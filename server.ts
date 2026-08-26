@@ -416,7 +416,9 @@ Return ONLY a single valid JSON object strictly formatted as follows (no markdow
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Homz Full-Stack IoT Server running on http://0.0.0.0:${PORT}`);
+    console.log('\n  \x1b[36m\x1b[1mHOMZ Smart Home Assistant Dashboard\x1b[0m');
+    console.log(`  \x1b[32m➜\x1b[0m  \x1b[1mLocal:\x1b[0m   \x1b[36mhttp://localhost:${PORT}/\x1b[0m`);
+    console.log(`  \x1b[32m➜\x1b[0m  \x1b[1mNetwork:\x1b[0m \x1b[36mhttp://0.0.0.0:${PORT}/\x1b[0m (accessible by wall tablets on LAN)\n`);
   });
 }
 

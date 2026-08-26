@@ -1,77 +1,30 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
+import React, { useState, useEffect } from 'react';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence, Reorder } from 'motion/react';
-import { 
-  Lock, 
-  Unlock, 
-  Droplets, 
-  Bell, 
-  Volume2, 
-  VolumeX, 
-  Sparkles, 
-  Bot, 
-  Lightbulb, 
-  Activity, 
-  Settings, 
-  Plus, 
-  ShieldCheck, 
-  ShieldAlert, 
-  AlertCircle, 
-  Power, 
-  Zap, 
-  Info, 
-  ChevronRight, 
-  Workflow, 
-  Coffee, 
-  BedDouble, 
-  Sofa, 
-  Cookie,
-  ArrowUpDown,
-  Battery,
-  BatteryLow,
-  HeartPulse,
-  Wrench,
-  GripHorizontal,
-  Move,
-  Network,
-  Cpu,
-  Layers,
-  Thermometer
-} from 'lucide-react';
-
-import { HAEntity, Room, LogMessage, ToastNotification, MaintenanceTask, MaintenanceLogEntry } from './types';
-import { INITIAL_ENTITIES, INITIAL_ROOMS, SCENES, INITIAL_MAINTENANCE_TASKS, INITIAL_MAINTENANCE_LOGS } from './data';
+import { HAEntity, Room, LogMessage, ToastNotification } from './types';
+import { INITIAL_ENTITIES, INITIAL_ROOMS } from './data';
 import { useAutoLayoutStore } from './store/useAutoLayoutStore';
 import { resolvedEntityToHAEntity } from './services/graphResolution';
-import GraphResolutionModal from './components/GraphResolutionModal';
-import Sidebar from './components/Sidebar';
-import CameraFeedCard from './components/CameraFeedCard';
-import RoomCard from './components/RoomCard';
-import WebSocketTerminal from './components/WebSocketTerminal';
-import SettingsView from './components/SettingsView';
-import NotificationToast from './components/NotificationToast';
-import RoomDetailSection from './components/RoomDetailSection';
-import EnergyAnalyticsView from './components/EnergyAnalyticsView';
-import DailyInsightsWidget from './components/DailyInsightsWidget';
-import BatteryStatusCard from './components/BatteryStatusCard';
-import DeviceHealthView from './components/DeviceHealthView';
-import WeatherWidget from './components/WeatherWidget';
-import DevicesView from './components/DevicesView';
-import { BentoGrid } from './components/ui/bento-grid';
 
-// 8 Core Navigation Views
-import RoomsView from './components/RoomsView';
-import AutomationsView, { AutomationItem } from './components/AutomationsView';
-import SecurityView from './components/SecurityView';
-import MediaView from './components/MediaView';
-import SystemView from './components/SystemView';
+import Sidebar from './components/Sidebar';
+import NotificationToast from './components/NotificationToast';
+
+// 10 Blank Views
+import OverviewView from './components/views/OverviewView';
+import RoomsView from './components/views/RoomsView';
+import EnergyView from './components/views/EnergyView';
+import SecurityView from './components/views/SecurityView';
+import MediaView from './components/views/MediaView';
+import SystemView from './components/views/SystemView';
+import NetworkView from './components/views/NetworkView';
+import MobilityView from './components/views/MobilityView';
+import HealthView from './components/views/HealthView';
+import AutomationsView from './components/views/AutomationsView';
+
+// Existing Settings View (Retained)
+import SettingsView from './components/SettingsView';
 
 export default function App() {
-  // Master React State
+  // Theme State
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('theme');
@@ -90,1583 +43,193 @@ export default function App() {
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
-  const [selectedRoomId, setSelectedRoomId] = useState<string>('living_room');
-  const [activeTab, setActiveTab] = useState<string>('home');
-  const [showTerminal, setShowTerminal] = useState<boolean>(false);
-  const [showGraphModal, setShowGraphModal] = useState<boolean>(false);
+  // Tab State
+  const [activeTab, setActiveTab] = useState<string>('overview');
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
 
-  // Auto-Layout Graph Resolution Store
+  // Auto-Layout Graph Store
   const {
     init: initAutoLayout,
-    resolvedAreas,
     resolvedEntities,
-    areasMap,
-    domainGroups,
-    securityOverview,
-    overviewSummary,
-    metrics,
-    isLiveMode,
-    connectionStatus,
-    callHAService,
-    updateEntityState: updateStoreEntityState
+    isLiveMode
   } = useAutoLayoutStore();
 
   useEffect(() => {
     initAutoLayout();
   }, [initAutoLayout]);
 
-  // Derive dynamic entities from auto-layout store (falling back to INITIAL_ENTITIES if empty)
-  const entities = useMemo<HAEntity[]>(() => {
-    const list = Object.values(resolvedEntities);
-    if (list.length === 0) return INITIAL_ENTITIES;
-    return list.map(resolvedEntityToHAEntity);
+  // Entity & Room State
+  const [entities, setEntities] = useState<HAEntity[]>(() => {
+    return Object.values(resolvedEntities).map(resolvedEntityToHAEntity);
+  });
+
+  useEffect(() => {
+    const arr = Object.values(resolvedEntities).map(resolvedEntityToHAEntity);
+    if (arr.length > 0) {
+      setEntities(arr);
+    }
   }, [resolvedEntities]);
 
-  // Derive dynamic rooms from auto-layout store (falling back to INITIAL_ROOMS if empty)
-  const [customRoomOrder, setCustomRoomOrder] = useState<string[] | null>(null);
-
-  const baseRooms = useMemo<Room[]>(() => {
-    if (resolvedAreas.length === 0) return INITIAL_ROOMS;
-    return resolvedAreas.map(ra => {
-      let icon = 'Sofa';
-      if (ra.area_id.includes('bed')) icon = 'BedDouble';
-      else if (ra.area_id.includes('kitchen') || ra.area_id.includes('cook')) icon = 'Cookie';
-      else if (ra.area_id.includes('bath')) icon = 'Bath';
-      else if (ra.area_id.includes('hall') || ra.area_id.includes('door') || ra.area_id.includes('entrance')) icon = 'KeyRound';
-      else if (ra.area_id.includes('media') || ra.area_id.includes('cinema')) icon = 'Tv';
-
-      return {
-        id: ra.area_id,
-        name: ra.name,
-        icon,
-        temperature: ra.summary?.currentTempAvg || 21.5,
-        humidity: ra.summary?.currentHumidityAvg || 45,
-        devicesCount: ra.summary?.totalEntities || ra.entities.length,
-        entityIds: ra.entities.map(e => e.entity_id),
-        bannerImage: ra.bannerImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=500&auto=format&fit=crop'
-      };
-    });
-  }, [resolvedAreas]);
-
-  const rooms = useMemo<Room[]>(() => {
-    if (!customRoomOrder) return baseRooms;
-    const map = new Map<string, Room>(baseRooms.map(r => [r.id, r]));
-    const ordered: Room[] = [];
-    for (const id of customRoomOrder) {
-      const found = map.get(id);
-      if (found) {
-        ordered.push(found);
-        map.delete(id);
+  const [rooms, setRooms] = useState<Room[]>(() => {
+    const saved = localStorage.getItem('homz_rooms');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return INITIAL_ROOMS;
       }
     }
-    for (const remaining of map.values()) {
-      ordered.push(remaining);
-    }
-    return ordered;
-  }, [baseRooms, customRoomOrder]);
+    return INITIAL_ROOMS;
+  });
 
-  const setRooms = (action: React.SetStateAction<Room[]>) => {
-    const next = typeof action === 'function' ? action(rooms) : action;
-    setCustomRoomOrder(next.map(r => r.id));
-  };
+  useEffect(() => {
+    localStorage.setItem('homz_rooms', JSON.stringify(rooms));
+  }, [rooms]);
 
-  const handleSetEntities: React.Dispatch<React.SetStateAction<HAEntity[]>> = (action) => {
-    const next = typeof action === 'function' ? action(entities) : action;
-    next.forEach(e => {
-      updateStoreEntityState(e.entity_id, e.state, e.attributes);
-    });
-  };
-  
-  // Device Maintenance state
-  const [maintenanceTasks, setMaintenanceTasks] = useState<MaintenanceTask[]>(INITIAL_MAINTENANCE_TASKS);
-  const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLogEntry[]>(INITIAL_MAINTENANCE_LOGS);
+  // Logs State
   const [logs, setLogs] = useState<LogMessage[]>([
-    { 
-      id: 'init-1', 
-      timestamp: '11:08:02', 
-      type: 'info', 
-      message: 'Established WebSocket Secure connection to HASS node at wss://hass.homz.internal/api/websocket...' 
-    },
-    { 
-      id: 'init-2', 
-      timestamp: '11:08:03', 
-      type: 'info', 
-      message: 'WebSocket API authorization accepted. Session validated.' 
-    },
-    { 
-      id: 'init-3', 
-      timestamp: '11:08:03', 
-      type: 'state_changed', 
-      message: 'Subscribed to Hass Event Stream. Synced state variables with backend database.',
-      details: { loaded_entities: 11, host: 'Local server', ssl: 'Enabled' } 
+    {
+      id: 'init-1',
+      timestamp: new Date().toLocaleTimeString(),
+      type: 'info',
+      message: 'HAD Dashboard Initialized'
     }
   ]);
 
-  useEffect(() => {
-    const handleHaLog = (e: any) => {
-      if (e.detail) {
-        addLog(e.detail.type || 'info', e.detail.msg, e.detail.details);
+  const addLog = (type: LogMessage['type'], message: string, details?: any) => {
+    setLogs(prev => [
+      ...prev.slice(-150),
+      {
+        id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+        timestamp: new Date().toLocaleTimeString(),
+        type,
+        message,
+        details
       }
-    };
-    window.addEventListener('ha_log_message', handleHaLog);
-    return () => window.removeEventListener('ha_log_message', handleHaLog);
-  }, []);
-
-  // Global smart home mode preset (Relax is active by default in mock scene)
-  const [activePreset, setActivePreset] = useState<string>('relax');
-
-  // Rooms environment matrix sorting state
-  const [roomSortOption, setRoomSortOption] = useState<'default' | 'active_devices' | 'energy_consumption'>('default');
-  const [roomSortDirection, setRoomSortDirection] = useState<'desc' | 'asc'>('desc');
-
-  // Helper: Get formatted local time timestamp
-  const getTimestamp = () => {
-    const d = new Date();
-    return d.toTimeString().split(' ')[0];
+    ]);
   };
 
-  // Maintenance alert count
-  const maintenanceDueCount = useMemo(() => {
-    return maintenanceTasks.filter(t => t.status === 'overdue' || t.status === 'due_soon').length;
-  }, [maintenanceTasks]);
-
-  // Critical Low Battery Alert count (<15%)
-  const criticalBatteryCount = useMemo(() => {
-    return entities.filter(e => 
-      e.entity_id !== 'sensor.home_battery' && 
-      typeof e.attributes.battery === 'number' && 
-      e.attributes.battery < 15
-    ).length;
-  }, [entities]);
-
-  // Battery Replacement & Maintenance Handler (Reset cell to 100%)
-  const handleReplaceBattery = (entityId: string) => {
-    const dev = entities.find(e => e.entity_id === entityId);
-    updateStoreEntityState(entityId, dev?.state || 'on', { battery: 100 });
-
-    const devName = dev?.attributes.friendly_name || entityId;
-
-    addToast({
-      type: 'success',
-      title: 'Battery Serviced',
-      message: `${devName} cell replaced/recharged to 100% capacity.`
-    });
-
-    addLog('service_call', `Physical battery replacement recorded: [${devName}] restored to 100% power.`, {
-      entity_id: entityId,
-      new_capacity: '100%',
-      state_of_health: '98%'
-    });
-  };
-
-  // Quick Simulation Trigger for <15% Critical Low Battery Test
-  const handleSimulateLowBattery = (entityId: string) => {
-    const dev = entities.find(e => e.entity_id === entityId);
-    updateStoreEntityState(entityId, dev?.state || 'on', { battery: 8 });
-
-    const devName = dev?.attributes.friendly_name || entityId;
-
-    addToast({
-      type: 'warning',
-      title: 'Critical Battery Warning',
-      message: `Simulated critical battery drop on ${devName} (8% charge). Notification badges activated!`,
-      duration: 6000
-    });
-
-    addLog('warning', `Telemetry Alarm: ${devName} voltage dropped below critical safety cutoff (<15% at 8%).`);
-  };
-
-  // Complete Maintenance Task Handler
-  const handleCompleteMaintenanceTask = (
-    taskId: string, 
-    logData: { servicedBy: string; notes: string; cost?: number; replacedPart?: string }
-  ) => {
-    const task = maintenanceTasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    const nextDueDate = new Date();
-    nextDueDate.setDate(nextDueDate.getDate() + task.intervalDays);
-    const nextDueDateStr = nextDueDate.toISOString().split('T')[0];
-
-    // Update task
-    setMaintenanceTasks(prev => prev.map(t => {
-      if (t.id === taskId) {
-        return {
-          ...t,
-          lastServicedDate: todayStr,
-          dueDate: nextDueDateStr,
-          status: 'healthy',
-          wearPercentage: 8
-        };
-      }
-      return t;
-    }));
-
-    // Add log entry
-    const newLogEntry: MaintenanceLogEntry = {
-      id: `log_${Date.now()}`,
-      taskId: task.id,
-      entityId: task.entityId,
-      deviceName: task.deviceName,
-      roomName: task.roomName,
-      taskTitle: task.taskTitle,
-      servicedDate: todayStr,
-      servicedBy: logData.servicedBy,
-      notes: logData.notes,
-      cost: logData.cost,
-      replacedPart: logData.replacedPart
-    };
-
-    setMaintenanceLogs(prev => [newLogEntry, ...prev]);
-
-    addToast({
-      type: 'success',
-      title: 'Maintenance Logged',
-      message: `${task.taskTitle} successfully logged for ${task.deviceName}.`
-    });
-
-    addLog('service_call', `Device maintenance recorded: [${task.deviceName}] ${task.taskTitle}`, {
-      serviced_by: logData.servicedBy,
-      next_due: nextDueDateStr,
-      cost: logData.cost
-    });
-  };
-
-  // Add Custom Maintenance Task Handler
-  const handleAddMaintenanceTask = (newTaskData: Omit<MaintenanceTask, 'id' | 'status'>) => {
-    const newTask: MaintenanceTask = {
-      ...newTaskData,
-      id: `task_${Date.now()}`,
-      status: 'healthy'
-    };
-
-    setMaintenanceTasks(prev => [newTask, ...prev]);
-
-    addToast({
-      type: 'info',
-      title: 'Maintenance Scheduled',
-      message: `Scheduled ${newTask.taskTitle} every ${newTask.intervalDays} days.`
-    });
-
-    addLog('info', `New maintenance schedule configured for ${newTask.deviceName}: ${newTask.taskTitle}`);
-  };
-
-  // Add New Living Space / Room Handler
-  const handleAddRoom = (newRoomData: Partial<Room>) => {
-    const newRoom: Room = {
-      id: newRoomData.id || `room_${Date.now()}`,
-      name: newRoomData.name || 'New Room',
-      icon: newRoomData.icon || 'Sofa',
-      temperature: newRoomData.temperature ?? 21.5,
-      humidity: newRoomData.humidity ?? 45,
-      devicesCount: 0,
-      entityIds: newRoomData.entityIds || [],
-      bannerImage: newRoomData.bannerImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=500&auto=format&fit=crop'
-    };
-
-    setRooms(prev => [...prev, newRoom]);
-
-    addToast({
-      type: 'success',
-      title: 'Room Created',
-      message: `${newRoom.name} added to your home spaces matrix.`
-    });
-
-    addLog('state_changed', `Registered new living zone: [${newRoom.name}] with ID '${newRoom.id}'`);
-  };
-
-  // Trigger Automation Routine Execution
-  const handleTriggerAutomation = (automation: AutomationItem) => {
-    addLog('service_call', `Dispatched Automation Trigger: '${automation.name}'`, {
-      automation_id: automation.id,
-      category: automation.category,
-      target_entity: automation.action.entityId,
-      target_state: automation.action.targetState
-    });
-
-    // Execute target state update on entity
-    updateEntityState(automation.action.entityId, automation.action.targetState);
-
-    addToast({
-      type: 'scene',
-      title: 'Automation Fired',
-      message: `${automation.name} successfully executed.`
-    });
-  };
-
-  // Security Panic Button Trigger Handler
-  const handlePanicTrigger = () => {
-    addLog('warning', 'SECURITY EMERGENCY: Manual Panic Alarm activated from security console!', {
-      siren_db: 110,
-      strobe_lights: 'Active',
-      monitoring_dispatched: true
-    });
-
-    addToast({
-      type: 'warning',
-      title: 'SECURITY ALARM TRIGGERED',
-      message: 'Perimeter sirens sounding and emergency contacts alerted.',
-      duration: 8000
-    });
-
-    // Flash lights & lock doors
-    handleSetEntities(prev => prev.map(ent => {
-      if (ent.entity_id === 'lock.front_door') {
-        return { ...ent, state: 'locked' };
-      }
-      if (ent.entity_id.startsWith('light.')) {
-        return { ...ent, state: 'on', attributes: { ...ent.attributes, brightness: 100, color: '#ef4444' } };
-      }
-      return ent;
-    }));
-  };
-
-  // System Core Management Handlers
-  const handleRestartCore = () => {
-    addLog('service_call', 'Initiating Home Assistant Core soft restart daemon...');
-    addToast({
-      type: 'info',
-      title: 'Restarting Core',
-      message: 'Home Assistant Core service restarting in background...'
-    });
-    setTimeout(() => {
-      addLog('info', 'Home Assistant Core restarted successfully (took 1.4s). All integrations warm.');
-      addToast({
-        type: 'success',
-        title: 'Core Online',
-        message: 'Home Assistant Core reboot complete.'
-      });
-    }, 1500);
-  };
-
-  const handleReloadYAML = () => {
-    addLog('service_call', 'Reloading YAML configuration blueprints and scripts...');
-    addToast({
-      type: 'info',
-      title: 'YAML Reloaded',
-      message: 'Configuration schemes updated without restarting node.'
-    });
-  };
-
-  const handleCreateBackup = () => {
-    const backupId = `backup_${new Date().toISOString().split('T')[0]}_${Math.random().toString(36).substr(2, 4)}`;
-    addLog('service_call', `Creating full snapshot archive: ${backupId}.tar.gz`);
-    addToast({
-      type: 'success',
-      title: 'Backup Created',
-      message: `Full system snapshot saved (${backupId}).`
-    });
-  };
-
-  // Toast Notification Dispatcher
-  const addToast = (
-    toast: Omit<ToastNotification, 'id' | 'timestamp'> & { id?: string; timestamp?: string }
-  ) => {
+  const addToast = (toast: Omit<ToastNotification, 'id' | 'timestamp'>) => {
     const newToast: ToastNotification = {
-      id: toast.id || `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      timestamp: toast.timestamp || getTimestamp(),
-      duration: toast.duration ?? 4200,
-      ...toast
+      ...toast,
+      id: `toast-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+      timestamp: new Date().toLocaleTimeString()
     };
-    // Keep max 4 visible notifications so UI remains clean & non-intrusive
-    setToasts(prev => [newToast, ...prev.slice(0, 3)]);
+    setToasts(prev => [...prev, newToast]);
   };
 
   const dismissToast = (id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
-  // Log dispatch function
-  const addLog = (type: LogMessage['type'], message: string, details?: any) => {
-    const newLog: LogMessage = {
-      id: `${Date.now()}-${Math.random()}`,
-      timestamp: getTimestamp(),
-      type,
-      message,
-      details
-    };
-    setLogs(prev => [...prev, newLog]);
-  };
-
-  // Helper to fetch single entity state
-  const getEntity = (entityId: string): HAEntity => {
-    return entities.find(e => e.entity_id === entityId) || {
-      entity_id: entityId,
-      state: 'off',
-      attributes: { friendly_name: 'Unknown Device' }
-    };
-  };
-
-  // Master updateEntity function (dispatching genuine HA call_service on WebSocket)
-  const updateEntityState = (
-    entityId: string, 
-    newState: string, 
-    newAttributes: Record<string, any> = {}
-  ) => {
-    const domain = entityId.split('.')[0];
-    let service = 'turn_on';
-    let serviceData: Record<string, any> = { ...newAttributes };
-
-    if (domain === 'lock') {
-      service = newState === 'locked' ? 'lock' : 'unlock';
-    } else if (domain === 'cover') {
-      if (newState === 'open' || newState === 'opening') service = 'open_cover';
-      else if (newState === 'closed' || newState === 'closing') service = 'close_cover';
-      else if (newState === 'stopped') service = 'stop_cover';
-      else if (newAttributes.position !== undefined) {
-        service = 'set_cover_position';
-        serviceData = { position: newAttributes.position };
-      }
-    } else if (domain === 'climate') {
-      if (newAttributes.temperature !== undefined || newAttributes.target_temp !== undefined) {
-        service = 'set_temperature';
-        serviceData = { temperature: newAttributes.temperature ?? newAttributes.target_temp };
-      } else if (['off', 'heat', 'cool', 'auto', 'fan_only'].includes(newState)) {
-        service = 'set_hvac_mode';
-        serviceData = { hvac_mode: newState };
-      }
-    } else if (domain === 'media_player') {
-      if (newState === 'playing') service = 'media_play';
-      else if (newState === 'paused') service = 'media_pause';
-      else if (newState === 'off') service = 'turn_off';
-      else if (newAttributes.volume_level !== undefined) {
-        service = 'volume_set';
-        serviceData = { volume_level: newAttributes.volume_level };
-      }
-    } else if (domain === 'vacuum') {
-      if (newState === 'cleaning' || newState === 'start') service = 'start';
-      else if (newState === 'returning' || newState === 'docked') service = 'return_to_base';
-      else if (newState === 'paused') service = 'pause';
-    } else {
-      service = newState === 'on' ? 'turn_on' : newState === 'off' ? 'turn_off' : 'toggle';
-    }
-
-    addLog('service_call', `call_service: ${domain}.${service}`, {
-      entity_id: entityId,
-      target_state: newState,
-      parameters: serviceData
-    });
-
-    // 1. Dispatch real WebSocket call_service & trigger optimistic store update
-    callHAService(domain, service, serviceData, { entity_id: entityId });
-
-    // 2. Commit local state update
-    updateStoreEntityState(entityId, newState, newAttributes);
-
-    // 3. Log receipt
-    setTimeout(() => {
-      addLog('state_changed', `Event state_changed: ${entityId} -> ${newState}`, {
-        entity_id: entityId,
-        current_state: newState,
-        attributes: newAttributes
-      });
-    }, 120);
-  };
-
-  // Handle Camera snapshots
-  const handleCaptureSnapshot = (cameraName: string) => {
-    addLog('service_call', `Triggered snapshot feed capture of '${cameraName}'`);
-    addToast({
-      type: 'security',
-      title: 'Snapshot Captured',
-      message: `Full frame archived from ${cameraName} to security vault.`
-    });
-    setTimeout(() => {
-      addLog('state_changed', `Snapshot saved to localized vault storage with format: snapshot_${cameraName.toLowerCase().replace(/ /g, '_')}.png`, {
-        frame_resolution: '1920x1080',
-        size_bytes: 412580,
-        tunnel_webrtc: 'Completed secure frame pull'
-      });
-    }, 300);
-  };
-
-  // Handle Camera Intercom communication
-  const handleIntercomToggle = (cameraName: string, isMicActive: boolean) => {
-    const action = isMicActive ? 'Intercom microphone broadcast ENABLED' : 'Intercom microphone broadcast MUTED';
-    addLog('service_call', `${action} for camera '${cameraName}'`);
-    addToast({
-      type: 'security',
-      title: isMicActive ? 'Intercom Active' : 'Intercom Muted',
-      message: isMicActive ? `2-way live audio open to ${cameraName}.` : 'Microphone broadcast ended.'
-    });
-  };
-
-  // Toggle Door lock
-  const handleToggleDoorLock = () => {
-    const lockEntity = getEntity('lock.front_door');
-    const newState = lockEntity.state === 'locked' ? 'unlocked' : 'locked';
-    updateEntityState('lock.front_door', newState);
-
-    if (newState === 'unlocked') {
-      addToast({
-        type: 'lock',
-        title: 'Door Unlocked',
-        message: 'Front entrance smart deadbolt latch opened.'
-      });
-    } else {
-      addToast({
-        type: 'lock',
-        title: 'Door Locked',
-        message: 'Front entrance secured. Perimeter protection active.'
-      });
-    }
-  };
-
-  // Trigger quick actions inside RoomCards / Master toggle
-  const handleToggleAllInRoom = (roomId: string, currentSomeActive: boolean) => {
-    const room = rooms.find(r => r.id === roomId);
-    if (!room) return;
-
-    const targetState = currentSomeActive ? 'off' : 'on';
-    addLog('service_call', `Master room toggle triggered: powering ${targetState} all elements inside room: '${room.name}'`);
-
-    handleSetEntities(prev => prev.map(ent => {
-      if (room.entityIds.includes(ent.entity_id)) {
-        // Toggle brightness as well for lights
-        const extraAttr: any = {};
-        if (ent.entity_id.startsWith('light.')) {
-          extraAttr.brightness = targetState === 'on' ? 80 : 0;
-        }
+  const updateEntityState = (entityId: string, newState: string, newAttributes?: any) => {
+    setEntities(prev => prev.map(ent => {
+      if (ent.entity_id === entityId) {
         return {
           ...ent,
-          state: targetState,
-          attributes: { ...ent.attributes, ...extraAttr }
+          state: newState,
+          attributes: { ...ent.attributes, ...(newAttributes || {}) },
+          last_updated: new Date().toISOString()
         };
       }
       return ent;
     }));
 
-    addLog('state_changed', `State changes batch broadcasted to IoT node array representing room '${room.name}'`);
-    addToast({
-      type: 'light',
-      title: `${room.name} ${targetState === 'on' ? 'Powered On' : 'Turned Off'}`,
-      message: `All ${room.entityIds.length} devices switched ${targetState}.`
+    addLog('service_call', `Service called on ${entityId} -> ${newState}`, {
+      domain: entityId.split('.')[0],
+      service: newState === 'on' ? 'turn_on' : newState === 'off' ? 'turn_off' : 'set_state',
+      service_data: { entity_id: entityId, ...(newAttributes || {}) }
     });
   };
 
-  // Change entire home smart scenes presets
-  const handleTriggerPreset = (sceneId: string) => {
-    setActivePreset(sceneId);
-    addLog('service_call', `Smart Scene template active triggered: '${sceneId}'`);
-    
-    // Modify device values depending on scene template chosen
-    if (sceneId === 'morning') {
-      // Turn on lighting with warm light
-      handleSetEntities(prev => prev.map(ent => {
-        if (ent.entity_id.startsWith('light.')) {
-          return {
-            ...ent,
-            state: 'on',
-            attributes: { ...ent.attributes, brightness: 50, color: '#fef3c7' }
-          };
-        }
-        if (ent.entity_id === 'switch.coffee_maker') {
-          return { ...ent, state: 'on' };
-        }
-        return ent;
-      }));
-      addToast({
-        type: 'scene',
-        title: 'Morning Routine Activated',
-        message: 'Warm lighting set to 50% & coffee maker brewing.'
-      });
-    } else if (sceneId === 'away') {
-      // Turn off everything, lock front door
-      handleSetEntities(prev => prev.map(ent => {
-        if (ent.entity_id.startsWith('light.')) {
-          return { ...ent, state: 'off', attributes: { ...ent.attributes, brightness: 0 } };
-        }
-        if (ent.entity_id === 'lock.front_door') {
-          return { ...ent, state: 'locked' };
-        }
-        if (ent.entity_id.startsWith('vacuum.')) {
-          return { ...ent, state: 'on', attributes: { ...ent.attributes, mode: 'Turbo' } };
-        }
-        return ent;
-      }));
-      addToast({
-        type: 'scene',
-        title: 'Away Routine Activated',
-        message: 'Perimeter locked, lighting off, and vacuum cycle started.'
-      });
-    } else if (sceneId === 'relax') {
-      handleSetEntities(prev => prev.map(ent => {
-        if (ent.entity_id === 'light.living_room_accent') {
-          return { ...ent, state: 'on', attributes: { ...ent.attributes, brightness: 60, color: '#7B61FF' } };
-        }
-        if (ent.entity_id === 'light.bedroom') {
-          return { ...ent, state: 'on', attributes: { ...ent.attributes, brightness: 40, color: '#fef3c7' } };
-        }
-        return ent;
-      }));
-      addToast({
-        type: 'scene',
-        title: 'Relax Routine Activated',
-        message: 'Atmospheric purple glow and ambient climate engaged.'
-      });
-    } else {
-      addToast({
-        type: 'scene',
-        title: `Scene Applied: ${sceneId.toUpperCase()}`,
-        message: 'Environment parameters updated.'
-      });
-    }
-    
-    setTimeout(() => {
-      addLog('state_changed', `All active environment variables transitioned to preset: '${sceneId.toUpperCase()}'`);
-    }, 200);
-  };
-
-  // Custom Simulator Event dispatch handler for WebSocket console
-  const handleSimulateEvent = (eventType: string) => {
-    if (eventType === 'doorbell_ring') {
-      addLog('warning', `HASS Event Capture: Doorbell button clicked! Broadcasting alert...`);
-      addToast({
-        type: 'security',
-        title: 'Doorbell Ringing!',
-        message: 'Front entrance doorbell pressed.',
-        duration: 5500
-      });
-      // Temporarily set doorbell sensor state to active
-      handleSetEntities(prev => prev.map(ent => {
-        if (ent.entity_id === 'binary_sensor.doorbell') {
-          return { ...ent, state: 'on', attributes: { ...ent.attributes, friendly_name: 'Bell is Ringing!', motion_detected: true } };
-        }
-        return ent;
-      }));
-      
-      // Auto restore event state in 3 seconds
-      setTimeout(() => {
-        handleSetEntities(prev => prev.map(ent => {
-          if (ent.entity_id === 'binary_sensor.doorbell') {
-            return { ...ent, state: 'off', attributes: { ...ent.attributes, friendly_name: 'Ring Pro Doorbell', motion_detected: false } };
-          }
-          return ent;
-        }));
-        addLog('info', `Doorbell sensor state auto-restored to sleep.`);
-      }, 3500);
-
-    } else if (eventType === 'motion_detected') {
-      addLog('warning', `HASS Sensor Alert: Presence motion detected in Front Corridor!`);
-      addToast({
-        type: 'security',
-        title: 'Motion Detected',
-        message: 'Infrared sensor trigger at Front Corridor.',
-        duration: 5000
-      });
-      // Simulate snapshot
-      addLog('info', `Triggering live security capture at main corridor camera zone...`);
+  // Helper getters for view titles
+  const getTabTitle = (tab: string) => {
+    switch (tab) {
+      case 'overview': return 'Overview';
+      case 'rooms': return 'Rooms';
+      case 'energy': return 'Energy';
+      case 'security': return 'Security';
+      case 'media': return 'Media';
+      case 'system': return 'System';
+      case 'network': return 'Network';
+      case 'mobility': return 'Mobility';
+      case 'health': return 'Health';
+      case 'automations': return 'Automations';
+      case 'settings': return 'Settings';
+      default: return 'Dashboard';
     }
   };
-
-  // Calculations for responsive stats
-  const activeLightsCount = entities.filter(e => e.entity_id.startsWith('light.') && e.state === 'on').length;
-  const activeDevicesTotal = entities.filter(e => e.state === 'on' || e.state === 'playing').length;
-  
-  // Dynamically calculate power sum and format as kW
-  const totalPowerConsumption = entities.reduce((sum, ent) => {
-    if (ent.state === 'on' || ent.state === 'playing') {
-      return sum + (ent.attributes.power || 0);
-    }
-    return sum;
-  }, 0);
-  const formattedPowerStr = (totalPowerConsumption / 1000).toFixed(2); // converting to kW e.g., 1.45 kW
-
-  // Selected Room element to inspect details in bottom-center area
-  const currentSelectedRoom = rooms.find(r => r.id === selectedRoomId) || rooms[0];
-  const roomEntities = entities.filter(ent => currentSelectedRoom.entityIds.includes(ent.entity_id));
-
-  // Dynamic sorting for Rooms environment matrix
-  const sortedRooms = useMemo(() => {
-    if (roomSortOption === 'default') {
-      return rooms;
-    }
-
-    return [...rooms].sort((a, b) => {
-      // 1. Sort by Active Devices count
-      if (roomSortOption === 'active_devices') {
-        const aActive = entities.filter(e => a.entityIds.includes(e.entity_id) && (e.state === 'on' || e.state === 'playing' || e.state === 'locked')).length;
-        const bActive = entities.filter(e => b.entityIds.includes(e.entity_id) && (e.state === 'on' || e.state === 'playing' || e.state === 'locked')).length;
-        
-        const diff = bActive - aActive;
-        if (diff !== 0) {
-          return roomSortDirection === 'desc' ? diff : -diff;
-        }
-        // Secondary tiebreaker: power consumption
-        const aPower = entities.filter(e => a.entityIds.includes(e.entity_id) && (e.state === 'on' || e.state === 'playing')).reduce((s, e) => s + (e.attributes.power || 0), 0);
-        const bPower = entities.filter(e => b.entityIds.includes(e.entity_id) && (e.state === 'on' || e.state === 'playing')).reduce((s, e) => s + (e.attributes.power || 0), 0);
-        return bPower - aPower;
-      }
-
-      // 2. Sort by Highest Energy Consumption (Watts)
-      if (roomSortOption === 'energy_consumption') {
-        const aPower = entities
-          .filter(e => a.entityIds.includes(e.entity_id) && (e.state === 'on' || e.state === 'playing'))
-          .reduce((sum, e) => sum + (Number(e.attributes.power) || 0), 0);
-        
-        const bPower = entities
-          .filter(e => b.entityIds.includes(e.entity_id) && (e.state === 'on' || e.state === 'playing'))
-          .reduce((sum, e) => sum + (Number(e.attributes.power) || 0), 0);
-
-        const diff = bPower - aPower;
-        if (diff !== 0) {
-          return roomSortDirection === 'desc' ? diff : -diff;
-        }
-        // Secondary tiebreaker: active device count
-        const aActive = entities.filter(e => a.entityIds.includes(e.entity_id) && (e.state === 'on' || e.state === 'playing')).length;
-        const bActive = entities.filter(e => b.entityIds.includes(e.entity_id) && (e.state === 'on' || e.state === 'playing')).length;
-        return bActive - aActive;
-      }
-
-      return 0;
-    });
-  }, [rooms, entities, roomSortOption, roomSortDirection]);
 
   return (
     <div className={`w-full h-screen min-h-screen font-sans flex flex-col md:flex-row relative overflow-hidden select-none transition-colors duration-500 ${
       darkMode 
-        ? 'bg-[#090C15] text-slate-100 dark-ambient-mesh' 
-        : 'bg-[#EBF0F8] text-slate-800'
+        ? 'bg-[#0B1124] text-slate-100 dark-mesh-bg' 
+        : 'bg-[#F8FAFC] text-slate-800 light-mesh-bg'
     }`}>
-      
-      {/* Decorative premium floating blurred gradient circles in the background */}
-      {darkMode ? (
-        <>
-          <div className="absolute top-[-10%] left-[10%] w-137.5 h-137.5 bg-slate-800/25 rounded-full blur-[140px] pointer-events-none" />
-          <div className="absolute top-[20%] right-[-5%] w-112.5 h-112.5 bg-[#7B61FF]/08 rounded-full blur-[160px] pointer-events-none" />
-          <div className="absolute bottom-[-10%] left-[25%] w-137.5 h-137.5 bg-indigo-950/20 rounded-full blur-[140px] pointer-events-none" />
-        </>
-      ) : (
-        <>
-          <div className="absolute top-[-10%] left-[10%] w-125 h-125 bg-indigo-200/50 rounded-full blur-[140px] pointer-events-none" />
-          <div className="absolute bottom-[-10%] right-[-5%] w-150 h-150 bg-purple-200/60 rounded-full blur-[150px] pointer-events-none" />
-        </>
-      )}
-
-      {/* Main dashboard full-page containment layout - strictly locked to screen bounds without global window scrolling */}
-      <div className="w-full h-full flex flex-col md:flex-row relative z-10 overflow-hidden min-h-0 max-h-screen">
-        
-        {/* 1. LEFT SIDEBAR - Fixed to left in desktop, bottom nav in mobile */}
-        <Sidebar 
-          activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
-          showTerminal={showTerminal}
-          setShowTerminal={setShowTerminal}
-          activeLightsCount={activeLightsCount}
-          maintenanceDueCount={maintenanceDueCount}
-          criticalBatteryCount={criticalBatteryCount}
-          darkMode={darkMode}
-          toggleDarkMode={(next) => setDarkMode(typeof next === 'boolean' ? next : !darkMode)}
-        />
-
-        {/* 2. DYNAMIC CONTENT SECTION depending on left action navigation */}
-        <main 
-          id="main-content-area"
-          className="flex-1 min-w-0 flex flex-col p-4 sm:p-6 md:p-8 lg:p-10 overflow-y-auto touch-scroll-container h-full max-w-full min-h-0 pb-28 md:pb-10 overscroll-contain"
-        >
-          
-          {/* Header */}
-          <header className="flex flex-col lg:flex-row justify-between lg:items-center gap-4 mb-8">
-            <div>
-              <span className={`text-[10px] font-black tracking-widest block mb-1 ${
-                darkMode ? 'text-[#9D8BFF]' : 'text-indigo-600'
-              }`}>HOMZ SMART ENVIRONMENT</span>
-              <h1 className={`text-2xl sm:text-3xl font-extrabold tracking-tight leading-none ${
-                darkMode ? 'text-white' : 'text-slate-900'
-              }`}>
-                {activeTab === 'home' ? 'Live apartment view' : 
-                 activeTab === 'rooms' ? 'Rooms & Living Spaces' :
-                 activeTab === 'devices' ? 'Device Fleet & Hardware Status' :
-                 activeTab === 'automations' || activeTab === 'routines' ? 'Smart Automations & Routines' :
-                 activeTab === 'energy' ? 'Microgrid & Solar Energy' :
-                 activeTab === 'security' || activeTab === 'cameras' ? 'Perimeter Security & Alarm' : 
-                 activeTab === 'media' || activeTab === 'music' ? 'Music & Multi-Room Audio' :
-                 activeTab === 'system' ? 'Home Assistant Node & Core' :
-                 activeTab === 'health' ? 'Device Health & Service History' :
-                 activeTab === 'settings' ? 'Settings & System Configuration' : 'Home Assistant Dashboard'}
-              </h1>
-            </div>
-            
-            {/* Header Right Area: Grounded Weather Widget & Status Badges */}
-            <div className="flex flex-wrap items-center gap-2.5">
-               {/* Auto-Layout Graph Resolution Badge Button */}
-               <button
-                 id="btn-open-ha-graph"
-                 onClick={() => setShowGraphModal(true)}
-                 className={`inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-black shadow-xs backdrop-blur-md border transition-all cursor-pointer ${
-                   darkMode 
-                     ? 'bg-linear-to-r from-indigo-950/70 to-purple-950/70 hover:from-indigo-900/80 hover:to-purple-900/80 border-[#7B61FF]/40 text-[#9D8BFF]' 
-                     : 'bg-linear-to-r from-indigo-50/90 to-purple-50/90 hover:from-indigo-100 hover:to-purple-100 border-indigo-200 text-[#7B61FF]'
-                 }`}
-                 title="Open Auto-Layout Graph Inspector"
-               >
-                 <Network size={14} className="text-[#7B61FF]" />
-                 <span className="hidden sm:inline">HA Graph</span>
-                 <span className="inline sm:hidden">Graph</span>
-                 {metrics && (
-                   <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-md bg-[#7B61FF] text-white">
-                     {metrics.totalAreas} Areas
-                   </span>
-                 )}
-               </button>
-
-               {/* Grounded Weather Widget */}
-               <WeatherWidget darkMode={darkMode} />
-
-               {/* Clean connection badge */}
-               <div className={`hidden sm:flex items-center gap-2 py-2 px-3.5 rounded-full text-xs font-semibold shadow-sm backdrop-blur-md border ${
-                 darkMode ? 'bg-slate-900/80 border-slate-700/80 text-slate-200' : 'bg-white/80 border-slate-100 text-slate-700'
-               }`}>
-                  <span className={`w-2 h-2 rounded-full ${connectionStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                  <span>{connectionStatus === 'connected' ? (isLiveMode ? 'Live HA' : 'Auto Graph') : 'Connecting...'}</span>
-               </div>
-               
-               <div className={`hidden xl:flex items-center gap-2 py-2 px-3.5 rounded-full text-xs font-semibold shadow-sm backdrop-blur-md border ${
-                 darkMode ? 'bg-slate-900/80 border-slate-700/80 text-slate-200' : 'bg-white/80 border-slate-100 text-slate-700'
-               }`}>
-                  <span className="w-2 h-2 bg-teal-400 rounded-full"></span>
-                  <span>Air: Optimal</span>
-               </div>
-            </div>
-          </header>
-
-          {/* DYNAMIC VIEWS RENDER */}
-          {activeTab === 'home' && (
-            <div className="space-y-6 flex-1 flex flex-col justify-between">
-              {/* A. Status Bar / Chips Row (Overview Status Hub) */}
-              <div className="flex items-center gap-2.5 overflow-x-auto touch-scroll-container pb-1 scrollbar-none">
-                {/* 1. People Status Chip */}
-                <button
-                  onClick={() => setActiveTab('security')}
-                  className={`px-3.5 py-2 rounded-2xl border text-xs font-extrabold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-2xs ${
-                    overviewSummary.peopleHome > 0
-                      ? darkMode
-                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300 hover:bg-emerald-950/50'
-                        : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
-                      : darkMode
-                        ? 'bg-slate-900/60 border-slate-800 text-slate-400'
-                        : 'bg-slate-50 border-slate-200 text-slate-600'
-                  }`}
-                >
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>{overviewSummary.peopleHome} People Home</span>
-                  {overviewSummary.peopleAway > 0 && (
-                    <span className="text-[10px] opacity-70">({overviewSummary.peopleAway} Away)</span>
-                  )}
-                </button>
-
-                {/* 2. Active Lights Chip */}
-                <button
-                  onClick={() => {
-                    const allLights = Object.values(resolvedEntities).filter(e => e.domain === 'light');
-                    const anyOn = allLights.some(l => l.state === 'on');
-                    allLights.forEach(l => {
-                      updateEntityState(l.entity_id, anyOn ? 'off' : 'on');
-                    });
-                  }}
-                  className={`px-3.5 py-2 rounded-2xl border text-xs font-extrabold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-2xs ${
-                    activeLightsCount > 0
-                      ? darkMode
-                        ? 'bg-amber-950/30 border-amber-500/40 text-amber-300 hover:bg-amber-950/50'
-                        : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
-                      : darkMode
-                        ? 'bg-slate-900/60 border-slate-800 text-slate-400'
-                        : 'bg-slate-50 border-slate-200 text-slate-600'
-                  }`}
-                  title={activeLightsCount > 0 ? "Click to toggle all lights OFF" : "Click to turn ambient lights ON"}
-                >
-                  <Lightbulb size={14} className={activeLightsCount > 0 ? 'text-amber-400' : 'text-slate-400'} />
-                  <span>{activeLightsCount} {activeLightsCount === 1 ? 'Light' : 'Lights'} On</span>
-                  {activeLightsCount > 0 && <span className="text-[10px] text-amber-400 font-mono">• Turn Off</span>}
-                </button>
-
-                {/* 3. Open Doors / Windows Chip */}
-                <button
-                  onClick={() => setActiveTab('security')}
-                  className={`px-3.5 py-2 rounded-2xl border text-xs font-extrabold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-2xs ${
-                    overviewSummary.openOpeningsCount > 0
-                      ? darkMode
-                        ? 'bg-rose-950/30 border-rose-500/40 text-rose-300 hover:bg-rose-950/50 animate-pulse'
-                        : 'bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100'
-                      : darkMode
-                        ? 'bg-slate-900/60 border-slate-800 text-slate-400'
-                        : 'bg-slate-50 border-slate-200 text-slate-600'
-                  }`}
-                >
-                  <ShieldAlert size={14} className={overviewSummary.openOpeningsCount > 0 ? 'text-rose-500' : 'text-slate-400'} />
-                  <span>{overviewSummary.openOpeningsCount > 0 ? `${overviewSummary.openOpeningsCount} Openings Open` : 'Perimeter Sealed'}</span>
-                </button>
-
-                {/* 4. Security Status Chip */}
-                <button
-                  onClick={() => setActiveTab('security')}
-                  className={`px-3.5 py-2 rounded-2xl border text-xs font-extrabold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-2xs ${
-                    getEntity('lock.front_door').state === 'locked'
-                      ? darkMode
-                        ? 'bg-indigo-950/40 border-indigo-500/40 text-indigo-300'
-                        : 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                      : darkMode
-                        ? 'bg-rose-950/40 border-rose-500/50 text-rose-300 animate-pulse'
-                        : 'bg-rose-50 border-rose-200 text-rose-700'
-                  }`}
-                >
-                  {getEntity('lock.front_door').state === 'locked' ? <ShieldCheck size={14} className="text-emerald-400" /> : <Lock size={14} className="text-rose-400" />}
-                  <span>{getEntity('lock.front_door').state === 'locked' ? 'Alarm Armed Home' : 'Alarm Disarmed'}</span>
-                </button>
-
-                {/* 5. Active Media Players Chip */}
-                {overviewSummary.activeMediaCount > 0 && (
-                  <button
-                    onClick={() => setActiveTab('media')}
-                    className={`px-3.5 py-2 rounded-2xl border text-xs font-extrabold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-2xs ${
-                      darkMode
-                        ? 'bg-pink-950/30 border-pink-500/40 text-pink-300 hover:bg-pink-950/50'
-                        : 'bg-pink-50 border-pink-200 text-pink-800 hover:bg-pink-100'
-                    }`}
-                  >
-                    <Volume2 size={14} className="text-pink-400 animate-bounce" />
-                    <span>{overviewSummary.activeMediaCount} Media Playing</span>
-                  </button>
-                )}
-
-                {/* 6. Active HVAC Climates Chip */}
-                {overviewSummary.activeClimatesCount > 0 && (
-                  <button
-                    onClick={() => setActiveTab('rooms')}
-                    className={`px-3.5 py-2 rounded-2xl border text-xs font-extrabold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-2xs ${
-                      darkMode
-                        ? 'bg-sky-950/30 border-sky-500/40 text-sky-300 hover:bg-sky-950/50'
-                        : 'bg-sky-50 border-sky-200 text-sky-800 hover:bg-sky-100'
-                    }`}
-                  >
-                    <Thermometer size={14} className="text-sky-400" />
-                    <span>{overviewSummary.activeClimatesCount} Active HVAC</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Pinned / Active Entities Dynamic Banner (Surfacing Active Media, Active Climate & Contact Alerts) */}
-              {(overviewSummary.activeMediaCount > 0 || overviewSummary.openOpeningsCount > 0 || overviewSummary.activeClimatesCount > 0) && (
-                <div className={`p-4 sm:p-5 rounded-2xl border shadow-xs transition-all ${
-                  darkMode ? 'bg-slate-900/60 border-white/10 backdrop-blur-md' : 'bg-white/70 border-black/6 backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
-                }`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`text-[10px] font-black uppercase tracking-wider ${
-                      darkMode ? 'text-indigo-400' : 'text-indigo-600'
-                    }`}>
-                      Live Active Entities & Highlights
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-bold">Auto-Surfaced Stream</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {/* Active Media Player Card */}
-                    {entities.find(e => e.entity_id.startsWith('media_player.') && e.state === 'playing') && (() => {
-                      const activePlayer = entities.find(e => e.entity_id.startsWith('media_player.') && e.state === 'playing')!;
-                      return (
-                        <div
-                          key={activePlayer.entity_id}
-                          onClick={() => setActiveTab('media')}
-                          className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
-                            darkMode ? 'bg-pink-950/20 border-pink-500/30 hover:border-pink-500/50' : 'bg-pink-50/60 border-pink-200 hover:border-pink-300'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-9 h-9 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0">
-                              <Volume2 size={16} />
-                            </div>
-                            <div className="min-w-0">
-                              <h5 className="text-xs font-black truncate">{activePlayer.attributes.friendly_name}</h5>
-                              <p className="text-[10px] text-pink-400 truncate">{activePlayer.attributes.media_title || 'Now Playing'}</p>
-                            </div>
-                          </div>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-500 text-white shrink-0">
-                            Live &rarr;
-                          </span>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Active Climate Card */}
-                    {entities.find(e => e.entity_id.startsWith('climate.') && e.state !== 'off') && (() => {
-                      const activeClimate = entities.find(e => e.entity_id.startsWith('climate.') && e.state !== 'off')!;
-                      return (
-                        <div
-                          key={activeClimate.entity_id}
-                          onClick={() => setActiveTab('rooms')}
-                          className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
-                            darkMode ? 'bg-sky-950/20 border-sky-500/30 hover:border-sky-500/50' : 'bg-sky-50/60 border-sky-200 hover:border-sky-300'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-9 h-9 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
-                              <Thermometer size={16} />
-                            </div>
-                            <div className="min-w-0">
-                              <h5 className="text-xs font-black truncate">{activeClimate.attributes.friendly_name}</h5>
-                              <p className="text-[10px] text-sky-400 font-bold truncate">
-                                Target {activeClimate.attributes.temperature || activeClimate.attributes.target_temp || 21}°C • Ambient {activeClimate.attributes.current_temperature || 20.5}°C
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-sky-500 text-white shrink-0 uppercase">
-                            {activeClimate.state}
-                          </span>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Security Alert / Door Contact Card */}
-                    {overviewSummary.openOpeningsCount > 0 && (
-                      <div
-                        onClick={() => setActiveTab('security')}
-                        className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
-                          darkMode ? 'bg-rose-950/20 border-rose-500/40 hover:border-rose-500/60 animate-pulse' : 'bg-rose-50/70 border-rose-300 hover:border-rose-400'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-9 h-9 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
-                            <ShieldAlert size={16} />
-                          </div>
-                          <div className="min-w-0">
-                            <h5 className="text-xs font-black truncate text-rose-500">Perimeter Contact Alert</h5>
-                            <p className="text-[10px] text-slate-400 truncate">{overviewSummary.openOpeningsCount} unclosed entry sensor(s)</p>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500 text-white shrink-0">
-                          Check &rarr;
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                {/* Hero section: Camera element + mini responsive summary metric containers */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-                  {/* Camera card column */}
-                  <div className="lg:col-span-8">
-                    <CameraFeedCard 
-                      onCaptureSnapshot={handleCaptureSnapshot}
-                      onIntercomToggle={handleIntercomToggle}
-                      doorLocked={getEntity('lock.front_door').state === 'locked'}
-                      onToggleDoorLock={handleToggleDoorLock}
-                      darkMode={darkMode}
-                    />
-                  </div>
-
-                  {/* Summary information column */}
-                  <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
-                    {/* Device count indicator */}
-                    <motion.div 
-                      layout
-                      whileHover={{ y: -2 }}
-                      className={`transition-all p-5 rounded-2xl flex flex-row lg:flex-col items-center lg:items-start justify-between backdrop-blur-md shadow-xs border ${
-                        darkMode 
-                          ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 text-white' 
-                          : 'bg-white/70 hover:bg-white/85 border-black/6 text-slate-800 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
-                      }`}
-                    >
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center border shadow-xs ${
-                        darkMode 
-                          ? 'bg-orange-950/50 text-orange-400 border-orange-800/40' 
-                          : 'bg-orange-100/80 text-orange-600 border-orange-100'
-                      }`}>
-                        <Bot size={22} className={activeDevicesTotal > 0 ? 'animate-pulse' : ''} />
-                      </div>
-                      <div className="mt-0 lg:mt-4 text-right lg:text-left">
-                          <p className={`text-2xl font-black leading-none ${darkMode ? 'text-white' : 'text-slate-800'}`}>{activeDevicesTotal}</p>
-                          <p className="text-[10px] text-slate-400 font-extrabold uppercase mt-1 tracking-wider">Active Devices</p>
-                      </div>
-                    </motion.div>
-
-                    {/* Energy load estimation calculator */}
-                    <motion.div 
-                      layout
-                      whileHover={{ y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setActiveTab('energy')}
-                      className={`transition-all p-5 rounded-2xl flex flex-row lg:flex-col items-center lg:items-start justify-between backdrop-blur-md shadow-xs border cursor-pointer group ${
-                        darkMode 
-                          ? 'bg-slate-900/60 hover:bg-slate-900/90 border-white/10 hover:border-[#7B61FF]/40 text-white' 
-                          : 'bg-white/70 hover:bg-white/90 border-black/6 hover:border-[#7B61FF]/40 text-slate-800 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
-                      }`}
-                    >
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center border shadow-xs transition-transform group-hover:scale-105 ${
-                        darkMode 
-                          ? 'bg-indigo-950/50 text-[#9D8BFF] border-indigo-800/40' 
-                          : 'bg-indigo-100/80 text-[#7B61FF] border-indigo-100'
-                      }`}>
-                        <Zap size={22} className={darkMode ? 'text-[#9D8BFF]' : 'text-[#7B61FF]'} />
-                      </div>
-                      <div className="mt-0 lg:mt-4 text-right lg:text-left">
-                          <p className={`text-2xl font-black leading-none ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                            {formattedPowerStr} <span className="text-xs font-semibold text-slate-400">kW</span>
-                          </p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Estimated Load</span>
-                            <span className={`text-[9px] font-bold ${darkMode ? 'text-[#9D8BFF]' : 'text-[#7B61FF]'}`}>• Analytics &rarr;</span>
-                          </div>
-                      </div>
-                    </motion.div>
-
-                    {/* Armed Lock indicator with Soft Purple Dynamic Aura */}
-                    <motion.div 
-                      layout
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={handleToggleDoorLock} 
-                      className="bg-[#7B61FF] hover:bg-[#674EE3] cursor-pointer duration-300 p-5 rounded-2xl text-white flex flex-row lg:flex-col items-center lg:items-start justify-between shadow-xl shadow-[#7B61FF]/35 ring-2 ring-[#7B61FF]/30 relative overflow-hidden group"
-                    >
-                      <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/20 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
-                      <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center text-white border border-white/20 shadow-xs relative z-10">
-                        {getEntity('lock.front_door').state === 'locked' ? <ShieldCheck size={22} /> : <ShieldAlert size={22} className="animate-pulse" />}
-                      </div>
-                      <div className="mt-0 lg:mt-4 text-right lg:text-left relative z-10">
-                          <p className="text-xl font-black leading-none">{getEntity('lock.front_door').state === 'locked' ? 'Armed Secure' : 'Unlocked Warning'}</p>
-                          <p className="text-[10px] text-white/85 font-extrabold uppercase mt-1 tracking-wider">
-                            {getEntity('lock.front_door').state === 'locked' ? 'Front Door Locked' : 'Tap to secure lock'}
-                          </p>
-                      </div>
-                    </motion.div>
-                  </div>
-                </div>
-
-                {/* Rooms status list area */}
-                <motion.section layout id="rooms-status-hub">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-                    <div>
-                      <h2 className={`text-base font-extrabold tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>Rooms environment matrix</h2>
-                      <p className="text-[10px] text-slate-400 font-bold">
-                        {roomSortOption === 'active_devices' 
-                          ? `Ordered by Active Devices count (${roomSortDirection === 'desc' ? 'Most active first' : 'Least active first'})` 
-                          : roomSortOption === 'energy_consumption' 
-                            ? `Ordered by Power Consumption (${roomSortDirection === 'desc' ? 'Highest power draw first' : 'Lowest power draw first'})` 
-                            : 'Select individual room to review registered devices'}
-                      </p>
-                    </div>
-                    
-                    {/* Reordering / Sorting Control Group */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-[10px] font-black uppercase tracking-wider hidden sm:inline ${
-                        darkMode ? 'text-slate-400' : 'text-slate-500'
-                      }`}>
-                        Sort:
-                      </span>
-
-                      <div 
-                        id="rooms-sorting-controls"
-                        role="group"
-                        aria-label="Sort rooms matrix"
-                        className={`p-1 rounded-2xl flex items-center gap-1 border shadow-2xs backdrop-blur-md ${
-                          darkMode ? 'bg-slate-950/70 border-slate-800/80' : 'bg-slate-100/90 border-slate-200/70'
-                        }`}
-                      >
-                        {/* Default Order Button */}
-                        <button
-                          id="btn-sort-rooms-default"
-                          type="button"
-                          onClick={() => setRoomSortOption('default')}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                            roomSortOption === 'default'
-                              ? 'bg-[#7B61FF] text-white shadow-md shadow-[#7B61FF]/30 scale-[1.02]'
-                              : darkMode
-                                ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                          }`}
-                        >
-                          Default
-                        </button>
-
-                        {/* Active Devices Sort Button */}
-                        <button
-                          id="btn-sort-rooms-active-devices"
-                          type="button"
-                          onClick={() => {
-                            if (roomSortOption === 'active_devices') {
-                              setRoomSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
-                            } else {
-                              setRoomSortOption('active_devices');
-                              setRoomSortDirection('desc');
-                            }
-                          }}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                            roomSortOption === 'active_devices'
-                              ? 'bg-[#7B61FF] text-white shadow-md shadow-[#7B61FF]/30 scale-[1.02]'
-                              : darkMode
-                                ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                          }`}
-                        >
-                          <Activity size={13} className={roomSortOption === 'active_devices' ? 'text-white' : 'text-indigo-400'} />
-                          <span>Active Devices</span>
-                          {roomSortOption === 'active_devices' && (
-                            <span className="text-[11px] font-black font-mono ml-0.5 px-1 py-0.2 rounded bg-white/20">
-                              {roomSortDirection === 'desc' ? '↓ High' : '↑ Low'}
-                            </span>
-                          )}
-                        </button>
-
-                        {/* Highest Energy Consumption Sort Button */}
-                        <button
-                          id="btn-sort-rooms-energy-consumption"
-                          type="button"
-                          onClick={() => {
-                            if (roomSortOption === 'energy_consumption') {
-                              setRoomSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
-                            } else {
-                              setRoomSortOption('energy_consumption');
-                              setRoomSortDirection('desc');
-                            }
-                          }}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                            roomSortOption === 'energy_consumption'
-                              ? 'bg-[#7B61FF] text-white shadow-md shadow-[#7B61FF]/30 scale-[1.02]'
-                              : darkMode
-                                ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                          }`}
-                        >
-                          <Zap size={13} className={roomSortOption === 'energy_consumption' ? 'text-amber-300' : 'text-amber-500'} />
-                          <span>Highest Energy</span>
-                          {roomSortOption === 'energy_consumption' && (
-                            <span className="text-[11px] font-black font-mono ml-0.5 px-1 py-0.2 rounded bg-white/20">
-                              {roomSortDirection === 'desc' ? '↓ Peak' : '↑ Min'}
-                            </span>
-                          )}
-                        </button>
-                      </div>
-
-                      {/* Direction Toggle button if a sorted mode is active */}
-                      {roomSortOption !== 'default' && (
-                        <button
-                          id="btn-toggle-sort-direction"
-                          type="button"
-                          onClick={() => setRoomSortDirection(prev => prev === 'desc' ? 'asc' : 'desc')}
-                          title={`Click to reverse sort order (${roomSortDirection === 'desc' ? 'Highest first' : 'Lowest first'})`}
-                          className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
-                            darkMode
-                              ? 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800'
-                              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          <ArrowUpDown size={13} className="text-[#7B61FF]" />
-                          <span className="text-[10px] uppercase font-mono">{roomSortDirection}</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Room Bento Grid with Layout Transitions & Varied Tile Sizing */}
-                  {roomSortOption === 'default' ? (
-                    <Reorder.Group
-                      axis="x"
-                      values={rooms}
-                      onReorder={(newOrder) => {
-                        setRooms(newOrder);
-                        addToast({
-                          type: 'info',
-                          title: 'Dashboard Layout Updated',
-                          message: 'Room order saved to your personalized view.',
-                          duration: 2500
-                        });
-                        addLog('info', 'Personalized dashboard reordered via drag-and-drop.');
-                      }}
-                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 list-none p-0 m-0 w-full"
-                    >
-                      {rooms.map((room, idx) => {
-                        const isHero = idx === 0 || (room.id === selectedRoomId && rooms.length > 2);
-                        const bentoSpan = isHero 
-                          ? 'col-span-1 sm:col-span-2 lg:col-span-2' 
-                          : (idx % 5 === 3 ? 'col-span-1 sm:col-span-2 lg:col-span-2' : 'col-span-1');
-                        return (
-                          <Reorder.Item
-                            key={room.id}
-                            value={room}
-                            id={`reorder-room-${room.id}`}
-                            className={`list-none select-none touch-manipulation cursor-grab focus:outline-hidden ${bentoSpan}`}
-                            whileDrag={{ 
-                              scale: 1.03, 
-                              zIndex: 40,
-                              boxShadow: "0 20px 30px -10px rgba(123, 97, 255, 0.35)" 
-                            }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <RoomCard 
-                              room={room}
-                              entities={entities}
-                              maintenanceTasks={maintenanceTasks}
-                              isSelected={selectedRoomId === room.id}
-                              onSelect={() => setSelectedRoomId(room.id)}
-                              onToggleAllInRoom={handleToggleAllInRoom}
-                              darkMode={darkMode}
-                              isDragEnabled={true}
-                              className="h-full"
-                            />
-                          </Reorder.Item>
-                        );
-                      })}
-                    </Reorder.Group>
-                  ) : (
-                    <BentoGrid className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-                      {sortedRooms.map((room, idx) => {
-                        const isHero = idx === 0 || (room.id === selectedRoomId && sortedRooms.length > 2);
-                        const bentoSpan = isHero 
-                          ? 'col-span-1 sm:col-span-2 lg:col-span-2' 
-                          : (idx % 5 === 3 ? 'col-span-1 sm:col-span-2 lg:col-span-2' : 'col-span-1');
-                        return (
-                          <div key={room.id} className={bentoSpan}>
-                            <RoomCard 
-                              room={room}
-                              entities={entities}
-                              maintenanceTasks={maintenanceTasks}
-                              isSelected={selectedRoomId === room.id}
-                              onSelect={() => setSelectedRoomId(room.id)}
-                              onToggleAllInRoom={handleToggleAllInRoom}
-                              darkMode={darkMode}
-                              isDragEnabled={false}
-                              className="h-full"
-                            />
-                          </div>
-                        );
-                      })}
-                    </BentoGrid>
-                  )}
-                </motion.section>
-              </div>
-
-              {/* 24-Hour Daily Insights & Microgrid Trends Widget */}
-              <div className="mt-6">
-                <DailyInsightsWidget
-                  entities={entities}
-                  rooms={rooms}
-                  darkMode={darkMode}
-                  onOpenEnergyTab={() => setActiveTab('energy')}
-                />
-              </div>
-
-              {/* Focus detailed entities controller panel for the selected room */}
-              <div className="mt-6">
-                <RoomDetailSection
-                  room={currentSelectedRoom}
-                  entities={entities}
-                  rooms={rooms}
-                  maintenanceTasks={maintenanceTasks}
-                  onUpdateEntityState={(id, newState, newAttr) => updateEntityState(id, newState, newAttr)}
-                  onSelectRoom={(rId) => setSelectedRoomId(rId)}
-                  onViewHealth={() => setActiveTab('health')}
-                  darkMode={darkMode}
-                />
-              </div>
-
-              {/* Master low-profile Quick action presets bar */}
-              <motion.div layout id="quick-action-bar" className={`mt-8 pt-5 border-t flex flex-col gap-3 ${
-                darkMode ? 'border-slate-800' : 'border-white/80'
-              }`}>
-                <span className="text-[10px] text-slate-400 font-extrabold tracking-widest uppercase">Smart Scene Presets</span>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {SCENES.map((scene) => {
-                    const isActive = activePreset === scene.id;
-                    return (
-                      <div key={scene.id} className="relative flex">
-                        {isActive && (
-                          <motion.div 
-                            animate={{ scale: [1, 1.04, 1], opacity: [0.45, 0.8, 0.45] }}
-                            transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
-                            className="absolute -inset-1.5 bg-[#7B61FF] rounded-2xl blur-md pointer-events-none" 
-                            style={{ boxShadow: '0 0 16px rgba(123, 97, 255, 0.55)' }}
-                          />
-                        )}
-                        <motion.button
-                          layout
-                          whileHover={{ y: -2 }}
-                          whileTap={{ scale: 0.98 }}
-                          id={`btn-scene-${scene.id}`}
-                          onClick={() => handleTriggerPreset(scene.id)}
-                          className={`w-full p-3.5 rounded-2xl flex items-center justify-between shadow-sm transition-all text-left cursor-pointer border relative z-10 backdrop-blur-xl ${
-                            isActive 
-                              ? 'bg-slate-900 border-[#7B61FF] text-white shadow-lg ring-2 ring-[#7B61FF]/50' 
-                              : darkMode
-                                ? 'bg-slate-900/60 hover:bg-slate-800/80 border-slate-800 text-slate-200'
-                                : 'bg-white/80 hover:bg-white border-slate-100 text-slate-700'
-                          }`}
-                          style={{
-                            boxShadow: isActive ? '0 6px 20px rgba(123, 97, 255, 0.35)' : undefined
-                          }}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <span className={`w-2 h-2 rounded-full bg-linear-to-r ${scene.color}`} />
-                            <span className="text-xs font-black tracking-tight">{scene.name}</span>
-                          </div>
-                          <span className={`text-[10px] font-bold ${isActive ? 'text-amber-300' : 'text-slate-400'}`}>
-                            {isActive ? 'Active' : 'Apply'}
-                          </span>
-                        </motion.button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            </div>
-          )}
-
-          {/* 1. ROOMS & LIVING SPACES DIRECTORY VIEW */}
-          {activeTab === 'rooms' && (
-            <RoomsView
-              rooms={rooms}
-              entities={entities}
-              maintenanceTasks={maintenanceTasks}
-              onUpdateEntityState={updateEntityState}
-              onToggleAllInRoom={(roomId, forceTurnOn) => {
-                const targetRoom = rooms.find(r => r.id === roomId);
-                if (!targetRoom) return;
-                const turnState = forceTurnOn !== undefined ? (forceTurnOn ? 'on' : 'off') : 'off';
-                targetRoom.entityIds.forEach(id => updateEntityState(id, turnState));
-              }}
-              onAddRoom={handleAddRoom}
-              onViewHealth={() => setActiveTab('health')}
-              onOpenEnergy={() => setActiveTab('energy')}
-              onOpenGraphInspector={() => setShowGraphModal(true)}
-              darkMode={darkMode}
-            />
-          )}
-
-          {/* 2. AUTOMATIONS VIEW */}
-          {(activeTab === 'automations' || activeTab === 'routines' || activeTab === 'activity') && (
-            <AutomationsView
-              entities={entities}
-              rooms={rooms}
-              onTriggerAutomation={handleTriggerAutomation}
-              darkMode={darkMode}
-            />
-          )}
-
-          {/* 3. SECURITY VIEW (Replaces legacy cameras tab) */}
-          {(activeTab === 'security' || activeTab === 'cameras') && (
-            <SecurityView
-              entities={entities}
-              rooms={rooms}
-              onUpdateEntityState={updateEntityState}
-              onCaptureSnapshot={handleCaptureSnapshot}
-              onIntercomToggle={handleIntercomToggle}
-              onPanicTrigger={handlePanicTrigger}
-              darkMode={darkMode}
-            />
-          )}
-
-          {/* 4. MUSIC & MEDIA VIEW */}
-          {(activeTab === 'media' || activeTab === 'music') && (
-            <MediaView
-              entities={entities}
-              rooms={rooms}
-              onUpdateEntityState={updateEntityState}
-              darkMode={darkMode}
-            />
-          )}
-
-          {/* 5. SYSTEM & CORE VIEW */}
-          {activeTab === 'system' && (
-            <SystemView
-              logs={logs}
-              entities={entities}
-              rooms={rooms}
-              darkMode={darkMode}
-              onClearLogs={() => setLogs([])}
-              onRestartCore={handleRestartCore}
-              onReloadYAML={handleReloadYAML}
-              onCreateBackup={handleCreateBackup}
-              setActiveTab={setActiveTab}
-            />
-          )}
-
-          {/* 6. ENERGY ANALYTICS VIEW */}
-          {activeTab === 'energy' && (
-            <EnergyAnalyticsView
-              entities={entities}
-              rooms={rooms}
-              darkMode={darkMode}
-            />
-          )}
-
-          {/* 7. REGISTERED DEVICES FLEET VIEW (Categorical Aggregation) */}
-          {activeTab === 'devices' && (
-            <DevicesView
-              entities={entities}
-              rooms={rooms}
-              darkMode={darkMode}
-              onUpdateEntityState={updateEntityState}
-              onSelectRoom={(rId) => {
-                setSelectedRoomId(rId);
-                setActiveTab('rooms');
-              }}
-              onViewHealth={() => setActiveTab('health')}
-            />
-          )}
-
-          {/* 8. DEVICE HEALTH VIEW */}
-          {activeTab === 'health' && (
-            <DeviceHealthView
-              tasks={maintenanceTasks}
-              logs={maintenanceLogs}
-              entities={entities}
-              rooms={rooms}
-              darkMode={darkMode}
-              onCompleteTask={handleCompleteMaintenanceTask}
-              onAddTask={handleAddMaintenanceTask}
-            />
-          )}
-
-          {/* 9. SETTINGS VIEW */}
-          {activeTab === 'settings' && (
-            <SettingsView
-              darkMode={darkMode}
-              toggleDarkMode={() => setDarkMode(!darkMode)}
-              entities={entities}
-              setEntities={handleSetEntities}
-              rooms={rooms}
-              setRooms={setRooms}
-              addLog={addLog}
-              logs={logs}
-              setLogs={setLogs}
-              setActiveTab={setActiveTab}
-              addToast={addToast}
-            />
-          )}
-
-          {/* 3. INTERACTIVE DEVELOPER MONITOR (COLLAPSIBLE FOOTER/DRAWER PANEL) */}
-          {showTerminal && (
-            <div id="terminal-drawer-container" className="mt-8 transition-transform duration-300">
-              <WebSocketTerminal 
-                logs={logs}
-                entities={entities}
-                onClearLogs={() => setLogs([])}
-                onSimulateServiceCall={(dom, srv, targetId, data) => {
-                  updateEntityState(targetId, data.target_state || 'on', data);
-                }}
-                onSimulateEvent={handleSimulateEvent}
-                onClose={() => setShowTerminal(false)}
-              />
-            </div>
-          )}
-        </main>
-
+      {/* Background ambient lighting glows */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className={`absolute -top-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-30 transition-all duration-1000 ${
+          darkMode ? 'bg-indigo-600/30' : 'bg-indigo-300/40'
+        }`} />
+        <div className={`absolute top-1/2 -right-40 w-96 h-96 rounded-full blur-3xl opacity-20 transition-all duration-1000 ${
+          darkMode ? 'bg-blue-600/20' : 'bg-sky-200/50'
+        }`} />
       </div>
 
-      {/* Global Notification Toast System */}
+      {/* Modern Glassmorphic Nav Sidebar */}
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        darkMode={darkMode}
+        toggleDarkMode={(next) => setDarkMode(next !== undefined ? next : !darkMode)}
+      />
+
+      {/* Main Dynamic Viewport Container */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative z-10">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container p-4 sm:p-6 lg:p-8 flex flex-col">
+          {/* Header Bar - Clean Title Only */}
+          <header className="mb-6">
+            <h1 className={`text-2xl sm:text-3xl font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+              {getTabTitle(activeTab)}
+            </h1>
+          </header>
+
+          {/* PAGE ROUTING (Blank views ready to build + Settings) */}
+          <div className="flex-1 flex flex-col">
+            {activeTab === 'overview' && <OverviewView darkMode={darkMode} />}
+            {activeTab === 'rooms' && <RoomsView darkMode={darkMode} />}
+            {activeTab === 'energy' && <EnergyView darkMode={darkMode} />}
+            {activeTab === 'security' && <SecurityView darkMode={darkMode} />}
+            {activeTab === 'media' && <MediaView darkMode={darkMode} />}
+            {activeTab === 'system' && <SystemView darkMode={darkMode} />}
+            {activeTab === 'network' && <NetworkView darkMode={darkMode} />}
+            {activeTab === 'mobility' && <MobilityView darkMode={darkMode} />}
+            {activeTab === 'health' && <HealthView darkMode={darkMode} />}
+            {activeTab === 'automations' && <AutomationsView darkMode={darkMode} />}
+            {activeTab === 'settings' && (
+              <SettingsView
+                darkMode={darkMode}
+                toggleDarkMode={() => setDarkMode(!darkMode)}
+                entities={entities}
+                setEntities={setEntities}
+                rooms={rooms}
+                setRooms={setRooms}
+                addLog={addLog}
+                logs={logs}
+                setLogs={setLogs}
+                setActiveTab={setActiveTab}
+                addToast={addToast}
+              />
+            )}
+          </div>
+        </main>
+      </div>
+
+      {/* Global Notifications */}
       <NotificationToast 
         toasts={toasts} 
         onDismiss={dismissToast} 
         darkMode={darkMode} 
-      />
-
-      {/* Auto-Layout Graph Resolution & Connection Inspector Modal */}
-      <GraphResolutionModal
-        isOpen={showGraphModal}
-        onClose={() => setShowGraphModal(false)}
-        darkMode={darkMode}
       />
     </div>
   );
