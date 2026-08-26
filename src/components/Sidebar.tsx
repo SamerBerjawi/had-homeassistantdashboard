@@ -79,7 +79,7 @@ export default function Sidebar({
         } ${
           darkMode 
             ? 'bg-slate-950/40 backdrop-blur-md backdrop-saturate-150 border-white/10 text-white' 
-            : 'bg-white/80 backdrop-blur-md backdrop-saturate-150 border-black/[0.08] text-slate-800'
+            : 'bg-white/80 backdrop-blur-md backdrop-saturate-150 border-black/[0.08] text-slate-900'
         }`}
       >
         {/* Header Branding & Collapse Toggle */}
@@ -89,13 +89,15 @@ export default function Sidebar({
             className="flex items-center gap-3 cursor-pointer group"
             title="Homz Dashboard"
           >
-            <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm flex items-center justify-center text-sky-400 shadow-md transition-all shrink-0 group-hover:scale-105">
+            <div className={`w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center shadow-md transition-all shrink-0 group-hover:scale-105 ${
+              darkMode ? 'bg-white/10 border border-white/15 text-sky-400' : 'bg-sky-500/10 border border-sky-500/20 text-sky-600'
+            }`}>
               <Sparkle size={22} weight="duotone" className="group-hover:rotate-12 transition-transform" />
             </div>
             {!isCollapsed && (
               <div className="min-w-0">
-                <h2 className="text-sm font-black tracking-tight text-white leading-none">HOMZ</h2>
-                <p className="text-[10px] text-sky-400 font-semibold tracking-wider uppercase mt-0.5">Automated Living</p>
+                <h2 className={`text-sm font-black tracking-tight leading-none ${darkMode ? 'text-white' : 'text-slate-900'}`}>HOMZ</h2>
+                <p className={`text-[10px] font-semibold tracking-wider uppercase mt-0.5 ${darkMode ? 'text-sky-400' : 'text-sky-600'}`}>Automated Living</p>
               </div>
             )}
           </div>
@@ -104,7 +106,9 @@ export default function Sidebar({
           <button
             type="button"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer text-slate-400 hover:text-white hover:bg-white/[0.05] ${
+            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
+              darkMode ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-900/[0.05]'
+            } ${
               isCollapsed ? 'hidden' : 'block'
             }`}
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
@@ -130,15 +134,21 @@ export default function Sidebar({
                     : 'w-full px-3.5 py-2.5 text-left'
                 } ${
                   isActive 
-                    ? 'bg-gradient-to-r from-sky-500/15 to-indigo-500/10 text-white font-medium border border-sky-400/20 shadow-[0_0_15px_-3px_rgba(56,189,248,0.2)]' 
-                    : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+                    ? darkMode
+                      ? 'bg-gradient-to-r from-sky-500/15 to-indigo-500/10 text-white font-medium border border-sky-400/20 shadow-[0_0_15px_-3px_rgba(56,189,248,0.2)]' 
+                      : 'bg-gradient-to-r from-sky-500/15 to-indigo-500/10 text-sky-950 font-bold border border-sky-500/30 shadow-[0_0_15px_-3px_rgba(56,189,248,0.25)]'
+                    : darkMode
+                      ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/[0.05]'
                 }`}
               >
                 <Icon 
                   size={20} 
                   weight="duotone" 
                   className={`shrink-0 transition-transform duration-200 ${
-                    isActive ? 'text-sky-400' : 'text-slate-400 group-hover:text-white'
+                    isActive 
+                      ? darkMode ? 'text-sky-400' : 'text-sky-600' 
+                      : darkMode ? 'text-slate-400 group-hover:text-white' : 'text-slate-500 group-hover:text-slate-900'
                   }`} 
                 />
 
@@ -148,12 +158,18 @@ export default function Sidebar({
                 
                 {/* Active Indicator Bar */}
                 {isActive && !isCollapsed && (
-                  <span className="ml-auto w-1.5 h-3.5 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+                  <span className={`ml-auto w-1.5 h-3.5 rounded-full ${
+                    darkMode ? 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]' : 'bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]'
+                  }`} />
                 )}
                 
                 {/* Hover Tooltip Label (Only when collapsed) */}
                 {isCollapsed && (
-                  <span className="absolute left-full ml-3 px-2.5 py-1 text-[11px] bg-slate-900/95 backdrop-blur-md text-white font-semibold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-xl border border-white/10 whitespace-nowrap">
+                  <span className={`absolute left-full ml-3 px-2.5 py-1 text-[11px] font-semibold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-xl whitespace-nowrap ${
+                    darkMode 
+                      ? 'bg-slate-900/95 backdrop-blur-md text-white border border-white/10' 
+                      : 'bg-white/95 backdrop-blur-md text-slate-900 border border-slate-200 shadow-slate-300/50'
+                  }`}>
                     {item.label}
                   </span>
                 )}
@@ -163,33 +179,37 @@ export default function Sidebar({
         </div>
 
         {/* Pinned Footer Section: Telemetry & Theme Toggler & Collapse Re-open */}
-        <div className="mt-auto pt-4 border-t border-white/10 w-full flex flex-col gap-2.5">
+        <div className={`mt-auto pt-4 border-t w-full flex flex-col gap-2.5 ${darkMode ? 'border-white/10' : 'border-slate-200/80'}`}>
           {/* Telemetry Status Bar */}
           {!isCollapsed ? (
-            <div className="px-2 py-2 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between">
+            <div className={`px-2.5 py-2 rounded-xl border flex items-center justify-between ${
+              darkMode ? 'bg-white/[0.03] border-white/10' : 'bg-slate-100/80 border-slate-200/80'
+            }`}>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                <span className="text-[11px] font-semibold text-slate-300">HA Core Live</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                <span className={`text-[11px] font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>HA Core Live</span>
               </div>
-              <span className="text-[10px] font-mono text-slate-400">v2026.8</span>
+              <span className={`text-[10px] font-mono ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>v2026.8</span>
             </div>
           ) : (
             <div className="flex justify-center" title="Home Assistant Online">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
             </div>
           )}
 
           {/* Theme Toggler */}
           <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between px-1'}`}>
             {!isCollapsed && (
-              <span className="text-xs text-slate-400 font-medium">Appearance</span>
+              <span className={`text-xs font-medium ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Appearance</span>
             )}
             <AnimatedThemeToggler 
               id="btn-toggle-darkmode-desktop"
               theme={darkMode ? "dark" : "light"}
               onThemeChange={(newTheme) => toggleDarkMode(newTheme === "dark")}
               title={darkMode ? "Switch to Light Theme" : "Switch to Dark Theme"}
-              className="w-9 h-9 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05]"
+              className={`w-9 h-9 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center ${
+                darkMode ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-900/[0.05]'
+              }`}
             />
           </div>
 
@@ -198,7 +218,9 @@ export default function Sidebar({
             <button
               type="button"
               onClick={() => setIsCollapsed(false)}
-              className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer text-slate-400 hover:text-white hover:bg-white/[0.05] mx-auto"
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer mx-auto ${
+                darkMode ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-900/[0.05]'
+              }`}
               title="Expand Sidebar"
             >
               <CaretRight size={16} weight="bold" />
@@ -227,7 +249,9 @@ export default function Sidebar({
               title={item.label}
               className={`w-11 h-11 rounded-2xl relative transition-all duration-200 cursor-pointer flex items-center justify-center ${
                 isActive 
-                  ? 'bg-[#7B61FF] text-white shadow-md shadow-[#7B61FF]/30 scale-105' 
+                  ? darkMode
+                    ? 'bg-gradient-to-r from-sky-500/20 to-indigo-500/15 text-sky-400 border border-sky-400/30 shadow-md shadow-sky-500/20 scale-105' 
+                    : 'bg-gradient-to-r from-sky-500/20 to-indigo-500/15 text-sky-600 border border-sky-500/30 shadow-md shadow-sky-500/10 scale-105'
                   : darkMode
                     ? 'text-slate-400 hover:text-white'
                     : 'text-slate-600 hover:text-slate-900'
@@ -245,7 +269,9 @@ export default function Sidebar({
           title="More views and options"
           className={`w-11 h-11 rounded-2xl relative transition-all duration-200 cursor-pointer flex items-center justify-center ${
             isMoreTabActive || showMoreMenu
-              ? 'bg-[#7B61FF] text-white shadow-md shadow-[#7B61FF]/30 scale-105' 
+              ? darkMode
+                ? 'bg-gradient-to-r from-sky-500/20 to-indigo-500/15 text-sky-400 border border-sky-400/30 shadow-md shadow-sky-500/20 scale-105' 
+                : 'bg-gradient-to-r from-sky-500/20 to-indigo-500/15 text-sky-600 border border-sky-500/30 shadow-md shadow-sky-500/10 scale-105'
               : darkMode 
                 ? 'text-slate-400 hover:text-white' 
                 : 'text-slate-600 hover:text-slate-900'
@@ -253,7 +279,7 @@ export default function Sidebar({
         >
           <DotsThreeVertical size={22} weight="duotone" />
           {isMoreTabActive && !showMoreMenu && (
-            <span className="absolute bottom-1.5 w-1.5 h-1.5 bg-white rounded-full"></span>
+            <span className="absolute bottom-1.5 w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
           )}
         </button>
 
@@ -270,21 +296,25 @@ export default function Sidebar({
               id="mobile-more-sheet"
               className={`fixed bottom-20 left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto p-5 rounded-[28px] border shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-5 duration-200 ${
                 darkMode 
-                  ? 'bg-[#0B1124]/95 backdrop-blur-3xl border-slate-700/80 text-slate-100 shadow-black/80' 
-                  : 'bg-white/95 backdrop-blur-2xl border-slate-200/90 text-slate-800 shadow-slate-400/40'
+                  ? 'bg-slate-950/95 backdrop-blur-3xl border-white/10 text-white shadow-black/80' 
+                  : 'bg-white/95 backdrop-blur-2xl border-slate-200 text-slate-900 shadow-slate-400/40'
               }`}
             >
               {/* Sheet Header */}
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/40 dark:border-slate-800">
+              <div className={`flex items-center justify-between pb-3 mb-3 border-b ${
+                darkMode ? 'border-white/10' : 'border-slate-200'
+              }`}>
                 <div className="flex items-center gap-2">
-                  <DotsThreeVertical size={20} weight="duotone" className="text-indigo-400" />
+                  <DotsThreeVertical size={20} weight="duotone" className={darkMode ? 'text-sky-400' : 'text-sky-600'} />
                   <div>
-                    <h3 className="font-extrabold text-sm tracking-tight leading-none">Navigation Hub</h3>
+                    <h3 className={`font-extrabold text-sm tracking-tight leading-none ${darkMode ? 'text-white' : 'text-slate-900'}`}>Navigation Hub</h3>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowMoreMenu(false)}
-                  className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
+                    darkMode ? 'bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900'
+                  }`}
                 >
                   <X size={16} weight="duotone" />
                 </button>
@@ -305,16 +335,18 @@ export default function Sidebar({
                       }}
                       className={`p-3 rounded-2xl flex items-center gap-3 text-left transition-all border cursor-pointer ${
                         isActive
-                          ? 'bg-[#7B61FF] text-white border-[#7B61FF] shadow-sm font-bold'
+                          ? darkMode
+                            ? 'bg-gradient-to-r from-sky-500/20 to-indigo-500/15 text-white border-sky-400/30 shadow-md font-bold'
+                            : 'bg-gradient-to-r from-sky-500/15 to-indigo-500/10 text-sky-950 border-sky-500/30 shadow-sm font-bold'
                           : darkMode
                             ? 'bg-slate-900/60 border-slate-800 hover:bg-slate-800/80 text-slate-200'
-                            : 'bg-slate-50 border-slate-200/70 hover:bg-indigo-50/50 text-slate-700'
+                            : 'bg-slate-50 border-slate-200/70 hover:bg-slate-100 text-slate-800'
                       }`}
                     >
                       <ItemIcon 
                         size={20} 
                         weight="duotone" 
-                        className={isActive ? 'text-white' : 'text-indigo-400'} 
+                        className={isActive ? (darkMode ? 'text-sky-400' : 'text-sky-600') : (darkMode ? 'text-slate-400' : 'text-slate-500')} 
                       />
                       <div className="min-w-0">
                         <div className="text-xs font-bold truncate">{item.label}</div>
