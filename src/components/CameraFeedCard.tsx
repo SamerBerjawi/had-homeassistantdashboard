@@ -62,8 +62,8 @@ export default function CameraFeedCard({
   };
 
   return (
-    <div id="camera-feed-card" className={`relative rounded-[32px] overflow-hidden group shadow-2xl border h-80 transition-all duration-300 ${
-      darkMode ? 'border-white/10 shadow-black/60' : 'border-white/50'
+    <div id="camera-feed-card" className={`relative rounded-3xl overflow-hidden group shadow-xl border h-80 transition-all duration-300 ${
+      darkMode ? 'border-white/[0.1] shadow-black/60' : 'border-black/[0.06] shadow-sm'
     }`}>
       
       {/* Background Live video representation */}

@@ -98,7 +98,7 @@ export default function WebSocketTerminal({
   });
 
   return (
-    <div className="bg-slate-950/95 border border-slate-800 text-slate-100 rounded-[32px] p-6 shadow-2xl font-mono overflow-hidden flex flex-col h-[520px] transition-all">
+    <div className="bg-slate-950/95 border border-white/[0.1] text-slate-100 rounded-3xl p-6 shadow-2xl font-mono overflow-hidden flex flex-col h-[520px] transition-all backdrop-blur-2xl">
       {/* Title Header */}
       <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
         <div className="flex items-center gap-2">

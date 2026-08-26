@@ -39,7 +39,8 @@ import {
   Move,
   Network,
   Cpu,
-  Layers
+  Layers,
+  Thermometer
 } from 'lucide-react';
 
 import { HAEntity, Room, LogMessage, ToastNotification, MaintenanceTask, MaintenanceLogEntry } from './types';
@@ -59,6 +60,7 @@ import DailyInsightsWidget from './components/DailyInsightsWidget';
 import BatteryStatusCard from './components/BatteryStatusCard';
 import DeviceHealthView from './components/DeviceHealthView';
 import WeatherWidget from './components/WeatherWidget';
+import DevicesView from './components/DevicesView';
 
 // 8 Core Navigation Views
 import RoomsView from './components/RoomsView';
@@ -69,21 +71,43 @@ import SystemView from './components/SystemView';
 
 export default function App() {
   // Master React State
-  const [darkMode, setDarkMode] = useState<boolean>(false);
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      if (saved) return saved === 'dark';
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
   const [selectedRoomId, setSelectedRoomId] = useState<string>('living_room');
   const [activeTab, setActiveTab] = useState<string>('home');
   const [showTerminal, setShowTerminal] = useState<boolean>(false);
   const [showGraphModal, setShowGraphModal] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
 
-  // HAPulse Auto-Layout Graph Resolution Store
+  // Auto-Layout Graph Resolution Store
   const {
     init: initAutoLayout,
     resolvedAreas,
     resolvedEntities,
+    areasMap,
+    domainGroups,
+    securityOverview,
+    overviewSummary,
     metrics,
     isLiveMode,
     connectionStatus,
+    callHAService,
     updateEntityState: updateStoreEntityState
   } = useAutoLayoutStore();
 
@@ -474,33 +498,70 @@ export default function App() {
     };
   };
 
-  // Master updateEntity function (simulating call_service on WebSocket)
+  // Master updateEntity function (dispatching genuine HA call_service on WebSocket)
   const updateEntityState = (
     entityId: string, 
     newState: string, 
     newAttributes: Record<string, any> = {}
   ) => {
-    // 1. Log simulation packet info before committing changes to reflect genuine WebSocket latency and architecture
     const domain = entityId.split('.')[0];
-    const service = newState === 'on' ? 'turn_on' : newState === 'off' ? 'turn_off' : `update_state`;
-    
-    addLog('service_call', `Dispatched API Service Call: domain '${domain}', service '${service}'`, {
+    let service = 'turn_on';
+    let serviceData: Record<string, any> = { ...newAttributes };
+
+    if (domain === 'lock') {
+      service = newState === 'locked' ? 'lock' : 'unlock';
+    } else if (domain === 'cover') {
+      if (newState === 'open' || newState === 'opening') service = 'open_cover';
+      else if (newState === 'closed' || newState === 'closing') service = 'close_cover';
+      else if (newState === 'stopped') service = 'stop_cover';
+      else if (newAttributes.position !== undefined) {
+        service = 'set_cover_position';
+        serviceData = { position: newAttributes.position };
+      }
+    } else if (domain === 'climate') {
+      if (newAttributes.temperature !== undefined || newAttributes.target_temp !== undefined) {
+        service = 'set_temperature';
+        serviceData = { temperature: newAttributes.temperature ?? newAttributes.target_temp };
+      } else if (['off', 'heat', 'cool', 'auto', 'fan_only'].includes(newState)) {
+        service = 'set_hvac_mode';
+        serviceData = { hvac_mode: newState };
+      }
+    } else if (domain === 'media_player') {
+      if (newState === 'playing') service = 'media_play';
+      else if (newState === 'paused') service = 'media_pause';
+      else if (newState === 'off') service = 'turn_off';
+      else if (newAttributes.volume_level !== undefined) {
+        service = 'volume_set';
+        serviceData = { volume_level: newAttributes.volume_level };
+      }
+    } else if (domain === 'vacuum') {
+      if (newState === 'cleaning' || newState === 'start') service = 'start';
+      else if (newState === 'returning' || newState === 'docked') service = 'return_to_base';
+      else if (newState === 'paused') service = 'pause';
+    } else {
+      service = newState === 'on' ? 'turn_on' : newState === 'off' ? 'turn_off' : 'toggle';
+    }
+
+    addLog('service_call', `call_service: ${domain}.${service}`, {
       entity_id: entityId,
-      requested_state: newState,
-      parameters: newAttributes
+      target_state: newState,
+      parameters: serviceData
     });
 
-    // 2. Commit changes to HAPulse auto layout store
+    // 1. Dispatch real WebSocket call_service & trigger optimistic store update
+    callHAService(domain, service, serviceData, { entity_id: entityId });
+
+    // 2. Commit local state update
     updateStoreEntityState(entityId, newState, newAttributes);
 
-    // 3. Log confirmation receipt
+    // 3. Log receipt
     setTimeout(() => {
-      addLog('state_changed', `Socket RECV: ${entityId} attributes updated. Sync committed successfully.`, {
+      addLog('state_changed', `Event state_changed: ${entityId} -> ${newState}`, {
         entity_id: entityId,
         current_state: newState,
         attributes: newAttributes
       });
-    }, 150);
+    }, 120);
   };
 
   // Handle Camera snapshots
@@ -765,20 +826,21 @@ export default function App() {
   return (
     <div className={`w-full h-screen min-h-screen font-sans flex flex-col md:flex-row relative overflow-hidden select-none transition-colors duration-500 ${
       darkMode 
-        ? 'bg-gradient-to-tr from-[#0B0D19] via-[#0F172A] to-[#1E1B4B] text-slate-100 deep-space-stars' 
-        : 'bg-gradient-to-tr from-[#C5CDDF] via-[#DDE2F0] to-[#E9EDF5] text-slate-800'
+        ? 'bg-[#090C15] text-slate-100 dark-ambient-mesh' 
+        : 'bg-[#EBF0F8] text-slate-800'
     }`}>
       
       {/* Decorative premium floating blurred gradient circles in the background */}
       {darkMode ? (
         <>
-          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#7B61FF]/15 rounded-full blur-[140px] opacity-70 animate-pulse-slow-1 pointer-events-none" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-indigo-900/30 rounded-full blur-[140px] opacity-80 animate-pulse-slow-2 pointer-events-none" />
+          <div className="absolute top-[-10%] left-[10%] w-[550px] h-[550px] bg-slate-800/25 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute top-[20%] right-[-5%] w-[450px] h-[450px] bg-[#7B61FF]/08 rounded-full blur-[160px] pointer-events-none" />
+          <div className="absolute bottom-[-10%] left-[25%] w-[550px] h-[550px] bg-indigo-950/20 rounded-full blur-[140px] pointer-events-none" />
         </>
       ) : (
         <>
-          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-200 rounded-full blur-[140px] opacity-60 animate-pulse-slow-1 pointer-events-none" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-200 rounded-full blur-[140px] opacity-70 animate-pulse-slow-2 pointer-events-none" />
+          <div className="absolute top-[-10%] left-[10%] w-[500px] h-[500px] bg-indigo-200/50 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-purple-200/60 rounded-full blur-[150px] pointer-events-none" />
         </>
       )}
 
@@ -795,7 +857,7 @@ export default function App() {
           maintenanceDueCount={maintenanceDueCount}
           criticalBatteryCount={criticalBatteryCount}
           darkMode={darkMode}
-          toggleDarkMode={() => setDarkMode(!darkMode)}
+          toggleDarkMode={(next) => setDarkMode(typeof next === 'boolean' ? next : !darkMode)}
         />
 
         {/* 2. DYNAMIC CONTENT SECTION depending on left action navigation */}
@@ -828,19 +890,19 @@ export default function App() {
             
             {/* Header Right Area: Grounded Weather Widget & Status Badges */}
             <div className="flex flex-wrap items-center gap-2.5">
-               {/* HAPulse Auto-Layout Graph Resolution Badge Button */}
+               {/* Auto-Layout Graph Resolution Badge Button */}
                <button
-                 id="btn-open-hapulse-graph"
+                 id="btn-open-ha-graph"
                  onClick={() => setShowGraphModal(true)}
                  className={`inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-black shadow-xs backdrop-blur-md border transition-all cursor-pointer ${
                    darkMode 
                      ? 'bg-gradient-to-r from-indigo-950/70 to-purple-950/70 hover:from-indigo-900/80 hover:to-purple-900/80 border-[#7B61FF]/40 text-[#9D8BFF]' 
                      : 'bg-gradient-to-r from-indigo-50/90 to-purple-50/90 hover:from-indigo-100 hover:to-purple-100 border-indigo-200 text-[#7B61FF]'
                  }`}
-                 title="Open HAPulse Auto-Layout Graph Inspector"
+                 title="Open Auto-Layout Graph Inspector"
                >
                  <Network size={14} className="text-[#7B61FF]" />
-                 <span className="hidden sm:inline">HAPulse Graph</span>
+                 <span className="hidden sm:inline">HA Graph</span>
                  <span className="inline sm:hidden">Graph</span>
                  {metrics && (
                    <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-md bg-[#7B61FF] text-white">
@@ -871,7 +933,216 @@ export default function App() {
 
           {/* DYNAMIC VIEWS RENDER */}
           {activeTab === 'home' && (
-            <div className="space-y-8 flex-1 flex flex-col justify-between">
+            <div className="space-y-6 flex-1 flex flex-col justify-between">
+              {/* A. Status Bar / Chips Row (Overview Status Hub) */}
+              <div className="flex items-center gap-2.5 overflow-x-auto touch-scroll-container pb-1 scrollbar-none">
+                {/* 1. People Status Chip */}
+                <button
+                  onClick={() => setActiveTab('security')}
+                  className={`px-3.5 py-2 rounded-2xl border text-xs font-extrabold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-2xs ${
+                    overviewSummary.peopleHome > 0
+                      ? darkMode
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300 hover:bg-emerald-950/50'
+                        : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                      : darkMode
+                        ? 'bg-slate-900/60 border-slate-800 text-slate-400'
+                        : 'bg-slate-50 border-slate-200 text-slate-600'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>{overviewSummary.peopleHome} People Home</span>
+                  {overviewSummary.peopleAway > 0 && (
+                    <span className="text-[10px] opacity-70">({overviewSummary.peopleAway} Away)</span>
+                  )}
+                </button>
+
+                {/* 2. Active Lights Chip */}
+                <button
+                  onClick={() => {
+                    const allLights = Object.values(resolvedEntities).filter(e => e.domain === 'light');
+                    const anyOn = allLights.some(l => l.state === 'on');
+                    allLights.forEach(l => {
+                      updateEntityState(l.entity_id, anyOn ? 'off' : 'on');
+                    });
+                  }}
+                  className={`px-3.5 py-2 rounded-2xl border text-xs font-extrabold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-2xs ${
+                    activeLightsCount > 0
+                      ? darkMode
+                        ? 'bg-amber-950/30 border-amber-500/40 text-amber-300 hover:bg-amber-950/50'
+                        : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
+                      : darkMode
+                        ? 'bg-slate-900/60 border-slate-800 text-slate-400'
+                        : 'bg-slate-50 border-slate-200 text-slate-600'
+                  }`}
+                  title={activeLightsCount > 0 ? "Click to toggle all lights OFF" : "Click to turn ambient lights ON"}
+                >
+                  <Lightbulb size={14} className={activeLightsCount > 0 ? 'text-amber-400' : 'text-slate-400'} />
+                  <span>{activeLightsCount} {activeLightsCount === 1 ? 'Light' : 'Lights'} On</span>
+                  {activeLightsCount > 0 && <span className="text-[10px] text-amber-400 font-mono">• Turn Off</span>}
+                </button>
+
+                {/* 3. Open Doors / Windows Chip */}
+                <button
+                  onClick={() => setActiveTab('security')}
+                  className={`px-3.5 py-2 rounded-2xl border text-xs font-extrabold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-2xs ${
+                    overviewSummary.openOpeningsCount > 0
+                      ? darkMode
+                        ? 'bg-rose-950/30 border-rose-500/40 text-rose-300 hover:bg-rose-950/50 animate-pulse'
+                        : 'bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100'
+                      : darkMode
+                        ? 'bg-slate-900/60 border-slate-800 text-slate-400'
+                        : 'bg-slate-50 border-slate-200 text-slate-600'
+                  }`}
+                >
+                  <ShieldAlert size={14} className={overviewSummary.openOpeningsCount > 0 ? 'text-rose-500' : 'text-slate-400'} />
+                  <span>{overviewSummary.openOpeningsCount > 0 ? `${overviewSummary.openOpeningsCount} Openings Open` : 'Perimeter Sealed'}</span>
+                </button>
+
+                {/* 4. Security Status Chip */}
+                <button
+                  onClick={() => setActiveTab('security')}
+                  className={`px-3.5 py-2 rounded-2xl border text-xs font-extrabold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-2xs ${
+                    getEntity('lock.front_door').state === 'locked'
+                      ? darkMode
+                        ? 'bg-indigo-950/40 border-indigo-500/40 text-indigo-300'
+                        : 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                      : darkMode
+                        ? 'bg-rose-950/40 border-rose-500/50 text-rose-300 animate-pulse'
+                        : 'bg-rose-50 border-rose-200 text-rose-700'
+                  }`}
+                >
+                  {getEntity('lock.front_door').state === 'locked' ? <ShieldCheck size={14} className="text-emerald-400" /> : <Lock size={14} className="text-rose-400" />}
+                  <span>{getEntity('lock.front_door').state === 'locked' ? 'Alarm Armed Home' : 'Alarm Disarmed'}</span>
+                </button>
+
+                {/* 5. Active Media Players Chip */}
+                {overviewSummary.activeMediaCount > 0 && (
+                  <button
+                    onClick={() => setActiveTab('media')}
+                    className={`px-3.5 py-2 rounded-2xl border text-xs font-extrabold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-2xs ${
+                      darkMode
+                        ? 'bg-pink-950/30 border-pink-500/40 text-pink-300 hover:bg-pink-950/50'
+                        : 'bg-pink-50 border-pink-200 text-pink-800 hover:bg-pink-100'
+                    }`}
+                  >
+                    <Volume2 size={14} className="text-pink-400 animate-bounce" />
+                    <span>{overviewSummary.activeMediaCount} Media Playing</span>
+                  </button>
+                )}
+
+                {/* 6. Active HVAC Climates Chip */}
+                {overviewSummary.activeClimatesCount > 0 && (
+                  <button
+                    onClick={() => setActiveTab('rooms')}
+                    className={`px-3.5 py-2 rounded-2xl border text-xs font-extrabold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-2xs ${
+                      darkMode
+                        ? 'bg-sky-950/30 border-sky-500/40 text-sky-300 hover:bg-sky-950/50'
+                        : 'bg-sky-50 border-sky-200 text-sky-800 hover:bg-sky-100'
+                    }`}
+                  >
+                    <Thermometer size={14} className="text-sky-400" />
+                    <span>{overviewSummary.activeClimatesCount} Active HVAC</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Pinned / Active Entities Dynamic Banner (Surfacing Active Media, Active Climate & Contact Alerts) */}
+              {(overviewSummary.activeMediaCount > 0 || overviewSummary.openOpeningsCount > 0 || overviewSummary.activeClimatesCount > 0) && (
+                <div className={`p-4 sm:p-5 rounded-2xl border shadow-xs transition-all ${
+                  darkMode ? 'bg-slate-900/60 border-white/[0.1] backdrop-blur-md' : 'bg-white/70 border-black/[0.06] backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
+                }`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`text-[10px] font-black uppercase tracking-wider ${
+                      darkMode ? 'text-indigo-400' : 'text-indigo-600'
+                    }`}>
+                      Live Active Entities & Highlights
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold">Auto-Surfaced Stream</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {/* Active Media Player Card */}
+                    {entities.find(e => e.entity_id.startsWith('media_player.') && e.state === 'playing') && (() => {
+                      const activePlayer = entities.find(e => e.entity_id.startsWith('media_player.') && e.state === 'playing')!;
+                      return (
+                        <div
+                          key={activePlayer.entity_id}
+                          onClick={() => setActiveTab('media')}
+                          className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
+                            darkMode ? 'bg-pink-950/20 border-pink-500/30 hover:border-pink-500/50' : 'bg-pink-50/60 border-pink-200 hover:border-pink-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-9 h-9 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0">
+                              <Volume2 size={16} />
+                            </div>
+                            <div className="min-w-0">
+                              <h5 className="text-xs font-black truncate">{activePlayer.attributes.friendly_name}</h5>
+                              <p className="text-[10px] text-pink-400 truncate">{activePlayer.attributes.media_title || 'Now Playing'}</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-500 text-white shrink-0">
+                            Live &rarr;
+                          </span>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Active Climate Card */}
+                    {entities.find(e => e.entity_id.startsWith('climate.') && e.state !== 'off') && (() => {
+                      const activeClimate = entities.find(e => e.entity_id.startsWith('climate.') && e.state !== 'off')!;
+                      return (
+                        <div
+                          key={activeClimate.entity_id}
+                          onClick={() => setActiveTab('rooms')}
+                          className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
+                            darkMode ? 'bg-sky-950/20 border-sky-500/30 hover:border-sky-500/50' : 'bg-sky-50/60 border-sky-200 hover:border-sky-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-9 h-9 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+                              <Thermometer size={16} />
+                            </div>
+                            <div className="min-w-0">
+                              <h5 className="text-xs font-black truncate">{activeClimate.attributes.friendly_name}</h5>
+                              <p className="text-[10px] text-sky-400 font-bold truncate">
+                                Target {activeClimate.attributes.temperature || activeClimate.attributes.target_temp || 21}°C • Ambient {activeClimate.attributes.current_temperature || 20.5}°C
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-sky-500 text-white shrink-0 uppercase">
+                            {activeClimate.state}
+                          </span>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Security Alert / Door Contact Card */}
+                    {overviewSummary.openOpeningsCount > 0 && (
+                      <div
+                        onClick={() => setActiveTab('security')}
+                        className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
+                          darkMode ? 'bg-rose-950/20 border-rose-500/40 hover:border-rose-500/60 animate-pulse' : 'bg-rose-50/70 border-rose-300 hover:border-rose-400'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-9 h-9 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                            <ShieldAlert size={16} />
+                          </div>
+                          <div className="min-w-0">
+                            <h5 className="text-xs font-black truncate text-rose-500">Perimeter Contact Alert</h5>
+                            <p className="text-[10px] text-slate-400 truncate">{overviewSummary.openOpeningsCount} unclosed entry sensor(s)</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500 text-white shrink-0">
+                          Check &rarr;
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div>
                 {/* Hero section: Camera element + mini responsive summary metric containers */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
@@ -892,13 +1163,13 @@ export default function App() {
                     <motion.div 
                       layout
                       whileHover={{ y: -2 }}
-                      className={`transition-all p-5 rounded-[28px] flex flex-row lg:flex-col items-center lg:items-start justify-between backdrop-blur-xl shadow-xs border ${
+                      className={`transition-all p-5 rounded-2xl flex flex-row lg:flex-col items-center lg:items-start justify-between backdrop-blur-md shadow-xs border ${
                         darkMode 
-                          ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 text-white' 
-                          : 'bg-white/60 hover:bg-white/75 border-white/70 text-slate-800'
+                          ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/[0.1] text-white' 
+                          : 'bg-white/70 hover:bg-white/85 border-black/[0.06] text-slate-800 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
                       }`}
                     >
-                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border shadow-sm ${
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center border shadow-xs ${
                         darkMode 
                           ? 'bg-orange-950/50 text-orange-400 border-orange-800/40' 
                           : 'bg-orange-100/80 text-orange-600 border-orange-100'
@@ -917,13 +1188,13 @@ export default function App() {
                       whileHover={{ y: -2 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setActiveTab('energy')}
-                      className={`transition-all p-5 rounded-[28px] flex flex-row lg:flex-col items-center lg:items-start justify-between backdrop-blur-xl shadow-xs border cursor-pointer group ${
+                      className={`transition-all p-5 rounded-2xl flex flex-row lg:flex-col items-center lg:items-start justify-between backdrop-blur-md shadow-xs border cursor-pointer group ${
                         darkMode 
-                          ? 'bg-slate-900/60 hover:bg-slate-900/90 border-white/10 hover:border-[#7B61FF]/40 text-white' 
-                          : 'bg-white/60 hover:bg-white/90 border-white/70 hover:border-[#7B61FF]/40 text-slate-800'
+                          ? 'bg-slate-900/60 hover:bg-slate-900/90 border-white/[0.1] hover:border-[#7B61FF]/40 text-white' 
+                          : 'bg-white/70 hover:bg-white/90 border-black/[0.06] hover:border-[#7B61FF]/40 text-slate-800 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
                       }`}
                     >
-                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border shadow-sm transition-transform group-hover:scale-105 ${
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center border shadow-xs transition-transform group-hover:scale-105 ${
                         darkMode 
                           ? 'bg-indigo-950/50 text-[#9D8BFF] border-indigo-800/40' 
                           : 'bg-indigo-100/80 text-[#7B61FF] border-indigo-100'
@@ -947,10 +1218,10 @@ export default function App() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={handleToggleDoorLock} 
-                      className="bg-[#7B61FF] hover:bg-[#674EE3] cursor-pointer duration-300 p-5 rounded-[28px] text-white flex flex-row lg:flex-col items-center lg:items-start justify-between shadow-xl shadow-[#7B61FF]/35 ring-2 ring-[#7B61FF]/30 relative overflow-hidden group"
+                      className="bg-[#7B61FF] hover:bg-[#674EE3] cursor-pointer duration-300 p-5 rounded-2xl text-white flex flex-row lg:flex-col items-center lg:items-start justify-between shadow-xl shadow-[#7B61FF]/35 ring-2 ring-[#7B61FF]/30 relative overflow-hidden group"
                     >
                       <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/20 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
-                      <div className="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center text-white border border-white/20 shadow-sm relative z-10">
+                      <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center text-white border border-white/20 shadow-xs relative z-10">
                         {getEntity('lock.front_door').state === 'locked' ? <ShieldCheck size={22} /> : <ShieldAlert size={22} className="animate-pulse" />}
                       </div>
                       <div className="mt-0 lg:mt-4 text-right lg:text-left relative z-10">
@@ -1304,121 +1575,19 @@ export default function App() {
             />
           )}
 
-          {/* 7. REGISTERED DEVICES FLEET VIEW */}
+          {/* 7. REGISTERED DEVICES FLEET VIEW (Categorical Aggregation) */}
           {activeTab === 'devices' && (
-            <div className="space-y-6">
-              {/* IoT Battery Health Monitoring & Fleet Diagnostics Dashboard */}
-              <BatteryStatusCard 
-                entities={entities}
-                rooms={rooms}
-                darkMode={darkMode}
-                onSelectRoom={(rId) => {
-                  setSelectedRoomId(rId);
-                  setActiveTab('home');
-                }}
-                onReplaceBattery={handleReplaceBattery}
-                onSimulateLowBattery={handleSimulateLowBattery}
-              />
-
-              <div>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
-                  <div>
-                    <h3 className={`text-base font-extrabold tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                      All Registered System Entities ({entities.length})
-                    </h3>
-                    <p className="text-[11px] text-slate-400 font-medium">
-                      Real-time power drawing and hardware communication state
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setActiveTab('health')}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                        darkMode ? 'bg-[#7B61FF]/20 text-indigo-300 border-[#7B61FF]/40 hover:bg-[#7B61FF]/30' : 'bg-[#7B61FF]/10 text-[#7B61FF] border-[#7B61FF]/30 hover:bg-[#7B61FF]/20'
-                      }`}
-                    >
-                      <HeartPulse size={14} />
-                      <span>Open Fleet Health Tracker &rarr;</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {entities.map(ent => {
-                    const devTask = maintenanceTasks.find(t => t.entityId === ent.entity_id && (t.status === 'overdue' || t.status === 'due_soon'));
-                    const isBatteryBelow15 = typeof ent.attributes.battery === 'number' && ent.attributes.battery < 15;
-                    return (
-                      <div key={ent.entity_id} className={`p-5 rounded-[28px] shadow-sm border transition-all ${
-                        isBatteryBelow15
-                          ? darkMode 
-                            ? 'bg-rose-950/25 border-rose-500/50 shadow-md shadow-rose-950/40' 
-                            : 'bg-rose-50/90 border-rose-300 shadow-xs'
-                          : darkMode 
-                            ? 'bg-slate-900/70 border-white/10' 
-                            : 'bg-white/80 border-slate-100'
-                      }`}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-[9px] font-black uppercase ${
-                            darkMode ? 'text-[#9D8BFF]' : 'text-indigo-600'
-                          }`}>{ent.entity_id.split('.')[0]}</span>
-                          
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {devTask && (
-                              <button
-                                onClick={() => setActiveTab('health')}
-                                className={`inline-flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border cursor-pointer ${
-                                  devTask.status === 'overdue'
-                                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
-                                    : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                                }`}
-                              >
-                                <Wrench size={9} />
-                                <span>{devTask.status === 'overdue' ? 'Service Overdue' : 'Service Due'}</span>
-                              </button>
-                            )}
-
-                            {typeof ent.attributes.battery === 'number' && (
-                              <div className="flex items-center gap-1">
-                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full font-mono flex items-center gap-1 ${
-                                  isBatteryBelow15 
-                                    ? 'bg-rose-600 text-white border border-rose-500 shadow-xs animate-bounce'
-                                    : ent.attributes.battery <= 49 
-                                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' 
-                                      : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                                }`}>
-                                  <BatteryLow size={11} />
-                                  <span>{ent.attributes.battery}%</span>
-                                </span>
-
-                                {isBatteryBelow15 && (
-                                  <button
-                                    onClick={() => handleReplaceBattery(ent.entity_id)}
-                                    title="Replace / recharge critical battery"
-                                    className="p-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[9px] font-bold cursor-pointer"
-                                  >
-                                    <Wrench size={10} />
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <p className={`font-extrabold text-sm mb-2 ${darkMode ? 'text-white' : 'text-slate-800'}`}>{ent.attributes.friendly_name}</p>
-                        <p className="text-xs text-slate-400 mb-4">Current state reported: <code className={`text-[11px] px-1.5 py-0.5 rounded font-mono ${
-                          darkMode ? 'bg-slate-950 text-[#9D8BFF] border border-slate-800' : 'bg-slate-100 text-indigo-600'
-                        }`}>{ent.state}</code></p>
-                        <div className={`flex justify-between items-center text-[10px] text-slate-400 font-semibold pt-3 border-t ${
-                          darkMode ? 'border-slate-800' : 'border-slate-100'
-                        }`}>
-                          <span>Room: {ent.attributes.room || 'General'}</span>
-                          <span>Load: {ent.attributes.power || 0}W</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+            <DevicesView
+              entities={entities}
+              rooms={rooms}
+              darkMode={darkMode}
+              onUpdateEntityState={updateEntityState}
+              onSelectRoom={(rId) => {
+                setSelectedRoomId(rId);
+                setActiveTab('rooms');
+              }}
+              onViewHealth={() => setActiveTab('health')}
+            />
           )}
 
           {/* 8. DEVICE HEALTH VIEW */}
@@ -1477,7 +1646,7 @@ export default function App() {
         darkMode={darkMode} 
       />
 
-      {/* HAPulse Auto-Layout Graph Resolution & Connection Inspector Modal */}
+      {/* Auto-Layout Graph Resolution & Connection Inspector Modal */}
       <GraphResolutionModal
         isOpen={showGraphModal}
         onClose={() => setShowGraphModal(false)}

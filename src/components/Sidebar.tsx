@@ -27,6 +27,7 @@ import {
   Radio,
   Sliders
 } from 'lucide-react';
+import { AnimatedThemeToggler } from './ui/animated-theme-toggler';
 
 interface SidebarProps {
   activeTab: string;
@@ -37,7 +38,7 @@ interface SidebarProps {
   criticalBatteryCount?: number;
   maintenanceDueCount?: number;
   darkMode: boolean;
-  toggleDarkMode: () => void;
+  toggleDarkMode: (next?: boolean) => void;
 }
 
 export default function Sidebar({ 
@@ -84,21 +85,21 @@ export default function Sidebar({
         id="sidebar-desktop" 
         className={`hidden md:flex flex-col items-center w-20 lg:w-24 h-screen py-6 transition-all duration-300 shrink-0 sticky top-0 left-0 bottom-0 z-40 border-r ${
           darkMode 
-            ? 'glassmorphic-sidebar-dark border-white/10' 
-            : 'glassmorphic-sidebar border-white/50 bg-white/60 backdrop-blur-2xl'
+            ? 'glassmorphic-sidebar-dark border-white/[0.1]' 
+            : 'glassmorphic-sidebar border-black/[0.06] bg-white/70 backdrop-blur-xl'
         }`}
       >
         {/* Rounded Premium Homz Logo */}
         <div 
           onClick={() => setActiveTab('home')}
-          className="flex w-12 h-12 bg-indigo-600 hover:bg-indigo-500 rounded-2xl items-center justify-center mb-6 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer group"
+          className="flex w-11 h-11 bg-indigo-600 hover:bg-indigo-500 rounded-xl items-center justify-center mb-6 shadow-md shadow-indigo-600/30 transition-all cursor-pointer group"
           title="Homz Dashboard"
         >
-          <Sparkles className="text-white group-hover:scale-110 transition-transform" size={22} />
+          <Sparkles className="text-white group-hover:scale-110 transition-transform" size={20} />
         </div>
         
         {/* All 8 Navigation Actions */}
-        <div className="flex flex-col items-center justify-center w-full gap-3.5 overflow-y-auto touch-scroll-container py-1 px-1">
+        <div className="flex flex-col items-center justify-center w-full gap-2.5 overflow-y-auto touch-scroll-container py-1 px-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -108,19 +109,19 @@ export default function Sidebar({
                 id={`btn-nav-desktop-${item.id}`}
                 onClick={() => setActiveTab(item.id)}
                 title={item.label}
-                className={`p-3.5 rounded-2xl relative transition-all group duration-300 cursor-pointer ${
+                className={`p-3 min-w-[44px] min-h-[44px] rounded-xl relative transition-all group duration-300 cursor-pointer flex items-center justify-center ${
                   isActive 
                     ? 'bg-[#7B61FF] text-white shadow-lg shadow-[#7B61FF]/40 scale-105' 
                     : darkMode
                       ? 'text-slate-400 hover:text-slate-100 hover:bg-white/10'
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-black/5'
                 }`}
               >
                 <Icon size={20} className="transition-transform duration-300 group-hover:scale-110" />
                 
                 {/* Visual Glow indicators */}
                 {isActive && (
-                  <span className="absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-[#7B61FF] rounded-r-full shadow-sm shadow-[#7B61FF]" />
+                  <span className="absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-[#7B61FF] rounded-r-full shadow-xs shadow-[#7B61FF]" />
                 )}
                 
                 {/* Notification/Status badges */}
@@ -156,23 +157,18 @@ export default function Sidebar({
 
         {/* Bottom Options Container */}
         <div className="mt-auto pt-4 flex flex-col gap-3 items-center">
-          {/* Global Dark Mode Toggle */}
-          <button 
+          {/* Global Dark Mode Toggle with Magic UI Animated View Transition */}
+          <AnimatedThemeToggler 
             id="btn-toggle-darkmode-desktop"
-            onClick={toggleDarkMode}
+            theme={darkMode ? "dark" : "light"}
+            onThemeChange={(newTheme) => toggleDarkMode(newTheme === "dark")}
             title={darkMode ? "Switch to Light Theme" : "Switch to Dark Theme"}
-            className={`p-3 rounded-2xl relative transition-all duration-300 cursor-pointer ${
+            className={`p-3 min-w-[44px] min-h-[44px] rounded-xl relative transition-all duration-300 cursor-pointer border flex items-center justify-center ${
               darkMode 
-                ? 'bg-indigo-950/90 text-indigo-300 border border-indigo-500/40 shadow-lg shadow-indigo-900/50 hover:border-indigo-400 hover:text-white' 
-                : 'text-slate-500 hover:text-slate-800 hover:bg-white/60 bg-white/30'
+                ? 'bg-slate-800/80 border-white/[0.1] text-amber-400 hover:bg-slate-700/80 shadow-md' 
+                : 'text-slate-700 hover:text-slate-900 bg-white/70 hover:bg-white border-black/[0.06] shadow-xs'
             }`}
-          >
-            {darkMode ? (
-              <Moon size={18} className="text-indigo-400 fill-indigo-400/20" />
-            ) : (
-              <Sun size={18} className="text-amber-500" />
-            )}
-          </button>
+          />
 
           {/* WebSocket Live Console Toggle */}
           <button 
@@ -229,23 +225,21 @@ export default function Sidebar({
                 </div>
                 
                 <div className={`p-2.5 rounded-2xl mb-3 flex items-center justify-between ${
-                  darkMode ? 'bg-slate-900/80 border border-slate-800' : 'bg-slate-50 border border-slate-100'
+                  darkMode ? 'bg-slate-900/80 border border-white/[0.1]' : 'bg-slate-50 border border-slate-200'
                 }`}>
                   <div className="flex items-center gap-2">
-                    {darkMode ? <Moon size={14} className="text-indigo-400" /> : <Sun size={14} className="text-amber-500" />}
-                    <span className="text-xs font-semibold">Dark Theme</span>
+                    <span className="text-xs font-semibold">{darkMode ? 'Dark Theme' : 'Light Theme'}</span>
                   </div>
-                  <button 
+                  <AnimatedThemeToggler 
                     id="btn-toggle-darkmode-dropdown"
-                    onClick={toggleDarkMode}
-                    className={`w-9 h-5 rounded-full relative transition-all cursor-pointer ${
-                      darkMode ? 'bg-[#7B61FF]' : 'bg-slate-300'
+                    theme={darkMode ? "dark" : "light"}
+                    onThemeChange={(newTheme) => toggleDarkMode(newTheme === "dark")}
+                    className={`w-9 h-9 rounded-xl relative transition-all cursor-pointer border flex items-center justify-center ${
+                      darkMode 
+                        ? 'bg-slate-800 border-white/[0.1] text-amber-400' 
+                        : 'bg-white border-slate-200 text-slate-700 shadow-xs'
                     }`}
-                  >
-                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-xs ${
-                      darkMode ? 'right-0.5' : 'left-0.5'
-                    }`} />
-                  </button>
+                  />
                 </div>
 
                 <p className={`text-xs mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>HA Node: <code className={`text-[10px] px-1 py-0.5 rounded ${darkMode ? 'bg-slate-900 text-indigo-400' : 'bg-slate-100 text-slate-700'}`}>hass.homz.internal</code></p>
@@ -479,21 +473,16 @@ export default function Sidebar({
 
               {/* Utility Toggles Bar: Theme & Terminal */}
               <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-200/40 dark:border-slate-800 mb-3">
-                <button
+                <AnimatedThemeToggler
                   id="btn-more-toggle-darkmode"
-                  onClick={toggleDarkMode}
-                  className={`p-2.5 rounded-xl flex items-center justify-between text-xs font-bold border transition-colors cursor-pointer ${
+                  theme={darkMode ? "dark" : "light"}
+                  onThemeChange={(newTheme) => toggleDarkMode(newTheme === "dark")}
+                  className={`p-2.5 rounded-xl flex items-center justify-between text-xs font-bold border transition-colors cursor-pointer w-full ${
                     darkMode 
-                      ? 'bg-indigo-950/70 border-indigo-500/30 text-indigo-200 hover:bg-indigo-950/90' 
-                      : 'bg-amber-50/80 border-amber-200 text-amber-900 hover:bg-amber-100/80'
+                      ? 'bg-slate-800/90 border-white/[0.1] text-slate-100 hover:bg-slate-700/90' 
+                      : 'bg-white/90 border-black/[0.06] text-slate-800 hover:bg-white shadow-xs'
                   }`}
-                >
-                  <span className="flex items-center gap-1.5">
-                    {darkMode ? <Moon size={14} className="text-indigo-400" /> : <Sun size={14} className="text-amber-500" />}
-                    <span>{darkMode ? 'Dark Theme' : 'Light Theme'}</span>
-                  </span>
-                  <span className="text-[10px] font-mono opacity-80">{darkMode ? 'ON' : 'OFF'}</span>
-                </button>
+                />
 
                 <button
                   id="btn-more-toggle-terminal"

@@ -260,10 +260,10 @@ export default function SettingsView({
     <div id="settings-view-root" className="space-y-6">
       
       {/* Settings Top Hero Banner */}
-      <div className={`p-6 sm:p-7 rounded-[32px] border backdrop-blur-2xl transition-all duration-300 ${
+      <div className={`p-6 sm:p-7 rounded-3xl border backdrop-blur-xl transition-all duration-300 ${
         darkMode 
-          ? 'bg-slate-900/60 border-white/10 text-white shadow-xl shadow-black/40' 
-          : 'bg-white/70 border-white/80 text-slate-800 shadow-sm'
+          ? 'bg-slate-900/70 border-white/[0.1] text-white shadow-xl shadow-black/40' 
+          : 'bg-white/80 border-black/[0.06] text-slate-800 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
       }`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -318,8 +318,8 @@ export default function SettingsView({
         
         {/* Category Nav Selector (4 columns on desktop) */}
         <div className="lg:col-span-4 space-y-2">
-          <div className={`p-3.5 rounded-[28px] border backdrop-blur-2xl transition-all ${
-            darkMode ? 'bg-slate-900/50 border-white/10' : 'bg-white/60 border-white/80'
+          <div className={`p-3.5 rounded-2xl border backdrop-blur-xl transition-all ${
+            darkMode ? 'bg-slate-900/50 border-white/[0.1]' : 'bg-white/70 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
           }`}>
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider px-3 py-1.5 block">
               Configuration Modules
@@ -366,8 +366,8 @@ export default function SettingsView({
           </div>
 
           {/* Quick System Telemetry Box */}
-          <div className={`p-4 rounded-[28px] border backdrop-blur-2xl transition-all ${
-            darkMode ? 'bg-slate-900/40 border-white/10 text-slate-300' : 'bg-white/50 border-white/80 text-slate-600'
+          <div className={`p-4 rounded-2xl border backdrop-blur-xl transition-all ${
+            darkMode ? 'bg-slate-900/40 border-white/[0.08] text-slate-300' : 'bg-white/60 border-black/[0.06] text-slate-600 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
           }`}>
             <div className="flex items-center gap-2 mb-2.5">
               <Server size={14} className={darkMode ? 'text-[#9D8BFF]' : 'text-indigo-600'} />
@@ -402,8 +402,8 @@ export default function SettingsView({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
-                className={`p-6 rounded-[32px] border backdrop-blur-2xl space-y-6 ${
-                  darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/70 border-white/80'
+                className={`p-6 rounded-3xl border backdrop-blur-xl space-y-6 ${
+                  darkMode ? 'bg-slate-900/60 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
                 }`}
               >
                 <div className="flex justify-between items-start">
@@ -588,8 +588,8 @@ export default function SettingsView({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
-                className={`p-6 rounded-[32px] border backdrop-blur-2xl space-y-6 ${
-                  darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/70 border-white/80'
+                className={`p-6 rounded-3xl border backdrop-blur-xl space-y-6 ${
+                  darkMode ? 'bg-slate-900/60 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
                 }`}
               >
                 <div>
@@ -789,8 +789,8 @@ export default function SettingsView({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
-                className={`p-6 rounded-[32px] border backdrop-blur-2xl space-y-6 ${
-                  darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/70 border-white/80'
+                className={`p-6 rounded-3xl border backdrop-blur-xl space-y-6 ${
+                  darkMode ? 'bg-slate-900/60 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
                 }`}
               >
                 <div>
@@ -935,8 +935,8 @@ export default function SettingsView({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
-                className={`p-6 rounded-[32px] border backdrop-blur-2xl space-y-6 ${
-                  darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/70 border-white/80'
+                className={`p-6 rounded-3xl border backdrop-blur-xl space-y-6 ${
+                  darkMode ? 'bg-slate-900/60 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
                 }`}
               >
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
@@ -1023,8 +1023,8 @@ export default function SettingsView({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
-                className={`p-6 rounded-[32px] border backdrop-blur-2xl space-y-6 ${
-                  darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/70 border-white/80'
+                className={`p-6 rounded-3xl border backdrop-blur-xl space-y-6 ${
+                  darkMode ? 'bg-slate-900/60 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
                 }`}
               >
                 <div>
@@ -1148,8 +1148,8 @@ export default function SettingsView({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
-                className={`p-6 rounded-[32px] border backdrop-blur-2xl space-y-6 ${
-                  darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/70 border-white/80'
+                className={`p-6 rounded-3xl border backdrop-blur-xl space-y-6 ${
+                  darkMode ? 'bg-slate-900/60 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
                 }`}
               >
                 <div>

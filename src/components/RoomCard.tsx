@@ -95,14 +95,14 @@ export default function RoomCard({
       onClick={onSelect}
       whileHover={{ y: -3 }}
       whileTap={{ scale: 0.98 }}
-      className={`rounded-[28px] p-5 border cursor-pointer backdrop-blur-2xl transition-all duration-300 relative overflow-hidden group glass-noise ${
+      className={`rounded-3xl p-5 sm:p-6 border cursor-pointer backdrop-blur-xl transition-all duration-300 relative overflow-hidden group glass-noise ${
         isSelected 
           ? darkMode
             ? 'ring-2 ring-[#7B61FF] border-[#7B61FF]/60 shadow-xl shadow-[#7B61FF]/25'
             : 'ring-2 ring-[#7B61FF] border-[#7B61FF]/40 shadow-xl shadow-[#7B61FF]/15' 
           : darkMode
-            ? 'border-white/10 hover:border-white/25 hover:shadow-2xl shadow-black/40'
-            : 'border-white/70 hover:border-white hover:shadow-lg'
+            ? 'border-white/[0.1] hover:border-white/[0.2] hover:shadow-2xl shadow-black/40'
+            : 'border-black/[0.06] hover:border-black/[0.12] hover:shadow-lg shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
       }`}
       style={{
         background: darkMode
@@ -115,7 +115,7 @@ export default function RoomCard({
             ? `radial-gradient(circle at 85% 15%, rgba(123, 97, 255, ${0.18 + 0.08 * glowFactor}) 0%, rgba(158, 138, 255, 0.1) 40%, rgba(255, 255, 255, 0.8) 90%)`
             : activeDeviceCount > 0
               ? `radial-gradient(circle at 85% 15%, rgba(123, 97, 255, ${0.12 * glowFactor}) 0%, rgba(255, 255, 255, 0.7) 70%)`
-              : 'rgba(255, 255, 255, 0.55)'
+              : 'rgba(255, 255, 255, 0.65)'
       }}
     >
       {/* Subtle Dynamic Radial Gradient Mesh Overlay */}
@@ -134,11 +134,11 @@ export default function RoomCard({
       {/* Top Section heading and status */}
       <div className="flex justify-between items-start mb-4 relative z-10">
         <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-2xl transition-all ${
+          <div className={`p-2.5 rounded-xl transition-all ${
             isSelected || activeDeviceCount > 0
               ? darkMode
-                ? 'bg-[#7B61FF]/25 text-indigo-300 shadow-sm'
-                : 'bg-[#7B61FF]/15 text-[#7B61FF] shadow-sm'
+                ? 'bg-[#7B61FF]/25 text-indigo-300 shadow-xs'
+                : 'bg-[#7B61FF]/15 text-[#7B61FF] shadow-xs'
               : darkMode
                 ? 'bg-slate-800/80 text-slate-400 group-hover:bg-slate-800'
                 : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200'
@@ -172,7 +172,7 @@ export default function RoomCard({
                   opacity: [0.35 * glowFactor, 0.7 * glowFactor, 0.35 * glowFactor]
                 }}
                 transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
-                className="absolute -inset-1.5 bg-[#7B61FF] rounded-xl blur-sm pointer-events-none" 
+                className="absolute -inset-1 bg-[#7B61FF] rounded-xl blur-xs pointer-events-none" 
                 style={{
                   filter: `blur(${4 + 4 * glowFactor}px)`,
                   boxShadow: `0 0 ${12 + 14 * glowFactor}px rgba(123, 97, 255, ${0.45 * glowFactor})`
@@ -186,18 +186,18 @@ export default function RoomCard({
                 onToggleAllInRoom(room.id, activeDeviceCount > 0);
               }}
               title={isAllOn ? "Power off all room lights" : "Enable all room lights"}
-              className={`p-2 rounded-xl transition-all relative z-10 cursor-pointer ${
+              className={`p-2.5 min-w-[40px] min-h-[40px] rounded-xl flex items-center justify-center transition-all relative z-10 cursor-pointer ${
                 activeDeviceCount > 0 
                   ? 'bg-[#7B61FF] text-white border border-[#7B61FF] ring-1 ring-[#7B61FF]/50' 
                   : darkMode
                     ? 'bg-slate-800/90 text-slate-400 hover:text-slate-200 hover:bg-slate-700/90 border border-slate-700/80 shadow-xs'
-                    : 'bg-white/80 text-slate-400 hover:text-slate-600 hover:bg-white border border-slate-200/80 shadow-xs'
+                    : 'bg-white/80 text-slate-400 hover:text-slate-600 hover:bg-white border border-black/[0.06] shadow-xs'
               }`}
               style={{
                 boxShadow: activeDeviceCount > 0 ? `0 3px ${8 + 10 * glowFactor}px rgba(123, 97, 255, ${0.4 * glowFactor})` : undefined
               }}
             >
-              <Power size={13} />
+              <Power size={14} />
             </button>
           </div>
         </div>

@@ -261,14 +261,14 @@ export default function SecurityView({
   return (
     <div className="space-y-6 flex-1 flex flex-col min-h-0">
       {/* 1. TOP HERO: ALARM STATUS & ARMING CONTROLS */}
-      <div className={`rounded-[32px] p-6 sm:p-8 border transition-all relative overflow-hidden shadow-sm ${
+      <div className={`rounded-3xl p-6 sm:p-8 border transition-all relative overflow-hidden shadow-sm ${
         panicActive
           ? 'bg-rose-950 border-rose-600 text-white animate-pulse'
           : alarmMode === 'disarmed'
-            ? darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'
+            ? darkMode ? 'bg-slate-900/80 border-white/[0.1] backdrop-blur-md' : 'bg-white/80 border-black/[0.06] backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
             : darkMode
-              ? 'bg-slate-900/90 border-[#7B61FF]/40 text-white'
-              : 'bg-indigo-50/70 border-indigo-200 text-slate-800'
+              ? 'bg-slate-900/90 border-[#7B61FF]/40 text-white backdrop-blur-md'
+              : 'bg-indigo-50/80 border-indigo-200 text-slate-800 backdrop-blur-md'
       }`}>
         {/* Subtle Background Glow */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-[#7B61FF]/15 to-transparent rounded-bl-full pointer-events-none" />
@@ -442,8 +442,8 @@ export default function SecurityView({
             {cameraFeeds.slice(1).map(cam => (
               <div
                 key={cam.id}
-                className={`rounded-[24px] overflow-hidden border relative group shadow-xs ${
-                  darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'
+                className={`rounded-2xl overflow-hidden border relative group shadow-xs ${
+                  darkMode ? 'bg-slate-900/80 border-white/[0.1]' : 'bg-white/80 border-black/[0.06]'
                 }`}
               >
                 <div className="relative aspect-video w-full overflow-hidden bg-slate-950">
@@ -533,14 +533,14 @@ export default function SecurityView({
                 key={sensor.id}
                 layout
                 whileHover={{ y: -2 }}
-                className={`rounded-[24px] p-4 border transition-all flex flex-col justify-between shadow-xs ${
+                className={`rounded-2xl p-4 border transition-all flex flex-col justify-between shadow-xs ${
                   sensor.isWarning
                     ? darkMode
                       ? 'bg-rose-950/20 border-rose-500/40'
                       : 'bg-rose-50/80 border-rose-200'
                     : darkMode
-                      ? 'bg-slate-900/70 border-slate-800'
-                      : 'bg-white border-slate-200'
+                      ? 'bg-slate-900/70 border-white/[0.1]'
+                      : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
                 }`}
               >
                 <div>

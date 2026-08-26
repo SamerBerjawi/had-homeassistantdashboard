@@ -266,7 +266,7 @@ export default function RoomsView({
                   Rooms & Living Spaces
                 </h2>
                 <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#7B61FF]/15 text-[#7B61FF] dark:text-[#9D8BFF] border border-[#7B61FF]/30">
-                  HAPulse Ingested ({rooms.length} Areas)
+                  Auto Ingested ({rooms.length} Areas)
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-medium mt-0.5">

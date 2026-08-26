@@ -251,8 +251,8 @@ export default function MediaView({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* HERO NOW PLAYING CARD (Left/Top 7 cols) */}
         <div className="lg:col-span-7 space-y-6">
-          <div className={`rounded-[32px] p-6 sm:p-8 border transition-all relative overflow-hidden shadow-sm ${
-            darkMode ? 'bg-slate-900/80 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
+          <div className={`rounded-3xl p-6 sm:p-8 border transition-all relative overflow-hidden shadow-sm ${
+            darkMode ? 'bg-slate-900/80 border-white/[0.1] text-white backdrop-blur-md' : 'bg-white/80 border-black/[0.06] text-slate-800 backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
           }`}>
             {/* Background Gradient Blob */}
             <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-[#7B61FF]/20 via-pink-500/10 to-transparent rounded-bl-full pointer-events-none blur-2xl" />
@@ -390,8 +390,8 @@ export default function MediaView({
           </div>
 
           {/* Quick Playlist Queue Selection */}
-          <div className={`rounded-[28px] p-5 border ${
-            darkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'
+          <div className={`rounded-3xl p-5 border ${
+            darkMode ? 'bg-slate-900/60 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
           }`}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -467,14 +467,14 @@ export default function MediaView({
             {speakerZones.map(zone => (
               <div
                 key={zone.id}
-                className={`rounded-[26px] p-5 border transition-all ${
+                className={`rounded-2xl p-5 border transition-all ${
                   zone.active
                     ? darkMode
                       ? 'bg-slate-900/80 border-[#7B61FF]/40 shadow-xs'
                       : 'bg-white border-indigo-200 shadow-xs'
                     : darkMode
-                      ? 'bg-slate-950/40 border-slate-800/60 opacity-60'
-                      : 'bg-slate-100/70 border-slate-200 opacity-60'
+                      ? 'bg-slate-950/40 border-white/[0.05] opacity-60'
+                      : 'bg-slate-100/70 border-black/[0.04] opacity-60'
                 }`}
               >
                 {/* Zone Header */}

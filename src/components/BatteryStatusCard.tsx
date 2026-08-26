@@ -470,10 +470,10 @@ export default function BatteryStatusCard({
     <motion.div
       layout
       id="battery-health-dashboard"
-      className={`rounded-[32px] p-5 sm:p-7 border backdrop-blur-2xl transition-all relative overflow-hidden shadow-lg ${
+      className={`rounded-3xl p-5 sm:p-7 border backdrop-blur-xl transition-all relative overflow-hidden shadow-lg ${
         darkMode
-          ? 'bg-slate-900/70 border-white/10 shadow-black/60'
-          : 'bg-white/80 border-white shadow-slate-200/50'
+          ? 'bg-slate-900/70 border-white/[0.1] shadow-black/60'
+          : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
       }`}
     >
       {/* Background Soft Glow */}

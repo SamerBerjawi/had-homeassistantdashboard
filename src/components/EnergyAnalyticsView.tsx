@@ -271,8 +271,8 @@ export default function EnergyAnalyticsView({
       </div>
 
       {/* 2. LIVE POWER TOPOGRAPHY & ENERGY FLOW INTERACTION */}
-      <div className={`rounded-[32px] p-5 sm:p-6 border backdrop-blur-2xl relative overflow-hidden transition-all ${
-        darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/65 border-white/80'
+      <div className={`rounded-3xl p-5 sm:p-6 border backdrop-blur-xl relative overflow-hidden transition-all ${
+        darkMode ? 'bg-slate-900/60 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
       }`}>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 pb-3 border-b border-white/10">
           <div className="flex items-center gap-2.5">
@@ -411,7 +411,7 @@ export default function EnergyAnalyticsView({
       </div>
 
       {/* 3. CHART NAVIGATION TABS & FILTER TOGGLES */}
-      <div className={`rounded-[32px] p-5 sm:p-6 border backdrop-blur-2xl transition-all ${
+      <div className={`rounded-3xl p-5 sm:p-6 border backdrop-blur-2xl transition-all ${
         darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/65 border-white/80'
       }`}>
         
@@ -810,10 +810,10 @@ export default function EnergyAnalyticsView({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         {/* Estimated Savings */}
-        <div className={`p-5 rounded-[28px] border backdrop-blur-xl flex items-center gap-4 ${
-          darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/65 border-white/80'
+        <div className={`p-5 rounded-2xl border backdrop-blur-xl flex items-center gap-4 ${
+          darkMode ? 'bg-slate-900/60 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
         }`}>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
             <DollarSign size={24} />
           </div>
           <div>
@@ -826,10 +826,10 @@ export default function EnergyAnalyticsView({
         </div>
 
         {/* Carbon Offset */}
-        <div className={`p-5 rounded-[28px] border backdrop-blur-xl flex items-center gap-4 ${
-          darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/65 border-white/80'
+        <div className={`p-5 rounded-2xl border backdrop-blur-xl flex items-center gap-4 ${
+          darkMode ? 'bg-slate-900/60 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
         }`}>
-          <div className="w-12 h-12 rounded-2xl bg-teal-500/20 text-teal-400 flex items-center justify-center shrink-0 border border-teal-500/30">
+          <div className="w-12 h-12 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center shrink-0 border border-teal-500/30">
             <Leaf size={24} />
           </div>
           <div>
@@ -842,10 +842,10 @@ export default function EnergyAnalyticsView({
         </div>
 
         {/* Solar Coverage */}
-        <div className={`p-5 rounded-[28px] border backdrop-blur-xl flex items-center gap-4 ${
-          darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/65 border-white/80'
+        <div className={`p-5 rounded-2xl border backdrop-blur-xl flex items-center gap-4 ${
+          darkMode ? 'bg-slate-900/60 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
         }`}>
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+          <div className="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
             <Sun size={24} />
           </div>
           <div>

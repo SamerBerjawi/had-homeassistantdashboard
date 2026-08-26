@@ -105,8 +105,8 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className={`w-full max-w-6xl max-h-[90vh] rounded-[32px] border shadow-2xl flex flex-col overflow-hidden backdrop-blur-2xl transition-all ${
-            darkMode ? 'bg-slate-900/95 border-slate-700/80 text-white' : 'bg-white/95 border-slate-200 text-slate-900'
+          className={`w-full max-w-6xl max-h-[90vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden backdrop-blur-2xl transition-all ${
+            darkMode ? 'bg-slate-900/95 border-white/[0.12] text-white shadow-black/70' : 'bg-white/95 border-black/[0.08] text-slate-900 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.8)]'
           }`}
         >
           {/* Header */}
@@ -118,7 +118,7 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-black tracking-tight">
-                    HAPulse Auto-Layout Graph Resolution Engine
+                    Automatic HA Graph Resolution Engine
                   </h3>
                   <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                     Zero YAML Required

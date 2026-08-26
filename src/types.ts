@@ -175,6 +175,36 @@ export interface ResolvedFloor {
   securityBreaches: number;
 }
 
+export interface HassAreaWithEntities extends ResolvedArea {}
+
+export interface SecurityOverviewState {
+  alarmPanel?: ResolvedEntity;
+  locks: ResolvedEntity[];
+  openDoorsWindows: ResolvedEntity[];
+  activeMotionSensors: ResolvedEntity[];
+  cameras: ResolvedEntity[];
+}
+
+export interface OverviewSummaryState {
+  peopleHome: number;
+  peopleAway: number;
+  lightsOnCount: number;
+  openOpeningsCount: number;
+  activeMediaCount: number;
+  activeClimatesCount: number;
+  activeSwitchesCount: number;
+  totalPowerWatts: number;
+}
+
+export interface AutoLayoutState {
+  areas: Record<string, HassAreaWithEntities>;
+  domainGroups: Record<string, ResolvedEntity[]>;
+  securityOverview: SecurityOverviewState;
+  overviewSummary: OverviewSummaryState;
+  isLoading: boolean;
+  error: string | null;
+}
+
 export interface AutoLayoutMetrics {
   totalFloors: number;
   totalAreas: number;

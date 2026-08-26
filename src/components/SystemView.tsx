@@ -175,8 +175,8 @@ export default function SystemView({
       {/* 1. HARDWARE PERFORMANCE TELEMETRY GAUGES */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* CPU Load */}
-        <div className={`rounded-[26px] p-5 border transition-all ${
-          darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'
+        <div className={`rounded-2xl p-5 border transition-all ${
+          darkMode ? 'bg-slate-900/80 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
         }`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -198,8 +198,8 @@ export default function SystemView({
         </div>
 
         {/* RAM Usage */}
-        <div className={`rounded-[26px] p-5 border transition-all ${
-          darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'
+        <div className={`rounded-2xl p-5 border transition-all ${
+          darkMode ? 'bg-slate-900/80 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
         }`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -221,8 +221,8 @@ export default function SystemView({
         </div>
 
         {/* Storage */}
-        <div className={`rounded-[26px] p-5 border transition-all ${
-          darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'
+        <div className={`rounded-2xl p-5 border transition-all ${
+          darkMode ? 'bg-slate-900/80 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
         }`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -244,8 +244,8 @@ export default function SystemView({
         </div>
 
         {/* Uptime & Latency */}
-        <div className={`rounded-[26px] p-5 border transition-all ${
-          darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'
+        <div className={`rounded-2xl p-5 border transition-all ${
+          darkMode ? 'bg-slate-900/80 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
         }`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -284,8 +284,8 @@ export default function SystemView({
           {integrations.map(integ => (
             <div
               key={integ.id}
-              className={`rounded-[24px] p-4 border transition-all ${
-                darkMode ? 'bg-slate-900/70 border-slate-800' : 'bg-white border-slate-200'
+              className={`rounded-2xl p-4 border transition-all ${
+                darkMode ? 'bg-slate-900/70 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
               }`}
             >
               <div className="flex items-start justify-between gap-2 mb-2">
@@ -311,8 +311,8 @@ export default function SystemView({
       </div>
 
       {/* 3. SYSTEM LOGS VIEWER & AUDIT TRAIL */}
-      <div className={`rounded-[28px] p-5 sm:p-6 border ${
-        darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'
+      <div className={`rounded-3xl p-5 sm:p-6 border ${
+        darkMode ? 'bg-slate-900/80 border-white/[0.1]' : 'bg-white/80 border-black/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
       }`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">

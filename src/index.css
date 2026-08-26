@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 html, body, #root {
   height: 100%;
   width: 100%;
@@ -14,7 +16,7 @@ html, body, #root {
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  
+
   --color-brand-purple: #7B61FF;
   --color-brand-purple-hover: #674EE3;
   --color-brand-light-purple: #9E8AFF;
@@ -23,60 +25,65 @@ html, body, #root {
 }
 
 @layer utilities {
-  .glassmorphic-card {
-    background: rgba(255, 255, 255, 0.45);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+  /* Apple HIG Frosted Glassmorphism Tokens */
+  .apple-glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
   }
-  .glassmorphic-card-dark {
-    background: rgba(13, 20, 38, 0.75);
-    backdrop-filter: blur(36px);
-    -webkit-backdrop-filter: blur(36px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-  }
-  .glassmorphic-sidebar {
-    background: rgba(255, 255, 255, 0.35);
-    backdrop-filter: blur(32px);
-    -webkit-backdrop-filter: blur(32px);
-    border-right: 1px solid rgba(255, 255, 255, 0.2);
-  }
-  .glassmorphic-sidebar-dark {
-    background: rgba(9, 13, 26, 0.82);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-  }
-  .glassmorphic-control {
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-  }
-  .glassmorphic-control-dark {
-    background: rgba(18, 25, 48, 0.7);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+  .dark .apple-glass-card {
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
   }
 
-  /* Deep Space Cosmic Stars Canvas */
-  .deep-space-stars {
+  .apple-glass-subtle {
+    background: rgba(241, 245, 249, 0.6);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+  }
+  .dark .apple-glass-subtle {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .apple-glass-modal {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+  }
+  .dark .apple-glass-modal {
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .apple-glass-control {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  .dark .apple-glass-control {
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Clean Modern Dark Mode Subtle Mesh Ambient Glow */
+  .dark-ambient-mesh {
     background-image: 
-      radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.8), rgba(0,0,0,0)),
-      radial-gradient(1.5px 1.5px at 140px 80px, rgba(165, 180, 252, 0.9), rgba(0,0,0,0)),
-      radial-gradient(1px 1px at 90px 170px, rgba(255, 255, 255, 0.6), rgba(0,0,0,0)),
-      radial-gradient(1.5px 1.5px at 230px 240px, rgba(199, 210, 254, 0.8), rgba(0,0,0,0)),
-      radial-gradient(1px 1px at 320px 120px, rgba(147, 197, 253, 0.7), rgba(0,0,0,0)),
-      radial-gradient(2px 2px at 450px 350px, rgba(167, 139, 250, 0.75), rgba(0,0,0,0)),
-      radial-gradient(1px 1px at 520px 190px, rgba(255, 255, 255, 0.7), rgba(0,0,0,0)),
-      radial-gradient(1.5px 1.5px at 680px 420px, rgba(56, 189, 248, 0.65), rgba(0,0,0,0)),
-      radial-gradient(1px 1px at 800px 150px, rgba(255, 255, 255, 0.8), rgba(0,0,0,0)),
-      radial-gradient(1.5px 1.5px at 950px 310px, rgba(165, 180, 252, 0.85), rgba(0,0,0,0)),
-      radial-gradient(1px 1px at 1100px 90px, rgba(255, 255, 255, 0.6), rgba(0,0,0,0)),
-      radial-gradient(2px 2px at 1250px 260px, rgba(192, 132, 252, 0.7), rgba(0,0,0,0));
-    background-repeat: repeat;
-    background-size: 1300px 600px;
+      radial-gradient(1200px circle at 50% -120px, rgba(30, 41, 59, 0.45), transparent 70%),
+      radial-gradient(800px circle at 85% 15%, rgba(123, 97, 255, 0.08), transparent 60%),
+      radial-gradient(700px circle at 15% 85%, rgba(99, 102, 241, 0.05), transparent 60%);
   }
 
   /* Refined Glassmorphism Tiers with Layered Backdrop Blurs */
@@ -218,3 +225,137 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
 .animate-pulse-slow-2 {
   animation: pulseSlow2 18s infinite ease-in-out;
 }
+
+:root {
+  --chart-1: oklch(0.32 0 none);
+  --chart-2: oklch(0.41 0 none);
+  --chart-3: oklch(0.54 0 none);
+  --chart-4: oklch(0.71 0 none);
+  --chart-5: oklch(0.89 0 none);
+  --chart-background: oklch(1 0 0);
+  --chart-foreground: oklch(0.145 0.004 285);
+  --chart-foreground-muted: oklch(0.55 0.014 260);
+  --chart-line-primary: var(--chart-1);
+  --chart-line-secondary: var(--chart-2);
+  --chart-crosshair: oklch(0.4 0.1828 274.34);
+  --chart-grid: oklch(0.9 0 0);
+  --chart-brush-border: var(--chart-grid);
+  --chart-tooltip-background: oklch(0.21 0.006 285 / 0.8);
+  --chart-tooltip-foreground: oklch(0.985 0 0);
+  --chart-tooltip-muted: oklch(0.65 0.01 260);
+  --chart-marker-background: oklch(0.97 0.005 260);
+  --chart-marker-border: oklch(0.85 0.01 260);
+  --chart-marker-foreground: oklch(0.3 0.01 260);
+  --chart-label: oklch(0.45 0.01 260);
+  --chart-scale-01: oklch(0.98 0.003 106);
+  --chart-scale-02: oklch(0.92 0.008 106);
+  --chart-scale-03: oklch(0.82 0.015 106);
+  --chart-scale-04: oklch(0.68 0.02 106);
+  --chart-scale-05: oklch(0.55 0.025 106);
+  --chart-scale-pattern-color: oklch(0.96 0.005 106);
+  --color-1: oklch(66.2% 0.225 25.9);
+  --color-2: oklch(60.4% 0.26 302);
+  --color-3: oklch(69.6% 0.165 251);
+  --color-4: oklch(80.2% 0.134 225);
+  --color-5: oklch(90.7% 0.231 133);
+}
+
+.dark {
+  --chart-1: oklch(1 0 none);
+  --chart-2: oklch(0.73 0 none);
+  --chart-3: oklch(0.51 0 none);
+  --chart-4: oklch(0.39 0 none);
+  --chart-5: oklch(0.32 0 none);
+  --chart-background: oklch(0.145 0 0);
+  --chart-foreground: oklch(0.45 0 0);
+  --chart-foreground-muted: oklch(0.65 0.01 260);
+  --chart-crosshair: oklch(0.45 0 0);
+  --chart-grid: oklch(0.25 0 0);
+  --chart-brush-border: var(--chart-grid);
+  --chart-marker-background: oklch(0.25 0.01 260);
+  --chart-marker-border: oklch(0.4 0.01 260);
+  --chart-marker-foreground: oklch(0.9 0 0);
+  --chart-label: oklch(0.75 0.01 260);
+  --chart-scale-01: oklch(0.28 0.03 270);
+  --chart-scale-02: oklch(0.38 0.04 270);
+  --chart-scale-03: oklch(0.48 0.05 270);
+  --chart-scale-04: oklch(0.58 0.06 270);
+  --chart-scale-05: oklch(0.68 0.07 270);
+  --chart-scale-pattern-color: oklch(0.145 0 0);
+  --color-1: oklch(66.2% 0.225 25.9);
+  --color-2: oklch(60.4% 0.26 302);
+  --color-3: oklch(69.6% 0.165 251);
+  --color-4: oklch(80.2% 0.134 225);
+  --color-5: oklch(90.7% 0.231 133);
+}
+
+@theme inline {
+  --color-chart-1: var(----chart-1);
+  --color-chart-2: var(----chart-2);
+  --color-chart-3: var(----chart-3);
+  --color-chart-4: var(----chart-4);
+  --color-chart-5: var(----chart-5);
+  --color-chart-background: var(----chart-background);
+  --color-chart-foreground: var(----chart-foreground);
+  --color-chart-foreground-muted: var(----chart-foreground-muted);
+  --chart-line-primary: var(----chart-line-primary);
+  --chart-line-secondary: var(----chart-line-secondary);
+  --color-chart-crosshair: var(----chart-crosshair);
+  --color-chart-grid: var(----chart-grid);
+  --chart-brush-border: var(----chart-brush-border);
+  --color-chart-tooltip-background: var(----chart-tooltip-background);
+  --color-chart-tooltip-foreground: var(----chart-tooltip-foreground);
+  --color-chart-tooltip-muted: var(----chart-tooltip-muted);
+  --color-chart-marker-background: var(----chart-marker-background);
+  --color-chart-marker-border: var(----chart-marker-border);
+  --color-chart-marker-foreground: var(----chart-marker-foreground);
+  --color-chart-label: var(----chart-label);
+  --color-chart-scale-01: var(----chart-scale-01);
+  --color-chart-scale-02: var(----chart-scale-02);
+  --color-chart-scale-03: var(----chart-scale-03);
+  --color-chart-scale-04: var(----chart-scale-04);
+  --color-chart-scale-05: var(----chart-scale-05);
+  --color-chart-scale-pattern-color: var(----chart-scale-pattern-color);
+  --animate-shine: shine var(--duration) infinite linear;
+  @keyframes shine {
+  0% {
+    background-position: 0% 0%;
+    }
+  50% {
+    background-position: 100% 100%;
+    }
+  to {
+    background-position: 0% 0%;
+    }
+  }
+  --animate-rainbow: rainbow var(--speed, 2s) infinite linear;
+  --color-color-5: var(--color-5);
+  --color-color-4: var(--color-4);
+  --color-color-3: var(--color-3);
+  --color-color-2: var(--color-2);
+  --color-color-1: var(--color-1)
+;
+  @keyframes rainbow {
+  0% {
+    background-position: 0%;
+    }
+  100% {
+    background-position: 200%;
+    }
+  }}
+
+  /* Magic UI Animated Theme Toggler View Transition */
+  html[data-magicui-theme-vt="active"]::view-transition-old(root),
+  html[data-magicui-theme-vt="active"]::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  html[data-magicui-theme-vt="active"]::view-transition-old(root) {
+    z-index: 1;
+  }
+
+  html[data-magicui-theme-vt="active"]::view-transition-new(root) {
+    z-index: 9999;
+    clip-path: var(--magicui-theme-vt-clip-from, circle(0% at 50% 50%));
+  }

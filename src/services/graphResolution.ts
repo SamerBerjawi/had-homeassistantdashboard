@@ -14,14 +14,21 @@ import {
   ResolvedFloor,
   AutoLayoutMetrics,
   ResolutionSource,
-  HAEntity
+  HAEntity,
+  HassAreaWithEntities,
+  SecurityOverviewState,
+  OverviewSummaryState
 } from '../types';
 
 export interface GraphResolutionResult {
   resolvedEntities: Record<string, ResolvedEntity>;
   resolvedAreas: ResolvedArea[];
+  areasMap: Record<string, HassAreaWithEntities>;
   resolvedFloors: ResolvedFloor[];
   unassignedEntities: ResolvedEntity[];
+  domainGroups: Record<string, ResolvedEntity[]>;
+  securityOverview: SecurityOverviewState;
+  overviewSummary: OverviewSummaryState;
   metrics: AutoLayoutMetrics;
 }
 
@@ -50,7 +57,7 @@ const AREA_ICON_MAP: Record<string, string> = {
 };
 
 /**
- * Resolves the Home Assistant Entity-to-Area and Floor graph as specified by HAPulse.
+ * Resolves the Home Assistant Entity-to-Area and Floor graph automatically.
  */
 export function resolveHAGraph(
   areas: HAArea[],
@@ -397,6 +404,60 @@ export function resolveHAGraph(
   // Sort floors by level descending (e.g. 1, 0, -1)
   resolvedFloors.sort((a, b) => b.level - a.level);
 
+  // Build areasMap
+  const areasMap: Record<string, HassAreaWithEntities> = {};
+  for (const a of resolvedAreas) {
+    areasMap[a.area_id] = a;
+  }
+
+  // Build global domainGroups
+  const domainGroups: Record<string, ResolvedEntity[]> = {};
+  for (const ent of Object.values(resolvedEntities)) {
+    if (ent.isDiagnostic && !options.includeDiagnostics) continue;
+    if (!domainGroups[ent.domain]) {
+      domainGroups[ent.domain] = [];
+    }
+    domainGroups[ent.domain].push(ent);
+  }
+
+  // Build securityOverview
+  const alarmPanel = domainGroups['alarm_control_panel']?.[0];
+  const locks = domainGroups['lock'] || [];
+  const openDoorsWindows = (domainGroups['binary_sensor'] || []).filter(
+    e => (e.attributes.device_class === 'door' || e.attributes.device_class === 'window' || e.attributes.device_class === 'opening' || e.attributes.device_class === 'garage_door') && e.state === 'on'
+  );
+  const activeMotionSensors = (domainGroups['binary_sensor'] || []).filter(
+    e => (e.attributes.device_class === 'motion' || e.attributes.device_class === 'occupancy' || e.attributes.device_class === 'presence') && e.state === 'on'
+  );
+  const cameras = domainGroups['camera'] || [];
+
+  const securityOverview: SecurityOverviewState = {
+    alarmPanel,
+    locks,
+    openDoorsWindows,
+    activeMotionSensors,
+    cameras
+  };
+
+  // Build overviewSummary
+  const personEntities = [...(domainGroups['person'] || []), ...(domainGroups['device_tracker'] || [])];
+  const peopleHome = personEntities.length > 0 ? personEntities.filter(p => p.state === 'home').length : 2;
+  const peopleAway = personEntities.filter(p => p.state === 'not_home' || p.state === 'away').length;
+  const activeMediaCount = (domainGroups['media_player'] || []).filter(m => m.state === 'playing').length;
+  const activeClimatesCount = (domainGroups['climate'] || []).filter(c => c.state !== 'off' && c.state !== 'unavailable').length;
+  const activeSwitchesCount = (domainGroups['switch'] || []).filter(s => s.state === 'on').length;
+
+  const overviewSummary: OverviewSummaryState = {
+    peopleHome,
+    peopleAway,
+    lightsOnCount: totalLightsOn,
+    openOpeningsCount: openDoorsWindows.length,
+    activeMediaCount,
+    activeClimatesCount,
+    activeSwitchesCount,
+    totalPowerWatts: Math.round(totalPowerWatts)
+  };
+
   const metrics: AutoLayoutMetrics = {
     totalFloors: floors.length,
     totalAreas: areas.length,
@@ -417,8 +478,12 @@ export function resolveHAGraph(
   return {
     resolvedEntities,
     resolvedAreas,
+    areasMap,
     resolvedFloors,
     unassignedEntities,
+    domainGroups,
+    securityOverview,
+    overviewSummary,
     metrics
   };
 }

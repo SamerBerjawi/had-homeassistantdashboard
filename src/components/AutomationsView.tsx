@@ -27,9 +27,33 @@ import {
   Trash2,
   Calendar,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Star,
+  Sunrise,
+  Coffee,
+  BedDouble,
+  Tv
 } from 'lucide-react';
 import { HAEntity, Room } from '../types';
+import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
+
+export interface SceneTileItem {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  starred: boolean;
+  active: boolean;
+}
+
+const DEFAULT_SCENES: SceneTileItem[] = [
+  { id: 'scene.morning_glow', name: 'Morning Glow', icon: 'Sunrise', color: 'from-amber-500 to-orange-600', starred: true, active: false },
+  { id: 'scene.calm_zen', name: 'Calm Zen Focus', icon: 'Sparkles', color: 'from-purple-500 to-indigo-600', starred: true, active: true },
+  { id: 'scene.work_focus', name: 'Studio Daylight', icon: 'Sun', color: 'from-sky-500 to-blue-600', starred: false, active: false },
+  { id: 'scene.cinema_night', name: 'Cinema Ambiance', icon: 'Tv', color: 'from-rose-500 to-pink-600', starred: true, active: false },
+  { id: 'scene.away_secure', name: 'Away Perimeter Arm', icon: 'ShieldAlert', color: 'from-red-600 to-rose-700', starred: false, active: false },
+  { id: 'scene.night_slumber', name: 'Night Slumber', icon: 'Moon', color: 'from-slate-700 to-indigo-950', starred: false, active: false }
+];
 
 export interface AutomationItem {
   id: string;
@@ -180,10 +204,13 @@ export default function AutomationsView({
   onTriggerAutomation,
   darkMode
 }: AutomationsViewProps) {
+  const { callHAService } = useAutoLayoutStore();
+  const [scenes, setScenes] = useState<SceneTileItem[]>(DEFAULT_SCENES);
   const [automations, setAutomations] = useState<AutomationItem[]>(INITIAL_AUTOMATIONS);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [executingId, setExecutingId] = useState<string | null>(null);
+  const [executingSceneId, setExecutingSceneId] = useState<string | null>(null);
 
   // New automation form fields
   const [newName, setNewName] = useState('');
@@ -198,6 +225,21 @@ export default function AutomationsView({
     if (activeCategory === 'all') return true;
     return auto.category === activeCategory;
   });
+
+  const toggleStarScene = (sceneId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, starred: !s.starred } : s));
+  };
+
+  const handleRunScene = (scene: SceneTileItem) => {
+    setExecutingSceneId(scene.id);
+    setScenes(prev => prev.map(s => ({ ...s, active: s.id === scene.id })));
+    callHAService('scene', 'turn_on', {}, { entity_id: scene.id });
+
+    setTimeout(() => {
+      setExecutingSceneId(null);
+    }, 1200);
+  };
 
   const toggleAutomationState = (id: string) => {
     setAutomations(prev => prev.map(a => {
@@ -304,6 +346,72 @@ export default function AutomationsView({
         </div>
       </div>
 
+      {/* Quick-Run Action Scenes Grid */}
+      <div className={`p-4 sm:p-5 rounded-3xl border shadow-xs ${
+        darkMode ? 'bg-slate-900/60 border-white/[0.1] backdrop-blur-md' : 'bg-white/80 border-black/[0.06] backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
+      }`}>
+        <div className="flex items-center justify-between mb-3.5">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-xl bg-amber-500/10 text-amber-500">
+              <Sparkles size={16} />
+            </span>
+            <div>
+              <h3 className={`text-sm font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                Quick-Run Scenes & Atmosphere Tiles
+              </h3>
+              <p className="text-[10px] text-slate-400">One-tap multi-room state presets with instant feedback</p>
+            </div>
+          </div>
+          <span className="text-[10px] font-bold text-slate-400">
+            {scenes.filter(s => s.starred).length} Pinned Favorites
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {scenes.map(scene => {
+            const isExecuting = executingSceneId === scene.id;
+            return (
+              <motion.div
+                key={scene.id}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleRunScene(scene)}
+                className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between group shadow-xs ${
+                  scene.active
+                    ? 'bg-gradient-to-br ' + scene.color + ' text-white border-white/30 shadow-md'
+                    : darkMode
+                      ? 'bg-slate-950/60 border-slate-800 hover:border-indigo-500/40 text-slate-200'
+                      : 'bg-slate-50 border-slate-200 hover:border-indigo-300 text-slate-800'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${
+                    scene.active ? 'bg-white/25 text-white' : 'bg-indigo-500/15 text-indigo-400'
+                  }`}>
+                    {isExecuting ? <Check size={14} className="animate-bounce" /> : <Play size={12} />}
+                  </div>
+
+                  <button
+                    onClick={(e) => toggleStarScene(scene.id, e)}
+                    className="p-1 text-slate-400 hover:text-amber-400 transition-colors"
+                    title={scene.starred ? 'Remove favorite' : 'Pin to favorites'}
+                  >
+                    <Star size={13} className={scene.starred ? 'fill-amber-400 text-amber-400' : ''} />
+                  </button>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-black tracking-tight truncate">{scene.name}</h4>
+                  <span className={`text-[9px] font-bold ${scene.active ? 'text-white/80' : 'text-slate-400'}`}>
+                    {isExecuting ? 'Triggering...' : scene.active ? 'Active Now' : 'Tap to Activate'}
+                  </span>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Category Pills Bar */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 touch-scroll-container">
         {[
@@ -341,14 +449,14 @@ export default function AutomationsView({
             <motion.div
               key={auto.id}
               layout
-              className={`rounded-[28px] p-5 sm:p-6 border transition-all relative overflow-hidden flex flex-col justify-between shadow-xs ${
+              className={`rounded-3xl p-5 sm:p-6 border transition-all relative overflow-hidden flex flex-col justify-between shadow-xs ${
                 auto.enabled
                   ? darkMode 
-                    ? 'bg-slate-900/70 border-slate-800/80 hover:border-[#7B61FF]/40' 
-                    : 'bg-white border-slate-200 hover:border-[#7B61FF]/40'
+                    ? 'bg-slate-900/70 border-white/[0.1] hover:border-[#7B61FF]/40 backdrop-blur-md' 
+                    : 'bg-white/80 border-black/[0.06] hover:border-[#7B61FF]/40 backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
                   : darkMode
-                    ? 'bg-slate-950/40 border-slate-800/40 opacity-70'
-                    : 'bg-slate-100/60 border-slate-200/60 opacity-70'
+                    ? 'bg-slate-950/40 border-white/[0.05] opacity-70'
+                    : 'bg-slate-100/60 border-black/[0.04] opacity-70'
               }`}
             >
               <div>

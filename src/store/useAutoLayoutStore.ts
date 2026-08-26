@@ -14,7 +14,11 @@ import {
   ResolvedArea,
   ResolvedFloor,
   AutoLayoutMetrics,
-  HAEntity
+  HAEntity,
+  HassAreaWithEntities,
+  SecurityOverviewState,
+  OverviewSummaryState,
+  AutoLayoutState
 } from '../types';
 import { resolveHAGraph, resolvedEntityToHAEntity } from '../services/graphResolution';
 import { haWebSocketService, HAConnectionStatus } from '../services/haWebSocket';
@@ -27,19 +31,32 @@ export interface AutoLayoutStoreState {
   haToken: string;
   connectionStatus: HAConnectionStatus;
   connectionError: string | null;
+  isLoading: boolean;
+  error: string | null;
 
   // Raw Registries
+  rawAreas: HAArea[];
+  rawDevices: HADevice[];
+  rawEntityRegistry: HAEntityRegistryEntry[];
+  rawFloors: HAFloor[];
+  rawStates: Record<string, HAState>;
+
+  // Legacy arrays for compatibility
   areas: HAArea[];
   devices: HADevice[];
   entityRegistry: HAEntityRegistryEntry[];
   floors: HAFloor[];
   states: Record<string, HAState>;
 
-  // Resolved Graph (HAPulse Structure)
+  // Resolved Graph (Auto-Layout Structure & AutoLayoutState)
   resolvedEntities: Record<string, ResolvedEntity>;
   resolvedAreas: ResolvedArea[];
+  areasMap: Record<string, HassAreaWithEntities>;
   resolvedFloors: ResolvedFloor[];
   unassignedEntities: ResolvedEntity[];
+  domainGroups: Record<string, ResolvedEntity[]>;
+  securityOverview: SecurityOverviewState;
+  overviewSummary: OverviewSummaryState;
   metrics: AutoLayoutMetrics | null;
 
   // Filter & Navigation
@@ -71,12 +88,38 @@ export interface AutoLayoutStoreState {
   getLegacyEntities: () => HAEntity[];
 }
 
+const INITIAL_SECURITY_OVERVIEW: SecurityOverviewState = {
+  locks: [],
+  openDoorsWindows: [],
+  activeMotionSensors: [],
+  cameras: []
+};
+
+const INITIAL_OVERVIEW_SUMMARY: OverviewSummaryState = {
+  peopleHome: 2,
+  peopleAway: 0,
+  lightsOnCount: 0,
+  openOpeningsCount: 0,
+  activeMediaCount: 0,
+  activeClimatesCount: 0,
+  activeSwitchesCount: 0,
+  totalPowerWatts: 0
+};
+
 export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   isLiveMode: false,
   serverUrl: 'wss://hass.homz.internal/api/websocket',
   haToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   connectionStatus: 'connected',
   connectionError: null,
+  isLoading: false,
+  error: null,
+
+  rawAreas: [...MOCK_AREAS],
+  rawDevices: [...MOCK_DEVICES],
+  rawEntityRegistry: [...MOCK_ENTITY_REGISTRY],
+  rawFloors: [...MOCK_FLOORS],
+  rawStates: { ...MOCK_STATES },
 
   areas: [...MOCK_AREAS],
   devices: [...MOCK_DEVICES],
@@ -86,8 +129,12 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
 
   resolvedEntities: {},
   resolvedAreas: [],
+  areasMap: {},
   resolvedFloors: [],
   unassignedEntities: [],
+  domainGroups: {},
+  securityOverview: INITIAL_SECURITY_OVERVIEW,
+  overviewSummary: INITIAL_OVERVIEW_SUMMARY,
   metrics: null,
 
   selectedFloorId: 'all',
@@ -98,7 +145,12 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   init: () => {
     haWebSocketService.init({
       onStatusChange: (status, errorMsg) => {
-        set({ connectionStatus: status, connectionError: errorMsg || null });
+        set({ 
+          connectionStatus: status, 
+          connectionError: errorMsg || null,
+          isLoading: status === 'connecting',
+          error: errorMsg || null
+        });
       },
       onRegistriesLoaded: (payload) => {
         set({
@@ -106,7 +158,14 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           devices: payload.devices,
           entityRegistry: payload.entityRegistry,
           floors: payload.floors,
-          states: payload.states
+          states: payload.states,
+          rawAreas: payload.areas,
+          rawDevices: payload.devices,
+          rawEntityRegistry: payload.entityRegistry,
+          rawFloors: payload.floors,
+          rawStates: payload.states,
+          isLoading: false,
+          error: null
         });
         get().recomputeGraph();
       },
@@ -115,12 +174,15 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           states: {
             ...prev.states,
             [entityId]: newState
+          },
+          rawStates: {
+            ...prev.rawStates,
+            [entityId]: newState
           }
         }));
         get().recomputeGraph();
       },
       onLogMessage: (type, msg, details) => {
-        // Will be picked up by logging bus
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('ha_log_message', { detail: { type, msg, details } }));
         }
@@ -140,8 +202,12 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
     set({
       resolvedEntities: result.resolvedEntities,
       resolvedAreas: result.resolvedAreas,
+      areasMap: result.areasMap,
       resolvedFloors: result.resolvedFloors,
       unassignedEntities: result.unassignedEntities,
+      domainGroups: result.domainGroups,
+      securityOverview: result.securityOverview,
+      overviewSummary: result.overviewSummary,
       metrics: result.metrics
     });
   },
@@ -215,29 +281,64 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   },
 
   callHAService: async (domain: string, service: string, serviceData: Record<string, any> = {}, target: any = {}) => {
-    await haWebSocketService.callService(domain, service, serviceData, target);
+    try {
+      await haWebSocketService.callService(domain, service, serviceData, target);
+    } catch (err: any) {
+      console.warn(`[HA WebSocket] Service call failed: ${domain}.${service}`, err);
+    }
 
-    // Optimistic local state update
+    // Comprehensive optimistic local state update
     if (target?.entity_id) {
       const entityIds = Array.isArray(target.entity_id) ? target.entity_id : [target.entity_id];
       for (const eid of entityIds) {
+        const current = get().states[eid];
+        const currentState = current?.state;
+        const currentAttrs = current?.attributes || {};
+
         if (service === 'turn_on') {
-          get().updateEntityState(eid, 'on', serviceData);
+          const brightness = serviceData.brightness !== undefined ? serviceData.brightness : serviceData.brightness_pct !== undefined ? Math.round((serviceData.brightness_pct / 100) * 255) : currentAttrs.brightness;
+          get().updateEntityState(eid, 'on', { ...serviceData, ...(brightness !== undefined ? { brightness } : {}) });
         } else if (service === 'turn_off') {
           get().updateEntityState(eid, 'off', serviceData);
         } else if (service === 'toggle') {
-          const current = get().states[eid]?.state;
-          get().updateEntityState(eid, current === 'on' ? 'off' : 'on', serviceData);
+          get().updateEntityState(eid, currentState === 'on' ? 'off' : 'on', serviceData);
+        } else if (service === 'open_cover') {
+          get().updateEntityState(eid, 'open', { current_position: 100 });
+        } else if (service === 'close_cover') {
+          get().updateEntityState(eid, 'closed', { current_position: 0 });
+        } else if (service === 'stop_cover') {
+          get().updateEntityState(eid, 'stopped');
+        } else if (service === 'set_cover_position') {
+          const pos = Number(serviceData.position ?? 50);
+          get().updateEntityState(eid, pos > 0 ? 'open' : 'closed', { current_position: pos });
         } else if (service === 'set_temperature' && serviceData.temperature !== undefined) {
-          get().updateEntityState(eid, 'cool', { temperature: serviceData.temperature });
+          get().updateEntityState(eid, currentState === 'off' ? 'heat' : currentState, { temperature: serviceData.temperature });
+        } else if (service === 'set_hvac_mode' && serviceData.hvac_mode !== undefined) {
+          get().updateEntityState(eid, serviceData.hvac_mode);
         } else if (service === 'lock') {
           get().updateEntityState(eid, 'locked');
         } else if (service === 'unlock') {
           get().updateEntityState(eid, 'unlocked');
+        } else if (service === 'media_play') {
+          get().updateEntityState(eid, 'playing');
+        } else if (service === 'media_pause') {
+          get().updateEntityState(eid, 'paused');
+        } else if (service === 'media_play_pause') {
+          get().updateEntityState(eid, currentState === 'playing' ? 'paused' : 'playing');
+        } else if (service === 'media_stop') {
+          get().updateEntityState(eid, 'idle');
+        } else if (service === 'volume_set' && serviceData.volume_level !== undefined) {
+          get().updateEntityState(eid, currentState || 'playing', { volume_level: serviceData.volume_level });
+        } else if (service === 'volume_mute') {
+          get().updateEntityState(eid, currentState || 'playing', { is_volume_muted: serviceData.is_volume_muted });
         } else if (service === 'start' || service === 'start_cleaning') {
           get().updateEntityState(eid, 'cleaning');
         } else if (service === 'return_to_base') {
           get().updateEntityState(eid, 'returning');
+        } else if (service === 'pause') {
+          get().updateEntityState(eid, 'paused');
+        } else if (service === 'set_percentage' && serviceData.percentage !== undefined) {
+          get().updateEntityState(eid, serviceData.percentage > 0 ? 'on' : 'off', { percentage: serviceData.percentage });
         }
       }
     }

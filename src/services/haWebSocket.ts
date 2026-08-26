@@ -55,7 +55,7 @@ class HAWebSocketClient {
   public loadDemoRegistries() {
     this.status = 'connected';
     this.callbacks?.onStatusChange('connected');
-    this.callbacks?.onLogMessage('info', 'Loaded Home Assistant Registries from HAPulse Graph Ingestion Engine (Demo/Simulated Mode)');
+    this.callbacks?.onLogMessage('info', 'Loaded Home Assistant Registries from Auto-Layout Graph Ingestion Engine (Demo/Simulated Mode)');
     this.callbacks?.onRegistriesLoaded({
       areas: [...MOCK_AREAS],
       devices: [...MOCK_DEVICES],
