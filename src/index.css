@@ -1,0 +1,220 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand-purple: #7B61FF;
+  --color-brand-purple-hover: #674EE3;
+  --color-brand-light-purple: #9E8AFF;
+  --color-brand-bg: #DDE2F0;
+  --color-glass-white: rgba(255, 255, 255, 0.4);
+}
+
+@layer utilities {
+  .glassmorphic-card {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+  .glassmorphic-card-dark {
+    background: rgba(13, 20, 38, 0.75);
+    backdrop-filter: blur(36px);
+    -webkit-backdrop-filter: blur(36px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .glassmorphic-sidebar {
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  .glassmorphic-sidebar-dark {
+    background: rgba(9, 13, 26, 0.82);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .glassmorphic-control {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+  .glassmorphic-control-dark {
+    background: rgba(18, 25, 48, 0.7);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Deep Space Cosmic Stars Canvas */
+  .deep-space-stars {
+    background-image: 
+      radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.8), rgba(0,0,0,0)),
+      radial-gradient(1.5px 1.5px at 140px 80px, rgba(165, 180, 252, 0.9), rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 90px 170px, rgba(255, 255, 255, 0.6), rgba(0,0,0,0)),
+      radial-gradient(1.5px 1.5px at 230px 240px, rgba(199, 210, 254, 0.8), rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 320px 120px, rgba(147, 197, 253, 0.7), rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 450px 350px, rgba(167, 139, 250, 0.75), rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 520px 190px, rgba(255, 255, 255, 0.7), rgba(0,0,0,0)),
+      radial-gradient(1.5px 1.5px at 680px 420px, rgba(56, 189, 248, 0.65), rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 800px 150px, rgba(255, 255, 255, 0.8), rgba(0,0,0,0)),
+      radial-gradient(1.5px 1.5px at 950px 310px, rgba(165, 180, 252, 0.85), rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 1100px 90px, rgba(255, 255, 255, 0.6), rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 1250px 260px, rgba(192, 132, 252, 0.7), rgba(0,0,0,0));
+    background-repeat: repeat;
+    background-size: 1300px 600px;
+  }
+
+  /* Refined Glassmorphism Tiers with Layered Backdrop Blurs */
+  .glass-card-sm {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+  .glass-card-md {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+  .glass-card-lg {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+  }
+  .glass-sidebar {
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(36px);
+    -webkit-backdrop-filter: blur(36px);
+    border-right: 1px solid rgba(255, 255, 255, 0.4);
+  }
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.48);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+  }
+
+  /* Tactile Noise Texture Overlay for Rich Depth */
+  .glass-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.035'/%3E%3C/svg%3E");
+  }
+  .glass-noise-subtle {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
+  }
+
+  /* Dynamic Brand-Purple Accent Light Glows */
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(123, 97, 255, 0.45), 0 0 6px rgba(123, 97, 255, 0.3);
+  }
+  .glow-purple-sm {
+    box-shadow: 0 0 12px rgba(123, 97, 255, 0.38);
+  }
+  .glow-purple-lg {
+    box-shadow: 0 0 32px rgba(123, 97, 255, 0.5), 0 0 12px rgba(158, 138, 255, 0.35);
+  }
+  .slider-glow {
+    filter: drop-shadow(0 0 8px rgba(123, 97, 255, 0.55));
+  }
+}
+
+/* Custom slider thumb styles for enhanced glowing feedback */
+input[type="range"].glow-slider-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #7B61FF;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 0 12px rgba(123, 97, 255, 0.75), 0 2px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+input[type="range"].glow-slider-thumb::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 18px rgba(123, 97, 255, 0.95), 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+input[type="range"].glow-slider-thumb::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #7B61FF;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 0 12px rgba(123, 97, 255, 0.75), 0 2px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+/* Custom styles for high-end look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(123, 97, 255, 0.15);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(123, 97, 255, 0.3);
+}
+
+/* Momentum Touch Scrolling & Responsive Scroll Utilities */
+.touch-scroll-container {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .touch-scroll-container {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Custom animated background elements */
+@keyframes pulseSlow {
+  0%, 100% {
+    transform: scale(1) translate(0px, 0px);
+  }
+  50% {
+    transform: scale(1.15) translate(30px, -20px);
+  }
+}
+
+@keyframes pulseSlow2 {
+  0%, 100% {
+    transform: scale(1.1) translate(0px, 0px);
+  }
+  50% {
+    transform: scale(0.9) translate(-40px, 40px);
+  }
+}
+
+.animate-pulse-slow-1 {
+  animation: pulseSlow 15s infinite ease-in-out;
+}
+
+.animate-pulse-slow-2 {
+  animation: pulseSlow2 18s infinite ease-in-out;
+}
