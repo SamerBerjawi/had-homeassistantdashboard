@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Moon, Sun } from "lucide-react"
+import { Moon, Sun } from "@phosphor-icons/react"
 import { flushSync } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -332,9 +332,9 @@ export const AnimatedThemeToggler = ({
           className="flex items-center justify-center"
         >
           {isDark ? (
-            <Sun className="size-5 text-amber-400 fill-amber-400/20" />
+            <Sun size={20} weight="duotone" className="text-amber-400" />
           ) : (
-            <Moon className="size-5 text-slate-700 fill-slate-700/20" />
+            <Moon size={20} weight="duotone" className="text-slate-700" />
           )}
         </motion.div>
       </AnimatePresence>

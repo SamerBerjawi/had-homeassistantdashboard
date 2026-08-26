@@ -7,25 +7,25 @@ import React, { useState } from 'react';
 import { 
   Plus, 
   Lock, 
-  Unlock, 
+  LockOpen, 
   CloudSun, 
   Sun, 
   CloudRain, 
   Cloud, 
-  Zap, 
+  Lightning, 
   Snowflake, 
   Moon, 
-  Sliders, 
-  Layers, 
-  ChevronDown, 
-  Download, 
-  Upload, 
-  RotateCcw, 
+  Faders, 
+  Stack, 
+  CaretDown, 
+  DownloadSimple, 
+  UploadSimple, 
+  ArrowCounterClockwise, 
   ShieldCheck, 
-  Sparkles,
-  Edit3,
-  Trash2
-} from 'lucide-react';
+  Sparkle, 
+  PencilSimple,
+  Trash
+} from '@phosphor-icons/react';
 import { DashboardProfile, WeatherBackdropType } from '../../types/canvas';
 
 interface CanvasHeaderProps {
@@ -49,12 +49,12 @@ interface CanvasHeaderProps {
 }
 
 const WEATHER_OPTIONS: { id: WeatherBackdropType; label: string; icon: any }[] = [
-  { id: 'auto', label: 'Auto (Hass Entity)', icon: Sparkles },
+  { id: 'auto', label: 'Auto (Hass Entity)', icon: Sparkle },
   { id: 'sunny', label: 'Sunny Day', icon: Sun },
   { id: 'partly-cloudy', label: 'Partly Cloudy', icon: CloudSun },
   { id: 'cloudy', label: 'Overcast Clouds', icon: Cloud },
   { id: 'rain', label: 'Rain Streaks', icon: CloudRain },
-  { id: 'storm', label: 'Thunderstorm', icon: Zap },
+  { id: 'storm', label: 'Thunderstorm', icon: Lightning },
   { id: 'snow', label: 'Snowfall', icon: Snowflake },
   { id: 'starry-night', label: 'Starry Night', icon: Moon }
 ];
@@ -116,9 +116,9 @@ export default function CanvasHeader({
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-white backdrop-blur-xl shadow-lg transition-all cursor-pointer group"
           >
-            <Layers size={16} className="text-[#9D8BFF]" />
+            <Stack size={18} weight="duotone" className="text-[#9D8BFF] shrink-0" />
             <span className="text-sm font-extrabold tracking-tight">{activeProfile.name}</span>
-            <ChevronDown size={14} className="text-slate-400 group-hover:text-white transition-transform duration-200" />
+            <CaretDown size={14} weight="bold" className="text-slate-400 group-hover:text-white transition-transform duration-200" />
           </button>
 
           {/* Profile Dropdown Menu */}
@@ -155,10 +155,10 @@ export default function CanvasHeader({
                           e.stopPropagation();
                           onDeleteProfile(p.id);
                         }}
-                        className="p-1 text-slate-400 hover:text-rose-400 hover:bg-white/10 rounded-lg transition-colors"
+                        className="w-6 h-6 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-white/15 transition-colors"
                         title="Delete profile"
                       >
-                        <Trash2 size={12} />
+                        <Trash size={13} weight="duotone" />
                       </button>
                     )}
                   </div>
@@ -188,7 +188,7 @@ export default function CanvasHeader({
                       onClick={() => setIsCreatingProfile(true)}
                       className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-semibold text-indigo-300 hover:bg-white/10 transition-colors cursor-pointer"
                     >
-                      <Plus size={14} />
+                      <Plus size={14} weight="duotone" />
                       <span>Create New Profile</span>
                     </button>
                   )}
@@ -201,11 +201,11 @@ export default function CanvasHeader({
                     className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer p-1"
                     title="Export profiles JSON"
                   >
-                    <Download size={12} /> Export
+                    <DownloadSimple size={13} weight="duotone" /> Export
                   </button>
 
                   <label className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer p-1">
-                    <Upload size={12} /> Import
+                    <UploadSimple size={13} weight="duotone" /> Import
                     <input type="file" accept=".json" onChange={handleImportFile} className="hidden" />
                   </label>
 
@@ -214,7 +214,7 @@ export default function CanvasHeader({
                     className="flex items-center gap-1 text-rose-400 hover:text-rose-300 transition-colors cursor-pointer p-1"
                     title="Reset to default profiles"
                   >
-                    <RotateCcw size={12} /> Reset
+                    <ArrowCounterClockwise size={13} weight="duotone" /> Reset
                   </button>
                 </div>
               </div>
@@ -237,11 +237,11 @@ export default function CanvasHeader({
             className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-white backdrop-blur-xl shadow-lg transition-all cursor-pointer text-xs font-bold"
             title="Choose Animated Weather Backdrop"
           >
-            <CloudSun size={15} className="text-amber-400" />
+            <CloudSun size={16} weight="duotone" className="text-amber-400" />
             <span className="capitalize hidden sm:inline">
               {weatherBackdrop.replace('-', ' ')}
             </span>
-            <ChevronDown size={13} className="text-slate-400" />
+            <CaretDown size={13} weight="bold" className="text-slate-400" />
           </button>
 
           {showWeatherMenu && (
@@ -267,7 +267,7 @@ export default function CanvasHeader({
                           : 'hover:bg-white/10 text-slate-300'
                       }`}
                     >
-                      <Icon size={14} className={isSelected ? 'text-white' : 'text-slate-400'} />
+                      <Icon size={16} weight="duotone" className={isSelected ? 'text-white' : 'text-slate-400'} />
                       <span>{opt.label}</span>
                     </button>
                   );
@@ -280,14 +280,14 @@ export default function CanvasHeader({
         {/* PIN Security Settings button */}
         <button
           onClick={() => onOpenPinModal(hasPinSet ? 'remove_pin' : 'set_pin')}
-          className={`p-2 rounded-2xl border transition-all cursor-pointer backdrop-blur-xl ${
+          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer backdrop-blur-xl ${
             hasPinSet
               ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
               : 'bg-white/10 border-white/15 text-slate-400 hover:text-white'
           }`}
           title={hasPinSet ? '4-Digit PIN Lock Enabled (Click to change/remove)' : 'Configure PIN Lock for Kiosk mode'}
         >
-          <ShieldCheck size={16} />
+          <ShieldCheck size={18} weight="duotone" />
         </button>
 
         {/* Edit Mode vs Kiosk Mode Toggle */}
@@ -299,7 +299,7 @@ export default function CanvasHeader({
               : 'bg-white/10 hover:bg-white/15 border-white/20 text-white'
           }`}
         >
-          {isEditMode ? <Unlock size={14} /> : <Lock size={14} />}
+          {isEditMode ? <LockOpen size={16} weight="duotone" /> : <Lock size={16} weight="duotone" />}
           <span>{isEditMode ? 'Editing Canvas' : 'Locked Kiosk'}</span>
         </button>
 
@@ -308,7 +308,7 @@ export default function CanvasHeader({
           onClick={onOpenCatalog}
           className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition-all cursor-pointer hover:scale-105"
         >
-          <Plus size={16} />
+          <Plus size={16} weight="bold" />
           <span>Add Card</span>
         </button>
       </div>

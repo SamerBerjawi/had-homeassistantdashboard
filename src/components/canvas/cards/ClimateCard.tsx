@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from 'react';
-import { Thermometer, Plus, Minus, Wind, Droplets } from 'lucide-react';
+import { Thermometer, Plus, Minus, Wind, Drop } from '@phosphor-icons/react';
 import { CardConfig } from '../../../types/canvas';
 import { HAEntity } from '../../../types';
 
@@ -41,10 +36,12 @@ export default function ClimateCard({
     <div className="w-full h-full flex flex-col justify-between">
       {/* Top row: Icon & Status Badge */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-10 h-10 rounded-2xl bg-sky-500/20 border border-sky-400/30 text-sky-400 flex items-center justify-center shadow-md shadow-sky-500/10">
-            <Thermometer size={20} />
-          </div>
+        <div className="flex items-center gap-3 min-w-0">
+          <Thermometer
+            size={24}
+            weight="duotone"
+            className="text-sky-400 shrink-0 drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]"
+          />
           <div className="min-w-0">
             <h4 className="text-sm font-bold text-white truncate">{title}</h4>
             <p className="text-[11px] text-sky-300 font-medium truncate">
@@ -54,8 +51,8 @@ export default function ClimateCard({
         </div>
 
         {/* Humidity Pill */}
-        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] text-slate-300">
-          <Droplets size={12} className="text-cyan-400" />
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 border border-white/15 text-[11px] text-slate-300 backdrop-blur-md">
+          <Drop size={13} weight="duotone" className="text-cyan-400" />
           <span>{humidity}%</span>
         </div>
       </div>
@@ -75,20 +72,20 @@ export default function ClimateCard({
         </div>
 
         {/* Quick Stepper Buttons */}
-        <div className="flex items-center gap-1 bg-black/30 p-1 rounded-2xl border border-white/10">
+        <div className="flex items-center gap-1.5 bg-black/30 p-1 rounded-2xl border border-white/10">
           <button
             onClick={(e) => handleAdjustTemp(-0.5, e)}
-            className="w-7 h-7 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
+            className="w-7 h-7 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
             title="Decrease Target"
           >
-            <Minus size={14} />
+            <Minus size={14} weight="duotone" />
           </button>
           <button
             onClick={(e) => handleAdjustTemp(0.5, e)}
             className="w-7 h-7 rounded-xl bg-sky-500 hover:bg-sky-400 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm shadow-sky-500/30"
             title="Increase Target"
           >
-            <Plus size={14} />
+            <Plus size={14} weight="bold" />
           </button>
         </div>
       </div>
@@ -96,7 +93,7 @@ export default function ClimateCard({
       {/* Bottom status bar */}
       <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-white/10">
         <span className="flex items-center gap-1 text-slate-300">
-          <Wind size={12} className="text-sky-400" /> Auto Fan
+          <Wind size={13} weight="duotone" className="text-sky-400" /> Auto Fan
         </span>
         <span className="font-semibold text-emerald-400">Optimal Temp</span>
       </div>

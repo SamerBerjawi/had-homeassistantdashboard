@@ -13,18 +13,19 @@ import {
   CloudSnow, 
   CloudFog, 
   Wind, 
-  Droplets, 
+  Drop, 
   Compass, 
-  RotateCw, 
+  ArrowClockwise, 
   MapPin, 
-  Search, 
-  ExternalLink, 
-  Sparkles, 
-  ChevronDown, 
-  ChevronUp,
+  MagnifyingGlass, 
+  ArrowSquareOut, 
+  Sparkle, 
+  CaretDown, 
+  CaretUp,
   ShieldCheck,
-  Thermometer
-} from 'lucide-react';
+  Thermometer,
+  X
+} from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { WeatherData } from '../types';
 import { DEFAULT_WEATHER_DATA } from '../data';
@@ -135,20 +136,20 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
   const getWeatherIcon = (code?: string, size = 20) => {
     switch (code) {
       case 'sunny':
-        return <Sun size={size} className="text-amber-400 fill-amber-400/20" />;
+        return <Sun size={size} weight="duotone" className="text-amber-400" />;
       case 'cloudy':
-        return <Cloud size={size} className="text-slate-400" />;
+        return <Cloud size={size} weight="duotone" className="text-slate-400" />;
       case 'rain':
-        return <CloudRain size={size} className="text-sky-400" />;
+        return <CloudRain size={size} weight="duotone" className="text-sky-400" />;
       case 'storm':
-        return <CloudLightning size={size} className="text-violet-400" />;
+        return <CloudLightning size={size} weight="duotone" className="text-violet-400" />;
       case 'snow':
-        return <CloudSnow size={size} className="text-cyan-200" />;
+        return <CloudSnow size={size} weight="duotone" className="text-cyan-200" />;
       case 'fog':
-        return <CloudFog size={size} className="text-slate-300" />;
+        return <CloudFog size={size} weight="duotone" className="text-slate-300" />;
       case 'partly-cloudy':
       default:
-        return <CloudSun size={size} className="text-amber-400" />;
+        return <CloudSun size={size} weight="duotone" className="text-amber-400" />;
     }
   };
 
@@ -171,12 +172,8 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
         <div className="p-2.5 sm:p-3 flex items-center justify-between gap-3">
           {/* Location & Icon Group */}
           <div className="flex items-center gap-2.5 min-w-0">
-            {/* Animated Condition Badge */}
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-xs ${
-              darkMode 
-                ? 'bg-indigo-950/60 border-indigo-500/30' 
-                : 'bg-indigo-50/90 border-indigo-100'
-            }`}>
+            {/* Standardized frosted square badge w-10 h-10, rounded-xl */}
+            <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0 shadow-xs backdrop-blur-md">
               {getWeatherIcon(weather.conditionCode, 22)}
             </div>
 
@@ -191,9 +188,9 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                   }`}
                   title="Click to change location"
                 >
-                  <MapPin size={13} className="text-[#7B61FF] shrink-0" />
+                  <MapPin size={14} weight="duotone" className="text-[#7B61FF] shrink-0" />
                   <span className="truncate">{weather.location || selectedCity}</span>
-                  <ChevronDown size={12} className="text-slate-400 shrink-0" />
+                  <CaretDown size={12} weight="bold" className="text-slate-400 shrink-0" />
                 </button>
               </div>
 
@@ -239,11 +236,11 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
               onClick={() => fetchWeather(selectedCity)}
               disabled={loading}
               title="Refresh weather with Google Search Grounding"
-              className={`p-2 rounded-xl transition-all cursor-pointer ${
-                loading ? 'animate-spin text-[#7B61FF]' : darkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+              className={`w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center transition-all cursor-pointer ${
+                loading ? 'animate-spin text-[#7B61FF]' : darkMode ? 'text-slate-400 hover:text-white hover:bg-white/15' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              <RotateCw size={14} />
+              <ArrowClockwise size={16} weight="duotone" />
             </button>
 
             {/* Expand / Collapse Details */}
@@ -252,15 +249,15 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
               title={isExpanded ? "Collapse forecast" : "Expand detailed weather & grounding sources"}
-              className={`p-2 rounded-xl border transition-all cursor-pointer ${
+              className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
                 isExpanded 
-                  ? 'bg-[#7B61FF] text-white border-[#7B61FF] shadow-xs' 
+                  ? 'bg-[#7B61FF] text-white border-white/20 shadow-xs' 
                   : darkMode 
-                    ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700' 
-                    : 'bg-slate-100/90 border-slate-200 text-slate-700 hover:bg-slate-200'
+                    ? 'bg-white/10 border-white/15 text-slate-300 hover:bg-white/15' 
+                    : 'bg-white/70 border-slate-200 text-slate-700 hover:bg-white'
               }`}
             >
-              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {isExpanded ? <CaretUp size={16} weight="bold" /> : <CaretDown size={16} weight="bold" />}
             </button>
           </div>
         </div>
@@ -282,7 +279,7 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                 <div className={`p-2.5 rounded-xl border text-[11px] leading-relaxed flex items-start gap-2 ${
                   darkMode ? 'bg-indigo-950/40 border-indigo-500/30 text-indigo-200' : 'bg-indigo-50/70 border-indigo-100 text-indigo-900'
                 }`}>
-                  <Sparkles size={14} className="text-[#7B61FF] shrink-0 mt-0.5" />
+                  <Sparkle size={15} weight="duotone" className="text-[#7B61FF] shrink-0 mt-0.5" />
                   <p>{weather.summary}</p>
                 </div>
               )}
@@ -292,7 +289,9 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                 <div className={`p-2 rounded-xl border flex items-center gap-2 ${
                   darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50 border-slate-100'
                 }`}>
-                  <Droplets size={14} className="text-sky-400" />
+                  <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
+                    <Drop size={16} weight="duotone" className="text-sky-400" />
+                  </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-slate-400">Humidity</p>
                     <p className="font-extrabold font-mono text-xs">{weather.humidity}%</p>
@@ -302,7 +301,9 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                 <div className={`p-2 rounded-xl border flex items-center gap-2 ${
                   darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50 border-slate-100'
                 }`}>
-                  <Wind size={14} className="text-teal-400" />
+                  <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
+                    <Wind size={16} weight="duotone" className="text-teal-400" />
+                  </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-slate-400">Wind</p>
                     <p className="font-extrabold font-mono text-xs">
@@ -314,7 +315,9 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                 <div className={`p-2 rounded-xl border flex items-center gap-2 ${
                   darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50 border-slate-100'
                 }`}>
-                  <Sun size={14} className="text-amber-400" />
+                  <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
+                    <Sun size={16} weight="duotone" className="text-amber-400" />
+                  </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-slate-400">UV Index</p>
                     <p className="font-extrabold font-mono text-xs">{weather.uvIndex} of 11</p>
@@ -324,7 +327,9 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                 <div className={`p-2 rounded-xl border flex items-center gap-2 ${
                   darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50 border-slate-100'
                 }`}>
-                  <ShieldCheck size={14} className="text-emerald-400" />
+                  <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
+                    <ShieldCheck size={16} weight="duotone" className="text-emerald-400" />
+                  </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-slate-400">Air Quality</p>
                     <p className="font-extrabold font-mono text-xs">
@@ -387,7 +392,7 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                         }`}
                       >
                         <span className="truncate max-w-[140px]">{src.title}</span>
-                        <ExternalLink size={9} className="shrink-0" />
+                        <ArrowSquareOut size={11} weight="duotone" className="shrink-0" />
                       </a>
                     ))}
                   </div>
@@ -417,9 +422,9 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
               <button 
                 type="button"
                 onClick={() => setShowCityPicker(false)}
-                className="text-slate-400 hover:text-slate-200 text-xs p-1"
+                className="w-6 h-6 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center text-slate-400 hover:text-white cursor-pointer"
               >
-                ✕
+                <X size={12} weight="bold" />
               </button>
             </div>
 
@@ -436,7 +441,7 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                     : 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700'
               }`}
             >
-              <Compass size={14} className={geoLocating ? 'animate-spin' : ''} />
+              <Compass size={16} weight="duotone" className={geoLocating ? 'animate-spin' : ''} />
               <span>{geoLocating ? 'Detecting GPS Coordinates...' : 'Use Current Device Location'}</span>
             </button>
 
@@ -460,7 +465,7 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                       : 'bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400'
                   }`}
                 />
-                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <MagnifyingGlass size={15} weight="duotone" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
             </form>
 

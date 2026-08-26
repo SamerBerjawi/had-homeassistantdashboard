@@ -163,16 +163,16 @@ export default function App() {
   return (
     <div className={`w-full h-screen min-h-screen font-sans flex flex-col md:flex-row relative overflow-hidden select-none transition-colors duration-500 ${
       darkMode 
-        ? 'bg-[#0B1124] text-slate-100 dark-mesh-bg' 
-        : 'bg-[#F8FAFC] text-slate-800 light-mesh-bg'
+        ? 'bg-linear-to-b from-[#050811] via-[#080D1A] to-[#0B0F19] text-white' 
+        : 'bg-[#F8FAFC] text-slate-900 light-mesh-bg'
     }`}>
       {/* Background ambient lighting glows */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className={`absolute -top-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-30 transition-all duration-1000 ${
-          darkMode ? 'bg-indigo-600/30' : 'bg-indigo-300/40'
+        <div className={`absolute -top-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-25 transition-all duration-1000 ${
+          darkMode ? 'bg-sky-500/20' : 'bg-indigo-300/40'
         }`} />
         <div className={`absolute top-1/2 -right-40 w-96 h-96 rounded-full blur-3xl opacity-20 transition-all duration-1000 ${
-          darkMode ? 'bg-blue-600/20' : 'bg-sky-200/50'
+          darkMode ? 'bg-indigo-600/20' : 'bg-sky-200/50'
         }`} />
       </div>
 

@@ -1,5 +1,5 @@
 import { type ComponentPropsWithoutRef, type ReactNode } from "react"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
 
@@ -58,9 +58,11 @@ const BentoCard = ({
     ) : (
       <>
         <div className="p-5 sm:p-6">
-          <div className="pointer-events-none z-10 flex transform-gpu flex-col gap-1 transition-all duration-300">
+          <div className="pointer-events-none z-10 flex transform-gpu flex-col gap-2 transition-all duration-300">
             {Icon && (
-              <Icon className="h-10 w-10 origin-left transform-gpu text-neutral-700 dark:text-neutral-300 transition-all duration-300 ease-in-out group-hover:scale-110" />
+              <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-[#7B61FF] dark:text-[#9D8BFF] backdrop-blur-md transition-all duration-300 ease-in-out group-hover:scale-110">
+                <Icon size={22} weight="duotone" />
+              </div>
             )}
             {name && (
               <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-200">
@@ -74,7 +76,7 @@ const BentoCard = ({
         {cta && (
           <div className="pointer-events-auto p-5 sm:p-6 pt-0 flex items-center text-xs font-bold text-[#7B61FF]">
             <span>{cta}</span>
-            <ArrowRight className="ms-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+            <ArrowRight size={14} weight="duotone" className="ms-1.5 transition-transform group-hover:translate-x-1" />
           </div>
         )}
       </>

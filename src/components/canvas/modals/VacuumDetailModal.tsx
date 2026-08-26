@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
-import { Bot, Play, Pause, Home, Battery, Sparkles, MapPin, Gauge, AlertCircle } from 'lucide-react';
+import { Robot, Play, Pause, House, BatteryCharging, Sparkle, MapPin, Gauge, WarningCircle } from '@phosphor-icons/react';
 import { HAEntity } from '../../../types';
 import CardModalContainer from './CardModalContainer';
 
@@ -54,18 +49,18 @@ export default function VacuumDetailModal({
       onClose={onClose}
       title={entity.attributes?.friendly_name || 'Roborock S10 Vacuum'}
       subtitle="LiDAR Navigation & Auto-Empty Dock"
-      icon={<Bot size={22} className="text-indigo-400" />}
+      icon={<Robot size={22} weight="duotone" className="text-indigo-400" />}
       maxWidth="max-w-xl"
     >
       <div className="space-y-6">
         {/* Status Card */}
         <div className="p-5 rounded-3xl bg-black/40 border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${
-              isCleaning ? 'bg-indigo-600 text-white shadow-indigo-600/30' : 'bg-white/10 text-slate-400'
-            }`}>
-              <Bot size={28} className={isCleaning ? 'animate-pulse' : ''} />
-            </div>
+            <Robot
+              size={40}
+              weight="duotone"
+              className={`shrink-0 ${isCleaning ? 'text-indigo-400 animate-pulse drop-shadow-[0_0_12px_rgba(99,102,241,0.5)]' : 'text-slate-400'}`}
+            />
             <div>
               <h4 className="text-base font-extrabold text-white">
                 {isCleaning ? 'Vacuuming Active Zone' : 'Docked at Charging Base'}
@@ -89,10 +84,10 @@ export default function VacuumDetailModal({
             </button>
             <button
               onClick={handleReturnDock}
-              className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-all cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
               title="Return to Base"
             >
-              <Home size={16} />
+              <House size={16} weight="duotone" />
             </button>
           </div>
         </div>
@@ -100,7 +95,7 @@ export default function VacuumDetailModal({
         {/* Suction Power Mode */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
-            <Gauge size={14} className="text-sky-400" /> Suction Power Profile
+            <Gauge size={15} weight="duotone" className="text-sky-400" /> Suction Power Profile
           </div>
           <div className="grid grid-cols-5 gap-2">
             {SUCTION_MODES.map((mode) => (
@@ -125,7 +120,7 @@ export default function VacuumDetailModal({
         {/* Zone Cleaning Selection */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
-            <MapPin size={14} className="text-indigo-400" /> Select Rooms to Clean
+            <MapPin size={15} weight="duotone" className="text-indigo-400" /> Select Rooms to Clean
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {ROOM_ZONES.map((room) => {

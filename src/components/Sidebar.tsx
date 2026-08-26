@@ -1,20 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard,
-  Sofa,
-  Zap, 
+  SquaresFour,
+  Armchair,
+  Lightning, 
   ShieldCheck, 
-  Music, 
-  Server, 
-  Network,
+  MusicNotes, 
+  HardDrives, 
+  ShareNetwork,
   Car,
-  Activity,
-  Workflow, 
-  Settings,
-  Sparkles, 
+  Heartbeat,
+  GitFork, 
+  GearSix,
+  Sparkle, 
   X, 
-  MoreVertical
-} from 'lucide-react';
+  DotsThreeVertical,
+  SidebarSimple,
+  CaretLeft,
+  CaretRight
+} from '@phosphor-icons/react';
 import { AnimatedThemeToggler } from './ui/animated-theme-toggler';
 
 interface SidebarProps {
@@ -30,21 +33,33 @@ export default function Sidebar({
   darkMode,
   toggleDarkMode
 }: SidebarProps) {
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebar_collapsed');
+      return saved === 'true';
+    }
+    return false;
+  });
+
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
+  }, [isCollapsed]);
 
   // Exact 11 Requested Navigation Items
   const menuItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'rooms', label: 'Rooms', icon: Sofa },
-    { id: 'energy', label: 'Energy', icon: Zap },
+    { id: 'overview', label: 'Overview', icon: SquaresFour },
+    { id: 'rooms', label: 'Rooms', icon: Armchair },
+    { id: 'energy', label: 'Energy', icon: Lightning },
     { id: 'security', label: 'Security', icon: ShieldCheck },
-    { id: 'media', label: 'Media', icon: Music },
-    { id: 'system', label: 'System', icon: Server },
-    { id: 'network', label: 'Network', icon: Network },
+    { id: 'media', label: 'Media', icon: MusicNotes },
+    { id: 'system', label: 'System', icon: HardDrives },
+    { id: 'network', label: 'Network', icon: ShareNetwork },
     { id: 'mobility', label: 'Mobility', icon: Car },
-    { id: 'health', label: 'Health', icon: Activity },
-    { id: 'automations', label: 'Automations', icon: Workflow },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'health', label: 'Health', icon: Heartbeat },
+    { id: 'automations', label: 'Automations', icon: GitFork },
+    { id: 'settings', label: 'Settings', icon: GearSix }
   ];
 
   // Mobile Primary Items (Overview, Rooms, Security, Energy) - 5th item is "More"
@@ -56,26 +71,50 @@ export default function Sidebar({
 
   return (
     <>
-      {/* DESKTOP SIDEBAR - Left side vertical navbar */}
+      {/* DESKTOP SIDEBAR - Collapsible Left Vertical Navbar */}
       <nav 
         id="sidebar-desktop" 
-        className={`hidden md:flex flex-col items-center w-20 lg:w-24 h-screen py-6 transition-all duration-300 shrink-0 sticky top-0 left-0 bottom-0 z-40 border-r ${
+        className={`hidden md:flex flex-col h-screen py-5 px-3 transition-all duration-300 shrink-0 sticky top-0 left-0 bottom-0 z-40 border-r ${
+          isCollapsed ? 'w-20 items-center' : 'w-64'
+        } ${
           darkMode 
-            ? 'glassmorphic-sidebar-dark border-white/[0.1]' 
-            : 'glassmorphic-sidebar border-black/[0.06] bg-white/70 backdrop-blur-xl'
+            ? 'bg-slate-950/40 backdrop-blur-md backdrop-saturate-150 border-white/10 text-white' 
+            : 'bg-white/80 backdrop-blur-md backdrop-saturate-150 border-black/[0.08] text-slate-800'
         }`}
       >
-        {/* Rounded Premium Homz Logo */}
-        <div 
-          onClick={() => setActiveTab('overview')}
-          className="flex w-11 h-11 bg-indigo-600 hover:bg-indigo-500 rounded-xl items-center justify-center mb-6 shadow-md shadow-indigo-600/30 transition-all cursor-pointer group"
-          title="Homz Dashboard"
-        >
-          <Sparkles className="text-white group-hover:scale-110 transition-transform" size={20} />
+        {/* Header Branding & Collapse Toggle */}
+        <div className={`flex items-center mb-6 px-1 ${isCollapsed ? 'justify-center w-full' : 'justify-between w-full'}`}>
+          <div 
+            onClick={() => setActiveTab('overview')}
+            className="flex items-center gap-3 cursor-pointer group"
+            title="Homz Dashboard"
+          >
+            <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm flex items-center justify-center text-sky-400 shadow-md transition-all shrink-0 group-hover:scale-105">
+              <Sparkle size={22} weight="duotone" className="group-hover:rotate-12 transition-transform" />
+            </div>
+            {!isCollapsed && (
+              <div className="min-w-0">
+                <h2 className="text-sm font-black tracking-tight text-white leading-none">HOMZ</h2>
+                <p className="text-[10px] text-sky-400 font-semibold tracking-wider uppercase mt-0.5">Automated Living</p>
+              </div>
+            )}
+          </div>
+
+          {/* Collapse Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer text-slate-400 hover:text-white hover:bg-white/[0.05] ${
+              isCollapsed ? 'hidden' : 'block'
+            }`}
+            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            <CaretLeft size={16} weight="bold" />
+          </button>
         </div>
         
-        {/* Navigation Items */}
-        <div className="flex flex-col items-center justify-center w-full gap-2.5 overflow-y-auto touch-scroll-container py-1 px-1">
+        {/* Navigation Items List */}
+        <div className="flex flex-col w-full gap-1.5 overflow-y-auto touch-scroll-container py-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -84,44 +123,87 @@ export default function Sidebar({
                 key={item.id}
                 id={`btn-nav-desktop-${item.id}`}
                 onClick={() => setActiveTab(item.id)}
-                title={item.label}
-                className={`p-3 min-w-[44px] min-h-[44px] rounded-xl relative transition-all group duration-300 cursor-pointer flex items-center justify-center ${
+                title={isCollapsed ? item.label : undefined}
+                className={`relative transition-all duration-200 cursor-pointer flex items-center gap-3.5 rounded-xl group ${
+                  isCollapsed
+                    ? 'w-11 h-11 justify-center mx-auto'
+                    : 'w-full px-3.5 py-2.5 text-left'
+                } ${
                   isActive 
-                    ? 'bg-[#7B61FF] text-white shadow-lg shadow-[#7B61FF]/40 scale-105' 
-                    : darkMode
-                      ? 'text-slate-400 hover:text-slate-100 hover:bg-white/10'
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-black/5'
+                    ? 'bg-gradient-to-r from-sky-500/15 to-indigo-500/10 text-white font-medium border border-sky-400/20 shadow-[0_0_15px_-3px_rgba(56,189,248,0.2)]' 
+                    : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
                 }`}
               >
-                <Icon size={20} className="transition-transform duration-300 group-hover:scale-110" />
-                
-                {/* Visual Glow indicator */}
-                {isActive && (
-                  <span className="absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-[#7B61FF] rounded-r-full shadow-xs shadow-[#7B61FF]" />
+                <Icon 
+                  size={20} 
+                  weight="duotone" 
+                  className={`shrink-0 transition-transform duration-200 ${
+                    isActive ? 'text-sky-400' : 'text-slate-400 group-hover:text-white'
+                  }`} 
+                />
+
+                {!isCollapsed && (
+                  <span className="text-xs font-semibold truncate tracking-tight">{item.label}</span>
                 )}
                 
-                {/* Hover Tooltip Label */}
-                <span className="absolute left-full ml-4 px-2.5 py-1 text-[10px] bg-slate-900 text-white font-semibold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-xl border border-slate-700/50 whitespace-nowrap transform translate-x-1 group-hover:translate-x-0 duration-200">
-                  {item.label}
-                </span>
+                {/* Active Indicator Bar */}
+                {isActive && !isCollapsed && (
+                  <span className="ml-auto w-1.5 h-3.5 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+                )}
+                
+                {/* Hover Tooltip Label (Only when collapsed) */}
+                {isCollapsed && (
+                  <span className="absolute left-full ml-3 px-2.5 py-1 text-[11px] bg-slate-900/95 backdrop-blur-md text-white font-semibold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-xl border border-white/10 whitespace-nowrap">
+                    {item.label}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Bottom Container: Dark Mode Toggle */}
-        <div className="mt-auto pt-4 flex flex-col gap-3 items-center">
-          <AnimatedThemeToggler 
-            id="btn-toggle-darkmode-desktop"
-            theme={darkMode ? "dark" : "light"}
-            onThemeChange={(newTheme) => toggleDarkMode(newTheme === "dark")}
-            title={darkMode ? "Switch to Light Theme" : "Switch to Dark Theme"}
-            className={`p-3 min-w-[44px] min-h-[44px] rounded-xl relative transition-all duration-300 cursor-pointer border flex items-center justify-center ${
-              darkMode 
-                ? 'bg-slate-800/80 border-white/[0.1] text-amber-400 hover:bg-slate-700/80 shadow-md' 
-                : 'text-slate-700 hover:text-slate-900 bg-white/70 hover:bg-white border-black/[0.06] shadow-xs'
-            }`}
-          />
+        {/* Pinned Footer Section: Telemetry & Theme Toggler & Collapse Re-open */}
+        <div className="mt-auto pt-4 border-t border-white/10 w-full flex flex-col gap-2.5">
+          {/* Telemetry Status Bar */}
+          {!isCollapsed ? (
+            <div className="px-2 py-2 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                <span className="text-[11px] font-semibold text-slate-300">HA Core Live</span>
+              </div>
+              <span className="text-[10px] font-mono text-slate-400">v2026.8</span>
+            </div>
+          ) : (
+            <div className="flex justify-center" title="Home Assistant Online">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+            </div>
+          )}
+
+          {/* Theme Toggler */}
+          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between px-1'}`}>
+            {!isCollapsed && (
+              <span className="text-xs text-slate-400 font-medium">Appearance</span>
+            )}
+            <AnimatedThemeToggler 
+              id="btn-toggle-darkmode-desktop"
+              theme={darkMode ? "dark" : "light"}
+              onThemeChange={(newTheme) => toggleDarkMode(newTheme === "dark")}
+              title={darkMode ? "Switch to Light Theme" : "Switch to Dark Theme"}
+              className="w-9 h-9 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05]"
+            />
+          </div>
+
+          {/* Expand Button at bottom if collapsed */}
+          {isCollapsed && (
+            <button
+              type="button"
+              onClick={() => setIsCollapsed(false)}
+              className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer text-slate-400 hover:text-white hover:bg-white/[0.05] mx-auto"
+              title="Expand Sidebar"
+            >
+              <CaretRight size={16} weight="bold" />
+            </button>
+          )}
         </div>
       </nav>
 
@@ -143,15 +225,15 @@ export default function Sidebar({
               id={`btn-nav-mobile-${item.id}`}
               onClick={() => setActiveTab(item.id)}
               title={item.label}
-              className={`p-2.5 sm:p-3 rounded-2xl relative transition-all duration-200 cursor-pointer flex flex-col items-center gap-0.5 ${
+              className={`w-11 h-11 rounded-2xl relative transition-all duration-200 cursor-pointer flex items-center justify-center ${
                 isActive 
                   ? 'bg-[#7B61FF] text-white shadow-md shadow-[#7B61FF]/30 scale-105' 
                   : darkMode
-                    ? 'text-slate-400 hover:text-slate-200'
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'text-slate-400 hover:text-white'
+                    : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Icon size={19} />
+              <Icon size={22} weight="duotone" />
             </button>
           );
         })}
@@ -161,17 +243,17 @@ export default function Sidebar({
           id="btn-nav-mobile-more"
           onClick={() => setShowMoreMenu(!showMoreMenu)}
           title="More views and options"
-          className={`p-2.5 sm:p-3 rounded-2xl relative transition-all duration-200 cursor-pointer flex flex-col items-center gap-0.5 ${
+          className={`w-11 h-11 rounded-2xl relative transition-all duration-200 cursor-pointer flex items-center justify-center ${
             isMoreTabActive || showMoreMenu
               ? 'bg-[#7B61FF] text-white shadow-md shadow-[#7B61FF]/30 scale-105' 
               : darkMode 
-                ? 'text-slate-400 hover:text-slate-200' 
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'text-slate-400 hover:text-white' 
+                : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <MoreVertical size={19} />
+          <DotsThreeVertical size={22} weight="duotone" />
           {isMoreTabActive && !showMoreMenu && (
-            <span className="absolute bottom-1 w-1 h-1 bg-white rounded-full"></span>
+            <span className="absolute bottom-1.5 w-1.5 h-1.5 bg-white rounded-full"></span>
           )}
         </button>
 
@@ -195,20 +277,16 @@ export default function Sidebar({
               {/* Sheet Header */}
               <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/40 dark:border-slate-800">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-xl bg-indigo-600/20 text-indigo-500 flex items-center justify-center">
-                    <MoreVertical size={16} />
-                  </div>
+                  <DotsThreeVertical size={20} weight="duotone" className="text-indigo-400" />
                   <div>
                     <h3 className="font-extrabold text-sm tracking-tight leading-none">Navigation Hub</h3>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowMoreMenu(false)}
-                  className={`p-1.5 rounded-full hover:bg-slate-500/10 cursor-pointer ${
-                    darkMode ? 'text-slate-400' : 'text-slate-500'
-                  }`}
+                  className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
                 >
-                  <X size={16} />
+                  <X size={16} weight="duotone" />
                 </button>
               </div>
 
@@ -225,15 +303,19 @@ export default function Sidebar({
                         setActiveTab(item.id);
                         setShowMoreMenu(false);
                       }}
-                      className={`p-3 rounded-2xl flex items-center gap-2.5 text-left transition-all border cursor-pointer ${
+                      className={`p-3 rounded-2xl flex items-center gap-3 text-left transition-all border cursor-pointer ${
                         isActive
-                          ? 'bg-[#7B61FF] text-white border-[#7B61FF] shadow-sm'
+                          ? 'bg-[#7B61FF] text-white border-[#7B61FF] shadow-sm font-bold'
                           : darkMode
                             ? 'bg-slate-900/60 border-slate-800 hover:bg-slate-800/80 text-slate-200'
                             : 'bg-slate-50 border-slate-200/70 hover:bg-indigo-50/50 text-slate-700'
                       }`}
                     >
-                      <ItemIcon size={17} className={isActive ? 'text-white' : 'text-indigo-400'} />
+                      <ItemIcon 
+                        size={20} 
+                        weight="duotone" 
+                        className={isActive ? 'text-white' : 'text-indigo-400'} 
+                      />
                       <div className="min-w-0">
                         <div className="text-xs font-bold truncate">{item.label}</div>
                       </div>
@@ -262,3 +344,5 @@ export default function Sidebar({
     </>
   );
 }
+
+

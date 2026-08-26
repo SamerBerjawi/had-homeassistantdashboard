@@ -7,22 +7,18 @@ import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, 
-  ShieldAlert, 
+  ShieldWarning, 
   Lock, 
-  Unlock, 
-  Bot, 
-  Sparkles, 
-  CheckCircle2, 
-  AlertTriangle, 
+  LockOpen, 
+  Robot, 
+  Sparkle, 
+  CheckCircle, 
+  Warning, 
   Info, 
   Sun, 
   Thermometer, 
-  X, 
-  Camera, 
-  Bell, 
-  Zap,
-  Sliders
-} from 'lucide-react';
+  X
+} from '@phosphor-icons/react';
 import { ToastNotification } from '../types';
 
 interface NotificationToastProps {
@@ -71,83 +67,70 @@ function ToastItem({ toast, onDismiss, darkMode }: ToastItemProps) {
     return () => clearTimeout(timer);
   }, [toast.id, duration, onDismiss]);
 
-  // Determine icon, accent color, and badge based on type or content
+  // Determine icon, accent color, and progress based on type or content
   const getIconAndStyle = () => {
     switch (toast.type) {
       case 'lock': {
         const isLocked = toast.title.toLowerCase().includes('locked');
         return {
-          icon: isLocked ? Lock : Unlock,
+          icon: isLocked ? Lock : LockOpen,
           iconColor: isLocked ? 'text-emerald-400' : 'text-amber-400',
-          badgeBg: isLocked 
-            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
-            : 'bg-amber-500/15 border-amber-500/30 text-amber-400',
           progressColor: isLocked ? 'bg-emerald-500' : 'bg-amber-500'
         };
       }
       case 'vacuum':
         return {
-          icon: Bot,
-          iconColor: 'text-[#9D8BFF]',
-          badgeBg: 'bg-[#7B61FF]/15 border-[#7B61FF]/30 text-[#9D8BFF]',
+          icon: Robot,
+          iconColor: 'text-[#7B61FF]',
           progressColor: 'bg-[#7B61FF]'
         };
       case 'scene':
         return {
-          icon: Sparkles,
+          icon: Sparkle,
           iconColor: 'text-purple-400',
-          badgeBg: 'bg-purple-500/15 border-purple-500/30 text-purple-400',
           progressColor: 'bg-purple-500'
         };
       case 'light':
         return {
           icon: Sun,
           iconColor: 'text-amber-400',
-          badgeBg: 'bg-amber-500/15 border-amber-500/30 text-amber-400',
           progressColor: 'bg-amber-500'
         };
       case 'climate':
         return {
           icon: Thermometer,
           iconColor: 'text-cyan-400',
-          badgeBg: 'bg-cyan-500/15 border-cyan-500/30 text-cyan-400',
           progressColor: 'bg-cyan-500'
         };
       case 'security':
         return {
-          icon: ShieldAlert,
+          icon: ShieldWarning,
           iconColor: 'text-rose-400',
-          badgeBg: 'bg-rose-500/15 border-rose-500/30 text-rose-400',
           progressColor: 'bg-rose-500'
         };
       case 'warning':
         return {
-          icon: AlertTriangle,
+          icon: Warning,
           iconColor: 'text-amber-400',
-          badgeBg: 'bg-amber-500/15 border-amber-500/30 text-amber-400',
           progressColor: 'bg-amber-500'
         };
       case 'success':
         return {
-          icon: CheckCircle2,
+          icon: CheckCircle,
           iconColor: 'text-emerald-400',
-          badgeBg: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400',
           progressColor: 'bg-emerald-500'
         };
       case 'info':
       default:
         return {
           icon: Info,
-          iconColor: darkMode ? 'text-[#9D8BFF]' : 'text-indigo-600',
-          badgeBg: darkMode 
-            ? 'bg-indigo-500/15 border-indigo-500/30 text-[#9D8BFF]' 
-            : 'bg-indigo-50 border-indigo-100 text-indigo-700',
+          iconColor: 'text-[#7B61FF]',
           progressColor: 'bg-[#7B61FF]'
         };
     }
   };
 
-  const { icon: Icon, iconColor, badgeBg, progressColor } = getIconAndStyle();
+  const { icon: Icon, iconColor, progressColor } = getIconAndStyle();
 
   return (
     <motion.div
@@ -163,10 +146,12 @@ function ToastItem({ toast, onDismiss, darkMode }: ToastItemProps) {
       }`}
     >
       <div className="flex items-start gap-3">
-        {/* Type Icon container */}
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${badgeBg}`}>
-          <Icon size={18} className={iconColor} />
-        </div>
+        {/* Direct Icon Rendering */}
+        <Icon 
+          size={24} 
+          weight="duotone" 
+          className={`${iconColor} shrink-0 mt-0.5`}
+        />
 
         {/* Text Content */}
         <div className="min-w-0 flex-1 pt-0.5">
@@ -206,14 +191,14 @@ function ToastItem({ toast, onDismiss, darkMode }: ToastItemProps) {
         <button
           id={`btn-close-toast-${toast.id}`}
           onClick={() => onDismiss(toast.id)}
-          className={`p-1 rounded-lg transition-colors cursor-pointer shrink-0 ${
+          className={`w-7 h-7 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
             darkMode 
-              ? 'text-slate-400 hover:text-white hover:bg-white/10' 
+              ? 'text-slate-400 hover:text-white hover:bg-white/15' 
               : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
           }`}
           aria-label="Dismiss notification"
         >
-          <X size={14} />
+          <X size={14} weight="duotone" />
         </button>
       </div>
 

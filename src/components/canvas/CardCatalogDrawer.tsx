@@ -8,21 +8,21 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, 
   X, 
-  Search, 
+  MagnifyingGlass, 
   Lightbulb, 
   Thermometer, 
-  Zap, 
+  Lightning, 
   Car, 
   CloudSun, 
-  Music, 
-  Bot, 
+  MusicNotes, 
+  Robot, 
   Camera, 
-  Activity, 
+  Heartbeat, 
   Power, 
   Lock, 
-  LayoutGrid,
+  SquaresFour,
   Check
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { CardConfig, DashboardLayoutItem } from '../../types/canvas';
 import { HAEntity } from '../../types';
 
@@ -34,16 +34,16 @@ interface CardCatalogDrawerProps {
 }
 
 const CATEGORIES = [
-  { id: 'all', label: 'All Cards', icon: LayoutGrid },
+  { id: 'all', label: 'All Cards', icon: SquaresFour },
   { id: 'light', label: 'Lighting', icon: Lightbulb },
   { id: 'climate', label: 'Climate', icon: Thermometer },
-  { id: 'nordpool', label: 'Nordpool / Energy', icon: Zap },
+  { id: 'nordpool', label: 'Nordpool / Energy', icon: Lightning },
   { id: 'ev_charging', label: 'EV Charging', icon: Car },
   { id: 'weather', label: 'Weather', icon: CloudSun },
-  { id: 'media_player', label: 'Media & Sonos', icon: Music },
-  { id: 'vacuum', label: 'Vacuums', icon: Bot },
+  { id: 'media_player', label: 'Media & Sonos', icon: MusicNotes },
+  { id: 'vacuum', label: 'Vacuums', icon: Robot },
   { id: 'camera', label: 'Cameras', icon: Camera },
-  { id: 'sensor', label: 'Sensors', icon: Activity },
+  { id: 'sensor', label: 'Sensors', icon: Heartbeat },
   { id: 'switch', label: 'Switches', icon: Power },
   { id: 'lock', label: 'Security', icon: Lock }
 ];
@@ -238,10 +238,8 @@ export default function CardCatalogDrawer({
           >
             {/* Drawer Header */}
             <div className="flex items-center justify-between p-5 border-b border-white/10">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-600/30 text-indigo-400 border border-indigo-500/40 flex items-center justify-center">
-                  <Plus size={22} />
-                </div>
+              <div className="flex items-center gap-3">
+                <Plus size={22} weight="bold" className="text-indigo-400 shrink-0" />
                 <div>
                   <h3 className="text-base font-extrabold text-white">Add Card to Canvas</h3>
                   <p className="text-xs text-slate-400">Select card template & connect Home Assistant entity</p>
@@ -250,16 +248,16 @@ export default function CardCatalogDrawer({
 
               <button
                 onClick={onClose}
-                className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
               >
-                <X size={18} />
+                <X size={18} weight="duotone" />
               </button>
             </div>
 
             {/* Search and Category Filters */}
             <div className="p-4 border-b border-white/10 space-y-3">
               <div className="relative">
-                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <MagnifyingGlass size={16} weight="duotone" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   placeholder="Search card templates or entities..."
@@ -278,13 +276,13 @@ export default function CardCatalogDrawer({
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border ${
                         isSelected
-                          ? 'bg-indigo-600 text-white shadow-md'
-                          : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                          ? 'bg-indigo-600 text-white border-indigo-400 shadow-md'
+                          : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
                       }`}
                     >
-                      <Icon size={13} />
+                      <Icon size={14} weight="duotone" />
                       <span>{cat.label}</span>
                     </button>
                   );
@@ -312,7 +310,7 @@ export default function CardCatalogDrawer({
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-xs text-white">{template.defaultTitle}</span>
-                          {isSelected && <Check size={14} className="text-indigo-400" />}
+                          {isSelected && <Check size={14} weight="bold" className="text-indigo-400" />}
                         </div>
                         <p className="text-[11px] text-slate-400 leading-tight">{template.description}</p>
                       </button>

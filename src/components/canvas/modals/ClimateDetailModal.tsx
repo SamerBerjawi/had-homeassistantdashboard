@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
-import { Thermometer, Plus, Minus, Wind, Droplets, Power, Flame, Snowflake, Sparkles, Fan } from 'lucide-react';
+import { Thermometer, Plus, Minus, Wind, Drop, Power, Flame, Snowflake, Sparkle, Fan } from '@phosphor-icons/react';
 import { HAEntity } from '../../../types';
 import CardModalContainer from './CardModalContainer';
 
@@ -18,7 +13,7 @@ interface ClimateDetailModalProps {
 const MODES = [
   { id: 'cool', label: 'Cooling', icon: Snowflake, color: 'text-cyan-400 bg-cyan-500/20 border-cyan-500/30' },
   { id: 'heat', label: 'Heating', icon: Flame, color: 'text-amber-400 bg-amber-500/20 border-amber-500/30' },
-  { id: 'eco', label: 'Eco Save', icon: Sparkles, color: 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30' },
+  { id: 'eco', label: 'Eco Save', icon: Sparkle, color: 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30' },
   { id: 'off', label: 'Off', icon: Power, color: 'text-slate-400 bg-white/5 border-white/10' }
 ];
 
@@ -71,7 +66,7 @@ export default function ClimateDetailModal({
       onClose={onClose}
       title={entity.attributes?.friendly_name || 'Thermostat Zone'}
       subtitle={entity.entity_id}
-      icon={<Thermometer size={22} className="text-sky-400" />}
+      icon={<Thermometer size={22} weight="duotone" className="text-sky-400" />}
     >
       <div className="space-y-6">
         {/* Central Circular Temperature Display with Steppers */}
@@ -83,7 +78,7 @@ export default function ClimateDetailModal({
               className="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border border-white/10"
               title="Decrease Temp"
             >
-              <Minus size={20} />
+              <Minus size={20} weight="duotone" />
             </button>
 
             {/* Big Temperature Gauge */}
@@ -102,18 +97,18 @@ export default function ClimateDetailModal({
               className="w-12 h-12 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-md shadow-sky-500/30"
               title="Increase Temp"
             >
-              <Plus size={20} />
+              <Plus size={20} weight="bold" />
             </button>
           </div>
 
           {/* Sub Stats Row */}
           <div className="flex items-center gap-6 mt-6 pt-4 border-t border-white/10 text-xs text-slate-300">
             <div className="flex items-center gap-1.5">
-              <Thermometer size={14} className="text-slate-400" />
+              <Thermometer size={15} weight="duotone" className="text-slate-400" />
               <span>Ambient: <strong className="text-white font-mono">{currentAmbientTemp.toFixed(1)}°C</strong></span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Droplets size={14} className="text-cyan-400" />
+              <Drop size={15} weight="duotone" className="text-cyan-400" />
               <span>Humidity: <strong className="text-white font-mono">{currentHumidity}%</strong></span>
             </div>
           </div>
@@ -136,7 +131,7 @@ export default function ClimateDetailModal({
                       : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
                   }`}
                 >
-                  <IconComponent size={20} />
+                  <IconComponent size={22} weight="duotone" />
                   <span className="text-xs">{mode.label}</span>
                 </button>
               );
@@ -147,7 +142,7 @@ export default function ClimateDetailModal({
         {/* Fan Speed Selection */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
-            <Fan size={14} className="text-sky-400" /> Fan Speed
+            <Fan size={15} weight="duotone" className="text-sky-400" /> Fan Speed
           </div>
           <div className="grid grid-cols-4 gap-2">
             {FAN_SPEEDS.map((speed) => (

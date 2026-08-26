@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from 'react';
-import { Bot, Play, Pause, Home, Battery, Sparkles } from 'lucide-react';
+import { Robot, Play, Pause, House, BatteryCharging, Sparkle } from '@phosphor-icons/react';
 import { CardConfig } from '../../../types/canvas';
 import { HAEntity } from '../../../types';
 
@@ -42,14 +37,12 @@ export default function VacuumCard({
     <div className="w-full h-full flex flex-col justify-between">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all shadow-md ${
-            isCleaning 
-              ? 'bg-indigo-500/25 border border-indigo-400/40 text-indigo-300 shadow-indigo-500/20' 
-              : 'bg-white/10 border border-white/10 text-slate-400'
-          }`}>
-            <Bot size={20} className={isCleaning ? 'animate-pulse' : ''} />
-          </div>
+        <div className="flex items-center gap-3 min-w-0">
+          <Robot
+            size={24}
+            weight="duotone"
+            className={`shrink-0 ${isCleaning ? 'text-indigo-400' : 'text-slate-400'}`}
+          />
           <div className="min-w-0">
             <h4 className="text-sm font-bold text-white truncate">{title}</h4>
             <p className="text-[11px] text-slate-300 truncate">
@@ -59,8 +52,8 @@ export default function VacuumCard({
         </div>
 
         {/* Battery pill */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] font-mono text-slate-200">
-          <Battery size={13} className="text-emerald-400" />
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 border border-white/15 text-[11px] font-mono text-slate-200 backdrop-blur-md">
+          <BatteryCharging size={14} weight="duotone" className="text-emerald-400" />
           <span>{battery}%</span>
         </div>
       </div>
@@ -76,16 +69,16 @@ export default function VacuumCard({
                 : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
             }`}
           >
-            {isCleaning ? <Pause size={13} /> : <Play size={13} />}
+            {isCleaning ? <Pause size={13} weight="fill" /> : <Play size={13} weight="fill" />}
             <span>{isCleaning ? 'Pause Clean' : 'Start Auto Clean'}</span>
           </button>
 
           <button
             onClick={handleDock}
-            className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-all cursor-pointer"
+            className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
             title="Return to Dock"
           >
-            <Home size={15} />
+            <House size={16} weight="duotone" />
           </button>
         </div>
 
@@ -97,7 +90,7 @@ export default function VacuumCard({
       {/* Bottom stats */}
       <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-white/10">
         <span className="flex items-center gap-1 text-slate-300">
-          <Sparkles size={11} className="text-amber-400" /> Bin Filter: OK
+          <Sparkle size={12} weight="duotone" className="text-amber-400" /> Bin Filter: OK
         </span>
         <span className="text-slate-400">Area: 48 m²</span>
       </div>

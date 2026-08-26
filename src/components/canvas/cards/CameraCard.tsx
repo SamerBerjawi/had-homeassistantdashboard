@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from 'react';
-import { Camera, Radio, Shield, Maximize2 } from 'lucide-react';
+import { Camera, Broadcast, Shield, ArrowsOut } from '@phosphor-icons/react';
 import { CardConfig } from '../../../types/canvas';
 import { HAEntity } from '../../../types';
 
@@ -36,9 +31,11 @@ export default function CameraCard({
       {/* Top row: Status Tag & Live indicator */}
       <div className="relative z-10 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-black/40 backdrop-blur-md border border-white/20 text-white flex items-center justify-center">
-            <Camera size={16} />
-          </div>
+          <Camera
+            size={20}
+            weight="duotone"
+            className="text-cyan-400 shrink-0 drop-shadow-md"
+          />
           <span className="text-xs font-bold text-white drop-shadow-md truncate">{title}</span>
         </div>
 
@@ -51,7 +48,7 @@ export default function CameraCard({
       {/* Bottom row: Motion Status badge */}
       <div className="relative z-10 flex items-center justify-between text-[11px] text-slate-200 pt-1">
         <span className="flex items-center gap-1 font-semibold text-emerald-300">
-          <Radio size={12} className="text-emerald-400" /> Motion Cleared
+          <Broadcast size={14} weight="duotone" className="text-emerald-400" /> Motion Cleared
         </span>
         <span className="text-[10px] text-slate-400 bg-black/50 px-2 py-0.5 rounded-md backdrop-blur-md">
           WebRTC Low Latency

@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
-import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Music, Cast, Disc3, Radio } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, SpeakerHigh, SpeakerSlash, MusicNotes, Airplay, Disc } from '@phosphor-icons/react';
 import { HAEntity } from '../../../types';
 import CardModalContainer from './CardModalContainer';
 
@@ -52,7 +47,7 @@ export default function MediaDetailModal({
       onClose={onClose}
       title={entity.attributes?.friendly_name || 'Multi-Room Audio'}
       subtitle="AirPlay 2 & Spotify Connect"
-      icon={<Music size={22} className="text-pink-400" />}
+      icon={<MusicNotes size={22} weight="duotone" className="text-pink-400" />}
       maxWidth="max-w-lg"
     >
       <div className="space-y-6">
@@ -62,7 +57,7 @@ export default function MediaDetailModal({
             <img src={albumArt} alt={title} className="w-full h-full object-cover" />
             {isPlaying && (
               <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                <Disc3 size={48} className="text-white/80 animate-spin" style={{ animationDuration: '6s' }} />
+                <Disc size={48} weight="duotone" className="text-white/80 animate-spin" style={{ animationDuration: '6s' }} />
               </div>
             )}
           </div>
@@ -93,10 +88,10 @@ export default function MediaDetailModal({
         <div className="flex items-center justify-center gap-4">
           <button
             onClick={() => setProgress(0)}
-            className="w-11 h-11 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105"
+            className="w-11 h-11 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105"
             title="Previous"
           >
-            <SkipBack size={18} />
+            <SkipBack size={18} weight="duotone" />
           </button>
 
           <button
@@ -104,15 +99,15 @@ export default function MediaDetailModal({
             className="w-16 h-16 rounded-3xl bg-pink-500 hover:bg-pink-400 text-white flex items-center justify-center transition-all cursor-pointer shadow-xl shadow-pink-500/30 hover:scale-105 active:scale-95"
             title={isPlaying ? 'Pause' : 'Play'}
           >
-            {isPlaying ? <Pause size={28} /> : <Play size={28} className="ml-1" />}
+            {isPlaying ? <Pause size={28} weight="fill" /> : <Play size={28} weight="fill" className="ml-1" />}
           </button>
 
           <button
             onClick={() => setProgress(15)}
-            className="w-11 h-11 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105"
+            className="w-11 h-11 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105"
             title="Next"
           >
-            <SkipForward size={18} />
+            <SkipForward size={18} weight="duotone" />
           </button>
         </div>
 
@@ -122,7 +117,7 @@ export default function MediaDetailModal({
             onClick={() => setIsMuted(!isMuted)}
             className="text-slate-400 hover:text-white cursor-pointer"
           >
-            {isMuted ? <VolumeX size={18} className="text-rose-400" /> : <Volume2 size={18} />}
+            {isMuted ? <SpeakerSlash size={18} weight="duotone" className="text-rose-400" /> : <SpeakerHigh size={18} weight="duotone" />}
           </button>
           <input
             type="range"
@@ -140,7 +135,7 @@ export default function MediaDetailModal({
         {/* Multi-Room Speaker Grouping */}
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
-            <Cast size={14} className="text-indigo-400" /> Multi-Room Synchronized Output
+            <Airplay size={15} weight="duotone" className="text-indigo-400" /> Multi-Room Synchronized Output
           </div>
           <div className="space-y-1.5">
             {SPEAKERS.map((spk) => (

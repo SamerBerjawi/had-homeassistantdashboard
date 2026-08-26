@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
-import { Lightbulb, Power, Sun, Palette, Sparkles, Moon, Flame, Zap } from 'lucide-react';
+import { Lightbulb, Power, Sun, Palette, Sparkle, Moon, Flame, Lightning } from '@phosphor-icons/react';
 import { HAEntity } from '../../../types';
 import CardModalContainer from './CardModalContainer';
 
@@ -27,9 +22,9 @@ const COLOR_SWATCHES = [
 
 const PRESETS = [
   { id: 'relax', name: 'Cozy Relax', color: '#fef3c7', brightness: 40, icon: Flame },
-  { id: 'focus', name: 'Work Focus', color: '#ffffff', brightness: 90, icon: Zap },
+  { id: 'focus', name: 'Work Focus', color: '#ffffff', brightness: 90, icon: Lightning },
   { id: 'night', name: 'Nightlight', color: '#fed7aa', brightness: 12, icon: Moon },
-  { id: 'party', name: 'Neon Party', color: '#7B61FF', brightness: 75, icon: Sparkles }
+  { id: 'party', name: 'Neon Party', color: '#7B61FF', brightness: 75, icon: Sparkle }
 ];
 
 export default function LightDetailModal({
@@ -83,23 +78,18 @@ export default function LightDetailModal({
       onClose={onClose}
       title={entity.attributes?.friendly_name || 'Light Controls'}
       subtitle={entity.entity_id}
-      icon={<Lightbulb size={22} className={isOn ? 'text-amber-400 fill-amber-400' : 'text-slate-400'} />}
+      icon={<Lightbulb size={22} weight="duotone" className={isOn ? 'text-amber-400' : 'text-slate-400'} />}
     >
       <div className="space-y-6">
         {/* Top Control Bar: Master Power Toggle & Status */}
         <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
           <div className="flex items-center gap-3">
-            <div
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
-                isOn ? 'shadow-lg' : 'bg-white/10 text-slate-400'
-              }`}
-              style={{
-                backgroundColor: isOn ? selectedColor : undefined,
-                color: isOn ? '#000' : undefined
-              }}
-            >
-              <Lightbulb size={24} className={isOn ? 'fill-current' : ''} />
-            </div>
+            <Lightbulb
+              size={32}
+              weight="duotone"
+              className={`shrink-0 ${isOn ? 'text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.6)]' : 'text-slate-500'}`}
+              style={isOn && selectedColor && selectedColor !== '#ffffff' ? { color: selectedColor } : undefined}
+            />
             <div>
               <p className="text-sm font-bold text-white">
                 {isOn ? 'Light is Illuminated' : 'Light is Switched Off'}
@@ -115,10 +105,10 @@ export default function LightDetailModal({
             className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer shadow-md ${
               isOn
                 ? 'bg-amber-400 hover:bg-amber-300 text-black shadow-amber-400/30'
-                : 'bg-white/10 hover:bg-white/20 text-slate-300'
+                : 'bg-white/10 hover:bg-white/20 border border-white/15 text-slate-300'
             }`}
           >
-            <Power size={20} />
+            <Power size={22} weight="duotone" />
           </button>
         </div>
 
@@ -126,7 +116,7 @@ export default function LightDetailModal({
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-slate-300">
             <span className="flex items-center gap-1.5">
-              <Sun size={14} className="text-amber-400" /> Brightness Level
+              <Sun size={15} weight="duotone" className="text-amber-400" /> Brightness Level
             </span>
             <span className="font-mono text-white text-sm">{brightness}%</span>
           </div>
@@ -171,7 +161,7 @@ export default function LightDetailModal({
         {/* Color Palette Swatches */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
-            <Palette size={14} className="text-indigo-400" /> Chromatic Palette
+            <Palette size={15} weight="duotone" className="text-indigo-400" /> Chromatic Palette
           </div>
           <div className="flex flex-wrap gap-2.5">
             {COLOR_SWATCHES.map((swatch) => (
@@ -197,7 +187,7 @@ export default function LightDetailModal({
         {/* Quick Mood Presets */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
-            <Sparkles size={14} className="text-pink-400" /> Atmosphere Presets
+            <Sparkle size={15} weight="duotone" className="text-pink-400" /> Atmosphere Presets
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {PRESETS.map((preset) => {
@@ -208,9 +198,11 @@ export default function LightDetailModal({
                   onClick={() => handleApplyPreset(preset)}
                   className="p-3 rounded-2xl bg-white/5 hover:bg-white/15 border border-white/10 flex flex-col items-center gap-2 text-center transition-all cursor-pointer hover:scale-105"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white">
-                    <IconComponent size={16} />
-                  </div>
+                  <IconComponent
+                    size={22}
+                    weight="duotone"
+                    className="text-amber-400"
+                  />
                   <span className="text-xs font-bold text-white">{preset.name}</span>
                   <span className="text-[10px] text-slate-400 font-mono">{preset.brightness}%</span>
                 </button>

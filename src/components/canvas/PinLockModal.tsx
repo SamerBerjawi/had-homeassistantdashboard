@@ -1,11 +1,6 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Unlock, X, KeyRound, ShieldAlert, Check, Delete } from 'lucide-react';
+import { Lock, LockOpen, X, Key, ShieldWarning, Check, Backspace } from '@phosphor-icons/react';
 
 interface PinLockModalProps {
   isOpen: boolean;
@@ -81,13 +76,13 @@ export default function PinLockModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
+      {/* Scrim / Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/70 backdrop-blur-md"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
       />
 
       {/* PIN Card Shell */}
@@ -95,24 +90,28 @@ export default function PinLockModal({
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className={`relative w-full max-w-sm rounded-3xl overflow-hidden tunet-card-shell bg-slate-900/90 backdrop-blur-2xl border border-white/20 p-6 shadow-2xl text-white z-10 text-center ${
+        className={`relative w-full max-w-sm rounded-3xl overflow-hidden bg-slate-900/80 backdrop-blur-md backdrop-saturate-150 border border-white/15 p-6 shadow-2xl shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.15)] text-white z-10 text-center ${
           error ? 'animate-[shake_0.4s_ease-in-out]' : ''
         }`}
       >
         {/* Top Highlight Line */}
-        <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
+        <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
 
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
+          className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
         >
-          <X size={18} />
+          <X size={16} weight="duotone" />
         </button>
 
         {/* Icon & Title */}
-        <div className="w-14 h-14 rounded-3xl bg-indigo-600/30 border border-indigo-500/40 text-indigo-400 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-indigo-600/20">
-          {mode === 'unlock' ? <Lock size={26} /> : <KeyRound size={26} />}
+        <div className="flex justify-center mb-3">
+          {mode === 'unlock' ? (
+            <Lock size={36} weight="duotone" className="text-indigo-400 drop-shadow-[0_0_12px_rgba(99,102,241,0.5)]" />
+          ) : (
+            <Key size={36} weight="duotone" className="text-indigo-400 drop-shadow-[0_0_12px_rgba(99,102,241,0.5)]" />
+          )}
         </div>
 
         <h3 className="text-lg font-black text-white">
@@ -143,13 +142,13 @@ export default function PinLockModal({
 
         {/* Error / Success message */}
         {error && (
-          <p className="text-xs font-bold text-rose-400 mb-3 flex items-center justify-center gap-1">
-            <ShieldAlert size={14} /> Incorrect PIN Code. Try again.
+          <p className="text-xs font-bold text-rose-400 mb-3 flex items-center justify-center gap-1.5">
+            <ShieldWarning size={15} weight="duotone" /> Incorrect PIN Code. Try again.
           </p>
         )}
         {successMessage && (
-          <p className="text-xs font-bold text-emerald-400 mb-3 flex items-center justify-center gap-1">
-            <Check size={14} /> {successMessage}
+          <p className="text-xs font-bold text-emerald-400 mb-3 flex items-center justify-center gap-1.5">
+            <Check size={15} weight="bold" /> {successMessage}
           </p>
         )}
 
@@ -187,7 +186,7 @@ export default function PinLockModal({
             className="w-full py-3.5 rounded-2xl bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
             title="Backspace"
           >
-            <Delete size={18} />
+            <Backspace size={20} weight="duotone" />
           </button>
         </div>
       </motion.div>

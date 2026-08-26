@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
-import { Zap, Clock, TrendingDown, TrendingUp, Sparkles, CheckCircle2, DollarSign } from 'lucide-react';
+import { Lightning, Clock, TrendDown, TrendUp, Sparkle, CheckCircle, CurrencyDollar } from '@phosphor-icons/react';
 import CardModalContainer from './CardModalContainer';
 
 interface NordpoolDetailModalProps {
@@ -57,7 +52,7 @@ export default function NordpoolDetailModal({
       onClose={onClose}
       title="Nordpool Spot Energy Market"
       subtitle="SE3 Price Area • 24-Hour Spot Tariff"
-      icon={<Zap size={22} className="text-amber-400 fill-amber-400" />}
+      icon={<Lightning size={22} weight="duotone" className="text-amber-400" />}
       maxWidth="max-w-2xl"
     >
       <div className="space-y-6">
@@ -160,9 +155,11 @@ export default function NordpoolDetailModal({
         {/* Smart Appliance Scheduling Recommendations */}
         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-              <Sparkles size={20} />
-            </div>
+            <Sparkle
+              size={26}
+              weight="duotone"
+              className="text-emerald-400 shrink-0"
+            />
             <div>
               <h5 className="text-xs font-bold text-white">Recommended EV & Heat Pump Window</h5>
               <p className="text-[11px] text-emerald-300">

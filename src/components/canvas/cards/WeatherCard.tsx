@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, CloudRain, CloudSun, Cloud, Wind, Droplets, ArrowUp, ArrowDown } from 'lucide-react';
+import { Sun, CloudRain, CloudSun, Cloud, Wind, Drop, ArrowUp, ArrowDown } from '@phosphor-icons/react';
 import { CardConfig, WeatherBackdropType } from '../../../types/canvas';
 import { HAEntity } from '../../../types';
 import { DEFAULT_WEATHER_DATA } from '../../../data';
@@ -38,10 +38,12 @@ export default function WeatherCard({
 
       {/* Top row */}
       <div className="relative z-10 flex items-center justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-amber-300 flex items-center justify-center shadow-md">
-            <CloudSun size={22} />
-          </div>
+        <div className="flex items-center gap-3 min-w-0">
+          <CloudSun
+            size={26}
+            weight="duotone"
+            className="text-amber-300 drop-shadow-md shrink-0"
+          />
           <div className="min-w-0">
             <h4 className="text-sm font-bold text-white truncate drop-shadow-sm">{title}</h4>
             <p className="text-[11px] text-slate-200 font-medium truncate capitalize drop-shadow-xs">{condition}</p>
@@ -49,13 +51,13 @@ export default function WeatherCard({
         </div>
 
         {/* High / Low pill */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-[11px] font-mono text-slate-200 shadow-sm">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/40 backdrop-blur-md border border-white/15 text-[11px] font-mono text-slate-200 shadow-sm">
           <span className="flex items-center text-amber-300">
-            <ArrowUp size={10} />{data.highC}°
+            <ArrowUp size={11} weight="bold" />{data.highC}°
           </span>
           <span className="opacity-40">|</span>
           <span className="flex items-center text-cyan-300">
-            <ArrowDown size={10} />{data.lowC}°
+            <ArrowDown size={11} weight="bold" />{data.lowC}°
           </span>
         </div>
       </div>
@@ -87,10 +89,10 @@ export default function WeatherCard({
       {/* Bottom stats: Wind & Humidity */}
       <div className="relative z-10 flex items-center justify-between text-[10px] text-slate-200 pt-1.5 border-t border-white/15">
         <span className="flex items-center gap-1 text-slate-200 font-medium">
-          <Wind size={12} className="text-sky-300" /> {data.windSpeedKmh} km/h
+          <Wind size={13} weight="duotone" className="text-sky-300" /> {data.windSpeedKmh} km/h
         </span>
         <span className="flex items-center gap-1 text-slate-200 font-medium">
-          <Droplets size={12} className="text-cyan-300" /> {data.humidity}% Humidity
+          <Drop size={13} weight="duotone" className="text-cyan-300" /> {data.humidity}% Humidity
         </span>
       </div>
     </div>

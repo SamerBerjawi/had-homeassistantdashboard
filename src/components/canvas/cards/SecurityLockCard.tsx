@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from 'react';
-import { Lock, Unlock, ShieldCheck, ShieldAlert, KeyRound } from 'lucide-react';
+import { Lock, LockOpen, ShieldCheck, ShieldWarning, Key } from '@phosphor-icons/react';
 import { CardConfig } from '../../../types/canvas';
 import { HAEntity } from '../../../types';
 
@@ -30,18 +25,18 @@ export default function SecurityLockCard({
     onToggle(entity.entity_id, isLocked ? 'unlocked' : 'locked');
   };
 
+  const LockIcon = isLocked ? Lock : LockOpen;
+
   return (
     <div className="w-full h-full flex flex-col justify-between">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all shadow-md ${
-            isLocked
-              ? 'bg-emerald-500/25 border border-emerald-400/40 text-emerald-400 shadow-emerald-500/20'
-              : 'bg-rose-500/25 border border-rose-400/40 text-rose-400 shadow-rose-500/20 animate-pulse'
-          }`}>
-            {isLocked ? <Lock size={20} /> : <Unlock size={20} />}
-          </div>
+        <div className="flex items-center gap-3 min-w-0">
+          <LockIcon
+            size={24}
+            weight="duotone"
+            className={`shrink-0 ${isLocked ? 'text-emerald-400' : 'text-rose-400'}`}
+          />
           <div className="min-w-0">
             <h4 className="text-sm font-bold text-white truncate">{title}</h4>
             <p className="text-[11px] text-slate-300 truncate">
@@ -53,7 +48,7 @@ export default function SecurityLockCard({
         {/* Action Toggle Button */}
         <button
           onClick={handleToggle}
-          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md ${
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md ${
             isLocked
               ? 'bg-white/10 hover:bg-white/20 text-white border border-white/15'
               : 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-emerald-500/30'
@@ -65,8 +60,8 @@ export default function SecurityLockCard({
 
       {/* Center Status Badge */}
       <div className="my-1">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/30 border border-white/10 text-xs font-semibold text-white">
-          <ShieldCheck size={14} className={isLocked ? 'text-emerald-400' : 'text-rose-400'} />
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/30 border border-white/10 text-xs font-semibold text-white">
+          <ShieldCheck size={16} weight="duotone" className={isLocked ? 'text-emerald-400' : 'text-rose-400'} />
           <span>{isLocked ? 'Armed & Locked' : 'Latch Open'}</span>
         </div>
       </div>

@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
-import { Car, Zap, BatteryCharging, Clock, ShieldCheck, DollarSign, Power } from 'lucide-react';
+import { Car, Lightning, BatteryCharging, Clock, ShieldCheck, CurrencyDollar, Power } from '@phosphor-icons/react';
 import CardModalContainer from './CardModalContainer';
 
 interface EVChargingDetailModalProps {
@@ -32,20 +27,18 @@ export default function EVChargingDetailModal({
       onClose={onClose}
       title="EV Wall Connector"
       subtitle="Tesla Model 3 Long Range • Dual Motor"
-      icon={<Car size={22} className="text-emerald-400" />}
+      icon={<Car size={22} weight="duotone" className="text-emerald-400" />}
       maxWidth="max-w-xl"
     >
       <div className="space-y-6">
         {/* Big Charging State Header Card */}
         <div className="p-5 rounded-3xl bg-black/40 border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${
-              isCharging
-                ? 'bg-emerald-500 text-black shadow-emerald-500/30'
-                : 'bg-white/10 text-slate-400'
-            }`}>
-              <BatteryCharging size={30} className={isCharging ? 'animate-pulse' : ''} />
-            </div>
+            <BatteryCharging
+              size={40}
+              weight="duotone"
+              className={`shrink-0 ${isCharging ? 'text-emerald-400 animate-pulse drop-shadow-[0_0_12px_rgba(16,185,129,0.5)]' : 'text-slate-400'}`}
+            />
             <div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-black text-white font-mono">{batteryPct}%</span>
@@ -94,7 +87,7 @@ export default function EVChargingDetailModal({
         {/* Current Amperage Selector */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
-            <Zap size={14} className="text-amber-400" /> Maximum Charging Current
+            <Lightning size={15} weight="duotone" className="text-amber-400" /> Maximum Charging Current
           </div>
           <div className="grid grid-cols-6 gap-2">
             {AMPERAGE_OPTIONS.map((amp) => (

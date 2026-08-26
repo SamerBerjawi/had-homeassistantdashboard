@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
-import { Car, Zap, BatteryCharging, Power, Gauge, Clock } from 'lucide-react';
+import { Car, Lightning, BatteryCharging, Power, Gauge, Clock } from '@phosphor-icons/react';
 import { CardConfig } from '../../../types/canvas';
 import { HAEntity } from '../../../types';
 
@@ -34,14 +29,12 @@ export default function EVChargingCard({
     <div className="w-full h-full flex flex-col justify-between">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all shadow-md ${
-            isCharging 
-              ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 shadow-emerald-500/20' 
-              : 'bg-white/10 border border-white/10 text-slate-400'
-          }`}>
-            <Car size={20} />
-          </div>
+        <div className="flex items-center gap-3 min-w-0">
+          <Car
+            size={24}
+            weight="duotone"
+            className={`shrink-0 ${isCharging ? 'text-emerald-400' : 'text-slate-400'}`}
+          />
           <div className="min-w-0">
             <h4 className="text-sm font-bold text-white truncate">{title}</h4>
             <p className="text-[11px] text-emerald-400 font-semibold truncate flex items-center gap-1">
@@ -61,11 +54,11 @@ export default function EVChargingCard({
           className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
             isCharging
               ? 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-md shadow-emerald-500/30'
-              : 'bg-white/10 hover:bg-white/20 text-slate-400'
+              : 'bg-white/10 hover:bg-white/20 border border-white/15 text-slate-400'
           }`}
           title={isCharging ? 'Stop Charging' : 'Start Fast Charge'}
         >
-          <Zap size={14} className={isCharging ? 'fill-current' : ''} />
+          <Lightning size={15} weight="duotone" />
         </button>
       </div>
 
@@ -106,7 +99,7 @@ export default function EVChargingCard({
       {/* Bottom row: Time left & Rate */}
       <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-white/10">
         <span className="flex items-center gap-1 text-slate-300">
-          <Clock size={11} className="text-emerald-400" />
+          <Clock size={12} weight="duotone" className="text-emerald-400" />
           {isCharging ? '1h 15m to 80%' : 'Target: 80%'}
         </span>
         <span className="font-semibold text-slate-300 font-mono">

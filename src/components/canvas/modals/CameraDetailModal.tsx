@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
-import { Camera, Mic, MicOff, Download, Shield, Volume2, Radio, Maximize2 } from 'lucide-react';
+import { Camera, Microphone, MicrophoneSlash, DownloadSimple, Shield, SpeakerHigh, Broadcast, ArrowsOut } from '@phosphor-icons/react';
 import CardModalContainer from './CardModalContainer';
 
 interface CameraDetailModalProps {
@@ -33,7 +28,7 @@ export default function CameraDetailModal({
       onClose={onClose}
       title={cameraName}
       subtitle="WebRTC Real-time 2K Stream (30 FPS)"
-      icon={<Camera size={22} className="text-cyan-400" />}
+      icon={<Camera size={22} weight="duotone" className="text-cyan-400" />}
       maxWidth="max-w-2xl"
     >
       <div className="space-y-5">
@@ -79,7 +74,7 @@ export default function CameraDetailModal({
                   : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
               }`}
             >
-              {isMicActive ? <MicOff size={16} /> : <Mic size={16} />}
+              {isMicActive ? <MicrophoneSlash size={16} weight="duotone" /> : <Microphone size={16} weight="duotone" />}
               <span>{isMicActive ? 'Mute Intercom' : 'Hold to Talk'}</span>
             </button>
 
@@ -88,13 +83,13 @@ export default function CameraDetailModal({
               onClick={handleCaptureSnapshot}
               className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer border border-white/10"
             >
-              <Download size={16} />
+              <DownloadSimple size={16} weight="duotone" />
               <span>{isSnapshotting ? 'Saving Frame...' : 'Archive Snapshot'}</span>
             </button>
           </div>
 
           <div className="flex items-center gap-2 text-xs text-emerald-400 font-semibold">
-            <Radio size={14} className="animate-pulse" />
+            <Broadcast size={15} weight="duotone" className="animate-pulse" />
             <span>Encrypted Tunnel</span>
           </div>
         </div>

@@ -13,8 +13,8 @@ import {
   Wind, 
   Power,
   Thermometer,
-  Sparkles
-} from 'lucide-react';
+  Sparkle
+} from '@phosphor-icons/react';
 
 interface ClimateArcSliderProps {
   currentTemp: number;
@@ -328,7 +328,7 @@ export default function ClimateArcSlider({
           <div className={`flex items-center gap-1.5 mt-1 px-2.5 py-1 rounded-full border shadow-inner ${
             darkMode ? 'bg-slate-900/90 border-slate-700' : 'bg-white/80 border-slate-100/80'
           }`}>
-            <Thermometer size={11} className="text-rose-400" />
+            <Thermometer size={14} weight="duotone" className="text-rose-400" />
             <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-300' : 'text-slate-500'}`}>
               Ambient: {currentTemp}°C
             </span>
@@ -347,7 +347,7 @@ export default function ClimateArcSlider({
                 : 'bg-white/90 hover:bg-[#7B61FF]/10 hover:text-[#7B61FF] text-slate-600 border-slate-100'
             }`}
           >
-            <Minus size={15} />
+            <Minus size={15} weight="duotone" />
           </button>
           
           <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">TARGET</span>
@@ -362,7 +362,7 @@ export default function ClimateArcSlider({
                 : 'bg-white/90 hover:bg-[#7B61FF]/10 hover:text-[#7B61FF] text-slate-600 border-slate-100'
             }`}
           >
-            <Plus size={15} />
+            <Plus size={15} weight="duotone" />
           </button>
         </div>
       </div>
@@ -373,7 +373,7 @@ export default function ClimateArcSlider({
           { id: 'Cooling', icon: Snowflake, color: darkMode ? 'text-sky-400 bg-sky-950/40 border-sky-800/50 hover:bg-sky-900/50' : 'text-sky-500 bg-sky-50 border-sky-100 hover:bg-sky-100' },
           { id: 'Heating', icon: Flame, color: darkMode ? 'text-orange-400 bg-orange-950/40 border-orange-800/50 hover:bg-orange-900/50' : 'text-orange-500 bg-orange-50 border-orange-100 hover:bg-orange-100' },
           { id: 'Dry', icon: Wind, color: darkMode ? 'text-indigo-400 bg-indigo-950/40 border-indigo-800/50 hover:bg-indigo-900/50' : 'text-indigo-500 bg-indigo-50 border-indigo-100 hover:bg-indigo-100' },
-          { id: 'Eco', icon: Sparkles, color: darkMode ? 'text-emerald-400 bg-emerald-950/40 border-emerald-800/50 hover:bg-emerald-900/50' : 'text-emerald-500 bg-emerald-50 border-emerald-100 hover:bg-emerald-100' }
+          { id: 'Eco', icon: Sparkle, color: darkMode ? 'text-emerald-400 bg-emerald-950/40 border-emerald-800/50 hover:bg-emerald-900/50' : 'text-emerald-500 bg-emerald-50 border-emerald-100 hover:bg-emerald-100' }
         ].map((item) => {
           const Icon = item.icon;
           const isActive = mode === item.id && state === 'on';
@@ -398,7 +398,7 @@ export default function ClimateArcSlider({
                   boxShadow: isActive ? `0 4px ${10 + 12 * glowFactor}px rgba(123, 97, 255, ${0.4 + 0.3 * glowFactor})` : undefined
                 }}
               >
-                <Icon size={14} />
+                <Icon size={16} weight="duotone" />
                 <span className="text-[9px] font-bold">{item.id}</span>
               </button>
             </div>
@@ -411,7 +411,7 @@ export default function ClimateArcSlider({
         darkMode ? 'border-slate-800 text-slate-400' : 'border-slate-100/60 text-slate-400'
       }`}>
         <span className="flex items-center gap-1">
-          <Power size={11} className={state === 'on' ? 'text-emerald-400 animate-pulse' : ''} />
+          <Power size={13} weight="duotone" className={state === 'on' ? 'text-emerald-400 animate-pulse' : ''} />
           Est. Load: {state === 'on' ? `${power} W` : '0 W'}
         </span>
         <span>

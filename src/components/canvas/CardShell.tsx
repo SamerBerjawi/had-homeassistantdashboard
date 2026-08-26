@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { GripVertical, Trash2, Copy, Sliders, Maximize2 } from 'lucide-react';
+import { DotsSixVertical, Trash, Copy, Faders, ArrowsOut } from '@phosphor-icons/react';
 import { CardConfig } from '../../types/canvas';
 
 interface CardShellProps {
@@ -44,10 +44,10 @@ export default function CardShell({
         <div className="absolute top-2.5 right-2.5 z-30 flex items-center gap-1.5 p-1 rounded-xl bg-black/60 backdrop-blur-md border border-white/20 shadow-lg">
           {/* Drag Handle */}
           <div
-            className="canvas-drag-handle p-1 text-slate-300 hover:text-white cursor-grab hover:bg-white/10 rounded-lg transition-colors"
+            className="canvas-drag-handle w-7 h-7 flex items-center justify-center text-slate-300 hover:text-white cursor-grab hover:bg-white/10 rounded-lg transition-colors"
             title="Drag to reposition"
           >
-            <GripVertical size={14} />
+            <DotsSixVertical size={16} weight="bold" />
           </div>
 
           {/* Duplicate Card */}
@@ -56,10 +56,10 @@ export default function CardShell({
               e.stopPropagation();
               onDuplicate();
             }}
-            className="p-1 text-slate-300 hover:text-indigo-300 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+            className="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-indigo-300 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
             title="Duplicate Card"
           >
-            <Copy size={14} />
+            <Copy size={15} weight="duotone" />
           </button>
 
           {/* Delete Card */}
@@ -68,10 +68,10 @@ export default function CardShell({
               e.stopPropagation();
               onRemove();
             }}
-            className="p-1 text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 rounded-lg transition-colors cursor-pointer"
+            className="w-7 h-7 flex items-center justify-center text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 rounded-lg transition-colors cursor-pointer"
             title="Delete Card"
           >
-            <Trash2 size={14} />
+            <Trash size={15} weight="duotone" />
           </button>
         </div>
       )}
@@ -83,10 +83,10 @@ export default function CardShell({
             e.stopPropagation();
             onOpenModal();
           }}
-          className="absolute top-3 right-3 z-20 w-7 h-7 rounded-lg bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/15 text-white/70 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-sm hover:scale-105"
+          className="absolute top-3 right-3 z-20 w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/15 text-white/70 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-sm hover:scale-105"
           title="Open detailed controls"
         >
-          <Maximize2 size={12} />
+          <ArrowsOut size={14} weight="duotone" />
         </button>
       )}
 

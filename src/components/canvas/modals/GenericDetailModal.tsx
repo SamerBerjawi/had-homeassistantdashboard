@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from 'react';
-import { Activity, Power, Shield, ShieldCheck, Lock, Unlock, Hash, Clock, Cpu } from 'lucide-react';
+import { Heartbeat, Power, Shield, ShieldCheck, Lock, LockOpen, Hash, Clock, Cpu } from '@phosphor-icons/react';
 import { HAEntity } from '../../../types';
 import CardModalContainer from './CardModalContainer';
 
@@ -42,7 +37,7 @@ export default function GenericDetailModal({
       onClose={onClose}
       title={entity.attributes?.friendly_name || entity.entity_id}
       subtitle={entity.entity_id}
-      icon={<Activity size={22} className="text-indigo-400" />}
+      icon={<Heartbeat size={22} weight="duotone" className="text-indigo-400" />}
       maxWidth="max-w-xl"
     >
       <div className="space-y-6">
@@ -66,7 +61,7 @@ export default function GenericDetailModal({
                     ? 'bg-rose-500 hover:bg-rose-400 text-white shadow-rose-500/30'
                     : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/30'
                   : isOn
-                  ? 'bg-purple-600 hover:bg-purple-500 text-white'
+                  ? 'bg-[#7B61FF] hover:bg-[#6A4FE8] text-white'
                   : 'bg-white/10 hover:bg-white/20 text-slate-200'
               }`}
             >
@@ -78,7 +73,7 @@ export default function GenericDetailModal({
         {/* Entity Attributes Table */}
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
-            <Cpu size={14} className="text-indigo-400" /> State Attributes
+            <Cpu size={15} weight="duotone" className="text-indigo-400" /> State Attributes
           </div>
           <div className="rounded-2xl bg-white/5 border border-white/10 divide-y divide-white/5 overflow-hidden text-xs">
             {Object.entries(attributes).map(([key, val]) => (

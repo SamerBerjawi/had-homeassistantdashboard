@@ -6,40 +6,40 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Settings, 
-  Wifi, 
+  GearSix, 
+  WifiHigh, 
   Shield, 
   Palette, 
-  Layers, 
+  Stack, 
   Bell, 
   Database, 
   Check, 
-  RotateCw, 
-  Download, 
-  Trash2, 
+  ArrowClockwise, 
+  DownloadSimple, 
+  Trash, 
   Plus, 
-  Sparkles, 
-  Server, 
+  Sparkle, 
+  HardDrives, 
   Key, 
   Lock, 
-  Unlock, 
-  Activity, 
+  LockOpen, 
+  Heartbeat, 
   Cpu, 
   HardDrive, 
   Flame, 
   Eye, 
-  EyeOff, 
-  CheckCircle2,
-  AlertTriangle,
+  EyeSlash, 
+  CheckCircle,
+  Warning,
   Radio,
-  Sliders,
+  Faders,
   Moon,
   Sun,
-  Volume2,
+  SpeakerHigh,
   Thermometer,
-  Zap,
+  Lightning,
   Info
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { HAEntity, Room, LogMessage, ToastNotification } from '../types';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 
@@ -260,10 +260,10 @@ export default function SettingsView({
   };
 
   const navItems = [
-    { id: 'connectivity', label: 'Connection & Server', icon: Wifi, desc: 'Home Assistant WebSocket & API' },
+    { id: 'connectivity', label: 'Connection & Server', icon: WifiHigh, desc: 'Home Assistant WebSocket & API' },
     { id: 'appearance', label: 'Display & Units', icon: Palette, desc: 'Themes, units & power tariff' },
     { id: 'security', label: 'Security & Access', icon: Shield, desc: 'Smart locks, intercom & guest PIN' },
-    { id: 'devices', label: 'Entity Registry', icon: Layers, desc: `${entities.length} IoT devices registered` },
+    { id: 'devices', label: 'Entity Registry', icon: Stack, desc: `${entities.length} IoT devices registered` },
     { id: 'notifications', label: 'Alerts & Routines', icon: Bell, desc: 'Push notifications & triggers' },
     { id: 'diagnostics', label: 'System & Diagnostics', icon: Database, desc: 'Hardware stats & backup' }
   ];
@@ -279,13 +279,7 @@ export default function SettingsView({
       }`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-md ${
-              darkMode 
-                ? 'bg-[#7B61FF]/20 text-[#9D8BFF] border-[#7B61FF]/40' 
-                : 'bg-indigo-50 text-[#7B61FF] border-indigo-100'
-            }`}>
-              <Settings size={26} className="animate-spin-slow" />
-            </div>
+            <GearSix size={36} weight="duotone" className="text-[#7B61FF] shrink-0" />
             <div>
               <span className={`text-[10px] font-black uppercase tracking-widest block mb-0.5 ${
                 darkMode ? 'text-[#9D8BFF]' : 'text-indigo-600'
@@ -304,21 +298,21 @@ export default function SettingsView({
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <button 
               id="btn-back-to-home"
-              onClick={() => setActiveTab('home')}
+              onClick={() => setActiveTab('overview')}
               className={`px-4 py-2.5 rounded-full text-xs font-extrabold transition-all cursor-pointer border ${
                 darkMode 
                   ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' 
                   : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-xs'
               }`}
             >
-              Back to Home
+              Back to Overview
             </button>
             <button 
               id="btn-quick-export"
               onClick={handleExportConfig}
               className="px-4 py-2.5 rounded-full text-xs font-extrabold bg-[#7B61FF] hover:bg-[#684be3] text-white transition-all cursor-pointer shadow-md shadow-[#7B61FF]/25 flex items-center gap-1.5"
             >
-              <Download size={14} />
+              <DownloadSimple size={15} weight="duotone" />
               <span>Export Backup</span>
             </button>
           </div>
@@ -340,36 +334,30 @@ export default function SettingsView({
             <div className="space-y-1 mt-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                const isSelected = activeSection === item.id;
+                const isActive = activeSection === item.id;
                 return (
                   <button
                     key={item.id}
-                    id={`btn-settings-tab-${item.id}`}
+                    id={`btn-settings-nav-${item.id}`}
                     onClick={() => setActiveSection(item.id as SettingsSection)}
-                    className={`w-full p-3.5 rounded-2xl flex items-center gap-3.5 transition-all text-left cursor-pointer border ${
-                      isSelected
-                        ? darkMode
-                          ? 'bg-[#7B61FF]/20 border-[#7B61FF]/50 text-white shadow-md'
-                          : 'bg-white border-[#7B61FF]/40 text-slate-900 shadow-sm ring-1 ring-[#7B61FF]/20'
+                    className={`w-full p-3 rounded-xl flex items-center gap-3 text-left transition-all duration-200 cursor-pointer border ${
+                      isActive
+                        ? 'bg-[#7B61FF] text-white border-[#7B61FF] shadow-lg shadow-[#7B61FF]/25'
                         : darkMode
-                          ? 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                          : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-white/40'
+                          ? 'bg-transparent hover:bg-slate-800/60 border-transparent text-slate-300'
+                          : 'bg-transparent hover:bg-slate-100/70 border-transparent text-slate-700'
                     }`}
                   >
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                      isSelected
-                        ? darkMode ? 'bg-[#7B61FF] text-white' : 'bg-[#7B61FF] text-white'
-                        : darkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'
-                    }`}>
-                      <Icon size={18} />
-                    </div>
+                    <Icon
+                      size={20}
+                      weight="duotone"
+                      className={`shrink-0 ${isActive ? 'text-white' : darkMode ? 'text-[#9D8BFF]' : 'text-indigo-600'}`}
+                    />
                     <div className="min-w-0 flex-1">
-                      <h4 className={`text-xs font-bold truncate ${isSelected ? (darkMode ? 'text-white' : 'text-slate-900') : ''}`}>
-                        {item.label}
-                      </h4>
-                      <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                      <div className="text-xs font-bold truncate leading-snug">{item.label}</div>
+                      <div className={`text-[10px] truncate ${isActive ? 'text-white/80' : 'text-slate-400'}`}>
                         {item.desc}
-                      </p>
+                      </div>
                     </div>
                   </button>
                 );
@@ -382,7 +370,7 @@ export default function SettingsView({
             darkMode ? 'bg-slate-900/40 border-white/[0.08] text-slate-300' : 'bg-white/60 border-black/[0.06] text-slate-600 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
           }`}>
             <div className="flex items-center gap-2 mb-2.5">
-              <Server size={14} className={darkMode ? 'text-[#9D8BFF]' : 'text-indigo-600'} />
+              <HardDrives size={16} weight="duotone" className={darkMode ? 'text-[#9D8BFF]' : 'text-indigo-600'} />
               <span className="text-[11px] font-extrabold uppercase tracking-wider">Home Assistant Hub</span>
             </div>
             <div className="space-y-1.5 text-xs">
@@ -446,7 +434,7 @@ export default function SettingsView({
 
                 {saveSuccessNotice && (
                   <div className="p-3 bg-emerald-500/15 border border-emerald-500/40 rounded-2xl flex items-center gap-2 text-xs font-bold text-emerald-400 animate-fade-in">
-                    <CheckCircle2 size={16} />
+                    <CheckCircle size={16} weight="duotone" />
                     <span>Configuration successfully synchronized with runtime!</span>
                   </div>
                 )}
@@ -482,7 +470,7 @@ export default function SettingsView({
                             : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                         }`}
                       >
-                        <RotateCw size={14} className={isPinging ? 'animate-spin' : ''} />
+                        <ArrowClockwise size={15} weight="duotone" className={isPinging ? 'animate-spin' : ''} />
                         <span>{isPinging ? 'Pinging...' : 'Test Ping'}</span>
                       </button>
                     </div>
@@ -510,7 +498,7 @@ export default function SettingsView({
                         onClick={() => setShowToken(!showToken)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1"
                       >
-                        {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                        {showToken ? <EyeSlash size={16} weight="duotone" /> : <Eye size={16} weight="duotone" />}
                       </button>
                     </div>
                   </div>
@@ -1016,9 +1004,9 @@ export default function SettingsView({
                           type="button"
                           onClick={() => handleDeleteDevice(entity.entity_id)}
                           title="Remove Device"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          className="w-7 h-7 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
                         >
-                          <Trash2 size={14} />
+                          <Trash size={14} weight="duotone" />
                         </button>
                       </div>
                     </div>
@@ -1190,7 +1178,7 @@ export default function SettingsView({
                     darkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-100'
                   }`}>
                     <div className="flex items-center gap-2 mb-1.5 text-teal-400">
-                      <Activity size={16} />
+                      <Heartbeat size={16} weight="duotone" />
                       <span className="text-[11px] font-extrabold uppercase">RAM Allocation</span>
                     </div>
                     <p className="text-xl font-black">2.1 / 8.0 GB</p>
@@ -1201,7 +1189,7 @@ export default function SettingsView({
                     darkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-100'
                   }`}>
                     <div className="flex items-center gap-2 mb-1.5 text-amber-400">
-                      <HardDrive size={16} />
+                      <HardDrives size={16} weight="duotone" />
                       <span className="text-[11px] font-extrabold uppercase">Local Storage</span>
                     </div>
                     <p className="text-xl font-black">7.2 / 10 TB</p>
@@ -1224,7 +1212,7 @@ export default function SettingsView({
                       onClick={handleExportConfig}
                       className="px-4 py-2 rounded-xl text-xs font-extrabold bg-[#7B61FF] hover:bg-[#684be3] text-white cursor-pointer shadow-sm flex items-center gap-1.5"
                     >
-                      <Download size={14} />
+                      <DownloadSimple size={15} weight="duotone" />
                       <span>Download</span>
                     </button>
                   </div>
@@ -1242,7 +1230,7 @@ export default function SettingsView({
                       onClick={handleClearLogs}
                       className="px-4 py-2 rounded-xl text-xs font-extrabold bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 cursor-pointer flex items-center gap-1.5"
                     >
-                      <Trash2 size={14} />
+                      <Trash size={15} weight="duotone" />
                       <span>Purge Logs</span>
                     </button>
                   </div>

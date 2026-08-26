@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from 'react';
-import { Zap, TrendingDown, TrendingUp, Clock, AlertCircle } from 'lucide-react';
+import { Lightning, TrendDown, TrendUp, Clock, WarningCircle } from '@phosphor-icons/react';
 import { CardConfig } from '../../../types/canvas';
 import { HAEntity } from '../../../types';
 
@@ -62,10 +57,12 @@ export default function NordpoolCard({
     <div className="w-full h-full flex flex-col justify-between">
       {/* Top row: Title and Rating badge */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/30 text-amber-400 flex items-center justify-center shadow-md shadow-amber-500/10">
-            <Zap size={20} className="fill-amber-400/30" />
-          </div>
+        <div className="flex items-center gap-3 min-w-0">
+          <Lightning
+            size={24}
+            weight="duotone"
+            className="text-amber-400 shrink-0 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]"
+          />
           <div className="min-w-0">
             <h4 className="text-sm font-bold text-white truncate">{title}</h4>
             <p className="text-[11px] text-slate-400 truncate">SE3 Spot Market</p>
@@ -74,7 +71,7 @@ export default function NordpoolCard({
 
         {/* Dynamic Status Pill */}
         <span
-          className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${
+          className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold uppercase tracking-wide border backdrop-blur-md ${
             isCheap
               ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
               : isExpensive
@@ -95,8 +92,8 @@ export default function NordpoolCard({
             </span>
             <span className="text-xs text-slate-400 font-bold">c/kWh</span>
           </div>
-          <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-0.5">
-            <TrendingDown size={12} /> -12% vs avg
+          <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+            <TrendDown size={14} weight="bold" /> -12% vs avg
           </span>
         </div>
 
@@ -135,7 +132,7 @@ export default function NordpoolCard({
       {/* Bottom info: Optimal charging window */}
       <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-white/10">
         <span className="flex items-center gap-1 text-slate-300">
-          <Clock size={11} className="text-amber-400" /> Best Window: 02:00 - 05:00
+          <Clock size={12} weight="duotone" className="text-amber-400" /> Best Window: 02:00 - 05:00
         </span>
         <span className="font-mono text-slate-400">
           Min: {(minPrice * 100).toFixed(0)}c / Max: {(maxPrice * 100).toFixed(0)}c

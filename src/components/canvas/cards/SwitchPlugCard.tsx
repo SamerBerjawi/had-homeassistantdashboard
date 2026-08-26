@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from 'react';
-import { Power, Coffee, Utensils, Zap, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Power, Coffee, ForkKnife, Lightning } from '@phosphor-icons/react';
 import { CardConfig } from '../../../types/canvas';
 import { HAEntity } from '../../../types';
 
@@ -27,6 +22,7 @@ export default function SwitchPlugCard({
 
   const isCoffee = entity.entity_id.includes('coffee');
   const isDishwasher = entity.entity_id.includes('dishwasher');
+  const IconComponent = isCoffee ? Coffee : isDishwasher ? ForkKnife : Power;
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -39,14 +35,14 @@ export default function SwitchPlugCard({
     <div className="w-full h-full flex flex-col justify-between">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all shadow-md ${
-            isOn
-              ? 'bg-purple-500/25 border border-purple-400/40 text-purple-300 shadow-purple-500/20'
-              : 'bg-white/10 border border-white/10 text-slate-400'
-          }`}>
-            {isCoffee ? <Coffee size={20} /> : isDishwasher ? <Utensils size={20} /> : <Power size={20} />}
-          </div>
+        <div className="flex items-center gap-3 min-w-0">
+          <IconComponent
+            size={24}
+            weight="duotone"
+            className={`shrink-0 transition-colors ${
+              isOn ? 'text-[#7B61FF] drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]' : 'text-slate-400'
+            }`}
+          />
           <div className="min-w-0">
             <h4 className="text-sm font-bold text-white truncate">{title}</h4>
             <p className="text-[11px] text-slate-400 truncate">
@@ -59,7 +55,7 @@ export default function SwitchPlugCard({
         <button
           onClick={handleToggle}
           className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
-            isOn ? 'bg-purple-500 justify-end' : 'bg-white/15 justify-start'
+            isOn ? 'bg-[#7B61FF] justify-end' : 'bg-white/15 justify-start'
           }`}
           title={isOn ? 'Switch Off' : 'Switch On'}
         >
@@ -80,7 +76,7 @@ export default function SwitchPlugCard({
       {/* Bottom info */}
       <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-white/10">
         <span className="flex items-center gap-1 text-slate-300">
-          <Zap size={11} className={isOn ? 'text-amber-400 animate-pulse' : 'text-slate-500'} />
+          <Lightning size={13} weight="duotone" className={isOn ? 'text-amber-400 animate-pulse' : 'text-slate-500'} />
           {isOn ? 'Drawing Power' : 'Standby 0W'}
         </span>
         <span className="text-slate-400 font-mono">16A Relay</span>

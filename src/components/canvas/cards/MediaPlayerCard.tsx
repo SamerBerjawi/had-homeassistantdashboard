@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from 'react';
-import { Play, Pause, SkipForward, Volume2, Music } from 'lucide-react';
+import { Play, Pause, SkipForward, SpeakerHigh, MusicNotes } from '@phosphor-icons/react';
 import { CardConfig } from '../../../types/canvas';
 import { HAEntity } from '../../../types';
 
@@ -67,8 +62,8 @@ export default function MediaPlayerCard({
         </div>
 
         {/* Live Audio Badge */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-pink-500/20 border border-pink-500/30 text-pink-300 text-[10px] font-bold">
-          <Music size={11} className={isPlaying ? 'animate-bounce' : ''} />
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-pink-500/20 border border-pink-500/30 text-pink-300 text-[10px] font-bold backdrop-blur-md">
+          <MusicNotes size={13} weight="duotone" className={isPlaying ? 'animate-bounce' : ''} />
           <span>{isPlaying ? 'Sonos Live' : 'Paused'}</span>
         </div>
       </div>
@@ -86,19 +81,19 @@ export default function MediaPlayerCard({
               }`}
               title={isPlaying ? 'Pause' : 'Play'}
             >
-              {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
+              {isPlaying ? <Pause size={16} weight="fill" /> : <Play size={16} weight="fill" className="ml-0.5" />}
             </button>
             <button
               onClick={handleNext}
-              className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer"
+              className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer"
               title="Next Track"
             >
-              <SkipForward size={14} />
+              <SkipForward size={14} weight="duotone" />
             </button>
           </div>
 
-          <div className="flex items-center gap-2 text-slate-300 text-xs font-mono">
-            <Volume2 size={14} className="text-slate-400" />
+          <div className="flex items-center gap-1.5 text-slate-300 text-xs font-mono">
+            <SpeakerHigh size={15} weight="duotone" className="text-slate-400" />
             <span>{volume}%</span>
           </div>
         </div>
