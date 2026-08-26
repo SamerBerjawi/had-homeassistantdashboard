@@ -61,6 +61,7 @@ import BatteryStatusCard from './components/BatteryStatusCard';
 import DeviceHealthView from './components/DeviceHealthView';
 import WeatherWidget from './components/WeatherWidget';
 import DevicesView from './components/DevicesView';
+import { BentoGrid } from './components/ui/bento-grid';
 
 // 8 Core Navigation Views
 import RoomsView from './components/RoomsView';
@@ -1359,7 +1360,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Room Card Grid with Layout Transitions & Framer Motion Drag-to-Sort */}
+                  {/* Room Bento Grid with Layout Transitions & Varied Tile Sizing */}
                   {roomSortOption === 'default' ? (
                     <Reorder.Group
                       axis="x"
@@ -1374,50 +1375,65 @@ export default function App() {
                         });
                         addLog('info', 'Personalized dashboard reordered via drag-and-drop.');
                       }}
-                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 list-none p-0 m-0"
+                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 list-none p-0 m-0 w-full"
                     >
-                      {rooms.map((room) => (
-                        <Reorder.Item
-                          key={room.id}
-                          value={room}
-                          id={`reorder-room-${room.id}`}
-                          className="list-none select-none touch-manipulation cursor-grab active:cursor-grabbing focus:outline-hidden"
-                          whileDrag={{ 
-                            scale: 1.04, 
-                            zIndex: 40,
-                            boxShadow: "0 20px 30px -10px rgba(123, 97, 255, 0.35)" 
-                          }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <RoomCard 
-                            room={room}
-                            entities={entities}
-                            maintenanceTasks={maintenanceTasks}
-                            isSelected={selectedRoomId === room.id}
-                            onSelect={() => setSelectedRoomId(room.id)}
-                            onToggleAllInRoom={handleToggleAllInRoom}
-                            darkMode={darkMode}
-                            isDragEnabled={true}
-                          />
-                        </Reorder.Item>
-                      ))}
+                      {rooms.map((room, idx) => {
+                        const isHero = idx === 0 || (room.id === selectedRoomId && rooms.length > 2);
+                        const bentoSpan = isHero 
+                          ? 'col-span-1 sm:col-span-2 lg:col-span-2' 
+                          : (idx % 5 === 3 ? 'col-span-1 sm:col-span-2 lg:col-span-2' : 'col-span-1');
+                        return (
+                          <Reorder.Item
+                            key={room.id}
+                            value={room}
+                            id={`reorder-room-${room.id}`}
+                            className={`list-none select-none touch-manipulation cursor-grab active:cursor-grabbing focus:outline-hidden ${bentoSpan}`}
+                            whileDrag={{ 
+                              scale: 1.03, 
+                              zIndex: 40,
+                              boxShadow: "0 20px 30px -10px rgba(123, 97, 255, 0.35)" 
+                            }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <RoomCard 
+                              room={room}
+                              entities={entities}
+                              maintenanceTasks={maintenanceTasks}
+                              isSelected={selectedRoomId === room.id}
+                              onSelect={() => setSelectedRoomId(room.id)}
+                              onToggleAllInRoom={handleToggleAllInRoom}
+                              darkMode={darkMode}
+                              isDragEnabled={true}
+                              className="h-full"
+                            />
+                          </Reorder.Item>
+                        );
+                      })}
                     </Reorder.Group>
                   ) : (
-                    <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {sortedRooms.map((room) => (
-                        <RoomCard 
-                          key={room.id}
-                          room={room}
-                          entities={entities}
-                          maintenanceTasks={maintenanceTasks}
-                          isSelected={selectedRoomId === room.id}
-                          onSelect={() => setSelectedRoomId(room.id)}
-                          onToggleAllInRoom={handleToggleAllInRoom}
-                          darkMode={darkMode}
-                          isDragEnabled={false}
-                        />
-                      ))}
-                    </motion.div>
+                    <BentoGrid className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                      {sortedRooms.map((room, idx) => {
+                        const isHero = idx === 0 || (room.id === selectedRoomId && sortedRooms.length > 2);
+                        const bentoSpan = isHero 
+                          ? 'col-span-1 sm:col-span-2 lg:col-span-2' 
+                          : (idx % 5 === 3 ? 'col-span-1 sm:col-span-2 lg:col-span-2' : 'col-span-1');
+                        return (
+                          <div key={room.id} className={bentoSpan}>
+                            <RoomCard 
+                              room={room}
+                              entities={entities}
+                              maintenanceTasks={maintenanceTasks}
+                              isSelected={selectedRoomId === room.id}
+                              onSelect={() => setSelectedRoomId(room.id)}
+                              onToggleAllInRoom={handleToggleAllInRoom}
+                              darkMode={darkMode}
+                              isDragEnabled={false}
+                              className="h-full"
+                            />
+                          </div>
+                        );
+                      })}
+                    </BentoGrid>
                   )}
                 </motion.section>
               </div>

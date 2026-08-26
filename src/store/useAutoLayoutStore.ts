@@ -106,10 +106,34 @@ const INITIAL_OVERVIEW_SUMMARY: OverviewSummaryState = {
   totalPowerWatts: 0
 };
 
+// Browser Caching Helpers for WebSocket Endpoint & Access Token
+const getCachedServerUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('ha_server_url');
+    if (saved && saved.trim()) return saved;
+  }
+  return 'wss://hass.homz.internal/api/websocket';
+};
+
+const getCachedHaToken = (): string => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('ha_token');
+    if (saved && saved.trim()) return saved;
+  }
+  return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+};
+
+const getCachedLiveMode = (): boolean => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('ha_live_mode') === 'true';
+  }
+  return false;
+};
+
 export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
-  isLiveMode: false,
-  serverUrl: 'wss://hass.homz.internal/api/websocket',
-  haToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  isLiveMode: getCachedLiveMode(),
+  serverUrl: getCachedServerUrl(),
+  haToken: getCachedHaToken(),
   connectionStatus: 'connected',
   connectionError: null,
   isLoading: false,
@@ -143,6 +167,10 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   searchQuery: '',
 
   init: () => {
+    const cachedUrl = getCachedServerUrl();
+    const cachedToken = getCachedHaToken();
+    const cachedLive = getCachedLiveMode();
+
     haWebSocketService.init({
       onStatusChange: (status, errorMsg) => {
         set({ 
@@ -189,8 +217,15 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       }
     });
 
-    // Initial graph calculation with mock data
-    get().recomputeGraph();
+    // If live mode was previously enabled and valid credentials exist in browser cache, automatically connect!
+    if (cachedLive && cachedUrl && cachedToken && !cachedUrl.includes('hass.homz.internal')) {
+      set({ isLiveMode: true, serverUrl: cachedUrl, haToken: cachedToken });
+      haWebSocketService.setDemoMode(false);
+      haWebSocketService.connect(cachedUrl, cachedToken);
+    } else {
+      // Initial graph calculation with mock/demo data
+      get().recomputeGraph();
+    }
   },
 
   recomputeGraph: () => {
@@ -215,6 +250,13 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   setLiveMode: (live: boolean, url?: string, token?: string) => {
     const nextUrl = url || get().serverUrl;
     const nextToken = token || get().haToken;
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ha_live_mode', live ? 'true' : 'false');
+      if (nextUrl) localStorage.setItem('ha_server_url', nextUrl);
+      if (nextToken) localStorage.setItem('ha_token', nextToken);
+    }
+
     set({ isLiveMode: live, serverUrl: nextUrl, haToken: nextToken });
 
     haWebSocketService.setDemoMode(!live);
@@ -226,12 +268,20 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   },
 
   connectToHA: (url: string, token: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ha_live_mode', 'true');
+      localStorage.setItem('ha_server_url', url);
+      localStorage.setItem('ha_token', token);
+    }
     set({ isLiveMode: true, serverUrl: url, haToken: token });
     haWebSocketService.setDemoMode(false);
     haWebSocketService.connect(url, token);
   },
 
   disconnectFromHA: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ha_live_mode', 'false');
+    }
     haWebSocketService.disconnect();
     set({ isLiveMode: false });
     get().reloadDemoData();

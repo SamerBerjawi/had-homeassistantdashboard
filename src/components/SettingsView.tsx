@@ -41,6 +41,7 @@ import {
   Info
 } from 'lucide-react';
 import { HAEntity, Room, LogMessage, ToastNotification } from '../types';
+import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 
 interface SettingsViewProps {
   darkMode: boolean;
@@ -71,11 +72,19 @@ export default function SettingsView({
   setActiveTab,
   addToast
 }: SettingsViewProps) {
+  const {
+    serverUrl: storeServerUrl,
+    haToken: storeHaToken,
+    isLiveMode,
+    connectToHA,
+    setLiveMode
+  } = useAutoLayoutStore();
+
   const [activeSection, setActiveSection] = useState<SettingsSection>('connectivity');
 
   // Connectivity Form State
-  const [serverUrl, setServerUrl] = useState('wss://hass.homz.internal/api/websocket');
-  const [haToken, setHaToken] = useState('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhZG1pbiIsImlhdCI6MTYyODc2OTI4MH0.X8w_z0-hASS');
+  const [serverUrl, setServerUrl] = useState(storeServerUrl || 'wss://hass.homz.internal/api/websocket');
+  const [haToken, setHaToken] = useState(storeHaToken || '');
   const [showToken, setShowToken] = useState(false);
   const [sslEnabled, setSslEnabled] = useState(true);
   const [autoReconnect, setAutoReconnect] = useState(true);
@@ -128,12 +137,15 @@ export default function SettingsView({
   // Handle Save Connectivity
   const handleSaveConnectivity = (e: React.FormEvent) => {
     e.preventDefault();
+    if (serverUrl.trim() && haToken.trim()) {
+      connectToHA(serverUrl.trim(), haToken.trim());
+    }
     setSaveSuccessNotice(true);
-    addLog('info', `Updated Home Assistant server address to: ${serverUrl}`);
+    addLog('info', `Saved Home Assistant WebSocket credentials to browser cache: ${serverUrl}`);
     addToast?.({
       type: 'success',
-      title: 'Connection Settings Saved',
-      message: `WebSocket endpoint set to ${serverUrl}`
+      title: 'Credentials Saved & Connected',
+      message: `WebSocket endpoint set to ${serverUrl} and cached in browser.`
     });
     setTimeout(() => setSaveSuccessNotice(false), 3000);
   };

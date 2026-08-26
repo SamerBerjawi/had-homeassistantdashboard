@@ -38,8 +38,11 @@ import {
   Filter,
   Layers,
   HelpCircle,
+  TrendingUp,
+  LayoutGrid,
   Network
 } from 'lucide-react';
+import { BentoGrid } from './ui/bento-grid';
 import { Room, HAEntity, MaintenanceTask } from '../types';
 import RoomDetailSection from './RoomDetailSection';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
@@ -431,19 +434,24 @@ export default function RoomsView({
             )}
           </AnimatePresence>
 
-          {/* Quick Rooms Overview Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filteredRooms.map(({ room, roomEntities, activeCount, totalCount, totalPower, hasOverdueTasks, criticalBatteries, floorName }) => {
+          {/* Quick Rooms Overview Cards Bento Grid with Varied Sizing */}
+          <BentoGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+            {filteredRooms.map(({ room, roomEntities, activeCount, totalCount, totalPower, hasOverdueTasks, criticalBatteries, floorName }, idx) => {
               const anyActive = activeCount > 0;
+              const isHero = idx === 0 || (anyActive && idx % 4 === 0);
+              const bentoSpan = isHero
+                ? 'col-span-1 sm:col-span-2 lg:col-span-2'
+                : (idx % 5 === 3 ? 'col-span-1 sm:col-span-2 lg:col-span-2' : 'col-span-1');
+
               return (
                 <motion.div
                   key={room.id}
                   layout
                   whileHover={{ y: -3 }}
-                  className={`rounded-[28px] p-5 border transition-all relative overflow-hidden flex flex-col justify-between group shadow-sm ${
+                  className={`rounded-3xl p-5 border transition-all relative overflow-hidden flex flex-col justify-between group shadow-xs ${bentoSpan} ${
                     darkMode 
-                      ? 'bg-slate-900/70 hover:bg-slate-900/90 border-slate-800/80 hover:border-[#7B61FF]/50' 
-                      : 'bg-white hover:bg-slate-50/80 border-slate-200/80 hover:border-[#7B61FF]/50'
+                      ? 'bg-slate-900/70 hover:bg-slate-900/90 border-white/[0.08] hover:border-[#7B61FF]/50' 
+                      : 'bg-white hover:bg-slate-50/80 border-black/[0.06] hover:border-[#7B61FF]/50'
                   }`}
                 >
                   {/* Card Background Subtle Accent */}
@@ -589,7 +597,7 @@ export default function RoomsView({
                 </motion.div>
               );
             })}
-          </div>
+          </BentoGrid>
         </div>
       )}
 
