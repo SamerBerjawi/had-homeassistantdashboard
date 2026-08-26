@@ -1,4 +1,4 @@
-import React, { useRef, type PropsWithChildren } from "react"
+import React, { useRef, useState, type PropsWithChildren } from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import {
   motion,
@@ -6,6 +6,7 @@ import {
   useMotionValue,
   useSpring,
   useTransform,
+  AnimatePresence
 } from "motion/react"
 import type { MotionProps } from "motion/react"
 
@@ -27,7 +28,7 @@ const DEFAULT_DISTANCE = 140
 const DEFAULT_DISABLEMAGNIFICATION = false
 
 const dockVariants = cva(
-  "mx-auto flex h-[58px] w-max items-center justify-center gap-1.5 sm:gap-2 rounded-2xl border border-black/[0.08] dark:border-white/[0.1] bg-white/70 dark:bg-slate-900/80 p-1.5 sm:p-2 backdrop-blur-xl shadow-md"
+  "mx-auto flex h-[58px] w-max items-center justify-center gap-1.5 sm:gap-2 rounded-2xl border border-black/[0.08] dark:border-white/[0.1] bg-white/70 dark:bg-slate-900/80 p-1.5 sm:p-2 backdrop-blur-xl shadow-md overflow-visible"
 )
 
 const Dock = React.forwardRef<HTMLDivElement, DockProps>(
@@ -59,6 +60,7 @@ const Dock = React.forwardRef<HTMLDivElement, DockProps>(
             magnification: iconMagnification,
             disableMagnification: disableMagnification,
             distance: iconDistance,
+            direction: direction,
           })
         }
         return child
@@ -96,6 +98,8 @@ export interface DockIconProps extends Omit<
   mouseX?: MotionValue<number>
   className?: string
   children?: React.ReactNode
+  label?: string
+  direction?: "top" | "middle" | "bottom"
   props?: PropsWithChildren
 }
 
@@ -107,9 +111,12 @@ const DockIcon = ({
   mouseX,
   className,
   children,
+  label,
+  direction = "middle",
   ...props
 }: DockIconProps) => {
   const ref = useRef<HTMLDivElement>(null)
+  const [isHovered, setIsHovered] = useState(false)
   const padding = Math.max(6, size * 0.2)
   const defaultMouseX = useMotionValue(Infinity)
 
@@ -133,21 +140,54 @@ const DockIcon = ({
   })
 
   return (
-    <motion.div
-      ref={ref}
-      style={{ width: scaleSize, height: scaleSize, padding }}
-      className={cn(
-        "flex aspect-square cursor-pointer items-center justify-center rounded-full",
-        disableMagnification && "hover:bg-muted-foreground transition-colors",
-        className
-      )}
-      {...props}
+    <div 
+      className="relative flex items-center justify-center group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <div>{children}</div>
-    </motion.div>
+      {/* Floating Name/Tooltip Popup on Hover */}
+      <AnimatePresence>
+        {label && isHovered && (
+          <motion.div
+            initial={{ opacity: 0, y: direction === "top" ? -4 : 6, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: direction === "top" ? -4 : 4, scale: 0.9 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className={cn(
+              "absolute z-50 pointer-events-none whitespace-nowrap px-2.5 py-1 rounded-xl text-[11px] font-bold shadow-xl border border-white/10 dark:border-white/15 bg-slate-900/95 text-white backdrop-blur-md",
+              direction === "top" ? "-bottom-9" : "-top-9"
+            )}
+          >
+            {label}
+            <div 
+              className={cn(
+                "absolute left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900/95 rotate-45 border-white/10",
+                direction === "top" 
+                  ? "-top-1 border-l border-t" 
+                  : "-bottom-1 border-r border-b"
+              )} 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.div
+        ref={ref}
+        style={{ width: scaleSize, height: scaleSize, padding }}
+        className={cn(
+          "flex aspect-square cursor-pointer items-center justify-center rounded-full relative select-none",
+          disableMagnification && "hover:bg-muted-foreground transition-colors",
+          className
+        )}
+        {...props}
+      >
+        <div className="flex items-center justify-center">{children}</div>
+      </motion.div>
+    </div>
   )
 }
 
 DockIcon.displayName = "DockIcon"
 
 export { Dock, DockIcon, dockVariants }
+

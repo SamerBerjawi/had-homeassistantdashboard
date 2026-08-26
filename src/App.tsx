@@ -834,14 +834,14 @@ export default function App() {
       {/* Decorative premium floating blurred gradient circles in the background */}
       {darkMode ? (
         <>
-          <div className="absolute top-[-10%] left-[10%] w-[550px] h-[550px] bg-slate-800/25 rounded-full blur-[140px] pointer-events-none" />
-          <div className="absolute top-[20%] right-[-5%] w-[450px] h-[450px] bg-[#7B61FF]/08 rounded-full blur-[160px] pointer-events-none" />
-          <div className="absolute bottom-[-10%] left-[25%] w-[550px] h-[550px] bg-indigo-950/20 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute top-[-10%] left-[10%] w-137.5 h-137.5 bg-slate-800/25 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute top-[20%] right-[-5%] w-112.5 h-112.5 bg-[#7B61FF]/08 rounded-full blur-[160px] pointer-events-none" />
+          <div className="absolute bottom-[-10%] left-[25%] w-137.5 h-137.5 bg-indigo-950/20 rounded-full blur-[140px] pointer-events-none" />
         </>
       ) : (
         <>
-          <div className="absolute top-[-10%] left-[10%] w-[500px] h-[500px] bg-indigo-200/50 rounded-full blur-[140px] pointer-events-none" />
-          <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-purple-200/60 rounded-full blur-[150px] pointer-events-none" />
+          <div className="absolute top-[-10%] left-[10%] w-125 h-125 bg-indigo-200/50 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute bottom-[-10%] right-[-5%] w-150 h-150 bg-purple-200/60 rounded-full blur-[150px] pointer-events-none" />
         </>
       )}
 
@@ -897,8 +897,8 @@ export default function App() {
                  onClick={() => setShowGraphModal(true)}
                  className={`inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-black shadow-xs backdrop-blur-md border transition-all cursor-pointer ${
                    darkMode 
-                     ? 'bg-gradient-to-r from-indigo-950/70 to-purple-950/70 hover:from-indigo-900/80 hover:to-purple-900/80 border-[#7B61FF]/40 text-[#9D8BFF]' 
-                     : 'bg-gradient-to-r from-indigo-50/90 to-purple-50/90 hover:from-indigo-100 hover:to-purple-100 border-indigo-200 text-[#7B61FF]'
+                     ? 'bg-linear-to-r from-indigo-950/70 to-purple-950/70 hover:from-indigo-900/80 hover:to-purple-900/80 border-[#7B61FF]/40 text-[#9D8BFF]' 
+                     : 'bg-linear-to-r from-indigo-50/90 to-purple-50/90 hover:from-indigo-100 hover:to-purple-100 border-indigo-200 text-[#7B61FF]'
                  }`}
                  title="Open Auto-Layout Graph Inspector"
                >
@@ -1050,7 +1050,7 @@ export default function App() {
               {/* Pinned / Active Entities Dynamic Banner (Surfacing Active Media, Active Climate & Contact Alerts) */}
               {(overviewSummary.activeMediaCount > 0 || overviewSummary.openOpeningsCount > 0 || overviewSummary.activeClimatesCount > 0) && (
                 <div className={`p-4 sm:p-5 rounded-2xl border shadow-xs transition-all ${
-                  darkMode ? 'bg-slate-900/60 border-white/[0.1] backdrop-blur-md' : 'bg-white/70 border-black/[0.06] backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
+                  darkMode ? 'bg-slate-900/60 border-white/10 backdrop-blur-md' : 'bg-white/70 border-black/6 backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
                 }`}>
                   <div className="flex items-center justify-between mb-3">
                     <span className={`text-[10px] font-black uppercase tracking-wider ${
@@ -1166,8 +1166,8 @@ export default function App() {
                       whileHover={{ y: -2 }}
                       className={`transition-all p-5 rounded-2xl flex flex-row lg:flex-col items-center lg:items-start justify-between backdrop-blur-md shadow-xs border ${
                         darkMode 
-                          ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/[0.1] text-white' 
-                          : 'bg-white/70 hover:bg-white/85 border-black/[0.06] text-slate-800 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
+                          ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 text-white' 
+                          : 'bg-white/70 hover:bg-white/85 border-black/6 text-slate-800 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
                       }`}
                     >
                       <div className={`w-11 h-11 rounded-xl flex items-center justify-center border shadow-xs ${
@@ -1191,8 +1191,8 @@ export default function App() {
                       onClick={() => setActiveTab('energy')}
                       className={`transition-all p-5 rounded-2xl flex flex-row lg:flex-col items-center lg:items-start justify-between backdrop-blur-md shadow-xs border cursor-pointer group ${
                         darkMode 
-                          ? 'bg-slate-900/60 hover:bg-slate-900/90 border-white/[0.1] hover:border-[#7B61FF]/40 text-white' 
-                          : 'bg-white/70 hover:bg-white/90 border-black/[0.06] hover:border-[#7B61FF]/40 text-slate-800 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
+                          ? 'bg-slate-900/60 hover:bg-slate-900/90 border-white/10 hover:border-[#7B61FF]/40 text-white' 
+                          : 'bg-white/70 hover:bg-white/90 border-black/6 hover:border-[#7B61FF]/40 text-slate-800 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]'
                       }`}
                     >
                       <div className={`w-11 h-11 rounded-xl flex items-center justify-center border shadow-xs transition-transform group-hover:scale-105 ${
@@ -1387,7 +1387,7 @@ export default function App() {
                             key={room.id}
                             value={room}
                             id={`reorder-room-${room.id}`}
-                            className={`list-none select-none touch-manipulation cursor-grab active:cursor-grabbing focus:outline-hidden ${bentoSpan}`}
+                            className={`list-none select-none touch-manipulation cursor-grab focus:outline-hidden ${bentoSpan}`}
                             whileDrag={{ 
                               scale: 1.03, 
                               zIndex: 40,
@@ -1498,7 +1498,7 @@ export default function App() {
                           }}
                         >
                           <div className="flex items-center gap-2.5">
-                            <span className={`w-2 h-2 rounded-full bg-gradient-to-r ${scene.color}`} />
+                            <span className={`w-2 h-2 rounded-full bg-linear-to-r ${scene.color}`} />
                             <span className="text-xs font-black tracking-tight">{scene.name}</span>
                           </div>
                           <span className={`text-[10px] font-bold ${isActive ? 'text-amber-300' : 'text-slate-400'}`}>

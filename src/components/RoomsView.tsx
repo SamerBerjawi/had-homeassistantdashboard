@@ -50,10 +50,12 @@ import {
   ChevronDown,
   ArrowUpDown,
   ArrowRight,
-  GripVertical
+  GripVertical,
+  Palette
 } from 'lucide-react';
 import { BentoGrid } from './ui/bento-grid';
 import { Dock, DockIcon } from './ui/dock';
+import { PhosphorIconPicker, getPhosphorIcon } from './ui/PhosphorIconPicker';
 import { Room, HAEntity, MaintenanceTask } from '../types';
 import RoomDetailSection from './RoomDetailSection';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
@@ -102,6 +104,43 @@ export default function RoomsView({
   const [showUnassignedDrawer, setShowUnassignedDrawer] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomIcon, setNewRoomIcon] = useState('Sofa');
+
+  // Custom Phosphor Dock Icons (duotone default) mapped by floor/view ID
+  const [customDockIcons, setCustomDockIcons] = useState<Record<string, string>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ha_dock_custom_icons');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {}
+      }
+    }
+    return {
+      all: 'Stack',
+      ground_floor: 'House',
+      first_floor: 'Buildings',
+      outdoors: 'Tree'
+    };
+  });
+
+  const [editingDockIconTarget, setEditingDockIconTarget] = useState<{
+    id: string;
+    name: string;
+    currentIcon: string;
+  } | null>(null);
+
+  const handleSetCustomDockIcon = (targetId: string, iconId: string) => {
+    setCustomDockIcons(prev => {
+      const updated = { ...prev };
+      if (!iconId) {
+        delete updated[targetId];
+      } else {
+        updated[targetId] = iconId;
+      }
+      localStorage.setItem('ha_dock_custom_icons', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   // Compute room statistics and attach resolved Home Assistant area and floor metadata
   const roomStats = useMemo(() => {
@@ -470,59 +509,105 @@ export default function RoomsView({
 
           {/* MagicUI Dock for Floor Selection & Search/Sort controls */}
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4 py-1">
-            {/* MagicUI Dock Component for Home Assistant Floor Hierarchy */}
-            <div className="w-full lg:w-auto flex justify-center lg:justify-start">
+            {/* MagicUI Dock Component with Phosphor Duotone Icons */}
+            <div className="w-full lg:w-auto flex items-center justify-center lg:justify-start gap-2">
               <Dock 
+                direction="bottom"
                 className="my-0"
-                iconSize={38}
-                iconMagnification={52}
-                iconDistance={100}
+                iconSize={42}
+                iconMagnification={62}
+                iconDistance={130}
               >
-                <DockIcon
-                  onClick={() => setSelectedFloorFilter('all')}
-                  className={`transition-all ${
-                    selectedFloorFilter === 'all'
-                      ? 'bg-[#7B61FF] text-white shadow-md shadow-[#7B61FF]/40 ring-2 ring-[#7B61FF]/60'
-                      : darkMode
-                        ? 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white'
-                        : 'bg-white/90 text-slate-700 hover:bg-slate-100 hover:text-slate-900 shadow-xs'
-                  }`}
-                  title={`All Spaces (${rooms.length} Areas)`}
-                >
-                  <div className="flex flex-col items-center justify-center gap-0.5">
-                    <Layers size={17} />
-                    <span className="text-[8px] font-bold">All</span>
-                  </div>
-                </DockIcon>
+                {/* All Spaces Dock Icon */}
+                {(() => {
+                  const AllIcon = getPhosphorIcon(customDockIcons['all'] || 'Stack');
+                  return (
+                    <DockIcon
+                      label={`All Spaces (${rooms.length} Areas)`}
+                      onClick={() => setSelectedFloorFilter('all')}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setEditingDockIconTarget({
+                          id: 'all',
+                          name: 'All Spaces',
+                          currentIcon: customDockIcons['all'] || 'Stack'
+                        });
+                      }}
+                      className={`transition-all ${
+                        selectedFloorFilter === 'all'
+                          ? 'bg-[#7B61FF] text-white shadow-md shadow-[#7B61FF]/40 ring-2 ring-[#7B61FF]/60'
+                          : darkMode
+                            ? 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white'
+                            : 'bg-white/90 text-slate-700 hover:bg-slate-100 hover:text-slate-900 shadow-xs'
+                      }`}
+                    >
+                      <AllIcon size={22} weight="duotone" />
+                    </DockIcon>
+                  );
+                })()}
 
-                {haFloors.map(f => (
-                  <DockIcon
-                    key={f.id}
-                    onClick={() => setSelectedFloorFilter(f.id)}
-                    className={`transition-all ${
-                      selectedFloorFilter === f.id
-                        ? 'bg-[#7B61FF] text-white shadow-md shadow-[#7B61FF]/40 ring-2 ring-[#7B61FF]/60'
-                        : darkMode
-                          ? 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white'
-                          : 'bg-white/90 text-slate-700 hover:bg-slate-100 hover:text-slate-900 shadow-xs'
-                    }`}
-                    title={`${f.name} (${f.count} rooms)`}
-                  >
-                    <div className="flex flex-col items-center justify-center gap-0.5">
-                      {f.id === 'ground_floor' || f.icon === 'Home' ? (
-                        <Home size={17} />
-                      ) : f.id === 'first_floor' || f.icon === 'Building' ? (
-                        <Building2 size={17} />
-                      ) : f.id === 'outdoors' || f.icon === 'Trees' ? (
-                        <Trees size={17} />
-                      ) : (
-                        <LayoutGrid size={17} />
-                      )}
-                      <span className="text-[8px] font-bold truncate max-w-[44px]">{f.name.split(' ')[0]}</span>
-                    </div>
-                  </DockIcon>
-                ))}
+                {/* Dynamic Floor Dock Icons */}
+                {haFloors.map(f => {
+                  const defaultFloorIcon = f.id === 'ground_floor' || f.icon === 'Home' 
+                    ? 'House' 
+                    : f.id === 'first_floor' || f.icon === 'Building' 
+                      ? 'Buildings' 
+                      : f.id === 'outdoors' || f.icon === 'Trees' 
+                        ? 'Tree' 
+                        : 'SquaresFour';
+                  const FloorIcon = getPhosphorIcon(customDockIcons[f.id] || defaultFloorIcon);
+
+                  return (
+                    <DockIcon
+                      key={f.id}
+                      label={`${f.name} (${f.count} ${f.count === 1 ? 'room' : 'rooms'})`}
+                      onClick={() => setSelectedFloorFilter(f.id)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setEditingDockIconTarget({
+                          id: f.id,
+                          name: f.name,
+                          currentIcon: customDockIcons[f.id] || defaultFloorIcon
+                        });
+                      }}
+                      className={`transition-all ${
+                        selectedFloorFilter === f.id
+                          ? 'bg-[#7B61FF] text-white shadow-md shadow-[#7B61FF]/40 ring-2 ring-[#7B61FF]/60'
+                          : darkMode
+                            ? 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white'
+                            : 'bg-white/90 text-slate-700 hover:bg-slate-100 hover:text-slate-900 shadow-xs'
+                      }`}
+                    >
+                      <FloorIcon size={22} weight="duotone" />
+                    </DockIcon>
+                  );
+                })}
               </Dock>
+
+              {/* Icon Customizer Trigger Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const currentTargetId = selectedFloorFilter;
+                  const currentTargetName = currentTargetId === 'all' 
+                    ? 'All Spaces' 
+                    : (haFloors.find(f => f.id === currentTargetId)?.name || currentTargetId);
+                  const currentIcon = customDockIcons[currentTargetId] || (currentTargetId === 'all' ? 'Stack' : 'House');
+                  setEditingDockIconTarget({
+                    id: currentTargetId,
+                    name: currentTargetName,
+                    currentIcon
+                  });
+                }}
+                title="Customize selected Dock icon with Phosphor Icons"
+                className={`p-2.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                  darkMode
+                    ? 'bg-slate-900/80 hover:bg-slate-800 border-slate-800 text-slate-400 hover:text-[#9D8BFF] hover:border-[#7B61FF]/40'
+                    : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-500 hover:text-[#7B61FF] hover:border-[#7B61FF]/40 shadow-xs'
+                }`}
+              >
+                <Palette size={16} />
+              </button>
             </div>
 
             {/* Search and Sort controls */}
@@ -1094,6 +1179,20 @@ export default function RoomsView({
           </div>
         )}
       </AnimatePresence>
+
+      {/* PHOSPHOR DOCK ICON PICKER MODAL */}
+      {editingDockIconTarget && (
+        <PhosphorIconPicker
+          isOpen={Boolean(editingDockIconTarget)}
+          onClose={() => setEditingDockIconTarget(null)}
+          currentIconId={editingDockIconTarget.currentIcon}
+          targetName={editingDockIconTarget.name}
+          darkMode={darkMode}
+          onSelectIcon={(selectedIconId) => {
+            handleSetCustomDockIcon(editingDockIconTarget.id, selectedIconId);
+          }}
+        />
+      )}
     </div>
   );
 }
