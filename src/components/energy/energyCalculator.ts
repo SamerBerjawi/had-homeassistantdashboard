@@ -3,6 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export interface EnergyEntityMappingConfig {
+  solarPowerEntity?: string;
+  solarEnergyTodayEntity?: string;
+  batteryPowerEntity?: string;
+  batteryChargingPowerEntity?: string;
+  batteryDischargingPowerEntity?: string;
+  batterySocEntity?: string;
+  gridPowerEntity?: string;
+  gridImportPowerEntity?: string;
+  gridExportPowerEntity?: string;
+  gridImportEnergyTodayEntity?: string;
+  gridExportEnergyTodayEntity?: string;
+  homeConsumptionPowerEntity?: string;
+  homeConsumptionEnergyTodayEntity?: string;
+}
+
 export interface RealtimeEnergy {
   solarPower: number;      // kW
   gridPower: number;       // kW (+ import, - export)
@@ -65,6 +81,18 @@ export interface TimeseriesEnergyPoint {
   consumption: number;      // kW (dashed overlay line)
 }
 
+export interface BoundEntityInfo {
+  solarPower: string;
+  solarEnergyToday: string;
+  batteryPower: string;
+  batterySoc: string;
+  gridPower: string;
+  gridImportEnergyToday: string;
+  gridExportEnergyToday: string;
+  homeConsumptionPower: string;
+  homeConsumptionEnergyToday: string;
+}
+
 export interface EnergyDataState {
   realtime: RealtimeEnergy;
   dailyTotals: DailyTotalsEnergy;
@@ -74,6 +102,7 @@ export interface EnergyDataState {
   timeseries: TimeseriesEnergyPoint[];
   weeklyTimeseries: TimeseriesEnergyPoint[];
   monthlyTimeseries: TimeseriesEnergyPoint[];
+  boundEntities: BoundEntityInfo;
 }
 
 /**
@@ -89,28 +118,28 @@ export const ENV_FACTORS = {
 /**
  * Helper to parse power values (W or kW) to kW number
  */
-function parsePowerToKW(entity: any): number | null {
+export function parsePowerToKW(entity: any): number | null {
   if (!entity || entity.state === 'unavailable' || entity.state === 'unknown') return null;
   const val = parseFloat(entity.state);
   if (isNaN(val)) return null;
-  const uom = (entity.attributes?.unit_of_measurement || '').trim();
-  if (uom === 'W') return val / 1000;
-  if (uom === 'kW') return val;
-  if (uom === 'MW') return val * 1000;
-  return val > 100 ? val / 1000 : val; // Heuristic if no UoM
+  const uom = (entity.attributes?.unit_of_measurement || '').trim().toLowerCase();
+  if (uom === 'w') return val / 1000;
+  if (uom === 'kw') return val;
+  if (uom === 'mw') return val * 1000;
+  return Math.abs(val) > 100 ? val / 1000 : val; // Heuristic if no UoM
 }
 
 /**
  * Helper to parse energy values (Wh or kWh) to kWh number
  */
-function parseEnergyToKWh(entity: any): number | null {
+export function parseEnergyToKWh(entity: any): number | null {
   if (!entity || entity.state === 'unavailable' || entity.state === 'unknown') return null;
   const val = parseFloat(entity.state);
   if (isNaN(val)) return null;
-  const uom = (entity.attributes?.unit_of_measurement || '').trim();
-  if (uom === 'Wh') return val / 1000;
-  if (uom === 'kWh') return val;
-  if (uom === 'MWh') return val * 1000;
+  const uom = (entity.attributes?.unit_of_measurement || '').trim().toLowerCase();
+  if (uom === 'wh') return val / 1000;
+  if (uom === 'kwh') return val;
+  if (uom === 'mwh') return val * 1000;
   return val;
 }
 
@@ -121,41 +150,74 @@ export function calculateEnergyState(
   states: Record<string, any>,
   customImportTariff: number = 0.28,
   customExportTariff: number = 0.09,
-  currencySymbol: string = '€'
+  currencySymbol: string = '€',
+  entityOverrides: EnergyEntityMappingConfig = {}
 ): EnergyDataState {
   const entityKeys = Object.keys(states || {});
 
-  // 1. Resolve Solar Generation Power (kW)
+  const boundEntities: BoundEntityInfo = {
+    solarPower: 'auto-detected',
+    solarEnergyToday: 'auto-detected',
+    batteryPower: 'auto-detected',
+    batterySoc: 'auto-detected',
+    gridPower: 'auto-detected',
+    gridImportEnergyToday: 'auto-detected',
+    gridExportEnergyToday: 'auto-detected',
+    homeConsumptionPower: 'auto-detected',
+    homeConsumptionEnergyToday: 'auto-detected'
+  };
+
+  // =================================================================
+  // 1. RESOLVE SOLAR / PV GENERATION POWER (kW)
+  // =================================================================
   let solarPower: number | null = null;
-  const solarCandidates = [
-    'sensor.solaredge_solar_power',
-    'sensor.solar_power',
-    'sensor.pv_power',
-    'sensor.inverter_power',
-    'sensor.envoy_current_power_production',
-    'sensor.fronius_power_photovoltaics',
-    'sensor.huawei_solar_active_power',
-    'sensor.sun2000_active_power',
-    'sensor.solar_panels_power'
-  ];
-  for (const id of solarCandidates) {
-    if (states[id]) {
-      const parsed = parsePowerToKW(states[id]);
-      if (parsed !== null && parsed >= 0) {
-        solarPower = parsed;
-        break;
+
+  if (entityOverrides.solarPowerEntity && states[entityOverrides.solarPowerEntity]) {
+    const val = parsePowerToKW(states[entityOverrides.solarPowerEntity]);
+    if (val !== null) {
+      solarPower = Math.max(0, val);
+      boundEntities.solarPower = entityOverrides.solarPowerEntity;
+    }
+  }
+
+  if (solarPower === null) {
+    const solarCandidates = [
+      'sensor.solaredge_solar_power',
+      'sensor.solar_power',
+      'sensor.pv_power',
+      'sensor.inverter_power',
+      'sensor.envoy_current_power_production',
+      'sensor.fronius_power_photovoltaics',
+      'sensor.huawei_solar_active_power',
+      'sensor.sun2000_active_power',
+      'sensor.sungrow_sg_active_power',
+      'sensor.sma_power',
+      'sensor.goodwe_pv_power',
+      'sensor.solar_panels_power',
+      'sensor.power_production'
+    ];
+    for (const id of solarCandidates) {
+      if (states[id]) {
+        const parsed = parsePowerToKW(states[id]);
+        if (parsed !== null && parsed >= 0) {
+          solarPower = parsed;
+          boundEntities.solarPower = id;
+          break;
+        }
       }
     }
   }
+
   if (solarPower === null) {
     for (const key of entityKeys) {
       const ent = states[key];
       const name = (ent.attributes?.friendly_name || key).toLowerCase();
-      if ((name.includes('solar') || name.includes('pv ') || name.includes('photovoltaic')) && 
+      if ((name.includes('solar') || name.includes('pv ') || name.includes('photovoltaic') || name.includes('sun2000') || name.includes('inverter yield')) && 
           (ent.attributes?.device_class === 'power' || ent.attributes?.unit_of_measurement === 'W' || ent.attributes?.unit_of_measurement === 'kW')) {
         const parsed = parsePowerToKW(ent);
         if (parsed !== null && parsed >= 0) {
           solarPower = parsed;
+          boundEntities.solarPower = key;
           break;
         }
       }
@@ -163,121 +225,292 @@ export function calculateEnergyState(
   }
   if (solarPower === null) {
     solarPower = 1.35;
+    boundEntities.solarPower = 'demo:sensor.solaredge_solar_power';
   }
 
-  // 2. Resolve Home Battery Storage & Flow
+  // =================================================================
+  // 2. RESOLVE HOME BATTERY STORAGE (SoC % & Power Flow kW)
+  // =================================================================
   let batterySoC: number | null = null;
-  const batterySocCandidates = [
-    'sensor.tesla_powerwall_battery_level',
-    'sensor.battery_state_of_charge',
-    'sensor.home_battery_soc',
-    'sensor.storage_soc',
-    'sensor.battery_level',
-    'sensor.huawei_battery_soc',
-    'sensor.luna2000_battery_soc'
-  ];
-  for (const id of batterySocCandidates) {
-    if (states[id]) {
-      const val = parseFloat(states[id].state);
-      if (!isNaN(val)) {
-        batterySoC = val;
-        break;
+  if (entityOverrides.batterySocEntity && states[entityOverrides.batterySocEntity]) {
+    const val = parseFloat(states[entityOverrides.batterySocEntity].state);
+    if (!isNaN(val)) {
+      batterySoC = val;
+      boundEntities.batterySoc = entityOverrides.batterySocEntity;
+    }
+  }
+
+  if (batterySoC === null) {
+    const batterySocCandidates = [
+      'sensor.tesla_powerwall_battery_level',
+      'sensor.battery_state_of_charge',
+      'sensor.home_battery_soc',
+      'sensor.storage_soc',
+      'sensor.battery_level',
+      'sensor.huawei_battery_soc',
+      'sensor.luna2000_battery_soc',
+      'sensor.sungrow_battery_level',
+      'sensor.byd_battery_soc'
+    ];
+    for (const id of batterySocCandidates) {
+      if (states[id]) {
+        const val = parseFloat(states[id].state);
+        if (!isNaN(val)) {
+          batterySoC = val;
+          boundEntities.batterySoc = id;
+          break;
+        }
       }
     }
   }
   if (batterySoC === null) {
     batterySoC = 100;
+    boundEntities.batterySoc = 'demo:sensor.home_battery_soc';
   }
 
-  let batteryPower: number | null = null; // + discharge, - charge
-  const batteryPowerCandidates = [
-    'sensor.tesla_powerwall_flow',
-    'sensor.battery_power',
-    'sensor.powerwall_power',
-    'sensor.storage_power',
-    'sensor.huawei_battery_charge_discharge_power'
-  ];
-  for (const id of batteryPowerCandidates) {
-    if (states[id]) {
-      const parsed = parsePowerToKW(states[id]);
-      if (parsed !== null) {
-        batteryPower = parsed;
-        break;
+  // Battery Power (+ discharge, - charge)
+  let batteryPower: number | null = null;
+
+  if (entityOverrides.batteryPowerEntity && states[entityOverrides.batteryPowerEntity]) {
+    const parsed = parsePowerToKW(states[entityOverrides.batteryPowerEntity]);
+    if (parsed !== null) {
+      batteryPower = parsed;
+      boundEntities.batteryPower = entityOverrides.batteryPowerEntity;
+    }
+  } else if (entityOverrides.batteryChargingPowerEntity && entityOverrides.batteryDischargingPowerEntity) {
+    const charge = parsePowerToKW(states[entityOverrides.batteryChargingPowerEntity]) || 0;
+    const discharge = parsePowerToKW(states[entityOverrides.batteryDischargingPowerEntity]) || 0;
+    batteryPower = discharge - charge;
+    boundEntities.batteryPower = `${entityOverrides.batteryDischargingPowerEntity} - ${entityOverrides.batteryChargingPowerEntity}`;
+  }
+
+  if (batteryPower === null) {
+    const batteryPowerCandidates = [
+      'sensor.tesla_powerwall_flow',
+      'sensor.battery_power',
+      'sensor.powerwall_power',
+      'sensor.storage_power',
+      'sensor.huawei_battery_charge_discharge_power',
+      'sensor.luna2000_charge_discharge_power',
+      'sensor.sungrow_battery_power'
+    ];
+    for (const id of batteryPowerCandidates) {
+      if (states[id]) {
+        const parsed = parsePowerToKW(states[id]);
+        if (parsed !== null) {
+          batteryPower = parsed;
+          boundEntities.batteryPower = id;
+          break;
+        }
       }
     }
   }
+
+  // Check for separate charging and discharging power entities
+  if (batteryPower === null) {
+    let chargeEntity: string | null = null;
+    let dischargeEntity: string | null = null;
+    for (const key of entityKeys) {
+      const lower = key.toLowerCase();
+      if (lower.includes('battery') && lower.includes('charg') && !lower.includes('discharg')) {
+        chargeEntity = key;
+      }
+      if (lower.includes('battery') && lower.includes('discharg')) {
+        dischargeEntity = key;
+      }
+    }
+    if (chargeEntity && dischargeEntity) {
+      const c = parsePowerToKW(states[chargeEntity]) || 0;
+      const d = parsePowerToKW(states[dischargeEntity]) || 0;
+      batteryPower = d - c;
+      boundEntities.batteryPower = `${dischargeEntity} - ${chargeEntity}`;
+    }
+  }
+
   if (batteryPower === null) {
     batteryPower = 0.00;
+    boundEntities.batteryPower = 'demo:sensor.battery_power';
   }
 
-  // 3. Resolve Grid Power Flow (+ import, - export)
+  // =================================================================
+  // 3. RESOLVE GRID POWER FLOW (+ import, - export / feed-in)
+  // =================================================================
   let gridPower: number | null = null;
-  const gridCandidates = [
-    'sensor.grid_power',
-    'sensor.power_meter_active_power',
-    'sensor.meter_power',
-    'sensor.shelly_em_grid_power',
-    'sensor.envoy_current_power_consumption',
-    'sensor.smart_meter_active_power'
-  ];
-  for (const id of gridCandidates) {
-    if (states[id]) {
-      const parsed = parsePowerToKW(states[id]);
-      if (parsed !== null) {
-        gridPower = parsed;
-        break;
+
+  if (entityOverrides.gridPowerEntity && states[entityOverrides.gridPowerEntity]) {
+    const parsed = parsePowerToKW(states[entityOverrides.gridPowerEntity]);
+    if (parsed !== null) {
+      gridPower = parsed;
+      boundEntities.gridPower = entityOverrides.gridPowerEntity;
+    }
+  } else if (entityOverrides.gridImportPowerEntity && entityOverrides.gridExportPowerEntity) {
+    const imp = parsePowerToKW(states[entityOverrides.gridImportPowerEntity]) || 0;
+    const exp = parsePowerToKW(states[entityOverrides.gridExportPowerEntity]) || 0;
+    gridPower = imp - exp;
+    boundEntities.gridPower = `${entityOverrides.gridImportPowerEntity} - ${entityOverrides.gridExportPowerEntity}`;
+  }
+
+  if (gridPower === null) {
+    const gridCandidates = [
+      'sensor.grid_power',
+      'sensor.power_meter_active_power',
+      'sensor.meter_power',
+      'sensor.shelly_em_grid_power',
+      'sensor.shelly_3em_grid_power',
+      'sensor.envoy_current_power_consumption',
+      'sensor.smart_meter_active_power',
+      'sensor.grid_active_power'
+    ];
+    for (const id of gridCandidates) {
+      if (states[id]) {
+        const parsed = parsePowerToKW(states[id]);
+        if (parsed !== null) {
+          gridPower = parsed;
+          boundEntities.gridPower = id;
+          break;
+        }
       }
     }
   }
+
+  // Check for separate grid import and grid export sensors
+  if (gridPower === null) {
+    let importEntity: string | null = null;
+    let exportEntity: string | null = null;
+    for (const key of entityKeys) {
+      const lower = key.toLowerCase();
+      if ((lower.includes('grid') || lower.includes('meter')) && lower.includes('import') && (lower.includes('power') || lower.includes('w'))) {
+        importEntity = key;
+      }
+      if ((lower.includes('grid') || lower.includes('meter') || lower.includes('feed_in') || lower.includes('return')) && (lower.includes('export') || lower.includes('return') || lower.includes('feed_in')) && (lower.includes('power') || lower.includes('w'))) {
+        exportEntity = key;
+      }
+    }
+    if (importEntity && exportEntity) {
+      const imp = parsePowerToKW(states[importEntity]) || 0;
+      const exp = parsePowerToKW(states[exportEntity]) || 0;
+      gridPower = imp - exp;
+      boundEntities.gridPower = `${importEntity} - ${exportEntity}`;
+    }
+  }
+
   if (gridPower === null) {
     gridPower = -1.02;
+    boundEntities.gridPower = 'demo:sensor.grid_power';
   }
 
-  // 4. Resolve Home Consumption Power (kW)
+  // =================================================================
+  // 4. RESOLVE HOME CONSUMPTION POWER (kW)
+  // =================================================================
   let homeConsumption: number | null = null;
-  const homeCandidates = [
-    'sensor.home_consumption_power',
-    'sensor.home_power',
-    'sensor.house_consumption',
-    'sensor.active_load_power',
-    'sensor.total_load_power'
-  ];
-  for (const id of homeCandidates) {
-    if (states[id]) {
-      const parsed = parsePowerToKW(states[id]);
-      if (parsed !== null && parsed >= 0) {
-        homeConsumption = parsed;
-        break;
+
+  if (entityOverrides.homeConsumptionPowerEntity && states[entityOverrides.homeConsumptionPowerEntity]) {
+    const parsed = parsePowerToKW(states[entityOverrides.homeConsumptionPowerEntity]);
+    if (parsed !== null && parsed >= 0) {
+      homeConsumption = parsed;
+      boundEntities.homeConsumptionPower = entityOverrides.homeConsumptionPowerEntity;
+    }
+  }
+
+  if (homeConsumption === null) {
+    const homeCandidates = [
+      'sensor.home_consumption_power',
+      'sensor.home_power',
+      'sensor.house_consumption',
+      'sensor.active_load_power',
+      'sensor.total_load_power',
+      'sensor.house_power'
+    ];
+    for (const id of homeCandidates) {
+      if (states[id]) {
+        const parsed = parsePowerToKW(states[id]);
+        if (parsed !== null && parsed >= 0) {
+          homeConsumption = parsed;
+          boundEntities.homeConsumptionPower = id;
+          break;
+        }
       }
     }
   }
+
+  // If not measured directly by a whole-house clamp, compute from physical law:
+  // Home Demand = Solar (kW) + Grid Import (kW) - Grid Export (kW) + Battery Discharge (kW) - Battery Charge (kW)
   if (homeConsumption === null) {
     const calc = solarPower + gridPower + batteryPower;
     homeConsumption = calc > 0.05 ? calc : 0.33;
+    boundEntities.homeConsumptionPower = 'calculated: solar + grid + battery';
   }
 
-  // 5. Daily Cumulative Energy Totals (kWh)
+  // =================================================================
+  // 5. DAILY CUMULATIVE ENERGY TOTALS (kWh)
+  // =================================================================
   let solarProductionKWh: number | null = null;
-  const solarEnergyCandidates = [
-    'sensor.energy_production_today',
-    'sensor.solar_energy_today',
-    'sensor.solar_production_today',
-    'sensor.pv_energy_today',
-    'sensor.inverter_daily_yield',
-    'sensor.huawei_solar_daily_yield',
-    'sensor.envoy_today_s_energy_production'
-  ];
-  for (const id of solarEnergyCandidates) {
-    if (states[id]) {
-      const val = parseEnergyToKWh(states[id]);
-      if (val !== null && val >= 0) {
-        solarProductionKWh = val;
-        break;
+  if (entityOverrides.solarEnergyTodayEntity && states[entityOverrides.solarEnergyTodayEntity]) {
+    const val = parseEnergyToKWh(states[entityOverrides.solarEnergyTodayEntity]);
+    if (val !== null && val >= 0) {
+      solarProductionKWh = val;
+      boundEntities.solarEnergyToday = entityOverrides.solarEnergyTodayEntity;
+    }
+  }
+
+  if (solarProductionKWh === null) {
+    const solarEnergyCandidates = [
+      'sensor.energy_production_today',
+      'sensor.solar_energy_today',
+      'sensor.solar_production_today',
+      'sensor.pv_energy_today',
+      'sensor.inverter_daily_yield',
+      'sensor.huawei_solar_daily_yield',
+      'sensor.envoy_today_s_energy_production',
+      'sensor.solaredge_daily_energy'
+    ];
+    for (const id of solarEnergyCandidates) {
+      if (states[id]) {
+        const val = parseEnergyToKWh(states[id]);
+        if (val !== null && val >= 0) {
+          solarProductionKWh = val;
+          boundEntities.solarEnergyToday = id;
+          break;
+        }
       }
     }
   }
   if (solarProductionKWh === null) {
     solarProductionKWh = 16.44;
+    boundEntities.solarEnergyToday = 'demo:sensor.solar_energy_today';
+  }
+
+  let solarFedToGridKWh: number | null = null;
+  if (entityOverrides.gridExportEnergyTodayEntity && states[entityOverrides.gridExportEnergyTodayEntity]) {
+    const val = parseEnergyToKWh(states[entityOverrides.gridExportEnergyTodayEntity]);
+    if (val !== null && val >= 0) {
+      solarFedToGridKWh = val;
+      boundEntities.gridExportEnergyToday = entityOverrides.gridExportEnergyTodayEntity;
+    }
+  }
+
+  if (solarFedToGridKWh === null) {
+    const fedToGridCandidates = [
+      'sensor.energy_fed_to_grid_today',
+      'sensor.solar_exported_today',
+      'sensor.grid_export_energy_today',
+      'sensor.grid_return_today',
+      'sensor.feed_in_energy_today'
+    ];
+    for (const id of fedToGridCandidates) {
+      if (states[id]) {
+        const val = parseEnergyToKWh(states[id]);
+        if (val !== null && val >= 0) {
+          solarFedToGridKWh = val;
+          boundEntities.gridExportEnergyToday = id;
+          break;
+        }
+      }
+    }
+  }
+  if (solarFedToGridKWh === null) {
+    solarFedToGridKWh = 9.71;
+    boundEntities.gridExportEnergyToday = 'demo:sensor.energy_fed_to_grid_today';
   }
 
   let solarConsumedKWh: number | null = null;
@@ -297,103 +530,130 @@ export function calculateEnergyState(
     }
   }
   if (solarConsumedKWh === null) {
-    solarConsumedKWh = 6.73;
-  }
-
-  let solarFedToGridKWh: number | null = null;
-  const fedToGridCandidates = [
-    'sensor.energy_fed_to_grid_today',
-    'sensor.solar_exported_today',
-    'sensor.grid_export_energy_today',
-    'sensor.grid_return_today',
-    'sensor.feed_in_energy_today'
-  ];
-  for (const id of fedToGridCandidates) {
-    if (states[id]) {
-      const val = parseEnergyToKWh(states[id]);
-      if (val !== null && val >= 0) {
-        solarFedToGridKWh = val;
-        break;
-      }
-    }
-  }
-  if (solarFedToGridKWh === null) {
-    solarFedToGridKWh = 9.71;
+    solarConsumedKWh = Math.max(0, Number((solarProductionKWh - solarFedToGridKWh).toFixed(2)));
   }
 
   let totalConsumptionKWh: number | null = null;
-  const consumptionEnergyCandidates = [
-    'sensor.energy_consumption_today',
-    'sensor.home_energy_today',
-    'sensor.house_energy_consumption_today',
-    'sensor.daily_energy_consumption'
-  ];
-  for (const id of consumptionEnergyCandidates) {
-    if (states[id]) {
-      const val = parseEnergyToKWh(states[id]);
-      if (val !== null && val >= 0) {
-        totalConsumptionKWh = val;
-        break;
+  if (entityOverrides.homeConsumptionEnergyTodayEntity && states[entityOverrides.homeConsumptionEnergyTodayEntity]) {
+    const val = parseEnergyToKWh(states[entityOverrides.homeConsumptionEnergyTodayEntity]);
+    if (val !== null && val >= 0) {
+      totalConsumptionKWh = val;
+      boundEntities.homeConsumptionEnergyToday = entityOverrides.homeConsumptionEnergyTodayEntity;
+    }
+  }
+
+  if (totalConsumptionKWh === null) {
+    const consumptionEnergyCandidates = [
+      'sensor.energy_consumption_today',
+      'sensor.home_energy_today',
+      'sensor.house_energy_consumption_today',
+      'sensor.daily_energy_consumption'
+    ];
+    for (const id of consumptionEnergyCandidates) {
+      if (states[id]) {
+        const val = parseEnergyToKWh(states[id]);
+        if (val !== null && val >= 0) {
+          totalConsumptionKWh = val;
+          boundEntities.homeConsumptionEnergyToday = id;
+          break;
+        }
       }
     }
   }
   if (totalConsumptionKWh === null) {
     totalConsumptionKWh = 4.61;
+    boundEntities.homeConsumptionEnergyToday = 'demo:sensor.energy_consumption_today';
   }
 
-  let energyFromSolarTodayKWh: number | null = null;
-  const fromSolarCandidates = [
-    'sensor.energy_consumption_from_solar_today',
-    'sensor.solar_to_house_today',
-    'sensor.pv_self_consumption_today'
+  let gridImportKWh: number | null = null;
+  if (entityOverrides.gridImportEnergyTodayEntity && states[entityOverrides.gridImportEnergyTodayEntity]) {
+    const val = parseEnergyToKWh(states[entityOverrides.gridImportEnergyTodayEntity]);
+    if (val !== null && val >= 0) {
+      gridImportKWh = val;
+      boundEntities.gridImportEnergyToday = entityOverrides.gridImportEnergyTodayEntity;
+    }
+  }
+
+  if (gridImportKWh === null) {
+    const fromGridCandidates = [
+      'sensor.energy_consumption_from_grid_today',
+      'sensor.grid_import_energy_today',
+      'sensor.grid_consumption_today',
+      'sensor.grid_energy_imported_today'
+    ];
+    for (const id of fromGridCandidates) {
+      if (states[id]) {
+        const val = parseEnergyToKWh(states[id]);
+        if (val !== null && val >= 0) {
+          gridImportKWh = val;
+          boundEntities.gridImportEnergyToday = id;
+          break;
+        }
+      }
+    }
+  }
+  if (gridImportKWh === null) {
+    gridImportKWh = 0.17;
+    boundEntities.gridImportEnergyToday = 'demo:sensor.grid_import_energy_today';
+  }
+
+  let batteryChargedKWh: number | null = null;
+  let batteryDischargedKWh: number | null = null;
+
+  const batteryChargedCandidates = [
+    'sensor.battery_charged_today',
+    'sensor.battery_energy_in_today',
+    'sensor.battery_charge_today',
+    'sensor.huawei_battery_charge_today'
   ];
-  for (const id of fromSolarCandidates) {
+  for (const id of batteryChargedCandidates) {
     if (states[id]) {
       const val = parseEnergyToKWh(states[id]);
       if (val !== null && val >= 0) {
-        energyFromSolarTodayKWh = val;
+        batteryChargedKWh = val;
         break;
       }
     }
   }
-  if (energyFromSolarTodayKWh === null) {
-    energyFromSolarTodayKWh = 4.44;
-  }
 
-  let energyFromGridTodayKWh: number | null = null;
-  const fromGridCandidates = [
-    'sensor.energy_consumption_from_grid_today',
-    'sensor.grid_import_energy_today',
-    'sensor.grid_consumption_today'
+  const batteryDischargedCandidates = [
+    'sensor.battery_discharged_today',
+    'sensor.battery_energy_out_today',
+    'sensor.battery_discharge_today',
+    'sensor.huawei_battery_discharge_today'
   ];
-  for (const id of fromGridCandidates) {
+  for (const id of batteryDischargedCandidates) {
     if (states[id]) {
       const val = parseEnergyToKWh(states[id]);
       if (val !== null && val >= 0) {
-        energyFromGridTodayKWh = val;
+        batteryDischargedKWh = val;
         break;
       }
     }
   }
-  if (energyFromGridTodayKWh === null) {
-    energyFromGridTodayKWh = 0.17;
+
+  // If not explicitly measured, calculate from self-consumption storage buffer
+  if (batteryChargedKWh === null) {
+    // Difference between total solar self-consumed and solar directly consumed by home appliances
+    batteryChargedKWh = Math.max(0, Number((solarConsumedKWh - (totalConsumptionKWh - gridImportKWh)).toFixed(2)));
+  }
+  if (batteryDischargedKWh === null) {
+    batteryDischargedKWh = 0.00;
   }
 
-  const gridImportKWh = energyFromGridTodayKWh;
+  const energyFromSolarTodayKWh = Math.max(0, totalConsumptionKWh - gridImportKWh);
   const gridExportKWh = solarFedToGridKWh;
-  const batteryChargedKWh = 3.20;
-  const batteryDischargedKWh = 2.10;
 
   // Percentage Calculations
   const selfConsumptionRate = Number(((solarConsumedKWh / (solarProductionKWh || 1)) * 100).toFixed(2));
   const autarkyRate = Number(((energyFromSolarTodayKWh / (totalConsumptionKWh || 1)) * 100).toFixed(2));
 
-  // 6. Financial Calculations (Real imported kWh * import tariff vs exported kWh * export earnings)
+  // 6. Financial Calculations
   const importCost = Number((gridImportKWh * customImportTariff).toFixed(2));
   const exportEarnings = Number((gridExportKWh * customExportTariff).toFixed(2));
   const netCost = Number((importCost - exportEarnings).toFixed(2));
 
-  // 7. Environmental Impact (Real solar production kWh * conversion factors)
+  // 7. Environmental Impact
   const co2AvoidedKg = Number((solarProductionKWh * ENV_FACTORS.CO2_PER_KWH_KG).toFixed(2));
   const coalSavedKg = Number((solarProductionKWh * ENV_FACTORS.COAL_PER_KWH_KG).toFixed(2));
   const treesPlantedEquivalent = Number((co2AvoidedKg / (ENV_FACTORS.CO2_PER_TREE_YR_KG / 365)).toFixed(0));
@@ -402,7 +662,6 @@ export function calculateEnergyState(
   // 8. Individual Sub-Consumers Discovery from Home Assistant Entities
   const discoveredConsumers: DeviceConsumer[] = [];
   
-  // Scan for smart plugs and appliances with energy/power
   for (const entityId of entityKeys) {
     const ent = states[entityId];
     if (!ent) continue;
@@ -460,13 +719,12 @@ export function calculateEnergyState(
           category,
           currentPowerW: Math.round(powerW),
           energyKWh: Number(energy.toFixed(2)),
-          percentage: 0 // calculated below
+          percentage: 0
         });
       }
     }
   }
 
-  // Fallback defaults if no individual sub-consumers configured yet
   const deviceConsumers: DeviceConsumer[] = discoveredConsumers.length > 0 
     ? discoveredConsumers.slice(0, 8) 
     : [
@@ -527,16 +785,26 @@ export function calculateEnergyState(
         }
       ];
 
-  // Compute percentages
   const totalSubKWh = deviceConsumers.reduce((acc, c) => acc + c.energyKWh, 0) || 1;
   deviceConsumers.forEach(c => {
     c.percentage = Number(((c.energyKWh / totalSubKWh) * 100).toFixed(1));
   });
 
-  // 9. Generate realistic Timeseries with exact requested color balance
-  const timeseries = generatePowerSourcesTimeseries(solarPower, gridPower, batteryPower, homeConsumption);
-  const weeklyTimeseries = generate7DayTimeseries();
-  const monthlyTimeseries = generate30DayTimeseries();
+  // 9. Generate Timeseries matching exact energy profile & current telemetry
+  const timeseries = generatePowerSourcesTimeseries(
+    solarPower, 
+    gridPower, 
+    batteryPower, 
+    homeConsumption,
+    solarProductionKWh,
+    totalConsumptionKWh,
+    solarFedToGridKWh,
+    gridImportKWh,
+    batteryChargedKWh,
+    batteryDischargedKWh
+  );
+  const weeklyTimeseries = generate7DayTimeseries(solarProductionKWh, totalConsumptionKWh, solarFedToGridKWh, gridImportKWh);
+  const monthlyTimeseries = generate30DayTimeseries(solarProductionKWh, totalConsumptionKWh, solarFedToGridKWh, gridImportKWh);
 
   return {
     realtime: {
@@ -554,8 +822,8 @@ export function calculateEnergyState(
       gridImportKWh: Number(gridImportKWh.toFixed(2)),
       gridExportKWh: Number(gridExportKWh.toFixed(2)),
       totalConsumptionKWh: Number(totalConsumptionKWh.toFixed(2)),
-      batteryChargedKWh,
-      batteryDischargedKWh,
+      batteryChargedKWh: Number(batteryChargedKWh.toFixed(2)),
+      batteryDischargedKWh: Number(batteryDischargedKWh.toFixed(2)),
       selfConsumptionRate,
       autarkyRate
     },
@@ -576,23 +844,28 @@ export function calculateEnergyState(
     deviceConsumers,
     timeseries,
     weeklyTimeseries,
-    monthlyTimeseries
+    monthlyTimeseries,
+    boundEntities
   };
 }
 
-/**
- * Generates 24-hour interval timeseries matching the user's color scheme and physical power balance:
- * - Positive (> 0): Solar (Amber), Grid Import (Blue), Battery Discharge (Teal/Green)
- * - Negative (< 0): Grid Export (Dark Blue), Battery Charge (Cyan)
- * - Overlay Line: Total Home Consumption
- */
 function generatePowerSourcesTimeseries(
   currentSolar: number, 
   currentGrid: number, 
   currentBattery: number, 
-  currentHome: number
+  currentHome: number,
+  solarProductionKWh: number,
+  totalConsumptionKWh: number,
+  solarFedToGridKWh: number,
+  gridImportKWh: number,
+  batteryChargedKWh: number,
+  batteryDischargedKWh: number
 ): TimeseriesEnergyPoint[] {
   const points: TimeseriesEnergyPoint[] = [];
+  
+  // Peak scaling factor for solar based on daily yield (e.g. 16.44 kWh -> ~3.4 kW peak)
+  const solarScale = solarProductionKWh / 16.44;
+  const homeScale = totalConsumptionKWh / 4.61;
 
   for (let i = 0; i <= 96; i++) {
     const hour = i / 4;
@@ -607,65 +880,120 @@ function generatePowerSourcesTimeseries(
     else if (i === 48) label = '12:00 PM';
     else if (i === 64) label = '4:00 PM';
     else if (i === 80) label = '8:00 PM';
+    else if (i === 96) label = '11:59 PM';
 
     let solar = 0;
     let gridImport = 0;
     let gridExport = 0;
     let batteryDischarge = 0;
     let batteryCharge = 0;
-    let consumption = 0.20;
+    let consumption = 0.20 * homeScale;
 
-    if (hour < 7.0) {
-      // Night: battery discharge or grid import
-      consumption = 0.22 + Math.sin(hour * 1.5) * 0.04;
-      gridImport = consumption * 0.3;
-      batteryDischarge = consumption * 0.7;
-    } else if (hour >= 7.0 && hour < 9.5) {
-      // Morning rise & breakfast
-      if (hour >= 7.8 && hour <= 8.3) {
-        consumption = 1.65;
-        gridImport = 1.40;
-        solar = 0.25;
+    // Solar daylight curve from 06:15 to 19:45
+    if (hour >= 6.25 && hour <= 19.75) {
+      const peakHour = 13.0;
+      const sigma = 3.2;
+      const diff = (hour - peakHour) / sigma;
+      solar = Math.max(0, 3.45 * solarScale * Math.exp(-0.5 * diff * diff));
+      
+      // Slight passing cloud variation around midday
+      if (hour >= 11.25 && hour <= 11.75) solar *= 0.85;
+      if (hour >= 14.5 && hour <= 15.0) solar *= 0.88;
+    }
+
+    // Household load profile (morning peak, midday baseload + lunch, evening dinner peak)
+    if (hour < 6.5) {
+      consumption = (0.22 + Math.sin(hour * 1.5) * 0.04) * homeScale;
+      // Night import / battery discharge
+      if (batteryDischargedKWh > 0.5) {
+        batteryDischarge = consumption * 0.8;
+        gridImport = consumption * 0.2;
       } else {
-        consumption = 0.40;
-        gridImport = 0.25;
-        solar = 0.15;
+        gridImport = consumption * 0.9;
       }
-    } else if (hour >= 9.5 && hour <= 17.5) {
-      // Daylight solar curve
-      const dist = Math.abs(hour - 13.5);
-      solar = Math.max(0, 3.4 - (dist * dist) * 0.22);
-
-      // Daytime dips
-      if (hour >= 11.2 && hour <= 11.8) solar *= 0.68;
-      if (hour >= 13.0 && hour <= 13.3) solar *= 0.55;
-      if (hour >= 14.5 && hour <= 15.2) solar *= 0.72;
-
-      consumption = 0.28;
-      if (hour >= 10.0 && hour <= 10.3) consumption = 1.4;
-      if (hour >= 12.8 && hour <= 13.1) consumption = 1.2;
-      if (hour >= 13.8 && hour <= 14.2) consumption = 1.3;
+    } else if (hour >= 6.5 && hour < 9.0) {
+      // Breakfast / getting ready peak
+      if (hour >= 7.5 && hour <= 8.25) {
+        consumption = 1.45 * homeScale;
+      } else {
+        consumption = 0.55 * homeScale;
+      }
+      if (solar >= consumption) {
+        // Solar covers load
+      } else {
+        const deficit = consumption - solar;
+        gridImport = Math.min(deficit, 0.4 * homeScale);
+        batteryDischarge = deficit - gridImport;
+      }
+    } else if (hour >= 9.0 && hour <= 17.5) {
+      // Daytime appliance spikes (EV / Heat Pump / Dishwasher)
+      consumption = 0.35 * homeScale;
+      if (hour >= 10.0 && hour <= 10.5) consumption = 1.2 * homeScale;
+      if (hour >= 12.5 && hour <= 13.25) consumption = 0.95 * homeScale;
+      if (hour >= 15.0 && hour <= 15.75) consumption = 0.85 * homeScale;
 
       const surplus = Math.max(0, solar - consumption);
-      if (hour < 13.0) {
-        batteryCharge = Math.min(surplus * 0.45, 1.8);
+      if (hour < 14.0 && batteryChargedKWh > 0.5) {
+        batteryCharge = Math.min(surplus * 0.4, 1.5);
         gridExport = surplus - batteryCharge;
       } else {
         gridExport = surplus;
       }
+    } else if (hour > 17.5 && hour <= 22.0) {
+      // Evening load
+      if (hour >= 18.5 && hour <= 20.5) {
+        consumption = (0.75 + Math.sin(hour * 2) * 0.15) * homeScale;
+      } else {
+        consumption = 0.45 * homeScale;
+      }
+      
+      if (solar >= consumption) {
+        gridExport = solar - consumption;
+      } else {
+        const deficit = consumption - solar;
+        if (batteryDischargedKWh > 0.5) {
+          batteryDischarge = deficit * 0.7;
+          gridImport = deficit * 0.3;
+        } else {
+          gridImport = Math.min(deficit, 0.2);
+          batteryDischarge = Math.max(0, deficit - gridImport);
+        }
+      }
     } else {
-      // Evening
-      consumption = 0.45 + (hour >= 19 && hour <= 21 ? 0.40 : 0);
-      batteryDischarge = consumption * 0.8;
-      gridImport = consumption * 0.2;
+      consumption = 0.24 * homeScale;
+      gridImport = consumption * 0.3;
+      batteryDischarge = consumption * 0.7;
     }
 
-    // Anchor the current hour to the live state if near current time
-    if (hour > 17.25) {
-      solar = 0;
-      gridExport = 0;
-      batteryCharge = 0;
+    // Near current hour (~19:30), smoothly blend toward live sensor readings
+    const hourDelta = Math.abs(hour - 19.5);
+    if (hourDelta < 0.75) {
+      const blend = 1.0 - (hourDelta / 0.75);
+      solar = solar * (1 - blend) + currentSolar * blend;
+      consumption = consumption * (1 - blend) + currentHome * blend;
+      if (currentGrid < 0) {
+        gridExport = gridExport * (1 - blend) + Math.abs(currentGrid) * blend;
+        gridImport = 0;
+      } else {
+        gridImport = gridImport * (1 - blend) + currentGrid * blend;
+        gridExport = 0;
+      }
+      if (currentBattery > 0) {
+        batteryDischarge = batteryDischarge * (1 - blend) + currentBattery * blend;
+        batteryCharge = 0;
+      } else {
+        batteryCharge = batteryCharge * (1 - blend) + Math.abs(currentBattery) * blend;
+        batteryDischarge = 0;
+      }
     }
+
+    // Zero clamps
+    solar = Math.max(0, solar);
+    consumption = Math.max(0.1, consumption);
+    gridImport = Math.max(0, gridImport);
+    gridExport = Math.max(0, gridExport);
+    batteryDischarge = Math.max(0, batteryDischarge);
+    batteryCharge = Math.max(0, batteryCharge);
 
     points.push({
       timestamp: hourFormatted,
@@ -683,13 +1011,22 @@ function generatePowerSourcesTimeseries(
   return points;
 }
 
-function generate7DayTimeseries(): TimeseriesEnergyPoint[] {
+function generate7DayTimeseries(
+  solarKWh: number,
+  consumptionKWh: number,
+  gridExportKWh: number,
+  gridImportKWh: number
+): TimeseriesEnergyPoint[] {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   return days.map((day, idx) => {
-    const solar = Number((14.5 + Math.sin(idx * 1.2) * 3.5).toFixed(1));
-    const consumption = Number((4.5 + Math.cos(idx * 0.8) * 1.2).toFixed(1));
-    const gridExport = Number((solar * 0.59).toFixed(1));
-    const gridImport = Number((consumption * 0.04).toFixed(1));
+    const isToday = idx === 6; // Sunday / Today
+    const factor = isToday ? 1.0 : (0.88 + Math.sin(idx * 1.5) * 0.18);
+    const solar = Number((solarKWh * factor).toFixed(2));
+    const consumption = Number((consumptionKWh * (0.92 + Math.cos(idx * 1.1) * 0.12)).toFixed(2));
+    const gridExport = Number((gridExportKWh * factor).toFixed(2));
+    const gridImport = Number((gridImportKWh * (1.1 - factor * 0.1)).toFixed(2));
+    const batteryCharge = Number((Math.max(0, (solar - consumption) * 0.35)).toFixed(2));
+    const batteryDischarge = Number((Math.max(0, (consumption - 0.5) * 0.4)).toFixed(2));
 
     return {
       timestamp: day,
@@ -698,20 +1035,26 @@ function generate7DayTimeseries(): TimeseriesEnergyPoint[] {
       solar,
       gridImport,
       gridExport: -gridExport,
-      batteryDischarge: 1.8,
-      batteryCharge: -Number((solar * 0.25).toFixed(1)),
+      batteryDischarge,
+      batteryCharge: -batteryCharge,
       consumption
     };
   });
 }
 
-function generate30DayTimeseries(): TimeseriesEnergyPoint[] {
+function generate30DayTimeseries(
+  solarKWh: number,
+  consumptionKWh: number,
+  gridExportKWh: number,
+  gridImportKWh: number
+): TimeseriesEnergyPoint[] {
   const points: TimeseriesEnergyPoint[] = [];
   for (let d = 1; d <= 30; d++) {
-    const solar = Number((15 + Math.sin(d / 4) * 4.5).toFixed(1));
-    const consumption = Number((4.6 + Math.cos(d / 5) * 1.0).toFixed(1));
-    const gridExport = Number((solar * 0.58).toFixed(1));
-    const gridImport = Number((consumption * 0.05).toFixed(1));
+    const factor = 0.85 + Math.sin(d / 4.2) * 0.22;
+    const solar = Number((solarKWh * factor).toFixed(2));
+    const consumption = Number((consumptionKWh * (0.90 + Math.cos(d / 5.5) * 0.15)).toFixed(2));
+    const gridExport = Number((gridExportKWh * factor).toFixed(2));
+    const gridImport = Number((gridImportKWh * (1.05 - factor * 0.08)).toFixed(2));
 
     points.push({
       timestamp: `Day ${d}`,
@@ -720,8 +1063,8 @@ function generate30DayTimeseries(): TimeseriesEnergyPoint[] {
       solar,
       gridImport,
       gridExport: -gridExport,
-      batteryDischarge: 1.9,
-      batteryCharge: -Number((solar * 0.22).toFixed(1)),
+      batteryDischarge: Number((consumption * 0.3).toFixed(2)),
+      batteryCharge: -Number((solar * 0.2).toFixed(2)),
       consumption
     });
   }

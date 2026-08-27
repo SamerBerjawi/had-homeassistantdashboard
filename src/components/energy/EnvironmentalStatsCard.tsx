@@ -77,7 +77,7 @@ export default function EnvironmentalStatsCard({
 
           <div className="my-2">
             <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400 tracking-tight">
-              {co2AvoidedKg} <span className="text-xs font-bold font-sans text-slate-500 dark:text-slate-400">kg</span>
+              {co2AvoidedKg.toFixed(2)} <span className="text-xs font-bold font-sans text-slate-500 dark:text-slate-400">kg</span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
               Equivalent to 78 km driven in a standard gasoline vehicle
@@ -114,7 +114,7 @@ export default function EnvironmentalStatsCard({
 
           <div className="my-2">
             <div className="text-2xl sm:text-3xl font-black font-mono text-amber-600 dark:text-amber-400 tracking-tight">
-              {coalSavedKg} <span className="text-xs font-bold font-sans text-slate-500 dark:text-slate-400">kg</span>
+              {coalSavedKg.toFixed(2)} <span className="text-xs font-bold font-sans text-slate-500 dark:text-slate-400">kg</span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
               Fossil coal combustion prevented from the electrical grid
@@ -181,7 +181,7 @@ export default function EnvironmentalStatsCard({
       }`}>
         <div className="flex items-center gap-2">
           <Fire size={15} weight="duotone" className="text-amber-500" />
-          <span>Natural Gas Displaced: <strong className="text-slate-900 dark:text-white font-mono font-bold">{gasOffsetM3} m³</strong></span>
+          <span>Natural Gas Displaced: <strong className="text-slate-900 dark:text-white font-mono font-bold">{gasOffsetM3.toFixed(2)} m³</strong></span>
         </div>
         <div className="flex items-center gap-1 text-[11px] text-slate-400">
           <span>Standardized conversion per ENTSO-E grid mix</span>

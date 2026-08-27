@@ -82,7 +82,7 @@ export default function FinancialCostCard({
             {currency}{importCost.toFixed(2)}
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-            {dailyTotals.gridImportKWh} kWh imported
+            {dailyTotals.gridImportKWh.toFixed(2)} kWh imported
           </p>
         </div>
 
@@ -100,7 +100,7 @@ export default function FinancialCostCard({
             +{currency}{exportEarnings.toFixed(2)}
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-            {dailyTotals.gridExportKWh} kWh exported
+            {dailyTotals.gridExportKWh.toFixed(2)} kWh exported
           </p>
         </div>
 

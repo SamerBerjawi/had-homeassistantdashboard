@@ -33,6 +33,32 @@ const SettingsView = lazy(() => import('./components/SettingsView'));
 import WeatherHeaderSentence from './components/weather/WeatherHeaderSentence';
 import WeatherOverviewDrawer from './components/weather/WeatherOverviewDrawer';
 
+const VALID_TABS = [
+  'overview',
+  'rooms',
+  'energy',
+  'security',
+  'media',
+  'system',
+  'network',
+  'mobility',
+  'health',
+  'vacuums',
+  'automations',
+  'settings'
+] as const;
+
+type TabKey = typeof VALID_TABS[number];
+
+function getTabFromUrl(): TabKey {
+  if (typeof window === 'undefined') return 'overview';
+  const rawPath = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+  if (VALID_TABS.includes(rawPath as TabKey)) {
+    return rawPath as TabKey;
+  }
+  return 'overview';
+}
+
 export default function App() {
   // Theme State
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -53,8 +79,46 @@ export default function App() {
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
-  // Tab State
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  // Tab State with URL Path Synchronization
+  const [activeTab, setActiveTabState] = useState<string>(getTabFromUrl);
+
+  const setActiveTab = (tab: string) => {
+    const validTab = VALID_TABS.includes(tab as TabKey) ? tab : 'overview';
+    setActiveTabState(validTab);
+    const targetPath = `/${validTab}`;
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({ tab: validTab }, '', targetPath);
+    }
+  };
+
+  // Listen for browser Back/Forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const currentTab = getTabFromUrl();
+      setActiveTabState(currentTab);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    // Ensure root '/' or malformed path cleanly normalizes in the address bar
+    const initialTab = getTabFromUrl();
+    const expectedPath = `/${initialTab}`;
+    if (window.location.pathname !== expectedPath) {
+      window.history.replaceState({ tab: initialTab }, '', expectedPath);
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  // Update browser tab title to match the active view
+  useEffect(() => {
+    const theme = PAGE_THEMES[activeTab];
+    const label = theme?.title || (activeTab.charAt(0).toUpperCase() + activeTab.slice(1));
+    document.title = `HOMZ • ${label}`;
+  }, [activeTab]);
+
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState<boolean>(false);
   const [isWeatherDrawerOpen, setIsWeatherDrawerOpen] = useState<boolean>(false);

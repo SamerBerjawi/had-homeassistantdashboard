@@ -338,13 +338,135 @@ export default function Sidebar({
         </div>
       </nav>
 
+      {/* Subtle theme-based gradient backdrop separating the page from More Hub and Navbar */}
+      {showMoreMenu && (
+        <div 
+          id="mobile-more-backdrop"
+          className={`md:hidden fixed inset-0 z-40 transition-all duration-300 ${
+            darkMode 
+              ? 'bg-gradient-to-t from-black/80 via-black/40 to-black/10 backdrop-blur-xs' 
+              : 'bg-gradient-to-t from-slate-950/25 via-slate-900/10 to-transparent backdrop-blur-xs'
+          }`}
+          onClick={() => setShowMoreMenu(false)}
+        />
+      )}
+
+      {/* MORE MENU BOTTOM SHEET */}
+      {showMoreMenu && (
+        <div 
+          id="mobile-more-sheet"
+          className={`md:hidden fixed bottom-20 left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto p-5 rounded-[28px] border shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-5 duration-200 ${
+            darkMode 
+              ? 'bg-black/55 backdrop-blur-sm border-white/15 text-white shadow-2xl shadow-black/90' 
+              : 'bg-white/65 backdrop-blur-sm border-white/50 text-slate-900 shadow-2xl shadow-slate-900/15'
+          }`}
+        >
+          {/* Sheet Header */}
+          <div className={`flex items-center justify-between pb-3 mb-3 border-b ${
+            darkMode ? 'border-white/10' : 'border-slate-200/60'
+          }`}>
+            <div className="flex items-center gap-2">
+              <DotsThreeVertical size={20} weight="duotone" className={darkMode ? 'text-sky-400' : 'text-sky-600'} />
+              <div>
+                <h3 className={`font-extrabold text-sm tracking-tight leading-none ${darkMode ? 'text-white' : 'text-slate-900'}`}>Navigation Hub</h3>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowMoreMenu(false)}
+              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
+                darkMode ? 'bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white' : 'bg-slate-100/70 hover:bg-slate-200/80 text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <X size={16} weight="duotone" />
+            </button>
+          </div>
+
+          {/* Secondary Navigation Grid */}
+          <div className="grid grid-cols-2 gap-2.5 mb-3.5 max-h-64 overflow-y-auto touch-scroll-container">
+            {menuItems.slice(4).map(item => {
+              const ItemIcon = item.icon;
+              const isActive = activeTab === item.id;
+              const itemTheme = PAGE_THEMES[item.id] || PAGE_THEMES['overview'];
+              return (
+                <button
+                  key={item.id}
+                  id={`btn-more-${item.id}`}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setShowMoreMenu(false);
+                  }}
+                  className={`p-3 rounded-2xl flex items-center gap-3 text-left transition-all border cursor-pointer ${
+                    isActive
+                      ? darkMode
+                        ? itemTheme.activeSidebarDark + ' shadow-md font-bold'
+                        : itemTheme.activeSidebarLight + ' shadow-sm font-bold'
+                      : darkMode
+                        ? 'bg-slate-900/40 backdrop-blur-xs border-white/10 hover:bg-slate-800/60 text-slate-200'
+                        : 'bg-white/40 backdrop-blur-xs border-slate-200/50 hover:bg-white/70 text-slate-800'
+                  }`}
+                >
+                  <ItemIcon 
+                    size={20} 
+                    weight="duotone" 
+                    className={isActive ? itemTheme.color : (darkMode ? 'text-slate-400' : 'text-slate-500')} 
+                  />
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold truncate">{item.label}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick Notifications Button in Mobile More Menu */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowMoreMenu(false);
+              if (onOpenNotifications) onOpenNotifications();
+            }}
+            className={`w-full mb-3 p-3 rounded-2xl flex items-center justify-between border transition-all cursor-pointer ${
+              totalNotifications > 0
+                ? 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-300'
+                : darkMode
+                  ? 'bg-slate-900/40 backdrop-blur-xs border-white/10 text-slate-200 hover:bg-slate-800/60'
+                  : 'bg-white/40 backdrop-blur-xs border-slate-200/50 text-slate-800 hover:bg-white/70'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <Bell size={20} weight={totalNotifications > 0 ? 'fill' : 'duotone'} className={totalNotifications > 0 ? 'text-amber-500' : ''} />
+              <span className="text-xs font-bold">Notifications & Alerts</span>
+            </div>
+            {totalNotifications > 0 && (
+              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center">
+                {totalNotifications}
+              </span>
+            )}
+          </button>
+
+          {/* Theme Toggle Bar */}
+          <div className="pt-2 border-t border-slate-200/40 dark:border-white/10">
+            <AnimatedThemeToggler
+              id="btn-more-toggle-darkmode"
+              theme={darkMode ? "dark" : "light"}
+              onThemeChange={(newTheme) => toggleDarkMode(newTheme === "dark")}
+              className={`p-2.5 rounded-xl flex items-center justify-between text-xs font-bold border transition-colors cursor-pointer w-full ${
+                darkMode 
+                  ? 'bg-slate-800/60 backdrop-blur-xs border-white/10 text-slate-100 hover:bg-slate-700/70' 
+                  : 'bg-white/60 backdrop-blur-xs border-black/6 text-slate-800 hover:bg-white/90 shadow-xs'
+              }`}
+            />
+          </div>
+        </div>
+      )}
+
       {/* MOBILE BOTTOM NAVIGATION */}
       <nav 
         id="sidebar-mobile" 
-        className={`md:hidden fixed bottom-3 left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto h-16 rounded-[26px] border shadow-2xl z-40 px-3 flex items-center justify-around transition-all ${
+        className={`md:hidden fixed bottom-3 left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto h-16 rounded-[26px] border shadow-2xl z-50 px-3 flex items-center justify-around transition-all ${
           darkMode 
-            ? 'bg-black/75 backdrop-blur-2xl border-white/10 text-white shadow-black/90' 
-            : 'bg-white/75 backdrop-blur-2xl border-slate-200/90 text-slate-900 shadow-xl'
+            ? 'bg-black/45 backdrop-blur-sm border-white/15 text-white shadow-2xl shadow-black/80' 
+            : 'bg-white/55 backdrop-blur-sm border-white/40 text-slate-900 shadow-xl shadow-slate-900/10'
         }`}
       >
         {mobilePrimaryItems.map((item) => {
@@ -392,124 +514,6 @@ export default function Sidebar({
             <span className="absolute bottom-1.5 w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
           )}
         </button>
-
-        {/* MORE MENU BOTTOM SHEET */}
-        {showMoreMenu && (
-          <>
-            {/* Backdrop to dismiss (no blur on page behind) */}
-            <div 
-              className="fixed inset-0 bg-black/40 z-40"
-              onClick={() => setShowMoreMenu(false)}
-            />
-
-            <div 
-              id="mobile-more-sheet"
-              className={`fixed bottom-20 left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto p-5 rounded-[28px] border shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-5 duration-200 ${
-                darkMode 
-                  ? 'bg-black/65 backdrop-blur-md border-white/15 text-white shadow-black/80' 
-                  : 'bg-white/75 backdrop-blur-md border-slate-200/90 text-slate-900 shadow-xl'
-              }`}
-            >
-              {/* Sheet Header */}
-              <div className={`flex items-center justify-between pb-3 mb-3 border-b ${
-                darkMode ? 'border-white/10' : 'border-slate-200'
-              }`}>
-                <div className="flex items-center gap-2">
-                  <DotsThreeVertical size={20} weight="duotone" className={darkMode ? 'text-sky-400' : 'text-sky-600'} />
-                  <div>
-                    <h3 className={`font-extrabold text-sm tracking-tight leading-none ${darkMode ? 'text-white' : 'text-slate-900'}`}>Navigation Hub</h3>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setShowMoreMenu(false)}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
-                    darkMode ? 'bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <X size={16} weight="duotone" />
-                </button>
-              </div>
-
-              {/* Secondary Navigation Grid */}
-              <div className="grid grid-cols-2 gap-2.5 mb-3.5 max-h-64 overflow-y-auto touch-scroll-container">
-                {menuItems.slice(4).map(item => {
-                  const ItemIcon = item.icon;
-                  const isActive = activeTab === item.id;
-                  const itemTheme = PAGE_THEMES[item.id] || PAGE_THEMES['overview'];
-                  return (
-                    <button
-                      key={item.id}
-                      id={`btn-more-${item.id}`}
-                      onClick={() => {
-                        setActiveTab(item.id);
-                        setShowMoreMenu(false);
-                      }}
-                      className={`p-3 rounded-2xl flex items-center gap-3 text-left transition-all border cursor-pointer ${
-                        isActive
-                          ? darkMode
-                            ? itemTheme.activeSidebarDark + ' shadow-md font-bold'
-                            : itemTheme.activeSidebarLight + ' shadow-sm font-bold'
-                          : darkMode
-                            ? 'bg-slate-900/60 border-slate-800 hover:bg-slate-800/80 text-slate-200'
-                            : 'bg-slate-50 border-slate-200/70 hover:bg-slate-100 text-slate-800'
-                      }`}
-                    >
-                      <ItemIcon 
-                        size={20} 
-                        weight="duotone" 
-                        className={isActive ? itemTheme.color : (darkMode ? 'text-slate-400' : 'text-slate-500')} 
-                      />
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold truncate">{item.label}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Quick Notifications Button in Mobile More Menu */}
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMoreMenu(false);
-                  if (onOpenNotifications) onOpenNotifications();
-                }}
-                className={`w-full mb-3 p-3 rounded-2xl flex items-center justify-between border transition-all cursor-pointer ${
-                  totalNotifications > 0
-                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-300'
-                    : darkMode
-                      ? 'bg-slate-900/60 border-slate-800 text-slate-200 hover:bg-slate-800'
-                      : 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Bell size={20} weight={totalNotifications > 0 ? 'fill' : 'duotone'} className={totalNotifications > 0 ? 'text-amber-500' : ''} />
-                  <span className="text-xs font-bold">Notifications & Alerts</span>
-                </div>
-                {totalNotifications > 0 && (
-                  <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center">
-                    {totalNotifications}
-                  </span>
-                )}
-              </button>
-
-              {/* Theme Toggle Bar */}
-              <div className="pt-2 border-t border-slate-200/40 dark:border-slate-800">
-
-                <AnimatedThemeToggler
-                  id="btn-more-toggle-darkmode"
-                  theme={darkMode ? "dark" : "light"}
-                  onThemeChange={(newTheme) => toggleDarkMode(newTheme === "dark")}
-                  className={`p-2.5 rounded-xl flex items-center justify-between text-xs font-bold border transition-colors cursor-pointer w-full ${
-                    darkMode 
-                      ? 'bg-slate-800/90 border-white/10 text-slate-100 hover:bg-slate-700/90' 
-                      : 'bg-white/90 border-black/6 text-slate-800 hover:bg-white shadow-xs'
-                  }`}
-                />
-              </div>
-            </div>
-          </>
-        )}
       </nav>
     </>
   );

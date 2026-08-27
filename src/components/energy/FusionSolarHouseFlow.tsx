@@ -3,8 +3,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useMemo } from 'react';
+import React, { useRef, useMemo, useState, Suspense } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Html, Float } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import * as THREE from 'three';
+import { 
+  ArrowsClockwise, 
+  Eye, 
+  Sun, 
+  Moon, 
+  Sparkle, 
+  Lightning,
+  HouseLine
+} from '@phosphor-icons/react';
 import { RealtimeEnergy, DailyTotalsEnergy } from './energyCalculator';
+import { 
+  getSolarPanelTexture, 
+  getWoodGrainTexture, 
+  getLapSidingTexture, 
+  getPaverTexture, 
+  getMetalRoofTexture, 
+  getLawnTexture 
+} from './threeTextures';
 
 interface FusionSolarHouseFlowProps {
   realtime: RealtimeEnergy;
@@ -12,394 +33,865 @@ interface FusionSolarHouseFlowProps {
   darkMode?: boolean;
 }
 
+/**
+ * Animated 3D Energy Flow Path along CatmullRomCurve3
+ */
+function EnergyFlowPath({
+  curve,
+  color,
+  speed = 1.0,
+  active = true,
+  reverse = false,
+  particleCount = 5,
+  tubeRadius = 0.032
+}: {
+  curve: THREE.CatmullRomCurve3;
+  color: string;
+  speed?: number;
+  active?: boolean;
+  reverse?: boolean;
+  particleCount?: number;
+  tubeRadius?: number;
+}) {
+  const particlesRef = useRef<THREE.Group>(null);
+
+  // Fixed conduit wire geometry
+  const tubeGeometry = useMemo(() => {
+    return new THREE.TubeGeometry(curve, 64, tubeRadius, 8, false);
+  }, [curve, tubeRadius]);
+
+  // Points along the curve
+  const particleOffsets = useMemo(() => {
+    return Array.from({ length: particleCount }, (_, i) => i / particleCount);
+  }, [particleCount]);
+
+  useFrame((_, delta) => {
+    if (!particlesRef.current || !active) return;
+
+    particlesRef.current.children.forEach((child, i) => {
+      let t = particleOffsets[i];
+      const direction = reverse ? -1 : 1;
+      t = (t + delta * speed * 0.45 * direction) % 1.0;
+      if (t < 0) t += 1.0;
+      particleOffsets[i] = t;
+
+      const pt = curve.getPointAt(t);
+      child.position.copy(pt);
+    });
+  });
+
+  return (
+    <group>
+      {/* Conduit Wire */}
+      <mesh geometry={tubeGeometry}>
+        <meshStandardMaterial
+          color="#334155"
+          transparent
+          opacity={0.5}
+          roughness={0.6}
+        />
+      </mesh>
+
+      {/* Pulsing Energy Photons */}
+      {active && (
+        <group ref={particlesRef}>
+          {particleOffsets.map((_, idx) => (
+            <mesh key={idx}>
+              <sphereGeometry args={[0.072, 12, 12]} />
+              <meshBasicMaterial color={color} />
+            </mesh>
+          ))}
+        </group>
+      )}
+    </group>
+  );
+}
+
+/**
+ * Stylized Low-Poly Isometric Tree
+ */
+function LowPolyTree({ position, scale = 1, darkMode }: { position: [number, number, number]; scale?: number; darkMode: boolean }) {
+  return (
+    <group position={position} scale={scale}>
+      {/* Trunk */}
+      <mesh position={[0, 0.35, 0]} castShadow>
+        <cylinderGeometry args={[0.08, 0.1, 0.7, 6]} />
+        <meshStandardMaterial color="#78350F" roughness={0.9} />
+      </mesh>
+      {/* Layer 1 Foliage */}
+      <mesh position={[0, 0.85, 0]} castShadow>
+        <coneGeometry args={[0.5, 0.7, 6]} />
+        <meshStandardMaterial
+          color={darkMode ? "#065F46" : "#10B981"}
+          roughness={0.7}
+        />
+      </mesh>
+      {/* Layer 2 Foliage */}
+      <mesh position={[0, 1.25, 0]} castShadow>
+        <coneGeometry args={[0.38, 0.6, 6]} />
+        <meshStandardMaterial
+          color={darkMode ? "#047857" : "#34D399"}
+          roughness={0.7}
+        />
+      </mesh>
+      {/* Layer 3 Foliage */}
+      <mesh position={[0, 1.55, 0]} castShadow>
+        <coneGeometry args={[0.25, 0.45, 6]} />
+        <meshStandardMaterial
+          color={darkMode ? "#059669" : "#6EE7B7"}
+          roughness={0.7}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/**
+ * Modern Low-Poly Electric Vehicle (EV)
+ */
+function LowPolyEV({ position, rotation, darkMode }: { position: [number, number, number]; rotation: [number, number, number]; darkMode: boolean }) {
+  return (
+    <group position={position} rotation={rotation} scale={0.75}>
+      {/* Car Body */}
+      <mesh position={[0, 0.28, 0]} castShadow>
+        <boxGeometry args={[1.3, 0.36, 2.4]} />
+        <meshStandardMaterial 
+          color={darkMode ? "#E2E8F0" : "#0F172A"} 
+          metalness={0.6} 
+          roughness={0.3} 
+        />
+      </mesh>
+
+      {/* Cabin / Roof & Windshield */}
+      <mesh position={[0, 0.58, -0.15]} castShadow>
+        <boxGeometry args={[1.1, 0.32, 1.3]} />
+        <meshStandardMaterial 
+          color="#0F172A" 
+          roughness={0.1} 
+          metalness={0.9} 
+        />
+      </mesh>
+
+      {/* Windshield Glass Tint */}
+      <mesh position={[0, 0.58, 0.52]} rotation={[Math.PI / 6, 0, 0]}>
+        <planeGeometry args={[1.05, 0.34]} />
+        <meshStandardMaterial 
+          color="#38BDF8" 
+          transparent 
+          opacity={0.7} 
+          roughness={0.1} 
+        />
+      </mesh>
+
+      {/* Headlights (Cyan/White Glow) */}
+      <mesh position={[-0.45, 0.3, 1.21]}>
+        <planeGeometry args={[0.22, 0.08]} />
+        <meshBasicMaterial color="#38BDF8" />
+      </mesh>
+      <mesh position={[0.45, 0.3, 1.21]}>
+        <planeGeometry args={[0.22, 0.08]} />
+        <meshBasicMaterial color="#38BDF8" />
+      </mesh>
+
+      {/* Taillights (Red LED Strip) */}
+      <mesh position={[0, 0.32, -1.21]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[1.15, 0.06]} />
+        <meshBasicMaterial color="#EF4444" />
+      </mesh>
+
+      {/* Wheels */}
+      {[-0.68, 0.68].map((x, xi) =>
+        [-0.75, 0.75].map((z, zi) => (
+          <group key={`${xi}-${zi}`} position={[x, 0.16, z]} rotation={[0, 0, Math.PI / 2]}>
+            {/* Rubber Tire */}
+            <mesh castShadow>
+              <cylinderGeometry args={[0.2, 0.2, 0.12, 16]} />
+              <meshStandardMaterial color="#0F172A" roughness={0.9} />
+            </mesh>
+            {/* Alloy Rim */}
+            <mesh position={[0, x > 0 ? 0.05 : -0.05, 0]}>
+              <cylinderGeometry args={[0.13, 0.13, 0.04, 8]} />
+              <meshStandardMaterial color="#CBD5E1" metalness={0.8} roughness={0.2} />
+            </mesh>
+          </group>
+        ))
+      )}
+
+      {/* Glowing Green Charging Port Indicator */}
+      <mesh position={[0.66, 0.38, -0.6]}>
+        <circleGeometry args={[0.035, 12]} />
+        <meshBasicMaterial color="#10B981" />
+      </mesh>
+    </group>
+  );
+}
+
+/**
+ * Modern Garden Bollard Pathway Light
+ */
+function GardenBollardLight({ position, darkMode }: { position: [number, number, number]; darkMode: boolean }) {
+  return (
+    <group position={position}>
+      {/* Metal Post */}
+      <mesh position={[0, 0.15, 0]} castShadow>
+        <cylinderGeometry args={[0.03, 0.03, 0.3, 8]} />
+        <meshStandardMaterial color="#1E293B" metalness={0.8} roughness={0.3} />
+      </mesh>
+      {/* Glowing Lamp Head */}
+      <mesh position={[0, 0.31, 0]}>
+        <cylinderGeometry args={[0.04, 0.04, 0.05, 8]} />
+        <meshStandardMaterial 
+          color="#FDE047" 
+          emissive="#FDE047" 
+          emissiveIntensity={darkMode ? 2.5 : 0.8} 
+        />
+      </mesh>
+      {/* Warm Ground Glow */}
+      <pointLight 
+        position={[0, 0.32, 0]} 
+        color="#FDE047" 
+        intensity={darkMode ? 0.4 : 0.15} 
+        distance={1.5} 
+      />
+    </group>
+  );
+}
+
+/**
+ * 3D Low-Poly House Mesh Architecture with Textures
+ */
+function LowPolyHouse({
+  realtime,
+  darkMode
+}: {
+  realtime: RealtimeEnergy;
+  darkMode: boolean;
+}) {
+  const { solarPower, homeConsumption, batterySoC, batteryPower, gridPower } = realtime;
+
+  // Procedural Textures
+  const solarTexture = useMemo(() => getSolarPanelTexture(), []);
+  const woodTexture = useMemo(() => getWoodGrainTexture(darkMode), [darkMode]);
+  const sidingTexture = useMemo(() => getLapSidingTexture(darkMode), [darkMode]);
+  const paverTexture = useMemo(() => getPaverTexture(darkMode), [darkMode]);
+  const roofTexture = useMemo(() => getMetalRoofTexture(darkMode), [darkMode]);
+  const lawnTexture = useMemo(() => getLawnTexture(darkMode), [darkMode]);
+
+  // Window glow intensity scales with home load
+  const windowGlowIntensity = Math.min(3.8, Math.max(0.9, homeConsumption * 1.6));
+  const isSolarActive = solarPower > 0.05;
+  const isBatteryCharging = batteryPower < -0.05;
+  const isBatteryDischarging = batteryPower > 0.05;
+  const isGridExporting = gridPower < -0.05;
+  const isGridImporting = gridPower > 0.05;
+
+  // Battery bar segment count (5 segments)
+  const filledBars = Math.max(1, Math.min(5, Math.ceil((batterySoC / 100) * 5)));
+
+  // -------------------------------------------------------------
+  // 3D CURVES CONNECTING HARDWARE COMPONENTS
+  // -------------------------------------------------------------
+  const solarToInverterCurve = useMemo(() => {
+    return new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.4, 2.7, 0.4),
+      new THREE.Vector3(-1.85, 2.2, 0.5),
+      new THREE.Vector3(-1.85, 1.2, 0.5),
+      new THREE.Vector3(-1.85, 0.75, 0.4)
+    ]);
+  }, []);
+
+  const inverterToBatteryCurve = useMemo(() => {
+    return new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.85, 0.6, 0.4),
+      new THREE.Vector3(-2.1, 0.6, 0.4),
+      new THREE.Vector3(-2.3, 0.6, 0.4)
+    ]);
+  }, []);
+
+  const inverterToHouseCurve = useMemo(() => {
+    return new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.85, 0.6, 0.4),
+      new THREE.Vector3(-1.2, 0.6, 0.4),
+      new THREE.Vector3(-0.6, 0.6, 0.6),
+      new THREE.Vector3(0.0, 0.7, 0.0)
+    ]);
+  }, []);
+
+  const inverterToGridCurve = useMemo(() => {
+    return new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.85, 0.5, 0.4),
+      new THREE.Vector3(-1.85, 0.05, 0.8),
+      new THREE.Vector3(-0.8, 0.05, 1.8),
+      new THREE.Vector3(1.2, 0.05, 2.5)
+    ]);
+  }, []);
+
+  // Wallbox EV charger to EV car port curve
+  const wallboxToEvCurve = useMemo(() => {
+    return new THREE.CatmullRomCurve3([
+      new THREE.Vector3(1.6, 0.75, 1.25),
+      new THREE.Vector3(1.5, 0.4, 1.6),
+      new THREE.Vector3(1.5, 0.32, 2.1)
+    ]);
+  }, []);
+
+  return (
+    <group position={[0, -0.65, 0]}>
+      
+      {/* --------------------------------------------------------- */}
+      {/* 1. HOUSE MAIN BODY (Gable Left Wing)                      */}
+      {/* --------------------------------------------------------- */}
+      <mesh position={[-1.2, 1.0, 0]} castShadow receiveShadow>
+        <boxGeometry args={[2.0, 2.0, 2.4]} />
+        <meshStandardMaterial
+          map={sidingTexture}
+          roughness={darkMode ? 0.75 : 0.45}
+        />
+      </mesh>
+
+      {/* Siding Corner Trims */}
+      {[-2.21, -0.19].map((x, i) => (
+        <mesh key={i} position={[x, 1.0, 1.21]}>
+          <boxGeometry args={[0.06, 2.0, 0.06]} />
+          <meshStandardMaterial color={darkMode ? "#1E293B" : "#CBD5E1"} roughness={0.5} />
+        </mesh>
+      ))}
+
+      {/* 2. GABLE ROOF (Left Sloped Roof with Monocrystalline PV)  */}
+      <group position={[-1.2, 2.0, 0]}>
+        {/* Sloped Roof Left */}
+        <mesh position={[-0.55, 0.45, 0]} rotation={[0, 0, Math.PI / 4.5]} castShadow>
+          <boxGeometry args={[1.5, 0.1, 2.6]} />
+          <meshStandardMaterial map={roofTexture} roughness={0.5} metalness={0.4} />
+        </mesh>
+        {/* Sloped Roof Right */}
+        <mesh position={[0.55, 0.45, 0]} rotation={[0, 0, -Math.PI / 4.5]} castShadow>
+          <boxGeometry args={[1.5, 0.1, 2.6]} />
+          <meshStandardMaterial map={roofTexture} roughness={0.5} metalness={0.4} />
+        </mesh>
+
+        {/* Chimney with Exhaust Vent */}
+        <group position={[0.4, 0.8, -0.6]}>
+          <mesh castShadow>
+            <boxGeometry args={[0.25, 0.6, 0.25]} />
+            <meshStandardMaterial color={darkMode ? "#1E293B" : "#64748B"} roughness={0.8} />
+          </mesh>
+          <mesh position={[0, 0.31, 0]}>
+            <boxGeometry args={[0.28, 0.04, 0.28]} />
+            <meshStandardMaterial color="#0F172A" roughness={0.5} />
+          </mesh>
+        </group>
+
+        {/* High-Resolution Photovoltaic Solar Array Panels on Roof */}
+        <group position={[-0.58, 0.53, 0]} rotation={[0, 0, Math.PI / 4.5]}>
+          {/* Aluminum Under-mount Rails */}
+          {[-0.2, 0.2].map((x, ri) => (
+            <mesh key={ri} position={[x, -0.01, 0]}>
+              <boxGeometry args={[0.04, 0.02, 2.3]} />
+              <meshStandardMaterial color="#94A3B8" metalness={0.9} roughness={0.2} />
+            </mesh>
+          ))}
+
+          {/* 6 High-Fidelity Solar Modules */}
+          {[-0.75, 0, 0.75].map((z, zi) =>
+            [-0.3, 0.3].map((x, xi) => (
+              <group key={`${zi}-${xi}`} position={[x, 0.02, z]}>
+                {/* Panel Silicon Wafer Face */}
+                <mesh castShadow>
+                  <boxGeometry args={[0.54, 0.025, 0.68]} />
+                  <meshStandardMaterial
+                    map={solarTexture}
+                    metalness={0.85}
+                    roughness={0.15}
+                    emissive="#0284C7"
+                    emissiveIntensity={isSolarActive ? 0.35 : 0.02}
+                  />
+                </mesh>
+                {/* Silver Anodized Aluminum Edge Frame */}
+                <mesh position={[0, 0.015, 0]}>
+                  <boxGeometry args={[0.55, 0.01, 0.69]} />
+                  <meshStandardMaterial color="#CBD5E1" metalness={0.9} roughness={0.2} />
+                </mesh>
+              </group>
+            ))
+          )}
+        </group>
+      </group>
+
+      {/* 3. RIGHT WING: MODERN GARAGE & OVERHANG */}
+      <mesh position={[1.0, 0.85, 0.1]} castShadow receiveShadow>
+        <boxGeometry args={[2.2, 1.7, 2.2]} />
+        <meshStandardMaterial map={sidingTexture} roughness={darkMode ? 0.7 : 0.4} />
+      </mesh>
+      {/* Flat Overhang Roof with Wood Fascia */}
+      <group position={[1.0, 1.75, 0.1]}>
+        <mesh castShadow>
+          <boxGeometry args={[2.4, 0.12, 2.4]} />
+          <meshStandardMaterial map={roofTexture} roughness={0.6} />
+        </mesh>
+        {/* Wood Eaves Accent */}
+        <mesh position={[0, -0.06, 1.21]}>
+          <boxGeometry args={[2.4, 0.04, 0.02]} />
+          <meshStandardMaterial map={woodTexture} roughness={0.6} />
+        </mesh>
+      </group>
+
+      {/* Garage Slatted Door */}
+      <mesh position={[1.1, 0.75, 1.21]}>
+        <planeGeometry args={[1.6, 1.3]} />
+        <meshStandardMaterial color={darkMode ? "#1E293B" : "#475569"} roughness={0.6} />
+      </mesh>
+
+      {/* Driveway Pavers */}
+      <mesh position={[1.1, 0.01, 2.3]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[1.7, 1.8]} />
+        <meshStandardMaterial map={paverTexture} roughness={0.9} />
+      </mesh>
+
+      {/* Parked EV in the Driveway */}
+      <LowPolyEV 
+        position={[1.1, 0.01, 2.2]} 
+        rotation={[0, 0, 0]} 
+        darkMode={darkMode} 
+      />
+
+      {/* Wallbox Smart EV Charger on Garage Wall */}
+      <group position={[1.6, 0.8, 1.22]}>
+        {/* Charger Enclosure */}
+        <mesh castShadow>
+          <boxGeometry args={[0.18, 0.24, 0.08]} />
+          <meshStandardMaterial color="#0F172A" metalness={0.5} roughness={0.3} />
+        </mesh>
+        {/* LED Ring Indicator */}
+        <mesh position={[0, 0.04, 0.045]}>
+          <circleGeometry args={[0.035, 16]} />
+          <meshBasicMaterial color="#10B981" />
+        </mesh>
+        {/* Charging Cable Holster */}
+        <mesh position={[0, -0.06, 0.045]}>
+          <boxGeometry args={[0.06, 0.06, 0.04]} />
+          <meshStandardMaterial color="#334155" />
+        </mesh>
+      </group>
+
+      {/* 4. FRONT ENTRANCE, PERGOLA & WARM GLOWING DOOR */}
+      {/* Modern Natural Cedar Pergola Slats over Porch */}
+      <group position={[-0.2, 1.5, 1.4]}>
+        {[-0.35, -0.15, 0.05, 0.25].map((x, i) => (
+          <mesh key={i} position={[x, 0, 0]} castShadow>
+            <boxGeometry args={[0.04, 0.04, 0.65]} />
+            <meshStandardMaterial map={woodTexture} roughness={0.55} />
+          </mesh>
+        ))}
+        {/* Pergola Support Beam */}
+        <mesh position={[-0.05, -0.04, 0.3]}>
+          <boxGeometry args={[0.75, 0.04, 0.04]} />
+          <meshStandardMaterial map={woodTexture} roughness={0.55} />
+        </mesh>
+      </group>
+
+      {/* Entrance Glass Door with Warm Curtains & Sidelight */}
+      <group position={[-0.2, 0.7, 1.21]}>
+        {/* Door Frame */}
+        <mesh>
+          <planeGeometry args={[0.82, 1.32]} />
+          <meshStandardMaterial color="#0F172A" roughness={0.4} />
+        </mesh>
+        {/* Glowing Translucent Glass Panel */}
+        <mesh position={[0, 0, 0.01]}>
+          <planeGeometry args={[0.74, 1.24]} />
+          <meshStandardMaterial
+            color="#F59E0B"
+            emissive="#F59E0B"
+            emissiveIntensity={windowGlowIntensity}
+            transparent
+            opacity={0.88}
+          />
+        </mesh>
+      </group>
+
+      {/* Interior Warm Light Source */}
+      <pointLight
+        position={[-0.2, 0.8, 0.6]}
+        color="#F59E0B"
+        intensity={windowGlowIntensity * 3.2}
+        distance={4.5}
+      />
+
+      {/* Large Living Room Picture Window on Left Wing */}
+      <group position={[-1.2, 0.75, 1.21]}>
+        {/* Window Frame */}
+        <mesh>
+          <planeGeometry args={[0.9, 0.7]} />
+          <meshStandardMaterial color="#0F172A" roughness={0.3} />
+        </mesh>
+        {/* Glass Pane */}
+        <mesh position={[0, 0, 0.01]}>
+          <planeGeometry args={[0.82, 0.62]} />
+          <meshStandardMaterial
+            color="#F59E0B"
+            emissive="#F59E0B"
+            emissiveIntensity={windowGlowIntensity * 0.9}
+            transparent
+            opacity={0.85}
+          />
+        </mesh>
+      </group>
+
+      {/* Porch Steps & Garden Stepping Pavers */}
+      <mesh position={[-0.2, 0.1, 1.45]} receiveShadow>
+        <boxGeometry args={[1.1, 0.2, 0.4]} />
+        <meshStandardMaterial map={paverTexture} roughness={0.85} />
+      </mesh>
+      <mesh position={[-0.2, 0.03, 1.75]} receiveShadow>
+        <boxGeometry args={[1.3, 0.08, 0.35]} />
+        <meshStandardMaterial map={paverTexture} roughness={0.85} />
+      </mesh>
+
+      {/* Stepping Stones leading through the lawn */}
+      {[-0.1, 0.2, 0.5, 0.8].map((z, idx) => (
+        <mesh key={idx} position={[-0.2 + (idx % 2 === 0 ? 0.05 : -0.05), 0.01, 2.0 + z * 0.5]} receiveShadow>
+          <boxGeometry args={[0.55, 0.02, 0.3]} />
+          <meshStandardMaterial map={paverTexture} roughness={0.9} />
+        </mesh>
+      ))}
+
+      {/* 4 Garden Bollard Pathway Lights */}
+      <GardenBollardLight position={[-0.6, 0, 1.8]} darkMode={darkMode} />
+      <GardenBollardLight position={[-0.6, 0, 2.5]} darkMode={darkMode} />
+      <GardenBollardLight position={[0.2, 0, 1.8]} darkMode={darkMode} />
+      <GardenBollardLight position={[0.2, 0, 2.5]} darkMode={darkMode} />
+
+      {/* 5. WALL-MOUNTED HARDWARE: INVERTER & SEGMENTED BATTERY */}
+      {/* Hybrid Inverter Box with Display */}
+      <group position={[-1.85, 0.65, 0.4]}>
+        <mesh castShadow>
+          <boxGeometry args={[0.18, 0.34, 0.3]} />
+          <meshStandardMaterial color="#FFFFFF" metalness={0.4} roughness={0.2} />
+        </mesh>
+        {/* LCD Screen on Inverter */}
+        <mesh position={[-0.095, 0.04, 0]}>
+          <planeGeometry args={[0.12, 0.08]} />
+          <meshStandardMaterial color="#0F172A" emissive="#0284C7" emissiveIntensity={0.5} />
+        </mesh>
+        {/* Status LEDs */}
+        <mesh position={[-0.095, -0.06, -0.05]}>
+          <circleGeometry args={[0.012, 8]} />
+          <meshBasicMaterial color="#10B981" />
+        </mesh>
+        <mesh position={[-0.095, -0.06, 0.05]}>
+          <circleGeometry args={[0.012, 8]} />
+          <meshBasicMaterial color="#38BDF8" />
+        </mesh>
+      </group>
+
+      {/* Segmented Lithium Battery Storage (LUNA2000 / Powerwall Style) */}
+      <group position={[-2.3, 0.65, 0.4]}>
+        {/* Tempered Glass Outer Casing */}
+        <mesh>
+          <boxGeometry args={[0.16, 0.72, 0.36]} />
+          <meshStandardMaterial
+            color="#0F172A"
+            transparent
+            opacity={0.82}
+            roughness={0.15}
+            metalness={0.6}
+          />
+        </mesh>
+        {/* Aluminum Top Accent Cap */}
+        <mesh position={[0, 0.37, 0]}>
+          <boxGeometry args={[0.17, 0.03, 0.37]} />
+          <meshStandardMaterial color="#94A3B8" metalness={0.8} roughness={0.2} />
+        </mesh>
+        
+        {/* 5 Stacked Glowing Battery Cell Segments */}
+        {[0, 1, 2, 3, 4].map(barIdx => {
+          const isIlluminated = barIdx < filledBars;
+          return (
+            <mesh key={barIdx} position={[0.02, -0.25 + barIdx * 0.125, 0]}>
+              <boxGeometry args={[0.14, 0.095, 0.3]} />
+              <meshStandardMaterial
+                color={isIlluminated ? "#10B981" : "#1E293B"}
+                emissive={isIlluminated ? "#10B981" : "#000000"}
+                emissiveIntensity={isIlluminated ? 1.6 : 0.0}
+              />
+            </mesh>
+          );
+        })}
+      </group>
+
+      {/* 6. GROUND PLATFORM & SCENIC FOLIAGE */}
+      <mesh position={[0, -0.05, 0]} receiveShadow>
+        <cylinderGeometry args={[4.5, 4.7, 0.1, 48]} />
+        <meshStandardMaterial
+          map={lawnTexture}
+          roughness={0.95}
+        />
+      </mesh>
+
+      {/* Low-Poly Evergreen Trees */}
+      <LowPolyTree position={[-2.5, 0, -1.8]} scale={0.9} darkMode={darkMode} />
+      <LowPolyTree position={[-2.9, 0, 1.8]} scale={0.75} darkMode={darkMode} />
+      <LowPolyTree position={[2.8, 0, -1.5]} scale={1.1} darkMode={darkMode} />
+      <LowPolyTree position={[3.2, 0, 1.5]} scale={0.85} darkMode={darkMode} />
+
+      {/* --------------------------------------------------------- */}
+      {/* 7. ENERGY PACKET FLOW CURVES                              */}
+      {/* --------------------------------------------------------- */}
+      {/* Solar -> Inverter */}
+      <EnergyFlowPath
+        curve={solarToInverterCurve}
+        color="#F59E0B"
+        speed={Math.max(1.0, solarPower * 0.8)}
+        active={isSolarActive}
+      />
+
+      {/* Inverter <-> Battery */}
+      <EnergyFlowPath
+        curve={inverterToBatteryCurve}
+        color="#10B981"
+        speed={1.4}
+        active={isBatteryCharging || isBatteryDischarging}
+        reverse={isBatteryDischarging}
+      />
+
+      {/* Inverter -> Home Demand */}
+      <EnergyFlowPath
+        curve={inverterToHouseCurve}
+        color="#F59E0B"
+        speed={Math.max(1.0, homeConsumption * 0.9)}
+        active={homeConsumption > 0.05}
+      />
+
+      {/* Inverter <-> Grid */}
+      <EnergyFlowPath
+        curve={inverterToGridCurve}
+        color={isGridExporting ? "#10B981" : "#0284C7"}
+        speed={Math.max(1.0, Math.abs(gridPower) * 0.8)}
+        active={isGridExporting || isGridImporting}
+        reverse={isGridImporting}
+      />
+
+      {/* Wallbox to EV Charging Conduit */}
+      <EnergyFlowPath
+        curve={wallboxToEvCurve}
+        color="#10B981"
+        speed={1.3}
+        active={homeConsumption > 1.2}
+      />
+
+      {/* --------------------------------------------------------- */}
+      {/* 8. FLOATING 3D HTML BADGES (<Html center>)                */}
+      {/* --------------------------------------------------------- */}
+
+      {/* PV BADGE (Anchored above rooftop solar array) */}
+      <Html position={[-1.2, 3.2, 0.2]} center distanceFactor={8.5}>
+        <div className="flex flex-col items-center pointer-events-none select-none">
+          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${
+            darkMode 
+              ? 'bg-black/75 border-amber-500/40 text-white shadow-amber-500/10' 
+              : 'bg-white/85 border-amber-400 text-slate-900 shadow-slate-300'
+          }`}>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500">PV Solar</span>
+            <span className="text-sm font-black font-mono tracking-tight">
+              {solarPower.toFixed(2)} <span className="text-[10px] font-normal text-slate-400">kW</span>
+            </span>
+          </div>
+          <div className="w-0.5 h-6 bg-amber-500/50 mt-0.5" />
+        </div>
+      </Html>
+
+      {/* HOME DEMAND BADGE (Anchored above main living space) */}
+      <Html position={[1.0, 2.5, 0.1]} center distanceFactor={8.5}>
+        <div className="flex flex-col items-center pointer-events-none select-none">
+          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${
+            darkMode 
+              ? 'bg-black/75 border-purple-500/40 text-white shadow-purple-500/10' 
+              : 'bg-white/85 border-purple-400 text-slate-900 shadow-slate-300'
+          }`}>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-purple-500">Home Demand</span>
+            <span className="text-sm font-black font-mono tracking-tight">
+              {homeConsumption.toFixed(2)} <span className="text-[10px] font-normal text-slate-400">kW</span>
+            </span>
+          </div>
+          <div className="w-0.5 h-6 bg-purple-500/50 mt-0.5" />
+        </div>
+      </Html>
+
+      {/* BATTERY STORAGE BADGE (Anchored next to battery pack) */}
+      <Html position={[-2.85, 0.65, 0.4]} center distanceFactor={8.5}>
+        <div className="flex flex-col items-end pointer-events-none select-none pr-1">
+          <div className={`flex flex-col items-start px-3 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${
+            darkMode 
+              ? 'bg-black/75 border-emerald-500/40 text-white shadow-emerald-500/10' 
+              : 'bg-white/85 border-emerald-400 text-slate-900 shadow-slate-300'
+          }`}>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Battery</span>
+              <span className="text-[9px] font-black px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono">
+                {batterySoC}%
+              </span>
+            </div>
+            <span className="text-xs font-black font-mono tracking-tight mt-0.5">
+              {Math.abs(batteryPower).toFixed(2)} <span className="text-[9px] font-normal text-slate-400">kW</span>
+            </span>
+          </div>
+        </div>
+      </Html>
+
+      {/* GRID FLOW BADGE (Anchored near grid path terminal) */}
+      <Html position={[1.5, 0.4, 2.5]} center distanceFactor={8.5}>
+        <div className="flex flex-col items-center pointer-events-none select-none">
+          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${
+            darkMode 
+              ? 'bg-black/75 border-sky-500/40 text-white shadow-sky-500/10' 
+              : 'bg-white/85 border-sky-400 text-slate-900 shadow-slate-300'
+          }`}>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-sky-500">
+              {gridPower < 0 ? 'Grid Export' : 'Grid Import'}
+            </span>
+            <span className="text-xs font-black font-mono tracking-tight">
+              {Math.abs(gridPower).toFixed(2)} <span className="text-[9px] font-normal text-slate-400">kW</span>
+            </span>
+          </div>
+          <div className="w-0.5 h-4 bg-sky-500/50 mt-0.5" />
+        </div>
+      </Html>
+
+    </group>
+  );
+}
+
 export default function FusionSolarHouseFlow({
   realtime,
   dailyTotals,
   darkMode = true
 }: FusionSolarHouseFlowProps) {
-  const {
-    solarPower,
-    gridPower,
-    batteryPower,
-    batterySoC,
-    homeConsumption
-  } = realtime;
+  const [autoRotate, setAutoRotate] = useState(false);
+  const controlsRef = useRef<any>(null);
 
-  // Flow speeds based on wattage magnitude
-  const isSolarGenerating = solarPower > 0.05;
-  const isBatteryActive = Math.abs(batteryPower) > 0.02;
-  const isGridActive = Math.abs(gridPower) > 0.05;
-  const isHomeActive = homeConsumption > 0.05;
-
-  const solarSpeed = useMemo(() => Math.max(1.2, 4.0 - Math.min(3.0, solarPower * 0.8)), [solarPower]);
-  const gridSpeed = useMemo(() => Math.max(1.2, 4.0 - Math.min(3.0, Math.abs(gridPower) * 0.8)), [gridPower]);
-  const homeSpeed = useMemo(() => Math.max(1.2, 4.0 - Math.min(3.0, homeConsumption * 0.8)), [homeConsumption]);
-
-  // Battery bar fill segments (5 bars total)
-  const filledBars = Math.max(1, Math.min(5, Math.ceil((batterySoC / 100) * 5)));
+  const handleResetCamera = () => {
+    if (controlsRef.current) {
+      controlsRef.current.reset();
+    }
+  };
 
   return (
-    <div className={`relative w-full rounded-3xl p-6 sm:p-8 border backdrop-blur-xl transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[460px] sm:min-h-[520px] ${
+    <div className={`relative w-full rounded-3xl p-4 sm:p-6 border backdrop-blur-xl transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[480px] sm:min-h-[530px] ${
       darkMode 
         ? 'bg-black/60 border-white/10 text-white shadow-2xl' 
         : 'bg-white/70 border-slate-200/90 text-slate-900 shadow-lg'
     }`}>
-      {/* ------------------------------------------------------------- */}
-      {/* 2.5D ISOMETRIC HOUSE ILLUSTRATION WITH CONDUIT PULSES          */}
-      {/* ------------------------------------------------------------- */}
-      <div className="relative w-full h-full min-h-[380px] sm:min-h-[440px] flex items-center justify-center select-none">
-        
-        <svg 
-          viewBox="0 0 700 620" 
-          className="w-full h-full max-w-[620px] overflow-visible"
-        >
-          <defs>
-            {/* Solar Panel Dark Mesh Pattern */}
-            <pattern id="solarGrid" width="12" height="6" patternUnits="userSpaceOnUse">
-              <rect width="12" height="6" fill="#18202F" stroke="#28354D" strokeWidth="0.75" />
-            </pattern>
+      {/* Top Controls Header */}
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10 z-10">
+        <div className="flex items-center gap-2.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-xs font-black tracking-tight uppercase text-slate-800 dark:text-slate-200">
+            3D Energy Flow Visualizer
+          </span>
+        </div>
 
-            {/* Neon Green Glow Filter */}
-            <filter id="neonPulse" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="3.5" result="blur1" />
-              <feGaussianBlur stdDeviation="7" result="blur2" />
-              <feMerge>
-                <feMergeNode in="blur2" />
-                <feMergeNode in="blur1" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
+        <div className="flex items-center gap-2">
+          {/* Auto Rotate Toggle */}
+          <button
+            type="button"
+            onClick={() => setAutoRotate(!autoRotate)}
+            className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
+              autoRotate 
+                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-600 dark:text-emerald-400' 
+                : darkMode 
+                  ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white' 
+                  : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Sparkle size={13} weight={autoRotate ? "fill" : "regular"} />
+            <span>Auto Rotate</span>
+          </button>
 
-            {/* Warm Entrance Light Gradient */}
-            <linearGradient id="warmDoorLight" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#FEF3C7" stopOpacity="0.4" />
-            </linearGradient>
+          {/* Reset Camera View */}
+          <button
+            type="button"
+            onClick={handleResetCamera}
+            title="Reset Camera View"
+            className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+              darkMode 
+                ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white' 
+                : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <ArrowsClockwise size={14} />
+          </button>
+        </div>
+      </div>
 
-            {/* Inverter Box Gradient */}
-            <linearGradient id="inverterMetal" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FFFFFF" />
-              <stop offset="100%" stopColor="#D8DDE6" />
-            </linearGradient>
-          </defs>
-
-          {/* ========================================================= */}
-          {/* ISOMETRIC HOUSE 3D GEOMETRY                               */}
-          {/* ========================================================= */}
-
-          {/* 1. Ground Shadow */}
-          <polygon points="40,500 320,380 660,490 380,610" fill="rgba(0,0,0,0.4)" opacity="0.6" />
-
-          {/* 2. Left House Body (Gable Wall with Vertical Charcoal Siding) */}
-          <polygon 
-            points="120,480 340,390 340,160 120,250" 
-            fill="#3B4048" 
-            stroke="#2A2E35" 
-            strokeWidth="1.5" 
-          />
-          {/* Siding lines */}
-          {[140, 160, 180, 200, 220, 240, 260, 280, 300, 320].map((x, i) => (
-            <line 
-              key={i} 
-              x1={x} 
-              y1={250 - (i * 8)} 
-              x2={x} 
-              y2={480 - (i * 8)} 
-              stroke="#2C3139" 
-              strokeWidth="1" 
-              opacity="0.6" 
+      {/* 3D React Three Fiber Canvas */}
+      <div className="relative w-full h-full min-h-[410px] sm:min-h-[450px] select-none">
+        <Suspense fallback={
+          <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">
+            Loading 3D Visualizer...
+          </div>
+        }>
+          <Canvas
+            shadows
+            camera={{ position: [8.5, 6.5, 8.5], fov: 36 }}
+            className="w-full h-full"
+            gl={{ antialias: true, alpha: true }}
+          >
+            {/* Daylight / Studio Lighting Setup */}
+            <ambientLight intensity={darkMode ? 0.55 : 1.1} />
+            <directionalLight
+              position={[9, 14, 7]}
+              intensity={darkMode ? 1.3 : 1.6}
+              color={darkMode ? "#FFFFFF" : "#FFFBEB"}
+              castShadow
+              shadow-mapSize-width={1024}
+              shadow-mapSize-height={1024}
+              shadow-camera-far={25}
+              shadow-camera-left={-6}
+              shadow-camera-right={6}
+              shadow-camera-top={6}
+              shadow-camera-bottom={-6}
             />
-          ))}
-
-          {/* 3. Sloped Gable Roof with Solar PV Panels */}
-          <polygon 
-            points="120,250 340,160 260,95 40,185" 
-            fill="#1E232A" 
-            stroke="#2F3642" 
-            strokeWidth="2" 
-          />
-          {/* Solar Panel Layer on Roof */}
-          <polygon 
-            points="115,242 325,158 250,102 50,182" 
-            fill="url(#solarGrid)" 
-            stroke="#475569" 
-            strokeWidth="1.5" 
-          />
-          {/* Blue solar reflection sheen */}
-          <polygon 
-            points="60,180 180,132 230,172 110,220" 
-            fill="rgba(56, 189, 248, 0.08)" 
-          />
-
-          {/* 4. Roof Overhang & Gable Triangular Face */}
-          <polygon 
-            points="340,160 480,225 340,290" 
-            fill="#4A505A" 
-            stroke="#2F353E" 
-            strokeWidth="1.5" 
-          />
-          <polygon 
-            points="340,160 480,225 480,410 340,345" 
-            fill="#3F454F" 
-            stroke="#2F353E" 
-            strokeWidth="1.5" 
-          />
-
-          {/* 5. Right Flat Roof Garage & Entrance Overhang */}
-          <polygon 
-            points="340,345 480,410 650,335 510,270" 
-            fill="#525964" 
-            stroke="#3B414A" 
-            strokeWidth="1.5" 
-          />
-          <polygon 
-            points="480,410 650,335 650,470 480,545" 
-            fill="#3A3F47" 
-            stroke="#2A2E35" 
-            strokeWidth="1.5" 
-          />
-
-          {/* 6. Garage Door (Right) */}
-          <polygon 
-            points="530,385 640,338 640,460 530,510" 
-            fill="#2F333A" 
-            stroke="#23272D" 
-            strokeWidth="1.5" 
-          />
-          {[0, 1, 2, 3, 4].map(idx => (
-            <line 
-              key={idx} 
-              x1={530} 
-              y1={410 + idx * 20} 
-              x2={640} 
-              y2={363 + idx * 20} 
-              stroke="#22262C" 
-              strokeWidth="1" 
-            />
-          ))}
-
-          {/* 7. Warm Light Glass Entrance Door & Steps */}
-          <polygon 
-            points="420,380 475,405 475,490 420,465" 
-            fill="url(#warmDoorLight)" 
-            stroke="#F59E0B" 
-            strokeWidth="1" 
-            style={{ filter: 'drop-shadow(0 0 12px rgba(245, 158, 11, 0.4))' }}
-          />
-          {/* Glass Door Dividers */}
-          <line x1="447" y1="392" x2="447" y2="478" stroke="#78350F" strokeWidth="1.5" />
-
-          {/* Steps */}
-          <polygon points="390,480 475,442 505,455 420,495" fill="#4B525D" />
-          <polygon points="380,495 470,455 495,467 405,510" fill="#3D434D" />
-          <polygon points="370,510 465,468 485,478 390,522" fill="#2E333B" />
-
-          {/* ========================================================= */}
-          {/* ELECTRICAL HARDWARE ON LEFT WALL                          */}
-          {/* ========================================================= */}
-
-          {/* 1. BATTERY ENCLOSURE & GREEN GLOWING CELLS */}
-          <g transform="translate(160, 360)">
-            {/* Translucent Glass Outer Box */}
-            <rect 
-              x="0" 
-              y="0" 
-              width="50" 
-              height="115" 
-              rx="6" 
-              fill="rgba(16, 185, 129, 0.12)" 
-              stroke="rgba(255, 255, 255, 0.4)" 
-              strokeWidth="1.5" 
-              style={{ filter: 'drop-shadow(0 0 16px rgba(16, 185, 129, 0.35))' }}
+            <pointLight 
+              position={[-6, 7, -6]} 
+              intensity={darkMode ? 0.4 : 0.6} 
+              color={darkMode ? "#38BDF8" : "#93C5FD"} 
             />
 
-            {/* 5 Stacked Battery Segments (Glowing Green) */}
-            {[0, 1, 2, 3, 4].map(barIdx => {
-              const isFilled = 4 - barIdx < filledBars;
-              return (
-                <rect
-                  key={barIdx}
-                  x="5"
-                  y={6 + barIdx * 21}
-                  width="40"
-                  height="18"
-                  rx="3"
-                  fill={isFilled ? "#10B981" : "rgba(255,255,255,0.08)"}
-                  stroke={isFilled ? "#34D399" : "rgba(255,255,255,0.15)"}
-                  strokeWidth="1"
-                  style={{
-                    filter: isFilled ? 'drop-shadow(0 0 6px #10B981)' : undefined
-                  }}
-                />
-              );
-            })}
+            {/* Floating Isometric 3D House */}
+            <Float speed={1.1} rotationIntensity={0.06} floatIntensity={0.12}>
+              <LowPolyHouse realtime={realtime} darkMode={darkMode} />
+            </Float>
 
-            {/* Battery SoC Text (White "100" on bottom segment) */}
-            <text
-              x="25"
-              y="104"
-              textAnchor="middle"
-              className="text-[13px] font-black font-mono fill-white select-none"
-              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))' }}
-            >
-              {batterySoC}
-            </text>
-          </g>
-
-          {/* 2. CENTRAL HYBRID INVERTER BOX */}
-          <g transform="translate(245, 355)">
-            <rect 
-              x="0" 
-              y="0" 
-              width="45" 
-              height="45" 
-              rx="10" 
-              fill="url(#inverterMetal)" 
-              stroke="#CBD5E1" 
-              strokeWidth="1.5" 
-              style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))' }}
+            {/* Orbit Controls with smooth damping */}
+            <OrbitControls
+              ref={controlsRef}
+              autoRotate={autoRotate}
+              autoRotateSpeed={1.0}
+              enablePan={false}
+              minPolarAngle={Math.PI / 6}
+              maxPolarAngle={Math.PI / 2.25}
+              minDistance={6}
+              maxDistance={14}
+              dampingFactor={0.05}
             />
-            {/* Center Pill / Indicator Notch */}
-            <rect x="15" y="20" width="15" height="5" rx="2.5" fill="#0F172A" />
-          </g>
 
-          {/* 3. Small Junction Box (Right of Inverter) */}
-          <g transform="translate(305, 365)">
-            <rect x="0" y="0" width="22" height="18" rx="4" fill="#E2E8F0" stroke="#94A3B8" strokeWidth="1" />
-          </g>
+            {/* Post-Processing Bloom for Glowing Elements */}
+            <EffectComposer>
+              <Bloom
+                luminanceThreshold={0.5}
+                luminanceSmoothing={0.3}
+                intensity={darkMode ? 1.2 : 0.6}
+              />
+            </EffectComposer>
+          </Canvas>
+        </Suspense>
+      </div>
 
-          {/* ========================================================= */}
-          {/* ENERGY FLOW CONDUIT LINES & NEON PARTICLES                */}
-          {/* ========================================================= */}
-
-          {/* Base Conduit Tracks */}
-          {/* Vertical PV to Inverter */}
-          <line x1="267" y1="180" x2="267" y2="355" stroke="#1E293B" strokeWidth="4" strokeLinecap="round" />
-          {/* Battery to Inverter */}
-          <line x1="210" y1="378" x2="245" y2="378" stroke="#1E293B" strokeWidth="4" strokeLinecap="round" />
-          {/* Inverter to Junction Box */}
-          <line x1="290" y1="375" x2="305" y2="375" stroke="#1E293B" strokeWidth="4" strokeLinecap="round" />
-          {/* Junction Box to Home (into wall) */}
-          <line x1="327" y1="374" x2="385" y2="368" stroke="#1E293B" strokeWidth="4" strokeLinecap="round" />
-          {/* Junction Box down to Grid */}
-          <path d="M 316 383 L 316 455 Q 316 465, 326 468 L 360 476" fill="none" stroke="#1E293B" strokeWidth="4" strokeLinecap="round" />
-
-          {/* GLOWING NEON GREEN ACTIVE FLOW LINES */}
-          {/* 1. Rooftop PV -> Inverter (Vertical Green Stream) */}
-          {isSolarGenerating && (
-            <line 
-              x1="267" y1="180" x2="267" y2="355" 
-              stroke="#10B981" 
-              strokeWidth="3.5" 
-              strokeLinecap="round" 
-              strokeDasharray="6, 8"
-              className="animate-[dash_linear_infinite]"
-              style={{
-                animationDuration: `${solarSpeed}s`,
-                filter: 'url(#neonPulse)'
-              }}
-            />
-          )}
-
-          {/* 2. Battery Flow (Battery <-> Inverter) */}
-          {isBatteryActive && (
-            <line 
-              x1="210" y1="378" x2="245" y2="378" 
-              stroke="#10B981" 
-              strokeWidth="3.5" 
-              strokeLinecap="round" 
-              strokeDasharray="6, 8"
-              className="animate-[dash_linear_infinite]"
-              style={{
-                filter: 'url(#neonPulse)'
-              }}
-            />
-          )}
-
-          {/* 3. Inverter to Home Entrance Flow */}
-          {isHomeActive && (
-            <line 
-              x1="327" y1="374" x2="385" y2="368" 
-              stroke="#10B981" 
-              strokeWidth="3.5" 
-              strokeLinecap="round" 
-              strokeDasharray="6, 8"
-              className="animate-[dash_linear_infinite]"
-              style={{
-                animationDuration: `${homeSpeed}s`,
-                filter: 'url(#neonPulse)'
-              }}
-            />
-          )}
-
-          {/* 4. Inverter to Ground / Grid Flow */}
-          {isGridActive && (
-            <path 
-              d="M 316 383 L 316 455 Q 316 465, 326 468 L 360 476" 
-              fill="none" 
-              stroke="#10B981" 
-              strokeWidth="3.5" 
-              strokeLinecap="round" 
-              strokeDasharray="6, 8"
-              className="animate-[dash_linear_infinite]"
-              style={{
-                animationDuration: `${gridSpeed}s`,
-                filter: 'url(#neonPulse)'
-              }}
-            />
-          )}
-
-          {/* ========================================================= */}
-          {/* FLOATING TYPOGRAPHY LABELS & THIN INDICATOR HAIRLINES     */}
-          {/* ========================================================= */}
-
-          {/* 1. PV (Top Left above roof) */}
-          <g transform="translate(180, 50)">
-            <text x="0" y="0" textAnchor="middle" className="text-sm font-semibold fill-slate-400 dark:fill-slate-400 select-none">
-              PV
-            </text>
-            <text x="0" y="24" textAnchor="middle" className="text-2xl font-black font-mono fill-slate-900 dark:fill-white select-none">
-              {solarPower.toFixed(2)} <tspan className="text-xs font-normal font-sans fill-slate-400">kW</tspan>
-            </text>
-            {/* Thin hairline pointing to solar panels */}
-            <line x1="0" y1="34" x2="0" y2="105" stroke="rgba(255,255,255,0.25)" strokeWidth="0.75" />
-          </g>
-
-          {/* 2. HOME (Top Right above house) */}
-          <g transform="translate(470, 50)">
-            <text x="0" y="0" textAnchor="middle" className="text-sm font-semibold fill-slate-400 dark:fill-slate-400 select-none">
-              Home
-            </text>
-            <text x="0" y="24" textAnchor="middle" className="text-2xl font-black font-mono fill-slate-900 dark:fill-white select-none">
-              {homeConsumption.toFixed(2)} <tspan className="text-xs font-normal font-sans fill-slate-400">kW</tspan>
-            </text>
-            {/* Thin hairline pointing to house roof */}
-            <line x1="0" y1="34" x2="0" y2="280" stroke="rgba(255,255,255,0.25)" strokeWidth="0.75" />
-          </g>
-
-          {/* 3. BATTERY (Bottom Left below battery pack) */}
-          <g transform="translate(185, 520)">
-            <text x="0" y="0" textAnchor="middle" className="text-sm font-semibold fill-slate-400 dark:fill-slate-400 select-none">
-              Battery
-            </text>
-            <text x="0" y="24" textAnchor="middle" className="text-2xl font-black font-mono fill-slate-900 dark:fill-white select-none">
-              {Math.abs(batteryPower).toFixed(2)} <tspan className="text-xs font-normal font-sans fill-slate-400">kW</tspan>
-            </text>
-          </g>
-
-          {/* 4. GRID (Bottom Right near steps conduit) */}
-          <g transform="translate(440, 520)">
-            <text x="0" y="0" textAnchor="middle" className="text-sm font-semibold fill-slate-400 dark:fill-slate-400 select-none">
-              Grid
-            </text>
-            <text x="0" y="24" textAnchor="middle" className="text-2xl font-black font-mono fill-slate-900 dark:fill-white select-none">
-              {Math.abs(gridPower).toFixed(2)} <tspan className="text-xs font-normal font-sans fill-slate-400">kW</tspan>
-            </text>
-            {/* Thin hairline pointing to grid conduit near steps */}
-            <path d="M 0 0 C 0 -15, -60 -25, -75 -40" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="0.75" />
-          </g>
-        </svg>
-
+      {/* Bottom Summary Bar */}
+      <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-white/10 text-[11px] font-medium text-slate-500 dark:text-slate-400 z-10">
+        <span>Inverter Output: <strong className="text-amber-500 font-bold">{realtime.solarPower.toFixed(2)} kW</strong></span>
+        <span>Autarky Rate: <strong className="text-emerald-500 font-bold">{dailyTotals.autarkyRate.toFixed(2)}%</strong></span>
       </div>
     </div>
   );

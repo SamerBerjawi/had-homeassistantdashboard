@@ -110,7 +110,7 @@ export default function EnergyGauges({
               </span>
             </div>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-              Yield: 100%
+              Yield: 100.00%
             </span>
           </div>
 
@@ -127,12 +127,14 @@ export default function EnergyGauges({
               {productionData.map((_, i) => (
                 <PieSlice key={i} index={i} />
               ))}
-              <PieCenter defaultLabel="Yield" suffix=" kWh">
-                {() => (
+              <PieCenter defaultLabel="Yield" suffix=" kWh" formatOptions={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }}>
+                {({ value, isHovered, data }) => (
                   <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Yield</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {isHovered ? data.label : 'Total Yield'}
+                    </span>
                     <span className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight leading-none my-0.5">
-                      {solarProductionKWh.toFixed(2)}
+                      {(isHovered ? value : solarProductionKWh).toFixed(2)}
                     </span>
                     <span className="text-xs font-bold text-amber-500">kWh</span>
                   </div>
@@ -151,7 +153,7 @@ export default function EnergyGauges({
                 {solarConsumedKWh.toFixed(2)} <span className="text-[10px] font-normal text-slate-400">kWh</span>
               </span>
               <span className="text-[10px] font-semibold text-emerald-500">
-                ({selfConsumptionRate}%)
+                ({selfConsumptionRate.toFixed(2)}%)
               </span>
             </div>
 
@@ -183,7 +185,7 @@ export default function EnergyGauges({
               </span>
             </div>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30">
-              Demand: 100%
+              Demand: 100.00%
             </span>
           </div>
 
@@ -200,12 +202,14 @@ export default function EnergyGauges({
               {consumptionData.map((_, i) => (
                 <PieSlice key={i} index={i} />
               ))}
-              <PieCenter defaultLabel="Total" suffix=" kWh">
-                {() => (
+              <PieCenter defaultLabel="Total" suffix=" kWh" formatOptions={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }}>
+                {({ value, isHovered, data }) => (
                   <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Used</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {isHovered ? data.label : 'Total Used'}
+                    </span>
                     <span className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight leading-none my-0.5">
-                      {totalConsumptionKWh.toFixed(2)}
+                      {(isHovered ? value : totalConsumptionKWh).toFixed(2)}
                     </span>
                     <span className="text-xs font-bold text-purple-500">kWh</span>
                   </div>
@@ -224,7 +228,7 @@ export default function EnergyGauges({
                 {fromSolarKWh.toFixed(2)} <span className="text-[10px] font-normal text-slate-400">kWh</span>
               </span>
               <span className="text-[10px] font-semibold text-amber-500">
-                ({autarkyRate}%)
+                ({autarkyRate.toFixed(2)}%)
               </span>
             </div>
 
@@ -251,7 +255,7 @@ export default function EnergyGauges({
               <ShieldCheck size={16} className="text-emerald-500" />
               Autarky / Self-Sufficiency
             </span>
-            <span className="font-mono text-emerald-600 dark:text-emerald-400">{autarkyRate}%</span>
+            <span className="font-mono text-emerald-600 dark:text-emerald-400">{autarkyRate.toFixed(2)}%</span>
           </div>
           <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
             <div 
@@ -267,7 +271,7 @@ export default function EnergyGauges({
               <Sun size={16} className="text-amber-500" />
               Self-Consumption Rate
             </span>
-            <span className="font-mono text-amber-600 dark:text-amber-400">{selfConsumptionRate}%</span>
+            <span className="font-mono text-amber-600 dark:text-amber-400">{selfConsumptionRate.toFixed(2)}%</span>
           </div>
           <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
             <div 
