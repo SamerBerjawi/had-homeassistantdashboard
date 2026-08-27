@@ -8,23 +8,23 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html, Float } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
-import { 
-  ArrowsClockwise, 
-  Eye, 
-  Sun, 
-  Moon, 
-  Sparkle, 
+import {
+  ArrowsClockwise,
+  Eye,
+  Sun,
+  Moon,
+  Sparkle,
   Lightning,
   HouseLine
 } from '@phosphor-icons/react';
 import { RealtimeEnergy, DailyTotalsEnergy } from './energyCalculator';
-import { 
-  getSolarPanelTexture, 
-  getWoodGrainTexture, 
-  getLapSidingTexture, 
-  getPaverTexture, 
-  getMetalRoofTexture, 
-  getLawnTexture 
+import {
+  getSolarPanelTexture,
+  getWoodGrainTexture,
+  getLapSidingTexture,
+  getPaverTexture,
+  getMetalRoofTexture,
+  getLawnTexture
 } from './threeTextures';
 
 interface FusionSolarHouseFlowProps {
@@ -155,31 +155,31 @@ function LowPolyEV({ position, rotation, darkMode }: { position: [number, number
       {/* Car Body */}
       <mesh position={[0, 0.28, 0]} castShadow>
         <boxGeometry args={[1.3, 0.36, 2.4]} />
-        <meshStandardMaterial 
-          color={darkMode ? "#E2E8F0" : "#0F172A"} 
-          metalness={0.6} 
-          roughness={0.3} 
+        <meshStandardMaterial
+          color={darkMode ? "#E2E8F0" : "#0F172A"}
+          metalness={0.6}
+          roughness={0.3}
         />
       </mesh>
 
       {/* Cabin / Roof & Windshield */}
       <mesh position={[0, 0.58, -0.15]} castShadow>
         <boxGeometry args={[1.1, 0.32, 1.3]} />
-        <meshStandardMaterial 
-          color="#0F172A" 
-          roughness={0.1} 
-          metalness={0.9} 
+        <meshStandardMaterial
+          color="#0F172A"
+          roughness={0.1}
+          metalness={0.9}
         />
       </mesh>
 
       {/* Windshield Glass Tint */}
       <mesh position={[0, 0.58, 0.52]} rotation={[Math.PI / 6, 0, 0]}>
         <planeGeometry args={[1.05, 0.34]} />
-        <meshStandardMaterial 
-          color="#38BDF8" 
-          transparent 
-          opacity={0.7} 
-          roughness={0.1} 
+        <meshStandardMaterial
+          color="#38BDF8"
+          transparent
+          opacity={0.7}
+          roughness={0.1}
         />
       </mesh>
 
@@ -240,18 +240,18 @@ function GardenBollardLight({ position, darkMode }: { position: [number, number,
       {/* Glowing Lamp Head */}
       <mesh position={[0, 0.31, 0]}>
         <cylinderGeometry args={[0.04, 0.04, 0.05, 8]} />
-        <meshStandardMaterial 
-          color="#FDE047" 
-          emissive="#FDE047" 
-          emissiveIntensity={darkMode ? 2.5 : 0.8} 
+        <meshStandardMaterial
+          color="#FDE047"
+          emissive="#FDE047"
+          emissiveIntensity={darkMode ? 2.5 : 0.8}
         />
       </mesh>
       {/* Warm Ground Glow */}
-      <pointLight 
-        position={[0, 0.32, 0]} 
-        color="#FDE047" 
-        intensity={darkMode ? 0.4 : 0.15} 
-        distance={1.5} 
+      <pointLight
+        position={[0, 0.32, 0]}
+        color="#FDE047"
+        intensity={darkMode ? 0.4 : 0.15}
+        distance={1.5}
       />
     </group>
   );
@@ -337,7 +337,7 @@ function LowPolyHouse({
 
   return (
     <group position={[0, -0.65, 0]}>
-      
+
       {/* --------------------------------------------------------- */}
       {/* 1. HOUSE MAIN BODY (Gable Left Wing)                      */}
       {/* --------------------------------------------------------- */}
@@ -449,10 +449,10 @@ function LowPolyHouse({
       </mesh>
 
       {/* Parked EV in the Driveway */}
-      <LowPolyEV 
-        position={[1.1, 0.01, 2.2]} 
-        rotation={[0, 0, 0]} 
-        darkMode={darkMode} 
+      <LowPolyEV
+        position={[1.1, 0.01, 2.2]}
+        rotation={[0, 0, 0]}
+        darkMode={darkMode}
       />
 
       {/* Wallbox Smart EV Charger on Garage Wall */}
@@ -603,7 +603,7 @@ function LowPolyHouse({
           <boxGeometry args={[0.17, 0.03, 0.37]} />
           <meshStandardMaterial color="#94A3B8" metalness={0.8} roughness={0.2} />
         </mesh>
-        
+
         {/* 5 Stacked Glowing Battery Cell Segments */}
         {[0, 1, 2, 3, 4].map(barIdx => {
           const isIlluminated = barIdx < filledBars;
@@ -687,11 +687,10 @@ function LowPolyHouse({
       {/* PV BADGE (Anchored above rooftop solar array) */}
       <Html position={[-1.2, 3.2, 0.2]} center distanceFactor={8.5}>
         <div className="flex flex-col items-center pointer-events-none select-none">
-          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${
-            darkMode 
-              ? 'bg-black/75 border-amber-500/40 text-white shadow-amber-500/10' 
+          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${darkMode
+              ? 'bg-black/75 border-amber-500/40 text-white shadow-amber-500/10'
               : 'bg-white/85 border-amber-400 text-slate-900 shadow-slate-300'
-          }`}>
+            }`}>
             <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500">PV Solar</span>
             <span className="text-sm font-black font-mono tracking-tight">
               {solarPower.toFixed(2)} <span className="text-[10px] font-normal text-slate-400">kW</span>
@@ -704,11 +703,10 @@ function LowPolyHouse({
       {/* HOME DEMAND BADGE (Anchored above main living space) */}
       <Html position={[1.0, 2.5, 0.1]} center distanceFactor={8.5}>
         <div className="flex flex-col items-center pointer-events-none select-none">
-          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${
-            darkMode 
-              ? 'bg-black/75 border-purple-500/40 text-white shadow-purple-500/10' 
+          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${darkMode
+              ? 'bg-black/75 border-purple-500/40 text-white shadow-purple-500/10'
               : 'bg-white/85 border-purple-400 text-slate-900 shadow-slate-300'
-          }`}>
+            }`}>
             <span className="text-[10px] font-bold uppercase tracking-wider text-purple-500">Home Demand</span>
             <span className="text-sm font-black font-mono tracking-tight">
               {homeConsumption.toFixed(2)} <span className="text-[10px] font-normal text-slate-400">kW</span>
@@ -721,11 +719,10 @@ function LowPolyHouse({
       {/* BATTERY STORAGE BADGE (Anchored next to battery pack) */}
       <Html position={[-2.85, 0.65, 0.4]} center distanceFactor={8.5}>
         <div className="flex flex-col items-end pointer-events-none select-none pr-1">
-          <div className={`flex flex-col items-start px-3 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${
-            darkMode 
-              ? 'bg-black/75 border-emerald-500/40 text-white shadow-emerald-500/10' 
+          <div className={`flex flex-col items-start px-3 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${darkMode
+              ? 'bg-black/75 border-emerald-500/40 text-white shadow-emerald-500/10'
               : 'bg-white/85 border-emerald-400 text-slate-900 shadow-slate-300'
-          }`}>
+            }`}>
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Battery</span>
               <span className="text-[9px] font-black px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono">
@@ -742,11 +739,10 @@ function LowPolyHouse({
       {/* GRID FLOW BADGE (Anchored near grid path terminal) */}
       <Html position={[1.5, 0.4, 2.5]} center distanceFactor={8.5}>
         <div className="flex flex-col items-center pointer-events-none select-none">
-          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${
-            darkMode 
-              ? 'bg-black/75 border-sky-500/40 text-white shadow-sky-500/10' 
+          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${darkMode
+              ? 'bg-black/75 border-sky-500/40 text-white shadow-sky-500/10'
               : 'bg-white/85 border-sky-400 text-slate-900 shadow-slate-300'
-          }`}>
+            }`}>
             <span className="text-[10px] font-bold uppercase tracking-wider text-sky-500">
               {gridPower < 0 ? 'Grid Export' : 'Grid Import'}
             </span>
@@ -777,11 +773,10 @@ export default function FusionSolarHouseFlow({
   };
 
   return (
-    <div className={`relative w-full rounded-3xl p-4 sm:p-6 border backdrop-blur-xl transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[480px] sm:min-h-[530px] ${
-      darkMode 
-        ? 'bg-black/60 border-white/10 text-white shadow-2xl' 
+    <div className={`relative w-full rounded-3xl p-4 sm:p-6 border backdrop-blur-xl transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[480px] sm:min-h-[530px] ${darkMode
+        ? 'bg-black/60 border-white/10 text-white shadow-2xl'
         : 'bg-white/70 border-slate-200/90 text-slate-900 shadow-lg'
-    }`}>
+      }`}>
       {/* Top Controls Header */}
       <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10 z-10">
         <div className="flex items-center gap-2.5">
@@ -796,13 +791,12 @@ export default function FusionSolarHouseFlow({
           <button
             type="button"
             onClick={() => setAutoRotate(!autoRotate)}
-            className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
-              autoRotate 
-                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-600 dark:text-emerald-400' 
-                : darkMode 
-                  ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white' 
+            className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${autoRotate
+                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
+                : darkMode
+                  ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
                   : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             <Sparkle size={13} weight={autoRotate ? "fill" : "regular"} />
             <span>Auto Rotate</span>
@@ -813,11 +807,10 @@ export default function FusionSolarHouseFlow({
             type="button"
             onClick={handleResetCamera}
             title="Reset Camera View"
-            className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
-              darkMode 
-                ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white' 
+            className={`p-1.5 rounded-xl border transition-all cursor-pointer ${darkMode
+                ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
                 : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             <ArrowsClockwise size={14} />
           </button>
@@ -852,10 +845,10 @@ export default function FusionSolarHouseFlow({
               shadow-camera-top={6}
               shadow-camera-bottom={-6}
             />
-            <pointLight 
-              position={[-6, 7, -6]} 
-              intensity={darkMode ? 0.4 : 0.6} 
-              color={darkMode ? "#38BDF8" : "#93C5FD"} 
+            <pointLight
+              position={[-6, 7, -6]}
+              intensity={darkMode ? 0.4 : 0.6}
+              color={darkMode ? "#38BDF8" : "#93C5FD"}
             />
 
             {/* Floating Isometric 3D House */}

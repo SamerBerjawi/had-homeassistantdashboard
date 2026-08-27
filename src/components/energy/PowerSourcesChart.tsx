@@ -376,8 +376,15 @@ export default function PowerSourcesChart({
           })}
 
           {/* Vertical Time Grid Lines */}
-          {timeRange === 'today' ? (
-            [0, 16, 32, 48, 64, 80, 96].map(idx => {
+          {(() => {
+            if (data.length <= 1) return null;
+            const stepCount = Math.min(8, Math.max(4, Math.floor(innerWidth / 120)));
+            const indices: number[] = [];
+            for (let s = 0; s <= stepCount; s++) {
+              const idx = Math.min(data.length - 1, Math.round((s / stepCount) * (data.length - 1)));
+              if (!indices.includes(idx)) indices.push(idx);
+            }
+            return indices.map(idx => {
               const x = getX(idx);
               return (
                 <line
@@ -386,27 +393,12 @@ export default function PowerSourcesChart({
                   y1={padding.top}
                   x2={x}
                   y2={height - padding.bottom}
-                  stroke={darkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}
+                  stroke={darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}
                   strokeWidth="1"
                 />
               );
-            })
-          ) : (
-            data.map((_, idx) => {
-              const x = getX(idx);
-              return (
-                <line
-                  key={idx}
-                  x1={x}
-                  y1={padding.top}
-                  x2={x}
-                  y2={height - padding.bottom}
-                  stroke={darkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}
-                  strokeWidth="1"
-                />
-              );
-            })
-          )}
+            });
+          })()}
 
           {/* --------------------------------------------------------- */}
           {/* STACKED AREA CURVES                                       */}
@@ -475,38 +467,32 @@ export default function PowerSourcesChart({
             />
           )}
 
-          {/* X-Axis Time Labels */}
-          {timeRange === 'today' ? (
-            <>
-              <text x={getX(0)} y={height - 15} textAnchor="start" className="text-[11px] font-bold fill-slate-300 select-none">
-                12:00 AM
-              </text>
-              <text x={getX(16)} y={height - 15} textAnchor="middle" className="text-[11px] font-medium fill-slate-400 select-none">
-                4:00 AM
-              </text>
-              <text x={getX(32)} y={height - 15} textAnchor="middle" className="text-[11px] font-medium fill-slate-400 select-none">
-                8:00 AM
-              </text>
-              <text x={getX(48)} y={height - 15} textAnchor="middle" className="text-[11px] font-medium fill-slate-400 select-none">
-                12:00 PM
-              </text>
-              <text x={getX(64)} y={height - 15} textAnchor="middle" className="text-[11px] font-medium fill-slate-400 select-none">
-                4:00 PM
-              </text>
-              <text x={getX(80)} y={height - 15} textAnchor="middle" className="text-[11px] font-medium fill-slate-400 select-none">
-                8:00 PM
-              </text>
-              <text x={getX(96)} y={height - 15} textAnchor="end" className="text-[11px] font-bold fill-slate-300 select-none">
-                11:59 PM
-              </text>
-            </>
-          ) : (
-            data.map((d, i) => (
-              <text key={i} x={getX(i)} y={height - 15} textAnchor="middle" className="text-[11px] font-medium fill-slate-400 select-none">
-                {d.label}
-              </text>
-            ))
-          )}
+          {/* X-Axis Time Labels (Dynamic for 5-minute and multi-interval series) */}
+          {(() => {
+            if (data.length === 0) return null;
+            const stepCount = Math.min(8, Math.max(4, Math.floor(innerWidth / 120)));
+            const indices: number[] = [];
+            for (let s = 0; s <= stepCount; s++) {
+              const idx = Math.min(data.length - 1, Math.round((s / stepCount) * (data.length - 1)));
+              if (!indices.includes(idx)) indices.push(idx);
+            }
+
+            return indices.map((idx, i) => {
+              const d = data[idx];
+              const align = i === 0 ? 'start' : i === indices.length - 1 ? 'end' : 'middle';
+              return (
+                <text
+                  key={idx}
+                  x={getX(idx)}
+                  y={height - 15}
+                  textAnchor={align}
+                  className="text-[11px] font-medium fill-slate-400 select-none"
+                >
+                  {d?.label || ''}
+                </text>
+              );
+            });
+          })()}
 
           {/* Hover Cursor Crosshair */}
           {hoverIndex !== null && activePoint && (

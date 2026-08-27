@@ -1502,6 +1502,155 @@ export const MOCK_STATES: Record<string, HAState> = {
     }
   },
 
+  // ---------------- Exact User Energy Mapping Entities ----------------
+  'sensor.meter_reverse_active_energy': {
+    entity_id: 'sensor.meter_reverse_active_energy',
+    state: '4.20',
+    attributes: {
+      friendly_name: 'Reverse active energy',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy',
+      state_class: 'total_increasing'
+    }
+  },
+  'sensor.meter_active_energy': {
+    entity_id: 'sensor.meter_active_energy',
+    state: '5.80',
+    attributes: {
+      friendly_name: 'Active energy (forward active energy)',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy',
+      state_class: 'total_increasing'
+    }
+  },
+  'sensor.meter_active_power_inverted': {
+    entity_id: 'sensor.meter_active_power_inverted',
+    state: '0.35',
+    attributes: {
+      friendly_name: 'Active power',
+      unit_of_measurement: 'kW',
+      device_class: 'power'
+    }
+  },
+  'sensor.current_price': {
+    entity_id: 'sensor.current_price',
+    state: '0.28',
+    attributes: {
+      friendly_name: 'Current price',
+      unit_of_measurement: '€/kWh'
+    }
+  },
+  'sensor.electricity_maps_co2_intensity': {
+    entity_id: 'sensor.electricity_maps_co2_intensity',
+    state: '142',
+    attributes: {
+      friendly_name: 'Electricity Maps',
+      unit_of_measurement: 'gCO2eq/kWh'
+    }
+  },
+  'sensor.total_current_day_energy': {
+    entity_id: 'sensor.total_current_day_energy',
+    state: '18.50',
+    attributes: {
+      friendly_name: 'Total Current Day Energy',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy',
+      state_class: 'total_increasing'
+    }
+  },
+  'sensor.mppt_total_input_power': {
+    entity_id: 'sensor.mppt_total_input_power',
+    state: '2.45',
+    attributes: {
+      friendly_name: 'MPPT total input power',
+      unit_of_measurement: 'kW',
+      device_class: 'power'
+    }
+  },
+  'sensor.discharging_capacity': {
+    entity_id: 'sensor.discharging_capacity',
+    state: '2.10',
+    attributes: {
+      friendly_name: 'Discharging capacity',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy',
+      state_class: 'total_increasing'
+    }
+  },
+  'sensor.charging_capacity': {
+    entity_id: 'sensor.charging_capacity',
+    state: '3.40',
+    attributes: {
+      friendly_name: 'Charging capacity',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy',
+      state_class: 'total_increasing'
+    }
+  },
+  'sensor.battery_charge_discharge_power_inverted': {
+    entity_id: 'sensor.battery_charge_discharge_power_inverted',
+    state: '0.00',
+    attributes: {
+      friendly_name: 'Charge/Discharge power',
+      unit_of_measurement: 'kW',
+      device_class: 'power'
+    }
+  },
+  'sensor.battery_state_of_charge_soc': {
+    entity_id: 'sensor.battery_state_of_charge_soc',
+    state: '92',
+    attributes: {
+      friendly_name: 'Battery state of charge (SOC)',
+      unit_of_measurement: '%',
+      device_class: 'battery'
+    }
+  },
+  'sensor.shelves_light_energy': {
+    entity_id: 'sensor.shelves_light_energy',
+    state: '0.45',
+    attributes: {
+      friendly_name: 'Shelves Light Energy',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy'
+    }
+  },
+  'sensor.tv_plug_total_energy': {
+    entity_id: 'sensor.tv_plug_total_energy',
+    state: '1.20',
+    attributes: {
+      friendly_name: 'TV Plug Total energy',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy'
+    }
+  },
+  'sensor.stick_vacuum_energy': {
+    entity_id: 'sensor.stick_vacuum_energy',
+    state: '0.30',
+    attributes: {
+      friendly_name: 'Stick vacuum Energy',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy'
+    }
+  },
+  'sensor.left_night_table_summation_delivered': {
+    entity_id: 'sensor.left_night_table_summation_delivered',
+    state: '0.15',
+    attributes: {
+      friendly_name: 'Left Night Table Summation delivered',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy'
+    }
+  },
+  'sensor.right_night_table_summation_delivered': {
+    entity_id: 'sensor.right_night_table_summation_delivered',
+    state: '0.18',
+    attributes: {
+      friendly_name: 'Right Night Table Summation delivered',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy'
+    }
+  },
+
   // Unassigned
   'switch.portable_air_purifier': {
     entity_id: 'switch.portable_air_purifier',
