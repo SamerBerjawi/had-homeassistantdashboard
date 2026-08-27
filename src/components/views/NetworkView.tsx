@@ -1,59 +1,110 @@
-import React from 'react';
-import { ShareNetwork, WifiHigh, Broadcast, Globe, TreeStructure, ShieldCheck, Devices } from '@phosphor-icons/react';
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-interface ViewProps {
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Globe, ShieldCheck } from '@phosphor-icons/react';
+import { TpLinkRouterTab } from './network/TpLinkRouterTab';
+import { AdGuardTab } from './network/AdGuardTab';
+
+interface NetworkViewProps {
   darkMode?: boolean;
 }
 
-export default function NetworkView({ darkMode = true }: ViewProps) {
+type NetworkSubTab = 'tplink_router' | 'adguard_home';
+
+export default function NetworkView({ darkMode = true }: NetworkViewProps) {
+  const [activeSubTab, setActiveSubTab] = useState<NetworkSubTab>('tplink_router');
+
   return (
-    <div className="w-full flex-1 flex flex-col">
-      {/* 4-column mobile grid / adaptive desktop grid container */}
-      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-3.5 sm:gap-4.5">
-        <div className={`col-span-4 sm:col-span-6 md:col-span-8 lg:col-span-12 p-8 sm:p-12 rounded-3xl backdrop-blur-xl border flex flex-col items-center justify-center text-center transition-all duration-300 min-h-[360px] ${
-          darkMode 
-            ? 'bg-black/60 border-white/10 text-white' 
-            : 'bg-white/80 border-slate-200/90 text-slate-900 shadow-sm'
-        }`}>
-          <div className="w-16 h-16 rounded-3xl bg-sky-500/15 border border-sky-500/30 text-sky-400 flex items-center justify-center shadow-lg shadow-sky-500/10 mb-4">
-            <ShareNetwork size={32} weight="duotone" />
-          </div>
+    <div className="w-full flex-1 flex flex-col gap-5 sm:gap-6">
+      {/* Top Segmented Sub-View Switcher */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div
+          className={`p-1.5 rounded-2xl border backdrop-blur-xl flex items-center gap-1.5 transition-all shadow-md ${
+            darkMode ? 'bg-black/60 border-white/10' : 'bg-white/80 border-slate-200 shadow-slate-100'
+          }`}
+        >
+          {/* TP-Link Router Tab */}
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('tplink_router')}
+            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              activeSubTab === 'tplink_router'
+                ? darkMode
+                  ? 'bg-sky-500 text-black shadow-lg shadow-sky-500/20'
+                  : 'bg-sky-600 text-white shadow-md shadow-sky-600/20'
+                : darkMode
+                ? 'text-slate-400 hover:text-white hover:bg-white/5'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Globe size={16} weight={activeSubTab === 'tplink_router' ? 'bold' : 'duotone'} />
+            <span>TP-Link Router</span>
+          </button>
 
-          <h3 className={`text-lg sm:text-xl font-black tracking-tight mb-1.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-            Network & Connectivity
-          </h3>
-          <p className={`text-xs sm:text-sm max-w-md mb-6 leading-relaxed ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            Monitor local gateway health, Wi-Fi signal strengths, connected Zigbee and Matter IoT mesh nodes, and active network bandwidth.
-          </p>
+          {/* AdGuard Home Tab */}
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('adguard_home')}
+            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              activeSubTab === 'adguard_home'
+                ? darkMode
+                  ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
+                  : 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                : darkMode
+                ? 'text-slate-400 hover:text-white hover:bg-white/5'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <ShieldCheck size={16} weight={activeSubTab === 'adguard_home' ? 'bold' : 'duotone'} />
+            <span>AdGuard Home</span>
+            <span
+              className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md ${
+                activeSubTab === 'adguard_home'
+                  ? 'bg-black/20 text-black dark:text-black'
+                  : 'bg-emerald-500/20 text-emerald-400'
+              }`}
+            >
+              DNS Shield
+            </span>
+          </button>
+        </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-2.5">
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
-              darkMode ? 'bg-white/5 border-white/10 text-slate-300' : 'bg-slate-100/90 border-slate-200 text-slate-700'
-            }`}>
-              <WifiHigh size={15} weight="duotone" className="text-sky-400" />
-              <span>Wi-Fi Network</span>
-            </div>
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
-              darkMode ? 'bg-white/5 border-white/10 text-slate-300' : 'bg-slate-100/90 border-slate-200 text-slate-700'
-            }`}>
-              <Devices size={15} weight="duotone" className="text-indigo-400" />
-              <span>Connected Clients</span>
-            </div>
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
-              darkMode ? 'bg-white/5 border-white/10 text-slate-300' : 'bg-slate-100/90 border-slate-200 text-slate-700'
-            }`}>
-              <Broadcast size={15} weight="duotone" className="text-amber-400" />
-              <span>Zigbee & Matter</span>
-            </div>
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
-              darkMode ? 'bg-white/5 border-white/10 text-slate-300' : 'bg-slate-100/90 border-slate-200 text-slate-700'
-            }`}>
-              <TreeStructure size={15} weight="duotone" className="text-emerald-400" />
-              <span>Mesh Topology</span>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
+          <span>Network Infrastructure Gateway</span>
         </div>
       </div>
+
+      {/* Animated Sub-View Content */}
+      <AnimatePresence mode="wait">
+        {activeSubTab === 'tplink_router' ? (
+          <motion.div
+            key="tplink_router"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="w-full"
+          >
+            <TpLinkRouterTab darkMode={darkMode} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="adguard_home"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="w-full"
+          >
+            <AdGuardTab darkMode={darkMode} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -2461,6 +2461,586 @@ export const MOCK_STATES: Record<string, HAState> = {
       icon: 'Clock',
       status: 'healthy'
     }
+  },
+
+  // ---------------- UGreen NAS Integration ----------------
+  'sensor.ugreen_nas_model': {
+    entity_id: 'sensor.ugreen_nas_model',
+    state: 'DXP4800 Plus',
+    attributes: {
+      friendly_name: 'UGreen NAS Model',
+      icon: 'HardDrives',
+      manufacturer: 'UGREEN'
+    }
+  },
+  'sensor.ugreen_nas_ugos_version': {
+    entity_id: 'sensor.ugreen_nas_ugos_version',
+    state: 'UGOS Pro v1.1.8',
+    attributes: {
+      friendly_name: 'UGOS Version',
+      icon: 'Tag'
+    }
+  },
+  'sensor.ugreen_nas_uptime': {
+    entity_id: 'sensor.ugreen_nas_uptime',
+    state: '4 weeks, 2 days',
+    attributes: {
+      friendly_name: 'NAS Uptime',
+      icon: 'Clock'
+    }
+  },
+  'sensor.ugreen_nas_cpu_usage': {
+    entity_id: 'sensor.ugreen_nas_cpu_usage',
+    state: '18.5',
+    attributes: {
+      friendly_name: 'NAS CPU Usage',
+      unit_of_measurement: '%',
+      icon: 'Cpu',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.ugreen_nas_cpu_temperature': {
+    entity_id: 'sensor.ugreen_nas_cpu_temperature',
+    state: '52.0',
+    attributes: {
+      friendly_name: 'NAS CPU Temperature',
+      unit_of_measurement: '°C',
+      device_class: 'temperature',
+      icon: 'Thermometer',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.ugreen_nas_system_temperature': {
+    entity_id: 'sensor.ugreen_nas_system_temperature',
+    state: '44.0',
+    attributes: {
+      friendly_name: 'NAS Motherboard Temperature',
+      unit_of_measurement: '°C',
+      device_class: 'temperature',
+      icon: 'Thermometer'
+    }
+  },
+  'sensor.ugreen_nas_memory_usage': {
+    entity_id: 'sensor.ugreen_nas_memory_usage',
+    state: '34.2',
+    attributes: {
+      friendly_name: 'NAS Memory Usage',
+      unit_of_measurement: '%',
+      icon: 'Memory',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.ugreen_nas_memory_used': {
+    entity_id: 'sensor.ugreen_nas_memory_used',
+    state: '5.47',
+    attributes: {
+      friendly_name: 'NAS Memory Used',
+      unit_of_measurement: 'GB'
+    }
+  },
+  'sensor.ugreen_nas_memory_total': {
+    entity_id: 'sensor.ugreen_nas_memory_total',
+    state: '16.0',
+    attributes: {
+      friendly_name: 'NAS Memory Total',
+      unit_of_measurement: 'GB'
+    }
+  },
+  'sensor.ugreen_nas_fan_speed': {
+    entity_id: 'sensor.ugreen_nas_fan_speed',
+    state: '850',
+    attributes: {
+      friendly_name: 'NAS Fan Speed',
+      unit_of_measurement: 'RPM',
+      icon: 'Fan'
+    }
+  },
+  'select.ugreen_nas_fan_mode': {
+    entity_id: 'select.ugreen_nas_fan_mode',
+    state: 'Standard',
+    attributes: {
+      friendly_name: 'NAS Fan Profile',
+      options: ['Standard', 'Quiet', 'Full Speed'],
+      icon: 'Fan'
+    }
+  },
+  'switch.ugreen_nas_led_indicator': {
+    entity_id: 'switch.ugreen_nas_led_indicator',
+    state: 'on',
+    attributes: {
+      friendly_name: 'NAS Front LED Indicator',
+      icon: 'Lightbulb'
+    }
+  },
+  'switch.ugreen_nas_buzzer': {
+    entity_id: 'switch.ugreen_nas_buzzer',
+    state: 'off',
+    attributes: {
+      friendly_name: 'NAS Alert Buzzer',
+      icon: 'SpeakerHigh'
+    }
+  },
+  'binary_sensor.ugreen_nas_overheat_warning': {
+    entity_id: 'binary_sensor.ugreen_nas_overheat_warning',
+    state: 'off',
+    attributes: {
+      friendly_name: 'NAS Overheat Warning',
+      device_class: 'problem',
+      icon: 'Flame'
+    }
+  },
+  'sensor.ugreen_nas_storage_pool_1_usage': {
+    entity_id: 'sensor.ugreen_nas_storage_pool_1_usage',
+    state: '66.7',
+    attributes: {
+      friendly_name: 'Storage Pool 1 (RAID 5)',
+      unit_of_measurement: '%',
+      raid_type: 'RAID 5',
+      status: 'healthy',
+      used_tb: 14.55,
+      total_tb: 21.82,
+      free_tb: 7.27
+    }
+  },
+  'sensor.ugreen_nas_network_download_speed': {
+    entity_id: 'sensor.ugreen_nas_network_download_speed',
+    state: '14200',
+    attributes: {
+      friendly_name: 'NAS Download Speed',
+      unit_of_measurement: 'kB/s',
+      icon: 'DownloadSimple'
+    }
+  },
+  'sensor.ugreen_nas_network_upload_speed': {
+    entity_id: 'sensor.ugreen_nas_network_upload_speed',
+    state: '6800',
+    attributes: {
+      friendly_name: 'NAS Upload Speed',
+      unit_of_measurement: 'kB/s',
+      icon: 'UploadSimple'
+    }
+  },
+  'sensor.ugreen_nas_lan_1_speed': {
+    entity_id: 'sensor.ugreen_nas_lan_1_speed',
+    state: '2.5 Gbps',
+    attributes: {
+      friendly_name: 'LAN 1 Link Speed',
+      interface: 'eth0',
+      status: 'connected',
+      ip_address: '192.168.68.80'
+    }
+  },
+  'sensor.ugreen_nas_lan_2_speed': {
+    entity_id: 'sensor.ugreen_nas_lan_2_speed',
+    state: '10 Gbps',
+    attributes: {
+      friendly_name: 'LAN 2 Link Speed',
+      interface: 'eth1',
+      status: 'connected'
+    }
+  },
+  'sensor.ugreen_nas_ip_address': {
+    entity_id: 'sensor.ugreen_nas_ip_address',
+    state: '192.168.68.80',
+    attributes: {
+      friendly_name: 'NAS IP Address',
+      icon: 'Network'
+    }
+  },
+  'sensor.ugreen_nas_backup_status': {
+    entity_id: 'sensor.ugreen_nas_backup_status',
+    state: 'idle',
+    attributes: {
+      friendly_name: 'Snapshot & Cloud Backup',
+      last_backup_time: 'Today, 03:00 AM',
+      task_name: 'Nightly Btrfs Sync'
+    }
+  },
+  'button.ugreen_nas_start_backup': {
+    entity_id: 'button.ugreen_nas_start_backup',
+    state: '2026-08-27T03:00:00Z',
+    attributes: {
+      friendly_name: 'Run Immediate Backup',
+      icon: 'ArrowsClockwise'
+    }
+  },
+  'button.ugreen_nas_restart': {
+    entity_id: 'button.ugreen_nas_restart',
+    state: '2026-08-01T12:00:00Z',
+    attributes: {
+      friendly_name: 'Restart NAS',
+      icon: 'ArrowsCounterClockwise'
+    }
+  },
+  'button.ugreen_nas_shutdown': {
+    entity_id: 'button.ugreen_nas_shutdown',
+    state: '2026-08-01T12:00:00Z',
+    attributes: {
+      friendly_name: 'Shutdown NAS',
+      icon: 'Power'
+    }
+  },
+
+  // ---------------- TP-Link Router Integration ----------------
+  'sensor.tplink_router_model': {
+    entity_id: 'sensor.tplink_router_model',
+    state: 'Archer AXE300 (Quad-Band 6E)',
+    attributes: {
+      friendly_name: 'TP-Link Router Model',
+      manufacturer: 'TP-Link'
+    }
+  },
+  'sensor.tplink_router_wan_ipv4': {
+    entity_id: 'sensor.tplink_router_wan_ipv4',
+    state: '84.115.192.42',
+    attributes: {
+      friendly_name: 'WAN Public IPv4',
+      status: 'connected',
+      gateway: '84.115.192.1',
+      dns_servers: ['192.168.68.2', '1.1.1.1']
+    }
+  },
+  'sensor.tplink_router_wan_status': {
+    entity_id: 'sensor.tplink_router_wan_status',
+    state: 'connected',
+    attributes: {
+      friendly_name: 'WAN Connection Status',
+      icon: 'Globe'
+    }
+  },
+  'sensor.tplink_router_cpu_usage': {
+    entity_id: 'sensor.tplink_router_cpu_usage',
+    state: '24.0',
+    attributes: {
+      friendly_name: 'Router CPU Usage',
+      unit_of_measurement: '%'
+    }
+  },
+  'sensor.tplink_router_memory_usage': {
+    entity_id: 'sensor.tplink_router_memory_usage',
+    state: '48.5',
+    attributes: {
+      friendly_name: 'Router Memory Usage',
+      unit_of_measurement: '%'
+    }
+  },
+  'sensor.tplink_router_uptime': {
+    entity_id: 'sensor.tplink_router_uptime',
+    state: '18 days, 4 hours',
+    attributes: {
+      friendly_name: 'Router Uptime'
+    }
+  },
+  'sensor.tplink_router_current_download_speed': {
+    entity_id: 'sensor.tplink_router_current_download_speed',
+    state: '28400',
+    attributes: {
+      friendly_name: 'Current Download Speed',
+      unit_of_measurement: 'kB/s'
+    }
+  },
+  'sensor.tplink_router_current_upload_speed': {
+    entity_id: 'sensor.tplink_router_current_upload_speed',
+    state: '9500',
+    attributes: {
+      friendly_name: 'Current Upload Speed',
+      unit_of_measurement: 'kB/s'
+    }
+  },
+  'sensor.tplink_router_devices_total': {
+    entity_id: 'sensor.tplink_router_devices_total',
+    state: '38',
+    attributes: {
+      friendly_name: 'Total Connected Clients',
+      wired_count: 8,
+      wireless_count: 30
+    }
+  },
+  'switch.tplink_router_wifi_host_24ghz': {
+    entity_id: 'switch.tplink_router_wifi_host_24ghz',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Primary 2.4 GHz Radio',
+      ssid: 'Antigravity-Home',
+      band: '2.4 GHz'
+    }
+  },
+  'switch.tplink_router_wifi_host_5ghz': {
+    entity_id: 'switch.tplink_router_wifi_host_5ghz',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Primary 5 GHz Radio',
+      ssid: 'Antigravity-Home 5G',
+      band: '5 GHz'
+    }
+  },
+  'switch.tplink_router_wifi_host_6ghz': {
+    entity_id: 'switch.tplink_router_wifi_host_6ghz',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Wi-Fi 6E (6 GHz) Radio',
+      ssid: 'Antigravity-Ultra-6E',
+      band: '6 GHz'
+    }
+  },
+  'switch.tplink_router_wifi_guest_24ghz': {
+    entity_id: 'switch.tplink_router_wifi_guest_24ghz',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Guest 2.4 GHz Wi-Fi',
+      ssid: 'Antigravity-Guest',
+      key: 'WelcomeGuest2026!'
+    }
+  },
+  'switch.tplink_router_wifi_guest_5ghz': {
+    entity_id: 'switch.tplink_router_wifi_guest_5ghz',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Guest 5 GHz Wi-Fi',
+      ssid: 'Antigravity-Guest-5G',
+      key: 'WelcomeGuest2026!'
+    }
+  },
+  'switch.tplink_router_iot_network': {
+    entity_id: 'switch.tplink_router_iot_network',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Isolated IoT SSID',
+      ssid: 'Antigravity-IoT'
+    }
+  },
+  'switch.tplink_router_vpn_client': {
+    entity_id: 'switch.tplink_router_vpn_client',
+    state: 'on',
+    attributes: {
+      friendly_name: 'WireGuard Router VPN Client',
+      server: 'Zurich-Gateway-1'
+    }
+  },
+  'button.tplink_router_reboot': {
+    entity_id: 'button.tplink_router_reboot',
+    state: '2026-08-01T12:00:00Z',
+    attributes: {
+      friendly_name: 'Reboot Router'
+    }
+  },
+
+  // ---------------- AdGuard Home Integration ----------------
+  'switch.adguard_protection': {
+    entity_id: 'switch.adguard_protection',
+    state: 'on',
+    attributes: {
+      friendly_name: 'AdGuard Master Protection',
+      icon: 'ShieldCheck'
+    }
+  },
+  'switch.adguard_filtering': {
+    entity_id: 'switch.adguard_filtering',
+    state: 'on',
+    attributes: {
+      friendly_name: 'DNS Filtering',
+      icon: 'Funnel'
+    }
+  },
+  'switch.adguard_safe_browsing': {
+    entity_id: 'switch.adguard_safe_browsing',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Safe Browsing Security',
+      icon: 'ShieldWarning'
+    }
+  },
+  'switch.adguard_parental_control': {
+    entity_id: 'switch.adguard_parental_control',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Parental Control',
+      icon: 'UsersThree'
+    }
+  },
+  'switch.adguard_safe_search': {
+    entity_id: 'switch.adguard_safe_search',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Safe Search Enforcement',
+      icon: 'MagnifyingGlass'
+    }
+  },
+  'switch.adguard_query_log': {
+    entity_id: 'switch.adguard_query_log',
+    state: 'on',
+    attributes: {
+      friendly_name: 'DNS Query Log',
+      icon: 'ListBullets'
+    }
+  },
+  'sensor.adguard_dns_queries': {
+    entity_id: 'sensor.adguard_dns_queries',
+    state: '142580',
+    attributes: {
+      friendly_name: 'Total DNS Queries (24h)',
+      unit_of_measurement: 'queries'
+    }
+  },
+  'sensor.adguard_dns_queries_blocked': {
+    entity_id: 'sensor.adguard_dns_queries_blocked',
+    state: '35360',
+    attributes: {
+      friendly_name: 'Blocked DNS Queries (24h)',
+      unit_of_measurement: 'queries'
+    }
+  },
+  'sensor.adguard_dns_queries_blocked_ratio': {
+    entity_id: 'sensor.adguard_dns_queries_blocked_ratio',
+    state: '24.8',
+    attributes: {
+      friendly_name: 'DNS Block Ratio',
+      unit_of_measurement: '%'
+    }
+  },
+  'sensor.adguard_safe_browsing_blocked': {
+    entity_id: 'sensor.adguard_safe_browsing_blocked',
+    state: '184',
+    attributes: {
+      friendly_name: 'Malware & Phishing Blocked'
+    }
+  },
+  'sensor.adguard_parental_control_blocked': {
+    entity_id: 'sensor.adguard_parental_control_blocked',
+    state: '12',
+    attributes: {
+      friendly_name: 'Parental Content Blocked'
+    }
+  },
+  'sensor.adguard_rules_count': {
+    entity_id: 'sensor.adguard_rules_count',
+    state: '450210',
+    attributes: {
+      friendly_name: 'Active Filter Rules',
+      rule_lists_count: 14
+    }
+  },
+  'sensor.adguard_average_processing_speed': {
+    entity_id: 'sensor.adguard_average_processing_speed',
+    state: '12.4',
+    attributes: {
+      friendly_name: 'Average Processing Speed',
+      unit_of_measurement: 'ms'
+    }
+  },
+
+  // ---------------- Connected Network Devices (Device Trackers) ----------------
+  'device_tracker.samers_macbook_pro_m3_max': {
+    entity_id: 'device_tracker.samers_macbook_pro_m3_max',
+    state: 'home',
+    attributes: {
+      friendly_name: "Samer's MacBook Pro M3 Max",
+      ip_address: '192.168.68.102',
+      mac_address: 'E4:5F:01:23:45:67',
+      band: '6ghz',
+      signal_strength: -48,
+      download_speed_kbps: 18400,
+      upload_speed_kbps: 6200,
+      source_type: 'router'
+    }
+  },
+  'device_tracker.home_assistant_green_host': {
+    entity_id: 'device_tracker.home_assistant_green_host',
+    state: 'home',
+    attributes: {
+      friendly_name: 'Home Assistant Green Host',
+      ip_address: '192.168.68.80',
+      mac_address: 'D8:9C:E4:56:78:9A',
+      band: 'ethernet',
+      signal_strength: 0,
+      download_speed_kbps: 210,
+      upload_speed_kbps: 180,
+      source_type: 'router'
+    }
+  },
+  'device_tracker.ugreen_dxp4800_plus_nas': {
+    entity_id: 'device_tracker.ugreen_dxp4800_plus_nas',
+    state: 'home',
+    attributes: {
+      friendly_name: 'UGREEN DXP4800 Plus NAS',
+      ip_address: '192.168.68.81',
+      mac_address: 'BC:D0:74:11:22:33',
+      band: 'ethernet',
+      signal_strength: 0,
+      download_speed_kbps: 14200,
+      upload_speed_kbps: 6800,
+      source_type: 'router'
+    }
+  },
+  'device_tracker.living_room_apple_tv_4k': {
+    entity_id: 'device_tracker.living_room_apple_tv_4k',
+    state: 'home',
+    attributes: {
+      friendly_name: 'Living Room Apple TV 4K',
+      ip_address: '192.168.68.115',
+      mac_address: 'A4:C3:F0:88:99:AA',
+      band: '5ghz',
+      signal_strength: -54,
+      download_speed_kbps: 8500,
+      upload_speed_kbps: 45,
+      source_type: 'router'
+    }
+  },
+  'device_tracker.office_smart_lamp': {
+    entity_id: 'device_tracker.office_smart_lamp',
+    state: 'home',
+    attributes: {
+      friendly_name: 'Office Smart Lamp (Matter)',
+      ip_address: '192.168.68.140',
+      mac_address: '34:7E:5C:99:88:77',
+      band: '2.4ghz',
+      signal_strength: -68,
+      download_speed_kbps: 2,
+      upload_speed_kbps: 4,
+      source_type: 'router'
+    }
+  },
+  'device_tracker.tesla_wall_connector_gen3': {
+    entity_id: 'device_tracker.tesla_wall_connector_gen3',
+    state: 'home',
+    attributes: {
+      friendly_name: 'Tesla Wall Connector Gen 3',
+      ip_address: '192.168.68.190',
+      mac_address: 'F0:18:98:44:55:66',
+      band: '2.4ghz',
+      signal_strength: -72,
+      download_speed_kbps: 15,
+      upload_speed_kbps: 8,
+      source_type: 'router'
+    }
+  },
+  'device_tracker.ipad_pro_13_m4': {
+    entity_id: 'device_tracker.ipad_pro_13_m4',
+    state: 'home',
+    attributes: {
+      friendly_name: 'iPad Pro 13 (M4)',
+      ip_address: '192.168.68.105',
+      mac_address: '70:EE:50:33:44:55',
+      band: '5ghz',
+      signal_strength: -51,
+      download_speed_kbps: 2400,
+      upload_speed_kbps: 120,
+      source_type: 'router'
+    }
+  },
+  'device_tracker.ecobee_premium_thermostat': {
+    entity_id: 'device_tracker.ecobee_premium_thermostat',
+    state: 'home',
+    attributes: {
+      friendly_name: 'Ecobee Premium Thermostat',
+      ip_address: '192.168.68.145',
+      mac_address: '48:D7:05:12:34:56',
+      band: '2.4ghz',
+      signal_strength: -64,
+      download_speed_kbps: 5,
+      upload_speed_kbps: 12,
+      source_type: 'router'
+    }
   }
 };
 
