@@ -10,6 +10,7 @@ import {
   ShareNetwork,
   Car,
   Heartbeat,
+  Broom,
   GitFork, 
   GearSix,
   Sparkle, 
@@ -99,7 +100,7 @@ export default function Sidebar({
     localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
   }, [isCollapsed]);
 
-  // Exact 11 Requested Navigation Items
+  // Exact Requested Navigation Items
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: SquaresFour },
     { id: 'rooms', label: 'Rooms', icon: Armchair },
@@ -110,6 +111,7 @@ export default function Sidebar({
     { id: 'network', label: 'Network', icon: ShareNetwork },
     { id: 'mobility', label: 'Mobility', icon: Car },
     { id: 'health', label: 'Health', icon: Heartbeat },
+    { id: 'vacuums', label: 'Vacuums', icon: Broom },
     { id: 'automations', label: 'Automations', icon: GitFork },
     { id: 'settings', label: 'Settings', icon: GearSix }
   ];

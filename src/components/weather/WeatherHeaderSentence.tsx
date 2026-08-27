@@ -29,6 +29,126 @@ interface WeatherHeaderSentenceProps {
   className?: string;
 }
 
+function computeWeatherData(activeEntity?: ResolvedEntity) {
+  if (!activeEntity) {
+    return {
+      temperature: 22,
+      tempUnit: '°C',
+      conditionText: 'Partly Cloudy',
+      conditionInfo: getWeatherConditionInfo('partlycloudy', false, 16),
+      trend: {
+        prefix: 'Conditions will',
+        icon: <Sparkle size={15} weight="duotone" className="text-amber-400" />,
+        keyword: 'remain pleasant',
+        keywordClass: 'text-amber-500 dark:text-amber-300 font-bold',
+        suffix: 'throughout the day.'
+      },
+      highTemp: 25,
+      lowTemp: 16
+    };
+  }
+
+  const state = activeEntity.state || 'partlycloudy';
+  const attr = activeEntity.attributes || {};
+  const isNight = state.toLowerCase().includes('night');
+  const conditionInfo = getWeatherConditionInfo(state, isNight, 16);
+
+  const temp = typeof attr.temperature === 'number' ? Math.round(attr.temperature) : 22;
+  const rawUnit = attr.temperature_unit || '°';
+  const tempUnit = rawUnit.startsWith('°') ? rawUnit : `°${rawUnit}`;
+
+  const hourly = getHourlyForecast(activeEntity);
+  const daily = getDailyForecast(activeEntity);
+
+  const todayDaily = daily[0];
+  const highTemp = todayDaily?.temperature ?? temp + 3;
+  const lowTemp = todayDaily?.templow ?? temp - 5;
+
+  // Analyze upcoming 6 hours for weather events
+  const upcomingHours = hourly.slice(0, 6);
+  
+  // Check for imminent rain
+  const rainHourIndex = upcomingHours.findIndex(
+    h => (h.condition && (h.condition.includes('rain') || h.condition.includes('shower') || h.condition.includes('lightning') || h.condition.includes('storm'))) ||
+         (h.precipitation_probability !== undefined && h.precipitation_probability >= 40)
+  );
+
+  let trend = {
+    prefix: 'Temperatures will',
+    icon: <Sparkle size={15} weight="duotone" className="text-emerald-400" /> as React.ReactNode,
+    keyword: 'remain steady',
+    keywordClass: 'text-emerald-600 dark:text-emerald-400 font-bold',
+    suffix: 'with comfortable conditions.'
+  };
+
+  if (rainHourIndex !== -1) {
+    const hoursAway = rainHourIndex + 1;
+    trend = {
+      prefix: '',
+      icon: <CloudRain size={15} weight="duotone" className="text-sky-400" />,
+      keyword: 'Rain',
+      keywordClass: 'text-sky-600 dark:text-sky-400 font-bold',
+      suffix: hoursAway <= 1 ? 'is expected in the next hour.' : `is expected in the next ${hoursAway} hours.`
+    };
+  } else {
+    // Analyze temperature trajectory in next 3-4 hours
+    const futureHour = upcomingHours[2] || upcomingHours[1];
+    const futureTemp = futureHour?.temperature;
+
+    if (futureTemp !== undefined && futureTemp - temp >= 2) {
+      trend = {
+        prefix: 'Temperatures are expected to',
+        icon: <TrendUp size={15} weight="bold" className="text-amber-500 dark:text-amber-400" />,
+        keyword: 'rise',
+        keywordClass: 'text-amber-600 dark:text-amber-300 font-bold',
+        suffix: `to ${futureTemp}${tempUnit} in the next 3 hours.`
+      };
+    } else if (futureTemp !== undefined && temp - futureTemp >= 2) {
+      trend = {
+        prefix: 'Temperatures are expected to',
+        icon: <TrendDown size={15} weight="bold" className="text-sky-500 dark:text-sky-400" />,
+        keyword: 'drop',
+        keywordClass: 'text-sky-600 dark:text-sky-300 font-bold',
+        suffix: `to ${futureTemp}${tempUnit} in the next 3 hours.`
+      };
+    } else if (highTemp > temp && !isNight) {
+      trend = {
+        prefix: 'Temperatures are expected to',
+        icon: <TrendUp size={15} weight="bold" className="text-amber-500 dark:text-amber-400" />,
+        keyword: 'rise',
+        keywordClass: 'text-amber-600 dark:text-amber-300 font-bold',
+        suffix: `to reach a high of ${highTemp}${tempUnit} today.`
+      };
+    } else if (isNight) {
+      trend = {
+        prefix: 'Temperatures are expected to',
+        icon: <TrendDown size={15} weight="bold" className="text-indigo-400" />,
+        keyword: 'drop',
+        keywordClass: 'text-indigo-600 dark:text-indigo-300 font-bold',
+        suffix: `to ${lowTemp}${tempUnit} overnight.`
+      };
+    } else {
+      trend = {
+        prefix: 'Temperatures will',
+        icon: <Sparkle size={15} weight="duotone" className="text-emerald-400" />,
+        keyword: 'remain steady',
+        keywordClass: 'text-emerald-600 dark:text-emerald-400 font-bold',
+        suffix: 'with comfortable conditions.'
+      };
+    }
+  }
+
+  return {
+    temperature: temp,
+    tempUnit,
+    conditionText: conditionInfo.name,
+    conditionInfo,
+    trend,
+    highTemp,
+    lowTemp
+  };
+}
+
 export default function WeatherHeaderSentence({
   onOpenWeatherModal,
   darkMode = true,
@@ -42,126 +162,18 @@ export default function WeatherHeaderSentence({
     weatherEntities.find(w => w.entity_id === selectedWeatherEntityId) || 
     weatherEntities[0];
 
-  const weatherData = useMemo(() => {
-    // Default fallback
-    if (!activeEntity) {
-      return {
-        temperature: 22,
-        tempUnit: '°C',
-        conditionText: 'Partly Cloudy',
-        conditionInfo: getWeatherConditionInfo('partlycloudy', false, 16),
-        trend: {
-          prefix: 'Conditions will',
-          icon: <Sparkle size={15} weight="duotone" className="text-amber-400" />,
-          keyword: 'remain pleasant',
-          keywordClass: 'text-amber-500 dark:text-amber-300 font-bold',
-          suffix: 'throughout the day.'
-        },
-        highTemp: 25,
-        lowTemp: 16
-      };
+  // Lock initial load weather trend so it only calculates on page load
+  const [lockedData, setLockedData] = React.useState<ReturnType<typeof computeWeatherData> | null>(() => {
+    return activeEntity ? computeWeatherData(activeEntity) : null;
+  });
+
+  React.useEffect(() => {
+    if (!lockedData && activeEntity) {
+      setLockedData(computeWeatherData(activeEntity));
     }
+  }, [activeEntity, lockedData]);
 
-    const state = activeEntity.state || 'partlycloudy';
-    const attr = activeEntity.attributes || {};
-    const isNight = state.toLowerCase().includes('night');
-    const conditionInfo = getWeatherConditionInfo(state, isNight, 16);
-
-    const temp = typeof attr.temperature === 'number' ? Math.round(attr.temperature) : 22;
-    const rawUnit = attr.temperature_unit || '°';
-    const tempUnit = rawUnit.startsWith('°') ? rawUnit : `°${rawUnit}`;
-
-    const hourly = getHourlyForecast(activeEntity);
-    const daily = getDailyForecast(activeEntity);
-
-    const todayDaily = daily[0];
-    const highTemp = todayDaily?.temperature ?? temp + 3;
-    const lowTemp = todayDaily?.templow ?? temp - 5;
-
-    // Analyze upcoming 6 hours for weather events
-    const upcomingHours = hourly.slice(0, 6);
-    
-    // Check for imminent rain
-    const rainHourIndex = upcomingHours.findIndex(
-      h => (h.condition && (h.condition.includes('rain') || h.condition.includes('shower') || h.condition.includes('lightning') || h.condition.includes('storm'))) ||
-           (h.precipitation_probability !== undefined && h.precipitation_probability >= 40)
-    );
-
-    let trend = {
-      prefix: 'Temperatures will',
-      icon: <Sparkle size={15} weight="duotone" className="text-emerald-400" /> as React.ReactNode,
-      keyword: 'remain steady',
-      keywordClass: 'text-emerald-600 dark:text-emerald-400 font-bold',
-      suffix: 'with comfortable conditions.'
-    };
-
-    if (rainHourIndex !== -1) {
-      const hoursAway = rainHourIndex + 1;
-      trend = {
-        prefix: '',
-        icon: <CloudRain size={15} weight="duotone" className="text-sky-400 animate-bounce" />,
-        keyword: 'Rain',
-        keywordClass: 'text-sky-600 dark:text-sky-400 font-bold',
-        suffix: hoursAway <= 1 ? 'is expected in the next hour.' : `is expected in the next ${hoursAway} hours.`
-      };
-    } else {
-      // Analyze temperature trajectory in next 3-4 hours
-      const futureHour = upcomingHours[2] || upcomingHours[1];
-      const futureTemp = futureHour?.temperature;
-
-      if (futureTemp !== undefined && futureTemp - temp >= 2) {
-        trend = {
-          prefix: 'Temperatures are expected to',
-          icon: <TrendUp size={15} weight="bold" className="text-amber-500 dark:text-amber-400" />,
-          keyword: 'rise',
-          keywordClass: 'text-amber-600 dark:text-amber-300 font-bold',
-          suffix: `to ${futureTemp}${tempUnit} in the next 3 hours.`
-        };
-      } else if (futureTemp !== undefined && temp - futureTemp >= 2) {
-        trend = {
-          prefix: 'Temperatures are expected to',
-          icon: <TrendDown size={15} weight="bold" className="text-sky-500 dark:text-sky-400" />,
-          keyword: 'drop',
-          keywordClass: 'text-sky-600 dark:text-sky-300 font-bold',
-          suffix: `to ${futureTemp}${tempUnit} in the next 3 hours.`
-        };
-      } else if (highTemp > temp && !isNight) {
-        trend = {
-          prefix: 'Temperatures are expected to',
-          icon: <TrendUp size={15} weight="bold" className="text-amber-500 dark:text-amber-400" />,
-          keyword: 'rise',
-          keywordClass: 'text-amber-600 dark:text-amber-300 font-bold',
-          suffix: `to reach a high of ${highTemp}${tempUnit} today.`
-        };
-      } else if (isNight) {
-        trend = {
-          prefix: 'Temperatures are expected to',
-          icon: <TrendDown size={15} weight="bold" className="text-indigo-400" />,
-          keyword: 'drop',
-          keywordClass: 'text-indigo-600 dark:text-indigo-300 font-bold',
-          suffix: `to ${lowTemp}${tempUnit} overnight.`
-        };
-      } else {
-        trend = {
-          prefix: 'Temperatures will',
-          icon: <Sparkle size={15} weight="duotone" className="text-emerald-400" />,
-          keyword: 'remain steady',
-          keywordClass: 'text-emerald-600 dark:text-emerald-400 font-bold',
-          suffix: 'with comfortable conditions.'
-        };
-      }
-    }
-
-    return {
-      temperature: temp,
-      tempUnit,
-      conditionText: conditionInfo.name,
-      conditionInfo,
-      trend,
-      highTemp,
-      lowTemp
-    };
-  }, [activeEntity]);
+  const weatherData = lockedData || computeWeatherData(activeEntity);
 
   return (
     <div 

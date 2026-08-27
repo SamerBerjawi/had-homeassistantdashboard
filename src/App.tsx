@@ -11,6 +11,21 @@ import NotificationToast from './components/NotificationToast';
 import NotificationBell from './components/notifications/NotificationBell';
 import NotificationDrawer from './components/notifications/NotificationDrawer';
 
+import { 
+  Armchair,
+  Lightning, 
+  ShieldCheck, 
+  MusicNotes, 
+  HardDrives, 
+  ShareNetwork,
+  Car,
+  Heartbeat,
+  Broom,
+  GitFork, 
+  GearSix,
+  SquaresFour
+} from '@phosphor-icons/react';
+
 // Eagerly-loaded views (always visible)
 import OverviewView from './components/views/OverviewView';
 
@@ -23,6 +38,7 @@ const SystemView = lazy(() => import('./components/views/SystemView'));
 const NetworkView = lazy(() => import('./components/views/NetworkView'));
 const MobilityView = lazy(() => import('./components/views/MobilityView'));
 const HealthView = lazy(() => import('./components/views/HealthView'));
+const VacuumsView = lazy(() => import('./components/views/VacuumsView'));
 const AutomationsView = lazy(() => import('./components/views/AutomationsView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 
@@ -142,23 +158,83 @@ export default function App() {
     return 'Good Night';
   };
 
-  const getTabTitle = (tab: string) => {
-    switch (tab) {
-      case 'overview': return `${getTimeGreeting()}, ${userName}`;
-      case 'rooms': return 'Rooms & Areas';
-      case 'energy': return 'Energy & Power';
-      case 'security': return 'Security & Safety';
-      case 'media': return 'Media & Audio';
-      case 'system': return 'System & Diagnostics';
-      case 'network': return 'Network & Connectivity';
-      case 'mobility': return 'Mobility & Vehicles';
-      case 'health': return 'Health & Environment';
-      case 'automations': return 'Automations & Scenes';
-      case 'settings': return 'Settings & Setup';
-      default: return 'Overview';
+  const PAGE_CONFIG: Record<string, { title: string; subtitle: string; icon: React.ComponentType<any>; color: string }> = {
+    overview: {
+      title: `${getTimeGreeting()}, ${userName}`,
+      subtitle: '',
+      icon: SquaresFour,
+      color: 'text-amber-400'
+    },
+    rooms: {
+      title: 'Rooms & Areas',
+      subtitle: 'Explore live telemetry, lighting controls, climate targets, and appliances organized room by room.',
+      icon: Armchair,
+      color: 'text-indigo-400'
+    },
+    energy: {
+      title: 'Energy & Power',
+      subtitle: 'Monitor whole-home power draw, solar generation, battery storage, and historical grid energy.',
+      icon: Lightning,
+      color: 'text-amber-400'
+    },
+    security: {
+      title: 'Security & Safety',
+      subtitle: 'Keep your home safe with entry alarms, perimeter locks, motion zones, and surveillance feeds.',
+      icon: ShieldCheck,
+      color: 'text-emerald-400'
+    },
+    media: {
+      title: 'Media & Audio',
+      subtitle: 'Control whole-home audio playback, smart TV devices, streaming apps, and Apple TV remotes.',
+      icon: MusicNotes,
+      color: 'text-purple-400'
+    },
+    system: {
+      title: 'System & Diagnostics',
+      subtitle: 'Inspect Home Assistant server health, hardware resource usage, integration latency, and telemetry logs.',
+      icon: HardDrives,
+      color: 'text-cyan-400'
+    },
+    network: {
+      title: 'Network & Connectivity',
+      subtitle: 'Track connected IoT devices, gateway connectivity, signal strengths, and bandwidth distribution.',
+      icon: ShareNetwork,
+      color: 'text-sky-400'
+    },
+    mobility: {
+      title: 'Mobility & Vehicles',
+      subtitle: 'Monitor vehicle battery levels, charging status, location tracking, and transit routes.',
+      icon: Car,
+      color: 'text-emerald-400'
+    },
+    health: {
+      title: 'Health & Environment',
+      subtitle: 'Track indoor air quality, humidity levels, temperature comfort indices, and environmental wellness.',
+      icon: Heartbeat,
+      color: 'text-rose-400'
+    },
+    vacuums: {
+      title: 'Vacuums & Cleaning',
+      subtitle: 'Manage robotic vacuum routines, dock station controls, cleaning zones, and cordless stick batteries.',
+      icon: Broom,
+      color: 'text-cyan-400'
+    },
+    automations: {
+      title: 'Automations & Scenes',
+      subtitle: 'Manage home automations, custom routines, scene triggers, and smart execution schedules.',
+      icon: GitFork,
+      color: 'text-violet-400'
+    },
+    settings: {
+      title: 'Settings & Setup',
+      subtitle: 'Customize dashboard preferences, room layouts, entity mappings, and theme modes.',
+      icon: GearSix,
+      color: 'text-slate-400'
     }
   };
 
+  const currentPage = PAGE_CONFIG[activeTab] || PAGE_CONFIG['overview'];
+  const PageIcon = currentPage.icon;
 
   return (
     <div className={`flex h-screen w-screen overflow-hidden font-sans select-none ${
@@ -187,22 +263,33 @@ export default function App() {
       {/* Main Dynamic Viewport Container */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative z-10">
         <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container p-4 sm:p-6 lg:p-8 flex flex-col">
-          {/* Header Bar - Title with Animated Wave & Dynamic Weather Overview Subtitle */}
+          {/* Header Bar - Title with Animated Wave / Page Icon & Subtitle */}
           <header className="mb-6 flex flex-row items-start justify-between gap-3.5 pb-1">
             <div className="space-y-1.5 min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                  <span>{getTabTitle(activeTab)}</span>
-                  <span className="inline-block animate-wave cursor-default select-none text-2xl sm:text-3xl" title="Welcome!">👋</span>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5 sm:gap-3 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                  {activeTab !== 'overview' && (
+                    <PageIcon size={30} weight="duotone" className={`${currentPage.color} shrink-0`} />
+                  )}
+                  <span>{currentPage.title}</span>
+                  {activeTab === 'overview' && (
+                    <span className="inline-block animate-wave cursor-default select-none text-2xl sm:text-3xl" title="Welcome!">👋</span>
+                  )}
                 </h1>
               </div>
 
-              {/* Dynamic Fun Weather Overview Sentence Subtitle */}
+              {/* Dynamic Weather Sentence on Overview, or Page Description Sentence on other tabs */}
               <div className="pt-0.5">
-                <WeatherHeaderSentence
-                  darkMode={darkMode}
-                  onOpenWeatherModal={() => setIsWeatherDrawerOpen(true)}
-                />
+                {activeTab === 'overview' ? (
+                  <WeatherHeaderSentence
+                    darkMode={darkMode}
+                    onOpenWeatherModal={() => setIsWeatherDrawerOpen(true)}
+                  />
+                ) : (
+                  <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 max-w-3xl leading-relaxed">
+                    {currentPage.subtitle}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -227,6 +314,7 @@ export default function App() {
               {activeTab === 'network' && <NetworkView darkMode={darkMode} />}
               {activeTab === 'mobility' && <MobilityView darkMode={darkMode} />}
               {activeTab === 'health' && <HealthView darkMode={darkMode} />}
+              {activeTab === 'vacuums' && <VacuumsView darkMode={darkMode} />}
               {activeTab === 'automations' && <AutomationsView darkMode={darkMode} />}
               {activeTab === 'settings' && (
                 <SettingsView

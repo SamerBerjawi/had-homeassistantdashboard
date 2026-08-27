@@ -109,7 +109,7 @@ export function generateFallbackHourlyForecast(
       condition: cond,
       temperature: temp,
       precipitation_probability: cond.includes('rain') ? 70 : (cond.includes('cloud') ? 15 : 0),
-      wind_speed: Math.round(10 + Math.random() * 8)
+      wind_speed: 10 + ((hour * 3) % 8)
     });
   }
 
