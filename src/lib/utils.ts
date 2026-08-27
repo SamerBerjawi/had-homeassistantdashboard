@@ -1,11 +1,10 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { resolveHAImageUrl } from '../services/haImageService';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-import { resolveHAImageUrl } from '../services/haImageService';
 
 export function getHAImageUrl(url?: string | null, serverUrl?: string | null): string {
   return resolveHAImageUrl(url, serverUrl);

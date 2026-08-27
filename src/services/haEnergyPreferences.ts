@@ -32,6 +32,7 @@ export interface GridSource {
   stat_energy_from?: string;
   stat_energy_to?: string | null;
   stat_cost?: string | null;
+  stat_compensation?: string | null;
   entity_energy_price?: string | null;
   number_energy_price?: number | null;
 }

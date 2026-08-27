@@ -14,7 +14,7 @@ import {
   useChart,
   useChartStable,
 } from "../chart-context";
-import { weekdayDateFmt } from "../chart-formatters";
+import { dateTimeFmt, weekdayDateFmt } from "../chart-formatters";
 import type { IndicatorFadeEdges } from "../indicator-fade";
 import { DateTicker } from "./date-ticker";
 import { TooltipBox } from "./tooltip-box";
@@ -248,8 +248,18 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     if (barXAccessor) {
       return barXAccessor(tooltipData.point);
     }
-    // For line/area charts, use the date
-    return weekdayDateFmt.format(xAccessor(tooltipData.point));
+    // For line/area charts, format with Date and Time
+    const rawVal = xAccessor(tooltipData.point);
+    if (rawVal instanceof Date) {
+      return dateTimeFmt.format(rawVal);
+    }
+    if (typeof rawVal === "string" || typeof rawVal === "number") {
+      const d = new Date(rawVal);
+      if (!isNaN(d.getTime())) {
+        return dateTimeFmt.format(d);
+      }
+    }
+    return String(rawVal);
   }, [tooltipData, barXAccessor, xAccessor]);
 
   const tooltipContent = (

@@ -9,6 +9,15 @@ export const weekdayDateFmt = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
+export const dateTimeFmt = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+});
+
 export const hmsTimeFmt = new Intl.DateTimeFormat("en-US", {
   hour: "2-digit",
   minute: "2-digit",

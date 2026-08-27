@@ -1,3 +1,8 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import type { ReactNode } from "react";
@@ -19,9 +24,9 @@ export interface TooltipContentProps {
 export function TooltipContent({ title, rows, children }: TooltipContentProps) {
   return (
     <div className="overflow-hidden">
-      <div className="px-3 py-2.5">
+      <div className="px-3.5 py-2.5">
         {title && (
-          <div className="mb-2 text-left font-medium text-chart-tooltip-foreground text-xs">
+          <div className="mb-2 text-left font-bold text-slate-800 dark:text-slate-100 text-xs pb-1.5 border-b border-slate-200/80 dark:border-white/10 tracking-tight">
             {title}
           </div>
         )}
@@ -33,14 +38,14 @@ export function TooltipContent({ title, rows, children }: TooltipContentProps) {
             >
               <div className="flex items-center gap-2">
                 <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  className="h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: row.color }}
                 />
-                <span className="text-chart-tooltip-muted text-sm">
+                <span className="text-slate-600 dark:text-slate-400 text-xs font-semibold">
                   {row.label}
                 </span>
               </div>
-              <span className="font-medium text-chart-tooltip-foreground text-sm tabular-nums">
+              <span className="font-bold font-mono text-slate-900 dark:text-white text-xs tabular-nums">
                 {typeof row.value === "number" ? intFmt(row.value) : row.value}
               </span>
             </div>

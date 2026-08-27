@@ -2293,6 +2293,174 @@ export const MOCK_STATES: Record<string, HAState> = {
       icon: 'Sparkle',
       description: 'Enables dynamic RGB color loops on living room accents and syncs whole-home multi-room audio.'
     }
+  },
+
+  // ---------------- System Monitor ----------------
+  'sensor.system_monitor_processor_use': {
+    entity_id: 'sensor.system_monitor_processor_use',
+    state: '10',
+    attributes: {
+      friendly_name: 'Processor use',
+      unit_of_measurement: '%',
+      icon: 'Cpu',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.system_monitor_processor_temperature': {
+    entity_id: 'sensor.system_monitor_processor_temperature',
+    state: '74.0',
+    attributes: {
+      friendly_name: 'Processor temperature',
+      unit_of_measurement: '°C',
+      device_class: 'temperature',
+      icon: 'Thermometer',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.system_monitor_load_1m': {
+    entity_id: 'sensor.system_monitor_load_1m',
+    state: '1.09',
+    attributes: {
+      friendly_name: 'Load (1m)',
+      icon: 'Cpu',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.system_monitor_load_5m': {
+    entity_id: 'sensor.system_monitor_load_5m',
+    state: '1.21',
+    attributes: {
+      friendly_name: 'Load (5m)',
+      icon: 'Cpu',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.system_monitor_load_15m': {
+    entity_id: 'sensor.system_monitor_load_15m',
+    state: '1.26',
+    attributes: {
+      friendly_name: 'Load (15m)',
+      icon: 'Cpu',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.system_monitor_memory_usage': {
+    entity_id: 'sensor.system_monitor_memory_usage',
+    state: '73.4',
+    attributes: {
+      friendly_name: 'Memory usage',
+      unit_of_measurement: '%',
+      icon: 'Memory',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.system_monitor_memory_use': {
+    entity_id: 'sensor.system_monitor_memory_use',
+    state: '2779.40',
+    attributes: {
+      friendly_name: 'Memory use',
+      unit_of_measurement: 'MiB',
+      icon: 'Memory',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.system_monitor_memory_free': {
+    entity_id: 'sensor.system_monitor_memory_free',
+    state: '1006.90',
+    attributes: {
+      friendly_name: 'Memory free',
+      unit_of_measurement: 'MiB',
+      icon: 'Memory',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.system_monitor_disk_usage_': {
+    entity_id: 'sensor.system_monitor_disk_usage_',
+    state: '20.2',
+    attributes: {
+      friendly_name: 'Disk usage (/)',
+      unit_of_measurement: '%',
+      icon: 'HardDrive',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.system_monitor_disk_use_': {
+    entity_id: 'sensor.system_monitor_disk_use_',
+    state: '21.20',
+    attributes: {
+      friendly_name: 'Disk use (/)',
+      unit_of_measurement: 'GiB',
+      icon: 'HardDrive',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.system_monitor_disk_free_': {
+    entity_id: 'sensor.system_monitor_disk_free_',
+    state: '83.70',
+    attributes: {
+      friendly_name: 'Disk free (/)',
+      unit_of_measurement: 'GiB',
+      icon: 'HardDrive',
+      state_class: 'measurement'
+    }
+  },
+  'sensor.system_monitor_ipv4_address_end0': {
+    entity_id: 'sensor.system_monitor_ipv4_address_end0',
+    state: '192.168.68.71',
+    attributes: {
+      friendly_name: 'IPv4 address (end0)',
+      icon: 'Network',
+      interface: 'end0'
+    }
+  },
+  'sensor.system_monitor_network_in_end0': {
+    entity_id: 'sensor.system_monitor_network_in_end0',
+    state: '13760.5',
+    attributes: {
+      friendly_name: 'Network in (end0)',
+      unit_of_measurement: 'MiB',
+      icon: 'DownloadSimple',
+      state_class: 'total_increasing'
+    }
+  },
+  'sensor.system_monitor_network_out_end0': {
+    entity_id: 'sensor.system_monitor_network_out_end0',
+    state: '19500.8',
+    attributes: {
+      friendly_name: 'Network out (end0)',
+      unit_of_measurement: 'MiB',
+      icon: 'UploadSimple',
+      state_class: 'total_increasing'
+    }
+  },
+  'sensor.system_monitor_packets_in_end0': {
+    entity_id: 'sensor.system_monitor_packets_in_end0',
+    state: '24800000',
+    attributes: {
+      friendly_name: 'Packets in (end0)',
+      unit_of_measurement: 'packets',
+      icon: 'ArrowsInLineHorizontal',
+      state_class: 'total_increasing'
+    }
+  },
+  'sensor.system_monitor_packets_out_end0': {
+    entity_id: 'sensor.system_monitor_packets_out_end0',
+    state: '28500000',
+    attributes: {
+      friendly_name: 'Packets out (end0)',
+      unit_of_measurement: 'packets',
+      icon: 'ArrowsOutLineHorizontal',
+      state_class: 'total_increasing'
+    }
+  },
+  'sensor.system_monitor_uptime': {
+    entity_id: 'sensor.system_monitor_uptime',
+    state: '1 week',
+    attributes: {
+      friendly_name: 'System Uptime',
+      icon: 'Clock',
+      status: 'healthy'
+    }
   }
 };
 

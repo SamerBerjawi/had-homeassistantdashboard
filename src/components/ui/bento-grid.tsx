@@ -1,14 +1,13 @@
 import { type ComponentPropsWithoutRef, type ReactNode } from "react"
 import { ArrowRight } from "@phosphor-icons/react"
-
 import { cn } from "@/lib/utils"
 
-interface BentoGridProps extends ComponentPropsWithoutRef<"div"> {
+export interface BentoGridProps extends ComponentPropsWithoutRef<"div"> {
   children: ReactNode
   className?: string
 }
 
-interface BentoCardProps extends ComponentPropsWithoutRef<"div"> {
+export interface BentoCardProps extends ComponentPropsWithoutRef<"div"> {
   name?: string
   className?: string
   background?: ReactNode
@@ -47,7 +46,11 @@ const BentoCard = ({
   <div
     key={name}
     className={cn(
-      "group relative flex flex-col justify-between overflow-hidden rounded-3xl",
+      "group relative flex flex-col justify-between overflow-hidden rounded-3xl border backdrop-blur-xl transition-all duration-300",
+      // light styles
+      "bg-white/70 border-slate-200/90 text-slate-900 shadow-md",
+      // dark styles
+      "dark:bg-black/60 dark:border-white/10 dark:text-white dark:shadow-2xl",
       className
     )}
     {...props}
@@ -60,7 +63,7 @@ const BentoCard = ({
         <div className="p-5 sm:p-6">
           <div className="pointer-events-none z-10 flex transform-gpu flex-col gap-2 transition-all duration-300">
             {Icon && (
-              <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-brand-purple backdrop-blur-md transition-all duration-300 ease-in-out group-hover:scale-110">
+              <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-cyan-400 backdrop-blur-md transition-all duration-300 ease-in-out group-hover:scale-110">
                 <Icon size={22} weight="duotone" />
               </div>
             )}
@@ -74,7 +77,7 @@ const BentoCard = ({
         </div>
 
         {cta && (
-          <div className="pointer-events-auto p-5 sm:p-6 pt-0 flex items-center text-xs font-bold text-brand-purple">
+          <div className="pointer-events-auto p-5 sm:p-6 pt-0 flex items-center text-xs font-bold text-cyan-400">
             <span>{cta}</span>
             <ArrowRight size={14} weight="duotone" className="ms-1.5 transition-transform group-hover:translate-x-1" />
           </div>
@@ -85,4 +88,3 @@ const BentoCard = ({
 )
 
 export { BentoCard, BentoGrid }
-
