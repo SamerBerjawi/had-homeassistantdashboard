@@ -29,6 +29,8 @@ import AppleRemoteControl from '../../media/AppleRemoteControl';
 import CustomDropdown from '../../ui/CustomDropdown';
 import { groupEntitiesByFloorAndArea } from '../../../lib/grouping';
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
+import AudioWaveformScrubber from '../../media/AudioWaveformScrubber';
+import { useMediaPosition } from '../../../hooks/useMediaPosition';
 import { Stairs, HouseLine } from '@phosphor-icons/react';
 
 interface MediaOverviewDrawerProps {
@@ -120,46 +122,26 @@ export default function MediaOverviewDrawer({
   }, [currentMedia?.attributes?.volume_level]);
 
   // ==========================================
-  // PROGRESS BAR & REAL-TIME SEEK SCRIBBLER
+  // PROGRESS BAR & REAL-TIME SEEK SCRUBBER (SYNCHRONIZED)
   // ==========================================
-  const rawDuration = typeof currentMedia?.attributes?.media_duration === 'number' 
-    ? currentMedia.attributes.media_duration 
-    : 228; // default 3:48 min
-  const rawPosition = typeof currentMedia?.attributes?.media_position === 'number'
-    ? currentMedia.attributes.media_position
-    : 74; // default 1:14
-
-  const [playbackPos, setPlaybackPos] = useState<number>(rawPosition);
   const [isSeeking, setIsSeeking] = useState<boolean>(false);
+  const [seekOverride, setSeekOverride] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (!isSeeking && currentMedia?.attributes?.media_position !== undefined) {
-      setPlaybackPos(currentMedia.attributes.media_position);
-    }
-  }, [currentMedia?.attributes?.media_position, isSeeking]);
-
-  // Live timer tick when playing
-  useEffect(() => {
-    if (!isPlaying || isSeeking) return;
-
-    const interval = setInterval(() => {
-      setPlaybackPos(prev => (prev < rawDuration ? prev + 1 : prev));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, isSeeking, rawDuration]);
-
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = Math.floor(secs % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
+  const { currentPosition: playbackPos, duration: rawDuration } = useMediaPosition(
+    currentMedia,
+    isSeeking,
+    seekOverride
+  );
 
   const handleSeekCommit = async (newSecs: number) => {
-    setPlaybackPos(newSecs);
+    setSeekOverride(newSecs);
     setIsSeeking(false);
     if (!currentMedia) return;
     await callHAService('media_player', 'media_seek', { seek_position: newSecs }, { entity_id: currentMedia.entity_id });
+    // Clear seek override after a short debounce to allow HA to acknowledge
+    setTimeout(() => {
+      setSeekOverride(null);
+    }, 800);
   };
 
   // Handle Playback Services
@@ -292,15 +274,26 @@ export default function MediaOverviewDrawer({
         {/* VIEW A: NOW PLAYING / TRACK CONTROLS                           */}
         {/* ------------------------------------------------------------- */}
         {activeTab === 'playback' && currentMedia && (
-          <div className={`p-6 rounded-3xl border shadow-xl relative flex flex-col items-center text-center transition-colors ${
+          <div className={`p-6 rounded-3xl border shadow-xl relative flex flex-col items-center text-center transition-all duration-300 ${
             darkMode
-              ? 'bg-gradient-to-b from-purple-950/40 via-slate-900/80 to-black/80 border-purple-500/25'
-              : 'bg-gradient-to-b from-purple-50 via-white to-slate-50 border-purple-200'
+              ? 'bg-slate-900/80 border-purple-500/25'
+              : 'bg-white/90 border-purple-200'
           }`}>
-            {/* Ambient Backlight */}
-            <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
-              <div className="absolute top-0 inset-x-0 h-32 bg-radial from-purple-500/20 to-transparent blur-2xl" />
-            </div>
+            {/* Blurred Album Artwork covering the entire tile */}
+            {albumArt ? (
+              <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none z-0">
+                <img
+                  src={albumArt}
+                  alt=""
+                  className="w-full h-full object-cover scale-110 blur-2xl opacity-40 dark:opacity-35 transition-opacity duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/50 to-slate-950/35 dark:from-black/90 dark:via-black/60 dark:to-black/30 backdrop-blur-xs" />
+              </div>
+            ) : (
+              <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+                <div className="absolute top-0 inset-x-0 h-32 bg-radial from-purple-500/20 to-transparent blur-2xl" />
+              </div>
+            )}
 
             {/* Top Device Header with Classification Badge & Power Toggle */}
             <div className="w-full flex items-center justify-between gap-2 mb-4 relative z-10">
@@ -311,83 +304,57 @@ export default function MediaOverviewDrawer({
               <button
                 type="button"
                 onClick={handlePowerToggle}
-                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-rose-100 dark:bg-white/10 dark:hover:bg-rose-500/20 text-slate-700 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 border border-slate-200 dark:border-white/10 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                className="w-8 h-8 rounded-xl bg-slate-100/80 hover:bg-rose-100 dark:bg-white/10 dark:hover:bg-rose-500/20 text-slate-700 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 border border-slate-200/80 dark:border-white/10 flex items-center justify-center transition-all cursor-pointer shadow-2xs backdrop-blur-md"
                 title="Toggle Device Power"
               >
                 <Power size={14} weight="bold" />
               </button>
             </div>
 
-            {/* Album Artwork with Spinning Vinyl Graphic */}
-            <div className="relative w-44 h-44 rounded-3xl overflow-hidden shadow-2xl ring-2 ring-slate-300 dark:ring-white/15 mb-4 shrink-0">
+            {/* Actual Unblurred Album Artwork */}
+            <div className="relative w-44 h-44 rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/20 dark:ring-white/10 mb-4 shrink-0 z-10 group">
               {albumArt ? (
                 <img
                   src={albumArt}
                   alt={title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-purple-900 to-indigo-950 flex items-center justify-center text-purple-300">
                   <MusicNotes size={56} weight="duotone" />
                 </div>
               )}
-
-              {isPlaying && (
-                <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                  <Disc size={44} weight="duotone" className="text-white/80 animate-spin" style={{ animationDuration: '6s' }} />
-                </div>
-              )}
             </div>
 
             {/* Track Info */}
-            <div className="w-full max-w-sm mb-2">
+            <div className="w-full max-w-sm mb-2 relative z-10">
               <h3 className="text-base font-black text-slate-900 dark:text-white truncate">{title}</h3>
               <p className="text-xs font-semibold text-purple-600 dark:text-purple-300 truncate mt-0.5">{artist}</p>
               {album && <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{album}</p>}
             </div>
 
-            {/* PROGRESS BAR & SCRUBBER */}
-            <div className="w-full max-w-xs my-2.5 space-y-1">
-              <div className="relative flex items-center">
-                <input
-                  type="range"
-                  min={0}
-                  max={rawDuration}
-                  value={playbackPos}
-                  onMouseDown={() => setIsSeeking(true)}
-                  onTouchStart={() => setIsSeeking(true)}
-                  onChange={(e) => setPlaybackPos(Number(e.target.value))}
-                  onMouseUp={(e) => handleSeekCommit(Number((e.target as HTMLInputElement).value))}
-                  onTouchEnd={(e) => handleSeekCommit(Number((e.target as HTMLInputElement).value))}
-                  className="w-full h-2 rounded-lg appearance-none bg-slate-300 dark:bg-white/15 accent-purple-500 cursor-pointer"
-                />
-              </div>
-              <div className="flex justify-between text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 px-0.5">
-                <span>{formatTime(playbackPos)}</span>
-                <span>{formatTime(rawDuration)}</span>
-              </div>
+            {/* REAL AUDIO WAVEFORM SCRUBBER */}
+            <div className="w-full max-w-xs z-10">
+              <AudioWaveformScrubber
+                title={title}
+                artist={artist}
+                duration={rawDuration}
+                currentPosition={playbackPos}
+                isPlaying={isPlaying}
+                onSeek={handleSeekCommit}
+                accentColor="purple"
+                darkMode={darkMode}
+                barCount={44}
+              />
             </div>
 
-            {/* Equalizer Visualizer Bars */}
-            {isPlaying && (
-              <div className="flex items-end gap-1.5 h-4 my-1">
-                {[40, 90, 60, 100, 75, 45, 85, 30, 95, 65].map((h, i) => (
-                  <span
-                    key={i}
-                    className="w-1.5 bg-gradient-to-t from-purple-500 to-pink-500 rounded-full animate-pulse"
-                    style={{ height: `${h}%`, animationDuration: `${0.4 + (i % 4) * 0.2}s` }}
-                  />
-                ))}
-              </div>
-            )}
-
             {/* Playback Controls (Live HA WebSocket Service Calls) */}
-            <div className="flex items-center justify-center gap-4 my-2">
+            <div className="flex items-center justify-center gap-4 my-2 relative z-10">
               <button
                 type="button"
                 onClick={handlePrev}
                 disabled={!classification.supportsNextPrev}
-                className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/15 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 flex items-center justify-center transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-11 h-11 rounded-2xl bg-slate-100/90 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200/80 dark:border-white/15 text-slate-800 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs backdrop-blur-md"
                 title="Previous Track"
               >
                 <SkipBack size={18} weight="fill" />
@@ -406,7 +373,7 @@ export default function MediaOverviewDrawer({
                 type="button"
                 onClick={handleNext}
                 disabled={!classification.supportsNextPrev}
-                className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/15 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 flex items-center justify-center transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-11 h-11 rounded-2xl bg-slate-100/90 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200/80 dark:border-white/15 text-slate-800 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs backdrop-blur-md"
                 title="Next Track"
               >
                 <SkipForward size={18} weight="fill" />
@@ -415,11 +382,11 @@ export default function MediaOverviewDrawer({
 
             {/* Volume Slider (Live HA volume_set) */}
             {classification.supportsVolume && (
-              <div className="w-full max-w-xs flex items-center gap-3 pt-3 border-t border-slate-200 dark:border-white/10 mt-2">
+              <div className="w-full max-w-xs flex items-center gap-3 pt-3 border-t border-slate-200/80 dark:border-white/10 mt-2 relative z-10">
                 <button
                   type="button"
                   onClick={handleToggleMute}
-                  className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer transition-colors"
+                  className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer transition-colors"
                   title={isMuted ? 'Unmute' : 'Mute'}
                 >
                   {isMuted || volume === 0 ? (
@@ -438,7 +405,7 @@ export default function MediaOverviewDrawer({
                   className="w-full h-1.5 rounded-lg appearance-none bg-slate-300 dark:bg-white/20 accent-purple-500 cursor-pointer"
                 />
 
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 w-8 text-right shrink-0 font-mono">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 w-8 text-right shrink-0 font-mono">
                   {isMuted ? '0%' : `${volume}%`}
                 </span>
               </div>
@@ -446,7 +413,7 @@ export default function MediaOverviewDrawer({
 
             {/* Modern Custom Dropdowns for Source & Sound Mode */}
             {(sourceList.length > 0 || soundModeList.length > 0) && (
-              <div className="w-full max-w-xs grid grid-cols-2 gap-2.5 pt-3 border-t border-slate-200 dark:border-white/10 mt-3 text-left">
+              <div className="w-full max-w-xs grid grid-cols-2 gap-2.5 pt-3 border-t border-slate-200/80 dark:border-white/10 mt-3 text-left relative z-10">
                 {sourceList.length > 0 && (
                   <div>
                     <CustomDropdown
