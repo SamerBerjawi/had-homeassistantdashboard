@@ -14,6 +14,7 @@ import {
 
 import { ResolvedEntity, HAState } from '../types';
 import { safeOpenExternalUrl } from '../lib/utils';
+import { isLeakSensor } from '../lib/entityClassifiers';
 
 export interface ExtractNotificationsParams {
   domainGroups: Record<string, ResolvedEntity[]>;
@@ -505,10 +506,9 @@ export function extractHANotifications({
   // 4. CRITICAL SENSORS & HAZARDS (Moisture, Smoke, Critical Battery)
   const binarySensors = domainGroups['binary_sensor'] || [];
   
-  // Water leaks
+  // Water leaks (strictly indoor leak detectors, excludes rain & weather sensors)
   const leakSensors = binarySensors.filter(
-    b => (b.attributes.device_class === 'moisture' || b.attributes.device_class === 'water' || b.entity_id.includes('leak') || b.entity_id.includes('flood')) &&
-         (b.state === 'on' || b.state === 'wet' || b.state === 'detected')
+    b => isLeakSensor(b) && (b.state === 'on' || b.state === 'wet' || b.state === 'detected')
   );
   for (const leak of leakSensors) {
     items.push({

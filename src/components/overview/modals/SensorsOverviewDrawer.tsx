@@ -20,6 +20,7 @@ import DetailsRightDrawer from '../DetailsRightDrawer';
 import { groupEntitiesByFloorAndArea } from '../../../lib/grouping';
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { isMotionSensor, isLeakSensor, isSmokeSensor } from '../../../lib/entityClassifiers';
 
 interface SensorsOverviewDrawerProps {
   isOpen: boolean;
@@ -347,9 +348,9 @@ export default function SensorsOverviewDrawer({
                     <div className="space-y-2.5">
                       {areaGroup.entities.map((sensor) => {
                         const devClass = sensor.attributes?.device_class || '';
-                        const isMotion = devClass === 'motion' || devClass === 'occupancy' || devClass === 'presence' || sensor.entity_id.includes('motion') || sensor.entity_id.includes('occupancy');
-                        const isLeak = devClass === 'moisture' || devClass === 'water' || sensor.entity_id.includes('leak') || sensor.entity_id.includes('flood');
-                        const isSmoke = devClass === 'smoke' || devClass === 'gas' || devClass === 'carbon_monoxide' || sensor.entity_id.includes('smoke');
+                        const isMotion = isMotionSensor(sensor);
+                        const isLeak = isLeakSensor(sensor);
+                        const isSmoke = isSmokeSensor(sensor);
 
                         const isAlert = isLeak || isSmoke ? (sensor.state === 'on' || sensor.state === 'wet' || sensor.state === 'detected') : false;
                         const isActiveMotion = isMotion && sensor.state === 'on';

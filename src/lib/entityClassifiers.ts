@@ -35,14 +35,62 @@ export function isMotionSensor(e: { attributes?: Record<string, any>; entity_id:
   );
 }
 
-export function isLeakSensor(e: { attributes?: Record<string, any>; entity_id: string }): boolean {
-  const dc = e.attributes?.device_class;
+export function isRainOrWeatherSensor(e: { attributes?: Record<string, any>; entity_id: string; name?: string }): boolean {
+  const dc = (e.attributes?.device_class || '').toLowerCase();
+  const id = e.entity_id.toLowerCase();
+  const name = (e.attributes?.friendly_name || (e as any).name || '').toLowerCase();
+
+  return (
+    dc === 'precipitation' ||
+    dc === 'precipitation_intensity' ||
+    dc === 'weather' ||
+    id.includes('rain') ||
+    name.includes('rain') ||
+    id.includes('precip') ||
+    name.includes('precip') ||
+    id.includes('weather') ||
+    name.includes('weather') ||
+    id.includes('soil') ||
+    name.includes('soil') ||
+    id.includes('plant') ||
+    name.includes('plant') ||
+    id.includes('garden') ||
+    name.includes('garden') ||
+    id.includes('irrigation') ||
+    name.includes('irrigation') ||
+    id.includes('sprinkler') ||
+    name.includes('sprinkler') ||
+    id.includes('lawn') ||
+    name.includes('lawn') ||
+    id.includes('outdoor') ||
+    name.includes('outdoor') ||
+    id.includes('dew') ||
+    name.includes('dew') ||
+    id.includes('frost') ||
+    name.includes('frost')
+  );
+}
+
+export function isLeakSensor(e: { attributes?: Record<string, any>; entity_id: string; name?: string }): boolean {
+  // If it's a rain, weather, outdoor, or soil/plant sensor, it is NOT an indoor water leak
+  if (isRainOrWeatherSensor(e)) {
+    return false;
+  }
+
+  const dc = (e.attributes?.device_class || '').toLowerCase();
+  const id = e.entity_id.toLowerCase();
+  const name = (e.attributes?.friendly_name || (e as any).name || '').toLowerCase();
+
   return (
     dc === 'moisture' ||
     dc === 'water' ||
-    e.entity_id.includes('leak') ||
-    e.entity_id.includes('flood') ||
-    e.entity_id.includes('moisture')
+    id.includes('leak') ||
+    name.includes('leak') ||
+    id.includes('flood') ||
+    name.includes('flood') ||
+    id.includes('water_leak') ||
+    id.includes('water_sensor') ||
+    id.includes('overflow')
   );
 }
 
