@@ -4,15 +4,14 @@
  */
 
 import React from 'react';
-import { ArrowDown, ArrowUp, ChartLineUp, Broadcast } from '@phosphor-icons/react';
+import { ArrowDown, ArrowUp, ChartLineUp } from '@phosphor-icons/react';
 import { LineChart } from '../../../charts/line-chart';
 import { Line } from '../../../charts/line';
 import { Grid } from '../../../charts/grid';
 import { XAxis } from '../../../charts/x-axis';
 import { YAxis } from '../../../charts/y-axis';
 import { ChartTooltip } from '../../../charts/tooltip';
-import { RouterTimeseriesPoint } from '../../../../types/network';
-import { HistoryTimeRange } from '../../../../hooks/useSystemMetrics';
+import { RouterTimeseriesPoint, NetworkTimeRange } from '../../../../types/network';
 
 interface BandwidthTrafficCardProps {
   currentDownloadSpeedKBps: number;
@@ -20,10 +19,20 @@ interface BandwidthTrafficCardProps {
   totalDownloadGB: number;
   totalUploadGB: number;
   historyData: RouterTimeseriesPoint[];
-  timeRange: HistoryTimeRange;
-  onTimeRangeChange: (range: HistoryTimeRange) => void;
+  timeRange: NetworkTimeRange;
+  onTimeRangeChange: (range: NetworkTimeRange) => void;
   darkMode?: boolean;
 }
+
+const TIME_RANGES: { key: NetworkTimeRange; label: string }[] = [
+  { key: '1D', label: '1 Day' },
+  { key: '1W', label: '1 Week' },
+  { key: '1M', label: '1 Month' },
+  { key: '3M', label: '3 Months' },
+  { key: '6M', label: '6 Months' },
+  { key: '1Y', label: '1 Year' },
+  { key: 'ALL', label: 'All Time' }
+];
 
 export const BandwidthTrafficCard: React.FC<BandwidthTrafficCardProps> = ({
   currentDownloadSpeedKBps,
@@ -38,7 +47,7 @@ export const BandwidthTrafficCard: React.FC<BandwidthTrafficCardProps> = ({
   const downMBs = (currentDownloadSpeedKBps / 1000).toFixed(1);
   const upMBs = (currentUploadSpeedKBps / 1000).toFixed(1);
 
-  const cardBaseStyle = `rounded-3xl p-4 sm:p-5 md:p-6 border backdrop-blur-xl transition-all duration-300 flex flex-col justify-between min-h-[340px] sm:min-h-[380px] ${
+  const cardBaseStyle = `rounded-3xl p-4 sm:p-5 md:p-6 border backdrop-blur-xl transition-all duration-300 flex flex-col justify-between min-h-[360px] sm:min-h-[400px] ${
     darkMode
       ? 'bg-black/60 border-white/10 text-white shadow-xl hover:border-white/20'
       : 'bg-white/70 border-slate-200/90 text-slate-900 shadow-md hover:border-slate-300'
@@ -46,8 +55,8 @@ export const BandwidthTrafficCard: React.FC<BandwidthTrafficCardProps> = ({
 
   return (
     <div className={`col-span-4 sm:col-span-6 md:col-span-8 lg:col-span-8 ${cardBaseStyle}`}>
-      {/* 1. Header with Live Rates & Time Range Switcher */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200/60 dark:border-white/10">
+      {/* 1. Header with Live Rates & Timeline Selector */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-slate-200/60 dark:border-white/10">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
             <ChartLineUp size={20} weight="duotone" />
@@ -62,39 +71,44 @@ export const BandwidthTrafficCard: React.FC<BandwidthTrafficCardProps> = ({
               </span>
             </div>
             <p className="text-[10px] text-slate-500 dark:text-slate-400">
-              Real-time Inbound (Download) vs. Outbound (Upload) throughput curves
+              Download (↓) vs. Upload (↑) throughput curves
             </p>
           </div>
         </div>
 
-        {/* Live Rates & Time Range Switcher */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-xs font-mono">
-            <span className="text-emerald-400 font-bold flex items-center gap-0.5">
-              <ArrowDown size={12} /> {downMBs} MB/s
-            </span>
-            <span className="text-slate-400">•</span>
-            <span className="text-indigo-400 font-bold flex items-center gap-0.5">
-              <ArrowUp size={12} /> {upMBs} MB/s
-            </span>
-          </div>
+        {/* Live Rates Badge */}
+        <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-xs font-mono">
+          <span className="text-emerald-400 font-bold flex items-center gap-0.5">
+            <ArrowDown size={12} /> {downMBs} MB/s
+          </span>
+          <span className="text-slate-400">•</span>
+          <span className="text-indigo-400 font-bold flex items-center gap-0.5">
+            <ArrowUp size={12} /> {upMBs} MB/s
+          </span>
+        </div>
+      </div>
 
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-0.5 rounded-xl border border-slate-200/80 dark:border-white/10">
-            {(['1h', '6h', '24h'] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => onTimeRangeChange(r)}
-                className={`text-[9px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  timeRange === r
-                    ? 'bg-emerald-500 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
+      {/* Timeline Selector Bar (1D, 1W, 1M, 3M, 6M, 1Y, ALL) */}
+      <div className="flex items-center justify-between flex-wrap gap-2 pt-2.5 pb-1">
+        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+          Timeline Window:
+        </span>
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-x-auto max-w-full">
+          {TIME_RANGES.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onTimeRangeChange(key)}
+              title={label}
+              className={`text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                timeRange === key
+                  ? 'bg-emerald-500 text-white shadow-sm font-black'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              {key}
+            </button>
+          ))}
         </div>
       </div>
 

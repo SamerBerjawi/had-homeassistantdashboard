@@ -52,8 +52,10 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
         <button
           type="button"
           onClick={() =>
-            wifiSwitches.host24Ghz.entityId &&
-            onToggleSwitch(wifiSwitches.host24Ghz.entityId, wifiSwitches.host24Ghz.enabled)
+            onToggleSwitch(
+              wifiSwitches.host24Ghz.entityId || 'switch.tplink_router_wifi_host_24ghz',
+              wifiSwitches.host24Ghz.enabled
+            )
           }
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
             wifiSwitches.host24Ghz.enabled
@@ -78,8 +80,10 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
         <button
           type="button"
           onClick={() =>
-            wifiSwitches.host5Ghz.entityId &&
-            onToggleSwitch(wifiSwitches.host5Ghz.entityId, wifiSwitches.host5Ghz.enabled)
+            onToggleSwitch(
+              wifiSwitches.host5Ghz.entityId || 'switch.tplink_router_wifi_host_5ghz',
+              wifiSwitches.host5Ghz.enabled
+            )
           }
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
             wifiSwitches.host5Ghz.enabled
@@ -104,8 +108,10 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
         <button
           type="button"
           onClick={() =>
-            wifiSwitches.host6Ghz?.entityId &&
-            onToggleSwitch(wifiSwitches.host6Ghz.entityId, wifiSwitches.host6Ghz.enabled)
+            onToggleSwitch(
+              wifiSwitches.host6Ghz?.entityId || 'switch.tplink_router_wifi_host_6ghz',
+              wifiSwitches.host6Ghz?.enabled ?? true
+            )
           }
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
             wifiSwitches.host6Ghz?.enabled
@@ -131,8 +137,10 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
           <button
             type="button"
             onClick={() =>
-              wifiSwitches.guest24Ghz.entityId &&
-              onToggleSwitch(wifiSwitches.guest24Ghz.entityId, wifiSwitches.guest24Ghz.enabled)
+              onToggleSwitch(
+                wifiSwitches.guest24Ghz.entityId || 'switch.tplink_router_wifi_guest_24ghz',
+                wifiSwitches.guest24Ghz.enabled
+              )
             }
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
               wifiSwitches.guest24Ghz.enabled
@@ -170,8 +178,10 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
         <button
           type="button"
           onClick={() =>
-            wifiSwitches.iotNetwork?.entityId &&
-            onToggleSwitch(wifiSwitches.iotNetwork.entityId, wifiSwitches.iotNetwork.enabled)
+            onToggleSwitch(
+              wifiSwitches.iotNetwork?.entityId || 'switch.tplink_router_iot_network',
+              wifiSwitches.iotNetwork?.enabled ?? true
+            )
           }
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
             wifiSwitches.iotNetwork?.enabled
@@ -196,8 +206,10 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
         <button
           type="button"
           onClick={() =>
-            wifiSwitches.vpnClient?.entityId &&
-            onToggleSwitch(wifiSwitches.vpnClient.entityId, wifiSwitches.vpnClient.enabled)
+            onToggleSwitch(
+              wifiSwitches.vpnClient?.entityId || 'switch.tplink_router_vpn_client',
+              wifiSwitches.vpnClient?.enabled ?? true
+            )
           }
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
             wifiSwitches.vpnClient?.enabled

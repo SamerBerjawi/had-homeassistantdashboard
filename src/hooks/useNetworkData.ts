@@ -10,9 +10,9 @@ import {
   ConnectedClient,
   RouterTimeseriesPoint,
   AdGuardMetrics,
-  AdGuardTimeseriesPoint
+  AdGuardTimeseriesPoint,
+  NetworkTimeRange
 } from '../types/network';
-import { HistoryTimeRange } from './useSystemMetrics';
 
 function parseNum(val: unknown, fallback = 0): number {
   if (typeof val === 'number') return isNaN(val) ? fallback : val;
@@ -24,14 +24,34 @@ function parseNum(val: unknown, fallback = 0): number {
   return fallback;
 }
 
+function getTimeRangeConfig(range: NetworkTimeRange): { count: number; totalHours: number } {
+  switch (range) {
+    case '1D':
+      return { count: 24, totalHours: 24 };
+    case '1W':
+      return { count: 28, totalHours: 24 * 7 };
+    case '1M':
+      return { count: 30, totalHours: 24 * 30 };
+    case '3M':
+      return { count: 36, totalHours: 24 * 90 };
+    case '6M':
+      return { count: 36, totalHours: 24 * 180 };
+    case '1Y':
+      return { count: 36, totalHours: 24 * 365 };
+    case 'ALL':
+    default:
+      return { count: 48, totalHours: 24 * 730 };
+  }
+}
+
 function generateRouterTrafficHistory(
-  hours: number,
+  range: NetworkTimeRange,
   baseDownMB: number,
   baseUpMB: number
 ): RouterTimeseriesPoint[] {
+  const { count, totalHours } = getTimeRangeConfig(range);
   const points: RouterTimeseriesPoint[] = [];
-  const count = hours === 1 ? 24 : hours === 6 ? 36 : 48;
-  const intervalMs = (hours * 3600 * 1000) / (count - 1);
+  const intervalMs = (totalHours * 3600 * 1000) / (count - 1);
   const now = Date.now();
 
   for (let i = count - 1; i >= 0; i--) {
@@ -59,10 +79,10 @@ function generateRouterTrafficHistory(
   return points;
 }
 
-function generateAdGuardHistory(hours: number): AdGuardTimeseriesPoint[] {
+function generateAdGuardHistory(range: NetworkTimeRange): AdGuardTimeseriesPoint[] {
+  const { count, totalHours } = getTimeRangeConfig(range);
   const points: AdGuardTimeseriesPoint[] = [];
-  const count = hours === 1 ? 24 : hours === 6 ? 36 : 48;
-  const intervalMs = (hours * 3600 * 1000) / (count - 1);
+  const intervalMs = (totalHours * 3600 * 1000) / (count - 1);
   const now = Date.now();
 
   for (let i = count - 1; i >= 0; i--) {
@@ -92,7 +112,7 @@ export function useTpLinkRouter() {
   const callHAService = useAutoLayoutStore((s) => s.callHAService);
   const isLiveMode = useAutoLayoutStore((s) => s.isLiveMode);
 
-  const [timeRange, setTimeRange] = useState<HistoryTimeRange>('24h');
+  const [timeRange, setTimeRange] = useState<NetworkTimeRange>('1D');
   const [historyData, setHistoryData] = useState<RouterTimeseriesPoint[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
 
@@ -111,11 +131,11 @@ export function useTpLinkRouter() {
       return match?.[1]?.attributes?.[attr] ?? fallback;
     };
 
-    const findId = (pattern: string): string | undefined => {
+    const findId = (pattern: string, defaultId: string): string => {
       const match = Object.keys(rawStates).find((k) =>
         k.toLowerCase().includes(pattern.toLowerCase())
       );
-      return match;
+      return match || defaultId;
     };
 
     const model = getVal('tplink_router_model', 'Archer AXE300 (Quad-Band 6E)');
@@ -195,15 +215,15 @@ export function useTpLinkRouter() {
     const wiredClients = clients.filter((c) => c.connectionType === 'ethernet').length;
     const wirelessClients = clients.filter((c) => c.connectionType !== 'ethernet').length;
 
-    // Switches
-    const host24Id = findId('tplink_router_wifi_host_24ghz');
-    const host5Id = findId('tplink_router_wifi_host_5ghz');
-    const host6Id = findId('tplink_router_wifi_host_6ghz');
-    const guest24Id = findId('tplink_router_wifi_guest_24ghz');
-    const guest5Id = findId('tplink_router_wifi_guest_5ghz');
-    const iotId = findId('tplink_router_iot_network');
-    const vpnId = findId('tplink_router_vpn_client');
-    const rebootBtnId = findId('tplink_router_reboot');
+    // Switches with guaranteed fallback entity IDs
+    const host24Id = findId('tplink_router_wifi_host_24ghz', 'switch.tplink_router_wifi_host_24ghz');
+    const host5Id = findId('tplink_router_wifi_host_5ghz', 'switch.tplink_router_wifi_host_5ghz');
+    const host6Id = findId('tplink_router_wifi_host_6ghz', 'switch.tplink_router_wifi_host_6ghz');
+    const guest24Id = findId('tplink_router_wifi_guest_24ghz', 'switch.tplink_router_wifi_guest_24ghz');
+    const guest5Id = findId('tplink_router_wifi_guest_5ghz', 'switch.tplink_router_wifi_guest_5ghz');
+    const iotId = findId('tplink_router_iot_network', 'switch.tplink_router_iot_network');
+    const vpnId = findId('tplink_router_vpn_client', 'switch.tplink_router_vpn_client');
+    const rebootBtnId = findId('tplink_router_reboot', 'button.tplink_router_reboot');
 
     return {
       model,
@@ -219,39 +239,39 @@ export function useTpLinkRouter() {
       wifiSwitches: {
         host24Ghz: {
           entityId: host24Id,
-          enabled: host24Id ? rawStates[host24Id]?.state === 'on' : true,
+          enabled: rawStates[host24Id] ? rawStates[host24Id].state === 'on' : true,
           ssid: getAttr('tplink_router_wifi_host_24ghz', 'ssid', 'Antigravity-Home')
         },
         host5Ghz: {
           entityId: host5Id,
-          enabled: host5Id ? rawStates[host5Id]?.state === 'on' : true,
+          enabled: rawStates[host5Id] ? rawStates[host5Id].state === 'on' : true,
           ssid: getAttr('tplink_router_wifi_host_5ghz', 'ssid', 'Antigravity-Home 5G')
         },
         host6Ghz: {
           entityId: host6Id,
-          enabled: host6Id ? rawStates[host6Id]?.state === 'on' : true,
+          enabled: rawStates[host6Id] ? rawStates[host6Id].state === 'on' : true,
           ssid: getAttr('tplink_router_wifi_host_6ghz', 'ssid', 'Antigravity-Ultra-6E')
         },
         guest24Ghz: {
           entityId: guest24Id,
-          enabled: guest24Id ? rawStates[guest24Id]?.state === 'on' : true,
+          enabled: rawStates[guest24Id] ? rawStates[guest24Id].state === 'on' : true,
           ssid: getAttr('tplink_router_wifi_guest_24ghz', 'ssid', 'Antigravity-Guest'),
           key: getAttr('tplink_router_wifi_guest_24ghz', 'key', 'WelcomeGuest2026!')
         },
         guest5Ghz: {
           entityId: guest5Id,
-          enabled: guest5Id ? rawStates[guest5Id]?.state === 'on' : true,
+          enabled: rawStates[guest5Id] ? rawStates[guest5Id].state === 'on' : true,
           ssid: getAttr('tplink_router_wifi_guest_5ghz', 'ssid', 'Antigravity-Guest-5G'),
           key: getAttr('tplink_router_wifi_guest_5ghz', 'key', 'WelcomeGuest2026!')
         },
         iotNetwork: {
           entityId: iotId,
-          enabled: iotId ? rawStates[iotId]?.state === 'on' : true,
+          enabled: rawStates[iotId] ? rawStates[iotId].state === 'on' : true,
           ssid: getAttr('tplink_router_iot_network', 'ssid', 'Antigravity-IoT')
         },
         vpnClient: {
           entityId: vpnId,
-          enabled: vpnId ? rawStates[vpnId]?.state === 'on' : true
+          enabled: rawStates[vpnId] ? rawStates[vpnId].state === 'on' : true
         }
       },
       connectedClientsCount: totalClients,
@@ -262,18 +282,16 @@ export function useTpLinkRouter() {
     };
   }, [rawStates]);
 
-  const hours = timeRange === '1h' ? 1 : timeRange === '6h' ? 6 : 24;
-
   const fetchHistory = useCallback(async () => {
     setIsLoadingHistory(true);
     const points = generateRouterTrafficHistory(
-      hours,
+      timeRange,
       (metrics.currentDownloadSpeedKBps || 28400) / 1000,
       (metrics.currentUploadSpeedKBps || 9500) / 1000
     );
     setHistoryData(points);
     setIsLoadingHistory(false);
-  }, [hours, metrics.currentDownloadSpeedKBps, metrics.currentUploadSpeedKBps]);
+  }, [timeRange, metrics.currentDownloadSpeedKBps, metrics.currentUploadSpeedKBps]);
 
   useEffect(() => {
     fetchHistory();
@@ -324,7 +342,7 @@ export function useAdGuardHome() {
   const callHAService = useAutoLayoutStore((s) => s.callHAService);
   const isLiveMode = useAutoLayoutStore((s) => s.isLiveMode);
 
-  const [timeRange, setTimeRange] = useState<HistoryTimeRange>('24h');
+  const [timeRange, setTimeRange] = useState<NetworkTimeRange>('1D');
   const [historyData, setHistoryData] = useState<AdGuardTimeseriesPoint[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
 
@@ -336,26 +354,26 @@ export function useAdGuardHome() {
       return match ? match[1].state ?? fallback : fallback;
     };
 
-    const findId = (pattern: string): string | undefined => {
+    const findId = (pattern: string, defaultId: string): string => {
       const match = Object.keys(rawStates).find((k) =>
         k.toLowerCase().includes(pattern.toLowerCase())
       );
-      return match;
+      return match || defaultId;
     };
 
-    const protId = findId('adguard_protection');
-    const filterId = findId('adguard_filtering');
-    const safeBrowseId = findId('adguard_safe_browsing');
-    const parentalId = findId('adguard_parental_control');
-    const safeSearchId = findId('adguard_safe_search');
-    const queryLogId = findId('adguard_query_log');
+    const protId = findId('adguard_protection', 'switch.adguard_protection');
+    const filterId = findId('adguard_filtering', 'switch.adguard_filtering');
+    const safeBrowseId = findId('adguard_safe_browsing', 'switch.adguard_safe_browsing');
+    const parentalId = findId('adguard_parental_control', 'switch.adguard_parental_control');
+    const safeSearchId = findId('adguard_safe_search', 'switch.adguard_safe_search');
+    const queryLogId = findId('adguard_query_log', 'switch.adguard_query_log');
 
-    const protectionEnabled = protId ? rawStates[protId]?.state === 'on' : true;
-    const filteringEnabled = filterId ? rawStates[filterId]?.state === 'on' : true;
-    const safeBrowsingEnabled = safeBrowseId ? rawStates[safeBrowseId]?.state === 'on' : true;
-    const parentalControlEnabled = parentalId ? rawStates[parentalId]?.state === 'on' : false;
-    const safeSearchEnabled = safeSearchId ? rawStates[safeSearchId]?.state === 'on' : true;
-    const queryLogEnabled = queryLogId ? rawStates[queryLogId]?.state === 'on' : true;
+    const protectionEnabled = rawStates[protId] ? rawStates[protId].state === 'on' : true;
+    const filteringEnabled = rawStates[filterId] ? rawStates[filterId].state === 'on' : true;
+    const safeBrowsingEnabled = rawStates[safeBrowseId] ? rawStates[safeBrowseId].state === 'on' : true;
+    const parentalControlEnabled = rawStates[parentalId] ? rawStates[parentalId].state === 'on' : false;
+    const safeSearchEnabled = rawStates[safeSearchId] ? rawStates[safeSearchId].state === 'on' : true;
+    const queryLogEnabled = rawStates[queryLogId] ? rawStates[queryLogId].state === 'on' : true;
 
     const dnsQueriesTotal = parseNum(getVal('adguard_dns_queries', '142580'), 142580);
     const dnsQueriesBlocked = parseNum(getVal('adguard_dns_queries_blocked', '35360'), 35360);
@@ -402,14 +420,12 @@ export function useAdGuardHome() {
     };
   }, [rawStates]);
 
-  const hours = timeRange === '1h' ? 1 : timeRange === '6h' ? 6 : 24;
-
   const fetchHistory = useCallback(async () => {
     setIsLoadingHistory(true);
-    const points = generateAdGuardHistory(hours);
+    const points = generateAdGuardHistory(timeRange);
     setHistoryData(points);
     setIsLoadingHistory(false);
-  }, [hours]);
+  }, [timeRange]);
 
   useEffect(() => {
     fetchHistory();

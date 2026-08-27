@@ -14,6 +14,8 @@ export interface ConnectedClient {
   isOnline: boolean;
 }
 
+export type NetworkTimeRange = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | 'ALL';
+
 export interface RouterTimeseriesPoint {
   date: Date;
   downloadKBps: number;

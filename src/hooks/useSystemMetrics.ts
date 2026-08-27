@@ -46,7 +46,7 @@ export interface SystemTimeseriesPoint {
   networkOutRate: number; // MiB/s or MB/h
 }
 
-export type HistoryTimeRange = '1h' | '6h' | '24h';
+export type HistoryTimeRange = '1h' | '6h' | '24h' | '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | 'ALL';
 
 function parseNum(val: unknown, fallback = 0): number {
   if (typeof val === 'number') return isNaN(val) ? fallback : val;
@@ -69,7 +69,7 @@ function generateSyntheticHistory(
   baseDisk: number
 ): SystemTimeseriesPoint[] {
   const points: SystemTimeseriesPoint[] = [];
-  const count = hours === 1 ? 24 : hours === 6 ? 36 : 48;
+  const count = hours <= 1 ? 24 : hours <= 6 ? 36 : hours <= 24 ? 48 : 60;
   const intervalMs = (hours * 3600 * 1000) / (count - 1);
   const now = Date.now();
 
@@ -80,14 +80,12 @@ function generateSyntheticHistory(
     const wave = Math.sin(progress * Math.PI * 4);
     const wave2 = Math.cos(progress * Math.PI * 6);
 
-    const cpu = Math.max(3, Math.min(95, Math.round((baseCpu + wave * 14 + (Math.random() * 6 - 3)) * 10) / 10));
-    const temp = Math.max(40, Math.min(90, Math.round((baseTemp + wave * 4 + wave2 * 2 + (Math.random() * 1.5 - 0.75)) * 10) / 10));
-    const mem = Math.max(20, Math.min(98, Math.round((baseMem + wave2 * 3.5 + (Math.random() * 1.2 - 0.6)) * 10) / 10));
-    const disk = Math.max(1, Math.min(99, Math.round((baseDisk + (progress * 0.4 - 0.2) + (Math.random() * 0.1 - 0.05)) * 10) / 10));
-    
-    // Inbound/Outbound network activity in MB/s
-    const netIn = Math.max(0.05, Math.round((0.8 + Math.abs(wave) * 3.2 + (Math.random() * 0.8)) * 100) / 100);
-    const netOut = Math.max(0.02, Math.round((0.4 + Math.abs(wave2) * 2.1 + (Math.random() * 0.4)) * 100) / 100);
+    const cpu = Math.min(100, Math.max(2, Math.round((baseCpu + wave * 18 + (Math.random() * 4 - 2)) * 10) / 10));
+    const temp = Math.min(100, Math.max(30, Math.round((baseTemp + wave * 6 + (Math.random() * 2 - 1)) * 10) / 10));
+    const mem = Math.min(100, Math.max(10, Math.round((baseMem + wave2 * 8 + (Math.random() * 2 - 1)) * 10) / 10));
+    const disk = Math.min(100, Math.max(5, Math.round((baseDisk + (progress * 1.5)) * 10) / 10));
+    const netIn = Math.max(0.1, Math.round((Math.abs(wave) * 8.5 + Math.random() * 2) * 100) / 100);
+    const netOut = Math.max(0.05, Math.round((Math.abs(wave2) * 3.2 + Math.random()) * 100) / 100);
 
     points.push({
       date: t,

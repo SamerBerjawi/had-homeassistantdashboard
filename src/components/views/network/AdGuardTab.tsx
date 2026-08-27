@@ -20,6 +20,8 @@ export const AdGuardTab: React.FC<AdGuardTabProps> = ({ darkMode = true }) => {
   const {
     metrics,
     historyData,
+    timeRange,
+    setTimeRange,
     isLoadingHistory,
     refreshHistory,
     toggleSwitch,
@@ -69,6 +71,8 @@ export const AdGuardTab: React.FC<AdGuardTabProps> = ({ darkMode = true }) => {
         <QueryPerformanceCard
           avgProcessingSpeedMs={metrics.avgProcessingSpeedMs}
           historyData={historyData}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
           darkMode={darkMode}
         />
 

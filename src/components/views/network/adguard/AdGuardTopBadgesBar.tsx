@@ -33,8 +33,10 @@ export const AdGuardTopBadgesBar: React.FC<AdGuardTopBadgesBarProps> = ({
         <button
           type="button"
           onClick={() =>
-            metrics.switches.protection &&
-            onToggleSwitch(metrics.switches.protection, metrics.protectionEnabled)
+            onToggleSwitch(
+              metrics.switches.protection || 'switch.adguard_protection',
+              metrics.protectionEnabled
+            )
           }
           className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border text-xs font-black transition-all cursor-pointer shadow-sm ${
             metrics.protectionEnabled
@@ -59,8 +61,10 @@ export const AdGuardTopBadgesBar: React.FC<AdGuardTopBadgesBarProps> = ({
         <button
           type="button"
           onClick={() =>
-            metrics.switches.filtering &&
-            onToggleSwitch(metrics.switches.filtering, metrics.filteringEnabled)
+            onToggleSwitch(
+              metrics.switches.filtering || 'switch.adguard_filtering',
+              metrics.filteringEnabled
+            )
           }
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
             metrics.filteringEnabled
@@ -85,8 +89,10 @@ export const AdGuardTopBadgesBar: React.FC<AdGuardTopBadgesBarProps> = ({
         <button
           type="button"
           onClick={() =>
-            metrics.switches.safeBrowsing &&
-            onToggleSwitch(metrics.switches.safeBrowsing, metrics.safeBrowsingEnabled)
+            onToggleSwitch(
+              metrics.switches.safeBrowsing || 'switch.adguard_safe_browsing',
+              metrics.safeBrowsingEnabled
+            )
           }
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
             metrics.safeBrowsingEnabled
@@ -111,8 +117,10 @@ export const AdGuardTopBadgesBar: React.FC<AdGuardTopBadgesBarProps> = ({
         <button
           type="button"
           onClick={() =>
-            metrics.switches.safeSearch &&
-            onToggleSwitch(metrics.switches.safeSearch, metrics.safeSearchEnabled)
+            onToggleSwitch(
+              metrics.switches.safeSearch || 'switch.adguard_safe_search',
+              metrics.safeSearchEnabled
+            )
           }
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
             metrics.safeSearchEnabled
@@ -137,8 +145,10 @@ export const AdGuardTopBadgesBar: React.FC<AdGuardTopBadgesBarProps> = ({
         <button
           type="button"
           onClick={() =>
-            metrics.switches.parentalControl &&
-            onToggleSwitch(metrics.switches.parentalControl, metrics.parentalControlEnabled)
+            onToggleSwitch(
+              metrics.switches.parentalControl || 'switch.adguard_parental_control',
+              metrics.parentalControlEnabled
+            )
           }
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
             metrics.parentalControlEnabled
@@ -163,8 +173,10 @@ export const AdGuardTopBadgesBar: React.FC<AdGuardTopBadgesBarProps> = ({
         <button
           type="button"
           onClick={() =>
-            metrics.switches.queryLog &&
-            onToggleSwitch(metrics.switches.queryLog, metrics.queryLogEnabled)
+            onToggleSwitch(
+              metrics.switches.queryLog || 'switch.adguard_query_log',
+              metrics.queryLogEnabled
+            )
           }
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
             metrics.queryLogEnabled
