@@ -549,6 +549,19 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           get().updateEntityState(eid, 'paused');
         } else if (service === 'set_percentage' && serviceData.percentage !== undefined) {
           get().updateEntityState(eid, serviceData.percentage > 0 ? 'on' : 'off', { percentage: serviceData.percentage });
+        } else if (domain === 'fan' && service === 'oscillate') {
+          get().updateEntityState(eid, currentState || 'on', { oscillating: Boolean(serviceData.oscillating) });
+        } else if (domain === 'fan' && service === 'set_direction') {
+          get().updateEntityState(eid, currentState || 'on', { direction: serviceData.direction });
+        } else if (domain === 'fan' && service === 'set_preset_mode') {
+          get().updateEntityState(eid, currentState || 'on', { preset_mode: serviceData.preset_mode });
+        } else if (domain === 'fan' && (service === 'set_oscillation_angle' || service === 'set_angle')) {
+          get().updateEntityState(eid, currentState || 'on', { 
+            oscillation_angle: serviceData.angle || serviceData.oscillation_angle,
+            angle: serviceData.angle || serviceData.oscillation_angle 
+          });
+        } else if (domain === 'fan' && service === 'set_target_temperature') {
+          get().updateEntityState(eid, currentState || 'on', { target_temperature: serviceData.temperature || serviceData.target_temperature });
         } else if (domain === 'alarm_control_panel' || service.startsWith('alarm_')) {
           if (service === 'alarm_arm_home') {
             get().updateEntityState(eid, 'armed_home', { changed_by: 'Dashboard 1-Tap', last_changed: new Date().toISOString() });

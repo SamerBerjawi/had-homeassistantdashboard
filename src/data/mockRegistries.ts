@@ -745,21 +745,21 @@ export const MOCK_ENTITY_REGISTRY: HAEntityRegistryEntry[] = [
 
   // ---------------- Climate & Fans ----------------
   {
-    entity_id: 'fan.living_room_ceiling_fan',
-    name: 'Living Room Ceiling Fan',
+    entity_id: 'fan.living_room_dreo_fan',
+    name: 'DREO Pilot Max Tower Fan',
     area_id: 'living_room',
+    platform: 'dreo'
+  },
+  {
+    entity_id: 'fan.office_duux_fan',
+    name: 'Duux Whisper Flex Smart Fan',
+    area_id: 'office',
     platform: 'tuya'
   },
   {
     entity_id: 'fan.master_bedroom_fan',
-    name: 'Master Bedroom Fan',
+    name: 'Master Bedroom Ceiling Fan',
     area_id: 'bedroom',
-    platform: 'tuya'
-  },
-  {
-    entity_id: 'fan.office_smart_fan',
-    name: 'Office Smart Fan',
-    area_id: 'office',
     platform: 'tuya'
   },
 
@@ -1546,40 +1546,48 @@ export const MOCK_STATES: Record<string, HAState> = {
   },
 
   // ---------------- Climate & Fans ----------------
-  'fan.living_room_ceiling_fan': {
-    entity_id: 'fan.living_room_ceiling_fan',
+  'fan.living_room_dreo_fan': {
+    entity_id: 'fan.living_room_dreo_fan',
     state: 'on',
     attributes: {
-      friendly_name: 'Living Room Ceiling Fan',
-      speed: 'medium',
-      percentage: 66,
+      friendly_name: 'DREO Pilot Max Tower Fan',
+      speed: 'high',
+      percentage: 80,
+      percentage_step: 1,
       oscillating: true,
+      oscillation_angle: 90,
+      available_angles: [30, 60, 90, 120],
       direction: 'forward',
-      power: 35
+      preset_mode: 'natural',
+      preset_modes: ['normal', 'natural', 'auto', 'sleep', 'turbo'],
+      power: 45
+    }
+  },
+  'fan.office_duux_fan': {
+    entity_id: 'fan.office_duux_fan',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Duux Whisper Flex Smart Fan',
+      speed: 'level 6',
+      percentage: 50,
+      percentage_step: 8.33,
+      temperature: 21.5,
+      target_temperature: 22,
+      temperature_unit: '°C',
+      direction: 'forward',
+      power: 28
     }
   },
   'fan.master_bedroom_fan': {
     entity_id: 'fan.master_bedroom_fan',
     state: 'off',
     attributes: {
-      friendly_name: 'Master Bedroom Fan',
+      friendly_name: 'Master Bedroom Ceiling Fan',
       speed: 'off',
       percentage: 0,
-      oscillating: false,
+      percentage_step: 33.33,
       direction: 'forward',
       power: 0
-    }
-  },
-  'fan.office_smart_fan': {
-    entity_id: 'fan.office_smart_fan',
-    state: 'on',
-    attributes: {
-      friendly_name: 'Office Smart Fan',
-      speed: 'high',
-      percentage: 100,
-      oscillating: true,
-      direction: 'forward',
-      power: 45
     }
   },
 
