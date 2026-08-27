@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from '@phosphor-icons/react';
 
@@ -10,6 +11,7 @@ interface DetailsRightDrawerProps {
   icon?: React.ReactNode;
   children: React.ReactNode;
   footerActions?: React.ReactNode;
+  darkMode?: boolean;
 }
 
 export default function DetailsRightDrawer({
@@ -19,59 +21,75 @@ export default function DetailsRightDrawer({
   subtitle,
   icon,
   children,
-  footerActions
+  footerActions,
+  darkMode = true
 }: DetailsRightDrawerProps) {
-  // Close on Escape key press
+  // Prevent body scrolling when open without layout shifts
   useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape') {
         onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
-  return (
-    <AnimatePresence>
+  if (typeof document === 'undefined') return null;
+
+  const content = (
+    <AnimatePresence mode="wait">
       {isOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
+        <div className="fixed inset-0 z-9999 overflow-hidden isolate" style={{ contain: 'paint' }}>
           {/* Backdrop Scrim */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity cursor-pointer"
           />
 
           {/* Slide-over Right Sidebar Panel */}
-          <div className="fixed inset-y-0 right-0 flex max-w-full pl-6 pointer-events-none">
+          <div className="fixed inset-y-0 right-0 flex max-w-full pl-4 sm:pl-8 pointer-events-none z-10">
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-              className="pointer-events-auto w-screen max-w-md sm:max-w-lg lg:max-w-xl h-full bg-[#0B0F19]/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl text-white flex flex-col z-50 overflow-hidden"
+              transition={{ type: 'spring', damping: 30, stiffness: 320, mass: 0.8 }}
+              className={`pointer-events-auto w-screen max-w-md sm:max-w-lg lg:max-w-xl h-full backdrop-blur-2xl border-l shadow-2xl flex flex-col overflow-hidden transition-colors ${
+                darkMode
+                  ? 'bg-[#0B0F19]/95 border-white/10 text-white shadow-black/80'
+                  : 'bg-white/95 border-slate-200 text-slate-900 shadow-2xl'
+              }`}
             >
-              {/* Top Accent Gradient Border */}
-              <div className="h-1 w-full bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 shrink-0" />
+              {/* Top Accent Gradient Line */}
+              <div className="h-1.5 w-full bg-linear-to-r from-sky-500 via-indigo-500 to-purple-500 shrink-0" />
 
               {/* Sidebar Header */}
-              <div className="flex items-center justify-between p-5 sm:p-6 border-b border-white/10 bg-white/2 shrink-0">
+              <div className="flex items-center justify-between p-5 sm:p-6 border-b border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/2 shrink-0">
                 <div className="flex items-center gap-3.5 min-w-0">
                   {icon && (
-                    <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0 shadow-sm">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/15 flex items-center justify-center shrink-0 shadow-xs">
                       {icon}
                     </div>
                   )}
                   <div className="min-w-0">
-                    <h3 className="text-lg font-black text-white tracking-tight truncate">
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight truncate">
                       {title}
                     </h3>
                     {subtitle && (
-                      <p className="text-xs text-slate-400 font-medium truncate mt-0.5">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
                         {subtitle}
                       </p>
                     )}
@@ -82,10 +100,10 @@ export default function DetailsRightDrawer({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/15 border border-slate-200 dark:border-white/10 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0"
                   title="Close sidebar"
                 >
-                  <X className="w-5 h-5" />
+                  <X size={18} weight="bold" />
                 </button>
               </div>
 
@@ -96,7 +114,7 @@ export default function DetailsRightDrawer({
 
               {/* Optional Footer */}
               {footerActions && (
-                <div className="p-4 border-t border-white/10 flex justify-end gap-3 bg-slate-950/60 backdrop-blur-sm shrink-0">
+                <div className="p-4 border-t border-slate-200 dark:border-white/10 flex justify-end gap-3 bg-slate-50 dark:bg-slate-950/60 backdrop-blur-sm shrink-0">
                   {footerActions}
                 </div>
               )}
@@ -106,4 +124,6 @@ export default function DetailsRightDrawer({
       )}
     </AnimatePresence>
   );
+
+  return createPortal(content, document.body);
 }

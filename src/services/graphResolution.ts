@@ -8,7 +8,9 @@ import {
   HADevice,
   HAEntityRegistryEntry,
   HAFloor,
+  HALabel,
   HAState,
+  HAZone,
   ResolvedEntity,
   ResolvedArea,
   ResolvedFloor,
@@ -25,6 +27,8 @@ export interface GraphResolutionResult {
   resolvedAreas: ResolvedArea[];
   areasMap: Record<string, HassAreaWithEntities>;
   resolvedFloors: ResolvedFloor[];
+  resolvedZones: HAZone[];
+  labels: HALabel[];
   unassignedEntities: ResolvedEntity[];
   domainGroups: Record<string, ResolvedEntity[]>;
   securityOverview: SecurityOverviewState;
@@ -57,7 +61,7 @@ const AREA_ICON_MAP: Record<string, string> = {
 };
 
 /**
- * Resolves the Home Assistant Entity-to-Area and Floor graph automatically.
+ * Resolves the Home Assistant Entity-to-Area, Floor, Label and Zone graph automatically.
  */
 export function resolveHAGraph(
   areas: HAArea[],
@@ -65,6 +69,7 @@ export function resolveHAGraph(
   entityRegistry: HAEntityRegistryEntry[],
   floors: HAFloor[],
   states: Record<string, HAState>,
+  labels: HALabel[] = [],
   options: { includeDiagnostics?: boolean } = {}
 ): GraphResolutionResult {
   const areaMap = new Map<string, HAArea>(areas.map(a => [a.area_id, a]));
@@ -249,7 +254,8 @@ export function resolveHAGraph(
       isDiagnostic: isDiag,
       powerWatts,
       batteryPct,
-      icon: regEntry?.icon || liveState.attributes.icon
+      icon: regEntry?.icon || liveState.attributes.icon,
+      labels: regEntry?.labels || liveState.attributes.labels || matchedDevice?.labels || []
     };
 
     resolvedEntities[entityId] = resolved;
@@ -373,6 +379,8 @@ export function resolveHAGraph(
       picture: area.picture,
       floor_id: area.floor_id,
       floor,
+      color: area.color || null,
+      order: area.order,
       devices: areaDevices,
       entities: areaEntities,
       entitiesByDomain,
@@ -396,6 +404,14 @@ export function resolveHAGraph(
       },
       bannerImage
     };
+  });
+
+  // Sort resolvedAreas by order if defined, otherwise alphabetically
+  resolvedAreas.sort((a, b) => {
+    if (typeof a.order === 'number' && typeof b.order === 'number') {
+      return a.order - b.order;
+    }
+    return a.name.localeCompare(b.name);
   });
 
   // 4. Build Resolved Floors
@@ -424,7 +440,9 @@ export function resolveHAGraph(
       floor_id: floor.floor_id,
       name: floor.name,
       level: floor.level ?? 0,
-      icon: floor.icon || 'Layers',
+      icon: floor.icon || 'Stairs',
+      color: floor.color || null,
+      order: floor.order,
       areas: floorAreas,
       totalLightsOn: floorLightsOn,
       totalLights: floorTotalLights,
@@ -434,8 +452,13 @@ export function resolveHAGraph(
     };
   });
 
-  // Sort floors by level descending (e.g. 1, 0, -1)
-  resolvedFloors.sort((a, b) => b.level - a.level);
+  // Sort floors by order if defined, otherwise level
+  resolvedFloors.sort((a, b) => {
+    if (typeof a.order === 'number' && typeof b.order === 'number') {
+      return a.order - b.order;
+    }
+    return b.level - a.level;
+  });
 
   // Build areasMap
   const areasMap: Record<string, HassAreaWithEntities> = {};
@@ -566,11 +589,36 @@ export function resolveHAGraph(
     lastResolvedAt: new Date().toISOString()
   };
 
+  // 5. Build Resolved Zones
+  const resolvedZones: HAZone[] = [];
+  for (const [eid, st] of Object.entries(states)) {
+    if (eid.startsWith('zone.')) {
+      const zoneName = st.attributes.friendly_name || eid.replace('zone.', '');
+      const personsInZone = Object.values(states)
+        .filter(p => p.entity_id.startsWith('person.') && p.state.toLowerCase() === zoneName.toLowerCase())
+        .map(p => p.attributes.friendly_name || p.entity_id);
+
+      resolvedZones.push({
+        entity_id: eid,
+        name: zoneName,
+        latitude: st.attributes.latitude ?? 0,
+        longitude: st.attributes.longitude ?? 0,
+        radius: st.attributes.radius ?? 100,
+        icon: st.attributes.icon || 'House',
+        passive: Boolean(st.attributes.passive),
+        personsInZone,
+        personsCount: personsInZone.length
+      });
+    }
+  }
+
   return {
     resolvedEntities,
     resolvedAreas,
     areasMap,
     resolvedFloors,
+    resolvedZones,
+    labels,
     unassignedEntities,
     domainGroups,
     securityOverview,

@@ -36,9 +36,31 @@ export interface HAEntity {
   };
 }
 
+export type HAConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'auth_failed' | 'error';
+
 // ----------------------------------------------------
 // Home Assistant Registry Interfaces (Auto-Layout Model)
 // ----------------------------------------------------
+
+export interface HALabel {
+  label_id: string;
+  name: string;
+  icon?: string | null;
+  color?: string | null;
+  description?: string | null;
+}
+
+export interface HAZone {
+  entity_id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+  icon?: string | null;
+  passive?: boolean;
+  personsInZone?: string[];
+  personsCount?: number;
+}
 
 export interface HAArea {
   area_id: string;
@@ -47,6 +69,9 @@ export interface HAArea {
   icon?: string | null;
   floor_id?: string | null;
   aliases?: string[];
+  color?: string | null;
+  order?: number;
+  labels?: string[];
 }
 
 export interface HADevice {
@@ -64,6 +89,7 @@ export interface HADevice {
   via_device_id?: string | null;
   connections?: [string, string][];
   identifiers?: [string, string][];
+  labels?: string[];
 }
 
 export interface HAEntityRegistryEntry {
@@ -82,6 +108,7 @@ export interface HAEntityRegistryEntry {
   device_class?: string | null;
   unit_of_measurement?: string | null;
   options?: Record<string, any>;
+  labels?: string[];
 }
 
 export interface HAFloor {
@@ -90,6 +117,8 @@ export interface HAFloor {
   level?: number | null;
   icon?: string | null;
   aliases?: string[];
+  color?: string | null;
+  order?: number;
 }
 
 export interface HAState {
@@ -127,6 +156,7 @@ export interface ResolvedEntity {
   powerWatts?: number;
   batteryPct?: number;
   icon?: string;
+  labels?: string[];
 }
 
 export interface ResolvedAreaSummary {
@@ -155,11 +185,14 @@ export interface ResolvedArea {
   picture?: string | null;
   floor_id?: string | null;
   floor?: HAFloor | null;
+  color?: string | null;
+  order?: number;
   devices: HADevice[];
   entities: ResolvedEntity[];
   entitiesByDomain: Record<string, ResolvedEntity[]>;
   summary: ResolvedAreaSummary;
   bannerImage: string;
+  labels?: string[];
 }
 
 export interface ResolvedFloor {
@@ -167,6 +200,8 @@ export interface ResolvedFloor {
   name: string;
   level: number;
   icon: string;
+  color?: string | null;
+  order?: number;
   areas: ResolvedArea[];
   totalLightsOn: number;
   totalLights: number;

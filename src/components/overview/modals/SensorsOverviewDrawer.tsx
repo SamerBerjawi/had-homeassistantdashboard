@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
-  Door, 
-  DoorOpen, 
+  PersonSimpleWalk, 
+  Drop, 
+  Flame, 
   ShieldCheck, 
   ShieldWarning, 
   BatteryCharging, 
@@ -9,12 +10,8 @@ import {
   BatteryLow, 
   BatteryWarning, 
   Clock, 
-  FrameCorners, 
-  SquaresFour, 
-  Lock, 
-  LockOpen, 
-  Archive, 
-  Stack,
+  Warning, 
+  Waves,
   Stairs,
   HouseLine
 } from '@phosphor-icons/react';
@@ -23,105 +20,78 @@ import DetailsRightDrawer from '../DetailsRightDrawer';
 import { groupEntitiesByFloorAndArea } from '../../../lib/grouping';
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 
-interface OpeningsOverviewModalProps {
+interface SensorsOverviewDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  doorSensors: ResolvedEntity[];
-  windowSensors: ResolvedEntity[];
-  otherContactSensors?: ResolvedEntity[];
-  initialTab?: 'all' | 'doors' | 'windows' | 'other';
+  motionSensors: ResolvedEntity[];
+  leakSensors: ResolvedEntity[];
+  smokeSensors: ResolvedEntity[];
+  initialTab?: 'all' | 'motion' | 'leak' | 'smoke';
   darkMode?: boolean;
 }
 
-export default function OpeningsOverviewModal({
+export default function SensorsOverviewDrawer({
   isOpen,
   onClose,
-  doorSensors,
-  windowSensors,
-  otherContactSensors = [],
+  motionSensors,
+  leakSensors,
+  smokeSensors,
   initialTab = 'all',
   darkMode = true
-}: OpeningsOverviewModalProps) {
-  const [activeTab, setActiveTab] = useState<'all' | 'doors' | 'windows' | 'other'>(initialTab);
+}: SensorsOverviewDrawerProps) {
+  const [activeTab, setActiveTab] = useState<'all' | 'motion' | 'leak' | 'smoke'>(initialTab);
 
   React.useEffect(() => {
-    if (initialTab) {
-      setActiveTab(initialTab);
-    }
+    setActiveTab(initialTab);
   }, [initialTab]);
 
-  const openDoors = doorSensors.filter(d => d.state === 'on');
-  const openWindows = windowSensors.filter(w => w.state === 'on');
-  const openOthers = otherContactSensors.filter(o => o.state === 'on');
-  const totalOpen = openDoors.length + openWindows.length + openOthers.length;
-  const totalSensors = doorSensors.length + windowSensors.length + otherContactSensors.length;
+  const allSensors = [...motionSensors, ...leakSensors, ...smokeSensors];
+  const activeMotion = motionSensors.filter(m => m.state === 'on');
+  const activeLeaks = leakSensors.filter(l => l.state === 'on' || l.state === 'wet' || l.state === 'detected');
+  const activeSmoke = smokeSensors.filter(s => s.state === 'on' || s.state === 'detected' || s.state === 'smoke');
 
-  const displayedSensors = [
-    ...(activeTab === 'all' || activeTab === 'doors' ? doorSensors : []),
-    ...(activeTab === 'all' || activeTab === 'windows' ? windowSensors : []),
-    ...(activeTab === 'all' || activeTab === 'other' ? otherContactSensors : [])
-  ];
+  const totalAlerts = activeLeaks.length + activeSmoke.length;
 
-  const grouped = groupEntitiesByFloorAndArea(displayedSensors);
+  const currentDisplayList = 
+    activeTab === 'motion' ? motionSensors :
+    activeTab === 'leak' ? leakSensors :
+    activeTab === 'smoke' ? smokeSensors :
+    allSensors;
 
-  const getSensorIcon = (sensor: ResolvedEntity, isOpen: boolean) => {
-    const devClass = sensor.attributes?.device_class;
-    const eid = sensor.entity_id.toLowerCase();
-
-    if (devClass === 'door' || devClass === 'garage_door' || eid.includes('door') || eid.includes('garage') || eid.includes('gate')) {
-      return isOpen 
-        ? <DoorOpen size={22} weight="duotone" className="text-amber-500" /> 
-        : <Door size={22} weight="duotone" className="text-emerald-500" />;
-    }
-    if (devClass === 'window' || eid.includes('window')) {
-      return <FrameCorners size={22} weight="duotone" className={isOpen ? 'text-amber-500' : 'text-emerald-500'} />;
-    }
-    if (devClass === 'lock' || eid.includes('lock')) {
-      return isOpen
-        ? <LockOpen size={22} weight="duotone" className="text-amber-500" />
-        : <Lock size={22} weight="duotone" className="text-emerald-500" />;
-    }
-    if (eid.includes('safe') || eid.includes('cabinet') || eid.includes('mailbox')) {
-      return <Archive size={22} weight="duotone" className={isOpen ? 'text-amber-500' : 'text-emerald-500'} />;
-    }
-    return <Stack size={22} weight="duotone" className={isOpen ? 'text-amber-500' : 'text-emerald-500'} />;
-  };
+  const grouped = groupEntitiesByFloorAndArea(currentDisplayList);
 
   return (
     <DetailsRightDrawer
       isOpen={isOpen}
       onClose={onClose}
-      title="Contact Sensors & Perimeter Openings"
-      subtitle={`${totalOpen} opening${totalOpen === 1 ? '' : 's'} unsealed • ${totalSensors} total monitored sensors`}
-      icon={totalOpen > 0 
-        ? <ShieldWarning size={22} weight="duotone" className="text-amber-500" /> 
-        : <ShieldCheck size={22} weight="duotone" className="text-emerald-500" />
-      }
+      title="Security & Hazard Sensors"
+      subtitle={`${totalAlerts > 0 ? `${totalAlerts} Alert(s)` : 'All systems clear'} • ${allSensors.length} sensors active`}
+      icon={<ShieldCheck size={22} weight="duotone" className="text-emerald-500" />}
       darkMode={darkMode}
     >
       <div className="space-y-6">
         {/* Status Summary Banner */}
         <div
           className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${
-            totalOpen > 0
-              ? 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300'
+            totalAlerts > 0
+              ? 'bg-rose-500/15 border-rose-500/30 text-rose-800 dark:text-rose-300 shadow-lg shadow-rose-500/10'
               : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
           }`}
         >
           <div className="flex items-center gap-3">
-            {totalOpen > 0 ? (
-              <ShieldWarning size={28} weight="duotone" className="text-amber-500 shrink-0 animate-pulse" />
+            {totalAlerts > 0 ? (
+              <ShieldWarning size={28} weight="duotone" className="text-rose-500 shrink-0 animate-bounce" />
             ) : (
               <ShieldCheck size={28} weight="duotone" className="text-emerald-500 shrink-0" />
             )}
             <div>
               <div className="text-sm font-bold text-slate-900 dark:text-white">
-                {totalOpen > 0 ? `${totalOpen} Monitored Opening${totalOpen === 1 ? '' : 's'} Open` : 'All Contact Sensors Sealed & Closed'}
+                {totalAlerts > 0 ? `${totalAlerts} Hazard Alert Detected!` : 'Environmental & Presence Normal'}
               </div>
               <div className="text-xs text-slate-600 dark:text-slate-300">
-                {totalOpen > 0
-                  ? `${openDoors.length} Door(s) • ${openWindows.length} Window(s)${openOthers.length > 0 ? ` • ${openOthers.length} Other(s)` : ''}`
-                  : 'Perimeter envelope is fully secure'}
+                {totalAlerts > 0
+                  ? `${activeLeaks.length} Water Leak • ${activeSmoke.length} Smoke/Fire Hazard`
+                  : `${activeMotion.length} motion zones active • ${allSensors.length} telemetry sensors`}
               </div>
             </div>
           </div>
@@ -138,49 +108,50 @@ export default function OpeningsOverviewModal({
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            All ({totalSensors})
+            All ({allSensors.length})
           </button>
+          
           <button
             type="button"
-            onClick={() => setActiveTab('doors')}
+            onClick={() => setActiveTab('motion')}
             className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer truncate flex items-center justify-center gap-1 ${
-              activeTab === 'doors'
+              activeTab === 'motion'
                 ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-xs'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            <Door size={14} weight="duotone" />
-            <span>Doors ({doorSensors.length}) {openDoors.length > 0 && `• ${openDoors.length}`}</span>
+            <PersonSimpleWalk size={14} weight="duotone" />
+            <span>Motion ({motionSensors.length})</span>
           </button>
+
           <button
             type="button"
-            onClick={() => setActiveTab('windows')}
+            onClick={() => setActiveTab('leak')}
             className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer truncate flex items-center justify-center gap-1 ${
-              activeTab === 'windows'
+              activeTab === 'leak'
                 ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-xs'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            <FrameCorners size={14} weight="duotone" />
-            <span>Windows ({windowSensors.length}) {openWindows.length > 0 && `• ${openWindows.length}`}</span>
+            <Drop size={14} weight="duotone" />
+            <span>Leak ({leakSensors.length})</span>
           </button>
-          {otherContactSensors.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('other')}
-              className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer truncate flex items-center justify-center gap-1 ${
-                activeTab === 'other'
-                  ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <Archive size={14} weight="duotone" />
-              <span>Other ({otherContactSensors.length}) {openOthers.length > 0 && `• ${openOthers.length}`}</span>
-            </button>
-          )}
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('smoke')}
+            className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer truncate flex items-center justify-center gap-1 ${
+              activeTab === 'smoke'
+                ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Flame size={14} weight="duotone" />
+            <span>Smoke/Fire ({smokeSensors.length})</span>
+          </button>
         </div>
 
-        {/* Grouped Openings: Floor -> Area -> Entity */}
+        {/* Grouped Sensors: Floor -> Area -> Entity */}
         <div className="space-y-6">
           {grouped.groups.map((floorGroup) => (
             <div key={floorGroup.floorId || 'no-floor'} className="space-y-4">
@@ -193,7 +164,7 @@ export default function OpeningsOverviewModal({
                     fallback={Stairs} 
                     size={16} 
                     weight="duotone" 
-                    style={{ color: floorGroup.color || '#f59e0b' }}
+                    style={{ color: floorGroup.color || '#10b981' }}
                   />
                   <h4 
                     className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200"
@@ -221,7 +192,7 @@ export default function OpeningsOverviewModal({
                             fallback={HouseLine} 
                             size={14} 
                             weight="duotone" 
-                            style={{ color: areaGroup.color || '#f59e0b' }}
+                            style={{ color: areaGroup.color || '#10b981' }}
                           />
                           <span 
                             className="text-xs font-bold text-slate-700 dark:text-slate-300"
@@ -231,7 +202,7 @@ export default function OpeningsOverviewModal({
                           </span>
                         </div>
                         <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-                          {areaGroup.entities.filter(e => e.state === 'on').length}/{areaGroup.entities.length} open
+                          {areaGroup.entities.length} sensor{areaGroup.entities.length === 1 ? '' : 's'}
                         </span>
                       </div>
                     )}
@@ -239,7 +210,14 @@ export default function OpeningsOverviewModal({
                     {/* Sensor List */}
                     <div className="space-y-2.5">
                       {areaGroup.entities.map((sensor) => {
-                        const isOpen = sensor.state === 'on';
+                        const devClass = sensor.attributes?.device_class || '';
+                        const isMotion = devClass === 'motion' || devClass === 'occupancy' || devClass === 'presence' || sensor.entity_id.includes('motion') || sensor.entity_id.includes('occupancy');
+                        const isLeak = devClass === 'moisture' || devClass === 'water' || sensor.entity_id.includes('leak') || sensor.entity_id.includes('flood');
+                        const isSmoke = devClass === 'smoke' || devClass === 'gas' || devClass === 'carbon_monoxide' || sensor.entity_id.includes('smoke');
+
+                        const isAlert = isLeak || isSmoke ? (sensor.state === 'on' || sensor.state === 'wet' || sensor.state === 'detected') : false;
+                        const isActiveMotion = isMotion && sensor.state === 'on';
+
                         const battery = sensor.batteryPct ?? (
                           typeof sensor.attributes?.battery === 'number' 
                             ? sensor.attributes.battery 
@@ -247,41 +225,48 @@ export default function OpeningsOverviewModal({
                               ? sensor.attributes.battery_level 
                               : undefined
                         );
-                        const devClass = sensor.attributes?.device_class || 'contact';
 
                         return (
                           <div
                             key={sensor.entity_id}
                             className={`p-4 rounded-2xl border transition-all duration-200 flex items-center justify-between gap-4 ${
-                              isOpen
-                                ? 'bg-amber-500/10 border-amber-500/30 shadow-xs'
-                                : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10'
+                              isAlert
+                                ? 'bg-rose-500/15 border-rose-500/40 shadow-xs shadow-rose-500/10'
+                                : isActiveMotion
+                                  ? 'bg-amber-500/10 border-amber-500/30'
+                                  : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10'
                             }`}
                           >
                             <div className="flex items-center gap-3.5 min-w-0">
                               <div
                                 className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 ${
-                                  isOpen
-                                    ? 'bg-amber-500/20 border border-amber-500/40 text-amber-500 animate-pulse'
-                                    : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-500'
+                                  isAlert
+                                    ? 'bg-rose-500/25 border border-rose-500/50 text-rose-500 animate-pulse'
+                                    : isActiveMotion
+                                      ? 'bg-amber-500/20 border border-amber-500/40 text-amber-500'
+                                      : 'bg-slate-200 dark:bg-white/10 border border-slate-300 dark:border-white/15 text-slate-600 dark:text-slate-300'
                                 }`}
                               >
-                                {getSensorIcon(sensor, isOpen)}
+                                {isSmoke ? (
+                                  <Flame size={20} weight="duotone" />
+                                ) : isLeak ? (
+                                  <Drop size={20} weight="duotone" />
+                                ) : (
+                                  <PersonSimpleWalk size={20} weight="duotone" />
+                                )}
                               </div>
 
                               <div className="min-w-0">
                                 <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{sensor.name}</h4>
 
                                 <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                  <span className="capitalize">{devClass}</span>
+                                  <span className="capitalize">{devClass || (isMotion ? 'Motion' : isLeak ? 'Moisture' : 'Smoke')}</span>
                                   {battery !== undefined && (
                                     <>
                                       <span>•</span>
                                       <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
                                         {battery <= 20 ? (
                                           <BatteryWarning size={14} weight="duotone" className="text-rose-500" />
-                                        ) : battery >= 80 ? (
-                                          <BatteryCharging size={14} weight="duotone" className="text-emerald-500" />
                                         ) : (
                                           <BatteryHigh size={14} weight="duotone" className="text-slate-400" />
                                         )}
@@ -297,12 +282,14 @@ export default function OpeningsOverviewModal({
                             <div className="shrink-0 flex items-center">
                               <span
                                 className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border ${
-                                  isOpen
-                                    ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 animate-pulse'
-                                    : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                                  isAlert
+                                    ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300 border-rose-500/40 animate-pulse'
+                                    : isActiveMotion
+                                      ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/40'
+                                      : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
                                 }`}
                               >
-                                {isOpen ? 'OPEN' : 'CLOSED'}
+                                {isAlert ? 'HAZARD DETECTED' : isActiveMotion ? 'MOTION DETECTED' : isLeak ? 'DRY' : isSmoke ? 'SAFE' : 'CLEAR'}
                               </span>
                             </div>
                           </div>

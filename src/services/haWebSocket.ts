@@ -3,10 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { HAArea, HADevice, HAEntityRegistryEntry, HAFloor, HAState } from '../types';
+import {
+  HAArea,
+  HADevice,
+  HAEntityRegistryEntry,
+  HAFloor,
+  HALabel,
+  HAState,
+  HAConnectionStatus
+} from '../types';
 import { MOCK_AREAS, MOCK_DEVICES, MOCK_ENTITY_REGISTRY, MOCK_FLOORS, MOCK_STATES } from '../data/mockRegistries';
 
-export type HAConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'auth_failed' | 'error';
+export type { HAConnectionStatus };
 
 export interface HAWebSocketCallbacks {
   onStatusChange: (status: HAConnectionStatus, errorMsg?: string) => void;
@@ -15,6 +23,7 @@ export interface HAWebSocketCallbacks {
     devices: HADevice[];
     entityRegistry: HAEntityRegistryEntry[];
     floors: HAFloor[];
+    labels?: HALabel[];
     states: Record<string, HAState>;
   }) => void;
   onStateChanged: (entityId: string, newState: HAState) => void;
@@ -166,24 +175,68 @@ class HAWebSocketClient {
       return;
     }
 
-    if (msg.type === 'event' && msg.event?.event_type === 'state_changed') {
-      const { entity_id, new_state } = msg.event.data;
-      if (entity_id && new_state) {
-        this.callbacks?.onStateChanged(entity_id, new_state);
-        this.callbacks?.onLogMessage('state_changed', `State updated: ${entity_id} -> ${new_state.state}`, new_state.attributes);
+    if (msg.type === 'event') {
+      const data = msg.event?.data || msg.data;
+      const entityId = data?.entity_id || msg.event?.entity_id;
+      const newState = data?.new_state || data?.state || msg.event?.new_state;
+
+      if (entityId && newState) {
+        this.callbacks?.onStateChanged(entityId, newState);
+        this.callbacks?.onLogMessage('state_changed', `State updated: ${entityId} -> ${newState.state}`, newState.attributes);
       }
+    }
+  }
+
+  private pollTimer: any = null;
+
+  private startStatePolling() {
+    this.stopStatePolling();
+    this.pollTimer = setInterval(() => {
+      this.refreshStates();
+    }, 8000);
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          this.refreshStates();
+        }
+      });
+    }
+  }
+
+  private stopStatePolling() {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+  }
+
+  public async refreshStates(): Promise<void> {
+    if (this.isDemoMode || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+    try {
+      const statesList = await this.sendRequest<HAState[]>('get_states');
+      if (Array.isArray(statesList)) {
+        for (const s of statesList) {
+          if (s?.entity_id) {
+            this.callbacks?.onStateChanged(s.entity_id, s);
+          }
+        }
+      }
+    } catch {
+      // ignore
     }
   }
 
   private async fetchAllRegistries() {
     try {
-      this.callbacks?.onLogMessage('info', 'Querying Home Assistant Area, Device, Entity, Floor registries and live states...');
+      this.callbacks?.onLogMessage('info', 'Querying Home Assistant Area, Device, Entity, Floor, and Label registries and live states...');
       
-      const [areas, devices, entityRegistry, floors, statesList] = await Promise.all([
+      const [areas, devices, entityRegistry, floors, labels, statesList] = await Promise.all([
         this.sendRequest<HAArea[]>('config/area_registry/list').catch(() => []),
         this.sendRequest<HADevice[]>('config/device_registry/list').catch(() => []),
         this.sendRequest<HAEntityRegistryEntry[]>('config/entity_registry/list').catch(() => []),
         this.sendRequest<HAFloor[]>('config/floor_registry/list').catch(() => []),
+        this.sendRequest<HALabel[]>('config/label_registry/list').catch(() => []),
         this.sendRequest<HAState[]>('get_states').catch(() => [])
       ]);
 
@@ -197,12 +250,14 @@ class HAWebSocketClient {
         devices,
         entityRegistry,
         floors,
+        labels,
         states: statesMap
       });
 
-      // Subscribe to events
+      // Subscribe to live events
       this.sendRequest('subscribe_events', { event_type: 'state_changed' });
-      this.callbacks?.onLogMessage('info', `Ingested ${areas.length} areas, ${devices.length} devices, ${entityRegistry.length} entity registry entries, and ${statesList.length} live states.`);
+      this.startStatePolling();
+      this.callbacks?.onLogMessage('info', `Ingested ${areas.length} areas, ${devices.length} devices, ${entityRegistry.length} entities, ${labels?.length || 0} labels, and ${statesList.length} live states.`);
     } catch (e: any) {
       this.callbacks?.onLogMessage('error', `Failed to fetch HA registries: ${e.message}`);
     }

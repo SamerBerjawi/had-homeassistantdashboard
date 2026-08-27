@@ -3,7 +3,45 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { HAArea, HADevice, HAEntityRegistryEntry, HAFloor, HAState } from '../types';
+import { HAArea, HADevice, HAEntityRegistryEntry, HAFloor, HALabel, HAState } from '../types';
+
+export const MOCK_LABELS: HALabel[] = [
+  {
+    label_id: 'security',
+    name: 'Security Critical',
+    icon: 'Shield',
+    color: '#f43f5e',
+    description: 'Monitored sensors and perimeter security devices'
+  },
+  {
+    label_id: 'eco_mode',
+    name: 'Energy Saver',
+    icon: 'Lightning',
+    color: '#10b981',
+    description: 'High efficiency energy management'
+  },
+  {
+    label_id: 'climate_zone',
+    name: 'HVAC Active',
+    icon: 'Thermometer',
+    color: '#0ea5e9',
+    description: 'Thermostats, HVAC, and temperature probes'
+  },
+  {
+    label_id: 'guest_access',
+    name: 'Guest Accessible',
+    icon: 'User',
+    color: '#a855f7',
+    description: 'Accessible in guest kiosk profile'
+  },
+  {
+    label_id: 'automation',
+    name: 'Smart Automated',
+    icon: 'Sparkle',
+    color: '#f59e0b',
+    description: 'Entities controlled by automated routines'
+  }
+];
 
 export const MOCK_FLOORS: HAFloor[] = [
   {
@@ -111,6 +149,22 @@ export const MOCK_DEVICES: HADevice[] = [
     manufacturer: 'LG Electronics',
     model: 'OLED65C3PUA',
     sw_version: 'webOS 23.10.4'
+  },
+  {
+    id: 'dev_apple_tv_living',
+    name: 'Living Room Apple TV 4K',
+    area_id: 'living_room',
+    manufacturer: 'Apple Inc.',
+    model: 'Apple TV 4K (3rd Gen)',
+    sw_version: 'tvOS 17.5'
+  },
+  {
+    id: 'dev_chromecast_office',
+    name: 'Office Chromecast with Google TV',
+    area_id: 'office',
+    manufacturer: 'Google LLC',
+    model: 'Chromecast with Google TV (4K)',
+    sw_version: 'Android TV 12'
   },
 
   // Bedroom Devices
@@ -324,6 +378,41 @@ export const MOCK_ENTITY_REGISTRY: HAEntityRegistryEntry[] = [
     platform: 'webostv'
   },
   {
+    entity_id: 'remote.living_room_tv',
+    name: 'LG Magic Remote',
+    area_id: 'living_room',
+    device_id: 'dev_lg_oled_tv',
+    platform: 'webostv'
+  },
+  {
+    entity_id: 'media_player.living_room_apple_tv',
+    name: 'Living Room Apple TV',
+    area_id: 'living_room',
+    device_id: 'dev_apple_tv_living',
+    platform: 'apple_tv'
+  },
+  {
+    entity_id: 'remote.living_room_apple_tv',
+    name: 'Apple TV Remote',
+    area_id: 'living_room',
+    device_id: 'dev_apple_tv_living',
+    platform: 'apple_tv'
+  },
+  {
+    entity_id: 'media_player.office_chromecast',
+    name: 'Office Chromecast',
+    area_id: 'office',
+    device_id: 'dev_chromecast_office',
+    platform: 'cast'
+  },
+  {
+    entity_id: 'remote.office_chromecast',
+    name: 'Office Chromecast Remote',
+    area_id: 'office',
+    device_id: 'dev_chromecast_office',
+    platform: 'cast'
+  },
+  {
     entity_id: 'sensor.living_room_sonos_wifi_rssi',
     name: 'Sonos Arc WiFi Signal',
     area_id: null,
@@ -387,6 +476,13 @@ export const MOCK_ENTITY_REGISTRY: HAEntityRegistryEntry[] = [
     entity_id: 'media_player.bedroom_homepod',
     name: 'Bedroom HomePod',
     area_id: null, // Inherited match
+    device_id: 'dev_homepod_bedroom',
+    platform: 'apple_tv'
+  },
+  {
+    entity_id: 'remote.bedroom_homepod_remote',
+    name: 'Bedroom HomePod Remote',
+    area_id: 'bedroom',
     device_id: 'dev_homepod_bedroom',
     platform: 'apple_tv'
   },
@@ -473,6 +569,20 @@ export const MOCK_ENTITY_REGISTRY: HAEntityRegistryEntry[] = [
     area_id: 'office',
     device_id: null,
     platform: 'shelly'
+  },
+  {
+    entity_id: 'media_player.office_homepod',
+    name: 'Office HomePod',
+    area_id: 'office',
+    device_id: null,
+    platform: 'apple_tv'
+  },
+  {
+    entity_id: 'remote.office_homepod_remote',
+    name: 'Office HomePod Remote',
+    area_id: 'office',
+    device_id: null,
+    platform: 'apple_tv'
   },
   {
     entity_id: 'sensor.office_ambient_temp',
@@ -755,7 +865,9 @@ export const MOCK_STATES: Record<string, HAState> = {
       media_image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600&auto=format&fit=crop',
       volume_level: 0.42,
       is_volume_muted: false,
-      source: 'Spotify Hi-Fi'
+      source: 'Spotify Hi-Fi',
+      source_list: ['Spotify Hi-Fi', 'AirPlay 2', 'Line-In', 'TV Audio'],
+      supported_features: 590783
     }
   },
   'media_player.living_room_tv': {
@@ -763,8 +875,72 @@ export const MOCK_STATES: Record<string, HAState> = {
     state: 'on',
     attributes: {
       friendly_name: 'LG OLED C3 TV',
+      device_class: 'tv',
       source: 'Apple TV 4K',
-      power: 85
+      source_list: ['HDMI 1', 'HDMI 2', 'Apple TV 4K', 'Netflix', 'YouTube', 'Live TV'],
+      sound_mode: 'Cinema',
+      sound_mode_list: ['Cinema', 'Music', 'Standard', 'Game'],
+      volume_level: 0.35,
+      is_volume_muted: false,
+      power: 85,
+      supported_features: 86141
+    }
+  },
+  'remote.living_room_tv': {
+    entity_id: 'remote.living_room_tv',
+    state: 'on',
+    attributes: {
+      friendly_name: 'LG Magic Remote',
+      current_activity: 'Live TV'
+    }
+  },
+  'media_player.living_room_apple_tv': {
+    entity_id: 'media_player.living_room_apple_tv',
+    state: 'playing',
+    attributes: {
+      friendly_name: 'Living Room Apple TV',
+      device_class: 'tv',
+      media_title: 'Ted Lasso (Season 3)',
+      media_artist: 'Apple TV+',
+      media_album_name: 'Comedy Series',
+      media_image: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?q=80&w=600&auto=format&fit=crop',
+      app_name: 'Apple TV',
+      source: 'Apple TV+',
+      source_list: ['Apple TV+', 'Netflix', 'YouTube', 'Disney+', 'Plex', 'HBO Max'],
+      volume_level: 0.65,
+      is_volume_muted: false,
+      supported_features: 457
+    }
+  },
+  'remote.living_room_apple_tv': {
+    entity_id: 'remote.living_room_apple_tv',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Apple TV Remote',
+      current_activity: 'Apple TV'
+    }
+  },
+  'media_player.office_chromecast': {
+    entity_id: 'media_player.office_chromecast',
+    state: 'playing',
+    attributes: {
+      friendly_name: 'Office Chromecast',
+      media_title: 'Synthwave Night Ride',
+      media_artist: 'Lofi Girl Live Stream',
+      media_image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop',
+      app_name: 'YouTube',
+      source: 'YouTube Music',
+      source_list: ['YouTube Music', 'Spotify', 'SoundCloud', 'Twitch'],
+      volume_level: 0.50,
+      is_volume_muted: false,
+      supported_features: 21437
+    }
+  },
+  'remote.office_chromecast': {
+    entity_id: 'remote.office_chromecast',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Chromecast Remote'
     }
   },
   'sensor.living_room_sonos_wifi_rssi': {
@@ -858,6 +1034,13 @@ export const MOCK_STATES: Record<string, HAState> = {
       media_artist: 'Nordic Soundscapes',
       volume_level: 0.30,
       source: 'AirPlay 2'
+    }
+  },
+  'remote.bedroom_homepod_remote': {
+    entity_id: 'remote.bedroom_homepod_remote',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Bedroom HomePod Remote'
     }
   },
   'binary_sensor.bedroom_window_contact': {
@@ -969,6 +1152,22 @@ export const MOCK_STATES: Record<string, HAState> = {
     attributes: {
       friendly_name: 'Office Temperature',
       unit_of_measurement: '°C'
+    }
+  },
+  'media_player.office_homepod': {
+    entity_id: 'media_player.office_homepod',
+    state: 'idle',
+    attributes: {
+      friendly_name: 'Office HomePod',
+      volume_level: 0.25,
+      source: 'AirPlay'
+    }
+  },
+  'remote.office_homepod_remote': {
+    entity_id: 'remote.office_homepod_remote',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Office HomePod Remote'
     }
   },
 
@@ -1259,6 +1458,56 @@ export const MOCK_STATES: Record<string, HAState> = {
       device_class: 'window',
       battery: 81,
       last_opened: 'Yesterday'
+    }
+  },
+
+  // ---------------- Home Assistant Zones ----------------
+  'zone.home': {
+    entity_id: 'zone.home',
+    state: '1',
+    attributes: {
+      friendly_name: 'Home',
+      latitude: 37.7749,
+      longitude: -122.4194,
+      radius: 100,
+      icon: 'House',
+      passive: false
+    }
+  },
+  'zone.work': {
+    entity_id: 'zone.work',
+    state: '1',
+    attributes: {
+      friendly_name: 'HQ Office',
+      latitude: 37.7833,
+      longitude: -122.4167,
+      radius: 150,
+      icon: 'Briefcase',
+      passive: false
+    }
+  },
+  'zone.school': {
+    entity_id: 'zone.school',
+    state: '0',
+    attributes: {
+      friendly_name: 'Campus / School',
+      latitude: 37.7650,
+      longitude: -122.4400,
+      radius: 200,
+      icon: 'GraduationCap',
+      passive: false
+    }
+  },
+  'zone.gym': {
+    entity_id: 'zone.gym',
+    state: '0',
+    attributes: {
+      friendly_name: 'Fitness Center',
+      latitude: 37.7690,
+      longitude: -122.4300,
+      radius: 120,
+      icon: 'Barbell',
+      passive: false
     }
   }
 };

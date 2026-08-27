@@ -29,6 +29,7 @@ import {
   Heartbeat
 } from '@phosphor-icons/react';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
+import CustomDropdown from './ui/CustomDropdown';
 import { ResolutionSource } from '../types';
 
 interface GraphResolutionModalProps {
@@ -360,21 +361,16 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
                               </span>
                             </td>
 
-                            <td className="p-3.5 text-right">
-                              <select
+                            <td className="p-3.5 text-right w-48">
+                              <CustomDropdown
                                 value={ent.area_id || ''}
-                                onChange={e => reassignEntityArea(ent.entity_id, e.target.value || null)}
-                                className={`text-[11px] font-bold px-2 py-1 rounded-xl border outline-none cursor-pointer ${
-                                  darkMode ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-slate-100 border-slate-300 text-slate-700'
-                                }`}
-                              >
-                                <option value="">Unassigned</option>
-                                {areas.map(a => (
-                                  <option key={a.area_id} value={a.area_id}>
-                                    {a.name}
-                                  </option>
-                                ))}
-                              </select>
+                                onChange={val => reassignEntityArea(ent.entity_id, val || null)}
+                                options={[
+                                  { value: '', label: 'Unassigned' },
+                                  ...areas.map(a => ({ value: a.area_id, label: a.name }))
+                                ]}
+                                size="sm"
+                              />
                             </td>
                           </tr>
                         ))}

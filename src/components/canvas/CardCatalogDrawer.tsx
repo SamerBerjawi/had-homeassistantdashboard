@@ -25,6 +25,7 @@ import {
 } from '@phosphor-icons/react';
 import { CardConfig, DashboardLayoutItem } from '../../types/canvas';
 import { HAEntity } from '../../types';
+import CustomDropdown from '../ui/CustomDropdown';
 
 interface CardCatalogDrawerProps {
   isOpen: boolean;
@@ -323,17 +324,17 @@ export default function CardCatalogDrawer({
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-300 block">2. Target Home Assistant Entity</label>
                 {matchingEntities.length > 0 ? (
-                  <select
+                  <CustomDropdown
                     value={selectedEntityId}
-                    onChange={(e) => setSelectedEntityId(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-black/50 border border-white/15 text-white text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-                  >
-                    {matchingEntities.map((ent) => (
-                      <option key={ent.entity_id} value={ent.entity_id} className="bg-slate-900 text-white">
-                        {ent.attributes?.friendly_name || ent.entity_id} ({ent.entity_id})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setSelectedEntityId(val)}
+                    options={matchingEntities.map(ent => ({
+                      value: ent.entity_id,
+                      label: ent.attributes?.friendly_name || ent.entity_id,
+                      sublabel: ent.entity_id
+                    }))}
+                    searchable={true}
+                    placeholder="Choose an entity..."
+                  />
                 ) : (
                   <input
                     type="text"

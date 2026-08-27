@@ -1,4 +1,9 @@
-import React, { useState } from 'react';
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   MusicNotes, 
   Play, 
@@ -10,19 +15,29 @@ import {
   Disc, 
   Radio, 
   Television, 
-  SpeakerSimpleHigh
+  SpeakerSimpleHigh,
+  SlidersHorizontal,
+  Airplay,
+  Power
 } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
 import DetailsRightDrawer from '../DetailsRightDrawer';
 import { getHAImageUrl } from '../../../lib/utils';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { detectMediaPlayerType, MediaPlayerService, ClassifiedMediaPlayer } from '../../../services/mediaPlayerClassification';
+import AppleRemoteControl from '../../media/AppleRemoteControl';
+import CustomDropdown from '../../ui/CustomDropdown';
+import { groupEntitiesByFloorAndArea } from '../../../lib/grouping';
+import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
+import { Stairs, HouseLine } from '@phosphor-icons/react';
 
 interface MediaOverviewDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   mediaPlayers: ResolvedEntity[];
   activeEntity?: ResolvedEntity;
-  onUpdateEntity: (entityId: string, newState: string, attributes?: Record<string, any>) => void;
+  onUpdateEntity?: (entityId: string, newState: string, attributes?: Record<string, any>) => void;
+  darkMode?: boolean;
 }
 
 export default function MediaOverviewDrawer({
@@ -30,13 +45,55 @@ export default function MediaOverviewDrawer({
   onClose,
   mediaPlayers,
   activeEntity,
-  onUpdateEntity
+  darkMode = true
 }: MediaOverviewDrawerProps) {
   const serverUrl = useAutoLayoutStore(s => s.serverUrl);
-  const [selectedId, setSelectedId] = useState<string>(activeEntity?.entity_id || mediaPlayers[0]?.entity_id || '');
+  const devices = useAutoLayoutStore(s => s.devices);
+  const resolvedEntities = useAutoLayoutStore(s => s.resolvedEntities);
+  const callHAService = useAutoLayoutStore(s => s.callHAService);
 
-  const currentMedia = mediaPlayers.find(m => m.entity_id === selectedId) || activeEntity || mediaPlayers[0];
+  // Selected player ID - initialize once on open and do not override when user picks an idle/off player
+  const [selectedId, setSelectedId] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'playback' | 'remote'>('playback');
+
+  useEffect(() => {
+    if (isOpen) {
+      if (activeEntity?.entity_id && !selectedId) {
+        setSelectedId(activeEntity.entity_id);
+      } else if (!selectedId && mediaPlayers.length > 0) {
+        const firstPlaying = mediaPlayers.find(m => m.state === 'playing');
+        setSelectedId(firstPlaying?.entity_id || mediaPlayers[0].entity_id);
+      }
+    }
+  }, [isOpen, activeEntity]);
+
+  // Always resolve latest state from store's resolvedEntities or mediaPlayers array
+  const currentMedia: ResolvedEntity | undefined = 
+    resolvedEntities[selectedId] ||
+    mediaPlayers.find(m => m.entity_id === selectedId) ||
+    activeEntity ||
+    mediaPlayers[0];
+
   const isPlaying = currentMedia?.state === 'playing';
+
+  // Device Classification
+  const classification: ClassifiedMediaPlayer = currentMedia 
+    ? detectMediaPlayerType(currentMedia, devices, Object.values(resolvedEntities))
+    : {
+        kind: 'generic',
+        isApple: false,
+        hasRemote: false,
+        supportsVolume: true,
+        supportsPlayPause: true,
+        supportsNextPrev: true,
+        supportsMute: true,
+        supportsTurnOn: true,
+        supportsTurnOff: true,
+        supportsSource: false,
+        supportsSoundMode: false,
+        supportsGrouping: false,
+        supportedFeatures: 0
+      };
 
   const rawArt = currentMedia?.attributes?.media_image || currentMedia?.attributes?.entity_picture;
   const albumArt = getHAImageUrl(rawArt, serverUrl);
@@ -44,41 +101,151 @@ export default function MediaOverviewDrawer({
   const artist = currentMedia?.attributes?.media_artist || (currentMedia ? currentMedia.name : 'Unknown Artist');
   const album = currentMedia?.attributes?.media_album_name;
   const source = currentMedia?.attributes?.source || currentMedia?.attributes?.app_name;
+  const sourceList: string[] = currentMedia?.attributes?.source_list || [];
+  const soundModeList: string[] = currentMedia?.attributes?.sound_mode_list || [];
+  const soundMode = currentMedia?.attributes?.sound_mode;
 
+  // Volume state
   const currentVol = typeof currentMedia?.attributes?.volume_level === 'number' 
     ? Math.round(currentMedia.attributes.volume_level * 100) 
     : 45;
 
   const [volume, setVolume] = useState<number>(currentVol);
-  const [isMuted, setIsMuted] = useState<boolean>(Boolean(currentMedia?.attributes?.is_volume_muted));
+  const isMuted = Boolean(currentMedia?.attributes?.is_volume_muted);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentMedia?.attributes?.volume_level !== undefined) {
       setVolume(Math.round(currentMedia.attributes.volume_level * 100));
     }
-  }, [currentMedia]);
+  }, [currentMedia?.attributes?.volume_level]);
 
-  const handlePlayPause = () => {
-    if (!currentMedia) return;
-    const nextState = isPlaying ? 'paused' : 'playing';
-    onUpdateEntity(currentMedia.entity_id, nextState);
+  // ==========================================
+  // PROGRESS BAR & REAL-TIME SEEK SCRIBBLER
+  // ==========================================
+  const rawDuration = typeof currentMedia?.attributes?.media_duration === 'number' 
+    ? currentMedia.attributes.media_duration 
+    : 228; // default 3:48 min
+  const rawPosition = typeof currentMedia?.attributes?.media_position === 'number'
+    ? currentMedia.attributes.media_position
+    : 74; // default 1:14
+
+  const [playbackPos, setPlaybackPos] = useState<number>(rawPosition);
+  const [isSeeking, setIsSeeking] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isSeeking && currentMedia?.attributes?.media_position !== undefined) {
+      setPlaybackPos(currentMedia.attributes.media_position);
+    }
+  }, [currentMedia?.attributes?.media_position, isSeeking]);
+
+  // Live timer tick when playing
+  useEffect(() => {
+    if (!isPlaying || isSeeking) return;
+
+    const interval = setInterval(() => {
+      setPlaybackPos(prev => (prev < rawDuration ? prev + 1 : prev));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, isSeeking, rawDuration]);
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const handleVolumeChange = (val: number) => {
+  const handleSeekCommit = async (newSecs: number) => {
+    setPlaybackPos(newSecs);
+    setIsSeeking(false);
+    if (!currentMedia) return;
+    await callHAService('media_player', 'media_seek', { seek_position: newSecs }, { entity_id: currentMedia.entity_id });
+  };
+
+  // Handle Playback Services
+  const handlePlayPause = async () => {
+    if (!currentMedia) return;
+    await MediaPlayerService.playPause(currentMedia.entity_id);
+  };
+
+  const handleNext = async () => {
+    if (!currentMedia) return;
+    await MediaPlayerService.nextTrack(currentMedia.entity_id);
+  };
+
+  const handlePrev = async () => {
+    if (!currentMedia) return;
+    await MediaPlayerService.previousTrack(currentMedia.entity_id);
+  };
+
+  const handleVolumeChange = async (val: number) => {
     if (!currentMedia) return;
     setVolume(val);
-    onUpdateEntity(currentMedia.entity_id, currentMedia.state, {
-      volume_level: val / 100
-    });
+    await MediaPlayerService.setVolume(currentMedia.entity_id, val);
   };
 
-  const handleToggleMute = () => {
+  const handleToggleMute = async () => {
     if (!currentMedia) return;
-    const nextMute = !isMuted;
-    setIsMuted(nextMute);
-    onUpdateEntity(currentMedia.entity_id, currentMedia.state, {
-      is_volume_muted: nextMute
-    });
+    await MediaPlayerService.setMute(currentMedia.entity_id, !isMuted);
+  };
+
+  const handleSourceSelect = async (src: string) => {
+    if (!currentMedia) return;
+    await MediaPlayerService.selectSource(currentMedia.entity_id, src);
+  };
+
+  const handleSoundModeSelect = async (mode: string) => {
+    if (!currentMedia) return;
+    await MediaPlayerService.selectSoundMode(currentMedia.entity_id, mode);
+  };
+
+  const handlePowerToggle = async () => {
+    if (!currentMedia) return;
+    await MediaPlayerService.togglePower(currentMedia.entity_id, classification.remoteEntityId);
+  };
+
+  // Helper Badge for Device Kind
+  const renderDeviceKindBadge = (kind: string, isApple: boolean) => {
+    if (kind === 'apple_tv') {
+      return (
+        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 flex items-center gap-1">
+          <Television size={11} weight="duotone" /> Apple TV 4K
+        </span>
+      );
+    }
+    if (kind === 'homepod') {
+      return (
+        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+          <Radio size={11} weight="duotone" /> HomePod AirPlay
+        </span>
+      );
+    }
+    if (kind === 'sonos') {
+      return (
+        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 flex items-center gap-1">
+          <SpeakerHigh size={11} weight="duotone" /> Sonos Arc Hi-Fi
+        </span>
+      );
+    }
+    if (kind === 'cast') {
+      return (
+        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+          <Airplay size={11} weight="duotone" /> Google Cast
+        </span>
+      );
+    }
+    if (kind === 'smart_tv') {
+      return (
+        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 flex items-center gap-1">
+          <Television size={11} weight="duotone" /> Smart TV
+        </span>
+      );
+    }
+    return (
+      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10">
+        Media Output
+      </span>
+    );
   };
 
   return (
@@ -87,17 +254,72 @@ export default function MediaOverviewDrawer({
       onClose={onClose}
       title="Audio & Media Players"
       subtitle={`${mediaPlayers.filter(m => m.state === 'playing').length} of ${mediaPlayers.length} devices active`}
-      icon={<MusicNotes size={22} weight="duotone" className="text-purple-400" />}
+      icon={<MusicNotes size={22} weight="duotone" className="text-purple-500" />}
+      darkMode={darkMode}
     >
-      <div className="space-y-6">
-        {/* Main Currently Playing Hero Card */}
-        {currentMedia && (
-          <div className="p-6 rounded-3xl bg-linear-to-b from-purple-950/40 via-slate-900/80 to-black/80 border border-purple-500/25 shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
+      <div className="space-y-5">
+        {/* Device Selection Bar / Tab Navigation */}
+        {currentMedia && classification.hasRemote && (
+          <div className="p-1 rounded-2xl bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 flex items-center justify-center gap-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('playback')}
+              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                activeTab === 'playback'
+                  ? 'bg-white text-slate-900 dark:bg-purple-600 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <MusicNotes size={14} weight="duotone" />
+              <span>Now Playing</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('remote')}
+              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                activeTab === 'remote'
+                  ? 'bg-white text-slate-900 dark:bg-sky-500 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <SlidersHorizontal size={14} weight="duotone" />
+              <span>{classification.isApple ? 'Apple TV Remote' : 'Device Remote'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------- */}
+        {/* VIEW A: NOW PLAYING / TRACK CONTROLS                           */}
+        {/* ------------------------------------------------------------- */}
+        {activeTab === 'playback' && currentMedia && (
+          <div className={`p-6 rounded-3xl border shadow-xl relative flex flex-col items-center text-center transition-colors ${
+            darkMode
+              ? 'bg-gradient-to-b from-purple-950/40 via-slate-900/80 to-black/80 border-purple-500/25'
+              : 'bg-gradient-to-b from-purple-50 via-white to-slate-50 border-purple-200'
+          }`}>
             {/* Ambient Backlight */}
-            <div className="absolute top-0 inset-x-0 h-32 bg-radial from-purple-500/20 to-transparent blur-2xl pointer-events-none" />
+            <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+              <div className="absolute top-0 inset-x-0 h-32 bg-radial from-purple-500/20 to-transparent blur-2xl" />
+            </div>
+
+            {/* Top Device Header with Classification Badge & Power Toggle */}
+            <div className="w-full flex items-center justify-between gap-2 mb-4 relative z-10">
+              <div className="flex items-center gap-2">
+                {renderDeviceKindBadge(classification.kind, classification.isApple)}
+              </div>
+
+              <button
+                type="button"
+                onClick={handlePowerToggle}
+                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-rose-100 dark:bg-white/10 dark:hover:bg-rose-500/20 text-slate-700 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 border border-slate-200 dark:border-white/10 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                title="Toggle Device Power"
+              >
+                <Power size={14} weight="bold" />
+              </button>
+            </div>
 
             {/* Album Artwork with Spinning Vinyl Graphic */}
-            <div className="relative w-48 h-48 rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/15 mb-5 shrink-0">
+            <div className="relative w-44 h-44 rounded-3xl overflow-hidden shadow-2xl ring-2 ring-slate-300 dark:ring-white/15 mb-4 shrink-0">
               {albumArt ? (
                 <img
                   src={albumArt}
@@ -105,163 +327,296 @@ export default function MediaOverviewDrawer({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-linear-to-br from-purple-900 to-indigo-950 flex items-center justify-center text-purple-300">
-                  <MusicNotes size={64} weight="duotone" />
+                <div className="w-full h-full bg-gradient-to-br from-purple-900 to-indigo-950 flex items-center justify-center text-purple-300">
+                  <MusicNotes size={56} weight="duotone" />
                 </div>
               )}
 
               {isPlaying && (
                 <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                  <Disc size={48} weight="duotone" className="text-white/80 animate-spin" style={{ animationDuration: '6s' }} />
+                  <Disc size={44} weight="duotone" className="text-white/80 animate-spin" style={{ animationDuration: '6s' }} />
                 </div>
               )}
             </div>
 
             {/* Track Info */}
-            <div className="w-full max-w-sm mb-4">
-              <h3 className="text-lg font-black text-white truncate">{title}</h3>
-              <p className="text-sm font-semibold text-purple-300 truncate mt-0.5">{artist}</p>
-              {album && <p className="text-xs text-slate-400 truncate mt-0.5">{album}</p>}
-              {source && (
-                <span className="inline-block mt-2 text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                  {source}
-                </span>
-              )}
+            <div className="w-full max-w-sm mb-2">
+              <h3 className="text-base font-black text-slate-900 dark:text-white truncate">{title}</h3>
+              <p className="text-xs font-semibold text-purple-600 dark:text-purple-300 truncate mt-0.5">{artist}</p>
+              {album && <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{album}</p>}
+            </div>
+
+            {/* PROGRESS BAR & SCRUBBER */}
+            <div className="w-full max-w-xs my-2.5 space-y-1">
+              <div className="relative flex items-center">
+                <input
+                  type="range"
+                  min={0}
+                  max={rawDuration}
+                  value={playbackPos}
+                  onMouseDown={() => setIsSeeking(true)}
+                  onTouchStart={() => setIsSeeking(true)}
+                  onChange={(e) => setPlaybackPos(Number(e.target.value))}
+                  onMouseUp={(e) => handleSeekCommit(Number((e.target as HTMLInputElement).value))}
+                  onTouchEnd={(e) => handleSeekCommit(Number((e.target as HTMLInputElement).value))}
+                  className="w-full h-2 rounded-lg appearance-none bg-slate-300 dark:bg-white/15 accent-purple-500 cursor-pointer"
+                />
+              </div>
+              <div className="flex justify-between text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 px-0.5">
+                <span>{formatTime(playbackPos)}</span>
+                <span>{formatTime(rawDuration)}</span>
+              </div>
             </div>
 
             {/* Equalizer Visualizer Bars */}
             {isPlaying && (
-              <div className="flex items-end gap-1.5 h-6 my-2">
+              <div className="flex items-end gap-1.5 h-4 my-1">
                 {[40, 90, 60, 100, 75, 45, 85, 30, 95, 65].map((h, i) => (
                   <span
                     key={i}
-                    className="w-1.5 bg-linear-to-t from-purple-500 to-pink-400 rounded-full animate-pulse"
+                    className="w-1.5 bg-gradient-to-t from-purple-500 to-pink-500 rounded-full animate-pulse"
                     style={{ height: `${h}%`, animationDuration: `${0.4 + (i % 4) * 0.2}s` }}
                   />
                 ))}
               </div>
             )}
 
-            {/* Playback Controls */}
-            <div className="flex items-center justify-center gap-4 my-3">
+            {/* Playback Controls (Live HA WebSocket Service Calls) */}
+            <div className="flex items-center justify-center gap-4 my-2">
               <button
                 type="button"
-                onClick={() => onUpdateEntity(currentMedia.entity_id, currentMedia.state, { action: 'previous_track' })}
-                className="w-11 h-11 rounded-2xl bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                onClick={handlePrev}
+                disabled={!classification.supportsNextPrev}
+                className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/15 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 flex items-center justify-center transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Previous Track"
               >
-                <SkipBack size={20} weight="fill" />
+                <SkipBack size={18} weight="fill" />
               </button>
 
               <button
                 type="button"
                 onClick={handlePlayPause}
-                className="w-14 h-14 rounded-3xl bg-purple-500 hover:bg-purple-400 text-slate-950 flex items-center justify-center shadow-lg shadow-purple-500/30 transition-all cursor-pointer active:scale-95 hover:scale-105"
+                className="w-14 h-14 rounded-3xl bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center shadow-lg shadow-purple-500/30 transition-all cursor-pointer active:scale-95 hover:scale-105"
                 title={isPlaying ? 'Pause' : 'Play'}
               >
-                {isPlaying ? <Pause size={24} weight="fill" /> : <Play size={24} weight="fill" className="ml-0.5" />}
+                {isPlaying ? <Pause size={22} weight="fill" /> : <Play size={22} weight="fill" className="ml-0.5" />}
               </button>
 
               <button
                 type="button"
-                onClick={() => onUpdateEntity(currentMedia.entity_id, currentMedia.state, { action: 'next_track' })}
-                className="w-11 h-11 rounded-2xl bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                onClick={handleNext}
+                disabled={!classification.supportsNextPrev}
+                className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/15 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 flex items-center justify-center transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Next Track"
               >
-                <SkipForward size={20} weight="fill" />
+                <SkipForward size={18} weight="fill" />
               </button>
             </div>
 
-            {/* Volume Slider */}
-            <div className="w-full max-w-xs flex items-center gap-3 pt-4 border-t border-white/10 mt-3">
-              <button
-                type="button"
-                onClick={handleToggleMute}
-                className="text-slate-400 hover:text-white cursor-pointer transition-colors"
-                title={isMuted ? 'Unmute' : 'Mute'}
-              >
-                {isMuted || volume === 0 ? (
-                  <SpeakerSlash size={20} weight="duotone" className="text-rose-400" />
-                ) : (
-                  <SpeakerHigh size={20} weight="duotone" className="text-purple-400" />
+            {/* Volume Slider (Live HA volume_set) */}
+            {classification.supportsVolume && (
+              <div className="w-full max-w-xs flex items-center gap-3 pt-3 border-t border-slate-200 dark:border-white/10 mt-2">
+                <button
+                  type="button"
+                  onClick={handleToggleMute}
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer transition-colors"
+                  title={isMuted ? 'Unmute' : 'Mute'}
+                >
+                  {isMuted || volume === 0 ? (
+                    <SpeakerSlash size={18} weight="duotone" className="text-rose-500" />
+                  ) : (
+                    <SpeakerHigh size={18} weight="duotone" className="text-purple-500" />
+                  )}
+                </button>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={isMuted ? 0 : volume}
+                  onChange={(e) => handleVolumeChange(parseInt(e.target.value, 10))}
+                  className="w-full h-1.5 rounded-lg appearance-none bg-slate-300 dark:bg-white/20 accent-purple-500 cursor-pointer"
+                />
+
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 w-8 text-right shrink-0 font-mono">
+                  {isMuted ? '0%' : `${volume}%`}
+                </span>
+              </div>
+            )}
+
+            {/* Modern Custom Dropdowns for Source & Sound Mode */}
+            {(sourceList.length > 0 || soundModeList.length > 0) && (
+              <div className="w-full max-w-xs grid grid-cols-2 gap-2.5 pt-3 border-t border-slate-200 dark:border-white/10 mt-3 text-left">
+                {sourceList.length > 0 && (
+                  <div>
+                    <CustomDropdown
+                      label="Source Input"
+                      value={source || sourceList[0]}
+                      onChange={handleSourceSelect}
+                      options={sourceList}
+                      size="sm"
+                      placement="top"
+                    />
+                  </div>
                 )}
-              </button>
 
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={isMuted ? 0 : volume}
-                onChange={(e) => handleVolumeChange(parseInt(e.target.value, 10))}
-                className="w-full h-1.5 rounded-lg appearance-none bg-white/20 accent-purple-400 cursor-pointer"
-              />
-
-              <span className="text-xs font-bold text-slate-300 w-8 text-right shrink-0">
-                {isMuted ? '0%' : `${volume}%`}
-              </span>
-            </div>
+                {soundModeList.length > 0 && (
+                  <div>
+                    <CustomDropdown
+                      label="Sound Mode"
+                      value={soundMode || soundModeList[0]}
+                      onChange={handleSoundModeSelect}
+                      options={soundModeList}
+                      size="sm"
+                      placement="top"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
-        {/* All Connected Audio Output Devices */}
-        <div className="space-y-3">
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
+        {/* ------------------------------------------------------------- */}
+        {/* VIEW B: APPLE REMOTE D-PAD / TV REMOTE                        */}
+        {/* ------------------------------------------------------------- */}
+        {activeTab === 'remote' && currentMedia && (
+          <div className="space-y-4">
+            <AppleRemoteControl
+              entity={currentMedia}
+              remoteEntityId={classification.remoteEntityId}
+              darkMode={darkMode}
+            />
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------- */}
+        {/* ALL CONNECTED MEDIA OUTPUT DEVICES LIST (GROUPED BY FLOOR & AREA) */}
+        {/* ------------------------------------------------------------- */}
+        <div className="space-y-4">
+          <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-1">
             Available Media Players ({mediaPlayers.length})
           </div>
 
-          {mediaPlayers.map((player) => {
-            const isSel = player.entity_id === selectedId;
-            const isPlayingThis = player.state === 'playing';
-            const roomName = player.area?.name || 'Home';
-            const playerArt = getHAImageUrl(player.attributes?.media_image || player.attributes?.entity_picture, serverUrl);
-
+          {(() => {
+            const grouped = groupEntitiesByFloorAndArea(mediaPlayers);
             return (
-              <div
-                key={player.entity_id}
-                onClick={() => setSelectedId(player.entity_id)}
-                className={`p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 ${
-                  isSel
-                    ? 'bg-purple-500/20 border-purple-500/50 shadow-md ring-1 ring-purple-500/40'
-                    : 'bg-white/5 hover:bg-white/10 border-white/10'
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-purple-950/60 border border-white/10 flex items-center justify-center shrink-0">
-                    {playerArt ? (
-                      <img src={playerArt} alt={player.name} className="w-full h-full object-cover" />
-                    ) : player.attributes?.device_class === 'tv' ? (
-                      <Television size={20} weight="duotone" className="text-purple-300" />
-                    ) : (
-                      <SpeakerSimpleHigh size={20} weight="duotone" className="text-purple-300" />
-                    )}
-                  </div>
-
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-bold text-white truncate">{player.name}</h4>
-                    <p className="text-xs text-slate-400 truncate">
-                      {isPlayingThis ? (
-                        <span className="text-purple-300 font-semibold truncate">
-                          ▶ {player.attributes?.media_title || 'Playing'}
+              <div className="space-y-6">
+                {grouped.groups.map((floorGroup) => (
+                  <div key={floorGroup.floorId || 'no-floor'} className="space-y-3">
+                    {/* Floor Header */}
+                    {grouped.hasFloors && (
+                      <div className="flex items-center gap-2 pb-1.5 border-b border-slate-200 dark:border-white/10">
+                        <DynamicPhosphorIcon 
+                          name={floorGroup.icon} 
+                          fallback={Stairs} 
+                          size={16} 
+                          weight="duotone" 
+                          style={{ color: floorGroup.color || '#a855f7' }}
+                        />
+                        <h4 
+                          className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200"
+                          style={{ color: floorGroup.color || undefined }}
+                        >
+                          {floorGroup.floorName}
+                        </h4>
+                        <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
+                          ({floorGroup.areaGroups.reduce((acc, a) => acc + a.entities.length, 0)})
                         </span>
-                      ) : (
-                        <span>{roomName} • {player.state}</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
+                      </div>
+                    )}
 
-                <div className="shrink-0 flex items-center gap-2">
-                  <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
-                    isPlayingThis
-                      ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                      : 'bg-white/5 text-slate-400 border-white/10'
-                  }`}>
-                    {player.state}
-                  </span>
-                </div>
+                    {/* Area Groups */}
+                    <div className="space-y-3">
+                      {floorGroup.areaGroups.map((areaGroup) => (
+                        <div key={areaGroup.areaId || 'no-area'} className="space-y-2">
+                          {/* Area Header */}
+                          {(grouped.hasAreas || grouped.hasFloors) && (
+                            <div className="flex items-center justify-between px-1">
+                              <div className="flex items-center gap-1.5">
+                                <DynamicPhosphorIcon 
+                                  name={areaGroup.icon} 
+                                  fallback={HouseLine} 
+                                  size={14} 
+                                  weight="duotone" 
+                                  style={{ color: areaGroup.color || '#a855f7' }}
+                                />
+                                <span 
+                                  className="text-xs font-bold text-slate-700 dark:text-slate-300"
+                                  style={{ color: areaGroup.color || undefined }}
+                                >
+                                  {areaGroup.areaName}
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                                {areaGroup.entities.filter(e => e.state === 'playing').length}/{areaGroup.entities.length} playing
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Players in Area */}
+                          <div className="space-y-2">
+                            {areaGroup.entities.map((player) => {
+                              const isSel = player.entity_id === (currentMedia?.entity_id || selectedId);
+                              const isPlayingThis = player.state === 'playing';
+                              const roomName = player.area?.name || 'Home';
+                              const playerArt = getHAImageUrl(player.attributes?.media_image || player.attributes?.entity_picture, serverUrl);
+                              const playerClass = detectMediaPlayerType(player, devices, Object.values(resolvedEntities));
+
+                              return (
+                                <div
+                                  key={player.entity_id}
+                                  onClick={() => setSelectedId(player.entity_id)}
+                                  className={`p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 ${
+                                    isSel
+                                      ? 'bg-purple-500/15 border-purple-500/50 shadow-md ring-1 ring-purple-500/40'
+                                      : 'bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border-slate-200 dark:border-white/10'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-purple-100 dark:bg-purple-950/60 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0">
+                                      {playerArt ? (
+                                        <img src={playerArt} alt={player.name} className="w-full h-full object-cover" />
+                                      ) : playerClass.isApple ? (
+                                        <Television size={20} weight="duotone" className="text-sky-500 dark:text-sky-300" />
+                                      ) : player.attributes?.device_class === 'tv' ? (
+                                        <Television size={20} weight="duotone" className="text-purple-500 dark:text-purple-300" />
+                                      ) : (
+                                        <SpeakerSimpleHigh size={20} weight="duotone" className="text-purple-500 dark:text-purple-300" />
+                                      )}
+                                    </div>
+
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{player.name}</h4>
+                                      </div>
+                                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                                        {isPlayingThis ? (
+                                          <span className="text-purple-600 dark:text-purple-300 font-semibold truncate">
+                                            ▶ {player.attributes?.media_title || 'Playing'}
+                                          </span>
+                                        ) : (
+                                          <span>{roomName} • {player.state}</span>
+                                        )}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="shrink-0 flex items-center gap-2">
+                                    {renderDeviceKindBadge(playerClass.kind, playerClass.isApple)}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             );
-          })}
+          })()}
         </div>
       </div>
     </DetailsRightDrawer>

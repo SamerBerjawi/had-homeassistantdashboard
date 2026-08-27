@@ -50,12 +50,39 @@ import {
   Eye,
   EyeSlash,
   MagnifyingGlass,
-  CheckFat
+  CheckFat,
+  ArrowUp,
+  ArrowDown,
+  PencilSimple,
+  Stairs,
+  HouseLine,
+  Bed,
+  CookingPot,
+  Bathtub,
+  FilmSlate,
+  Car,
+  Books,
+  DoorOpen,
+  Armchair,
+  Buildings,
+  Tree,
+  Shield,
+  Stack,
+  ArrowsVertical,
+  PaintBrush,
+  Compass,
+  Tag,
+  MapPin,
+  Briefcase,
+  GraduationCap,
+  Barbell,
+  Info
 } from '@phosphor-icons/react';
-import { HAEntity, Room, LogMessage, ToastNotification } from '../types';
+import { HAEntity, Room, LogMessage, ToastNotification, HAArea, HAFloor, HALabel, HAZone } from '../types';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { useCanvasStore } from '../store/useCanvasStore';
 import { WeatherBackdropType } from '../types/canvas';
+import CustomDropdown from './ui/CustomDropdown';
 
 interface SettingsViewProps {
   darkMode: boolean;
@@ -120,12 +147,24 @@ export default function SettingsView({
     serverUrl: storeServerUrl,
     haToken: storeHaToken,
     isLiveMode,
+    authType,
     connectionStatus,
     connectToHA,
     disconnectFromHA,
+    loginWithHA,
+    logoutHA,
     rawAreas,
     rawDevices,
     rawStates,
+    floors,
+    areas,
+    labels,
+    resolvedZones,
+    resolvedEntities,
+    updateFloor,
+    updateArea,
+    reorderFloors,
+    reorderAreas,
     updateEntityState,
     reassignEntityArea,
     callHAService
@@ -248,15 +287,65 @@ export default function SettingsView({
   // ==========================================
   // 3. DEVICES + ROOM (TOGGLE) STATE
   // ==========================================
-  const [deviceRoomView, setDeviceRoomView] = useState<'devices' | 'rooms'>('devices');
+  const PRESET_COLORS = [
+    '#0ea5e9', // Sky
+    '#6366f1', // Indigo
+    '#a855f7', // Purple
+    '#ec4899', // Pink
+    '#10b981', // Emerald
+    '#f59e0b', // Amber
+    '#f97316', // Orange
+    '#f43f5e', // Rose
+    '#06b6d4', // Cyan
+    '#64748b'  // Slate
+  ];
+
+  const FLOOR_ICON_OPTIONS = [
+    'Stairs', 'House', 'Buildings', 'Tree', 'Shield', 'Armchair', 'Sparkle', 'Compass', 'Stack', 'ArrowsVertical'
+  ];
+
+  const AREA_ICON_OPTIONS = [
+    'Armchair', 'Bed', 'CookingPot', 'Desktop', 'Bathtub', 'FilmSlate', 'Tree', 'Car', 'Books', 'DoorOpen', 'Lightbulb', 'HouseLine'
+  ];
+
+  const renderIconByName = (iconName?: string | null, size = 18, colorClass = '') => {
+    switch (iconName) {
+      case 'Stairs': return <Stairs size={size} weight="duotone" className={colorClass} />;
+      case 'House': return <House size={size} weight="duotone" className={colorClass} />;
+      case 'Buildings': return <Buildings size={size} weight="duotone" className={colorClass} />;
+      case 'Tree': return <Tree size={size} weight="duotone" className={colorClass} />;
+      case 'Shield': return <Shield size={size} weight="duotone" className={colorClass} />;
+      case 'Armchair': return <Armchair size={size} weight="duotone" className={colorClass} />;
+      case 'Bed': return <Bed size={size} weight="duotone" className={colorClass} />;
+      case 'CookingPot': return <CookingPot size={size} weight="duotone" className={colorClass} />;
+      case 'Desktop': return <Desktop size={size} weight="duotone" className={colorClass} />;
+      case 'Bathtub': return <Bathtub size={size} weight="duotone" className={colorClass} />;
+      case 'FilmSlate': return <FilmSlate size={size} weight="duotone" className={colorClass} />;
+      case 'Car': return <Car size={size} weight="duotone" className={colorClass} />;
+      case 'Books': return <Books size={size} weight="duotone" className={colorClass} />;
+      case 'DoorOpen': return <DoorOpen size={size} weight="duotone" className={colorClass} />;
+      case 'Lightbulb': return <Lightbulb size={size} weight="duotone" className={colorClass} />;
+      case 'HouseLine': return <HouseLine size={size} weight="duotone" className={colorClass} />;
+      case 'Compass': return <Compass size={size} weight="duotone" className={colorClass} />;
+      case 'Sparkle': return <Sparkle size={size} weight="duotone" className={colorClass} />;
+      case 'Stack': return <Stack size={size} weight="duotone" className={colorClass} />;
+      case 'ArrowsVertical': return <ArrowsVertical size={size} weight="duotone" className={colorClass} />;
+      default: return <Armchair size={size} weight="duotone" className={colorClass} />;
+    }
+  };
+
+  const [deviceRoomView, setDeviceRoomView] = useState<'floors_areas' | 'labels' | 'zones' | 'devices'>('floors_areas');
   const [searchFilter, setSearchFilter] = useState('');
   const [domainFilter, setDomainFilter] = useState<string>('all');
+  const [selectedLabelFilter, setSelectedLabelFilter] = useState<string>('all');
   const [showAddDeviceModal, setShowAddDeviceModal] = useState(false);
   const [newDeviceName, setNewDeviceName] = useState('');
   const [newDeviceDomain, setNewDeviceDomain] = useState<'light' | 'switch' | 'climate' | 'sensor'>('light');
-  const [newDeviceRoom, setNewDeviceRoom] = useState(rooms[0]?.name || 'Living Room');
-  const [showAddRoomModal, setShowAddRoomModal] = useState(false);
-  const [newRoomName, setNewRoomName] = useState('');
+  const [newDeviceRoom, setNewDeviceRoom] = useState(areas[0]?.name || 'Living Room');
+  
+  // Floor & Area Customization State (Icons & Colors only; names/hierarchy are read-only from HA)
+  const [editingFloor, setEditingFloor] = useState<HAFloor | null>(null);
+  const [editingArea, setEditingArea] = useState<HAArea | null>(null);
 
   const filteredEntities = entities.filter(e => {
     const nameMatch = (e.attributes?.friendly_name || e.entity_id).toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -300,17 +389,6 @@ export default function SettingsView({
     };
 
     setEntities(prev => [newEnt, ...prev]);
-    setRooms(prev => prev.map(r => {
-      if (r.name.toLowerCase() === newDeviceRoom.toLowerCase()) {
-        return {
-          ...r,
-          devicesCount: r.devicesCount + 1,
-          entityIds: [...r.entityIds, entityId]
-        };
-      }
-      return r;
-    }));
-
     addLog('state_changed', `Added new entity ${newDeviceName} (${entityId}) in ${newDeviceRoom}`);
     addToast?.({
       type: 'success',
@@ -321,43 +399,85 @@ export default function SettingsView({
     setShowAddDeviceModal(false);
   };
 
-  const handleAddRoom = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newRoomName.trim()) return;
-
-    const newRoomObj: Room = {
-      id: `room_${Date.now()}`,
-      name: newRoomName.trim(),
-      devicesCount: 0,
-      icon: 'Armchair',
-      temperature: 21,
-      humidity: 45,
-      bannerImage: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80',
-      entityIds: []
-    };
-
-    setRooms(prev => [...prev, newRoomObj]);
-    addToast?.({
-      type: 'success',
-      title: 'Room Created',
-      message: `Area "${newRoomName}" added.`
-    });
-    setNewRoomName('');
-    setShowAddRoomModal(false);
-  };
-
   const handleDeleteEntity = (entityId: string) => {
     setEntities(prev => prev.filter(e => e.entity_id !== entityId));
-    setRooms(prev => prev.map(r => ({
-      ...r,
-      devicesCount: r.entityIds.includes(entityId) ? Math.max(0, r.devicesCount - 1) : r.devicesCount,
-      entityIds: r.entityIds.filter(id => id !== entityId)
-    })));
     addToast?.({
       type: 'warning',
       title: 'Device Removed',
       message: `${entityId} removed from registry.`
     });
+  };
+
+  // --- Floor Ordering & Mutation Handlers ---
+  const handleMoveFloor = (floorId: string, direction: 'up' | 'down') => {
+    const idx = floors.findIndex(f => f.floor_id === floorId);
+    if (idx === -1) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= floors.length) return;
+
+    const newFloors = [...floors];
+    const [moved] = newFloors.splice(idx, 1);
+    newFloors.splice(targetIdx, 0, moved);
+    reorderFloors(newFloors);
+    addToast?.({
+      type: 'info',
+      title: 'Floor Order Updated',
+      message: `Moved ${moved.name} ${direction}.`
+    });
+  };
+
+  const handleMoveAreaWithinFloor = (areaId: string, floorId: string | null, direction: 'up' | 'down') => {
+    const floorAreas = areas.filter(a => (a.floor_id || null) === (floorId || null));
+    const idx = floorAreas.findIndex(a => a.area_id === areaId);
+    if (idx === -1) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= floorAreas.length) return;
+
+    const targetAreaId = floorAreas[targetIdx].area_id;
+    const mainIdx1 = areas.findIndex(a => a.area_id === areaId);
+    const mainIdx2 = areas.findIndex(a => a.area_id === targetAreaId);
+    if (mainIdx1 === -1 || mainIdx2 === -1) return;
+
+    const newAreas = [...areas];
+    const temp = newAreas[mainIdx1];
+    newAreas[mainIdx1] = newAreas[mainIdx2];
+    newAreas[mainIdx2] = temp;
+    reorderAreas(newAreas);
+    addToast?.({
+      type: 'info',
+      title: 'Area Order Updated',
+      message: `Moved ${areas[mainIdx1].name} ${direction}.`
+    });
+  };
+
+  const handleSaveFloorEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFloor) return;
+    updateFloor(editingFloor.floor_id, {
+      icon: editingFloor.icon || 'Stairs',
+      color: editingFloor.color || '#0ea5e9'
+    });
+    addToast?.({
+      type: 'success',
+      title: 'Floor Customization Saved',
+      message: `Updated icon and accent color for "${editingFloor.name}".`
+    });
+    setEditingFloor(null);
+  };
+
+  const handleSaveAreaEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingArea) return;
+    updateArea(editingArea.area_id, {
+      icon: editingArea.icon || 'Armchair',
+      color: editingArea.color || '#6366f1'
+    });
+    addToast?.({
+      type: 'success',
+      title: 'Area Customization Saved',
+      message: `Updated icon and accent color for "${editingArea.name}".`
+    });
+    setEditingArea(null);
   };
 
   // ==========================================
@@ -534,12 +654,32 @@ export default function SettingsView({
   // ==========================================
   // 5. CONNECTION + WEBSOCKET + STATUS STATE
   // ==========================================
+  const [authMethodTab, setAuthMethodTab] = useState<'oauth' | 'llat'>('oauth');
+  const [haHttpUrlInput, setHaHttpUrlInput] = useState(() => {
+    if (storeServerUrl && !storeServerUrl.includes('hass.homz.internal')) {
+      return storeServerUrl.replace('wss://', 'https://').replace('ws://', 'http://').replace('/api/websocket', '');
+    }
+    return 'http://homeassistant.local:8123';
+  });
   const [wsUrlInput, setWsUrlInput] = useState(storeServerUrl || 'wss://hass.homz.internal/api/websocket');
   const [tokenInput, setTokenInput] = useState(storeHaToken || '');
   const [showToken, setShowToken] = useState(false);
   const [isPinging, setIsPinging] = useState(false);
   const [pingLatency, setPingLatency] = useState<number | null>(12);
   const [logFilter, setLogFilter] = useState<'all' | 'service_call' | 'state_changed' | 'info' | 'error'>('all');
+
+  const handleStartOAuthLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!haHttpUrlInput.trim()) return;
+
+    addLog('info', `Initiating Home Assistant OAuth login at: ${haHttpUrlInput.trim()}`);
+    addToast?.({
+      type: 'info',
+      title: 'Redirecting to Home Assistant',
+      message: 'Opening official Home Assistant login screen...'
+    });
+    loginWithHA(haHttpUrlInput.trim());
+  };
 
   const handleConnectWs = (e: React.FormEvent) => {
     e.preventDefault();
@@ -733,16 +873,16 @@ export default function SettingsView({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Access Role</label>
-                      <select
+                      <CustomDropdown
+                        label="Access Role"
                         value={profileData.role}
-                        onChange={(e) => setProfileData({ ...profileData, role: e.target.value as any })}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
-                      >
-                        <option value="Administrator" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Administrator (Full Control)</option>
-                        <option value="Resident" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Resident (Device Control Only)</option>
-                        <option value="Kiosk Operator" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Kiosk Operator (Wall Display)</option>
-                      </select>
+                        onChange={(val) => setProfileData({ ...profileData, role: val as any })}
+                        options={[
+                          { value: 'Administrator', label: 'Administrator (Full Control)' },
+                          { value: 'Resident', label: 'Resident (Device Control Only)' },
+                          { value: 'Kiosk Operator', label: 'Kiosk Operator (Wall Display)' }
+                        ]}
+                      />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Home Location Name</label>
@@ -964,16 +1104,19 @@ export default function SettingsView({
                         onChange={(e) => setEnergyTariff(parseFloat(e.target.value) || 0)}
                         className="w-full px-3 py-2 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs font-mono focus:outline-hidden focus:border-sky-500 shadow-xs"
                       />
-                      <select
-                        value={currencySymbol}
-                        onChange={(e) => setCurrencySymbol(e.target.value)}
-                        className="px-3 py-2 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs font-bold focus:outline-hidden focus:border-sky-500 shadow-xs"
-                      >
-                        <option value="€" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">€ / kWh</option>
-                        <option value="$" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">$ / kWh</option>
-                        <option value="£" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">£ / kWh</option>
-                        <option value="¢" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">¢ / kWh</option>
-                      </select>
+                      <div className="w-32">
+                        <CustomDropdown
+                          value={currencySymbol}
+                          onChange={(val) => setCurrencySymbol(val)}
+                          options={[
+                            { value: '€', label: '€ / kWh' },
+                            { value: '$', label: '$ / kWh' },
+                            { value: '£', label: '£ / kWh' },
+                            { value: '¢', label: '¢ / kWh' }
+                          ]}
+                          size="sm"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1027,7 +1170,7 @@ export default function SettingsView({
             )}
 
             {/* ========================================================================= */}
-            {/* 3. DEVICES + ROOM SECTION */}
+            {/* 3. FLOORS, AREAS & DEVICES SECTION */}
             {/* ========================================================================= */}
             {activeSection === 'devices_rooms' && (
               <motion.div
@@ -1039,220 +1182,844 @@ export default function SettingsView({
                   darkMode ? 'bg-white/3 border-white/10 shadow-2xl' : 'bg-white/90 border-slate-200 shadow-sm'
                 }`}
               >
+                {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4 border-slate-200 dark:border-white/10">
                   <div className="flex items-center gap-3">
                     <SlidersHorizontal size={28} weight="duotone" className="text-sky-500 dark:text-sky-400" />
                     <div>
-                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Devices & Room Assignment</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Manage registered entities, virtual demo devices, and area layouts.</p>
+                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Floors, Areas, Labels & Zones</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Customize default icons, accent colors, and display order. Home Assistant topology & names remain read-only.
+                      </p>
                     </div>
                   </div>
 
-                  {/* Toggle Between View by Devices vs View by Rooms */}
-                  <div className="p-1 rounded-2xl bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 flex items-center gap-1 shrink-0 self-start sm:self-auto">
+                  {/* 4-Way Sub-Navigation Tabs */}
+                  <div className="p-1 rounded-2xl bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 flex flex-wrap items-center gap-1 shrink-0 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => setDeviceRoomView('floors_areas')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        deviceRoomView === 'floors_areas'
+                          ? 'bg-white text-slate-900 dark:bg-sky-500 dark:text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <HouseLine size={15} weight="duotone" />
+                      <span>Floors & Areas ({floors.length} / {areas.length})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeviceRoomView('labels')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        deviceRoomView === 'labels'
+                          ? 'bg-white text-slate-900 dark:bg-sky-500 dark:text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <Tag size={15} weight="duotone" />
+                      <span>Labels ({labels.length})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeviceRoomView('zones')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        deviceRoomView === 'zones'
+                          ? 'bg-white text-slate-900 dark:bg-sky-500 dark:text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <MapPin size={15} weight="duotone" />
+                      <span>Zones ({resolvedZones.length})</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => setDeviceRoomView('devices')}
-                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         deviceRoomView === 'devices'
-                          ? 'bg-white text-slate-900 dark:bg-sky-500 dark:text-white shadow-sm'
+                          ? 'bg-white text-slate-900 dark:bg-sky-500 dark:text-white shadow-xs'
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
+                      <Cpu size={15} weight="duotone" />
                       <span>Devices ({entities.length})</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeviceRoomView('rooms')}
-                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        deviceRoomView === 'rooms'
-                          ? 'bg-white text-slate-900 dark:bg-sky-500 dark:text-white shadow-sm'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                    >
-                      <span>Rooms ({rooms.length})</span>
-                    </button>
                   </div>
                 </div>
 
-                {/* Filter and Search Bar for Devices */}
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <div className="relative w-full flex-1">
-                    <MagnifyingGlass size={16} weight="duotone" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search devices by name, domain, or entity ID..."
-                      value={searchFilter}
-                      onChange={(e) => setSearchFilter(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
-                    />
-                  </div>
-
-                  {deviceRoomView === 'devices' ? (
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                      <select
-                        value={domainFilter}
-                        onChange={(e) => setDomainFilter(e.target.value)}
-                        className="px-3 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs font-bold focus:outline-hidden focus:border-sky-500 shadow-xs flex-1 sm:flex-none"
-                      >
-                        <option value="all" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">All Domains</option>
-                        <option value="light" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Lights</option>
-                        <option value="switch" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Switches</option>
-                        <option value="climate" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Climate</option>
-                        <option value="sensor" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Sensors</option>
-                        <option value="lock" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Locks</option>
-                      </select>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowAddDeviceModal(true)}
-                        className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-[0_0_15px_rgba(14,165,233,0.3)]"
-                      >
-                        <Plus size={15} weight="bold" />
-                        <span>Add Device</span>
-                      </button>
+                {/* VIEW 1: FLOORS & AREAS HIERARCHY & CUSTOMIZATION */}
+                {deviceRoomView === 'floors_areas' && (
+                  <div className="space-y-5">
+                    {/* Read-Only Notice from HA */}
+                    <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/20 text-sky-700 dark:text-sky-300 text-xs">
+                      <Lock size={18} weight="duotone" className="shrink-0 text-sky-500" />
+                      <p className="leading-relaxed">
+                        <strong className="font-bold">Home Assistant Synchronized Topology:</strong> Floor names, area names, and floor links are read-only from Home Assistant. You can customize the default icon, accent color, and custom vertical display order.
+                      </p>
                     </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setShowAddRoomModal(true)}
-                      className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-[0_0_15px_rgba(14,165,233,0.3)]"
-                    >
-                      <Plus size={15} weight="bold" />
-                      <span>Add Room</span>
-                    </button>
-                  )}
-                </div>
 
-                {/* VIEW 1: BY DEVICES LIST */}
-                {deviceRoomView === 'devices' && (
-                  <div className="space-y-2 max-h-120 overflow-y-auto touch-scroll-container pr-1">
-                    {filteredEntities.length === 0 ? (
-                      <div className="p-8 text-center text-xs text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl bg-slate-50 dark:bg-white/2">
-                        No matching entities found in registry.
-                      </div>
-                    ) : (
-                      filteredEntities.map((ent) => {
-                        const domain = ent.entity_id.split('.')[0];
-                        const isOn = ent.state === 'on' || ent.state === 'open' || ent.state === 'unlocked';
-                        const friendlyName = ent.attributes?.friendly_name || ent.entity_id;
-                        const roomName = ent.attributes?.room || 'Unassigned';
+                    {/* Floors & Nested Areas List */}
+                    <div className="space-y-4">
+                      {floors.map((floor, floorIndex) => {
+                        const floorAreas = areas.filter(a => a.floor_id === floor.floor_id);
 
                         return (
                           <div
-                            key={ent.entity_id}
-                            className="p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100/80 dark:bg-white/2 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-between gap-4 transition-all"
+                            key={floor.floor_id}
+                            className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/2 overflow-hidden shadow-xs"
                           >
-                            <div className="flex items-center gap-3.5 min-w-0">
-                              <button
-                                type="button"
-                                onClick={() => handleToggleEntity(ent)}
-                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-                                  isOn 
-                                    ? 'bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-400/40 shadow-[0_0_10px_rgba(56,189,248,0.3)]' 
-                                    : 'bg-slate-200 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:text-slate-900 dark:hover:text-white'
-                                }`}
-                                title="Toggle state"
-                              >
-                                <Power size={18} weight="duotone" />
-                              </button>
+                            {/* Floor Header Bar */}
+                            <div className="p-4 bg-slate-100/90 dark:bg-white/5 border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                {/* Floor Icon with Custom Color */}
+                                <div
+                                  className="w-9 h-9 rounded-xl flex items-center justify-center border shadow-xs shrink-0"
+                                  style={{
+                                    backgroundColor: `${floor.color || '#0ea5e9'}1a`,
+                                    borderColor: `${floor.color || '#0ea5e9'}40`,
+                                    color: floor.color || '#0ea5e9'
+                                  }}
+                                >
+                                  {renderIconByName(floor.icon || 'Stairs', 18)}
+                                </div>
 
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h5 className="text-xs font-bold text-slate-900 dark:text-white truncate">{friendlyName}</h5>
-                                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate">({ent.entity_id})</span>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="text-sm font-black text-slate-900 dark:text-white">{floor.name}</h4>
+                                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                                      Level {floor.level ?? 0}
+                                    </span>
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center gap-1">
+                                      <Lock size={10} weight="bold" /> HA Managed
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                    {floorAreas.length} Assigned Area{floorAreas.length === 1 ? '' : 's'}
+                                  </p>
                                 </div>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">{domain}</span>
-                                  <span className="text-slate-400 dark:text-slate-600">•</span>
-                                  <span className="text-[10px] text-slate-600 dark:text-slate-300">{roomName}</span>
-                                </div>
+                              </div>
+
+                              {/* Floor Actions: Reorder & Edit Style */}
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveFloor(floor.floor_id, 'up')}
+                                  disabled={floorIndex === 0}
+                                  className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                  title="Move floor up in dashboard layout"
+                                >
+                                  <ArrowUp size={14} weight="bold" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveFloor(floor.floor_id, 'down')}
+                                  disabled={floorIndex === floors.length - 1}
+                                  className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                  title="Move floor down in dashboard layout"
+                                >
+                                  <ArrowDown size={14} weight="bold" />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingFloor(floor)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 transition-all cursor-pointer shadow-2xs"
+                                  title="Edit floor default icon & accent color"
+                                >
+                                  <PaintBrush size={13} weight="bold" />
+                                  <span>Edit Style</span>
+                                </button>
                               </div>
                             </div>
 
-                            {/* Right Actions: State Badge & Delete */}
-                            <div className="flex items-center gap-3 shrink-0">
-                              <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border uppercase ${
-                                isOn 
-                                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' 
-                                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border-slate-300 dark:border-slate-700'
-                              }`}>
-                                {ent.state}
-                              </span>
+                            {/* Areas within this Floor */}
+                            <div className="p-4 space-y-2.5">
+                              {floorAreas.length === 0 ? (
+                                <div className="p-4 text-center text-xs text-slate-400 dark:text-slate-500 italic rounded-xl border border-dashed border-slate-200 dark:border-white/10">
+                                  No areas assigned to {floor.name} in Home Assistant.
+                                </div>
+                              ) : (
+                                floorAreas.map((area, areaIndex) => {
+                                  const areaEntities = entities.filter(e => 
+                                    e.attributes?.room?.toLowerCase() === area.name.toLowerCase() ||
+                                    e.entity_id.toLowerCase().includes(area.name.toLowerCase().replace(/ /g, '_'))
+                                  );
 
+                                  return (
+                                    <div
+                                      key={area.area_id}
+                                      className="p-3 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 transition-all hover:border-slate-300 dark:hover:border-white/20"
+                                    >
+                                      {/* Area Identity */}
+                                      <div className="flex items-center gap-3 min-w-0">
+                                        <div
+                                          className="w-8 h-8 rounded-lg flex items-center justify-center border shrink-0"
+                                          style={{
+                                            backgroundColor: `${area.color || '#6366f1'}1a`,
+                                            borderColor: `${area.color || '#6366f1'}40`,
+                                            color: area.color || '#6366f1'
+                                          }}
+                                        >
+                                          {renderIconByName(area.icon || 'Armchair', 16)}
+                                        </div>
+
+                                        <div className="min-w-0">
+                                          <div className="flex items-center gap-2">
+                                            <h5 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                              {area.name}
+                                            </h5>
+                                            <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10">
+                                              Floor: {floor.name}
+                                            </span>
+                                          </div>
+                                          <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate block mt-0.5">
+                                            {areaEntities.length} assigned device{areaEntities.length === 1 ? '' : 's'}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {/* Controls: Area Reorder & Edit Style */}
+                                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                        {/* Area Up / Down within Floor */}
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            type="button"
+                                            onClick={() => handleMoveAreaWithinFloor(area.area_id, floor.floor_id, 'up')}
+                                            disabled={areaIndex === 0}
+                                            className="w-7 h-7 rounded-md bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                            title="Move area up within floor"
+                                          >
+                                            <ArrowUp size={12} weight="bold" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleMoveAreaWithinFloor(area.area_id, floor.floor_id, 'down')}
+                                            disabled={areaIndex === floorAreas.length - 1}
+                                            className="w-7 h-7 rounded-md bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                            title="Move area down within floor"
+                                          >
+                                            <ArrowDown size={12} weight="bold" />
+                                          </button>
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditingArea(area)}
+                                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 dark:bg-white/10 dark:hover:bg-indigo-500/20 text-slate-700 hover:text-indigo-600 dark:text-slate-200 dark:hover:text-indigo-400 border border-slate-200 dark:border-white/10 text-xs font-bold transition-all cursor-pointer"
+                                          title="Edit area default icon & accent color"
+                                        >
+                                          <PaintBrush size={12} weight="bold" />
+                                          <span>Edit Style</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Unassigned Areas Section */}
+                      {(() => {
+                        const unassignedAreas = areas.filter(a => !a.floor_id);
+                        if (unassignedAreas.length === 0) return null;
+
+                        return (
+                          <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/15 bg-slate-50/30 dark:bg-white/1 overflow-hidden">
+                            <div className="p-3.5 bg-slate-100/60 dark:bg-white/5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <HouseLine size={16} weight="duotone" className="text-slate-400" />
+                                <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                  General / Unassigned Floor Areas ({unassignedAreas.length})
+                                </h4>
+                              </div>
+                            </div>
+
+                            <div className="p-3.5 space-y-2">
+                              {unassignedAreas.map((area, areaIndex) => {
+                                const areaEntities = entities.filter(e => 
+                                  e.attributes?.room?.toLowerCase() === area.name.toLowerCase() ||
+                                  e.entity_id.toLowerCase().includes(area.name.toLowerCase().replace(/ /g, '_'))
+                                );
+
+                                return (
+                                  <div
+                                    key={area.area_id}
+                                    className="p-3 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3"
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div
+                                        className="w-8 h-8 rounded-lg flex items-center justify-center border shrink-0"
+                                        style={{
+                                          backgroundColor: `${area.color || '#6366f1'}1a`,
+                                          borderColor: `${area.color || '#6366f1'}40`,
+                                          color: area.color || '#6366f1'
+                                        }}
+                                      >
+                                        {renderIconByName(area.icon || 'Armchair', 16)}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <h5 className="text-xs font-bold text-slate-900 dark:text-white truncate">{area.name}</h5>
+                                        <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate block">
+                                          {areaEntities.length} assigned devices • No Floor Linked
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleMoveAreaWithinFloor(area.area_id, null, 'up')}
+                                          disabled={areaIndex === 0}
+                                          className="w-7 h-7 rounded-md bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                        >
+                                          <ArrowUp size={12} weight="bold" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleMoveAreaWithinFloor(area.area_id, null, 'down')}
+                                          disabled={areaIndex === unassignedAreas.length - 1}
+                                          className="w-7 h-7 rounded-md bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                        >
+                                          <ArrowDown size={12} weight="bold" />
+                                        </button>
+                                      </div>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingArea(area)}
+                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 dark:bg-white/10 dark:hover:bg-indigo-500/20 text-slate-700 hover:text-indigo-600 dark:text-slate-200 dark:hover:text-indigo-400 border border-slate-200 dark:border-white/10 text-xs font-bold transition-all cursor-pointer"
+                                      >
+                                        <PaintBrush size={12} weight="bold" />
+                                        <span>Edit Style</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* VIEW 2: HOME ASSISTANT LABELS */}
+                {deviceRoomView === 'labels' && (
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/15 border border-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs">
+                      <Tag size={18} weight="duotone" className="shrink-0 text-indigo-500" />
+                      <p className="leading-relaxed">
+                        <strong className="font-bold">Home Assistant Label Registry:</strong> Labels organize and tag entities, areas, and devices across your home. Labels and colors are synchronized directly from your Home Assistant configuration.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {labels.map((lbl) => {
+                        const matchingEntities = Object.values(resolvedEntities).filter(e => 
+                          (e.labels || []).includes(lbl.label_id) || (e.labels || []).includes(lbl.name)
+                        );
+
+                        return (
+                          <div
+                            key={lbl.label_id}
+                            className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 space-y-3 shadow-xs hover:border-slate-300 dark:hover:border-white/20 transition-all flex flex-col justify-between"
+                          >
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-7 h-7 rounded-lg flex items-center justify-center border shrink-0"
+                                    style={{
+                                      backgroundColor: `${lbl.color || '#6366f1'}20`,
+                                      borderColor: `${lbl.color || '#6366f1'}40`,
+                                      color: lbl.color || '#6366f1'
+                                    }}
+                                  >
+                                    <Tag size={15} weight="bold" />
+                                  </div>
+                                  <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">
+                                    {lbl.name}
+                                  </h4>
+                                </div>
+
+                                <span
+                                  className="w-3 h-3 rounded-full shrink-0 shadow-xs border border-white/40"
+                                  style={{ backgroundColor: lbl.color || '#6366f1' }}
+                                  title={`Color: ${lbl.color || '#6366f1'}`}
+                                />
+                              </div>
+
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                                {lbl.description || 'Custom tag defined in Home Assistant Label Registry.'}
+                              </p>
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+                              <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400">
+                                {matchingEntities.length} tagged {matchingEntities.length === 1 ? 'entity' : 'entities'}
+                              </span>
                               <button
                                 type="button"
-                                onClick={() => handleDeleteEntity(ent.entity_id)}
-                                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 dark:bg-white/5 dark:hover:bg-rose-500/20 dark:text-slate-400 dark:hover:text-rose-400 border border-slate-200 dark:border-white/10 flex items-center justify-center transition-colors cursor-pointer"
-                                title="Delete entity"
+                                onClick={() => {
+                                  setSelectedLabelFilter(lbl.label_id);
+                                  setDeviceRoomView('devices');
+                                }}
+                                className="text-[10px] font-bold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer flex items-center gap-1"
                               >
-                                <Trash size={14} weight="duotone" />
+                                View Devices →
                               </button>
                             </div>
                           </div>
                         );
-                      })
-                    )}
+                      })}
+                    </div>
                   </div>
                 )}
 
-                {/* VIEW 2: BY ROOMS LIST */}
-                {deviceRoomView === 'rooms' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-120 overflow-y-auto touch-scroll-container pr-1">
-                    {rooms.map((room) => {
-                      const roomEntities = entities.filter(e => 
-                        (e.attributes?.room && e.attributes.room.toLowerCase() === room.name.toLowerCase()) ||
-                        room.entityIds.includes(e.entity_id)
-                      );
+                {/* VIEW 3: HOME ASSISTANT ZONES */}
+                {deviceRoomView === 'zones' && (
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs">
+                      <MapPin size={18} weight="duotone" className="shrink-0 text-emerald-500" />
+                      <p className="leading-relaxed">
+                        <strong className="font-bold">Home Assistant Zones & Presence:</strong> Geofenced zones define geographic perimeters for occupant presence, arrival triggers, and presence-based dashboard profiles.
+                      </p>
+                    </div>
 
-                      return (
-                        <div
-                          key={room.id}
-                          className="p-4 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
-                              <House size={20} weight="duotone" className="text-sky-500 dark:text-sky-400" />
-                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">{room.name}</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {resolvedZones.map((zone) => {
+                        const occupants = zone.personsInZone || [];
+
+                        return (
+                          <div
+                            key={zone.entity_id}
+                            className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 space-y-3 shadow-xs hover:border-slate-300 dark:hover:border-white/20 transition-all flex flex-col justify-between"
+                          >
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                                    <MapPin size={18} weight="duotone" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">
+                                      {zone.name}
+                                    </h4>
+                                    <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500">
+                                      {zone.entity_id}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                                  occupants.length > 0 
+                                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' 
+                                    : 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10'
+                                }`}>
+                                  {occupants.length} Occupant{occupants.length === 1 ? '' : 's'}
+                                </span>
+                              </div>
+
+                              {/* Zone Geofence Coordinates & Radius */}
+                              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/5 space-y-1">
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span className="text-slate-500 dark:text-slate-400">GPS Coordinates</span>
+                                  <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                                    {zone.latitude.toFixed(4)}, {zone.longitude.toFixed(4)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span className="text-slate-500 dark:text-slate-400">Geofence Radius</span>
+                                  <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                                    {zone.radius} meters
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                              {roomEntities.length} Devices
-                            </span>
-                          </div>
 
-                          {/* Devices Pills in this room */}
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {roomEntities.length === 0 ? (
-                              <span className="text-[11px] text-slate-500 italic">No assigned devices</span>
-                            ) : (
-                              roomEntities.map(ent => (
+                            {/* Active Occupants List */}
+                            <div className="pt-2 border-t border-slate-100 dark:border-white/5">
+                              <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
+                                Current Occupants:
+                              </span>
+                              {occupants.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {occupants.map(name => (
+                                    <span
+                                      key={name}
+                                      className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1"
+                                    >
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                      {name}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">
+                                  No occupants currently in this zone.
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* VIEW 4: DEVICES & REGISTRY */}
+                {deviceRoomView === 'devices' && (
+                  <div className="space-y-4">
+                    {/* Filter & Search Bar */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div className="relative w-full sm:w-72">
+                        <MagnifyingGlass size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Search entity name, ID or area..."
+                          value={searchFilter}
+                          onChange={(e) => setSearchFilter(e.target.value)}
+                          className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/15 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:border-sky-500"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="w-40">
+                          <CustomDropdown
+                            value={domainFilter}
+                            onChange={(val) => setDomainFilter(val)}
+                            options={[
+                              { value: 'all', label: 'All Domains' },
+                              { value: 'light', label: 'Lights' },
+                              { value: 'switch', label: 'Switches & Plugs' },
+                              { value: 'climate', label: 'Climates & HVAC' },
+                              { value: 'sensor', label: 'Sensors' },
+                              { value: 'binary_sensor', label: 'Binary Sensors' },
+                              { value: 'media_player', label: 'Media Players' }
+                            ]}
+                            size="sm"
+                          />
+                        </div>
+
+                        <div className="w-40">
+                          <CustomDropdown
+                            value={selectedLabelFilter}
+                            onChange={(val) => setSelectedLabelFilter(val)}
+                            options={[
+                              { value: 'all', label: 'All Labels' },
+                              ...labels.map(l => ({ value: l.label_id, label: l.name, badge: l.color }))
+                            ]}
+                            size="sm"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowAddDeviceModal(true)}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+                        >
+                          <Plus size={14} weight="bold" />
+                          <span>Add Device</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Entities List */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {filteredEntities.length === 0 ? (
+                        <div className="col-span-full p-8 text-center text-xs text-slate-400 dark:text-slate-500 rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
+                          No devices match the active search or domain filter.
+                        </div>
+                      ) : (
+                        filteredEntities.map((ent) => {
+                          const domain = ent.entity_id.split('.')[0];
+                          const isOn = ent.state === 'on' || ent.state === 'open' || ent.state === 'unlocked' || ent.state === 'cleaning' || ent.state === 'playing';
+                          const friendlyName = ent.attributes?.friendly_name || ent.entity_id;
+                          const roomName = ent.attributes?.room || 'Unassigned';
+
+                          return (
+                            <div
+                              key={ent.entity_id}
+                              className="p-3.5 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-between gap-3 shadow-xs hover:border-slate-300 dark:hover:border-white/20 transition-all"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
                                 <button
-                                  key={ent.entity_id}
                                   type="button"
                                   onClick={() => handleToggleEntity(ent)}
-                                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
-                                    ent.state === 'on' 
-                                      ? 'bg-sky-500/15 text-sky-700 border-sky-400/40 dark:bg-sky-500/20 dark:text-sky-400 shadow-xs' 
-                                      : 'bg-slate-200/70 text-slate-700 border-slate-300/80 dark:bg-white/5 dark:text-slate-400 dark:border-white/10'
+                                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                                    isOn 
+                                      ? 'bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-400/40 shadow-[0_0_10px_rgba(56,189,248,0.3)]' 
+                                      : 'bg-slate-200 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:text-slate-900 dark:hover:text-white'
                                   }`}
-                                  title={`Toggle ${ent.entity_id}`}
+                                  title="Toggle state"
                                 >
-                                  {ent.attributes?.friendly_name || ent.entity_id}
+                                  <Power size={18} weight="duotone" />
                                 </button>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <h5 className="text-xs font-bold text-slate-900 dark:text-white truncate">{friendlyName}</h5>
+                                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate">({ent.entity_id})</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">{domain}</span>
+                                    <span className="text-slate-400 dark:text-slate-600">•</span>
+                                    <span className="text-[10px] text-slate-600 dark:text-slate-300">{roomName}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Right Actions: State Badge & Delete */}
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border uppercase ${
+                                  isOn 
+                                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' 
+                                    : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border-slate-300 dark:border-slate-700'
+                                }`}>
+                                  {ent.state}
+                                </span>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteEntity(ent.entity_id)}
+                                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 dark:bg-white/5 dark:hover:bg-rose-500/20 dark:text-slate-400 dark:hover:text-rose-400 border border-slate-200 dark:border-white/10 flex items-center justify-center transition-colors cursor-pointer"
+                                  title="Delete entity"
+                                >
+                                  <Trash size={14} weight="duotone" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
                 )}
               </motion.div>
             )}
 
             {/* ========================================================================= */}
-            {/* 4. BACKUP AND RESTORE SECTION */}
+            {/* MODALS FOR FLOORS & AREAS CUSTOMIZATION (ICONS & COLORS ONLY) */}
             {/* ========================================================================= */}
+
+            {/* EDIT FLOOR MODAL */}
+            {editingFloor && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl space-y-5 ${
+                    darkMode ? 'bg-slate-900 border-white/15 text-white' : 'bg-white border-slate-200 text-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center justify-between border-b pb-3 border-slate-200 dark:border-white/10">
+                    <div className="flex items-center gap-2">
+                      <Stairs size={20} weight="duotone" className="text-sky-500" />
+                      <h3 className="text-sm font-black">Customize Floor Style</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingFloor(null)}
+                      className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+                    >
+                      <X size={16} weight="bold" />
+                    </button>
+                  </div>
+
+                  {/* Read-Only HA Floor Metadata */}
+                  <div className="p-3.5 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Floor Name (Home Assistant)</span>
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white mt-0.5">{editingFloor.name}</h4>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold px-2 py-1 rounded-lg bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                      Level {editingFloor.level ?? 0}
+                    </span>
+                  </div>
+
+                  <form onSubmit={handleSaveFloorEdit} className="space-y-4">
+                    {/* Icon Selection */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">Choose Floor Icon</label>
+                      <div className="grid grid-cols-5 gap-2">
+                        {FLOOR_ICON_OPTIONS.map(iconOpt => (
+                          <button
+                            key={iconOpt}
+                            type="button"
+                            onClick={() => setEditingFloor({ ...editingFloor, icon: iconOpt })}
+                            className={`p-2.5 rounded-xl flex flex-col items-center justify-center gap-1 border transition-all cursor-pointer ${
+                              editingFloor.icon === iconOpt
+                                ? 'bg-sky-500/20 border-sky-500 text-sky-500 shadow-xs'
+                                : 'bg-slate-100/80 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            {renderIconByName(iconOpt, 20)}
+                            <span className="text-[9px] font-semibold truncate max-w-full">{iconOpt}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Color Swatch Selection */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">Floor Theme Accent Color</label>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {PRESET_COLORS.map(colorHex => (
+                          <button
+                            key={colorHex}
+                            type="button"
+                            onClick={() => setEditingFloor({ ...editingFloor, color: colorHex })}
+                            className={`w-7 h-7 rounded-full border-2 transition-all cursor-pointer relative ${
+                              (editingFloor.color || '#0ea5e9') === colorHex
+                                ? 'scale-115 border-slate-900 dark:border-white shadow-md'
+                                : 'border-transparent hover:scale-105'
+                            }`}
+                            style={{ backgroundColor: colorHex }}
+                          />
+                        ))}
+                        <input
+                          type="color"
+                          value={editingFloor.color || '#0ea5e9'}
+                          onChange={(e) => setEditingFloor({ ...editingFloor, color: e.target.value })}
+                          className="w-7 h-7 rounded-full border-0 cursor-pointer"
+                          title="Pick custom color"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => setEditingFloor(null)}
+                        className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-white/15 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                      >
+                        Save Style
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </div>
+            )}
+
+            {/* EDIT AREA MODAL */}
+            {editingArea && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl space-y-5 ${
+                    darkMode ? 'bg-slate-900 border-white/15 text-white' : 'bg-white border-slate-200 text-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center justify-between border-b pb-3 border-slate-200 dark:border-white/10">
+                    <div className="flex items-center gap-2">
+                      <Armchair size={20} weight="duotone" className="text-indigo-500" />
+                      <h3 className="text-sm font-black">Customize Area Style</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingArea(null)}
+                      className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+                    >
+                      <X size={16} weight="bold" />
+                    </button>
+                  </div>
+
+                  {/* Read-Only HA Area Metadata */}
+                  <div className="p-3.5 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Area Name (Home Assistant)</span>
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white mt-0.5">{editingArea.name}</h4>
+                    </div>
+                    <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
+                      Floor: {floors.find(f => f.floor_id === editingArea.floor_id)?.name || 'Unassigned'}
+                    </span>
+                  </div>
+
+                  <form onSubmit={handleSaveAreaEdit} className="space-y-4">
+                    {/* Icon Selection */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">Choose Area Icon</label>
+                      <div className="grid grid-cols-6 gap-2">
+                        {AREA_ICON_OPTIONS.map(iconOpt => (
+                          <button
+                            key={iconOpt}
+                            type="button"
+                            onClick={() => setEditingArea({ ...editingArea, icon: iconOpt })}
+                            className={`p-2 rounded-xl flex flex-col items-center justify-center gap-1 border transition-all cursor-pointer ${
+                              editingArea.icon === iconOpt
+                                ? 'bg-indigo-500/20 border-indigo-500 text-indigo-500 shadow-xs'
+                                : 'bg-slate-100/80 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            {renderIconByName(iconOpt, 18)}
+                            <span className="text-[8px] font-semibold truncate max-w-full">{iconOpt}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Accent Color Selection */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">Area Theme Accent Color</label>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {PRESET_COLORS.map(colorHex => (
+                          <button
+                            key={colorHex}
+                            type="button"
+                            onClick={() => setEditingArea({ ...editingArea, color: colorHex })}
+                            className={`w-7 h-7 rounded-full border-2 transition-all cursor-pointer relative ${
+                              (editingArea.color || '#6366f1') === colorHex
+                                ? 'scale-115 border-slate-900 dark:border-white shadow-md'
+                                : 'border-transparent hover:scale-105'
+                            }`}
+                            style={{ backgroundColor: colorHex }}
+                          />
+                        ))}
+                        <input
+                          type="color"
+                          value={editingArea.color || '#6366f1'}
+                          onChange={(e) => setEditingArea({ ...editingArea, color: e.target.value })}
+                          className="w-7 h-7 rounded-full border-0 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => setEditingArea(null)}
+                        className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-white/15 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                      >
+                        Save Style
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* 4. BACKUP AND RESTORE SECTION */}
             {activeSection === 'backup_restore' && (
               <motion.div
                 key="backup_restore"
@@ -1435,80 +2202,193 @@ export default function SettingsView({
                   </div>
                 </div>
 
-                {/* WebSocket Credentials Form */}
-                <form onSubmit={handleConnectWs} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Home Assistant WebSocket URL</label>
-                    <input
-                      type="text"
-                      placeholder="wss://your-homeassistant.local:8123/api/websocket"
-                      value={wsUrlInput}
-                      onChange={(e) => setWsUrlInput(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
-                      required
-                    />
+                {/* Authentication Method Tabs */}
+                <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setAuthMethodTab('oauth')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      authMethodTab === 'oauth'
+                        ? 'bg-white dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 shadow-sm border border-slate-200 dark:border-sky-500/30'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    <House size={16} weight="duotone" />
+                    <span>Sign In with HA Credentials (OAuth)</span>
+                    <span className="text-[10px] uppercase px-1.5 py-0.5 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-300 font-extrabold">
+                      Recommended
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAuthMethodTab('llat')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      authMethodTab === 'llat'
+                        ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-sm border border-slate-200 dark:border-white/15'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    <Key size={16} weight="duotone" />
+                    <span>Long-Lived Access Token (Manual)</span>
+                  </button>
+                </div>
+
+                {/* TAB 1: HOME ASSISTANT OAUTH LOGIN (Official Credentials) */}
+                {authMethodTab === 'oauth' && (
+                  <div className="space-y-4">
+                    {isLiveMode && authType === 'oauth' ? (
+                      <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30 shadow-md">
+                            <ShieldCheck size={28} weight="duotone" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                                Authenticated via Home Assistant OAuth
+                              </h4>
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase">
+                                Active Session
+                              </span>
+                            </div>
+                            <p className="text-xs font-mono text-slate-600 dark:text-slate-300 mt-0.5 truncate max-w-md">
+                              {storeServerUrl}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => logoutHA()}
+                            className="px-4 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-600 dark:text-rose-300 font-bold text-xs transition-all cursor-pointer active:scale-95"
+                          >
+                            Sign Out / Disconnect
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleStartOAuthLogin} className="p-5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                            Home Assistant Instance URL
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="http://homeassistant.local:8123 or https://your-ha.duckdns.org"
+                              value={haHttpUrlInput}
+                              onChange={(e) => setHaHttpUrlInput(e.target.value)}
+                              className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
+                              required
+                            />
+                          </div>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Enter your local IP (e.g. <code className="font-mono text-sky-600 dark:text-sky-400">http://192.168.1.100:8123</code>), mDNS (<code className="font-mono text-sky-600 dark:text-sky-400">http://homeassistant.local:8123</code>), or external HTTPS domain.
+                          </p>
+                        </div>
+
+                        <div className="p-3.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-xs text-slate-700 dark:text-slate-300 space-y-1">
+                          <div className="font-bold text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                            <ShieldCheck size={16} weight="duotone" />
+                            <span>Official Home Assistant OAuth2 Flow</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Clicking the button below will redirect you to your Home Assistant login page where you can enter your credentials or 2FA. Your tokens are stored exclusively in your browser and are never sent to external servers.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-end pt-1">
+                          <button
+                            type="submit"
+                            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-linear-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-sky-500/30 transition-all cursor-pointer active:scale-95"
+                          >
+                            <House size={16} weight="bold" />
+                            <span>Sign In with Home Assistant</span>
+                          </button>
+                        </div>
+                      </form>
+                    )}
                   </div>
+                )}
 
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Long-Lived Access Token</label>
-                      <button
-                        type="button"
-                        onClick={() => setShowToken(!showToken)}
-                        className="text-[11px] text-sky-600 dark:text-sky-400 hover:underline cursor-pointer flex items-center gap-1"
-                      >
-                        {showToken ? <EyeSlash size={13} /> : <Eye size={13} />}
-                        <span>{showToken ? 'Hide Token' : 'Show Token'}</span>
-                      </button>
-                    </div>
-                    <input
-                      type={showToken ? 'text' : 'password'}
-                      placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                      value={tokenInput}
-                      onChange={(e) => setTokenInput(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
-                    />
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleTestLatency}
-                        disabled={isPinging}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:border-white/15 dark:text-white text-xs font-semibold cursor-pointer transition-all disabled:opacity-50 shadow-xs"
-                      >
-                        <ArrowsClockwise size={14} className={isPinging ? 'animate-spin' : ''} />
-                        <span>{isPinging ? 'Pinging Socket...' : 'Test Latency Ping'}</span>
-                      </button>
-
-                      {pingLatency !== null && (
-                        <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-500/30">
-                          {pingLatency}ms Roundtrip
-                        </span>
-                      )}
+                {/* TAB 2: MANUAL LONG-LIVED ACCESS TOKEN */}
+                {authMethodTab === 'llat' && (
+                  <form onSubmit={handleConnectWs} className="p-5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Home Assistant WebSocket URL</label>
+                      <input
+                        type="text"
+                        placeholder="wss://your-homeassistant.local:8123/api/websocket"
+                        value={wsUrlInput}
+                        onChange={(e) => setWsUrlInput(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
+                        required
+                      />
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {isLiveMode && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Long-Lived Access Token</label>
                         <button
                           type="button"
-                          onClick={() => disconnectFromHA()}
-                          className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-300 text-xs font-semibold cursor-pointer transition-colors"
+                          onClick={() => setShowToken(!showToken)}
+                          className="text-[11px] text-sky-600 dark:text-sky-400 hover:underline cursor-pointer flex items-center gap-1"
                         >
-                          Disconnect
+                          {showToken ? <EyeSlash size={13} /> : <Eye size={13} />}
+                          <span>{showToken ? 'Hide Token' : 'Show Token'}</span>
                         </button>
-                      )}
-                      <button
-                        type="submit"
-                        className="flex items-center gap-2 px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs shadow-[0_0_20px_rgba(14,165,233,0.35)] transition-all cursor-pointer"
-                      >
-                        <WifiHigh size={16} weight="bold" />
-                        <span>Save & Connect WebSocket</span>
-                      </button>
+                      </div>
+                      <input
+                        type={showToken ? 'text' : 'password'}
+                        placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        value={tokenInput}
+                        onChange={(e) => setTokenInput(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
+                      />
                     </div>
-                  </div>
-                </form>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleTestLatency}
+                          disabled={isPinging}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:border-white/15 dark:text-white text-xs font-semibold cursor-pointer transition-all disabled:opacity-50 shadow-xs"
+                        >
+                          <ArrowsClockwise size={14} className={isPinging ? 'animate-spin' : ''} />
+                          <span>{isPinging ? 'Pinging Socket...' : 'Test Latency Ping'}</span>
+                        </button>
+
+                        {pingLatency !== null && (
+                          <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-500/30">
+                            {pingLatency}ms Roundtrip
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {isLiveMode && (
+                          <button
+                            type="button"
+                            onClick={() => disconnectFromHA()}
+                            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-300 text-xs font-semibold cursor-pointer transition-colors"
+                          >
+                            Disconnect
+                          </button>
+                        )}
+                        <button
+                          type="submit"
+                          className="flex items-center gap-2 px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs shadow-[0_0_20px_rgba(14,165,233,0.35)] transition-all cursor-pointer"
+                        >
+                          <WifiHigh size={16} weight="bold" />
+                          <span>Save & Connect Token</span>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                )}
 
                 {/* Real-time Telemetry Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1539,22 +2419,25 @@ export default function SettingsView({
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <select
-                        value={logFilter}
-                        onChange={(e) => setLogFilter(e.target.value as any)}
-                        className="px-2.5 py-1 rounded-lg bg-white dark:bg-black/40 border border-slate-300 dark:border-white/10 text-[11px] text-slate-800 dark:text-slate-300 font-semibold focus:outline-hidden shadow-xs"
-                      >
-                        <option value="all" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">All Events</option>
-                        <option value="state_changed" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">State Changed</option>
-                        <option value="service_call" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Service Calls</option>
-                        <option value="info" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Info Logs</option>
-                        <option value="error" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Errors</option>
-                      </select>
+                      <div className="w-36">
+                        <CustomDropdown
+                          value={logFilter}
+                          onChange={(val) => setLogFilter(val as any)}
+                          options={[
+                            { value: 'all', label: 'All Events' },
+                            { value: 'state_changed', label: 'State Changed' },
+                            { value: 'service_call', label: 'Service Calls' },
+                            { value: 'info', label: 'Info Logs' },
+                            { value: 'error', label: 'Errors' }
+                          ]}
+                          size="sm"
+                        />
+                      </div>
 
                       <button
                         type="button"
                         onClick={() => setLogs([])}
-                        className="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-[11px] text-slate-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-slate-400 dark:hover:text-white cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-[11px] font-bold text-slate-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-slate-400 dark:hover:text-white cursor-pointer"
                       >
                         Clear Feed
                       </button>
@@ -1616,29 +2499,27 @@ export default function SettingsView({
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Domain Type</label>
-                <select
+                <CustomDropdown
+                  label="Domain Type"
                   value={newDeviceDomain}
-                  onChange={(e) => setNewDeviceDomain(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
-                >
-                  <option value="light" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Light (Dimmable / RGB)</option>
-                  <option value="switch" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Smart Switch / Socket</option>
-                  <option value="climate" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Thermostat / Climate</option>
-                  <option value="sensor" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Telemetry Sensor</option>
-                </select>
+                  onChange={(val) => setNewDeviceDomain(val as any)}
+                  options={[
+                    { value: 'light', label: 'Light (Dimmable / RGB)' },
+                    { value: 'switch', label: 'Smart Switch / Socket' },
+                    { value: 'climate', label: 'Thermostat / Climate' },
+                    { value: 'sensor', label: 'Telemetry Sensor' }
+                  ]}
+                  size="sm"
+                />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Assigned Room</label>
-                <select
+                <CustomDropdown
+                  label="Assigned Room"
                   value={newDeviceRoom}
-                  onChange={(e) => setNewDeviceRoom(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
-                >
-                  {rooms.map(r => (
-                    <option key={r.id} value={r.name} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">{r.name}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setNewDeviceRoom(val)}
+                  options={rooms.map(r => ({ value: r.name, label: r.name }))}
+                  size="sm"
+                />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
@@ -1653,50 +2534,6 @@ export default function SettingsView({
                   className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold shadow-md cursor-pointer"
                 >
                   Add Device
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: ADD ROOM */}
-      {showAddRoomModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddRoomModal(false)} />
-          <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-white/15 p-6 shadow-2xl z-10 space-y-4">
-            <div className="flex items-center justify-between border-b pb-3 border-slate-200 dark:border-white/10">
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Create New Home Area</h4>
-              <button onClick={() => setShowAddRoomModal(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white cursor-pointer">
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleAddRoom} className="space-y-3">
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Room / Area Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Cinema Room, Guest Suite, Patio"
-                  value={newRoomName}
-                  onChange={(e) => setNewRoomName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
-                  autoFocus
-                  required
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddRoomModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-300 text-xs font-semibold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold shadow-md cursor-pointer"
-                >
-                  Create Area
                 </button>
               </div>
             </form>
