@@ -26,6 +26,7 @@ import {
 } from '@phosphor-icons/react';
 import DetailsRightDrawer from '../overview/DetailsRightDrawer';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { extractHANotifications, formatTimeAgo } from '../../services/notificationsService';
 import { HANotificationItem, NotificationCategory } from '../../types/notifications';
 import { haWebSocketService } from '../../services/haWebSocket';
@@ -56,7 +57,20 @@ export default function NotificationDrawer({
     installUpdate,
     skipUpdate,
     clearSkippedUpdate
-  } = useAutoLayoutStore();
+  } = useAutoLayoutStore(useShallow(s => ({
+    domainGroups: s.domainGroups,
+    states: s.states,
+    nativeNotifications: s.nativeNotifications,
+    nativeRepairs: s.nativeRepairs,
+    dismissedNotificationIds: s.dismissedNotificationIds,
+    callHAService: s.callHAService,
+    dismissNotification: s.dismissNotification,
+    clearAllNotifications: s.clearAllNotifications,
+    updateEntityState: s.updateEntityState,
+    installUpdate: s.installUpdate,
+    skipUpdate: s.skipUpdate,
+    clearSkippedUpdate: s.clearSkippedUpdate
+  })));
 
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [searchQuery, setSearchQuery] = useState('');

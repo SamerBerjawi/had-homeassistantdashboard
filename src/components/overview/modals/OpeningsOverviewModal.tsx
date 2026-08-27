@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Door, 
   DoorOpen, 
@@ -53,19 +53,35 @@ export default function OpeningsOverviewModal({
     }
   }, [initialTab]);
 
-  const openDoors = doorSensors.filter(d => d.state === 'on');
-  const openWindows = windowSensors.filter(w => w.state === 'on');
-  const openOthers = otherContactSensors.filter(o => o.state === 'on');
-  const totalOpen = openDoors.length + openWindows.length + openOthers.length;
-  const totalSensors = doorSensors.length + windowSensors.length + otherContactSensors.length;
+  const { openDoors, openWindows, openOthers, totalOpen, totalSensors, grouped } = useMemo(() => {
+    if (!isOpen) {
+      return {
+        openDoors: [],
+        openWindows: [],
+        openOthers: [],
+        totalOpen: 0,
+        totalSensors: 0,
+        grouped: { hasFloors: false, hasAreas: false, groups: [], totalEntities: 0 }
+      };
+    }
+    const oD = doorSensors.filter(d => d.state === 'on');
+    const oW = windowSensors.filter(w => w.state === 'on');
+    const oO = otherContactSensors.filter(o => o.state === 'on');
+    const displayed = [
+      ...(activeTab === 'all' || activeTab === 'doors' ? doorSensors : []),
+      ...(activeTab === 'all' || activeTab === 'windows' ? windowSensors : []),
+      ...(activeTab === 'all' || activeTab === 'other' ? otherContactSensors : [])
+    ];
+    return {
+      openDoors: oD,
+      openWindows: oW,
+      openOthers: oO,
+      totalOpen: oD.length + oW.length + oO.length,
+      totalSensors: doorSensors.length + windowSensors.length + otherContactSensors.length,
+      grouped: groupEntitiesByFloorAndArea(displayed, customFloors, customAreas)
+    };
+  }, [isOpen, doorSensors, windowSensors, otherContactSensors, activeTab, customFloors, customAreas]);
 
-  const displayedSensors = [
-    ...(activeTab === 'all' || activeTab === 'doors' ? doorSensors : []),
-    ...(activeTab === 'all' || activeTab === 'windows' ? windowSensors : []),
-    ...(activeTab === 'all' || activeTab === 'other' ? otherContactSensors : [])
-  ];
-
-  const grouped = groupEntitiesByFloorAndArea(displayedSensors, customFloors, customAreas);
 
   const getSensorIcon = (sensor: ResolvedEntity, isOpen: boolean) => {
     const devClass = sensor.attributes?.device_class;

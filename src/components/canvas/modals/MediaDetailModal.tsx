@@ -80,7 +80,8 @@ export default function MediaDetailModal({
   const { currentPosition: playbackPos, duration: rawDuration } = useMediaPosition(
     entity,
     isSeeking,
-    seekOverride
+    seekOverride,
+    isOpen
   );
 
   const handleSeekCommit = async (newSecs: number) => {

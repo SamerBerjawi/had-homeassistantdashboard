@@ -13,6 +13,7 @@ import {
 } from '../types/notifications';
 
 import { ResolvedEntity, HAState } from '../types';
+import { safeOpenExternalUrl } from '../lib/utils';
 
 export interface ExtractNotificationsParams {
   domainGroups: Record<string, ResolvedEntity[]>;
@@ -82,37 +83,12 @@ export function extractHANotifications({
   const seenIds = new Set<string>();
 
   // 1. SOFTWARE & FIRMWARE UPDATES (`update.*`)
-  const updateEntities = [
-    ...(domainGroups['update'] || []),
-    ...Object.values(states)
-      .filter(s => s.entity_id.startsWith('update.'))
-      .map(s => ({
-        entity_id: s.entity_id,
-        domain: 'update',
-        name: s.attributes.friendly_name || s.attributes.title || s.entity_id,
-        state: s.state,
-        attributes: s.attributes,
-        area_id: null,
-        device_id: null,
-        floor_id: null,
-        device: null,
-        area: null,
-        floor: null,
-        resolutionSource: 'unassigned' as const,
-        entity_category: null,
-        disabled_by: null,
-        hidden: false,
-        isDiagnostic: false,
-        powerWatts: 0,
-        labels: []
-      }))
-  ];
-
-  // Deduplicate by entity_id
+  // domainGroups['update'] already contains all resolved update entities from the graph — no need to re-scan states.
   const seenUpdates = new Set<string>();
-  for (const ent of updateEntities) {
+  for (const ent of (domainGroups['update'] || [])) {
     if (seenUpdates.has(ent.entity_id)) continue;
     seenUpdates.add(ent.entity_id);
+
 
     const isDismissed = dismissedSet.has(ent.entity_id);
     if (isDismissed) continue;
@@ -208,9 +184,7 @@ export function extractHANotifications({
               label: 'Release Notes',
               variant: 'ghost' as const,
               onClick: () => {
-                if (typeof window !== 'undefined') {
-                  window.open(releaseUrl, '_blank', 'noopener,noreferrer');
-                }
+                safeOpenExternalUrl(releaseUrl);
               }
             }
           ] : [])
@@ -360,8 +334,8 @@ export function extractHANotifications({
           label: 'Fix Issue',
           variant: 'primary' as const,
           onClick: async () => {
-            if (learnMoreUrl && typeof window !== 'undefined') {
-              window.open(learnMoreUrl, '_blank', 'noopener,noreferrer');
+            if (learnMoreUrl) {
+              safeOpenExternalUrl(learnMoreUrl);
             }
             await callHAService('repairs', 'ignore_issue', { issue_id: rep.issue_id }).catch(() => {});
             dismissNotification(issueId);
@@ -374,9 +348,7 @@ export function extractHANotifications({
           label: 'Documentation',
           variant: 'ghost' as const,
           onClick: () => {
-            if (typeof window !== 'undefined') {
-              window.open(learnMoreUrl, '_blank', 'noopener,noreferrer');
-            }
+            safeOpenExternalUrl(learnMoreUrl);
           }
         }
       ] : []),
@@ -467,8 +439,8 @@ export function extractHANotifications({
           label: 'Fix Issue',
           variant: 'primary' as const,
           onClick: async () => {
-            if (learnMoreUrl && typeof window !== 'undefined') {
-              window.open(learnMoreUrl, '_blank', 'noopener,noreferrer');
+            if (learnMoreUrl) {
+              safeOpenExternalUrl(learnMoreUrl);
             }
             await callHAService('repairs', 'ignore_issue', { issue_id: issueId }).catch(() => {});
             dismissNotification(issueId);
@@ -485,9 +457,7 @@ export function extractHANotifications({
           label: 'Documentation',
           variant: 'ghost' as const,
           onClick: () => {
-            if (typeof window !== 'undefined') {
-              window.open(learnMoreUrl, '_blank', 'noopener,noreferrer');
-            }
+            safeOpenExternalUrl(learnMoreUrl);
           }
         }
       ] : []),

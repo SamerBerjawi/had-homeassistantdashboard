@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   PersonSimpleWalk, 
   Drop, 
@@ -48,20 +48,37 @@ export default function SensorsOverviewDrawer({
     setActiveTab(initialTab);
   }, [initialTab]);
 
-  const allSensors = [...motionSensors, ...leakSensors, ...smokeSensors];
-  const activeMotion = motionSensors.filter(m => m.state === 'on');
-  const activeLeaks = leakSensors.filter(l => l.state === 'on' || l.state === 'wet' || l.state === 'detected');
-  const activeSmoke = smokeSensors.filter(s => s.state === 'on' || s.state === 'detected' || s.state === 'smoke');
+  const { allSensors, activeMotion, activeLeaks, activeSmoke, totalAlerts, grouped } = useMemo(() => {
+    if (!isOpen) {
+      return {
+        allSensors: [],
+        activeMotion: [],
+        activeLeaks: [],
+        activeSmoke: [],
+        totalAlerts: 0,
+        grouped: { hasFloors: false, hasAreas: false, groups: [], totalEntities: 0 }
+      };
+    }
+    const all = [...motionSensors, ...leakSensors, ...smokeSensors];
+    const aM = motionSensors.filter(m => m.state === 'on');
+    const aL = leakSensors.filter(l => l.state === 'on' || l.state === 'wet' || l.state === 'detected');
+    const aS = smokeSensors.filter(s => s.state === 'on' || s.state === 'detected' || s.state === 'smoke');
+    const currentDisplayList = 
+      activeTab === 'motion' ? motionSensors :
+      activeTab === 'leak' ? leakSensors :
+      activeTab === 'smoke' ? smokeSensors :
+      all;
 
-  const totalAlerts = activeLeaks.length + activeSmoke.length;
+    return {
+      allSensors: all,
+      activeMotion: aM,
+      activeLeaks: aL,
+      activeSmoke: aS,
+      totalAlerts: aL.length + aS.length,
+      grouped: groupEntitiesByFloorAndArea(currentDisplayList, customFloors, customAreas)
+    };
+  }, [isOpen, motionSensors, leakSensors, smokeSensors, activeTab, customFloors, customAreas]);
 
-  const currentDisplayList = 
-    activeTab === 'motion' ? motionSensors :
-    activeTab === 'leak' ? leakSensors :
-    activeTab === 'smoke' ? smokeSensors :
-    allSensors;
-
-  const grouped = groupEntitiesByFloorAndArea(currentDisplayList, customFloors, customAreas);
 
   return (
     <DetailsRightDrawer

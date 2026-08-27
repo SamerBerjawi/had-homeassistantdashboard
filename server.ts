@@ -14,11 +14,37 @@ dotenv.config();
 let aiClient: GoogleGenAI | null = null;
 let quotaBackoffUntil = 0;
 
-// In-memory weather cache: key -> { data: any, expiresAt: number }
+// Bounded in-memory weather cache: key -> { data: any, expiresAt: number }
+const MAX_CACHE_ENTRIES = 100;
 const weatherCache = new Map<string, { data: any; expiresAt: number }>();
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
+// In-memory rate limiting map: ip -> { count: number, resetAt: number }
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const MAX_REQUESTS_PER_WINDOW = 30;
+
+function setWeatherCache(key: string, data: any) {
+  if (weatherCache.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = weatherCache.keys().next().value;
+    if (oldestKey) weatherCache.delete(oldestKey);
+  }
+  weatherCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+// Periodic cleanup of expired cache entries and rate limits every 15m
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of weatherCache.entries()) {
+    if (v.expiresAt < now) weatherCache.delete(k);
+  }
+  for (const [ip, entry] of rateLimitMap.entries()) {
+    if (entry.resetAt < now) rateLimitMap.delete(ip);
+  }
+}, CACHE_TTL_MS);
+
 function getAiClient(): GoogleGenAI | null {
+
   if (!aiClient && process.env.GEMINI_API_KEY) {
     aiClient = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
@@ -264,20 +290,65 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  // Security Headers Middleware
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+  });
+
+  // Payload Limit Middleware (prevent oversized requests)
+  app.use(express.json({ limit: '64kb' }));
 
   // Health check endpoint
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', serverTime: new Date().toISOString() });
   });
 
-  // Dynamic Weather API using Google Search Grounding with Gemini 3.7 Flash
-  app.post('/api/weather', async (req, res) => {
-    const { location = 'San Francisco, CA', lat, lon } = req.body;
-    const targetLocation = lat && lon ? `${lat}, ${lon}` : location;
-    const cacheKey = (location || 'default').toLowerCase().trim() + (lat && lon ? `_${lat.toFixed(2)}_${lon.toFixed(2)}` : '');
+  // Rate limiter middleware for /api/weather
+  const weatherRateLimiter = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const now = Date.now();
+    const entry = rateLimitMap.get(ip);
 
-    // 1. Check in-memory cache
+    if (!entry || entry.resetAt < now) {
+      rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+      return next();
+    }
+
+    if (entry.count >= MAX_REQUESTS_PER_WINDOW) {
+      return res.status(429).json({
+        error: 'Too many weather requests from this IP. Please wait before retrying.',
+        retryAfterSecs: Math.ceil((entry.resetAt - now) / 1000)
+      });
+    }
+
+    entry.count++;
+    next();
+  };
+
+  // Dynamic Weather API using Google Search Grounding with Gemini 3.7 Flash
+  app.post('/api/weather', weatherRateLimiter, async (req, res) => {
+    // 1. Sanitize & validate inputs
+    let safeLocation = typeof req.body.location === 'string' ? req.body.location.trim().slice(0, 100) : 'San Francisco, CA';
+    safeLocation = safeLocation.replace(/[\r\n\t]/g, ' ').replace(/[<>{}[\]]/g, '');
+    if (!safeLocation) safeLocation = 'San Francisco, CA';
+
+    let safeLat: number | undefined = undefined;
+    let safeLon: number | undefined = undefined;
+    if (typeof req.body.lat === 'number' && !isNaN(req.body.lat) && req.body.lat >= -90 && req.body.lat <= 90) {
+      safeLat = req.body.lat;
+    }
+    if (typeof req.body.lon === 'number' && !isNaN(req.body.lon) && req.body.lon >= -180 && req.body.lon <= 180) {
+      safeLon = req.body.lon;
+    }
+
+    const targetLocation = safeLat && safeLon ? `${safeLat.toFixed(4)}, ${safeLon.toFixed(4)}` : safeLocation;
+    const cacheKey = safeLocation.toLowerCase().trim() + (safeLat && safeLon ? `_${safeLat.toFixed(2)}_${safeLon.toFixed(2)}` : '');
+
+    // 2. Check in-memory cache
     const cached = weatherCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       return res.json({
@@ -286,15 +357,16 @@ async function startServer() {
       });
     }
 
-    // 2. Check if currently in quota backoff period or AI client unavailable
+    // 3. Check if currently in quota backoff period or AI client unavailable
     const isQuotaLimited = quotaBackoffUntil > Date.now();
     const ai = getAiClient();
 
     if (isQuotaLimited || !ai) {
-      const fallbackWeather = generateRealisticWeather(location, lat, lon);
-      weatherCache.set(cacheKey, { data: fallbackWeather, expiresAt: Date.now() + CACHE_TTL_MS });
+      const fallbackWeather = generateRealisticWeather(safeLocation, safeLat, safeLon);
+      setWeatherCache(cacheKey, fallbackWeather);
       return res.json(fallbackWeather);
     }
+
 
     try {
       const prompt = `You are a real-time weather intelligence assistant.
@@ -356,7 +428,7 @@ Return ONLY a single valid JSON object strictly formatted as follows (no markdow
         parsedData = JSON.parse(cleanedJson);
       } catch (parseErr) {
         console.warn('Failed to parse weather JSON from model response, generating fallback data');
-        parsedData = generateRealisticWeather(location, lat, lon);
+        parsedData = generateRealisticWeather(safeLocation, safeLat, safeLon);
       }
 
       // Extract grounding sources from response candidates
@@ -373,13 +445,13 @@ Return ONLY a single valid JSON object strictly formatted as follows (no markdow
       }
 
       parsedData.groundingSources = groundingSources.length > 0 ? groundingSources.slice(0, 5) : [
-        { title: `Google Search Weather: ${parsedData.location || location}`, url: `https://www.google.com/search?q=weather+${encodeURIComponent(parsedData.location || location)}` }
+        { title: `Google Search Weather: ${parsedData.location || safeLocation}`, url: `https://www.google.com/search?q=weather+${encodeURIComponent(parsedData.location || safeLocation)}` }
       ];
       parsedData.lastUpdated = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       parsedData.isGrounded = true;
 
       // Cache successful response
-      weatherCache.set(cacheKey, { data: parsedData, expiresAt: Date.now() + CACHE_TTL_MS });
+      setWeatherCache(cacheKey, parsedData);
 
       res.json(parsedData);
     } catch (err: any) {
@@ -394,8 +466,8 @@ Return ONLY a single valid JSON object strictly formatted as follows (no markdow
       }
 
       // Provide high-fidelity realistic fallback weather
-      const fallbackWeather = generateRealisticWeather(location, lat, lon);
-      weatherCache.set(cacheKey, { data: fallbackWeather, expiresAt: Date.now() + CACHE_TTL_MS });
+      const fallbackWeather = generateRealisticWeather(safeLocation, safeLat, safeLon);
+      setWeatherCache(cacheKey, fallbackWeather);
       res.json(fallbackWeather);
     }
   });

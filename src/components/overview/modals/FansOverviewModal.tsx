@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   Fan, 
   Power, 
@@ -45,9 +45,21 @@ export default function FansOverviewModal({
   const resolvedEntities = useAutoLayoutStore(s => s.resolvedEntities);
   const callHAService = useAutoLayoutStore(s => s.callHAService);
 
-  const allEntitiesList = Object.values(resolvedEntities);
-  const activeFans = fans.filter(f => f.state === 'on');
-  const grouped = groupEntitiesByFloorAndArea(fans, customFloors, customAreas);
+  const { activeFans, grouped, allEntitiesList } = useMemo(() => {
+    if (!isOpen) {
+      return {
+        activeFans: [],
+        grouped: { hasFloors: false, hasAreas: false, groups: [], totalEntities: 0 },
+        allEntitiesList: []
+      };
+    }
+    return {
+      activeFans: fans.filter(f => f.state === 'on'),
+      grouped: groupEntitiesByFloorAndArea(fans, customFloors, customAreas),
+      allEntitiesList: Object.values(resolvedEntities)
+    };
+  }, [isOpen, fans, customFloors, customAreas, resolvedEntities]);
+
 
   // Toggle Power
   const handleToggleFan = async (fan: ResolvedEntity) => {

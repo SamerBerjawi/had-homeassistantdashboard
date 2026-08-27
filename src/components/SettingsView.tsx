@@ -80,6 +80,7 @@ import {
 } from '@phosphor-icons/react';
 import { HAEntity, Room, LogMessage, ToastNotification, HAArea, HAFloor, HALabel, HAZone } from '../types';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useCanvasStore } from '../store/useCanvasStore';
 import { WeatherBackdropType } from '../types/canvas';
 import CustomDropdown from './ui/CustomDropdown';
@@ -168,7 +169,32 @@ export default function SettingsView({
     updateEntityState,
     reassignEntityArea,
     callHAService
-  } = useAutoLayoutStore();
+  } = useAutoLayoutStore(useShallow(s => ({
+    serverUrl: s.serverUrl,
+    haToken: s.haToken,
+    isLiveMode: s.isLiveMode,
+    authType: s.authType,
+    connectionStatus: s.connectionStatus,
+    connectToHA: s.connectToHA,
+    disconnectFromHA: s.disconnectFromHA,
+    loginWithHA: s.loginWithHA,
+    logoutHA: s.logoutHA,
+    rawAreas: s.rawAreas,
+    rawDevices: s.rawDevices,
+    rawStates: s.rawStates,
+    floors: s.floors,
+    areas: s.areas,
+    labels: s.labels,
+    resolvedZones: s.resolvedZones,
+    resolvedEntities: s.resolvedEntities,
+    updateFloor: s.updateFloor,
+    updateArea: s.updateArea,
+    reorderFloors: s.reorderFloors,
+    reorderAreas: s.reorderAreas,
+    updateEntityState: s.updateEntityState,
+    reassignEntityArea: s.reassignEntityArea,
+    callHAService: s.callHAService
+  })));
 
   const {
     profiles,

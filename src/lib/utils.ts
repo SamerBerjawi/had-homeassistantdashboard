@@ -30,3 +30,16 @@ export function getHAImageUrl(rawPath?: string | null, serverUrl?: string): stri
   }
   return trimmed;
 }
+
+/**
+ * Safely opens an external URL in a new tab with noopener/noreferrer,
+ * strictly validating http: and https: protocols to prevent script execution.
+ */
+export function safeOpenExternalUrl(url?: string | null): void {
+  if (!url || typeof window === 'undefined') return;
+  const trimmed = url.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    window.open(trimmed, '_blank', 'noopener,noreferrer');
+  }
+}
+

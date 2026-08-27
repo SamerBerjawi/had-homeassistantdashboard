@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Users, 
   User, 
@@ -23,8 +23,11 @@ import {
   Shield
 } from '@phosphor-icons/react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { ResolvedEntity } from '../../types';
+import { classifyBinarySensors } from '../../lib/entityClassifiers';
 import { getHAImageUrl } from '../../lib/utils';
+
 
 // Interactive Slide-over Right Drawers
 import UsersPresenceModal from './modals/UsersPresenceModal';
@@ -55,7 +58,16 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     serverUrl,
     selectedWeatherEntityId,
     selectedAlarmEntityId
-  } = useAutoLayoutStore();
+  } = useAutoLayoutStore(useShallow(s => ({
+    domainGroups: s.domainGroups,
+    overviewSummary: s.overviewSummary,
+    securityOverview: s.securityOverview,
+    updateEntityState: s.updateEntityState,
+    callHAService: s.callHAService,
+    serverUrl: s.serverUrl,
+    selectedWeatherEntityId: s.selectedWeatherEntityId,
+    selectedAlarmEntityId: s.selectedAlarmEntityId
+  })));
 
   // Active Right Sidebar State
   const [drawerOpen, setDrawerOpen] = useState<
@@ -66,95 +78,67 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   const [openingsTab, setOpeningsTab] = useState<'all' | 'doors' | 'windows' | 'other'>('all');
   const [sensorsTab, setSensorsTab] = useState<'all' | 'motion' | 'leak' | 'smoke'>('all');
 
-  // Entities Breakdown directly from HA Domain Groups
-  const userEntities: ResolvedEntity[] = [
-    ...(domainGroups['person'] || []),
-    ...(domainGroups['device_tracker'] || [])
-  ];
-  const lightEntities: ResolvedEntity[] = domainGroups['light'] || [];
-  const fanEntities: ResolvedEntity[] = domainGroups['fan'] || [];
-  const mediaEntities: ResolvedEntity[] = domainGroups['media_player'] || [];
+  // alarmEntity for keypad
   const alarmEntities: ResolvedEntity[] = domainGroups['alarm_control_panel'] || [];
-  const alarmEntity: ResolvedEntity | undefined = 
-    alarmEntities.find(a => a.entity_id === selectedAlarmEntityId) || 
+  const alarmEntity: ResolvedEntity | undefined =
+    alarmEntities.find(a => a.entity_id === selectedAlarmEntityId) ||
     alarmEntities[0];
 
-  // Classify all binary sensors (Doors, Windows, Motion, Moisture/Leak, Smoke/Hazard)
-  const allBinary: ResolvedEntity[] = domainGroups['binary_sensor'] || [];
 
-  const isDoor = (e: ResolvedEntity) =>
-    e.attributes.device_class === 'door' ||
-    e.attributes.device_class === 'garage_door' ||
-    e.entity_id.includes('door') ||
-    e.entity_id.includes('garage') ||
-    e.entity_id.includes('gate');
+  // Classify all binary sensors (memoized — only re-runs when domainGroups changes)
+  const {
+    doorSensors, windowSensors, motionSensors, leakSensors, smokeSensors, otherContactSensors,
+    activeMedia, activeMediaCount,
+    userEntities, lightEntities, fanEntities, mediaEntities,
+    homeUsers, onLights, activeFans, openDoors, openWindows, activeMotion, activeLeaks, activeSmoke
+  } = useMemo(() => {
+    const allBinary: ResolvedEntity[] = domainGroups['binary_sensor'] || [];
+    const userEntitiesLocal = [...(domainGroups['person'] || []), ...(domainGroups['device_tracker'] || [])];
+    const lightEntitiesLocal = domainGroups['light'] || [];
+    const fanEntitiesLocal = domainGroups['fan'] || [];
+    const mediaEntitiesLocal = domainGroups['media_player'] || [];
 
-  const isWindow = (e: ResolvedEntity) =>
-    e.attributes.device_class === 'window' ||
-    e.entity_id.includes('window');
+    const {
+      doorSensors: doors,
+      windowSensors: windows,
+      motionSensors: motions,
+      leakSensors: leaks,
+      smokeSensors: smokes,
+      otherContactSensors: otherContacts
+    } = classifyBinarySensors(allBinary);
 
-  const isMotion = (e: ResolvedEntity) =>
-    e.attributes.device_class === 'motion' ||
-    e.attributes.device_class === 'occupancy' ||
-    e.attributes.device_class === 'presence' ||
-    e.entity_id.includes('motion') ||
-    e.entity_id.includes('occupancy') ||
-    e.entity_id.includes('presence');
+    const activeMed = mediaEntitiesLocal.find(m => m.state === 'playing') || mediaEntitiesLocal[0];
+    const activeMedCount = mediaEntitiesLocal.filter(m => m.state === 'playing').length;
 
-  const isLeak = (e: ResolvedEntity) =>
-    e.attributes.device_class === 'moisture' ||
-    e.attributes.device_class === 'water' ||
-    e.entity_id.includes('leak') ||
-    e.entity_id.includes('flood') ||
-    e.entity_id.includes('moisture');
+    return {
+      doorSensors: doors,
+      windowSensors: windows,
+      motionSensors: motions,
+      leakSensors: leaks,
+      smokeSensors: smokes,
+      otherContactSensors: otherContacts,
+      activeMedia: activeMed,
+      activeMediaCount: activeMedCount,
+      userEntities: userEntitiesLocal,
+      lightEntities: lightEntitiesLocal,
+      fanEntities: fanEntitiesLocal,
+      mediaEntities: mediaEntitiesLocal,
+      homeUsers: userEntitiesLocal.filter(u => u.state === 'home'),
+      onLights: lightEntitiesLocal.filter(l => l.state === 'on'),
+      activeFans: fanEntitiesLocal.filter(f => f.state === 'on'),
+      openDoors: doors.filter(d => d.state === 'on'),
+      openWindows: windows.filter(w => w.state === 'on'),
+      activeMotion: motions.filter(m => m.state === 'on'),
+      activeLeaks: leaks.filter(l => l.state === 'on' || l.state === 'wet' || l.state === 'detected'),
+      activeSmoke: smokes.filter(s => s.state === 'on' || s.state === 'detected' || s.state === 'smoke'),
+    };
+  }, [domainGroups]);
 
-  const isSmoke = (e: ResolvedEntity) =>
-    e.attributes.device_class === 'smoke' ||
-    e.attributes.device_class === 'gas' ||
-    e.attributes.device_class === 'carbon_monoxide' ||
-    e.entity_id.includes('smoke') ||
-    e.entity_id.includes('co_detector') ||
-    e.entity_id.includes('gas');
-
-  const isOtherContact = (e: ResolvedEntity) =>
-    !isDoor(e) &&
-    !isWindow(e) &&
-    !isMotion(e) &&
-    !isLeak(e) &&
-    !isSmoke(e) &&
-    (
-      e.attributes.device_class === 'opening' ||
-      e.attributes.device_class === 'safety' ||
-      e.attributes.device_class === 'tamper' ||
-      e.attributes.device_class === 'lock' ||
-      e.entity_id.includes('contact') ||
-      e.entity_id.includes('safe') ||
-      e.entity_id.includes('cabinet') ||
-      e.entity_id.includes('mailbox')
-    );
-
-  const doorSensors = allBinary.filter(isDoor);
-  const windowSensors = allBinary.filter(isWindow);
-  const motionSensors = allBinary.filter(isMotion);
-  const leakSensors = allBinary.filter(isLeak);
-  const smokeSensors = allBinary.filter(isSmoke);
-  const otherContactSensors = allBinary.filter(isOtherContact);
-
-  const activeMedia = mediaEntities.find(m => m.state === 'playing') || mediaEntities[0];
-  const activeMediaCount = mediaEntities.filter(m => m.state === 'playing').length;
-
-  // Calculated Real Metrics
-  const homeUsers = userEntities.filter(u => u.state === 'home');
-  const onLights = lightEntities.filter(l => l.state === 'on');
-  const activeFans = fanEntities.filter(f => f.state === 'on');
-  const openDoors = doorSensors.filter(d => d.state === 'on');
-  const openWindows = windowSensors.filter(w => w.state === 'on');
-  const activeMotion = motionSensors.filter(m => m.state === 'on');
-  const activeLeaks = leakSensors.filter(l => l.state === 'on' || l.state === 'wet' || l.state === 'detected');
-  const activeSmoke = smokeSensors.filter(s => s.state === 'on' || s.state === 'detected' || s.state === 'smoke');
 
   const isAlarmArmed = alarmEntity?.state && alarmEntity.state !== 'disarmed';
   const isPlayingMedia = activeMedia?.state === 'playing';
+
+
 
   // Weather Entity Resolution
   const weatherEntities: ResolvedEntity[] = domainGroups['weather'] || [];

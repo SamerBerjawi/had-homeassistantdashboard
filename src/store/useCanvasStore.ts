@@ -127,6 +127,16 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => {
     }
   };
 
+  let saveStorageTimer: ReturnType<typeof setTimeout> | null = null;
+  const saveToStorageDebounced = (profiles: Record<string, DashboardProfile>, activeId: string) => {
+    if (saveStorageTimer) clearTimeout(saveStorageTimer);
+    saveStorageTimer = setTimeout(() => {
+      saveToStorage(profiles, activeId);
+      saveStorageTimer = null;
+    }, 300);
+  };
+
+
   return {
     profiles: initialProfiles,
     activeProfileId: initialProfileId,
@@ -234,9 +244,10 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => {
         [activeProfileId]: updatedProfile
       };
 
-      saveToStorage(updatedProfiles, activeProfileId);
+      saveToStorageDebounced(updatedProfiles, activeProfileId);
       set({ profiles: updatedProfiles });
     },
+
 
     addCard: (config: CardConfig, layoutItem = {}) => {
       const { profiles, activeProfileId } = get();

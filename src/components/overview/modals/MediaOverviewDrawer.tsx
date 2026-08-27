@@ -132,7 +132,8 @@ export default function MediaOverviewDrawer({
   const { currentPosition: playbackPos, duration: rawDuration } = useMediaPosition(
     currentMedia,
     isSeeking,
-    seekOverride
+    seekOverride,
+    isOpen
   );
 
   const handleSeekCommit = async (newSecs: number) => {

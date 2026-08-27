@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Lightbulb, Power, Sun, Lightning, Stairs, HouseLine } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
 import DetailsRightDrawer from '../DetailsRightDrawer';
@@ -23,10 +23,21 @@ export default function LightsOverviewModal({
 }: LightsOverviewModalProps) {
   const customFloors = useAutoLayoutStore(s => s.floors);
   const customAreas = useAutoLayoutStore(s => s.areas);
-  const onLights = lights.filter(l => l.state === 'on');
-  const totalWatts = lights.reduce((sum, l) => sum + (l.state === 'on' ? (l.attributes?.power || l.powerWatts || 10) : 0), 0);
 
-  const grouped = groupEntitiesByFloorAndArea(lights, customFloors, customAreas);
+  const { onLights, totalWatts, grouped } = useMemo(() => {
+    if (!isOpen) {
+      return {
+        onLights: [],
+        totalWatts: 0,
+        grouped: { hasFloors: false, hasAreas: false, groups: [], totalEntities: 0 }
+      };
+    }
+    const onL = lights.filter(l => l.state === 'on');
+    const watts = lights.reduce((sum, l) => sum + (l.state === 'on' ? (l.attributes?.power || l.powerWatts || 10) : 0), 0);
+    const grp = groupEntitiesByFloorAndArea(lights, customFloors, customAreas);
+    return { onLights: onL, totalWatts: watts, grouped: grp };
+  }, [isOpen, lights, customFloors, customAreas]);
+
 
   const handleToggleLight = (light: ResolvedEntity) => {
     const isCurrentlyOn = light.state === 'on';

@@ -21,6 +21,8 @@ import {
   SecurityOverviewState,
   OverviewSummaryState
 } from '../types';
+import { classifyBinarySensors } from '../lib/entityClassifiers';
+
 
 export interface GraphResolutionResult {
   resolvedEntities: Record<string, ResolvedEntity>;
@@ -478,43 +480,19 @@ export function resolveHAGraph(
 
   // Contact Sensors & Openings Classification (Doors, Windows, and Other Contacts)
   const allBinary = domainGroups['binary_sensor'] || [];
-  const isDoorSensor = (e: ResolvedEntity) =>
-    e.attributes.device_class === 'door' ||
-    e.attributes.device_class === 'garage_door' ||
-    e.entity_id.includes('door') ||
-    e.entity_id.includes('garage') ||
-    e.entity_id.includes('gate');
+  const {
+    doorSensors,
+    windowSensors,
+    otherContactSensors,
+    motionSensors
+  } = classifyBinarySensors(allBinary);
 
-  const isWindowSensor = (e: ResolvedEntity) =>
-    e.attributes.device_class === 'window' ||
-    e.entity_id.includes('window');
-
-  const isOtherContactSensor = (e: ResolvedEntity) =>
-    !isDoorSensor(e) &&
-    !isWindowSensor(e) &&
-    (
-      e.attributes.device_class === 'opening' ||
-      e.attributes.device_class === 'safety' ||
-      e.attributes.device_class === 'tamper' ||
-      e.attributes.device_class === 'lock' ||
-      e.entity_id.includes('contact') ||
-      e.entity_id.includes('safe') ||
-      e.entity_id.includes('cabinet') ||
-      e.entity_id.includes('mailbox')
-    );
-
-  const doorSensors = allBinary.filter(isDoorSensor);
-  const windowSensors = allBinary.filter(isWindowSensor);
-  const otherContactSensors = allBinary.filter(isOtherContactSensor);
-  const allContactSensors = allBinary.filter(e => isDoorSensor(e) || isWindowSensor(e) || isOtherContactSensor(e));
-
-  const openDoorsWindows = allContactSensors.filter(e => e.state === 'on');
-  const activeMotionSensors = allBinary.filter(
-    e => (e.attributes.device_class === 'motion' || e.attributes.device_class === 'occupancy' || e.attributes.device_class === 'presence') && e.state === 'on'
-  );
+  const openDoorsWindows = [...doorSensors, ...windowSensors, ...otherContactSensors].filter(e => e.state === 'on');
+  const activeMotionSensors = motionSensors.filter(e => e.state === 'on');
   const alarmPanel = domainGroups['alarm_control_panel']?.[0];
   const locks = domainGroups['lock'] || [];
   const cameras = domainGroups['camera'] || [];
+
 
   const securityOverview: SecurityOverviewState = {
     alarmPanel,

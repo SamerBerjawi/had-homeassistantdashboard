@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { HAEntity, Room, LogMessage, ToastNotification } from './types';
 import { useAutoLayoutStore } from './store/useAutoLayoutStore';
@@ -10,20 +11,21 @@ import NotificationToast from './components/NotificationToast';
 import NotificationBell from './components/notifications/NotificationBell';
 import NotificationDrawer from './components/notifications/NotificationDrawer';
 
-// 10 Blank Views
+// Eagerly-loaded views (always visible)
 import OverviewView from './components/views/OverviewView';
-import RoomsView from './components/views/RoomsView';
-import EnergyView from './components/views/EnergyView';
-import SecurityView from './components/views/SecurityView';
-import MediaView from './components/views/MediaView';
-import SystemView from './components/views/SystemView';
-import NetworkView from './components/views/NetworkView';
-import MobilityView from './components/views/MobilityView';
-import HealthView from './components/views/HealthView';
-import AutomationsView from './components/views/AutomationsView';
 
-// Existing Settings View (Retained)
-import SettingsView from './components/SettingsView';
+// Lazy-loaded views (deferred until first navigation)
+const RoomsView = lazy(() => import('./components/views/RoomsView'));
+const EnergyView = lazy(() => import('./components/views/EnergyView'));
+const SecurityView = lazy(() => import('./components/views/SecurityView'));
+const MediaView = lazy(() => import('./components/views/MediaView'));
+const SystemView = lazy(() => import('./components/views/SystemView'));
+const NetworkView = lazy(() => import('./components/views/NetworkView'));
+const MobilityView = lazy(() => import('./components/views/MobilityView'));
+const HealthView = lazy(() => import('./components/views/HealthView'));
+const AutomationsView = lazy(() => import('./components/views/AutomationsView'));
+const SettingsView = lazy(() => import('./components/SettingsView'));
+
 
 export default function App() {
   // Theme State
@@ -55,7 +57,11 @@ export default function App() {
     init: initAutoLayout,
     resolvedEntities,
     isLiveMode
-  } = useAutoLayoutStore();
+  } = useAutoLayoutStore(useShallow(s => ({
+    init: s.init,
+    resolvedEntities: s.resolvedEntities,
+    isLiveMode: s.isLiveMode
+  })));
 
   useEffect(() => {
     initAutoLayout();
@@ -221,34 +227,37 @@ export default function App() {
             </div>
           </header>
 
-          {/* PAGE ROUTING (Blank views ready to build + Settings) */}
+          {/* PAGE ROUTING (Views lazy-loaded on first visit) */}
           <div className="flex-1 flex flex-col">
             {activeTab === 'overview' && <OverviewView darkMode={darkMode} />}
-            {activeTab === 'rooms' && <RoomsView darkMode={darkMode} />}
-            {activeTab === 'energy' && <EnergyView darkMode={darkMode} />}
-            {activeTab === 'security' && <SecurityView darkMode={darkMode} />}
-            {activeTab === 'media' && <MediaView darkMode={darkMode} />}
-            {activeTab === 'system' && <SystemView darkMode={darkMode} />}
-            {activeTab === 'network' && <NetworkView darkMode={darkMode} />}
-            {activeTab === 'mobility' && <MobilityView darkMode={darkMode} />}
-            {activeTab === 'health' && <HealthView darkMode={darkMode} />}
-            {activeTab === 'automations' && <AutomationsView darkMode={darkMode} />}
-            {activeTab === 'settings' && (
-              <SettingsView
-                darkMode={darkMode}
-                toggleDarkMode={() => setDarkMode(!darkMode)}
-                entities={entities}
-                setEntities={setEntities}
-                rooms={rooms}
-                setRooms={setRooms}
-                addLog={addLog}
-                logs={logs}
-                setLogs={setLogs}
-                setActiveTab={setActiveTab}
-                addToast={addToast}
-              />
-            )}
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center opacity-40 text-sm">Loading...</div>}>
+              {activeTab === 'rooms' && <RoomsView darkMode={darkMode} />}
+              {activeTab === 'energy' && <EnergyView darkMode={darkMode} />}
+              {activeTab === 'security' && <SecurityView darkMode={darkMode} />}
+              {activeTab === 'media' && <MediaView darkMode={darkMode} />}
+              {activeTab === 'system' && <SystemView darkMode={darkMode} />}
+              {activeTab === 'network' && <NetworkView darkMode={darkMode} />}
+              {activeTab === 'mobility' && <MobilityView darkMode={darkMode} />}
+              {activeTab === 'health' && <HealthView darkMode={darkMode} />}
+              {activeTab === 'automations' && <AutomationsView darkMode={darkMode} />}
+              {activeTab === 'settings' && (
+                <SettingsView
+                  darkMode={darkMode}
+                  toggleDarkMode={() => setDarkMode(!darkMode)}
+                  entities={entities}
+                  setEntities={setEntities}
+                  rooms={rooms}
+                  setRooms={setRooms}
+                  addLog={addLog}
+                  logs={logs}
+                  setLogs={setLogs}
+                  setActiveTab={setActiveTab}
+                  addToast={addToast}
+                />
+              )}
+            </Suspense>
           </div>
+
         </main>
       </div>
 

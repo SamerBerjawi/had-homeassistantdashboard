@@ -22,6 +22,7 @@ import {
 } from '@phosphor-icons/react';
 import { AnimatedThemeToggler } from './ui/animated-theme-toggler';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { extractHANotifications } from '../services/notificationsService';
 
 interface SidebarProps {
@@ -51,7 +52,19 @@ export default function Sidebar({
     installUpdate,
     skipUpdate,
     clearSkippedUpdate
-  } = useAutoLayoutStore();
+  } = useAutoLayoutStore(useShallow(s => ({
+    domainGroups: s.domainGroups,
+    states: s.states,
+    nativeNotifications: s.nativeNotifications,
+    nativeRepairs: s.nativeRepairs,
+    dismissedNotificationIds: s.dismissedNotificationIds,
+    callHAService: s.callHAService,
+    dismissNotification: s.dismissNotification,
+    updateEntityState: s.updateEntityState,
+    installUpdate: s.installUpdate,
+    skipUpdate: s.skipUpdate,
+    clearSkippedUpdate: s.clearSkippedUpdate
+  })));
 
   const notifications = useMemo(() => {
     return extractHANotifications({

@@ -38,6 +38,30 @@ export interface HAWebSocketCallbacks {
 
 
 
+export function normalizeHAWebSocketUrl(rawUrl: string): string {
+  let url = (rawUrl || '').trim();
+  if (!url) return '';
+
+  // Auto-convert HTTP(S) to WS(S)
+  if (url.startsWith('http://')) {
+    url = 'ws://' + url.slice(7);
+  } else if (url.startsWith('https://')) {
+    url = 'wss://' + url.slice(8);
+  } else if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
+    url = 'ws://' + url;
+  }
+
+  // Remove trailing slashes
+  url = url.replace(/\/+$/, '');
+
+  // Ensure /api/websocket suffix
+  if (!url.endsWith('/api/websocket')) {
+    url = url + '/api/websocket';
+  }
+
+  return url;
+}
+
 class HAWebSocketClient {
   private socket: WebSocket | null = null;
   private messageId = 1;
@@ -47,7 +71,9 @@ class HAWebSocketClient {
   private currentUrl = '';
   private currentToken = '';
   private isDemoMode = true;
+  private isExplicitDisconnect = false;
   private reconnectTimer: any = null;
+  private reconnectAttempts = 0;
 
   public init(callbacks: HAWebSocketCallbacks) {
     this.callbacks = callbacks;
@@ -119,6 +145,23 @@ class HAWebSocketClient {
 
   }
 
+  private scheduleReconnect() {
+    if (this.isDemoMode || this.isExplicitDisconnect || !this.currentUrl || !this.currentToken) return;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    this.reconnectAttempts++;
+    const delay = Math.min(30000, 2000 * Math.pow(1.4, Math.min(this.reconnectAttempts, 8))) + Math.floor(Math.random() * 1000);
+    this.callbacks?.onLogMessage('warning', `Live connection dropped. Auto-reconnecting in ${(delay / 1000).toFixed(1)}s (attempt ${this.reconnectAttempts})...`);
+
+    this.reconnectTimer = setTimeout(() => {
+      if (!this.isDemoMode && !this.isExplicitDisconnect) {
+        this.connect(this.currentUrl, this.currentToken);
+      }
+    }, delay);
+  }
 
   public connect(url: string, token: string) {
     if (this.isDemoMode) {
@@ -126,16 +169,22 @@ class HAWebSocketClient {
       return;
     }
 
-    this.currentUrl = url;
+    const normalizedUrl = normalizeHAWebSocketUrl(url);
+    this.currentUrl = normalizedUrl;
     this.currentToken = token;
-    this.disconnect();
+    this.isExplicitDisconnect = false;
+
+    if (this.socket) {
+      this.socket.close();
+      this.socket = null;
+    }
 
     this.status = 'connecting';
     this.callbacks?.onStatusChange('connecting');
-    this.callbacks?.onLogMessage('info', `Connecting to WebSocket: ${url}`);
+    this.callbacks?.onLogMessage('info', `Connecting to WebSocket: ${normalizedUrl}`);
 
     try {
-      this.socket = new WebSocket(url);
+      this.socket = new WebSocket(normalizedUrl);
 
       this.socket.onopen = () => {
         this.callbacks?.onLogMessage('info', 'WebSocket TCP connection opened. Awaiting auth challenge...');
@@ -161,16 +210,24 @@ class HAWebSocketClient {
           this.status = 'disconnected';
           this.callbacks?.onStatusChange('disconnected');
           this.callbacks?.onLogMessage('warning', 'WebSocket connection closed');
+          if (!this.isExplicitDisconnect) {
+            this.scheduleReconnect();
+          }
         }
       };
     } catch (err: any) {
       this.status = 'error';
       this.callbacks?.onStatusChange('error', err.message);
       this.callbacks?.onLogMessage('error', `Failed to initialize WebSocket: ${err.message}`);
+      if (!this.isExplicitDisconnect) {
+        this.scheduleReconnect();
+      }
     }
   }
 
   public disconnect() {
+    this.isExplicitDisconnect = true;
+    this.reconnectAttempts = 0;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -195,6 +252,7 @@ class HAWebSocketClient {
 
     if (msg.type === 'auth_ok') {
       this.status = 'connected';
+      this.reconnectAttempts = 0;
       this.callbacks?.onStatusChange('connected');
       this.callbacks?.onLogMessage('info', `Authentication successful! Home Assistant version: ${msg.ha_version || '2026.x'}`);
       this.fetchAllRegistries();
@@ -203,10 +261,12 @@ class HAWebSocketClient {
 
     if (msg.type === 'auth_invalid') {
       this.status = 'auth_failed';
+      this.isExplicitDisconnect = true;
       this.callbacks?.onStatusChange('auth_failed', msg.message || 'Invalid Access Token');
       this.callbacks?.onLogMessage('error', `Authentication failed: ${msg.message}`);
       return;
     }
+
 
     if (msg.type === 'result') {
       const pending = this.pendingRequests.get(msg.id);
@@ -234,6 +294,7 @@ class HAWebSocketClient {
   }
 
   private pollTimer: any = null;
+  private visibilityHandler: (() => void) | null = null;
 
   private startStatePolling() {
     this.stopStatePolling();
@@ -242,11 +303,12 @@ class HAWebSocketClient {
     }, 20000);
 
     if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', () => {
+      this.visibilityHandler = () => {
         if (document.visibilityState === 'visible') {
           this.refreshStates();
         }
-      });
+      };
+      document.addEventListener('visibilitychange', this.visibilityHandler);
     }
   }
 
@@ -254,6 +316,10 @@ class HAWebSocketClient {
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
+    }
+    if (this.visibilityHandler && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
     }
   }
 

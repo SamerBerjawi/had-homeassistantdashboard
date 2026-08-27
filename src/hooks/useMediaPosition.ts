@@ -29,7 +29,8 @@ export function formatMediaTime(secs: number): string {
 export function useMediaPosition(
   entity: HAEntity | ResolvedEntity | undefined | null,
   isSeeking: boolean = false,
-  seekPositionOverride: number | null = null
+  seekPositionOverride: number | null = null,
+  enabled: boolean = true
 ): MediaPositionResult {
   const isPlaying = entity?.state === 'playing';
   const duration = Number(entity?.attributes?.media_duration) || 0;
@@ -46,6 +47,8 @@ export function useMediaPosition(
 
   // Re-anchor clock whenever Home Assistant updates attributes or song changes
   useEffect(() => {
+    if (!enabled) return;
+
     const updatedAtMs = updatedAt ? new Date(updatedAt).getTime() : Date.now();
     lastSyncRef.current = {
       basePos: rawBasePosition,
@@ -62,11 +65,11 @@ export function useMediaPosition(
         setDisplayPosition(rawBasePosition);
       }
     }
-  }, [rawBasePosition, updatedAt, mediaTitle, isPlaying, duration, isSeeking, seekPositionOverride]);
+  }, [rawBasePosition, updatedAt, mediaTitle, isPlaying, duration, isSeeking, seekPositionOverride, enabled]);
 
   // High-precision ticker (every 250ms) to ensure smooth, accurate, drift-free playback time
   useEffect(() => {
-    if (!isPlaying || isSeeking || seekPositionOverride !== null) return;
+    if (!enabled || !isPlaying || isSeeking || seekPositionOverride !== null) return;
 
     const tick = () => {
       const { basePos, updatedAtMs } = lastSyncRef.current;
@@ -82,7 +85,8 @@ export function useMediaPosition(
 
     const intervalId = setInterval(tick, 250);
     return () => clearInterval(intervalId);
-  }, [isPlaying, duration, isSeeking, seekPositionOverride]);
+  }, [enabled, isPlaying, duration, isSeeking, seekPositionOverride]);
+
 
   const activePos = isSeeking && seekPositionOverride !== null 
     ? seekPositionOverride 
