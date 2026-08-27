@@ -79,28 +79,30 @@ export function groupEntitiesByFloorAndArea(
   let hasAreas = false;
 
   entities.forEach((entity) => {
-    // Resolve Floor (with custom store overrides)
+    // Resolve Floor (with custom store overrides and index-based ordering)
     const entityFloor = entity.floor;
     const storeFloor = entityFloor?.floor_id ? floorLookup.get(entityFloor.floor_id) : undefined;
+    const floorIndex = entityFloor?.floor_id ? allFloors.findIndex(f => f.floor_id === entityFloor.floor_id) : -1;
     const floorId = storeFloor?.floor_id || entityFloor?.floor_id || 'unassigned_floor';
     const floorName = storeFloor?.name || entityFloor?.name || 'Other Areas';
     const floorIcon = storeFloor?.icon || entityFloor?.icon || 'Stairs';
     const floorColor = storeFloor?.color || entityFloor?.color || '#6366f1';
-    const floorOrder = typeof storeFloor?.order === 'number' ? storeFloor.order : entityFloor?.order;
+    const floorOrder = typeof storeFloor?.order === 'number' ? storeFloor.order : (floorIndex >= 0 ? floorIndex : 999);
     const floorLevel = typeof storeFloor?.level === 'number' ? storeFloor.level : entityFloor?.level;
 
     if (floorId !== 'unassigned_floor') {
       hasFloors = true;
     }
 
-    // Resolve Area (with custom store overrides)
+    // Resolve Area (with custom store overrides and index-based ordering)
     const entityArea = entity.area;
     const storeArea = entityArea?.area_id ? areaLookup.get(entityArea.area_id) : undefined;
+    const areaIndex = entityArea?.area_id ? allAreas.findIndex(a => a.area_id === entityArea.area_id) : -1;
     const areaId = storeArea?.area_id || entityArea?.area_id || 'unassigned_area';
     const areaName = storeArea?.name || entityArea?.name || 'General / Unassigned';
     const areaIcon = storeArea?.icon || entityArea?.icon || 'HouseLine';
     const areaColor = storeArea?.color || entityArea?.color || '#38bdf8';
-    const areaOrder = typeof storeArea?.order === 'number' ? storeArea.order : entityArea?.order;
+    const areaOrder = typeof storeArea?.order === 'number' ? storeArea.order : (areaIndex >= 0 ? areaIndex : 999);
 
     if (areaId !== 'unassigned_area') {
       hasAreas = true;
@@ -153,15 +155,15 @@ export function groupEntitiesByFloorAndArea(
       });
     });
 
-    // Sort areas strictly by custom order if defined, placing unassigned at the end
+    // Sort areas strictly by custom order or index in allAreas, placing unassigned at the end
     areaGroups.sort((a, b) => {
       if (!a.areaId) return 1;
       if (!b.areaId) return -1;
-      if (typeof a.order === 'number' && typeof b.order === 'number') {
-        return a.order - b.order;
+      const orderA = typeof a.order === 'number' ? a.order : (allAreas.findIndex(ar => ar.area_id === a.areaId));
+      const orderB = typeof b.order === 'number' ? b.order : (allAreas.findIndex(ar => ar.area_id === b.areaId));
+      if (orderA !== orderB) {
+        return (orderA >= 0 ? orderA : 999) - (orderB >= 0 ? orderB : 999);
       }
-      if (typeof a.order === 'number') return -1;
-      if (typeof b.order === 'number') return 1;
       return a.areaName.localeCompare(b.areaName);
     });
 
@@ -176,15 +178,15 @@ export function groupEntitiesByFloorAndArea(
     });
   });
 
-  // Sort floors strictly by custom order if defined, placing unassigned at the end
+  // Sort floors strictly by custom order or index in allFloors, placing unassigned at the end
   resultGroups.sort((a, b) => {
     if (!a.floorId) return 1;
     if (!b.floorId) return -1;
-    if (typeof a.order === 'number' && typeof b.order === 'number') {
-      return a.order - b.order;
+    const orderA = typeof a.order === 'number' ? a.order : (allFloors.findIndex(fl => fl.floor_id === a.floorId));
+    const orderB = typeof b.order === 'number' ? b.order : (allFloors.findIndex(fl => fl.floor_id === b.floorId));
+    if (orderA !== orderB) {
+      return (orderA >= 0 ? orderA : 999) - (orderB >= 0 ? orderB : 999);
     }
-    if (typeof a.order === 'number') return -1;
-    if (typeof b.order === 'number') return 1;
     if (typeof a.level === 'number' && typeof b.level === 'number') {
       return a.level - b.level;
     }

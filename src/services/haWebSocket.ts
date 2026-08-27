@@ -257,9 +257,47 @@ class HAWebSocketClient {
       // Subscribe to live events
       this.sendRequest('subscribe_events', { event_type: 'state_changed' });
       this.startStatePolling();
+
+      // Ingest live forecasts for weather entities
+      const weatherEntities = statesList.filter(s => s?.entity_id?.startsWith('weather.'));
+      for (const w of weatherEntities) {
+        this.fetchWeatherForecast(w.entity_id);
+      }
+
       this.callbacks?.onLogMessage('info', `Ingested ${areas.length} areas, ${devices.length} devices, ${entityRegistry.length} entities, ${labels?.length || 0} labels, and ${statesList.length} live states.`);
     } catch (e: any) {
       this.callbacks?.onLogMessage('error', `Failed to fetch HA registries: ${e.message}`);
+    }
+  }
+
+  public async fetchWeatherForecast(entityId: string): Promise<void> {
+    if (this.isDemoMode || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+    try {
+      // 1. Try Home Assistant 2023.9+ get_forecasts service call
+      const res = await this.sendRequest('call_service', {
+        domain: 'weather',
+        service: 'get_forecasts',
+        service_data: { type: 'daily' },
+        target: { entity_id: entityId },
+        return_response: true
+      });
+
+      const forecastList = res?.response?.[entityId]?.forecast;
+      if (Array.isArray(forecastList) && forecastList.length > 0) {
+        const statesList = await this.sendRequest<HAState[]>('get_states').catch(() => []);
+        const stateObj = Array.isArray(statesList) ? statesList.find(s => s?.entity_id === entityId) : null;
+        if (stateObj) {
+          this.callbacks?.onStateChanged(entityId, {
+            ...stateObj,
+            attributes: {
+              ...stateObj.attributes,
+              forecast: forecastList
+            }
+          });
+        }
+      }
+    } catch {
+      // ignore
     }
   }
 

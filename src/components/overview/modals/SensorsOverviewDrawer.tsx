@@ -19,6 +19,7 @@ import { ResolvedEntity } from '../../../types';
 import DetailsRightDrawer from '../DetailsRightDrawer';
 import { groupEntitiesByFloorAndArea } from '../../../lib/grouping';
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
+import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 
 interface SensorsOverviewDrawerProps {
   isOpen: boolean;
@@ -39,6 +40,8 @@ export default function SensorsOverviewDrawer({
   initialTab = 'all',
   darkMode = true
 }: SensorsOverviewDrawerProps) {
+  const customFloors = useAutoLayoutStore(s => s.floors);
+  const customAreas = useAutoLayoutStore(s => s.areas);
   const [activeTab, setActiveTab] = useState<'all' | 'motion' | 'leak' | 'smoke'>(initialTab);
 
   React.useEffect(() => {
@@ -58,7 +61,7 @@ export default function SensorsOverviewDrawer({
     activeTab === 'smoke' ? smokeSensors :
     allSensors;
 
-  const grouped = groupEntitiesByFloorAndArea(currentDisplayList);
+  const grouped = groupEntitiesByFloorAndArea(currentDisplayList, customFloors, customAreas);
 
   return (
     <DetailsRightDrawer
@@ -158,14 +161,23 @@ export default function SensorsOverviewDrawer({
               
               {/* Floor Header */}
               {grouped.hasFloors && (
-                <div className="flex items-center gap-2 pb-1.5 border-b border-slate-200 dark:border-white/10">
-                  <DynamicPhosphorIcon 
-                    name={floorGroup.icon} 
-                    fallback={Stairs} 
-                    size={16} 
-                    weight="duotone" 
-                    style={{ color: floorGroup.color || '#10b981' }}
-                  />
+                <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200 dark:border-white/10">
+                  <div 
+                    className="w-7 h-7 rounded-xl flex items-center justify-center border shadow-2xs shrink-0"
+                    style={{
+                      backgroundColor: `${floorGroup.color || '#10b981'}1a`,
+                      borderColor: `${floorGroup.color || '#10b981'}40`,
+                      color: floorGroup.color || '#10b981'
+                    }}
+                  >
+                    <DynamicPhosphorIcon 
+                      name={floorGroup.icon} 
+                      fallback={Stairs} 
+                      size={15} 
+                      weight="duotone" 
+                      style={{ color: floorGroup.color || '#10b981' }}
+                    />
+                  </div>
                   <h4 
                     className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200"
                     style={{ color: floorGroup.color || undefined }}
@@ -186,14 +198,23 @@ export default function SensorsOverviewDrawer({
                     {/* Area Header */}
                     {(grouped.hasAreas || grouped.hasFloors) && (
                       <div className="flex items-center justify-between px-1">
-                        <div className="flex items-center gap-1.5">
-                          <DynamicPhosphorIcon 
-                            name={areaGroup.icon} 
-                            fallback={HouseLine} 
-                            size={14} 
-                            weight="duotone" 
-                            style={{ color: areaGroup.color || '#10b981' }}
-                          />
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-5 h-5 rounded-lg flex items-center justify-center border shrink-0"
+                            style={{
+                              backgroundColor: `${areaGroup.color || '#10b981'}1a`,
+                              borderColor: `${areaGroup.color || '#10b981'}40`,
+                              color: areaGroup.color || '#10b981'
+                            }}
+                          >
+                            <DynamicPhosphorIcon 
+                              name={areaGroup.icon} 
+                              fallback={HouseLine} 
+                              size={12} 
+                              weight="duotone" 
+                              style={{ color: areaGroup.color || '#10b981' }}
+                            />
+                          </div>
                           <span 
                             className="text-xs font-bold text-slate-700 dark:text-slate-300"
                             style={{ color: areaGroup.color || undefined }}

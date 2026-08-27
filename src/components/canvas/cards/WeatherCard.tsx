@@ -1,63 +1,82 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React from 'react';
-import { Sun, CloudRain, CloudSun, Cloud, Wind, Drop, ArrowUp, ArrowDown } from '@phosphor-icons/react';
+import { Wind, Drop, ArrowUp, ArrowDown } from '@phosphor-icons/react';
 import { CardConfig, WeatherBackdropType } from '../../../types/canvas';
 import { HAEntity } from '../../../types';
-import { DEFAULT_WEATHER_DATA } from '../../../data';
-import WeatherBackdrop from '../WeatherBackdrop';
+import AnimatedWeatherBackdrop from '../../weather/AnimatedWeatherBackdrop';
+import { getWeatherConditionInfo } from '../../weather/weatherIcons';
+import { getDailyForecast } from '../../../lib/weatherForecast';
 
 interface WeatherCardProps {
   config: CardConfig;
   entity?: HAEntity;
   backdropType?: WeatherBackdropType;
+  darkMode?: boolean;
   onOpenModal: () => void;
 }
 
 export default function WeatherCard({
   config,
   entity,
-  backdropType = 'auto',
+  darkMode = true,
   onOpenModal
 }: WeatherCardProps) {
-  const data = DEFAULT_WEATHER_DATA;
-  const title = config.title || data.location;
-  const condition = entity?.state ? entity.state : data.condition;
-  const tempC = entity?.attributes?.temperature ?? data.temperatureC;
+  const state = entity?.state || 'partlycloudy';
+  const attr: Record<string, any> = entity?.attributes || {};
+  const isNight = state.toLowerCase().includes('night');
+  const conditionInfo = getWeatherConditionInfo(state, isNight, 26);
+
+  const title = config.title || attr.friendly_name || entity?.entity_id || 'Weather Radar';
+  const temp = typeof attr.temperature === 'number' ? Math.round(attr.temperature) : 22;
+  const tempUnit = attr.temperature_unit || '°C';
+  const humidity = typeof attr.humidity === 'number' ? attr.humidity : 58;
+  const windSpeed = typeof attr.wind_speed === 'number' ? attr.wind_speed : 14;
+  const windSpeedUnit = attr.wind_speed_unit || 'km/h';
+
+  const dailyForecast = getDailyForecast(entity);
+  const todayForecast = dailyForecast[0];
+  const todayHigh = todayForecast?.temperature ?? (temp + 3);
+  const todayLow = todayForecast?.templow ?? (temp - 5);
 
   return (
-    <div className="relative w-full h-full p-4 flex flex-col justify-between overflow-hidden rounded-3xl">
+    <div 
+      onClick={onOpenModal}
+      className={`relative w-full h-full p-4 flex flex-col justify-between overflow-hidden rounded-3xl cursor-pointer group ${
+        darkMode ? 'text-white' : 'text-slate-900 shadow-slate-200/60'
+      }`}
+    >
       {/* Contained Animated Atmospheric Weather Backdrop */}
-      <WeatherBackdrop
-        isContained={true}
-        backdropType={backdropType}
-        weatherEntity={entity}
-        darkMode={true}
-      />
+      <AnimatedWeatherBackdrop condition={state} isNight={isNight} darkMode={darkMode} />
 
       {/* Atmospheric Contrast Overlay */}
-      <div className="absolute inset-0 bg-black/25 pointer-events-none rounded-3xl" />
+      <div className={`absolute inset-0 pointer-events-none rounded-3xl ${
+        darkMode ? 'bg-black/25' : 'bg-white/10'
+      }`} />
 
       {/* Top row */}
       <div className="relative z-10 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
-          <CloudSun
-            size={26}
-            weight="duotone"
-            className="text-amber-300 drop-shadow-md shrink-0"
-          />
+          <div className="p-1.5 rounded-xl bg-white/20 dark:bg-white/10 backdrop-blur-md border border-slate-200/40 dark:border-white/20 shadow-xs group-hover:rotate-6 transition-transform">
+            {conditionInfo.icon}
+          </div>
           <div className="min-w-0">
-            <h4 className="text-sm font-bold text-white truncate drop-shadow-sm">{title}</h4>
-            <p className="text-[11px] text-slate-200 font-medium truncate capitalize drop-shadow-xs">{condition}</p>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate drop-shadow-xs">{title}</h4>
+            <p className="text-[11px] text-slate-600 dark:text-slate-200 font-medium truncate drop-shadow-xs">{conditionInfo.name}</p>
           </div>
         </div>
 
         {/* High / Low pill */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/40 backdrop-blur-md border border-white/15 text-[11px] font-mono text-slate-200 shadow-sm">
-          <span className="flex items-center text-amber-300">
-            <ArrowUp size={11} weight="bold" />{data.highC}°
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-black/40 backdrop-blur-md border border-slate-200/80 dark:border-white/15 text-[11px] font-mono text-slate-800 dark:text-slate-200 shadow-xs">
+          <span className="flex items-center text-amber-600 dark:text-amber-300 font-bold">
+            <ArrowUp size={11} weight="bold" />{Math.round(todayHigh)}°
           </span>
           <span className="opacity-40">|</span>
-          <span className="flex items-center text-cyan-300">
-            <ArrowDown size={11} weight="bold" />{data.lowC}°
+          <span className="flex items-center text-sky-600 dark:text-cyan-300 font-bold">
+            <ArrowDown size={11} weight="bold" />{Math.round(todayLow)}°
           </span>
         </div>
       </div>
@@ -65,34 +84,42 @@ export default function WeatherCard({
       {/* Center: Large temperature + 3-day forecast pills */}
       <div className="relative z-10 flex items-center justify-between my-1">
         <div className="flex items-baseline gap-1">
-          <span className="text-4xl font-black text-white font-mono tracking-tight leading-none drop-shadow-md">
-            {tempC}°
+          <span className="text-4xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none drop-shadow-xs">
+            {temp}
           </span>
-          <span className="text-xs text-slate-300 font-bold">C</span>
+          <span className="text-xs text-slate-700 dark:text-slate-300 font-bold font-mono">{tempUnit}</span>
         </div>
 
         {/* 3-day mini forecast */}
-        <div className="flex items-center gap-2">
-          {data.forecast.map((f, i) => (
-            <div
-              key={i}
-              className="flex flex-col items-center px-2 py-1 rounded-xl bg-black/40 backdrop-blur-md border border-white/15 text-center shadow-xs"
-            >
-              <span className="text-[9px] text-slate-300 font-bold uppercase">{f.day.slice(0, 3)}</span>
-              <span className="text-xs font-bold text-white font-mono my-0.5">{f.highC}°</span>
-              <span className="text-[9px] text-slate-300 font-mono">{f.lowC}°</span>
-            </div>
-          ))}
-        </div>
+        {dailyForecast.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            {dailyForecast.slice(0, 3).map((f, i) => {
+              const dayLabel = i === 0 ? 'Today' : (i === 1 ? 'Tomorrow' : new Date(f.datetime).toLocaleDateString(undefined, { weekday: 'short' }));
+              const high = Math.round(f.temperature);
+              const low = Math.round(f.templow);
+
+              return (
+                <div
+                  key={f.datetime || i}
+                  className="flex flex-col items-center px-2 py-1 rounded-xl bg-white/80 dark:bg-black/40 backdrop-blur-md border border-slate-200/80 dark:border-white/15 text-center shadow-xs"
+                >
+                  <span className="text-[9px] text-slate-500 dark:text-slate-300 font-bold uppercase">{dayLabel.slice(0, 3)}</span>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white font-mono my-0.5">{high}°</span>
+                  <span className="text-[9px] text-sky-600 dark:text-slate-300 font-mono">{low}°</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Bottom stats: Wind & Humidity */}
-      <div className="relative z-10 flex items-center justify-between text-[10px] text-slate-200 pt-1.5 border-t border-white/15">
-        <span className="flex items-center gap-1 text-slate-200 font-medium">
-          <Wind size={13} weight="duotone" className="text-sky-300" /> {data.windSpeedKmh} km/h
+      <div className="relative z-10 flex items-center justify-between text-[10px] text-slate-700 dark:text-slate-200 pt-1.5 border-t border-slate-200/60 dark:border-white/15">
+        <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-200">
+          <Wind size={13} weight="duotone" className="text-teal-600 dark:text-sky-300" /> {windSpeed} {windSpeedUnit}
         </span>
-        <span className="flex items-center gap-1 text-slate-200 font-medium">
-          <Drop size={13} weight="duotone" className="text-cyan-300" /> {data.humidity}% Humidity
+        <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-200">
+          <Drop size={13} weight="duotone" className="text-blue-600 dark:text-cyan-300" /> {humidity}% Humidity
         </span>
       </div>
     </div>

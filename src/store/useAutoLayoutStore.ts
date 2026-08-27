@@ -86,6 +86,8 @@ export interface AutoLayoutStoreState {
   // Filter & Navigation
   selectedFloorId: string | 'all';
   selectedAreaId: string | null;
+  selectedWeatherEntityId: string | null;
+  selectedAlarmEntityId: string | null;
   showDiagnosticEntities: boolean;
   searchQuery: string;
 
@@ -108,6 +110,8 @@ export interface AutoLayoutStoreState {
   // Navigation Setters
   setSelectedFloorId: (floorId: string | 'all') => void;
   setSelectedAreaId: (areaId: string | null) => void;
+  setSelectedWeatherEntityId: (id: string | null) => void;
+  setSelectedAlarmEntityId: (id: string | null) => void;
   setShowDiagnosticEntities: (show: boolean) => void;
   setSearchQuery: (query: string) => void;
 
@@ -203,6 +207,8 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
 
   selectedFloorId: 'all',
   selectedAreaId: null,
+  selectedWeatherEntityId: typeof window !== 'undefined' ? localStorage.getItem('ha_selected_weather_id') : null,
+  selectedAlarmEntityId: typeof window !== 'undefined' ? localStorage.getItem('ha_selected_alarm_id') : null,
   showDiagnosticEntities: false,
   searchQuery: '',
 
@@ -543,6 +549,18 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           get().updateEntityState(eid, 'paused');
         } else if (service === 'set_percentage' && serviceData.percentage !== undefined) {
           get().updateEntityState(eid, serviceData.percentage > 0 ? 'on' : 'off', { percentage: serviceData.percentage });
+        } else if (domain === 'alarm_control_panel' || service.startsWith('alarm_')) {
+          if (service === 'alarm_arm_home') {
+            get().updateEntityState(eid, 'armed_home', { changed_by: 'Dashboard 1-Tap', last_changed: new Date().toISOString() });
+          } else if (service === 'alarm_arm_away') {
+            get().updateEntityState(eid, 'armed_away', { changed_by: 'Dashboard 1-Tap', last_changed: new Date().toISOString() });
+          } else if (service === 'alarm_arm_night') {
+            get().updateEntityState(eid, 'armed_night', { changed_by: 'Dashboard 1-Tap', last_changed: new Date().toISOString() });
+          } else if (service === 'alarm_disarm') {
+            get().updateEntityState(eid, 'disarmed', { changed_by: 'Dashboard 1-Tap', last_changed: new Date().toISOString() });
+          } else if (service === 'alarm_trigger') {
+            get().updateEntityState(eid, 'triggered', { changed_by: 'Alarm Trigger', last_changed: new Date().toISOString() });
+          }
         }
       }
     }
@@ -664,6 +682,26 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
 
   setSelectedFloorId: (floorId: string | 'all') => set({ selectedFloorId: floorId }),
   setSelectedAreaId: (areaId: string | null) => set({ selectedAreaId: areaId }),
+  setSelectedWeatherEntityId: (id: string | null) => {
+    if (typeof window !== 'undefined') {
+      if (id) {
+        localStorage.setItem('ha_selected_weather_id', id);
+      } else {
+        localStorage.removeItem('ha_selected_weather_id');
+      }
+    }
+    set({ selectedWeatherEntityId: id });
+  },
+  setSelectedAlarmEntityId: (id: string | null) => {
+    if (typeof window !== 'undefined') {
+      if (id) {
+        localStorage.setItem('ha_selected_alarm_id', id);
+      } else {
+        localStorage.removeItem('ha_selected_alarm_id');
+      }
+    }
+    set({ selectedAlarmEntityId: id });
+  },
   setShowDiagnosticEntities: (show: boolean) => {
     set({ showDiagnosticEntities: show });
     get().recomputeGraph();

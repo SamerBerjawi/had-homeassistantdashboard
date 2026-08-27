@@ -51,6 +51,8 @@ export default function MediaOverviewDrawer({
 }: MediaOverviewDrawerProps) {
   const serverUrl = useAutoLayoutStore(s => s.serverUrl);
   const devices = useAutoLayoutStore(s => s.devices);
+  const floors = useAutoLayoutStore(s => s.floors);
+  const areas = useAutoLayoutStore(s => s.areas);
   const resolvedEntities = useAutoLayoutStore(s => s.resolvedEntities);
   const callHAService = useAutoLayoutStore(s => s.callHAService);
 
@@ -277,7 +279,7 @@ export default function MediaOverviewDrawer({
           <div className={`p-6 rounded-3xl border shadow-xl relative flex flex-col items-center text-center transition-all duration-300 ${
             darkMode
               ? 'bg-slate-900/80 border-purple-500/25'
-              : 'bg-white/90 border-purple-200'
+              : 'bg-white/95 border-purple-200/80 shadow-slate-200/60'
           }`}>
             {/* Blurred Album Artwork covering the entire tile */}
             {albumArt ? (
@@ -285,13 +287,21 @@ export default function MediaOverviewDrawer({
                 <img
                   src={albumArt}
                   alt=""
-                  className="w-full h-full object-cover scale-110 blur-2xl opacity-40 dark:opacity-35 transition-opacity duration-700"
+                  className={`w-full h-full object-cover scale-110 blur-2xl transition-opacity duration-700 ${
+                    darkMode ? 'opacity-35' : 'opacity-20'
+                  }`}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/50 to-slate-950/35 dark:from-black/90 dark:via-black/60 dark:to-black/30 backdrop-blur-xs" />
+                <div className={`absolute inset-0 backdrop-blur-xs ${
+                  darkMode
+                    ? 'bg-gradient-to-t from-black/90 via-black/60 to-black/35'
+                    : 'bg-gradient-to-t from-white/95 via-white/80 to-white/60'
+                }`} />
               </div>
             ) : (
               <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
-                <div className="absolute top-0 inset-x-0 h-32 bg-radial from-purple-500/20 to-transparent blur-2xl" />
+                <div className={`absolute top-0 inset-x-0 h-32 blur-2xl ${
+                  darkMode ? 'bg-radial from-purple-500/20 to-transparent' : 'bg-radial from-purple-400/15 to-transparent'
+                }`} />
               </div>
             )}
 
@@ -466,21 +476,30 @@ export default function MediaOverviewDrawer({
           </div>
 
           {(() => {
-            const grouped = groupEntitiesByFloorAndArea(mediaPlayers);
+            const grouped = groupEntitiesByFloorAndArea(mediaPlayers, floors, areas);
             return (
               <div className="space-y-6">
                 {grouped.groups.map((floorGroup) => (
                   <div key={floorGroup.floorId || 'no-floor'} className="space-y-3">
                     {/* Floor Header */}
                     {grouped.hasFloors && (
-                      <div className="flex items-center gap-2 pb-1.5 border-b border-slate-200 dark:border-white/10">
-                        <DynamicPhosphorIcon 
-                          name={floorGroup.icon} 
-                          fallback={Stairs} 
-                          size={16} 
-                          weight="duotone" 
-                          style={{ color: floorGroup.color || '#a855f7' }}
-                        />
+                      <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200 dark:border-white/10">
+                        <div 
+                          className="w-7 h-7 rounded-xl flex items-center justify-center border shadow-2xs shrink-0"
+                          style={{
+                            backgroundColor: `${floorGroup.color || '#a855f7'}1a`,
+                            borderColor: `${floorGroup.color || '#a855f7'}40`,
+                            color: floorGroup.color || '#a855f7'
+                          }}
+                        >
+                          <DynamicPhosphorIcon 
+                            name={floorGroup.icon} 
+                            fallback={Stairs} 
+                            size={15} 
+                            weight="duotone" 
+                            style={{ color: floorGroup.color || '#a855f7' }}
+                          />
+                        </div>
                         <h4 
                           className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200"
                           style={{ color: floorGroup.color || undefined }}
@@ -500,14 +519,23 @@ export default function MediaOverviewDrawer({
                           {/* Area Header */}
                           {(grouped.hasAreas || grouped.hasFloors) && (
                             <div className="flex items-center justify-between px-1">
-                              <div className="flex items-center gap-1.5">
-                                <DynamicPhosphorIcon 
-                                  name={areaGroup.icon} 
-                                  fallback={HouseLine} 
-                                  size={14} 
-                                  weight="duotone" 
-                                  style={{ color: areaGroup.color || '#a855f7' }}
-                                />
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-5 h-5 rounded-lg flex items-center justify-center border shrink-0"
+                                  style={{
+                                    backgroundColor: `${areaGroup.color || '#a855f7'}1a`,
+                                    borderColor: `${areaGroup.color || '#a855f7'}40`,
+                                    color: areaGroup.color || '#a855f7'
+                                  }}
+                                >
+                                  <DynamicPhosphorIcon 
+                                    name={areaGroup.icon} 
+                                    fallback={HouseLine} 
+                                    size={12} 
+                                    weight="duotone" 
+                                    style={{ color: areaGroup.color || '#a855f7' }}
+                                  />
+                                </div>
                                 <span 
                                   className="text-xs font-bold text-slate-700 dark:text-slate-300"
                                   style={{ color: areaGroup.color || undefined }}

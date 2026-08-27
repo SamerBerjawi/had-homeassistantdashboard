@@ -695,6 +695,27 @@ export const MOCK_ENTITY_REGISTRY: HAEntityRegistryEntry[] = [
     device_class: 'pressure',
     unit_of_measurement: 'hPa'
   },
+  {
+    entity_id: 'weather.home',
+    name: 'Home Weather',
+    area_id: null,
+    device_id: null,
+    platform: 'met'
+  },
+  {
+    entity_id: 'weather.forecast_home',
+    name: 'AccuWeather Regional Forecast',
+    area_id: null,
+    device_id: null,
+    platform: 'accuweather'
+  },
+  {
+    entity_id: 'weather.patio_weather',
+    name: 'Patio Davis Weather Station',
+    area_id: 'patio',
+    device_id: null,
+    platform: 'netatmo'
+  },
 
   // ---------------- Household Users & Persons ----------------
   {
@@ -747,6 +768,12 @@ export const MOCK_ENTITY_REGISTRY: HAEntityRegistryEntry[] = [
     entity_id: 'alarm_control_panel.home_alarm',
     name: 'Homz Security Guard',
     area_id: 'hallway',
+    platform: 'manual'
+  },
+  {
+    entity_id: 'alarm_control_panel.garage_alarm',
+    name: 'Garage & Workshop Security',
+    area_id: 'garage',
     platform: 'manual'
   },
 
@@ -1292,6 +1319,176 @@ export const MOCK_STATES: Record<string, HAState> = {
       unit_of_measurement: 'hPa'
     }
   },
+  'weather.home': {
+    entity_id: 'weather.home',
+    state: 'partlycloudy',
+    attributes: {
+      friendly_name: 'Home Weather',
+      temperature: 22.5,
+      temperature_unit: '°C',
+      apparent_temperature: 21.8,
+      humidity: 58,
+      pressure: 1014.2,
+      pressure_unit: 'hPa',
+      wind_speed: 14.2,
+      wind_speed_unit: 'km/h',
+      wind_bearing: 235,
+      visibility: 10,
+      visibility_unit: 'km',
+      uv_index: 5.4,
+      dew_point: 13.2,
+      cloud_coverage: 42,
+      forecast: [
+        {
+          datetime: '2026-08-27T12:00:00+00:00',
+          condition: 'partlycloudy',
+          temperature: 24,
+          templow: 15,
+          precipitation: 0,
+          precipitation_probability: 10,
+          wind_speed: 14,
+          wind_bearing: 230,
+          uv_index: 6
+        },
+        {
+          datetime: '2026-08-28T12:00:00+00:00',
+          condition: 'sunny',
+          temperature: 26,
+          templow: 16,
+          precipitation: 0,
+          precipitation_probability: 0,
+          wind_speed: 11,
+          wind_bearing: 210,
+          uv_index: 7
+        },
+        {
+          datetime: '2026-08-29T12:00:00+00:00',
+          condition: 'rainy',
+          temperature: 19,
+          templow: 13,
+          precipitation: 4.5,
+          precipitation_probability: 75,
+          wind_speed: 22,
+          wind_bearing: 260,
+          uv_index: 3
+        },
+        {
+          datetime: '2026-08-30T12:00:00+00:00',
+          condition: 'cloudy',
+          temperature: 20,
+          templow: 14,
+          precipitation: 0.2,
+          precipitation_probability: 25,
+          wind_speed: 16,
+          wind_bearing: 240,
+          uv_index: 4
+        },
+        {
+          datetime: '2026-08-31T12:00:00+00:00',
+          condition: 'sunny',
+          temperature: 25,
+          templow: 15,
+          precipitation: 0,
+          precipitation_probability: 5,
+          wind_speed: 12,
+          wind_bearing: 200,
+          uv_index: 7
+        },
+        {
+          datetime: '2026-09-01T12:00:00+00:00',
+          condition: 'partlycloudy',
+          temperature: 23,
+          templow: 14,
+          precipitation: 0,
+          precipitation_probability: 15,
+          wind_speed: 13,
+          wind_bearing: 220,
+          uv_index: 6
+        },
+        {
+          datetime: '2026-09-02T12:00:00+00:00',
+          condition: 'lightning-rainy',
+          temperature: 21,
+          templow: 13,
+          precipitation: 8.0,
+          precipitation_probability: 85,
+          wind_speed: 28,
+          wind_bearing: 275,
+          uv_index: 3
+        }
+      ]
+    }
+  },
+  'weather.forecast_home': {
+    entity_id: 'weather.forecast_home',
+    state: 'sunny',
+    attributes: {
+      friendly_name: 'AccuWeather Regional Forecast',
+      temperature: 23.0,
+      temperature_unit: '°C',
+      apparent_temperature: 22.4,
+      humidity: 52,
+      pressure: 1015.0,
+      pressure_unit: 'hPa',
+      wind_speed: 10.5,
+      wind_speed_unit: 'km/h',
+      wind_bearing: 190,
+      visibility: 12,
+      visibility_unit: 'km',
+      uv_index: 6.2,
+      dew_point: 12.0,
+      cloud_coverage: 15,
+      forecast: [
+        {
+          datetime: '2026-08-27T12:00:00+00:00',
+          condition: 'sunny',
+          temperature: 25,
+          templow: 16,
+          precipitation: 0,
+          precipitation_probability: 0,
+          wind_speed: 10,
+          uv_index: 7
+        },
+        {
+          datetime: '2026-08-28T12:00:00+00:00',
+          condition: 'sunny',
+          temperature: 27,
+          templow: 17,
+          precipitation: 0,
+          precipitation_probability: 0,
+          wind_speed: 9,
+          uv_index: 8
+        },
+        {
+          datetime: '2026-08-29T12:00:00+00:00',
+          condition: 'rainy',
+          temperature: 20,
+          templow: 14,
+          precipitation: 6.0,
+          precipitation_probability: 80,
+          wind_speed: 20,
+          uv_index: 3
+        }
+      ]
+    }
+  },
+  'weather.patio_weather': {
+    entity_id: 'weather.patio_weather',
+    state: 'partlycloudy',
+    attributes: {
+      friendly_name: 'Patio Davis Weather Station',
+      temperature: 22.8,
+      temperature_unit: '°C',
+      apparent_temperature: 22.0,
+      humidity: 55,
+      pressure: 1014.8,
+      pressure_unit: 'hPa',
+      wind_speed: 12.0,
+      wind_speed_unit: 'km/h',
+      wind_bearing: 215,
+      uv_index: 5.8
+    }
+  },
 
   // Disabled
   'light.old_garage_fluorescent_decommissioned': {
@@ -1395,6 +1592,17 @@ export const MOCK_STATES: Record<string, HAState> = {
       code_format: 'number',
       changed_by: 'Sarah Jenkins',
       armed_at: 'Today, 7:30 AM',
+      perimeter_secure: true
+    }
+  },
+  'alarm_control_panel.garage_alarm': {
+    entity_id: 'alarm_control_panel.garage_alarm',
+    state: 'disarmed',
+    attributes: {
+      friendly_name: 'Garage Security Alarm',
+      code_format: 'number',
+      changed_by: 'User Keypad',
+      armed_at: 'Yesterday',
       perimeter_secure: true
     }
   },

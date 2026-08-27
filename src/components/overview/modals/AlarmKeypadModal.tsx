@@ -1,3 +1,8 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState } from 'react';
 import { 
   ShieldCheck, 
@@ -8,10 +13,13 @@ import {
   Shield, 
   Backspace, 
   WarningCircle, 
-  CheckCircle 
+  CheckCircle,
+  MapPin
 } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
 import DetailsRightDrawer from '../DetailsRightDrawer';
+import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import CustomDropdown from '../../ui/CustomDropdown';
 
 interface AlarmKeypadModalProps {
   isOpen: boolean;
@@ -28,12 +36,29 @@ export default function AlarmKeypadModal({
   onUpdateEntity,
   darkMode = true
 }: AlarmKeypadModalProps) {
+  const domainGroups = useAutoLayoutStore(s => s.domainGroups);
+  const selectedAlarmEntityId = useAutoLayoutStore(s => s.selectedAlarmEntityId);
+  const setSelectedAlarmEntityId = useAutoLayoutStore(s => s.setSelectedAlarmEntityId);
+  const callHAService = useAutoLayoutStore(s => s.callHAService);
+
+  const alarmEntities: ResolvedEntity[] = domainGroups['alarm_control_panel'] || [];
+  const activeAlarm: ResolvedEntity | undefined = 
+    (alarmEntity && !selectedAlarmEntityId ? alarmEntity : undefined) ||
+    alarmEntities.find(a => a.entity_id === selectedAlarmEntityId) || 
+    alarmEntity ||
+    alarmEntities[0];
+
+  const entityOptions = alarmEntities.map(a => ({
+    value: a.entity_id,
+    label: a.name || a.attributes?.friendly_name || a.entity_id
+  }));
+
   const [pin, setPin] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const currentState = alarmEntity?.state || 'armed_home';
-  const entityId = alarmEntity?.entity_id || 'alarm_control_panel.home_alarm';
+  const currentState = activeAlarm?.state || 'disarmed';
+  const entityId = activeAlarm?.entity_id || 'alarm_control_panel.home_alarm';
 
   const handleKeyPress = (num: string) => {
     if (pin.length < 6) {
@@ -52,22 +77,32 @@ export default function AlarmKeypadModal({
     setErrorMessage(null);
   };
 
-  const handleSetMode = (mode: 'disarmed' | 'armed_home' | 'armed_away' | 'armed_night') => {
-    if (mode === 'disarmed' && currentState !== 'disarmed') {
-      if (pin.length > 0 && pin !== '1234' && pin.length < 4) {
-        setErrorMessage('Invalid PIN code. Try 1234.');
-        return;
+  const handleSetMode = async (mode: 'disarmed' | 'armed_home' | 'armed_away' | 'armed_night') => {
+    try {
+      const serviceName = 
+        mode === 'disarmed' ? 'alarm_disarm' :
+        mode === 'armed_home' ? 'alarm_arm_home' :
+        mode === 'armed_away' ? 'alarm_arm_away' :
+        'alarm_arm_night';
+
+      const payload: Record<string, any> = {};
+      if (pin && pin.length >= 4) {
+        payload.code = pin;
       }
+
+      await callHAService('alarm_control_panel', serviceName, payload, { entity_id: entityId });
+      onUpdateEntity(entityId, mode, {
+        changed_by: 'User Keypad (1-Tap)',
+        last_changed: 'Just now'
+      });
+
+      setPin('');
+      setErrorMessage(null);
+      setSuccessMessage(`Alarm successfully ${mode === 'disarmed' ? 'disarmed' : `armed (${mode.replace('armed_', '')})`}`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to update alarm state');
     }
-
-    onUpdateEntity(entityId, mode, {
-      changed_by: 'User Keypad',
-      last_changed: 'Just now'
-    });
-
-    setPin('');
-    setSuccessMessage(`Alarm state updated to ${mode.replace('_', ' ').toUpperCase()}`);
-    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   const getStateBadge = () => {
@@ -112,16 +147,38 @@ export default function AlarmKeypadModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Security System & Keypad"
-      subtitle={alarmEntity?.name || 'Perimeter Security Guard'}
+      subtitle={activeAlarm?.name || 'Perimeter Security Guard'}
       icon={<Shield size={22} weight="duotone" className="text-indigo-500" />}
       darkMode={darkMode}
     >
       <div className="space-y-6">
+        {/* Multi-Alarm Entity Selector (if multiple exist) */}
+        {alarmEntities.length > 1 && (
+          <div className="p-3.5 rounded-2xl bg-white/5 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <MapPin size={14} weight="duotone" className="text-indigo-500" />
+                Select Alarm Panel
+              </span>
+              <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                {alarmEntities.length} panels installed
+              </span>
+            </div>
+            <CustomDropdown
+              value={entityId}
+              onChange={(val) => setSelectedAlarmEntityId(val)}
+              options={entityOptions}
+              size="md"
+              placement="bottom"
+            />
+          </div>
+        )}
+
         {/* Status Header */}
         <div className={`p-5 rounded-3xl border shadow-xl flex items-center justify-between transition-colors ${
           darkMode
             ? 'bg-linear-to-b from-slate-900 via-slate-900 to-slate-950 border-white/10'
-            : 'bg-linear-to-b from-slate-50 to-white border-slate-200'
+            : 'bg-linear-to-b from-slate-50 to-white border-slate-200 shadow-slate-200/60'
         }`}>
           <div className="flex items-center gap-4">
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-lg ${badge.color}`}>
@@ -193,10 +250,10 @@ export default function AlarmKeypadModal({
           </button>
         </div>
 
-        {/* PIN Code Display */}
+        {/* PIN Code Display (Optional) */}
         <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
           <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">
-            Security Keypad PIN
+            Optional Keypad PIN
           </div>
           <div className="flex items-center gap-3 my-2">
             {[0, 1, 2, 3].map((idx) => (

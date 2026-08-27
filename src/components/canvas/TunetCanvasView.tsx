@@ -34,6 +34,7 @@ import EVChargingDetailModal from './modals/EVChargingDetailModal';
 import MediaDetailModal from './modals/MediaDetailModal';
 import VacuumDetailModal from './modals/VacuumDetailModal';
 import CameraDetailModal from './modals/CameraDetailModal';
+import WeatherDetailModal from './modals/WeatherDetailModal';
 import GenericDetailModal from './modals/GenericDetailModal';
 
 interface TunetCanvasViewProps {
@@ -413,13 +414,22 @@ export default function TunetCanvasView({
             />
           )}
 
+          {activeModalConfig.type === 'weather' && (
+            <WeatherDetailModal
+              isOpen={Boolean(activeModalCardId)}
+              onClose={closeCardModal}
+              entity={activeModalEntity}
+            />
+          )}
+
           {activeModalConfig.type !== 'light' &&
             activeModalConfig.type !== 'climate' &&
             activeModalConfig.type !== 'nordpool' &&
             activeModalConfig.type !== 'ev_charging' &&
             activeModalConfig.type !== 'media_player' &&
             activeModalConfig.type !== 'vacuum' &&
-            activeModalConfig.type !== 'camera' && (
+            activeModalConfig.type !== 'camera' &&
+            activeModalConfig.type !== 'weather' && (
               <GenericDetailModal
                 isOpen={Boolean(activeModalCardId)}
                 onClose={closeCardModal}

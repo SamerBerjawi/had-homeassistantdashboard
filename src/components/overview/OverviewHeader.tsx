@@ -34,6 +34,10 @@ import OpeningsOverviewModal from './modals/OpeningsOverviewModal';
 import AlarmKeypadModal from './modals/AlarmKeypadModal';
 import MediaOverviewDrawer from './modals/MediaOverviewDrawer';
 import SensorsOverviewDrawer from './modals/SensorsOverviewDrawer';
+import WeatherOverviewDrawer from '../weather/WeatherOverviewDrawer';
+import WeatherBadge from '../weather/WeatherBadge';
+import AnimatedWeatherBackdrop from '../weather/AnimatedWeatherBackdrop';
+import { getWeatherConditionInfo } from '../weather/weatherIcons';
 
 interface OverviewHeaderProps {
   darkMode?: boolean;
@@ -45,12 +49,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     overviewSummary, 
     securityOverview, 
     updateEntityState,
-    serverUrl
+    callHAService,
+    serverUrl,
+    selectedWeatherEntityId,
+    selectedAlarmEntityId
   } = useAutoLayoutStore();
 
   // Active Right Sidebar State
   const [drawerOpen, setDrawerOpen] = useState<
-    'users' | 'lights' | 'fans' | 'doors' | 'windows' | 'alarm' | 'media' | 'sensors' | null
+    'users' | 'lights' | 'fans' | 'doors' | 'windows' | 'alarm' | 'media' | 'sensors' | 'weather' | null
   >(null);
 
   const [selectedUser, setSelectedUser] = useState<ResolvedEntity | null>(null);
@@ -65,7 +72,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   const lightEntities: ResolvedEntity[] = domainGroups['light'] || [];
   const fanEntities: ResolvedEntity[] = domainGroups['fan'] || [];
   const mediaEntities: ResolvedEntity[] = domainGroups['media_player'] || [];
-  const alarmEntity: ResolvedEntity | undefined = domainGroups['alarm_control_panel']?.[0];
+  const alarmEntities: ResolvedEntity[] = domainGroups['alarm_control_panel'] || [];
+  const alarmEntity: ResolvedEntity | undefined = 
+    alarmEntities.find(a => a.entity_id === selectedAlarmEntityId) || 
+    alarmEntities[0];
 
   // Classify all binary sensors (Doors, Windows, Motion, Moisture/Leak, Smoke/Hazard)
   const allBinary: ResolvedEntity[] = domainGroups['binary_sensor'] || [];
@@ -144,6 +154,22 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   const isAlarmArmed = alarmEntity?.state && alarmEntity.state !== 'disarmed';
   const isPlayingMedia = activeMedia?.state === 'playing';
 
+  // Weather Entity Resolution
+  const weatherEntities: ResolvedEntity[] = domainGroups['weather'] || [];
+  const activeWeather: ResolvedEntity | undefined = 
+    weatherEntities.find(w => w.entity_id === selectedWeatherEntityId) || 
+    weatherEntities[0];
+  const weatherState = activeWeather?.state || 'partlycloudy';
+  const isWeatherNight = weatherState.toLowerCase().includes('night');
+  const weatherCondition = getWeatherConditionInfo(weatherState, isWeatherNight, 22);
+  const weatherTemp = typeof activeWeather?.attributes?.temperature === 'number' 
+    ? Math.round(activeWeather.attributes.temperature) 
+    : 22;
+  const weatherTempUnit = activeWeather?.attributes?.temperature_unit || '°C';
+  const weatherApparent = typeof activeWeather?.attributes?.apparent_temperature === 'number'
+    ? activeWeather.attributes.apparent_temperature.toFixed(1)
+    : (weatherTemp - 0.7).toFixed(1);
+
   // Open Drawer Handlers
   const openUsersDrawer = (user?: ResolvedEntity) => {
     setSelectedUser(user || null);
@@ -194,11 +220,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     updateEntityState(activeMedia.entity_id, isPlayingMedia ? 'paused' : 'playing');
   };
 
-  const handleQuickAlarmToggle = (e: React.MouseEvent) => {
+  const handleQuickAlarmToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!alarmEntity) return;
-    const nextState = isAlarmArmed ? 'disarmed' : 'armed_home';
-    updateEntityState(alarmEntity.entity_id, nextState);
+    const nextService = isAlarmArmed ? 'alarm_disarm' : 'alarm_arm_home';
+    await callHAService('alarm_control_panel', nextService, {}, { entity_id: alarmEntity.entity_id });
   };
 
   const getAlarmStateDetails = () => {
@@ -470,13 +496,19 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
             <span>{activeFans.length} Fans</span>
           </button>
 
+          {/* Standalone Weather Badge */}
+          <WeatherBadge
+            onClick={() => setDrawerOpen('weather')}
+            darkMode={darkMode}
+          />
+
         </div>
       </div>
 
       {/* ------------------------------------------------------------- */}
       {/* 2. FEATURED HEADER OVERVIEW TILES (BENTO GRID)                 */}
       {/* ------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-9 gap-3.5">
         
         {/* TILE 1: USERS & FAMILY PRESENCE */}
         <div
@@ -945,6 +977,50 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           </div>
         </div>
 
+        {/* TILE 9: WEATHER & ATMOSPHERIC FORECAST */}
+        <div
+          onClick={() => setDrawerOpen('weather')}
+          className={`group relative p-4 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] ${
+            darkMode
+              ? 'bg-slate-900/70 hover:bg-slate-900/90 border-sky-500/25 hover:border-sky-400/50 text-white'
+              : 'bg-linear-to-br from-sky-50 via-white to-slate-50 border-sky-200 hover:border-sky-300 text-slate-900 shadow-sky-500/5'
+          }`}
+        >
+          {/* Animated Weather Backdrop inside tile */}
+          <AnimatedWeatherBackdrop condition={weatherState} isNight={isWeatherNight} darkMode={darkMode} />
+
+          <div className="flex items-center justify-between mb-2 relative z-10">
+            <div className="w-10 h-10 rounded-2xl bg-white/20 dark:bg-white/10 backdrop-blur-md border border-slate-200/50 dark:border-white/20 flex items-center justify-center shadow-xs group-hover:rotate-6 transition-transform">
+              {weatherCondition.icon}
+            </div>
+
+            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-300 backdrop-blur-md">
+              Live
+            </span>
+          </div>
+
+          <div className="my-1 relative z-10 min-w-0">
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-black text-slate-900 dark:text-white font-mono drop-shadow-xs">
+                {weatherTemp}°
+              </span>
+              <span className="text-xs font-semibold text-sky-600 dark:text-sky-300">
+                {weatherTempUnit}
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium truncate mt-0.5">
+              {weatherCondition.name}
+            </p>
+          </div>
+
+          <div className="relative z-10">
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
+              <span className="truncate">{activeWeather?.name || 'Local Weather'}</span>
+              <CaretRight size={14} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-sky-500 dark:group-hover:text-sky-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* ------------------------------------------------------------- */}
@@ -1010,6 +1086,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         onUpdateEntity={(entityId, newState, attrs) => {
           updateEntityState(entityId, newState, attrs);
         }}
+        darkMode={darkMode}
+      />
+
+      <WeatherOverviewDrawer
+        isOpen={drawerOpen === 'weather'}
+        onClose={() => setDrawerOpen(null)}
         darkMode={darkMode}
       />
     </section>
