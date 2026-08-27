@@ -23,6 +23,7 @@ import { ResolvedEntity } from '../../../types';
 import DetailsRightDrawer from '../DetailsRightDrawer';
 import { getHAImageUrl } from '../../../lib/utils';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import PersonAvatar from '../../ui/PersonAvatar';
 
 interface UsersPresenceModalProps {
   isOpen: boolean;
@@ -58,8 +59,6 @@ export default function UsersPresenceModal({
 
   // Active Person Details
   const isHome = activePerson?.state === 'home';
-  const rawPicture = activePerson?.attributes?.entity_picture;
-  const pictureUrl = getHAImageUrl(rawPicture, serverUrl);
 
   // Link Active HA Zone
   const matchedZone = resolvedZones.find(z => 
@@ -122,38 +121,26 @@ export default function UsersPresenceModal({
           {users.map((user) => {
             const isSel = user.entity_id === activeUserId;
             const isUserHome = user.state === 'home';
-            const userPic = getHAImageUrl(user.attributes?.entity_picture, serverUrl);
 
             return (
               <button
                 key={user.entity_id}
                 type="button"
                 onClick={() => setActiveUserId(user.entity_id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-2xl border transition-all cursor-pointer shrink-0 ${
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-2xl border transition-all cursor-pointer shrink-0 ${
                   isSel
                     ? 'bg-indigo-500/15 text-indigo-700 dark:bg-indigo-500/25 dark:text-white border-indigo-500/50 shadow-xs ring-1 ring-indigo-500/40'
                     : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
                 }`}
               >
-                <div className="relative">
-                  {userPic ? (
-                    <img
-                      src={userPic}
-                      alt={user.name}
-                      className="w-6 h-6 rounded-full object-cover ring-1 ring-slate-300 dark:ring-white/20"
-                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                    />
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
-                      {user.name.charAt(0)}
-                    </div>
-                  )}
-                  <span
-                    className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white dark:border-slate-950 ${
-                      isUserHome ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-slate-400 dark:bg-slate-500'
-                    }`}
-                  />
-                </div>
+                <PersonAvatar
+                  name={user.name}
+                  entity_picture={user.attributes?.entity_picture}
+                  state={user.state}
+                  isHome={isUserHome}
+                  size="xs"
+                  className="w-6 h-6 shrink-0"
+                />
                 <span className="text-xs font-bold">{user.name.split(' ')[0]}</span>
               </button>
             );
@@ -175,22 +162,15 @@ export default function UsersPresenceModal({
             {/* User Header with Avatar & Online Ring */}
             <div className="flex items-center gap-4">
               <div className="relative shrink-0">
-                {pictureUrl ? (
-                  <img
-                    src={pictureUrl}
-                    alt={activePerson.name}
-                    className={`w-20 h-20 rounded-3xl object-cover ring-4 shadow-xl ${
-                      isHome ? 'ring-emerald-500 dark:ring-emerald-400/80' : 'ring-slate-300 dark:ring-slate-600'
-                    }`}
-                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                  />
-                ) : (
-                  <div className={`w-20 h-20 rounded-3xl bg-linear-to-br from-indigo-600 to-purple-700 flex items-center justify-center text-3xl font-extrabold text-white ring-4 shadow-xl ${
-                    isHome ? 'ring-emerald-500 dark:ring-emerald-400/80' : 'ring-slate-300 dark:ring-slate-600'
-                  }`}>
-                    {activePerson.name.charAt(0)}
-                  </div>
-                )}
+                <PersonAvatar
+                  name={activePerson.name}
+                  entity_picture={activePerson.attributes?.entity_picture}
+                  state={activePerson.state}
+                  isHome={isHome}
+                  size="xl"
+                  showPresenceDot={false}
+                  className="w-20 h-20 shadow-xl"
+                />
                 <span
                   className={`absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-md ${
                     isHome

@@ -20,6 +20,7 @@ import {
   X
 } from '@phosphor-icons/react';
 import { ToastNotification } from '../types';
+import NotificationRichContent from './notifications/NotificationRichContent';
 
 interface NotificationToastProps {
   toasts: ToastNotification[];
@@ -169,9 +170,14 @@ function ToastItem({ toast, onDismiss, darkMode }: ToastItemProps) {
           </div>
 
           {toast.message && (
-            <p className="text-[11px] text-slate-400 mt-1 leading-snug wrap-break-word">
-              {toast.message}
-            </p>
+            <div className="mt-1">
+              <NotificationRichContent
+                content={toast.message}
+                imageUrl={toast.image}
+                darkMode={darkMode}
+                compact={true}
+              />
+            </div>
           )}
 
           {toast.action && (

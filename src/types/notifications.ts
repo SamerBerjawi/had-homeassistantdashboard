@@ -23,6 +23,7 @@ export interface HANotificationItem {
   severity: NotificationSeverity;
   title: string;
   message: string;
+  image?: string;
   createdAt?: string; // ISO date string or human readable
   timestamp?: number; // epoch ms
   

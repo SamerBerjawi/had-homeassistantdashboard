@@ -5,14 +5,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+import { resolveHAImageUrl } from '../services/haImageService';
+
 export function getHAImageUrl(url?: string | null, serverUrl?: string | null): string {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('data:')) {
-    return url;
-  }
-  const base = serverUrl ? serverUrl.replace(/\/+$/, '') : '';
-  const path = url.startsWith('/') ? url : `/${url}`;
-  return `${base}${path}`;
+  return resolveHAImageUrl(url, serverUrl);
 }
 
 export function safeOpenExternalUrl(url?: string): void {

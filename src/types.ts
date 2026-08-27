@@ -291,6 +291,7 @@ export interface ToastNotification {
   id: string;
   title: string;
   message?: string;
+  image?: string;
   type?: 'lock' | 'vacuum' | 'light' | 'climate' | 'security' | 'scene' | 'success' | 'warning' | 'info';
   timestamp?: string;
   duration?: number;

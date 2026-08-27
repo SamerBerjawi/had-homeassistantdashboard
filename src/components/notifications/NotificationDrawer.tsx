@@ -30,6 +30,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { extractHANotifications, formatTimeAgo } from '../../services/notificationsService';
 import { HANotificationItem, NotificationCategory } from '../../types/notifications';
 import { haWebSocketService } from '../../services/haWebSocket';
+import NotificationRichContent from './NotificationRichContent';
 
 interface NotificationDrawerProps {
   isOpen: boolean;
@@ -513,11 +514,15 @@ export default function NotificationDrawer({
                     )}
                   </div>
 
-                  {/* Message / Description Body */}
+                  {/* Message / Description Body with Markdown & Embedded Image Support */}
                   {item.message ? (
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pl-11.5">
-                      {item.message}
-                    </p>
+                    <div className="pl-11.5">
+                      <NotificationRichContent 
+                        content={item.message} 
+                        imageUrl={item.image} 
+                        darkMode={darkMode} 
+                      />
+                    </div>
                   ) : null}
 
 

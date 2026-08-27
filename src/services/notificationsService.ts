@@ -249,6 +249,7 @@ export function extractHANotifications({
 
     const title = notif.attributes.title || notif.attributes.friendly_name || 'Home Assistant Notification';
     const message = notif.attributes.message || 'System notification received.';
+    const image = notif.attributes.data?.image || notif.attributes.image || notif.attributes.entity_picture || notif.attributes.image_url;
     const createdAt = notif.attributes.created_at || notif.last_updated;
 
     items.push({
@@ -258,6 +259,7 @@ export function extractHANotifications({
       severity: 'info',
       title,
       message,
+      image,
       createdAt,
       dismissable: true,
       actions: [
