@@ -110,7 +110,7 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           onClick={onClose}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/40"
         />
 
         {/* Dialog Card */}
@@ -118,8 +118,10 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className={`relative w-full max-w-6xl max-h-[90vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden backdrop-blur-md backdrop-saturate-150 transition-all z-10 ${
-            darkMode ? 'bg-slate-900/80 border-white/15 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.15)] text-white' : 'bg-white/95 border-black/8 text-slate-900 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.8)]'
+          className={`relative w-full max-w-6xl max-h-[90vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden backdrop-blur-md transition-all z-10 ${
+            darkMode 
+              ? 'bg-black/65 border-white/15 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.15)] text-white' 
+              : 'bg-white/75 border-slate-200/90 text-slate-900 shadow-2xl'
           }`}
         >
           {/* Header */}

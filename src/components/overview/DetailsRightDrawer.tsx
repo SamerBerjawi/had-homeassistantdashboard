@@ -49,7 +49,7 @@ export default function DetailsRightDrawer({
   const content = (
     <AnimatePresence mode="wait">
       {isOpen && (
-        <div className="fixed inset-0 z-9999 overflow-hidden isolate" style={{ contain: 'paint' }}>
+        <div className="fixed inset-0 z-9999 overflow-hidden">
           {/* Backdrop Scrim */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -57,7 +57,7 @@ export default function DetailsRightDrawer({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity cursor-pointer"
+            className="fixed inset-0 bg-black/40 transition-opacity cursor-pointer"
           />
 
           {/* Slide-over Right Sidebar Panel */}
@@ -67,20 +67,20 @@ export default function DetailsRightDrawer({
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 320, mass: 0.8 }}
-              className={`pointer-events-auto w-screen max-w-md sm:max-w-lg lg:max-w-xl h-full backdrop-blur-2xl border-l shadow-2xl flex flex-col overflow-hidden transition-colors ${
+              className={`pointer-events-auto w-screen max-w-md sm:max-w-lg lg:max-w-xl h-full backdrop-blur-md border-l shadow-2xl flex flex-col overflow-hidden transition-colors ${
                 darkMode
-                  ? 'bg-[#0B0F19]/95 border-white/10 text-white shadow-black/80'
-                  : 'bg-white/95 border-slate-200 text-slate-900 shadow-2xl'
+                  ? 'bg-black/60 border-white/15 text-white shadow-black/90'
+                  : 'bg-white/70 border-slate-200/90 text-slate-900 shadow-2xl'
               }`}
             >
               {/* Top Accent Gradient Line */}
               <div className="h-1.5 w-full bg-linear-to-r from-sky-500 via-indigo-500 to-purple-500 shrink-0" />
 
               {/* Sidebar Header */}
-              <div className="flex items-center justify-between p-5 sm:p-6 border-b border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/2 shrink-0">
+              <div className="flex items-center justify-between p-5 sm:p-6 border-b border-slate-200/80 dark:border-white/10 bg-white/40 dark:bg-white/5 backdrop-blur-xs shrink-0">
                 <div className="flex items-center gap-3.5 min-w-0">
                   {icon && (
-                    <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/15 flex items-center justify-center shrink-0 shadow-xs">
+                    <div className="w-10 h-10 rounded-2xl bg-white/60 dark:bg-white/10 border border-slate-200/80 dark:border-white/15 flex items-center justify-center shrink-0 shadow-xs">
                       {icon}
                     </div>
                   )}
@@ -114,7 +114,7 @@ export default function DetailsRightDrawer({
 
               {/* Optional Footer */}
               {footerActions && (
-                <div className="p-4 border-t border-slate-200 dark:border-white/10 flex justify-end gap-3 bg-slate-50 dark:bg-slate-950/60 backdrop-blur-sm shrink-0">
+                <div className="p-4 border-t border-slate-200/80 dark:border-white/10 flex justify-end gap-3 bg-white/40 dark:bg-black/40 backdrop-blur-xs shrink-0">
                   {footerActions}
                 </div>
               )}

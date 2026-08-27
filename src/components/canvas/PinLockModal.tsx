@@ -76,13 +76,13 @@ export default function PinLockModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Scrim / Backdrop */}
+      {/* Scrim / Backdrop (no blur on page behind) */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/40"
       />
 
       {/* PIN Card Shell */}
@@ -90,7 +90,7 @@ export default function PinLockModal({
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className={`relative w-full max-w-sm rounded-3xl overflow-hidden bg-slate-900/80 backdrop-blur-md backdrop-saturate-150 border border-white/15 p-6 shadow-2xl text-white z-10 text-center ${
+        className={`relative w-full max-w-sm rounded-3xl overflow-hidden bg-black/65 backdrop-blur-md border border-white/15 p-6 shadow-2xl text-white z-10 text-center ${
           error ? 'animate-[shake_0.4s_ease-in-out]' : ''
         }`}
       >

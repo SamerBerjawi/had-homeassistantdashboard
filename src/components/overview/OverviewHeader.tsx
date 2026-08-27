@@ -495,10 +495,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.1 PERSONS / FAMILY PRESENCE */}
         <div
           onClick={() => openUsersDrawer()}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 isolate [mask-image:linear-gradient(white,white)] ${
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 ${
             darkMode
-              ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 hover:border-indigo-500/40 text-white'
-              : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-indigo-300 text-slate-900 shadow-slate-200/60'
+              ? 'bg-black/55 hover:bg-black/75 border-white/10 hover:border-indigo-500/40 text-white'
+              : 'bg-white/60 hover:bg-white/80 border-slate-200/90 hover:border-indigo-300 text-slate-900 shadow-slate-200/40'
           }`}
         >
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -526,23 +526,23 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                     <img
                       src={pictureUrl}
                       alt={user.name}
-                      className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover ring-2 ring-offset-1 dark:ring-offset-slate-900 transition-all ${
-                        isHome ? 'ring-emerald-500 dark:ring-emerald-400' : 'ring-slate-300 dark:ring-slate-600 opacity-60'
+                      className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover ring-2 ring-offset-1 dark:ring-offset-black transition-all ${
+                        isHome ? 'ring-emerald-500 dark:ring-emerald-400' : 'ring-slate-300 dark:ring-slate-700 opacity-60'
                       }`}
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = 'none';
                       }}
                     />
                   ) : (
-                    <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-bold text-white ring-2 ring-offset-1 dark:ring-offset-slate-900 ${
-                      isHome ? 'bg-indigo-600 ring-emerald-500 dark:ring-emerald-400' : 'bg-slate-500 dark:bg-slate-700 ring-slate-300 dark:ring-slate-600 opacity-60'
+                    <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-bold text-white ring-2 ring-offset-1 dark:ring-offset-black ${
+                      isHome ? 'bg-indigo-600 ring-emerald-500 dark:ring-emerald-400' : 'bg-slate-500 dark:bg-slate-800 ring-slate-300 dark:ring-slate-700 opacity-60'
                     }`}>
                       {user.name.charAt(0)}
                     </div>
                   )}
                   <span
-                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-slate-900 ${
-                      isHome ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-slate-400 dark:bg-slate-500'
+                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-black ${
+                      isHome ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-slate-400 dark:bg-slate-600'
                     }`}
                   />
                 </div>
@@ -562,14 +562,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.2 LIGHTS */}
         <div
           onClick={() => setDrawerOpen('lights')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 isolate [mask-image:linear-gradient(white,white)] ${
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 ${
             onLights.length > 0
               ? darkMode
-                ? 'bg-slate-900/70 hover:bg-slate-900/90 border-amber-500/30 hover:border-amber-400/60 text-white'
-                : 'bg-amber-50/50 hover:bg-amber-50/80 border-amber-200/90 hover:border-amber-300 text-slate-900'
+                ? 'bg-black/65 hover:bg-black/85 border-amber-500/30 hover:border-amber-400/60 text-white'
+                : 'bg-amber-50/70 hover:bg-amber-50/90 border-amber-200/90 hover:border-amber-300 text-slate-900'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 hover:border-white/20 text-white'
-                : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
+                ? 'bg-black/55 hover:bg-black/75 border-white/10 hover:border-white/20 text-white'
+                : 'bg-white/60 hover:bg-white/80 border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/40'
           }`}
         >
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -620,14 +620,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.3 SWITCHES */}
         <div
           onClick={() => setDrawerOpen('switches')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 isolate [mask-image:linear-gradient(white,white)] ${
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 ${
             onSwitches.length > 0
               ? darkMode
-                ? 'bg-slate-900/70 hover:bg-slate-900/90 border-emerald-500/30 hover:border-emerald-400/60 text-white'
-                : 'bg-emerald-50/50 hover:bg-emerald-50/80 border-emerald-200/90 hover:border-emerald-300 text-slate-900'
+                ? 'bg-black/65 hover:bg-black/85 border-emerald-500/30 hover:border-emerald-400/60 text-white'
+                : 'bg-emerald-50/70 hover:bg-emerald-50/90 border-emerald-200/90 hover:border-emerald-300 text-slate-900'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 hover:border-white/20 text-white'
-                : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
+                ? 'bg-black/55 hover:bg-black/75 border-white/10 hover:border-white/20 text-white'
+                : 'bg-white/60 hover:bg-white/80 border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/40'
           }`}
         >
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -678,14 +678,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.4 FANS */}
         <div
           onClick={() => setDrawerOpen('fans')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 isolate [mask-image:linear-gradient(white,white)] ${
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 ${
             activeFans.length > 0
               ? darkMode
-                ? 'bg-slate-900/70 hover:bg-slate-900/90 border-cyan-500/30 hover:border-cyan-400/60 text-white'
-                : 'bg-cyan-50/50 hover:bg-cyan-50/80 border-cyan-200/90 hover:border-cyan-300 text-slate-900'
+                ? 'bg-black/65 hover:bg-black/85 border-cyan-500/30 hover:border-cyan-400/60 text-white'
+                : 'bg-cyan-50/70 hover:bg-cyan-50/90 border-cyan-200/90 hover:border-cyan-300 text-slate-900'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 hover:border-white/20 text-white'
-                : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
+                ? 'bg-black/55 hover:bg-black/75 border-white/10 hover:border-white/20 text-white'
+                : 'bg-white/60 hover:bg-white/80 border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/40'
           }`}
         >
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -736,14 +736,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.5 AUDIO & MEDIA */}
         <div
           onClick={() => setDrawerOpen('media')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 isolate [mask-image:linear-gradient(white,white)] ${
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 ${
             isPlayingMedia
               ? darkMode
-                ? 'bg-linear-to-br from-purple-950/40 via-slate-900/80 to-slate-900/90 border-purple-500/25 hover:border-purple-400/50 text-white'
-                : 'bg-linear-to-br from-purple-50 via-white to-slate-50 border-purple-200 hover:border-purple-300 text-slate-900 shadow-purple-500/5'
+                ? 'bg-linear-to-br from-purple-950/60 via-black/75 to-black/85 border-purple-500/30 hover:border-purple-400/50 text-white'
+                : 'bg-linear-to-br from-purple-50/80 via-white/80 to-slate-50/80 border-purple-200/90 hover:border-purple-300 text-slate-900 shadow-purple-500/10'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 hover:border-white/20 text-white'
-                : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
+                ? 'bg-black/55 hover:bg-black/75 border-white/10 hover:border-white/20 text-white'
+                : 'bg-white/60 hover:bg-white/80 border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/40'
           }`}
         >
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -804,14 +804,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.6 ALARM & SECURITY */}
         <div
           onClick={() => setDrawerOpen('alarm')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 isolate [mask-image:linear-gradient(white,white)] ${
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 ${
             isAlarmArmed
               ? darkMode
-                ? 'bg-slate-900/70 hover:bg-slate-900/90 border-emerald-500/30 hover:border-emerald-400/60 text-white'
-                : 'bg-emerald-50/50 hover:bg-emerald-50/80 border-emerald-200/90 hover:border-emerald-300 text-slate-900'
+                ? 'bg-black/65 hover:bg-black/85 border-emerald-500/30 hover:border-emerald-400/60 text-white'
+                : 'bg-emerald-50/70 hover:bg-emerald-50/90 border-emerald-200/90 hover:border-emerald-300 text-slate-900'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 hover:border-white/20 text-white'
-                : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
+                ? 'bg-black/55 hover:bg-black/75 border-white/10 hover:border-white/20 text-white'
+                : 'bg-white/60 hover:bg-white/80 border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/40'
           }`}
         >
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -857,14 +857,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.7 ENTRY DOORS */}
         <div
           onClick={openDoorsDrawer}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 isolate [mask-image:linear-gradient(white,white)] ${
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 ${
             openDoors.length > 0
               ? darkMode
-                ? 'bg-slate-900/70 hover:bg-slate-900/90 border-amber-500/30 hover:border-amber-400/60 text-white'
-                : 'bg-amber-50/50 hover:bg-amber-50/80 border-amber-200/90 hover:border-amber-300 text-slate-900'
+                ? 'bg-black/65 hover:bg-black/85 border-amber-500/30 hover:border-amber-400/60 text-white'
+                : 'bg-amber-50/70 hover:bg-amber-50/90 border-amber-200/90 hover:border-amber-300 text-slate-900'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 hover:border-white/20 text-white'
-                : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
+                ? 'bg-black/55 hover:bg-black/75 border-white/10 hover:border-white/20 text-white'
+                : 'bg-white/60 hover:bg-white/80 border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/40'
           }`}
         >
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -912,14 +912,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.8 WINDOWS */}
         <div
           onClick={openWindowsDrawer}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 isolate [mask-image:linear-gradient(white,white)] ${
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 ${
             openWindows.length > 0
               ? darkMode
-                ? 'bg-slate-900/70 hover:bg-slate-900/90 border-amber-500/30 hover:border-amber-400/60 text-white'
-                : 'bg-amber-50/50 hover:bg-amber-50/80 border-amber-200/90 hover:border-amber-300 text-slate-900'
+                ? 'bg-black/65 hover:bg-black/85 border-amber-500/30 hover:border-amber-400/60 text-white'
+                : 'bg-amber-50/70 hover:bg-amber-50/90 border-amber-200/90 hover:border-amber-300 text-slate-900'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 hover:border-white/20 text-white'
-                : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
+                ? 'bg-black/55 hover:bg-black/75 border-white/10 hover:border-white/20 text-white'
+                : 'bg-white/60 hover:bg-white/80 border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/40'
           }`}
         >
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -967,14 +967,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.9 MOTION */}
         <div
           onClick={() => openSensorsDrawer('motion')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 isolate [mask-image:linear-gradient(white,white)] ${
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 ${
             activeMotion.length > 0
               ? darkMode
-                ? 'bg-slate-900/70 hover:bg-slate-900/90 border-amber-500/30 hover:border-amber-400/60 text-white'
-                : 'bg-amber-50/50 hover:bg-amber-50/80 border-amber-200/90 hover:border-amber-300 text-slate-900'
+                ? 'bg-black/65 hover:bg-black/85 border-amber-500/30 hover:border-amber-400/60 text-white'
+                : 'bg-amber-50/70 hover:bg-amber-50/90 border-amber-200/90 hover:border-amber-300 text-slate-900'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 hover:border-white/20 text-white'
-                : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
+                ? 'bg-black/55 hover:bg-black/75 border-white/10 hover:border-white/20 text-white'
+                : 'bg-white/60 hover:bg-white/80 border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/40'
           }`}
         >
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -1020,12 +1020,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.10 LEAKAGE */}
         <div
           onClick={() => openSensorsDrawer('leak')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 isolate [mask-image:linear-gradient(white,white)] ${
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 ${
             activeLeaks.length > 0
-              ? 'bg-rose-500/20 border-rose-500/40 text-slate-900 dark:text-white shadow-rose-500/10 animate-pulse'
+              ? 'bg-rose-950/40 border-rose-500/40 text-slate-900 dark:text-white shadow-rose-500/10 animate-pulse'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 hover:border-white/20 text-white'
-                : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
+                ? 'bg-black/55 hover:bg-black/75 border-white/10 hover:border-white/20 text-white'
+                : 'bg-white/60 hover:bg-white/80 border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/40'
           }`}
         >
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -1073,12 +1073,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.11 SMOKE */}
         <div
           onClick={() => openSensorsDrawer('smoke')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 isolate [mask-image:linear-gradient(white,white)] ${
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-3.5 sm:p-4 ${
             activeSmoke.length > 0
-              ? 'bg-rose-500/20 border-rose-500/40 text-slate-900 dark:text-white shadow-rose-500/10 animate-pulse'
+              ? 'bg-rose-950/40 border-rose-500/40 text-slate-900 dark:text-white shadow-rose-500/10 animate-pulse'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 hover:border-white/20 text-white'
-                : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
+                ? 'bg-black/55 hover:bg-black/75 border-white/10 hover:border-white/20 text-white'
+                : 'bg-white/60 hover:bg-white/80 border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/40'
           }`}
         >
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -1101,7 +1101,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 ? 'bg-rose-500/25 text-rose-700 dark:text-rose-300 border-rose-500/40'
                 : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
             }`}>
-              {activeSmoke.length > 0 ? 'Hazard' : 'Safe'}
+              {activeSmoke.length > 0 ? 'Fire Hazard' : 'Safe'}
             </span>
           </div>
 
@@ -1115,9 +1115,9 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           </div>
 
           <div className="relative z-10">
-            <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Smoke Detectors</div>
+            <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Smoke & Fire</div>
             <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-              <span>{activeSmoke.length > 0 ? 'Smoke detected!' : 'All clear'}</span>
+              <span>{activeSmoke.length > 0 ? 'Smoke detected!' : 'Air clear'}</span>
               <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-rose-500 dark:group-hover:text-rose-400 group-hover:translate-x-0.5 transition-all" />
             </div>
           </div>

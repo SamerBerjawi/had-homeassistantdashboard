@@ -26,6 +26,8 @@ import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { useShallow } from 'zustand/react/shallow';
 import { extractHANotifications } from '../services/notificationsService';
 
+import { PAGE_THEMES } from '../config/pageThemes';
+
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -132,8 +134,8 @@ export default function Sidebar({
           isCollapsed ? 'w-20 items-center' : 'w-64'
         } ${
           darkMode 
-            ? 'bg-slate-950/40 backdrop-blur-md backdrop-saturate-150 border-white/10 text-white' 
-            : 'bg-white/80 backdrop-blur-md backdrop-saturate-150 border-black/8 text-slate-900'
+            ? 'bg-black/60 backdrop-blur-2xl border-white/10 text-white' 
+            : 'bg-white/65 backdrop-blur-2xl border-slate-200/90 text-slate-900 shadow-xs'
         }`}
       >
         {/* Header Branding & Collapse Toggle */}
@@ -176,6 +178,7 @@ export default function Sidebar({
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const itemTheme = PAGE_THEMES[item.id] || PAGE_THEMES['overview'];
             return (
               <button
                 key={item.id}
@@ -189,8 +192,8 @@ export default function Sidebar({
                 } ${
                   isActive 
                     ? darkMode
-                      ? 'bg-linear-to-r from-sky-500/15 to-indigo-500/10 text-white font-medium border border-sky-400/20 shadow-[0_0_15px_-3px_rgba(56,189,248,0.2)]' 
-                      : 'bg-linear-to-r from-sky-500/15 to-indigo-500/10 text-sky-950 font-bold border border-sky-500/30 shadow-[0_0_15px_-3px_rgba(56,189,248,0.25)]'
+                      ? itemTheme.activeSidebarDark
+                      : itemTheme.activeSidebarLight
                     : darkMode
                       ? 'text-slate-400 hover:text-white hover:bg-white/5'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5'
@@ -201,7 +204,7 @@ export default function Sidebar({
                   weight="duotone" 
                   className={`shrink-0 transition-transform duration-200 ${
                     isActive 
-                      ? darkMode ? 'text-sky-400' : 'text-sky-600' 
+                      ? itemTheme.color 
                       : darkMode ? 'text-slate-400 group-hover:text-white' : 'text-slate-500 group-hover:text-slate-900'
                   }`} 
                 />
@@ -212,9 +215,7 @@ export default function Sidebar({
                 
                 {/* Active Indicator Bar */}
                 {isActive && !isCollapsed && (
-                  <span className={`ml-auto w-1.5 h-3.5 rounded-full ${
-                    darkMode ? 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]' : 'bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]'
-                  }`} />
+                  <span className={`ml-auto w-1.5 h-3.5 rounded-full ${itemTheme.indicator}`} />
                 )}
                 
                 {/* Hover Tooltip Label (Only when collapsed) */}
@@ -245,8 +246,8 @@ export default function Sidebar({
             } ${
               totalNotifications > 0
                 ? darkMode
-                  ? 'hover:bg-white/10 text-slate-200'
-                  : 'hover:bg-slate-200 text-slate-800'
+                  ? 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
+                  : 'bg-amber-50 text-amber-900 hover:bg-amber-100'
                 : darkMode
                   ? 'text-slate-400 hover:text-white hover:bg-white/5'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5'
@@ -340,15 +341,16 @@ export default function Sidebar({
       {/* MOBILE BOTTOM NAVIGATION */}
       <nav 
         id="sidebar-mobile" 
-        className={`md:hidden fixed bottom-0 left-0 right-0 h-16 sm:h-18 flex justify-around items-center px-3 sm:px-6 shadow-2xl z-50 transition-all border-t ${
+        className={`md:hidden fixed bottom-3 left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto h-16 rounded-[26px] border shadow-2xl z-40 px-3 flex items-center justify-around transition-all ${
           darkMode 
-            ? 'bg-slate-950/90 backdrop-blur-2xl border-white/10 text-white' 
-            : 'bg-white/90 backdrop-blur-2xl border-slate-200 text-slate-900'
+            ? 'bg-black/75 backdrop-blur-2xl border-white/10 text-white shadow-black/90' 
+            : 'bg-white/75 backdrop-blur-2xl border-slate-200/90 text-slate-900 shadow-xl'
         }`}
       >
         {mobilePrimaryItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
+          const itemTheme = PAGE_THEMES[item.id] || PAGE_THEMES['overview'];
           return (
             <button
               key={item.id}
@@ -358,14 +360,14 @@ export default function Sidebar({
               className={`w-11 h-11 rounded-2xl relative transition-all duration-200 cursor-pointer flex items-center justify-center ${
                 isActive 
                   ? darkMode
-                    ? 'bg-linear-to-r from-sky-500/20 to-indigo-500/15 text-sky-400 border border-sky-400/30 shadow-md shadow-sky-500/20 scale-105' 
-                    : 'bg-linear-to-r from-sky-500/20 to-indigo-500/15 text-sky-600 border border-sky-500/30 shadow-md shadow-sky-500/10 scale-105'
+                    ? itemTheme.activeSidebarDark + ' scale-105' 
+                    : itemTheme.activeSidebarLight + ' scale-105'
                   : darkMode
                     ? 'text-slate-400 hover:text-white'
                     : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Icon size={22} weight="duotone" />
+              <Icon size={22} weight="duotone" className={isActive ? itemTheme.color : ''} />
             </button>
           );
         })}
@@ -394,9 +396,9 @@ export default function Sidebar({
         {/* MORE MENU BOTTOM SHEET */}
         {showMoreMenu && (
           <>
-            {/* Backdrop to dismiss */}
+            {/* Backdrop to dismiss (no blur on page behind) */}
             <div 
-              className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40"
+              className="fixed inset-0 bg-black/40 z-40"
               onClick={() => setShowMoreMenu(false)}
             />
 
@@ -404,8 +406,8 @@ export default function Sidebar({
               id="mobile-more-sheet"
               className={`fixed bottom-20 left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto p-5 rounded-[28px] border shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-5 duration-200 ${
                 darkMode 
-                  ? 'bg-slate-950/95 backdrop-blur-3xl border-white/10 text-white shadow-black/80' 
-                  : 'bg-white/95 backdrop-blur-2xl border-slate-200 text-slate-900 shadow-slate-400/40'
+                  ? 'bg-black/65 backdrop-blur-md border-white/15 text-white shadow-black/80' 
+                  : 'bg-white/75 backdrop-blur-md border-slate-200/90 text-slate-900 shadow-xl'
               }`}
             >
               {/* Sheet Header */}
@@ -433,6 +435,7 @@ export default function Sidebar({
                 {menuItems.slice(4).map(item => {
                   const ItemIcon = item.icon;
                   const isActive = activeTab === item.id;
+                  const itemTheme = PAGE_THEMES[item.id] || PAGE_THEMES['overview'];
                   return (
                     <button
                       key={item.id}
@@ -444,8 +447,8 @@ export default function Sidebar({
                       className={`p-3 rounded-2xl flex items-center gap-3 text-left transition-all border cursor-pointer ${
                         isActive
                           ? darkMode
-                            ? 'bg-linear-to-r from-sky-500/20 to-indigo-500/15 text-white border-sky-400/30 shadow-md font-bold'
-                            : 'bg-linear-to-r from-sky-500/15 to-indigo-500/10 text-sky-950 border-sky-500/30 shadow-sm font-bold'
+                            ? itemTheme.activeSidebarDark + ' shadow-md font-bold'
+                            : itemTheme.activeSidebarLight + ' shadow-sm font-bold'
                           : darkMode
                             ? 'bg-slate-900/60 border-slate-800 hover:bg-slate-800/80 text-slate-200'
                             : 'bg-slate-50 border-slate-200/70 hover:bg-slate-100 text-slate-800'
@@ -454,7 +457,7 @@ export default function Sidebar({
                       <ItemIcon 
                         size={20} 
                         weight="duotone" 
-                        className={isActive ? (darkMode ? 'text-sky-400' : 'text-sky-600') : (darkMode ? 'text-slate-400' : 'text-slate-500')} 
+                        className={isActive ? itemTheme.color : (darkMode ? 'text-slate-400' : 'text-slate-500')} 
                       />
                       <div className="min-w-0">
                         <div className="text-xs font-bold truncate">{item.label}</div>

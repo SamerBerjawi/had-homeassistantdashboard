@@ -847,6 +847,94 @@ export const MOCK_ENTITY_REGISTRY: HAEntityRegistryEntry[] = [
     platform: 'repairs'
   },
 
+  // ---------------- Automations ----------------
+  {
+    entity_id: 'automation.morning_sunrise_wake_up',
+    name: 'Morning Sunrise Wake Up',
+    area_id: 'bedroom',
+    platform: 'automation',
+    labels: ['lighting', 'routine', 'morning']
+  },
+  {
+    entity_id: 'automation.night_perimeter_lockup',
+    name: 'Night Perimeter Lockup',
+    area_id: 'hallway',
+    platform: 'automation',
+    labels: ['security', 'locks', 'night']
+  },
+  {
+    entity_id: 'automation.hallway_motion_nightlight',
+    name: 'Hallway Motion Nightlight',
+    area_id: 'hallway',
+    platform: 'automation',
+    labels: ['sensors', 'lighting']
+  },
+  {
+    entity_id: 'automation.ac_eco_when_away',
+    name: 'Climate Eco Mode When Away',
+    area_id: 'living_room',
+    platform: 'automation',
+    labels: ['climate', 'energy', 'presence']
+  },
+  {
+    entity_id: 'automation.water_leak_auto_shutoff',
+    name: 'Water Leak Emergency Shutoff',
+    area_id: 'kitchen',
+    platform: 'automation',
+    labels: ['security', 'safety', 'emergency']
+  },
+  {
+    entity_id: 'automation.balcony_sunset_ambiance',
+    name: 'Balcony Sunset Ambiance',
+    area_id: 'balcony',
+    platform: 'automation',
+    labels: ['lighting', 'outdoor']
+  },
+  {
+    entity_id: 'automation.robot_clean_after_leaving',
+    name: 'Robot Vacuum When Leaving Home',
+    area_id: 'living_room',
+    platform: 'automation',
+    labels: ['cleaning', 'presence']
+  },
+
+  // ---------------- Scenes ----------------
+  {
+    entity_id: 'scene.cozy_evening_movie',
+    name: 'Cozy Movie Night',
+    area_id: 'living_room',
+    platform: 'scene',
+    labels: ['media', 'lighting']
+  },
+  {
+    entity_id: 'scene.bright_focus_mode',
+    name: 'Bright Work Focus',
+    area_id: 'office',
+    platform: 'scene',
+    labels: ['productivity', 'lighting']
+  },
+  {
+    entity_id: 'scene.relaxing_dinner',
+    name: 'Relaxing Dinner',
+    area_id: 'kitchen',
+    platform: 'scene',
+    labels: ['dining', 'ambiance']
+  },
+  {
+    entity_id: 'scene.all_lights_off',
+    name: 'All Lights Off',
+    area_id: 'hallway',
+    platform: 'scene',
+    labels: ['general', 'night']
+  },
+  {
+    entity_id: 'scene.party_mode',
+    name: 'Party & Celebration',
+    area_id: 'living_room',
+    platform: 'scene',
+    labels: ['entertainment', 'lighting']
+  },
+
   // ---------------- Disabled Entity (To test automatic filtering!) ----------------
   {
     entity_id: 'light.old_garage_fluorescent_decommissioned',
@@ -1832,6 +1920,139 @@ export const MOCK_STATES: Record<string, HAState> = {
       issue_id: 'mqtt_yaml_dep_1',
       severity: 'warning',
       learn_more_url: 'https://www.home-assistant.io/integrations/mqtt/'
+    }
+  },
+
+  // ---------------- Automations ----------------
+  'automation.morning_sunrise_wake_up': {
+    entity_id: 'automation.morning_sunrise_wake_up',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Morning Sunrise Wake Up',
+      last_triggered: '2026-08-27T07:00:00Z',
+      mode: 'single',
+      current: 0,
+      id: 'auto_morning_wake',
+      description: 'Gradually ramps up bedroom lights and turns on the kitchen espresso machine at 7:00 AM on weekdays.'
+    }
+  },
+  'automation.night_perimeter_lockup': {
+    entity_id: 'automation.night_perimeter_lockup',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Night Perimeter Lockup',
+      last_triggered: '2026-08-26T23:00:00Z',
+      mode: 'queued',
+      current: 0,
+      id: 'auto_night_lockup',
+      description: 'Arms home alarm, turns off non-essential lights, and locks exterior doors at 11:00 PM.'
+    }
+  },
+  'automation.hallway_motion_nightlight': {
+    entity_id: 'automation.hallway_motion_nightlight',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Hallway Motion Nightlight',
+      last_triggered: '2026-08-27T03:14:22Z',
+      mode: 'restart',
+      current: 0,
+      id: 'auto_motion_nightlight',
+      description: 'Illuminates hallway LED strip at 10% brightness when motion is detected during night hours.'
+    }
+  },
+  'automation.ac_eco_when_away': {
+    entity_id: 'automation.ac_eco_when_away',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Climate Eco Mode When Away',
+      last_triggered: '2026-08-26T14:20:00Z',
+      mode: 'single',
+      current: 0,
+      id: 'auto_eco_away',
+      description: 'Sets HVAC thermostats to eco mode whenever family members leave the home zone.'
+    }
+  },
+  'automation.water_leak_auto_shutoff': {
+    entity_id: 'automation.water_leak_auto_shutoff',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Water Leak Emergency Shutoff',
+      last_triggered: '2026-08-10T12:00:00Z',
+      mode: 'parallel',
+      current: 0,
+      id: 'auto_leak_shutoff',
+      description: 'Closes main water valve and sends critical notification if kitchen or laundry sensors detect moisture.'
+    }
+  },
+  'automation.balcony_sunset_ambiance': {
+    entity_id: 'automation.balcony_sunset_ambiance',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Balcony Sunset Ambiance',
+      last_triggered: '2026-08-25T19:30:00Z',
+      mode: 'single',
+      current: 0,
+      id: 'auto_balcony_sunset',
+      description: 'Turns on balcony string lights 15 minutes before sunset with warm incandescent color temperature.'
+    }
+  },
+  'automation.robot_clean_after_leaving': {
+    entity_id: 'automation.robot_clean_after_leaving',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Robot Vacuum When Leaving Home',
+      last_triggered: '2026-08-27T08:30:00Z',
+      mode: 'single',
+      current: 0,
+      id: 'auto_vac_leaving',
+      description: 'Starts robot vacuum cleaning routine 10 minutes after everyone has departed.'
+    }
+  },
+
+  // ---------------- Scenes ----------------
+  'scene.cozy_evening_movie': {
+    entity_id: 'scene.cozy_evening_movie',
+    state: '2026-08-26T21:00:00Z',
+    attributes: {
+      friendly_name: 'Cozy Movie Night',
+      icon: 'FilmStrip',
+      description: 'Dims living room lights to 15% warm amber, powers on TV OLED, and activates soundbar.'
+    }
+  },
+  'scene.bright_focus_mode': {
+    entity_id: 'scene.bright_focus_mode',
+    state: '2026-08-27T09:00:00Z',
+    attributes: {
+      friendly_name: 'Bright Work Focus',
+      icon: 'Sun',
+      description: 'Sets office lights to 100% 5000K daylight white and pauses background speaker music.'
+    }
+  },
+  'scene.relaxing_dinner': {
+    entity_id: 'scene.relaxing_dinner',
+    state: '2026-08-26T19:45:00Z',
+    attributes: {
+      friendly_name: 'Relaxing Dinner',
+      icon: 'ForkKnife',
+      description: 'Sets dining pendant lights to warm 2700K glow and starts acoustic jazz playlist.'
+    }
+  },
+  'scene.all_lights_off': {
+    entity_id: 'scene.all_lights_off',
+    state: '2026-08-26T23:15:00Z',
+    attributes: {
+      friendly_name: 'All Lights Off',
+      icon: 'Moon',
+      description: 'Instantly turns off all interior and exterior smart lights across all rooms.'
+    }
+  },
+  'scene.party_mode': {
+    entity_id: 'scene.party_mode',
+    state: '2026-08-20T20:00:00Z',
+    attributes: {
+      friendly_name: 'Party & Celebration',
+      icon: 'Sparkle',
+      description: 'Enables dynamic RGB color loops on living room accents and syncs whole-home multi-room audio.'
     }
   }
 };

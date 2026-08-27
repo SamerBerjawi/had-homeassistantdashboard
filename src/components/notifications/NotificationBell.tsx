@@ -140,7 +140,7 @@ export default function NotificationBell({
                   ? 'bg-white/10 border-white/20 text-white hover:bg-white/15'
                   : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50'
           : darkMode
-            ? 'bg-slate-900/60 hover:bg-slate-900 border-white/10 hover:border-white/20 text-slate-400 hover:text-white'
+            ? 'bg-black/60 hover:bg-black/80 border-white/10 hover:border-white/20 text-slate-400 hover:text-white'
             : 'bg-white/80 hover:bg-white border-slate-200 text-slate-600 hover:text-slate-900'
       } ${className}`}
       title={totalCount > 0 ? `${totalCount} Notifications, Updates & Alerts` : 'Notifications (All Clear)'}
@@ -154,7 +154,7 @@ export default function NotificationBell({
       {totalCount > 0 && (
         <span
           className={`absolute -top-1 -right-1 min-w-[19px] h-[19px] px-1 rounded-full text-[10px] font-black flex items-center justify-center ring-2 ${
-            darkMode ? 'ring-slate-950' : 'ring-white'
+            darkMode ? 'ring-black' : 'ring-white'
           } ${badgeColorClass}`}
         >
           {totalCount > 99 ? '99+' : totalCount}

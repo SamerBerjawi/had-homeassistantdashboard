@@ -11,20 +11,7 @@ import NotificationToast from './components/NotificationToast';
 import NotificationBell from './components/notifications/NotificationBell';
 import NotificationDrawer from './components/notifications/NotificationDrawer';
 
-import { 
-  Armchair,
-  Lightning, 
-  ShieldCheck, 
-  MusicNotes, 
-  HardDrives, 
-  ShareNetwork,
-  Car,
-  Heartbeat,
-  Broom,
-  GitFork, 
-  GearSix,
-  SquaresFour
-} from '@phosphor-icons/react';
+import { PAGE_THEMES } from './config/pageThemes';
 
 // Eagerly-loaded views (always visible)
 import OverviewView from './components/views/OverviewView';
@@ -158,95 +145,21 @@ export default function App() {
     return 'Good Night';
   };
 
-  const PAGE_CONFIG: Record<string, { title: string; subtitle: string; icon: React.ComponentType<any>; color: string }> = {
-    overview: {
-      title: `${getTimeGreeting()}, ${userName}`,
-      subtitle: '',
-      icon: SquaresFour,
-      color: 'text-amber-400'
-    },
-    rooms: {
-      title: 'Rooms & Areas',
-      subtitle: 'Explore live telemetry, lighting controls, climate targets, and appliances organized room by room.',
-      icon: Armchair,
-      color: 'text-indigo-400'
-    },
-    energy: {
-      title: 'Energy & Power',
-      subtitle: 'Monitor whole-home power draw, solar generation, battery storage, and historical grid energy.',
-      icon: Lightning,
-      color: 'text-amber-400'
-    },
-    security: {
-      title: 'Security & Safety',
-      subtitle: 'Keep your home safe with entry alarms, perimeter locks, motion zones, and surveillance feeds.',
-      icon: ShieldCheck,
-      color: 'text-emerald-400'
-    },
-    media: {
-      title: 'Media & Audio',
-      subtitle: 'Control whole-home audio playback, smart TV devices, streaming apps, and Apple TV remotes.',
-      icon: MusicNotes,
-      color: 'text-purple-400'
-    },
-    system: {
-      title: 'System & Diagnostics',
-      subtitle: 'Inspect Home Assistant server health, hardware resource usage, integration latency, and telemetry logs.',
-      icon: HardDrives,
-      color: 'text-cyan-400'
-    },
-    network: {
-      title: 'Network & Connectivity',
-      subtitle: 'Track connected IoT devices, gateway connectivity, signal strengths, and bandwidth distribution.',
-      icon: ShareNetwork,
-      color: 'text-sky-400'
-    },
-    mobility: {
-      title: 'Mobility & Vehicles',
-      subtitle: 'Monitor vehicle battery levels, charging status, location tracking, and transit routes.',
-      icon: Car,
-      color: 'text-emerald-400'
-    },
-    health: {
-      title: 'Health & Environment',
-      subtitle: 'Track indoor air quality, humidity levels, temperature comfort indices, and environmental wellness.',
-      icon: Heartbeat,
-      color: 'text-rose-400'
-    },
-    vacuums: {
-      title: 'Vacuums & Cleaning',
-      subtitle: 'Manage robotic vacuum routines, dock station controls, cleaning zones, and cordless stick batteries.',
-      icon: Broom,
-      color: 'text-cyan-400'
-    },
-    automations: {
-      title: 'Automations & Scenes',
-      subtitle: 'Manage home automations, custom routines, scene triggers, and smart execution schedules.',
-      icon: GitFork,
-      color: 'text-violet-400'
-    },
-    settings: {
-      title: 'Settings & Setup',
-      subtitle: 'Customize dashboard preferences, room layouts, entity mappings, and theme modes.',
-      icon: GearSix,
-      color: 'text-slate-400'
-    }
-  };
-
-  const currentPage = PAGE_CONFIG[activeTab] || PAGE_CONFIG['overview'];
-  const PageIcon = currentPage.icon;
+  const currentTheme = PAGE_THEMES[activeTab] || PAGE_THEMES['overview'];
+  const PageIcon = currentTheme.icon;
+  const pageTitle = activeTab === 'overview' ? `${getTimeGreeting()}, ${userName}` : currentTheme.title;
 
   return (
     <div className={`flex h-screen w-screen overflow-hidden font-sans select-none ${
-      darkMode ? 'bg-slate-950 text-slate-100 dark' : 'bg-slate-50 text-slate-900'
+      darkMode ? 'bg-black text-white dark' : 'bg-slate-100/80 text-slate-900'
     }`}>
-      {/* Ambient background decoration */}
+      {/* Ambient background decoration with distinct page accent glows */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className={`absolute top-0 right-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 transform-gpu transition-colors duration-1000 ${
-          darkMode ? 'bg-indigo-600' : 'bg-indigo-300'
+        <div className={`absolute top-0 right-1/4 w-96 h-96 rounded-full blur-3xl opacity-35 dark:opacity-20 transform-gpu transition-colors duration-1000 ${
+          currentTheme.glow1
         }`} />
-        <div className={`absolute bottom-0 left-1/3 w-[500px] h-[500px] rounded-full blur-3xl opacity-15 transform-gpu transition-colors duration-1000 ${
-          darkMode ? 'bg-sky-600' : 'bg-sky-300'
+        <div className={`absolute bottom-0 left-1/3 w-[500px] h-[500px] rounded-full blur-3xl opacity-30 dark:opacity-15 transform-gpu transition-colors duration-1000 ${
+          currentTheme.glow2
         }`} />
       </div>
 
@@ -269,9 +182,9 @@ export default function App() {
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5 sm:gap-3 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
                   {activeTab !== 'overview' && (
-                    <PageIcon size={30} weight="duotone" className={`${currentPage.color} shrink-0`} />
+                    <PageIcon size={30} weight="duotone" className={`${currentTheme.color} shrink-0`} />
                   )}
-                  <span>{currentPage.title}</span>
+                  <span>{pageTitle}</span>
                   {activeTab === 'overview' && (
                     <span className="inline-block animate-wave cursor-default select-none text-2xl sm:text-3xl" title="Welcome!">👋</span>
                   )}
@@ -287,7 +200,7 @@ export default function App() {
                   />
                 ) : (
                   <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 max-w-3xl leading-relaxed">
-                    {currentPage.subtitle}
+                    {currentTheme.subtitle}
                   </p>
                 )}
               </div>
