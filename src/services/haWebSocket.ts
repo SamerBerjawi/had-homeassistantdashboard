@@ -32,8 +32,10 @@ export interface HAWebSocketCallbacks {
   }) => void;
   onNativeNotificationsLoaded?: (notifications: HANativePersistentNotification[], repairs: HANativeRepairIssue[]) => void;
   onStateChanged: (entityId: string, newState: HAState) => void;
+  onStatesBatchUpdated?: (statesList: HAState[]) => void;
   onLogMessage: (type: 'info' | 'service_call' | 'state_changed' | 'warning' | 'error', msg: string, details?: any) => void;
 }
+
 
 
 class HAWebSocketClient {
@@ -237,7 +239,7 @@ class HAWebSocketClient {
     this.stopStatePolling();
     this.pollTimer = setInterval(() => {
       this.refreshStates();
-    }, 8000);
+    }, 20000);
 
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
@@ -264,10 +266,14 @@ class HAWebSocketClient {
         this.sendRequest<{ issues?: HANativeRepairIssue[] }>('repairs/list_issues').catch(() => ({ issues: [] }))
       ]);
 
-      if (Array.isArray(statesList)) {
-        for (const s of statesList) {
-          if (s?.entity_id) {
-            this.callbacks?.onStateChanged(s.entity_id, s);
+      if (Array.isArray(statesList) && statesList.length > 0) {
+        if (this.callbacks?.onStatesBatchUpdated) {
+          this.callbacks.onStatesBatchUpdated(statesList);
+        } else {
+          for (const s of statesList) {
+            if (s?.entity_id) {
+              this.callbacks?.onStateChanged(s.entity_id, s);
+            }
           }
         }
       }
@@ -282,6 +288,7 @@ class HAWebSocketClient {
       // ignore
     }
   }
+
 
   private async fetchAllRegistries() {
     try {

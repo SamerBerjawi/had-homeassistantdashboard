@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+
 import { 
   SquaresFour,
   Armchair,
@@ -52,22 +53,24 @@ export default function Sidebar({
     clearSkippedUpdate
   } = useAutoLayoutStore();
 
-  const notifications = extractHANotifications({
-    domainGroups,
-    states,
-    nativeNotifications,
-    nativeRepairs,
-    dismissedNotificationIds,
-    callHAService,
-    dismissNotification,
-    updateEntityState,
-    installUpdate,
-    skipUpdate,
-    clearSkippedUpdate
-  });
-
+  const notifications = useMemo(() => {
+    return extractHANotifications({
+      domainGroups,
+      states,
+      nativeNotifications,
+      nativeRepairs,
+      dismissedNotificationIds,
+      callHAService,
+      dismissNotification,
+      updateEntityState,
+      installUpdate,
+      skipUpdate,
+      clearSkippedUpdate
+    });
+  }, [domainGroups, states, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate]);
 
   const totalNotifications = notifications.length;
+
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {

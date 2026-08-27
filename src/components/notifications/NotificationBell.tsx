@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Bell, ShieldWarning, ArrowUpRight } from '@phosphor-icons/react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { extractHANotifications } from '../../services/notificationsService';
@@ -35,23 +35,24 @@ export default function NotificationBell({
     clearSkippedUpdate
   } = useAutoLayoutStore();
 
-  const notifications = extractHANotifications({
-    domainGroups,
-    states,
-    nativeNotifications,
-    nativeRepairs,
-    dismissedNotificationIds,
-    callHAService,
-    dismissNotification,
-    updateEntityState,
-    installUpdate,
-    skipUpdate,
-    clearSkippedUpdate
-  });
-
-
+  const notifications = useMemo(() => {
+    return extractHANotifications({
+      domainGroups,
+      states,
+      nativeNotifications,
+      nativeRepairs,
+      dismissedNotificationIds,
+      callHAService,
+      dismissNotification,
+      updateEntityState,
+      installUpdate,
+      skipUpdate,
+      clearSkippedUpdate
+    });
+  }, [domainGroups, states, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate]);
 
   const totalCount = notifications.length;
+
   const hasCritical = notifications.some(n => n.severity === 'critical');
   const hasWarning = notifications.some(n => n.severity === 'warning' || n.severity === 'error');
   const hasUpdates = notifications.some(n => n.category === 'update' && !n.skippedVersion);

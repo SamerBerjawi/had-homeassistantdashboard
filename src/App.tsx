@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
 import { HAEntity, Room, LogMessage, ToastNotification } from './types';
-import { INITIAL_ENTITIES, INITIAL_ROOMS } from './data';
 import { useAutoLayoutStore } from './store/useAutoLayoutStore';
 import { resolvedEntityToHAEntity } from './services/graphResolution';
+
 
 import Sidebar from './components/Sidebar';
 import NotificationToast from './components/NotificationToast';
@@ -79,11 +79,12 @@ export default function App() {
       try {
         return JSON.parse(saved);
       } catch (e) {
-        return INITIAL_ROOMS;
+        return [];
       }
     }
-    return INITIAL_ROOMS;
+    return [];
   });
+
 
   useEffect(() => {
     localStorage.setItem('homz_rooms', JSON.stringify(rooms));

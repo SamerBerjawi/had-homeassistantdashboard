@@ -185,6 +185,22 @@ const getCachedLiveMode = (): boolean => {
   return false;
 };
 
+let recomputeTimer: any = null;
+const scheduleRecompute = (get: any) => {
+  if (recomputeTimer) return;
+  if (typeof requestAnimationFrame !== 'undefined') {
+    recomputeTimer = requestAnimationFrame(() => {
+      recomputeTimer = null;
+      get().recomputeGraph();
+    });
+  } else {
+    recomputeTimer = setTimeout(() => {
+      recomputeTimer = null;
+      get().recomputeGraph();
+    }, 16);
+  }
+};
+
 export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   isLiveMode: getCachedLiveMode(),
   serverUrl: getCachedServerUrl(),
@@ -268,6 +284,17 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           nativeRepairs: repairs
         });
       },
+      onStatesBatchUpdated: (statesList) => {
+        const map: Record<string, HAState> = {};
+        for (const s of statesList) {
+          if (s?.entity_id) map[s.entity_id] = s;
+        }
+        set(prev => ({
+          states: { ...prev.states, ...map },
+          rawStates: { ...prev.rawStates, ...map }
+        }));
+        scheduleRecompute(get);
+      },
       onStateChanged: (entityId, newState) => {
 
         set(prev => ({
@@ -280,7 +307,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
             [entityId]: newState
           }
         }));
-        get().recomputeGraph();
+        scheduleRecompute(get);
       },
       onLogMessage: (type, msg, details) => {
         if (typeof window !== 'undefined') {
@@ -465,12 +492,17 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         states: {
           ...prev.states,
           [entityId]: updatedState
+        },
+        rawStates: {
+          ...prev.rawStates,
+          [entityId]: updatedState
         }
       };
     });
 
-    get().recomputeGraph();
+    scheduleRecompute(get);
   },
+
 
   callHAService: async (domain: string, service: string, serviceData: Record<string, any> = {}, target: any = {}) => {
     try {
