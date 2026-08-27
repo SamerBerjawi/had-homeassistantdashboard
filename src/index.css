@@ -618,3 +618,13 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
 .animate-wave:hover {
   animation: wave-hand 0.8s infinite ease-in-out;
 }
+
+/* SVG Power Flow Dash Animation */
+@keyframes dash {
+  from {
+    stroke-dashoffset: 32;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}

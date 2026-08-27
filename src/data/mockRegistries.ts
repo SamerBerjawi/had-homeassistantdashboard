@@ -1396,29 +1396,103 @@ export const MOCK_STATES: Record<string, HAState> = {
   },
   'sensor.solaredge_solar_power': {
     entity_id: 'sensor.solaredge_solar_power',
-    state: '4.82',
+    state: '1.35',
     attributes: {
-      friendly_name: 'Rooftop Solar Generation',
+      friendly_name: 'PV Solar Generation',
       unit_of_measurement: 'kW',
       device_class: 'power',
-      peak_today: '5.64 kW'
+      peak_today: '3.45 kW'
+    }
+  },
+  'sensor.home_consumption_power': {
+    entity_id: 'sensor.home_consumption_power',
+    state: '0.33',
+    attributes: {
+      friendly_name: 'Home Power Consumption',
+      unit_of_measurement: 'kW',
+      device_class: 'power'
     }
   },
   'sensor.tesla_powerwall_battery_level': {
     entity_id: 'sensor.tesla_powerwall_battery_level',
-    state: '74',
+    state: '100',
     attributes: {
-      friendly_name: 'Powerwall 3 Storage Level',
+      friendly_name: 'Battery Storage Level',
       unit_of_measurement: '%',
       capacity_kwh: 13.5
     }
   },
   'sensor.tesla_powerwall_flow': {
     entity_id: 'sensor.tesla_powerwall_flow',
-    state: '-1.45', // negative = charging
+    state: '0.00',
     attributes: {
-      friendly_name: 'Powerwall Charge / Discharge Flow',
-      unit_of_measurement: 'kW'
+      friendly_name: 'Battery Power Flow',
+      unit_of_measurement: 'kW',
+      device_class: 'power'
+    }
+  },
+  'sensor.grid_power': {
+    entity_id: 'sensor.grid_power',
+    state: '-1.02',
+    attributes: {
+      friendly_name: 'Grid Active Power',
+      unit_of_measurement: 'kW',
+      device_class: 'power'
+    }
+  },
+  'sensor.energy_production_today': {
+    entity_id: 'sensor.energy_production_today',
+    state: '16.44',
+    attributes: {
+      friendly_name: 'Solar Production Today',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy',
+      state_class: 'total_increasing'
+    }
+  },
+  'sensor.energy_consumed_today': {
+    entity_id: 'sensor.energy_consumed_today',
+    state: '6.73',
+    attributes: {
+      friendly_name: 'Solar Consumed Today',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy'
+    }
+  },
+  'sensor.energy_fed_to_grid_today': {
+    entity_id: 'sensor.energy_fed_to_grid_today',
+    state: '9.71',
+    attributes: {
+      friendly_name: 'Solar Fed to Grid Today',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy'
+    }
+  },
+  'sensor.energy_consumption_today': {
+    entity_id: 'sensor.energy_consumption_today',
+    state: '4.61',
+    attributes: {
+      friendly_name: 'Home Consumption Today',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy'
+    }
+  },
+  'sensor.energy_consumption_from_solar_today': {
+    entity_id: 'sensor.energy_consumption_from_solar_today',
+    state: '4.44',
+    attributes: {
+      friendly_name: 'Energy from Solar PV Today',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy'
+    }
+  },
+  'sensor.energy_consumption_from_grid_today': {
+    entity_id: 'sensor.energy_consumption_from_grid_today',
+    state: '0.17',
+    attributes: {
+      friendly_name: 'Energy from Grid Today',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy'
     }
   },
 
