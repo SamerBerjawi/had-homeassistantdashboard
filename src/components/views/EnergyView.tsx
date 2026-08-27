@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   Lightning, 
   Sun, 
@@ -12,16 +12,13 @@ import {
   House, 
   ShieldCheck, 
   Sparkle, 
-  ArrowUpRight, 
-  ArrowDownRight,
   ArrowsClockwise,
-  Leaf,
-  PiggyBank,
   SlidersHorizontal
 } from '@phosphor-icons/react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { useShallow } from 'zustand/react/shallow';
-import { calculateEnergyState, EnergyEntityMappingConfig } from '../energy/energyCalculator';
+import { EnergyEntityMappingConfig } from '../energy/energyCalculator';
+import { useEnergyDashboardData, EnergyPeriod } from '../../hooks/useEnergyDashboardData';
 import FusionSolarHouseFlow from '../energy/FusionSolarHouseFlow';
 import PowerSourcesChart from '../energy/PowerSourcesChart';
 import EnergySankeyChart from '../energy/EnergySankeyChart';
@@ -78,28 +75,52 @@ export default function EnergyView({ darkMode = true }: EnergyViewProps) {
     }
   };
 
-  // Compute live energy telemetry state
-  const energyState = useMemo(() => {
-    return calculateEnergyState(states, importTariff, exportTariff, currencySymbol, entityOverrides);
-  }, [states, importTariff, exportTariff, currencySymbol, entityOverrides]);
-
+  // Connect to official Home Assistant Energy Pipeline Hook
   const {
+    period,
+    setPeriod,
+    isFetchingStats,
+    refresh,
+    isLive,
     realtime,
     dailyTotals,
     financials,
     environmental,
     deviceConsumers,
     timeseries,
-    weeklyTimeseries,
-    monthlyTimeseries,
-    boundEntities
-  } = energyState;
+    timeseries7d,
+    timeseriesMonth
+  } = useEnergyDashboardData({
+    importTariff,
+    exportTariff,
+    currencySymbol,
+    entityOverrides
+  });
+
+  const boundEntities = useMemo(() => ({
+    solarPower: entityOverrides.solarPowerEntity || 'sensor.solaredge_solar_power',
+    solarEnergyToday: entityOverrides.solarEnergyTodayEntity || 'sensor.energy_consumption_from_solar_today',
+    batteryPower: entityOverrides.batteryPowerEntity || 'sensor.battery_power',
+    batterySoc: entityOverrides.batterySocEntity || 'sensor.battery_state_of_charge',
+    gridPower: entityOverrides.gridPowerEntity || 'sensor.grid_power',
+    gridImportEnergyToday: entityOverrides.gridImportEnergyTodayEntity || 'sensor.grid_import_kwh',
+    gridExportEnergyToday: entityOverrides.gridExportEnergyTodayEntity || 'sensor.grid_export_kwh',
+    homeConsumptionPower: entityOverrides.homeConsumptionPowerEntity || 'sensor.home_consumption_power',
+    homeConsumptionEnergyToday: entityOverrides.homeConsumptionEnergyTodayEntity || 'sensor.home_consumption_energy_today'
+  }), [entityOverrides]);
+
+  const periodOptions: Array<{ id: EnergyPeriod; label: string }> = [
+    { id: 'today', label: 'Today' },
+    { id: 'yesterday', label: 'Yesterday' },
+    { id: '7d', label: '7 Days' },
+    { id: 'month', label: 'This Month' }
+  ];
 
   return (
     <div className="w-full flex-1 flex flex-col space-y-5 sm:space-y-6 pb-12">
       
       {/* ------------------------------------------------------------- */}
-      {/* TOP HEADER & ENTITY CONFIGURATION BAR                         */}
+      {/* TOP HEADER & TIME PERIOD SELECTOR BAR                         */}
       {/* ------------------------------------------------------------- */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-1">
         <div className="flex items-center gap-3">
@@ -111,29 +132,75 @@ export default function EnergyView({ darkMode = true }: EnergyViewProps) {
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
                 Energy & Power System
               </h1>
-              <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                Live HA Stream
+              <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border ${
+                isLive 
+                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                  : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+              }`}>
+                {isLive ? 'HA Recorder Stream' : 'Simulated HA Pipeline'}
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Real-time solar generation, home consumption, battery state, and grid exchange
+              Official Home Assistant energy recorder statistics and telemetry
             </p>
           </div>
         </div>
 
-        {/* Configure Entity Mapping Button */}
-        <button
-          type="button"
-          onClick={() => setIsSettingsModalOpen(true)}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border text-xs font-bold transition-all shadow-sm cursor-pointer ${
-            darkMode 
-              ? 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-200 hover:text-white' 
-              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-slate-900'
-          }`}
-        >
-          <SlidersHorizontal size={16} weight="duotone" className="text-amber-500" />
-          <span>Configure Entities</span>
-        </button>
+        {/* Period Selector & Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Period Tabs */}
+          <div className={`flex items-center p-1 rounded-2xl border backdrop-blur-md ${
+            darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'
+          }`}>
+            {periodOptions.map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setPeriod(opt.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  period === opt.id
+                    ? darkMode
+                      ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                      : 'bg-white text-slate-900 shadow-xs'
+                    : darkMode
+                      ? 'text-slate-400 hover:text-white'
+                      : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Refresh Button */}
+          <button
+            type="button"
+            onClick={() => refresh()}
+            disabled={isFetchingStats}
+            title="Refresh statistics"
+            className={`p-2 rounded-2xl border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+              darkMode 
+                ? 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-200 hover:text-white' 
+                : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-slate-900'
+            }`}
+          >
+            <ArrowsClockwise size={16} weight="bold" className={`text-amber-500 ${isFetchingStats ? 'animate-spin' : ''}`} />
+          </button>
+
+          {/* Configure Entity Mapping Button */}
+          <button
+            type="button"
+            onClick={() => setIsSettingsModalOpen(true)}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+              darkMode 
+                ? 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-200 hover:text-white' 
+                : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-slate-900'
+            }`}
+          >
+            <SlidersHorizontal size={16} weight="duotone" className="text-amber-500" />
+            <span>Configure Entities</span>
+          </button>
+        </div>
       </div>
 
       {/* ------------------------------------------------------------- */}
@@ -162,7 +229,7 @@ export default function EnergyView({ darkMode = true }: EnergyViewProps) {
             </div>
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between font-medium">
-            <span>Yield Today:</span>
+            <span>Period Yield:</span>
             <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{dailyTotals.solarProductionKWh.toFixed(2)} kWh</span>
           </div>
         </div>
@@ -216,7 +283,7 @@ export default function EnergyView({ darkMode = true }: EnergyViewProps) {
             </div>
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between font-medium">
-            <span>Used Today:</span>
+            <span>Period Load:</span>
             <span className="font-mono text-purple-600 dark:text-purple-400 font-bold">{dailyTotals.totalConsumptionKWh.toFixed(2)} kWh</span>
           </div>
         </div>
@@ -331,8 +398,8 @@ export default function EnergyView({ darkMode = true }: EnergyViewProps) {
       <div className="w-full">
         <PowerSourcesChart
           timeseries24h={timeseries}
-          timeseries7d={weeklyTimeseries}
-          timeseriesMonth={monthlyTimeseries}
+          timeseries7d={timeseries7d}
+          timeseriesMonth={timeseriesMonth}
           darkMode={darkMode}
         />
       </div>
