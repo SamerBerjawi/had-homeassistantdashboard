@@ -405,3 +405,6 @@ export interface WeatherData {
   lastUpdated: string;
   isGrounded?: boolean;
 }
+
+export * from './types/notifications';
+

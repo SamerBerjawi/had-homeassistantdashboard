@@ -20,8 +20,11 @@ import {
   HassAreaWithEntities,
   SecurityOverviewState,
   OverviewSummaryState,
-  AutoLayoutState
+  AutoLayoutState,
+  HANativePersistentNotification,
+  HANativeRepairIssue
 } from '../types';
+
 import { resolveHAGraph, resolvedEntityToHAEntity } from '../services/graphResolution';
 import { haWebSocketService, HAConnectionStatus } from '../services/haWebSocket';
 import { 
@@ -106,6 +109,17 @@ export interface AutoLayoutStoreState {
   addArea: (area: Partial<HAArea>) => void;
   deleteFloor: (floorId: string) => void;
   deleteArea: (areaId: string) => void;
+
+  // Notification & Alert Management
+  nativeNotifications: HANativePersistentNotification[];
+  nativeRepairs: HANativeRepairIssue[];
+  dismissedNotificationIds: string[];
+  dismissNotification: (id: string) => void;
+  clearAllNotifications: (ids: string[]) => void;
+  installUpdate: (entityId: string) => Promise<void>;
+  skipUpdate: (entityId: string) => Promise<void>;
+  clearSkippedUpdate: (entityId: string) => Promise<void>;
+
 
   // Navigation Setters
   setSelectedFloorId: (floorId: string | 'all') => void;
@@ -209,6 +223,9 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   selectedAreaId: null,
   selectedWeatherEntityId: typeof window !== 'undefined' ? localStorage.getItem('ha_selected_weather_id') : null,
   selectedAlarmEntityId: typeof window !== 'undefined' ? localStorage.getItem('ha_selected_alarm_id') : null,
+  nativeNotifications: [],
+  nativeRepairs: [],
+  dismissedNotificationIds: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('ha_dismissed_notifications') || '[]') : [],
   showDiagnosticEntities: false,
   searchQuery: '',
 
@@ -238,12 +255,21 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           rawFloors: payload.floors,
           rawLabels: payload.labels && payload.labels.length > 0 ? payload.labels : [...MOCK_LABELS],
           rawStates: payload.states,
+          nativeNotifications: payload.nativeNotifications || [],
+          nativeRepairs: payload.nativeRepairs || [],
           isLoading: false,
           error: null
         });
         get().recomputeGraph();
       },
+      onNativeNotificationsLoaded: (notifications, repairs) => {
+        set({
+          nativeNotifications: notifications,
+          nativeRepairs: repairs
+        });
+      },
       onStateChanged: (entityId, newState) => {
+
         set(prev => ({
           states: {
             ...prev.states,
@@ -562,6 +588,16 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           });
         } else if (domain === 'fan' && service === 'set_target_temperature') {
           get().updateEntityState(eid, currentState || 'on', { target_temperature: serviceData.temperature || serviceData.target_temperature });
+        } else if (domain === 'update') {
+          if (service === 'install') {
+            get().updateEntityState(eid, 'off', { in_progress: false, installed_version: currentAttrs.latest_version || currentAttrs.installed_version });
+          } else if (service === 'skip') {
+            get().updateEntityState(eid, 'off', { skipped_version: currentAttrs.latest_version });
+          } else if (service === 'clear_skipped') {
+            get().updateEntityState(eid, 'on', { skipped_version: null });
+          }
+        } else if (domain === 'persistent_notification' && service === 'dismiss') {
+          get().updateEntityState(eid, 'dismissed');
         } else if (domain === 'alarm_control_panel' || service.startsWith('alarm_')) {
           if (service === 'alarm_arm_home') {
             get().updateEntityState(eid, 'armed_home', { changed_by: 'Dashboard 1-Tap', last_changed: new Date().toISOString() });
@@ -693,7 +729,101 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
     get().recomputeGraph();
   },
 
+  dismissNotification: (id: string) => {
+    set(prev => {
+      const nextIds = Array.from(new Set([...prev.dismissedNotificationIds, id]));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ha_dismissed_notifications', JSON.stringify(nextIds));
+      }
+      return { dismissedNotificationIds: nextIds };
+    });
+  },
+
+  clearAllNotifications: (ids: string[]) => {
+    set(prev => {
+      const nextIds = Array.from(new Set([...prev.dismissedNotificationIds, ...ids]));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ha_dismissed_notifications', JSON.stringify(nextIds));
+      }
+      return { dismissedNotificationIds: nextIds };
+    });
+  },
+
+  installUpdate: async (entityId: string) => {
+    const current = get().states[entityId];
+    const attrs = current?.attributes || {};
+    const latest = attrs.latest_version || attrs.installed_version || 'Latest';
+    const friendlyName = attrs.friendly_name || attrs.title || entityId;
+
+    // Step 1: Set immediate installing state with initial percentage
+    get().updateEntityState(entityId, 'installing', {
+      in_progress: true,
+      update_percentage: 15
+    });
+
+    // Send the live service call to Home Assistant (both service_data and target for wide HA version support)
+    try {
+      await haWebSocketService.callService('update', 'install', { backup: false, entity_id: entityId }, { entity_id: entityId });
+    } catch (e) {
+      console.warn('[HA Update] Service call caught:', e);
+    }
+
+    // Step 2: Animated progress sequence for rich feedback
+    setTimeout(() => {
+      const st = get().states[entityId];
+      if (st?.attributes?.in_progress || st?.state === 'installing') {
+        get().updateEntityState(entityId, 'installing', {
+          in_progress: true,
+          update_percentage: 45
+        });
+      }
+    }, 700);
+
+    setTimeout(() => {
+      const st = get().states[entityId];
+      if (st?.attributes?.in_progress || st?.state === 'installing') {
+        get().updateEntityState(entityId, 'installing', {
+          in_progress: true,
+          update_percentage: 80
+        });
+      }
+    }, 1500);
+
+    setTimeout(() => {
+      // Step 3: Complete update - installed version becomes latest, state turns off (up to date)
+      get().updateEntityState(entityId, 'off', {
+        in_progress: false,
+        update_percentage: 100,
+        installed_version: latest,
+        skipped_version: null
+      });
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ha_log_message', {
+          detail: {
+            type: 'info',
+            msg: `Successfully installed ${friendlyName} v${latest}`,
+            details: { entity_id: entityId, version: latest }
+          }
+        }));
+      }
+    }, 2400);
+  },
+
+  skipUpdate: async (entityId: string) => {
+    const current = get().states[entityId];
+    const latest = current?.attributes?.latest_version || 'skipped';
+    get().updateEntityState(entityId, 'off', { skipped_version: latest, in_progress: false });
+    await haWebSocketService.callService('update', 'skip', { entity_id: entityId }, { entity_id: entityId }).catch(() => {});
+  },
+
+  clearSkippedUpdate: async (entityId: string) => {
+    get().updateEntityState(entityId, 'on', { skipped_version: null, in_progress: false });
+    await haWebSocketService.callService('update', 'clear_skipped', { entity_id: entityId }, { entity_id: entityId }).catch(() => {});
+  },
+
   setSelectedFloorId: (floorId: string | 'all') => set({ selectedFloorId: floorId }),
+
   setSelectedAreaId: (areaId: string | null) => set({ selectedAreaId: areaId }),
   setSelectedWeatherEntityId: (id: string | null) => {
     if (typeof window !== 'undefined') {

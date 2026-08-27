@@ -38,6 +38,8 @@ import WeatherOverviewDrawer from '../weather/WeatherOverviewDrawer';
 import WeatherBadge from '../weather/WeatherBadge';
 import AnimatedWeatherBackdrop from '../weather/AnimatedWeatherBackdrop';
 import { getWeatherConditionInfo } from '../weather/weatherIcons';
+import NotificationBell from '../notifications/NotificationBell';
+import NotificationDrawer from '../notifications/NotificationDrawer';
 
 interface OverviewHeaderProps {
   darkMode?: boolean;
@@ -57,7 +59,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
   // Active Right Sidebar State
   const [drawerOpen, setDrawerOpen] = useState<
-    'users' | 'lights' | 'fans' | 'doors' | 'windows' | 'alarm' | 'media' | 'sensors' | 'weather' | null
+    'users' | 'lights' | 'fans' | 'doors' | 'windows' | 'alarm' | 'media' | 'sensors' | 'weather' | 'notifications' | null
   >(null);
 
   const [selectedUser, setSelectedUser] = useState<ResolvedEntity | null>(null);
@@ -502,7 +504,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
             darkMode={darkMode}
           />
 
+          {/* Standalone Notifications & Updates Badge */}
+          <NotificationBell
+            variant="pill-badge"
+            onClick={() => setDrawerOpen('notifications')}
+            darkMode={darkMode}
+          />
+
         </div>
+
       </div>
 
       {/* ------------------------------------------------------------- */}
@@ -1094,6 +1104,13 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         onClose={() => setDrawerOpen(null)}
         darkMode={darkMode}
       />
+
+      <NotificationDrawer
+        isOpen={drawerOpen === 'notifications'}
+        onClose={() => setDrawerOpen(null)}
+        darkMode={darkMode}
+      />
     </section>
+
   );
 }

@@ -7,6 +7,8 @@ import { resolvedEntityToHAEntity } from './services/graphResolution';
 
 import Sidebar from './components/Sidebar';
 import NotificationToast from './components/NotificationToast';
+import NotificationBell from './components/notifications/NotificationBell';
+import NotificationDrawer from './components/notifications/NotificationDrawer';
 
 // 10 Blank Views
 import OverviewView from './components/views/OverviewView';
@@ -46,6 +48,7 @@ export default function App() {
   // Tab State
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
+  const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState<boolean>(false);
 
   // Auto-Layout Graph Store
   const {
@@ -196,16 +199,25 @@ export default function App() {
         setActiveTab={setActiveTab} 
         darkMode={darkMode}
         toggleDarkMode={(next) => setDarkMode(next !== undefined ? next : !darkMode)}
+        onOpenNotifications={() => setIsNotificationDrawerOpen(true)}
       />
+
 
       {/* Main Dynamic Viewport Container */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative z-10">
         <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container p-4 sm:p-6 lg:p-8 flex flex-col">
-          {/* Header Bar - Clean Title Only */}
-          <header className="mb-6">
+          {/* Header Bar - Title & Quick Notifications Bell */}
+          <header className="mb-6 flex items-center justify-between gap-4">
             <h1 className={`text-2xl sm:text-3xl font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>
               {getTabTitle(activeTab)}
             </h1>
+
+            <div className="flex items-center gap-2.5 shrink-0">
+              <NotificationBell
+                darkMode={darkMode}
+                onClick={() => setIsNotificationDrawerOpen(true)}
+              />
+            </div>
           </header>
 
           {/* PAGE ROUTING (Blank views ready to build + Settings) */}
@@ -239,12 +251,20 @@ export default function App() {
         </main>
       </div>
 
+      {/* Global Notification Drawer */}
+      <NotificationDrawer
+        isOpen={isNotificationDrawerOpen}
+        onClose={() => setIsNotificationDrawerOpen(false)}
+        darkMode={darkMode}
+      />
+
       {/* Global Notifications */}
       <NotificationToast 
         toasts={toasts} 
         onDismiss={dismissToast} 
         darkMode={darkMode} 
       />
+
     </div>
   );
 }

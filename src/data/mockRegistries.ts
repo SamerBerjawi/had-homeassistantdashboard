@@ -815,6 +815,38 @@ export const MOCK_ENTITY_REGISTRY: HAEntityRegistryEntry[] = [
     device_class: 'window'
   },
 
+  // ---------------- Software Updates & System Notifications ----------------
+  {
+    entity_id: 'update.home_assistant_core_update',
+    name: 'Home Assistant Core Update',
+    area_id: 'office',
+    platform: 'homeassistant'
+  },
+  {
+    entity_id: 'update.zigbee2mqtt_update',
+    name: 'Zigbee2MQTT Gateway Update',
+    area_id: 'hallway',
+    platform: 'mqtt'
+  },
+  {
+    entity_id: 'persistent_notification.new_device_discovered',
+    name: 'New Device Discovered',
+    area_id: null,
+    platform: 'persistent_notification'
+  },
+  {
+    entity_id: 'persistent_notification.backup_success',
+    name: 'Automated System Backup',
+    area_id: null,
+    platform: 'persistent_notification'
+  },
+  {
+    entity_id: 'repair.yaml_configuration_warning',
+    name: 'Legacy Integration Deprecation',
+    area_id: null,
+    platform: 'repairs'
+  },
+
   // ---------------- Disabled Entity (To test automatic filtering!) ----------------
   {
     entity_id: 'light.old_garage_fluorescent_decommissioned',
@@ -1725,5 +1757,82 @@ export const MOCK_STATES: Record<string, HAState> = {
       icon: 'Barbell',
       passive: false
     }
+  },
+
+  // ---------------- Software Updates ----------------
+  'update.home_assistant_core_update': {
+    entity_id: 'update.home_assistant_core_update',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Home Assistant Core Update',
+      title: 'Home Assistant Core 2026.8.4',
+      installed_version: '2026.8.0',
+      latest_version: '2026.8.4',
+      release_summary: 'Major performance optimizations, responsive weather stream APIs, and Matter 1.3 certification.',
+      release_url: 'https://www.home-assistant.io/blog/2026/08/06/release-20268/',
+      in_progress: false,
+      auto_update: false
+    }
+  },
+  'update.zigbee2mqtt_update': {
+    entity_id: 'update.zigbee2mqtt_update',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Zigbee2MQTT Gateway',
+      title: 'Zigbee2MQTT 1.40.1',
+      installed_version: '1.38.0',
+      latest_version: '1.40.1',
+      release_summary: 'Added support for 35 new smart sensors, OTA firmware caching, and mesh stability enhancements.',
+      release_url: 'https://github.com/Koenkk/zigbee2mqtt/releases',
+      in_progress: false,
+      auto_update: false
+    }
+  },
+
+  // ---------------- Persistent Notifications ----------------
+  'persistent_notification.new_device_discovered': {
+    entity_id: 'persistent_notification.new_device_discovered',
+    state: 'notifying',
+    attributes: {
+      title: 'New Device Discovered',
+      message: 'Apple TV 4K in Living Room has been discovered and is ready for 1-tap HomeKit integration.',
+      notification_id: 'apple_tv_disc_1',
+      created_at: '2026-08-27T10:15:00Z'
+    }
+  },
+  'persistent_notification.backup_success': {
+    entity_id: 'persistent_notification.backup_success',
+    state: 'notifying',
+    attributes: {
+      title: 'Automated Snapshot Backup',
+      message: 'Nightly cloud backup completed successfully (1.42 GB encrypted archive stored).',
+      notification_id: 'backup_ok_1',
+      created_at: '2026-08-27T04:00:00Z'
+    }
+  },
+
+  // ---------------- System Repairs / Diagnostics ----------------
+  'repair.restart_required': {
+    entity_id: 'repair.restart_required',
+    state: 'active',
+    attributes: {
+      title: 'Restart Required',
+      message: 'A system restart is required to finish installing Home Assistant Core 2026.8.4 update.',
+      issue_id: 'restart_required_core_update',
+      severity: 'warning',
+      learn_more_url: 'https://www.home-assistant.io/latest-blogs/'
+    }
+  },
+  'repair.yaml_configuration_warning': {
+    entity_id: 'repair.yaml_configuration_warning',
+    state: 'active',
+    attributes: {
+      title: 'Legacy MQTT YAML Config Detected',
+      message: 'Legacy YAML configuration for MQTT sensors is deprecated. Please migrate to UI config flow.',
+      issue_id: 'mqtt_yaml_dep_1',
+      severity: 'warning',
+      learn_more_url: 'https://www.home-assistant.io/integrations/mqtt/'
+    }
   }
 };
+

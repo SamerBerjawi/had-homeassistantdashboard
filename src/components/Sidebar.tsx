@@ -16,23 +16,59 @@ import {
   DotsThreeVertical,
   SidebarSimple,
   CaretLeft,
-  CaretRight
+  CaretRight,
+  Bell
 } from '@phosphor-icons/react';
 import { AnimatedThemeToggler } from './ui/animated-theme-toggler';
+import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
+import { extractHANotifications } from '../services/notificationsService';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   darkMode: boolean;
   toggleDarkMode: (next?: boolean) => void;
+  onOpenNotifications?: () => void;
 }
 
 export default function Sidebar({ 
   activeTab, 
   setActiveTab, 
   darkMode,
-  toggleDarkMode
+  toggleDarkMode,
+  onOpenNotifications
 }: SidebarProps) {
+  const {
+    domainGroups,
+    states,
+    nativeNotifications,
+    nativeRepairs,
+    dismissedNotificationIds,
+    callHAService,
+    dismissNotification,
+    updateEntityState,
+    installUpdate,
+    skipUpdate,
+    clearSkippedUpdate
+  } = useAutoLayoutStore();
+
+  const notifications = extractHANotifications({
+    domainGroups,
+    states,
+    nativeNotifications,
+    nativeRepairs,
+    dismissedNotificationIds,
+    callHAService,
+    dismissNotification,
+    updateEntityState,
+    installUpdate,
+    skipUpdate,
+    clearSkippedUpdate
+  });
+
+
+  const totalNotifications = notifications.length;
+
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('sidebar_collapsed');
@@ -178,10 +214,64 @@ export default function Sidebar({
           })}
         </div>
 
-        {/* Pinned Footer Section: Telemetry & Theme Toggler & Collapse Re-open */}
-        <div className={`mt-auto pt-4 border-t w-full flex flex-col gap-2.5 ${darkMode ? 'border-white/10' : 'border-slate-200/80'}`}>
+        {/* Pinned Footer Section: Notifications, Telemetry, Theme Toggler & Collapse */}
+        <div className={`mt-auto pt-3 border-t w-full flex flex-col gap-2 ${darkMode ? 'border-white/10' : 'border-slate-200/80'}`}>
+          {/* Native Home Assistant Notifications Row (Matching Native HA Sidebar) */}
+          <button
+            type="button"
+            onClick={onOpenNotifications}
+            id="btn-sidebar-notifications"
+            title={isCollapsed ? `Notifications (${totalNotifications})` : undefined}
+            className={`relative transition-all duration-200 cursor-pointer flex items-center gap-3 rounded-xl group ${
+              isCollapsed ? 'w-11 h-11 justify-center mx-auto' : 'w-full px-3 py-2 text-left'
+            } ${
+              totalNotifications > 0
+                ? darkMode
+                  ? 'hover:bg-white/10 text-slate-200'
+                  : 'hover:bg-slate-200 text-slate-800'
+                : darkMode
+                  ? 'text-slate-400 hover:text-white hover:bg-white/5'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5'
+            }`}
+          >
+            <div className="relative flex items-center justify-center">
+              <Bell
+                size={20}
+                weight={totalNotifications > 0 ? 'fill' : 'regular'}
+                className={`${totalNotifications > 0 ? (darkMode ? 'text-amber-400' : 'text-amber-600') : (darkMode ? 'text-slate-400' : 'text-slate-500')}`}
+              />
+              {isCollapsed && totalNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-slate-950">
+                  {totalNotifications > 9 ? '9+' : totalNotifications}
+                </span>
+              )}
+            </div>
+
+            {!isCollapsed && (
+              <>
+                <span className="text-xs font-semibold tracking-tight text-slate-700 dark:text-slate-200">Notifications</span>
+                {totalNotifications > 0 && (
+                  <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                    {totalNotifications > 99 ? '99+' : totalNotifications}
+                  </span>
+                )}
+              </>
+            )}
+
+            {isCollapsed && (
+              <span className={`absolute left-full ml-3 px-2.5 py-1 text-[11px] font-semibold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-xl whitespace-nowrap ${
+                darkMode 
+                  ? 'bg-slate-900/95 backdrop-blur-md text-white border border-white/10' 
+                  : 'bg-white/95 backdrop-blur-md text-slate-900 border border-slate-200 shadow-slate-300/50'
+              }`}>
+                Notifications {totalNotifications > 0 ? `(${totalNotifications})` : ''}
+              </span>
+            )}
+          </button>
+
           {/* Telemetry Status Bar */}
           {!isCollapsed ? (
+
             <div className={`px-2.5 py-2 rounded-xl border flex items-center justify-between ${
               darkMode ? 'bg-white/3 border-white/10' : 'bg-slate-100/80 border-slate-200/80'
             }`}>
@@ -356,8 +446,35 @@ export default function Sidebar({
                 })}
               </div>
 
+              {/* Quick Notifications Button in Mobile More Menu */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMoreMenu(false);
+                  if (onOpenNotifications) onOpenNotifications();
+                }}
+                className={`w-full mb-3 p-3 rounded-2xl flex items-center justify-between border transition-all cursor-pointer ${
+                  totalNotifications > 0
+                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-300'
+                    : darkMode
+                      ? 'bg-slate-900/60 border-slate-800 text-slate-200 hover:bg-slate-800'
+                      : 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Bell size={20} weight={totalNotifications > 0 ? 'fill' : 'duotone'} className={totalNotifications > 0 ? 'text-amber-500' : ''} />
+                  <span className="text-xs font-bold">Notifications & Alerts</span>
+                </div>
+                {totalNotifications > 0 && (
+                  <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center">
+                    {totalNotifications}
+                  </span>
+                )}
+              </button>
+
               {/* Theme Toggle Bar */}
               <div className="pt-2 border-t border-slate-200/40 dark:border-slate-800">
+
                 <AnimatedThemeToggler
                   id="btn-more-toggle-darkmode"
                   theme={darkMode ? "dark" : "light"}

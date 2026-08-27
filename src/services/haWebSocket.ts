@@ -10,7 +10,9 @@ import {
   HAFloor,
   HALabel,
   HAState,
-  HAConnectionStatus
+  HAConnectionStatus,
+  HANativePersistentNotification,
+  HANativeRepairIssue
 } from '../types';
 import { MOCK_AREAS, MOCK_DEVICES, MOCK_ENTITY_REGISTRY, MOCK_FLOORS, MOCK_STATES } from '../data/mockRegistries';
 
@@ -25,10 +27,14 @@ export interface HAWebSocketCallbacks {
     floors: HAFloor[];
     labels?: HALabel[];
     states: Record<string, HAState>;
+    nativeNotifications?: HANativePersistentNotification[];
+    nativeRepairs?: HANativeRepairIssue[];
   }) => void;
+  onNativeNotificationsLoaded?: (notifications: HANativePersistentNotification[], repairs: HANativeRepairIssue[]) => void;
   onStateChanged: (entityId: string, newState: HAState) => void;
   onLogMessage: (type: 'info' | 'service_call' | 'state_changed' | 'warning' | 'error', msg: string, details?: any) => void;
 }
+
 
 class HAWebSocketClient {
   private socket: WebSocket | null = null;
@@ -70,9 +76,47 @@ class HAWebSocketClient {
       devices: [...MOCK_DEVICES],
       entityRegistry: [...MOCK_ENTITY_REGISTRY],
       floors: [...MOCK_FLOORS],
-      states: { ...MOCK_STATES }
+      states: { ...MOCK_STATES },
+      nativeNotifications: [
+        {
+          notification_id: 'apple_tv_disc_1',
+          title: 'New Device Discovered',
+          message: 'Apple TV 4K in Living Room has been discovered and is ready for 1-tap HomeKit integration.',
+          created_at: '2026-08-27T10:15:00Z',
+          status: 'unread'
+        },
+        {
+          notification_id: 'backup_ok_1',
+          title: 'Automated Snapshot Backup',
+          message: 'Nightly cloud backup completed successfully (1.42 GB encrypted archive stored).',
+          created_at: '2026-08-27T04:00:00Z',
+          status: 'unread'
+        }
+      ],
+      nativeRepairs: [
+        {
+          issue_id: 'restart_required_core_update',
+          domain: 'homeassistant',
+          title: 'Restart Required',
+          message: 'A system restart is required to finish installing Home Assistant Core 2026.8.4 update.',
+          severity: 'warning',
+          learn_more_url: 'https://www.home-assistant.io/latest-blogs/',
+          is_fixable: true
+        },
+        {
+          issue_id: 'mqtt_yaml_dep_1',
+          domain: 'mqtt',
+          title: 'Legacy MQTT YAML Config Detected',
+          message: 'Legacy YAML configuration for MQTT sensors is deprecated. Please migrate to UI config flow.',
+          severity: 'warning',
+          learn_more_url: 'https://www.home-assistant.io/integrations/mqtt/',
+          is_fixable: true
+        }
+      ]
     });
+
   }
+
 
   public connect(url: string, token: string) {
     if (this.isDemoMode) {
@@ -214,13 +258,25 @@ class HAWebSocketClient {
   public async refreshStates(): Promise<void> {
     if (this.isDemoMode || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
     try {
-      const statesList = await this.sendRequest<HAState[]>('get_states');
+      const [statesList, nativeNotifications, repairsRes] = await Promise.all([
+        this.sendRequest<HAState[]>('get_states').catch(() => []),
+        this.sendRequest<HANativePersistentNotification[]>('persistent_notification/get').catch(() => []),
+        this.sendRequest<{ issues?: HANativeRepairIssue[] }>('repairs/list_issues').catch(() => ({ issues: [] }))
+      ]);
+
       if (Array.isArray(statesList)) {
         for (const s of statesList) {
           if (s?.entity_id) {
             this.callbacks?.onStateChanged(s.entity_id, s);
           }
         }
+      }
+
+      if (this.callbacks?.onNativeNotificationsLoaded) {
+        this.callbacks.onNativeNotificationsLoaded(
+          Array.isArray(nativeNotifications) ? nativeNotifications : [],
+          Array.isArray(repairsRes?.issues) ? repairsRes.issues : []
+        );
       }
     } catch {
       // ignore
@@ -229,15 +285,17 @@ class HAWebSocketClient {
 
   private async fetchAllRegistries() {
     try {
-      this.callbacks?.onLogMessage('info', 'Querying Home Assistant Area, Device, Entity, Floor, and Label registries and live states...');
+      this.callbacks?.onLogMessage('info', 'Querying Home Assistant Area, Device, Entity, Floor, Label registries, native persistent notifications, and repairs...');
       
-      const [areas, devices, entityRegistry, floors, labels, statesList] = await Promise.all([
+      const [areas, devices, entityRegistry, floors, labels, statesList, nativeNotifications, repairsRes] = await Promise.all([
         this.sendRequest<HAArea[]>('config/area_registry/list').catch(() => []),
         this.sendRequest<HADevice[]>('config/device_registry/list').catch(() => []),
         this.sendRequest<HAEntityRegistryEntry[]>('config/entity_registry/list').catch(() => []),
         this.sendRequest<HAFloor[]>('config/floor_registry/list').catch(() => []),
         this.sendRequest<HALabel[]>('config/label_registry/list').catch(() => []),
-        this.sendRequest<HAState[]>('get_states').catch(() => [])
+        this.sendRequest<HAState[]>('get_states').catch(() => []),
+        this.sendRequest<HANativePersistentNotification[]>('persistent_notification/get').catch(() => []),
+        this.sendRequest<{ issues?: HANativeRepairIssue[] }>('repairs/list_issues').catch(() => ({ issues: [] }))
       ]);
 
       const statesMap: Record<string, HAState> = {};
@@ -245,13 +303,17 @@ class HAWebSocketClient {
         statesMap[s.entity_id] = s;
       }
 
+      const nativeRepairs = Array.isArray(repairsRes?.issues) ? repairsRes.issues : [];
+
       this.callbacks?.onRegistriesLoaded({
         areas,
         devices,
         entityRegistry,
         floors,
         labels,
-        states: statesMap
+        states: statesMap,
+        nativeNotifications: Array.isArray(nativeNotifications) ? nativeNotifications : [],
+        nativeRepairs
       });
 
       // Subscribe to live events
@@ -264,11 +326,12 @@ class HAWebSocketClient {
         this.fetchWeatherForecast(w.entity_id);
       }
 
-      this.callbacks?.onLogMessage('info', `Ingested ${areas.length} areas, ${devices.length} devices, ${entityRegistry.length} entities, ${labels?.length || 0} labels, and ${statesList.length} live states.`);
+      this.callbacks?.onLogMessage('info', `Ingested ${areas.length} areas, ${devices.length} devices, ${entityRegistry.length} entities, ${labels?.length || 0} labels, ${nativeNotifications?.length || 0} notifications, and ${statesList.length} live states.`);
     } catch (e: any) {
       this.callbacks?.onLogMessage('error', `Failed to fetch HA registries: ${e.message}`);
     }
   }
+
 
   public async fetchWeatherForecast(entityId: string): Promise<void> {
     if (this.isDemoMode || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
