@@ -95,6 +95,23 @@ export function resolveHAGraph(
   let criticalBatteryCount = 0;
   let securityAlertsCount = 0;
 
+  // Index all dedicated battery sensors from HA states to pair with devices
+  const deviceBatteryMap = new Map<string, number>();
+  for (const [eid, st] of Object.entries(states)) {
+    if (eid.startsWith('sensor.')) {
+      const isBatteryClass = st.attributes?.device_class === 'battery' || eid.endsWith('_battery') || eid.endsWith('_battery_level');
+      if (isBatteryClass) {
+        const val = parseFloat(st.state);
+        if (!isNaN(val)) {
+          const reg = registryMap.get(eid);
+          if (reg?.device_id) {
+            deviceBatteryMap.set(reg.device_id, val);
+          }
+        }
+      }
+    }
+  }
+
   for (const entityId of allEntityIds) {
     const regEntry = registryMap.get(entityId);
     const liveState = states[entityId] || {
@@ -169,14 +186,30 @@ export function resolveHAGraph(
           ? parseFloat(liveState.state) || 0
           : 0;
 
-    const batteryPct =
-      typeof liveState.attributes.battery === 'number'
-        ? liveState.attributes.battery
-        : typeof liveState.attributes.battery_level === 'number'
-          ? liveState.attributes.battery_level
-          : domain === 'sensor' && (liveState.attributes.device_class === 'battery' || entityId.includes('battery'))
-            ? parseFloat(liveState.state) || undefined
-            : undefined;
+    // Accurate Battery Resolution strictly from Home Assistant data
+    let batteryPct: number | undefined = undefined;
+    if (typeof liveState.attributes.battery === 'number') {
+      batteryPct = liveState.attributes.battery;
+    } else if (typeof liveState.attributes.battery_level === 'number') {
+      batteryPct = liveState.attributes.battery_level;
+    } else if (typeof liveState.attributes.battery === 'string') {
+      const parsed = parseFloat(liveState.attributes.battery);
+      if (!isNaN(parsed)) batteryPct = parsed;
+    } else if (regEntry?.device_id && deviceBatteryMap.has(regEntry.device_id)) {
+      batteryPct = deviceBatteryMap.get(regEntry.device_id);
+    } else if (domain === 'sensor' && (liveState.attributes.device_class === 'battery' || entityId.includes('battery'))) {
+      const parsed = parseFloat(liveState.state);
+      if (!isNaN(parsed)) batteryPct = parsed;
+    } else if (domain === 'person') {
+      const personKey = entityId.replace('person.', '');
+      const linkedSensor = states[`sensor.${personKey}_battery`] || 
+                           states[`sensor.${personKey}_phone_battery`] || 
+                           states[`sensor.${personKey}_battery_level`];
+      if (linkedSensor) {
+        const parsed = parseFloat(linkedSensor.state);
+        if (!isNaN(parsed)) batteryPct = parsed;
+      }
+    }
 
     if (batteryPct !== undefined && batteryPct <= 20) {
       criticalBatteryCount++;
@@ -420,15 +453,44 @@ export function resolveHAGraph(
     domainGroups[ent.domain].push(ent);
   }
 
-  // Build securityOverview
-  const alarmPanel = domainGroups['alarm_control_panel']?.[0];
-  const locks = domainGroups['lock'] || [];
-  const openDoorsWindows = (domainGroups['binary_sensor'] || []).filter(
-    e => (e.attributes.device_class === 'door' || e.attributes.device_class === 'window' || e.attributes.device_class === 'opening' || e.attributes.device_class === 'garage_door') && e.state === 'on'
-  );
-  const activeMotionSensors = (domainGroups['binary_sensor'] || []).filter(
+  // Contact Sensors & Openings Classification (Doors, Windows, and Other Contacts)
+  const allBinary = domainGroups['binary_sensor'] || [];
+  const isDoorSensor = (e: ResolvedEntity) =>
+    e.attributes.device_class === 'door' ||
+    e.attributes.device_class === 'garage_door' ||
+    e.entity_id.includes('door') ||
+    e.entity_id.includes('garage') ||
+    e.entity_id.includes('gate');
+
+  const isWindowSensor = (e: ResolvedEntity) =>
+    e.attributes.device_class === 'window' ||
+    e.entity_id.includes('window');
+
+  const isOtherContactSensor = (e: ResolvedEntity) =>
+    !isDoorSensor(e) &&
+    !isWindowSensor(e) &&
+    (
+      e.attributes.device_class === 'opening' ||
+      e.attributes.device_class === 'safety' ||
+      e.attributes.device_class === 'tamper' ||
+      e.attributes.device_class === 'lock' ||
+      e.entity_id.includes('contact') ||
+      e.entity_id.includes('safe') ||
+      e.entity_id.includes('cabinet') ||
+      e.entity_id.includes('mailbox')
+    );
+
+  const doorSensors = allBinary.filter(isDoorSensor);
+  const windowSensors = allBinary.filter(isWindowSensor);
+  const otherContactSensors = allBinary.filter(isOtherContactSensor);
+  const allContactSensors = allBinary.filter(e => isDoorSensor(e) || isWindowSensor(e) || isOtherContactSensor(e));
+
+  const openDoorsWindows = allContactSensors.filter(e => e.state === 'on');
+  const activeMotionSensors = allBinary.filter(
     e => (e.attributes.device_class === 'motion' || e.attributes.device_class === 'occupancy' || e.attributes.device_class === 'presence') && e.state === 'on'
   );
+  const alarmPanel = domainGroups['alarm_control_panel']?.[0];
+  const locks = domainGroups['lock'] || [];
   const cameras = domainGroups['camera'] || [];
 
   const securityOverview: SecurityOverviewState = {
@@ -441,18 +503,47 @@ export function resolveHAGraph(
 
   // Build overviewSummary
   const personEntities = [...(domainGroups['person'] || []), ...(domainGroups['device_tracker'] || [])];
-  const peopleHome = personEntities.length > 0 ? personEntities.filter(p => p.state === 'home').length : 2;
+  const peopleHome = personEntities.length > 0 ? personEntities.filter(p => p.state === 'home').length : 0;
   const peopleAway = personEntities.filter(p => p.state === 'not_home' || p.state === 'away').length;
-  const activeMediaCount = (domainGroups['media_player'] || []).filter(m => m.state === 'playing').length;
+  const totalPeople = personEntities.length;
+
+  const totalLightsList = domainGroups['light'] || [];
+  const totalLightsCount = totalLightsList.length;
+
+  const fanEntities = domainGroups['fan'] || [];
+  const fansOnCount = fanEntities.filter(f => f.state === 'on').length;
+  const totalFansCount = fanEntities.length;
+
+  const doorsOpenCount = doorSensors.filter(e => e.state === 'on').length;
+  const totalDoorsCount = doorSensors.length;
+
+  const windowsOpenCount = windowSensors.filter(e => e.state === 'on').length;
+  const totalWindowsCount = windowSensors.length;
+
+  const activeMediaPlayers = domainGroups['media_player'] || [];
+  const activeMediaCount = activeMediaPlayers.filter(m => m.state === 'playing').length;
+  const totalMediaCount = activeMediaPlayers.length;
+
   const activeClimatesCount = (domainGroups['climate'] || []).filter(c => c.state !== 'off' && c.state !== 'unavailable').length;
   const activeSwitchesCount = (domainGroups['switch'] || []).filter(s => s.state === 'on').length;
+  const currentAlarmState = alarmPanel?.state || 'disarmed';
 
   const overviewSummary: OverviewSummaryState = {
     peopleHome,
     peopleAway,
+    totalPeople,
     lightsOnCount: totalLightsOn,
+    totalLightsCount,
+    fansOnCount,
+    totalFansCount,
+    doorsOpenCount,
+    totalDoorsCount,
+    windowsOpenCount,
+    totalWindowsCount,
     openOpeningsCount: openDoorsWindows.length,
+    alarmState: currentAlarmState,
     activeMediaCount,
+    totalMediaCount,
     activeClimatesCount,
     activeSwitchesCount,
     totalPowerWatts: Math.round(totalPowerWatts)

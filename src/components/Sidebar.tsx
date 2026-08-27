@@ -79,7 +79,7 @@ export default function Sidebar({
         } ${
           darkMode 
             ? 'bg-slate-950/40 backdrop-blur-md backdrop-saturate-150 border-white/10 text-white' 
-            : 'bg-white/80 backdrop-blur-md backdrop-saturate-150 border-black/[0.08] text-slate-900'
+            : 'bg-white/80 backdrop-blur-md backdrop-saturate-150 border-black/8 text-slate-900'
         }`}
       >
         {/* Header Branding & Collapse Toggle */}
@@ -107,7 +107,7 @@ export default function Sidebar({
             type="button"
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
-              darkMode ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-900/[0.05]'
+              darkMode ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-900/5'
             } ${
               isCollapsed ? 'hidden' : 'block'
             }`}
@@ -135,11 +135,11 @@ export default function Sidebar({
                 } ${
                   isActive 
                     ? darkMode
-                      ? 'bg-gradient-to-r from-sky-500/15 to-indigo-500/10 text-white font-medium border border-sky-400/20 shadow-[0_0_15px_-3px_rgba(56,189,248,0.2)]' 
-                      : 'bg-gradient-to-r from-sky-500/15 to-indigo-500/10 text-sky-950 font-bold border border-sky-500/30 shadow-[0_0_15px_-3px_rgba(56,189,248,0.25)]'
+                      ? 'bg-linear-to-r from-sky-500/15 to-indigo-500/10 text-white font-medium border border-sky-400/20 shadow-[0_0_15px_-3px_rgba(56,189,248,0.2)]' 
+                      : 'bg-linear-to-r from-sky-500/15 to-indigo-500/10 text-sky-950 font-bold border border-sky-500/30 shadow-[0_0_15px_-3px_rgba(56,189,248,0.25)]'
                     : darkMode
-                      ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/[0.05]'
+                      ? 'text-slate-400 hover:text-white hover:bg-white/5'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5'
                 }`}
               >
                 <Icon 
@@ -183,7 +183,7 @@ export default function Sidebar({
           {/* Telemetry Status Bar */}
           {!isCollapsed ? (
             <div className={`px-2.5 py-2 rounded-xl border flex items-center justify-between ${
-              darkMode ? 'bg-white/[0.03] border-white/10' : 'bg-slate-100/80 border-slate-200/80'
+              darkMode ? 'bg-white/3 border-white/10' : 'bg-slate-100/80 border-slate-200/80'
             }`}>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
@@ -208,7 +208,7 @@ export default function Sidebar({
               onThemeChange={(newTheme) => toggleDarkMode(newTheme === "dark")}
               title={darkMode ? "Switch to Light Theme" : "Switch to Dark Theme"}
               className={`w-9 h-9 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center ${
-                darkMode ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-900/[0.05]'
+                darkMode ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-900/5'
               }`}
             />
           </div>
@@ -219,7 +219,7 @@ export default function Sidebar({
               type="button"
               onClick={() => setIsCollapsed(false)}
               className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer mx-auto ${
-                darkMode ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-900/[0.05]'
+                darkMode ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-900/5'
               }`}
               title="Expand Sidebar"
             >
@@ -234,8 +234,8 @@ export default function Sidebar({
         id="sidebar-mobile" 
         className={`md:hidden fixed bottom-0 left-0 right-0 h-16 sm:h-18 flex justify-around items-center px-3 sm:px-6 shadow-2xl z-50 transition-all border-t ${
           darkMode 
-            ? 'bg-[#090D1A]/95 backdrop-blur-3xl border-white/10 text-slate-100' 
-            : 'bg-white/95 backdrop-blur-3xl border-slate-200/80 text-slate-800'
+            ? 'bg-slate-950/90 backdrop-blur-2xl border-white/10 text-white' 
+            : 'bg-white/90 backdrop-blur-2xl border-slate-200 text-slate-900'
         }`}
       >
         {mobilePrimaryItems.map((item) => {
@@ -250,8 +250,8 @@ export default function Sidebar({
               className={`w-11 h-11 rounded-2xl relative transition-all duration-200 cursor-pointer flex items-center justify-center ${
                 isActive 
                   ? darkMode
-                    ? 'bg-gradient-to-r from-sky-500/20 to-indigo-500/15 text-sky-400 border border-sky-400/30 shadow-md shadow-sky-500/20 scale-105' 
-                    : 'bg-gradient-to-r from-sky-500/20 to-indigo-500/15 text-sky-600 border border-sky-500/30 shadow-md shadow-sky-500/10 scale-105'
+                    ? 'bg-linear-to-r from-sky-500/20 to-indigo-500/15 text-sky-400 border border-sky-400/30 shadow-md shadow-sky-500/20 scale-105' 
+                    : 'bg-linear-to-r from-sky-500/20 to-indigo-500/15 text-sky-600 border border-sky-500/30 shadow-md shadow-sky-500/10 scale-105'
                   : darkMode
                     ? 'text-slate-400 hover:text-white'
                     : 'text-slate-600 hover:text-slate-900'
@@ -270,8 +270,8 @@ export default function Sidebar({
           className={`w-11 h-11 rounded-2xl relative transition-all duration-200 cursor-pointer flex items-center justify-center ${
             isMoreTabActive || showMoreMenu
               ? darkMode
-                ? 'bg-gradient-to-r from-sky-500/20 to-indigo-500/15 text-sky-400 border border-sky-400/30 shadow-md shadow-sky-500/20 scale-105' 
-                : 'bg-gradient-to-r from-sky-500/20 to-indigo-500/15 text-sky-600 border border-sky-500/30 shadow-md shadow-sky-500/10 scale-105'
+                ? 'bg-linear-to-r from-sky-500/20 to-indigo-500/15 text-sky-400 border border-sky-400/30 shadow-md shadow-sky-500/20 scale-105' 
+                : 'bg-linear-to-r from-sky-500/20 to-indigo-500/15 text-sky-600 border border-sky-500/30 shadow-md shadow-sky-500/10 scale-105'
               : darkMode 
                 ? 'text-slate-400 hover:text-white' 
                 : 'text-slate-600 hover:text-slate-900'
@@ -336,8 +336,8 @@ export default function Sidebar({
                       className={`p-3 rounded-2xl flex items-center gap-3 text-left transition-all border cursor-pointer ${
                         isActive
                           ? darkMode
-                            ? 'bg-gradient-to-r from-sky-500/20 to-indigo-500/15 text-white border-sky-400/30 shadow-md font-bold'
-                            : 'bg-gradient-to-r from-sky-500/15 to-indigo-500/10 text-sky-950 border-sky-500/30 shadow-sm font-bold'
+                            ? 'bg-linear-to-r from-sky-500/20 to-indigo-500/15 text-white border-sky-400/30 shadow-md font-bold'
+                            : 'bg-linear-to-r from-sky-500/15 to-indigo-500/10 text-sky-950 border-sky-500/30 shadow-sm font-bold'
                           : darkMode
                             ? 'bg-slate-900/60 border-slate-800 hover:bg-slate-800/80 text-slate-200'
                             : 'bg-slate-50 border-slate-200/70 hover:bg-slate-100 text-slate-800'
@@ -364,8 +364,8 @@ export default function Sidebar({
                   onThemeChange={(newTheme) => toggleDarkMode(newTheme === "dark")}
                   className={`p-2.5 rounded-xl flex items-center justify-between text-xs font-bold border transition-colors cursor-pointer w-full ${
                     darkMode 
-                      ? 'bg-slate-800/90 border-white/[0.1] text-slate-100 hover:bg-slate-700/90' 
-                      : 'bg-white/90 border-black/[0.06] text-slate-800 hover:bg-white shadow-xs'
+                      ? 'bg-slate-800/90 border-white/10 text-slate-100 hover:bg-slate-700/90' 
+                      : 'bg-white/90 border-black/6 text-slate-800 hover:bg-white shadow-xs'
                   }`}
                 />
               </div>

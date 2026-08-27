@@ -25,7 +25,8 @@ import {
   Shield,
   WifiHigh,
   Sparkle,
-  ArrowSquareOut
+  ArrowSquareOut,
+  Heartbeat
 } from '@phosphor-icons/react';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { ResolutionSource } from '../types';
@@ -117,7 +118,7 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           className={`relative w-full max-w-6xl max-h-[90vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden backdrop-blur-md backdrop-saturate-150 transition-all z-10 ${
-            darkMode ? 'bg-slate-900/80 border-white/15 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.15)] text-white' : 'bg-white/95 border-black/[0.08] text-slate-900 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.8)]'
+            darkMode ? 'bg-slate-900/80 border-white/15 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.15)] text-white' : 'bg-white/95 border-black/8 text-slate-900 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.8)]'
           }`}
         >
           {/* Header */}
@@ -155,7 +156,7 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
               darkMode ? 'bg-slate-950/60 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
             }`}>
               <div className="flex items-center gap-1.5">
-                <Stack size={16} weight="duotone" className="text-[#7B61FF]" />
+                <Stack size={16} weight="duotone" className="text-brand-purple" />
                 <span>{metrics.totalFloors} Floors</span>
               </div>
               <span className="text-slate-500">•</span>
@@ -165,28 +166,18 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
               </div>
               <span className="text-slate-500">•</span>
               <div className="flex items-center gap-1.5">
-                <Cpu size={16} weight="duotone" className="text-blue-400" />
-                <span>{metrics.totalDevices} Devices</span>
+                <Cpu size={16} weight="duotone" className="text-emerald-400" />
+                <span>{metrics.totalDevices} Physical Devices</span>
               </div>
               <span className="text-slate-500">•</span>
               <div className="flex items-center gap-1.5">
-                <CheckCircle size={16} weight="duotone" className="text-emerald-400" />
-                <span className="text-emerald-500 font-bold">{metrics.resolvedDirectCount} Direct Match</span>
-              </div>
-              <span className="text-slate-500">•</span>
-              <div className="flex items-center gap-1.5">
-                <Sparkle size={16} weight="duotone" className="text-amber-400" />
-                <span className="text-amber-500 font-bold">{metrics.resolvedInheritedCount} Inherited via Device</span>
-              </div>
-              <span className="text-slate-500">•</span>
-              <div className="flex items-center gap-1.5">
-                <Question size={16} weight="duotone" className="text-slate-400" />
-                <span className="text-slate-400">{metrics.unassignedEntitiesCount} Unassigned Pool</span>
+                <Heartbeat size={16} weight="duotone" className="text-pink-400" />
+                <span>{metrics.totalEntities} Live Entities</span>
               </div>
             </div>
           )}
 
-          {/* Sub-Navigation Tabs */}
+          {/* Nav Tabs */}
           <div className="px-6 pt-4 flex items-center gap-2 border-b border-slate-200/50 dark:border-slate-800/80">
             {[
               { id: 'graph', label: 'Entity Resolution Tree', icon: ShareNetwork },
@@ -201,7 +192,7 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`px-4 py-2.5 rounded-t-2xl text-xs font-bold flex items-center gap-2 cursor-pointer transition-all border-b-2 ${
                     isSelected
-                      ? 'border-[#7B61FF] text-[#7B61FF] bg-[#7B61FF]/10'
+                      ? 'border-brand-purple text-brand-purple bg-brand-purple/10'
                       : 'border-transparent text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -227,7 +218,7 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
                       onChange={e => setSearchFilter(e.target.value)}
                       placeholder="Search entities, areas, devices..."
                       className={`w-full pl-10 pr-4 py-2 rounded-2xl text-xs outline-none border transition-all ${
-                        darkMode ? 'bg-slate-950/70 border-slate-800 text-white focus:border-[#7B61FF]' : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-[#7B61FF]'
+                        darkMode ? 'bg-slate-950/70 border-slate-800 text-white focus:border-brand-purple' : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-brand-purple'
                       }`}
                     />
                   </div>
@@ -246,7 +237,7 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
                         onClick={() => setSourceFilter(f.id as any)}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all border ${
                           sourceFilter === f.id
-                            ? 'bg-[#7B61FF] text-white border-[#7B61FF]'
+                            ? 'bg-brand-purple text-white border-brand-purple'
                             : darkMode
                               ? 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200'
                               : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900'
@@ -283,13 +274,13 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
                             key={ent.entity_id}
                             className={`transition-colors ${
                               selectedEntityId === ent.entity_id
-                                ? darkMode ? 'bg-[#7B61FF]/15' : 'bg-indigo-50'
+                                ? darkMode ? 'bg-brand-purple/15' : 'bg-indigo-50'
                                 : darkMode ? 'hover:bg-slate-900/40' : 'hover:bg-slate-50'
                             }`}
                           >
                             <td className="p-3.5">
                               <div>
-                                <span className="font-bold text-slate-800 dark:text-slate-100 block truncate max-w-[200px]">
+                                <span className="font-bold text-slate-800 dark:text-slate-100 block truncate max-w-50">
                                   {ent.name}
                                 </span>
                                 <span className="font-mono text-[10px] text-slate-400 block truncate">
@@ -301,7 +292,7 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
                             <td className="p-3.5">
                               {ent.area ? (
                                 <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                                  <span className="w-2 h-2 rounded-full bg-[#7B61FF]" />
+                                  <span className="w-2 h-2 rounded-full bg-brand-purple" />
                                   <span>{ent.area.name}</span>
                                 </span>
                               ) : (
@@ -322,7 +313,7 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
                             <td className="p-3.5">
                               {ent.device ? (
                                 <div>
-                                  <span className="font-semibold block truncate max-w-[150px]">
+                                  <span className="font-semibold block truncate max-w-37.5">
                                     {ent.device.name}
                                   </span>
                                   <span className="text-[10px] text-slate-400 block">
@@ -360,10 +351,10 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
                             <td className="p-3.5">
                               <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg ${
                                 ent.state === 'on' || ent.state === 'playing' || ent.state === 'cleaning' || ent.state === 'locked'
-                                  ? 'bg-emerald-500/20 text-emerald-500'
-                                  : ent.state === 'off'
-                                    ? 'bg-slate-500/20 text-slate-400'
-                                    : 'bg-[#7B61FF]/20 text-[#7B61FF] dark:text-[#9D8BFF]'
+                                    ? 'bg-emerald-500/20 text-emerald-500'
+                                    : ent.state === 'off'
+                                      ? 'bg-slate-500/20 text-slate-400'
+                                      : 'bg-brand-purple/20 text-brand-purple'
                               }`}>
                                 {ent.state}
                               </span>
@@ -460,7 +451,7 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
                   darkMode ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'
                 }`}>
                   <div className="flex items-center gap-3 mb-4">
-                    <WifiHigh size={24} weight="duotone" className="text-[#7B61FF] shrink-0" />
+                    <WifiHigh size={24} weight="duotone" className="text-brand-purple shrink-0" />
                     <div>
                       <h4 className="text-sm font-extrabold">Connect to Live Home Assistant Instance</h4>
                       <p className="text-xs text-slate-400">
@@ -524,7 +515,7 @@ export default function GraphResolutionModal({ isOpen, onClose, darkMode }: Grap
 
                       <button
                         type="submit"
-                        className="px-6 py-2.5 rounded-2xl text-xs font-extrabold bg-[#7B61FF] hover:bg-[#684be3] text-white shadow-md transition-all cursor-pointer"
+                        className="px-6 py-2.5 rounded-2xl text-xs font-extrabold bg-brand-purple hover:bg-brand-purple-hover text-white shadow-md transition-all cursor-pointer"
                       >
                         Connect & Re-Ingest Registries
                       </button>

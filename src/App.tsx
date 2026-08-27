@@ -142,10 +142,24 @@ export default function App() {
     });
   };
 
+  // Primary User & Dynamic Greeting
+  const domainGroups = useAutoLayoutStore(s => s.domainGroups);
+  const personEntities = domainGroups['person'] || [];
+  const primaryPerson = personEntities[0];
+  const userName = primaryPerson?.name?.split(' ')[0] || 'Samer';
+
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Good Morning';
+    if (hour >= 12 && hour < 17) return 'Good Afternoon';
+    if (hour >= 17 && hour < 22) return 'Good Evening';
+    return 'Good Night';
+  };
+
   // Helper getters for view titles
   const getTabTitle = (tab: string) => {
     switch (tab) {
-      case 'overview': return 'Overview';
+      case 'overview': return `${getTimeGreeting()}, ${userName}`;
       case 'rooms': return 'Rooms';
       case 'energy': return 'Energy';
       case 'security': return 'Security';

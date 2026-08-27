@@ -42,13 +42,13 @@ export const IconBadge: React.FC<IconBadgeProps> = ({
   // Variant stylings layered over standardized frosted square badge: bg-white/10, border border-white/15
   const variantClasses = {
     default: 'bg-white/10 dark:bg-white/10 border-white/15 text-slate-700 dark:text-slate-200 backdrop-blur-md',
-    primary: 'bg-[#7B61FF]/15 border-[#7B61FF]/30 text-[#7B61FF] dark:text-[#9D8BFF] backdrop-blur-md',
+    primary: 'bg-brand-purple/15 border-brand-purple/30 text-brand-purple backdrop-blur-md',
     accent: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-500 dark:text-indigo-400 backdrop-blur-md',
     success: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 backdrop-blur-md',
     warning: 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 backdrop-blur-md',
     danger: 'bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-400 backdrop-blur-md',
     ghost: 'bg-white/5 border-white/10 text-slate-400 hover:text-slate-200 backdrop-blur-sm',
-    active: 'bg-[#7B61FF] border-white/20 text-white shadow-lg shadow-[#7B61FF]/30'
+    active: 'bg-brand-purple border-white/20 text-white shadow-lg shadow-brand-purple/30'
   }[variant];
 
   const glowEffect = glow ? 'shadow-[0_0_15px_rgba(123,97,255,0.25)]' : '';

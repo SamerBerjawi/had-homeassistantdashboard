@@ -188,9 +188,19 @@ export interface SecurityOverviewState {
 export interface OverviewSummaryState {
   peopleHome: number;
   peopleAway: number;
+  totalPeople?: number;
   lightsOnCount: number;
+  totalLightsCount?: number;
+  fansOnCount?: number;
+  totalFansCount?: number;
+  doorsOpenCount?: number;
+  totalDoorsCount?: number;
+  windowsOpenCount?: number;
+  totalWindowsCount?: number;
   openOpeningsCount: number;
+  alarmState?: string;
   activeMediaCount: number;
+  totalMediaCount?: number;
   activeClimatesCount: number;
   activeSwitchesCount: number;
   totalPowerWatts: number;

@@ -583,12 +583,12 @@ export default function SettingsView({
       {/* Top Hero Banner */}
       <div className={`p-6 sm:p-7 rounded-3xl border backdrop-blur-md backdrop-saturate-150 transition-all ${
         darkMode 
-          ? 'bg-slate-950/40 border-white/10 text-white shadow-xl shadow-black/40 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.15)]' 
+          ? 'bg-slate-950/40 border-white/10 text-white shadow-xl shadow-black/40' 
           : 'bg-white/80 border-slate-200 text-slate-900 shadow-sm'
       }`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <GearSix size={36} weight="duotone" className="text-sky-400 shrink-0" />
+            <GearSix size={36} weight="duotone" className="text-sky-500 dark:text-sky-400 shrink-0" />
             <div>
               <span className={`text-[10px] font-black uppercase tracking-widest block mb-0.5 ${
                 darkMode ? 'text-sky-400' : 'text-sky-600'
@@ -598,7 +598,7 @@ export default function SettingsView({
               }`}>
                 Settings & System Preferences
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Configure profile security, theme parameters, live HA connectivity, and device assignments.
               </p>
             </div>
@@ -606,9 +606,9 @@ export default function SettingsView({
 
           {/* Quick Telemetry Pill */}
           <div className={`flex items-center gap-3 px-3.5 py-2 rounded-2xl border text-xs font-mono self-start sm:self-auto ${
-            darkMode ? 'bg-white/[0.03] border-white/10 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-800'
+            darkMode ? 'bg-white/3 border-white/10 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-800'
           }`}>
-            <span className={`w-2.5 h-2.5 rounded-full ${isLiveMode ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-amber-400'}`} />
+            <span className={`w-2.5 h-2.5 rounded-full ${isLiveMode ? 'bg-emerald-500 dark:bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-amber-500'}`} />
             <span>{isLiveMode ? 'Live HA WebSocket' : 'Local Standalone'}</span>
           </div>
         </div>
@@ -619,7 +619,7 @@ export default function SettingsView({
         {/* Left Settings Nav Column */}
         <div className="lg:col-span-4 flex flex-col gap-2">
           <div className={`p-2.5 rounded-3xl border backdrop-blur-md backdrop-saturate-150 flex flex-col gap-1.5 ${
-            darkMode ? 'bg-white/[0.03] border-white/10' : 'bg-white/80 border-slate-200'
+            darkMode ? 'bg-white/3 border-white/10' : 'bg-white/80 border-slate-200 shadow-sm'
           }`}>
             {SECTIONS.map((sec) => {
               const Icon = sec.icon;
@@ -631,10 +631,10 @@ export default function SettingsView({
                   className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl transition-all cursor-pointer text-left border ${
                     isActive
                       ? darkMode
-                        ? 'bg-gradient-to-r from-sky-500/20 to-indigo-500/15 text-white border-sky-400/30 shadow-[0_0_15px_-3px_rgba(56,189,248,0.25)] font-bold'
-                        : 'bg-gradient-to-r from-sky-500/15 to-indigo-500/10 text-sky-950 border-sky-500/30 shadow-sm font-bold'
+                        ? 'bg-linear-to-r from-sky-500/20 to-indigo-500/15 text-white border-sky-400/30 shadow-[0_0_15px_-3px_rgba(56,189,248,0.25)] font-bold'
+                        : 'bg-linear-to-r from-sky-500/15 to-indigo-500/10 text-sky-950 border-sky-500/30 shadow-sm font-bold'
                       : darkMode
-                        ? 'bg-transparent border-transparent text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                        ? 'bg-transparent border-transparent text-slate-400 hover:text-white hover:bg-white/4'
                         : 'bg-transparent border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
@@ -644,10 +644,10 @@ export default function SettingsView({
                     className={`shrink-0 ${isActive ? (darkMode ? 'text-sky-400' : 'text-sky-600') : (darkMode ? 'text-slate-400' : 'text-slate-500')}`}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className={`text-xs font-bold truncate ${isActive ? (darkMode ? 'text-white' : 'text-slate-900') : ''}`}>
+                    <div className={`text-xs font-bold truncate ${isActive ? (darkMode ? 'text-white' : 'text-slate-900') : 'text-slate-700 dark:text-slate-300'}`}>
                       {sec.label}
                     </div>
-                    <div className="text-[10px] text-slate-400 truncate">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
                       {sec.desc}
                     </div>
                   </div>
@@ -670,29 +670,29 @@ export default function SettingsView({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 className={`p-6 sm:p-7 rounded-3xl border backdrop-blur-md backdrop-saturate-150 space-y-6 ${
-                  darkMode ? 'bg-white/[0.03] border-white/10 shadow-2xl' : 'bg-white/90 border-slate-200 shadow-sm'
+                  darkMode ? 'bg-white/3 border-white/10 shadow-2xl' : 'bg-white/90 border-slate-200 shadow-sm'
                 }`}
               >
-                <div className="flex items-center justify-between border-b pb-4 border-white/10 dark:border-white/10">
+                <div className="flex items-center justify-between border-b pb-4 border-slate-200 dark:border-white/10">
                   <div className="flex items-center gap-3">
-                    <User size={28} weight="duotone" className="text-sky-400" />
+                    <User size={28} weight="duotone" className="text-sky-500 dark:text-sky-400" />
                     <div>
-                      <h3 className="text-base font-extrabold text-white dark:text-white text-slate-900">User Profile & Identity</h3>
-                      <p className="text-xs text-slate-400">Manage owner credentials, permissions, and wall display PIN.</p>
+                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white">User Profile & Identity</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Manage owner credentials, permissions, and wall display PIN.</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Profile Avatar Card */}
-                <div className="flex flex-col sm:flex-row items-center gap-5 p-5 rounded-2xl bg-white/[0.02] border border-white/10">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white font-black text-xl flex items-center justify-center shadow-lg shadow-sky-500/20 shrink-0">
+                <div className="flex flex-col sm:flex-row items-center gap-5 p-5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10">
+                  <div className="w-16 h-16 rounded-2xl bg-linear-to-tr from-sky-500 to-indigo-600 text-white font-black text-xl flex items-center justify-center shadow-lg shadow-sky-500/20 shrink-0">
                     {profileData.avatarInitials || 'AM'}
                   </div>
                   <div className="min-w-0 text-center sm:text-left flex-1">
-                    <h4 className="text-base font-bold text-white dark:text-white text-slate-900">{profileData.displayName}</h4>
-                    <p className="text-xs text-slate-400">{profileData.email}</p>
+                    <h4 className="text-base font-bold text-slate-900 dark:text-white">{profileData.displayName}</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{profileData.email}</p>
                     <div className="flex items-center justify-center sm:justify-start gap-2 mt-2">
-                      <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-400 border border-sky-400/30">
+                      <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30">
                         {profileData.role}
                       </span>
                       <span className="text-[10px] font-mono text-slate-500">
@@ -706,7 +706,7 @@ export default function SettingsView({
                 <form onSubmit={handleSaveProfile} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-bold text-slate-300 block mb-1.5">Full Name</label>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Full Name</label>
                       <input
                         type="text"
                         value={profileData.displayName}
@@ -715,17 +715,17 @@ export default function SettingsView({
                           const initials = val.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
                           setProfileData({ ...profileData, displayName: val, avatarInitials: initials || 'U' });
                         }}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white text-xs focus:outline-hidden focus:border-sky-400"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
                         required
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-300 block mb-1.5">Email Address</label>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Email Address</label>
                       <input
                         type="email"
                         value={profileData.email}
                         onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white text-xs focus:outline-hidden focus:border-sky-400"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
                         required
                       />
                     </div>
@@ -733,24 +733,24 @@ export default function SettingsView({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-bold text-slate-300 block mb-1.5">Access Role</label>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Access Role</label>
                       <select
                         value={profileData.role}
                         onChange={(e) => setProfileData({ ...profileData, role: e.target.value as any })}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white text-xs focus:outline-hidden focus:border-sky-400"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
                       >
-                        <option value="Administrator" className="bg-slate-900 text-white">Administrator (Full Control)</option>
-                        <option value="Resident" className="bg-slate-900 text-white">Resident (Device Control Only)</option>
-                        <option value="Kiosk Operator" className="bg-slate-900 text-white">Kiosk Operator (Wall Display)</option>
+                        <option value="Administrator" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Administrator (Full Control)</option>
+                        <option value="Resident" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Resident (Device Control Only)</option>
+                        <option value="Kiosk Operator" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Kiosk Operator (Wall Display)</option>
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-300 block mb-1.5">Home Location Name</label>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Home Location Name</label>
                       <input
                         type="text"
                         value={profileData.homeName}
                         onChange={(e) => setProfileData({ ...profileData, homeName: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white text-xs focus:outline-hidden focus:border-sky-400"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
                       />
                     </div>
                   </div>
@@ -767,17 +767,19 @@ export default function SettingsView({
                 </form>
 
                 {/* Kiosk Mode 4-Digit PIN Security */}
-                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-4">
+                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Key size={22} weight="duotone" className="text-indigo-400" />
+                      <Key size={22} weight="duotone" className="text-indigo-500 dark:text-indigo-400" />
                       <div>
-                        <h4 className="text-xs font-bold text-white">Wall Display 4-Digit PIN Lock</h4>
-                        <p className="text-[11px] text-slate-400">Protects editing canvas cards and system settings on shared wall displays.</p>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">Wall Display 4-Digit PIN Lock</h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">Protects editing canvas cards and system settings on shared wall displays.</p>
                       </div>
                     </div>
                     <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border ${
-                      pinCode ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                      pinCode 
+                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' 
+                        : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
                     }`}>
                       {pinCode ? 'PIN Active' : 'No PIN Set'}
                     </span>
@@ -791,20 +793,20 @@ export default function SettingsView({
                         placeholder="Enter 4 digits..."
                         value={newPinInput}
                         onChange={(e) => setNewPinInput(e.target.value.replace(/\D/g, ''))}
-                        className="w-40 px-3.5 py-2 rounded-xl bg-black/40 border border-white/15 text-white font-mono text-center tracking-widest text-sm focus:outline-hidden focus:border-sky-400"
+                        className="w-40 px-3.5 py-2 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-center tracking-widest text-sm focus:outline-hidden focus:border-sky-500 shadow-xs"
                         autoFocus
                       />
                       <button
                         type="button"
                         onClick={handleSavePin}
-                        className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold cursor-pointer shadow-sm"
                       >
                         Set PIN
                       </button>
                       <button
                         type="button"
                         onClick={() => { setIsEditingPin(false); setNewPinInput(''); }}
-                        className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-semibold cursor-pointer"
+                        className="px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-300 text-xs font-semibold cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -814,7 +816,7 @@ export default function SettingsView({
                       <button
                         type="button"
                         onClick={() => setIsEditingPin(true)}
-                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-bold transition-all cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:border-white/15 dark:text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
                       >
                         {pinCode ? 'Change PIN Code' : 'Configure 4-Digit PIN'}
                       </button>
@@ -822,7 +824,7 @@ export default function SettingsView({
                         <button
                           type="button"
                           onClick={handleClearPin}
-                          className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 text-xs font-bold transition-all cursor-pointer"
+                          className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all cursor-pointer"
                         >
                           Remove PIN Lock
                         </button>
@@ -843,36 +845,36 @@ export default function SettingsView({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 className={`p-6 sm:p-7 rounded-3xl border backdrop-blur-md backdrop-saturate-150 space-y-6 ${
-                  darkMode ? 'bg-white/[0.03] border-white/10 shadow-2xl' : 'bg-white/90 border-slate-200 shadow-sm'
+                  darkMode ? 'bg-white/3 border-white/10 shadow-2xl' : 'bg-white/90 border-slate-200 shadow-sm'
                 }`}
               >
-                <div className="flex items-center justify-between border-b pb-4 border-white/10">
+                <div className="flex items-center justify-between border-b pb-4 border-slate-200 dark:border-white/10">
                   <div className="flex items-center gap-3">
-                    <Palette size={28} weight="duotone" className="text-sky-400" />
+                    <Palette size={28} weight="duotone" className="text-sky-500 dark:text-sky-400" />
                     <div>
-                      <h3 className="text-base font-extrabold text-white">Theme & Visual Customization</h3>
-                      <p className="text-xs text-slate-400">Control obsidian glassmorphism, units, specular glows, and backdrop simulations.</p>
+                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Theme & Visual Customization</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Control obsidian glassmorphism, units, specular glows, and backdrop simulations.</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Appearance Mode Selection */}
                 <div className="space-y-3">
-                  <label className="text-xs font-bold text-slate-300 block">Appearance Mode</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Appearance Mode</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={() => toggleDarkMode(true)}
                       className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all cursor-pointer ${
                         darkMode
-                          ? 'bg-gradient-to-r from-sky-500/20 to-indigo-500/15 border-sky-400/40 text-white shadow-[0_0_15px_-3px_rgba(56,189,248,0.2)] font-bold'
-                          : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
+                          ? 'bg-linear-to-r from-sky-500/20 to-indigo-500/15 border-sky-400/40 text-white shadow-[0_0_15px_-3px_rgba(56,189,248,0.2)] font-bold'
+                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white'
                       }`}
                     >
-                      <Moon size={24} weight="duotone" className={darkMode ? 'text-sky-400' : 'text-slate-400'} />
+                      <Moon size={24} weight="duotone" className={darkMode ? 'text-sky-400' : 'text-slate-500 dark:text-slate-400'} />
                       <div>
                         <div className="text-xs font-bold">Deep Obsidian Void</div>
-                        <div className="text-[10px] text-slate-400">Glassmorphic OLED dark mode</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">Glassmorphic OLED dark mode</div>
                       </div>
                     </button>
 
@@ -882,13 +884,13 @@ export default function SettingsView({
                       className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all cursor-pointer ${
                         !darkMode
                           ? 'bg-sky-500/15 border-sky-500 text-sky-950 font-bold shadow-md'
-                          : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
+                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white'
                       }`}
                     >
                       <Sun size={24} weight="duotone" className={!darkMode ? 'text-amber-500' : 'text-slate-400'} />
                       <div>
                         <div className="text-xs font-bold">Daylight Frost Glass</div>
-                        <div className="text-[10px] text-slate-400">High-clarity light mode</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">High-clarity light mode</div>
                       </div>
                     </button>
                   </div>
@@ -896,14 +898,16 @@ export default function SettingsView({
 
                 {/* Measurement Units & Formatting */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2">
-                    <label className="text-xs font-bold text-slate-300 block">Temperature Unit</label>
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-2">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Temperature Unit</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
                         onClick={() => setTempUnit('C')}
                         className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                          tempUnit === 'C' ? 'bg-sky-500 text-white border-sky-400 shadow-md' : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                          tempUnit === 'C' 
+                            ? 'bg-sky-500 text-white border-sky-400 shadow-md' 
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-400 dark:hover:text-white'
                         }`}
                       >
                         Celsius (°C)
@@ -912,7 +916,9 @@ export default function SettingsView({
                         type="button"
                         onClick={() => setTempUnit('F')}
                         className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                          tempUnit === 'F' ? 'bg-sky-500 text-white border-sky-400 shadow-md' : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                          tempUnit === 'F' 
+                            ? 'bg-sky-500 text-white border-sky-400 shadow-md' 
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-400 dark:hover:text-white'
                         }`}
                       >
                         Fahrenheit (°F)
@@ -920,14 +926,16 @@ export default function SettingsView({
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2">
-                    <label className="text-xs font-bold text-slate-300 block">Time Display Format</label>
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-2">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Time Display Format</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
                         onClick={() => setClockFormat('24h')}
                         className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                          clockFormat === '24h' ? 'bg-sky-500 text-white border-sky-400 shadow-md' : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                          clockFormat === '24h' 
+                            ? 'bg-sky-500 text-white border-sky-400 shadow-md' 
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-400 dark:hover:text-white'
                         }`}
                       >
                         24-Hour (18:45)
@@ -936,7 +944,9 @@ export default function SettingsView({
                         type="button"
                         onClick={() => setClockFormat('12h')}
                         className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                          clockFormat === '12h' ? 'bg-sky-500 text-white border-sky-400 shadow-md' : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                          clockFormat === '12h' 
+                            ? 'bg-sky-500 text-white border-sky-400 shadow-md' 
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-400 dark:hover:text-white'
                         }`}
                       >
                         12-Hour (6:45 PM)
@@ -944,38 +954,38 @@ export default function SettingsView({
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2">
-                    <label className="text-xs font-bold text-slate-300 block">Energy Tariff & Currency</label>
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-2">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Energy Tariff & Currency</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
                         step="0.01"
                         value={energyTariff}
                         onChange={(e) => setEnergyTariff(parseFloat(e.target.value) || 0)}
-                        className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/15 text-white text-xs font-mono focus:outline-hidden focus:border-sky-400"
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs font-mono focus:outline-hidden focus:border-sky-500 shadow-xs"
                       />
                       <select
                         value={currencySymbol}
                         onChange={(e) => setCurrencySymbol(e.target.value)}
-                        className="px-3 py-2 rounded-xl bg-black/40 border border-white/15 text-white text-xs font-bold focus:outline-hidden focus:border-sky-400"
+                        className="px-3 py-2 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs font-bold focus:outline-hidden focus:border-sky-500 shadow-xs"
                       >
-                        <option value="€">€ / kWh</option>
-                        <option value="$">$ / kWh</option>
-                        <option value="£">£ / kWh</option>
-                        <option value="¢">¢ / kWh</option>
+                        <option value="€" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">€ / kWh</option>
+                        <option value="$" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">$ / kWh</option>
+                        <option value="£" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">£ / kWh</option>
+                        <option value="¢" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">¢ / kWh</option>
                       </select>
                     </div>
                   </div>
                 </div>
 
                 {/* Weather Backdrop Simulation Override */}
-                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3">
+                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-xs font-bold text-white">Default Canvas Weather Backdrop</h4>
-                      <p className="text-[11px] text-slate-400">Choose the atmospheric canvas backdrop simulation mode.</p>
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">Default Canvas Weather Backdrop</h4>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Choose the atmospheric canvas backdrop simulation mode.</p>
                     </div>
-                    <span className="text-xs font-mono font-bold text-sky-400 uppercase">
+                    <span className="text-xs font-mono font-bold text-sky-600 dark:text-sky-400 uppercase">
                       {weatherBackdrop}
                     </span>
                   </div>
@@ -991,10 +1001,10 @@ export default function SettingsView({
                         key={backdrop.id}
                         type="button"
                         onClick={() => setWeatherBackdrop(backdrop.id)}
-                        className={`p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                        className={`p-3 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
                           weatherBackdrop === backdrop.id
-                            ? 'bg-sky-500/20 text-sky-400 border-sky-400 shadow-md font-bold'
-                            : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
+                            ? 'bg-sky-500 text-white border-sky-400 shadow-md'
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-400 dark:hover:text-white'
                         }`}
                       >
                         {backdrop.label}
@@ -1017,7 +1027,7 @@ export default function SettingsView({
             )}
 
             {/* ========================================================================= */}
-            {/* 3. DEVICES + ROOM (TOGGLE) SECTION */}
+            {/* 3. DEVICES + ROOM SECTION */}
             {/* ========================================================================= */}
             {activeSection === 'devices_rooms' && (
               <motion.div
@@ -1026,81 +1036,77 @@ export default function SettingsView({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 className={`p-6 sm:p-7 rounded-3xl border backdrop-blur-md backdrop-saturate-150 space-y-6 ${
-                  darkMode ? 'bg-white/[0.03] border-white/10 shadow-2xl' : 'bg-white/90 border-slate-200 shadow-sm'
+                  darkMode ? 'bg-white/3 border-white/10 shadow-2xl' : 'bg-white/90 border-slate-200 shadow-sm'
                 }`}
               >
-                {/* Header & Toggle Switch */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4 border-white/10">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4 border-slate-200 dark:border-white/10">
                   <div className="flex items-center gap-3">
-                    <SlidersHorizontal size={28} weight="duotone" className="text-sky-400" />
+                    <SlidersHorizontal size={28} weight="duotone" className="text-sky-500 dark:text-sky-400" />
                     <div>
-                      <h3 className="text-base font-extrabold text-white">Entity Registry & Area Management</h3>
-                      <p className="text-xs text-slate-400">View and manage device states, area topology, and custom room assignments.</p>
+                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Devices & Room Assignment</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Manage registered entities, virtual demo devices, and area layouts.</p>
                     </div>
                   </div>
 
-                  {/* BY DEVICES / BY ROOMS TOGGLE */}
-                  <div className="flex items-center p-1 rounded-xl bg-black/40 border border-white/15 shrink-0 self-start sm:self-auto">
+                  {/* Toggle Between View by Devices vs View by Rooms */}
+                  <div className="p-1 rounded-2xl bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 flex items-center gap-1 shrink-0 self-start sm:self-auto">
                     <button
                       type="button"
                       onClick={() => setDeviceRoomView('devices')}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         deviceRoomView === 'devices'
-                          ? 'bg-sky-500 text-white shadow-md'
-                          : 'text-slate-400 hover:text-white'
+                          ? 'bg-white text-slate-900 dark:bg-sky-500 dark:text-white shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      By Devices ({entities.length})
+                      <span>Devices ({entities.length})</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setDeviceRoomView('rooms')}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         deviceRoomView === 'rooms'
-                          ? 'bg-sky-500 text-white shadow-md'
-                          : 'text-slate-400 hover:text-white'
+                          ? 'bg-white text-slate-900 dark:bg-sky-500 dark:text-white shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      By Rooms ({rooms.length})
+                      <span>Rooms ({rooms.length})</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Filters & Actions Bar */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                  <div className="relative flex-1">
+                {/* Filter and Search Bar for Devices */}
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <div className="relative w-full flex-1">
                     <MagnifyingGlass size={16} weight="duotone" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
-                      placeholder={deviceRoomView === 'devices' ? "Search entities by name or ID..." : "Search rooms..."}
+                      placeholder="Search devices by name, domain, or entity ID..."
                       value={searchFilter}
                       onChange={(e) => setSearchFilter(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs placeholder-slate-500 focus:outline-hidden focus:border-sky-400"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
                     />
                   </div>
 
                   {deviceRoomView === 'devices' ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
                       <select
                         value={domainFilter}
                         onChange={(e) => setDomainFilter(e.target.value)}
-                        className="px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-semibold focus:outline-hidden focus:border-sky-400"
+                        className="px-3 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs font-bold focus:outline-hidden focus:border-sky-500 shadow-xs flex-1 sm:flex-none"
                       >
-                        <option value="all" className="bg-slate-900 text-white">All Domains</option>
-                        <option value="light" className="bg-slate-900 text-white">Lights</option>
-                        <option value="climate" className="bg-slate-900 text-white">Climate / Thermostats</option>
-                        <option value="switch" className="bg-slate-900 text-white">Switches & Plugs</option>
-                        <option value="sensor" className="bg-slate-900 text-white">Sensors</option>
-                        <option value="media_player" className="bg-slate-900 text-white">Media Players</option>
-                        <option value="vacuum" className="bg-slate-900 text-white">Vacuums</option>
-                        <option value="camera" className="bg-slate-900 text-white">Cameras</option>
-                        <option value="lock" className="bg-slate-900 text-white">Security Locks</option>
+                        <option value="all" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">All Domains</option>
+                        <option value="light" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Lights</option>
+                        <option value="switch" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Switches</option>
+                        <option value="climate" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Climate</option>
+                        <option value="sensor" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Sensors</option>
+                        <option value="lock" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Locks</option>
                       </select>
 
                       <button
                         type="button"
                         onClick={() => setShowAddDeviceModal(true)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-[0_0_15px_rgba(14,165,233,0.3)]"
+                        className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-[0_0_15px_rgba(14,165,233,0.3)]"
                       >
                         <Plus size={15} weight="bold" />
                         <span>Add Device</span>
@@ -1110,7 +1116,7 @@ export default function SettingsView({
                     <button
                       type="button"
                       onClick={() => setShowAddRoomModal(true)}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-[0_0_15px_rgba(14,165,233,0.3)]"
+                      className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-[0_0_15px_rgba(14,165,233,0.3)]"
                     >
                       <Plus size={15} weight="bold" />
                       <span>Add Room</span>
@@ -1120,9 +1126,9 @@ export default function SettingsView({
 
                 {/* VIEW 1: BY DEVICES LIST */}
                 {deviceRoomView === 'devices' && (
-                  <div className="space-y-2 max-h-[480px] overflow-y-auto touch-scroll-container pr-1">
+                  <div className="space-y-2 max-h-120 overflow-y-auto touch-scroll-container pr-1">
                     {filteredEntities.length === 0 ? (
-                      <div className="p-8 text-center text-xs text-slate-400 border border-white/10 rounded-2xl bg-white/[0.02]">
+                      <div className="p-8 text-center text-xs text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl bg-slate-50 dark:bg-white/2">
                         No matching entities found in registry.
                       </div>
                     ) : (
@@ -1135,7 +1141,7 @@ export default function SettingsView({
                         return (
                           <div
                             key={ent.entity_id}
-                            className="p-3.5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 flex items-center justify-between gap-4 transition-all"
+                            className="p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100/80 dark:bg-white/2 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-between gap-4 transition-all"
                           >
                             <div className="flex items-center gap-3.5 min-w-0">
                               <button
@@ -1143,8 +1149,8 @@ export default function SettingsView({
                                 onClick={() => handleToggleEntity(ent)}
                                 className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                                   isOn 
-                                    ? 'bg-sky-500/20 text-sky-400 border border-sky-400/40 shadow-[0_0_10px_rgba(56,189,248,0.3)]' 
-                                    : 'bg-white/5 text-slate-400 border border-white/10 hover:text-white'
+                                    ? 'bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-400/40 shadow-[0_0_10px_rgba(56,189,248,0.3)]' 
+                                    : 'bg-slate-200 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:text-slate-900 dark:hover:text-white'
                                 }`}
                                 title="Toggle state"
                               >
@@ -1153,13 +1159,13 @@ export default function SettingsView({
 
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <h5 className="text-xs font-bold text-white truncate">{friendlyName}</h5>
-                                  <span className="text-[10px] font-mono text-slate-400 truncate">({ent.entity_id})</span>
+                                  <h5 className="text-xs font-bold text-slate-900 dark:text-white truncate">{friendlyName}</h5>
+                                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate">({ent.entity_id})</span>
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider">{domain}</span>
-                                  <span className="text-slate-600">•</span>
-                                  <span className="text-[10px] text-slate-300">{roomName}</span>
+                                  <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">{domain}</span>
+                                  <span className="text-slate-400 dark:text-slate-600">•</span>
+                                  <span className="text-[10px] text-slate-600 dark:text-slate-300">{roomName}</span>
                                 </div>
                               </div>
                             </div>
@@ -1167,7 +1173,9 @@ export default function SettingsView({
                             {/* Right Actions: State Badge & Delete */}
                             <div className="flex items-center gap-3 shrink-0">
                               <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border uppercase ${
-                                isOn ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'
+                                isOn 
+                                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' 
+                                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border-slate-300 dark:border-slate-700'
                               }`}>
                                 {ent.state}
                               </span>
@@ -1175,7 +1183,7 @@ export default function SettingsView({
                               <button
                                 type="button"
                                 onClick={() => handleDeleteEntity(ent.entity_id)}
-                                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/10 flex items-center justify-center transition-colors cursor-pointer"
+                                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 dark:bg-white/5 dark:hover:bg-rose-500/20 dark:text-slate-400 dark:hover:text-rose-400 border border-slate-200 dark:border-white/10 flex items-center justify-center transition-colors cursor-pointer"
                                 title="Delete entity"
                               >
                                 <Trash size={14} weight="duotone" />
@@ -1190,7 +1198,7 @@ export default function SettingsView({
 
                 {/* VIEW 2: BY ROOMS LIST */}
                 {deviceRoomView === 'rooms' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[480px] overflow-y-auto touch-scroll-container pr-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-120 overflow-y-auto touch-scroll-container pr-1">
                     {rooms.map((room) => {
                       const roomEntities = entities.filter(e => 
                         (e.attributes?.room && e.attributes.room.toLowerCase() === room.name.toLowerCase()) ||
@@ -1200,14 +1208,14 @@ export default function SettingsView({
                       return (
                         <div
                           key={room.id}
-                          className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3"
+                          className="p-4 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
-                              <House size={20} weight="duotone" className="text-sky-400" />
-                              <h4 className="text-sm font-bold text-white">{room.name}</h4>
+                              <House size={20} weight="duotone" className="text-sky-500 dark:text-sky-400" />
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">{room.name}</h4>
                             </div>
-                            <span className="text-[11px] font-mono text-slate-400">
+                            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
                               {roomEntities.length} Devices
                             </span>
                           </div>
@@ -1224,8 +1232,8 @@ export default function SettingsView({
                                   onClick={() => handleToggleEntity(ent)}
                                   className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
                                     ent.state === 'on' 
-                                      ? 'bg-sky-500/20 text-sky-400 border-sky-400/40 shadow-xs' 
-                                      : 'bg-white/5 text-slate-400 border-white/10'
+                                      ? 'bg-sky-500/15 text-sky-700 border-sky-400/40 dark:bg-sky-500/20 dark:text-sky-400 shadow-xs' 
+                                      : 'bg-slate-200/70 text-slate-700 border-slate-300/80 dark:bg-white/5 dark:text-slate-400 dark:border-white/10'
                                   }`}
                                   title={`Toggle ${ent.entity_id}`}
                                 >
@@ -1252,25 +1260,25 @@ export default function SettingsView({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 className={`p-6 sm:p-7 rounded-3xl border backdrop-blur-md backdrop-saturate-150 space-y-6 ${
-                  darkMode ? 'bg-white/[0.03] border-white/10 shadow-2xl' : 'bg-white/90 border-slate-200 shadow-sm'
+                  darkMode ? 'bg-white/3 border-white/10 shadow-2xl' : 'bg-white/90 border-slate-200 shadow-sm'
                 }`}
               >
-                <div className="flex items-center justify-between border-b pb-4 border-white/10">
+                <div className="flex items-center justify-between border-b pb-4 border-slate-200 dark:border-white/10">
                   <div className="flex items-center gap-3">
-                    <DownloadSimple size={28} weight="duotone" className="text-sky-400" />
+                    <DownloadSimple size={28} weight="duotone" className="text-sky-500 dark:text-sky-400" />
                     <div>
-                      <h3 className="text-base font-extrabold text-white">Backup, Snapshots & Disaster Recovery</h3>
-                      <p className="text-xs text-slate-400">Export dashboard layout JSON, save local profile snapshots, or restore backups.</p>
+                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Backup, Snapshots & Disaster Recovery</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Export dashboard layout JSON, save local profile snapshots, or restore backups.</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Primary Export & Import Buttons */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3 flex flex-col justify-between">
+                  <div className="p-5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3 flex flex-col justify-between">
                     <div>
-                      <h4 className="text-xs font-bold text-white">Export Full Configuration JSON</h4>
-                      <p className="text-[11px] text-slate-400 mt-1">
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">Export Full Configuration JSON</h4>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                         Download a comprehensive `.json` file containing all canvas layouts, cards, room topologies, and user preferences.
                       </p>
                     </div>
@@ -1284,14 +1292,14 @@ export default function SettingsView({
                     </button>
                   </div>
 
-                  <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3 flex flex-col justify-between">
+                  <div className="p-5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3 flex flex-col justify-between">
                     <div>
-                      <h4 className="text-xs font-bold text-white">Restore from Backup File</h4>
-                      <p className="text-[11px] text-slate-400 mt-1">
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">Restore from Backup File</h4>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                         Upload an existing dashboard backup `.json` file to restore all canvas cards, layouts, and entities.
                       </p>
                     </div>
-                    <label className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-xs transition-all cursor-pointer">
+                    <label className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:border-white/15 dark:text-white font-bold text-xs transition-all cursor-pointer">
                       <UploadSimple size={16} weight="bold" />
                       <span>Select Backup JSON File</span>
                       <input
@@ -1306,11 +1314,11 @@ export default function SettingsView({
                 </div>
 
                 {/* Local Storage Snapshots Manager */}
-                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-4">
+                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <h4 className="text-xs font-bold text-white">Local Snapshot Snapshots ({snapshots.length})</h4>
-                      <p className="text-[11px] text-slate-400">Create instant rollback points cached in local browser storage.</p>
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">Local Snapshots ({snapshots.length})</h4>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Create instant rollback points cached in local browser storage.</p>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -1319,12 +1327,12 @@ export default function SettingsView({
                         placeholder="Snapshot name..."
                         value={snapshotNameInput}
                         onChange={(e) => setSnapshotNameInput(e.target.value)}
-                        className="px-3 py-1.5 rounded-xl bg-black/40 border border-white/15 text-white text-xs focus:outline-hidden focus:border-sky-400"
+                        className="px-3 py-1.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
                       />
                       <button
                         type="button"
                         onClick={handleCreateSnapshot}
-                        className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all cursor-pointer shrink-0"
+                        className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all cursor-pointer shrink-0 shadow-sm"
                       >
                         Take Snapshot
                       </button>
@@ -1332,7 +1340,7 @@ export default function SettingsView({
                   </div>
 
                   {snapshots.length === 0 ? (
-                    <div className="p-6 text-center text-xs text-slate-500 border border-dashed border-white/10 rounded-xl">
+                    <div className="p-6 text-center text-xs text-slate-500 border border-dashed border-slate-300 dark:border-white/10 rounded-xl">
                       No local snapshots stored yet. Click "Take Snapshot" above to create an instant rollback point.
                     </div>
                   ) : (
@@ -1340,11 +1348,11 @@ export default function SettingsView({
                       {snapshots.map((snap) => (
                         <div
                           key={snap.id}
-                          className="p-3 rounded-xl bg-black/30 border border-white/10 flex items-center justify-between gap-3"
+                          className="p-3 rounded-xl bg-white dark:bg-black/30 border border-slate-200 dark:border-white/10 flex items-center justify-between gap-3 shadow-xs"
                         >
                           <div>
-                            <h5 className="text-xs font-bold text-white">{snap.name}</h5>
-                            <p className="text-[10px] font-mono text-slate-400">
+                            <h5 className="text-xs font-bold text-slate-900 dark:text-white">{snap.name}</h5>
+                            <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
                               {snap.timestamp} • {snap.cardCount} cards • {snap.profileCount} profiles
                             </p>
                           </div>
@@ -1353,14 +1361,14 @@ export default function SettingsView({
                             <button
                               type="button"
                               onClick={() => handleRestoreSnapshot(snap)}
-                              className="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-400/30 text-[11px] font-bold cursor-pointer transition-colors"
+                              className="px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 border border-sky-400/30 text-[11px] font-bold cursor-pointer transition-colors"
                             >
                               Restore
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteSnapshot(snap.id)}
-                              className="w-7 h-7 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/10 flex items-center justify-center cursor-pointer transition-colors"
+                              className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 dark:bg-white/5 dark:hover:bg-rose-500/20 dark:text-slate-400 dark:hover:text-rose-400 border border-slate-200 dark:border-white/10 flex items-center justify-center cursor-pointer transition-colors"
                               title="Delete snapshot"
                             >
                               <Trash size={13} weight="duotone" />
@@ -1375,10 +1383,10 @@ export default function SettingsView({
                 {/* Factory Reset Section */}
                 <div className="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
-                    <h4 className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
+                    <h4 className="text-xs font-bold text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
                       <Warning size={16} weight="duotone" /> Factory Reset Dashboard
                     </h4>
-                    <p className="text-[11px] text-rose-200/70 mt-0.5">
+                    <p className="text-[11px] text-rose-800/80 dark:text-rose-200/70 mt-0.5">
                       Clear all custom canvas cards, layouts, and restore standard Home Assistant demo configuration.
                     </p>
                   </div>
@@ -1404,25 +1412,25 @@ export default function SettingsView({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 className={`p-6 sm:p-7 rounded-3xl border backdrop-blur-md backdrop-saturate-150 space-y-6 ${
-                  darkMode ? 'bg-white/[0.03] border-white/10 shadow-2xl' : 'bg-white/90 border-slate-200 shadow-sm'
+                  darkMode ? 'bg-white/3 border-white/10 shadow-2xl' : 'bg-white/90 border-slate-200 shadow-sm'
                 }`}
               >
-                <div className="flex items-center justify-between border-b pb-4 border-white/10">
+                <div className="flex items-center justify-between border-b pb-4 border-slate-200 dark:border-white/10">
                   <div className="flex items-center gap-3">
-                    <WifiHigh size={28} weight="duotone" className="text-sky-400" />
+                    <WifiHigh size={28} weight="duotone" className="text-sky-500 dark:text-sky-400" />
                     <div>
-                      <h3 className="text-base font-extrabold text-white">Home Assistant WebSocket & Telemetry</h3>
-                      <p className="text-xs text-slate-400">Direct real-time duplex socket configuration, latency testing, and live event feed.</p>
+                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Home Assistant WebSocket & Telemetry</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Direct real-time duplex socket configuration, latency testing, and live event feed.</p>
                     </div>
                   </div>
 
                   {/* Live Status Indicator */}
                   <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 text-xs font-bold font-mono uppercase ${
                     isLiveMode 
-                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' 
-                      : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' 
+                      : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
                   }`}>
-                    <span className={`w-2 h-2 rounded-full ${isLiveMode ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`} />
+                    <span className={`w-2 h-2 rounded-full ${isLiveMode ? 'bg-emerald-500 dark:bg-emerald-400 animate-ping' : 'bg-amber-500'}`} />
                     <span>{connectionStatus || (isLiveMode ? 'Connected' : 'Standalone Demo')}</span>
                   </div>
                 </div>
@@ -1430,24 +1438,24 @@ export default function SettingsView({
                 {/* WebSocket Credentials Form */}
                 <form onSubmit={handleConnectWs} className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-300 block">Home Assistant WebSocket URL</label>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Home Assistant WebSocket URL</label>
                     <input
                       type="text"
                       placeholder="wss://your-homeassistant.local:8123/api/websocket"
                       value={wsUrlInput}
                       onChange={(e) => setWsUrlInput(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white font-mono text-xs focus:outline-hidden focus:border-sky-400"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
                       required
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-slate-300 block">Long-Lived Access Token</label>
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Long-Lived Access Token</label>
                       <button
                         type="button"
                         onClick={() => setShowToken(!showToken)}
-                        className="text-[11px] text-sky-400 hover:underline cursor-pointer flex items-center gap-1"
+                        className="text-[11px] text-sky-600 dark:text-sky-400 hover:underline cursor-pointer flex items-center gap-1"
                       >
                         {showToken ? <EyeSlash size={13} /> : <Eye size={13} />}
                         <span>{showToken ? 'Hide Token' : 'Show Token'}</span>
@@ -1458,7 +1466,7 @@ export default function SettingsView({
                       placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                       value={tokenInput}
                       onChange={(e) => setTokenInput(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white font-mono text-xs focus:outline-hidden focus:border-sky-400"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
                     />
                   </div>
 
@@ -1468,14 +1476,14 @@ export default function SettingsView({
                         type="button"
                         onClick={handleTestLatency}
                         disabled={isPinging}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold cursor-pointer transition-all disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:border-white/15 dark:text-white text-xs font-semibold cursor-pointer transition-all disabled:opacity-50 shadow-xs"
                       >
                         <ArrowsClockwise size={14} className={isPinging ? 'animate-spin' : ''} />
                         <span>{isPinging ? 'Pinging Socket...' : 'Test Latency Ping'}</span>
                       </button>
 
                       {pingLatency !== null && (
-                        <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2.5 py-1.5 rounded-xl border border-emerald-500/30">
+                        <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-500/30">
                           {pingLatency}ms Roundtrip
                         </span>
                       )}
@@ -1486,7 +1494,7 @@ export default function SettingsView({
                         <button
                           type="button"
                           onClick={() => disconnectFromHA()}
-                          className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-semibold cursor-pointer transition-colors"
+                          className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-300 text-xs font-semibold cursor-pointer transition-colors"
                         >
                           Disconnect
                         </button>
@@ -1504,49 +1512,49 @@ export default function SettingsView({
 
                 {/* Real-time Telemetry Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/10 text-center">
-                    <div className="text-lg font-mono font-bold text-white">{entities.length}</div>
-                    <div className="text-[10px] text-slate-400 uppercase font-semibold">Active Entities</div>
+                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 text-center">
+                    <div className="text-lg font-mono font-bold text-slate-900 dark:text-white">{entities.length}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Active Entities</div>
                   </div>
-                  <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/10 text-center">
-                    <div className="text-lg font-mono font-bold text-sky-400">{rooms.length}</div>
-                    <div className="text-[10px] text-slate-400 uppercase font-semibold">Discovered Areas</div>
+                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 text-center">
+                    <div className="text-lg font-mono font-bold text-sky-600 dark:text-sky-400">{rooms.length}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Discovered Areas</div>
                   </div>
-                  <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/10 text-center">
-                    <div className="text-lg font-mono font-bold text-indigo-400">{Object.keys(rawDevices || {}).length || 18}</div>
-                    <div className="text-[10px] text-slate-400 uppercase font-semibold">Physical Devices</div>
+                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 text-center">
+                    <div className="text-lg font-mono font-bold text-indigo-600 dark:text-indigo-400">{Object.keys(rawDevices || {}).length || 18}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Physical Devices</div>
                   </div>
-                  <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/10 text-center">
-                    <div className="text-lg font-mono font-bold text-emerald-400">{logs.length}</div>
-                    <div className="text-[10px] text-slate-400 uppercase font-semibold">Events Processed</div>
+                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 text-center">
+                    <div className="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400">{logs.length}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Events Processed</div>
                   </div>
                 </div>
 
                 {/* Live WebSocket Event Log Stream */}
-                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3">
+                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Radio size={16} weight="duotone" className="text-emerald-400 animate-pulse" />
-                      <h4 className="text-xs font-bold text-white">Live Event Log Feed</h4>
+                      <Radio size={16} weight="duotone" className="text-emerald-500 dark:text-emerald-400 animate-pulse" />
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">Live Event Log Feed</h4>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <select
                         value={logFilter}
                         onChange={(e) => setLogFilter(e.target.value as any)}
-                        className="px-2.5 py-1 rounded-lg bg-black/40 border border-white/10 text-[11px] text-slate-300 font-semibold focus:outline-hidden"
+                        className="px-2.5 py-1 rounded-lg bg-white dark:bg-black/40 border border-slate-300 dark:border-white/10 text-[11px] text-slate-800 dark:text-slate-300 font-semibold focus:outline-hidden shadow-xs"
                       >
-                        <option value="all">All Events</option>
-                        <option value="state_changed">State Changed</option>
-                        <option value="service_call">Service Calls</option>
-                        <option value="info">Info Logs</option>
-                        <option value="error">Errors</option>
+                        <option value="all" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">All Events</option>
+                        <option value="state_changed" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">State Changed</option>
+                        <option value="service_call" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Service Calls</option>
+                        <option value="info" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Info Logs</option>
+                        <option value="error" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Errors</option>
                       </select>
 
                       <button
                         type="button"
                         onClick={() => setLogs([])}
-                        className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] text-slate-400 hover:text-white cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-[11px] text-slate-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-slate-400 dark:hover:text-white cursor-pointer"
                       >
                         Clear Feed
                       </button>
@@ -1560,18 +1568,18 @@ export default function SettingsView({
                       filteredLogs.map((log) => (
                         <div
                           key={log.id}
-                          className="p-2 rounded-lg bg-black/30 border border-white/5 flex items-start gap-2.5"
+                          className="p-2 rounded-lg bg-white dark:bg-black/30 border border-slate-200 dark:border-white/5 flex items-start gap-2.5 shadow-xs"
                         >
                           <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase shrink-0 ${
-                            log.type === 'error' ? 'bg-rose-500/20 text-rose-400' :
-                            log.type === 'service_call' ? 'bg-indigo-500/20 text-indigo-400' :
-                            log.type === 'state_changed' ? 'bg-sky-500/20 text-sky-400' :
-                            'bg-slate-700/40 text-slate-400'
+                            log.type === 'error' ? 'bg-rose-500/15 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400' :
+                            log.type === 'service_call' ? 'bg-indigo-500/15 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400' :
+                            log.type === 'state_changed' ? 'bg-sky-500/15 text-sky-700 dark:bg-sky-500/20 dark:text-sky-400' :
+                            'bg-slate-200 dark:bg-slate-700/40 text-slate-700 dark:text-slate-400'
                           }`}>
                             {log.type.replace('_', ' ')}
                           </span>
-                          <span className="text-slate-300 flex-1 break-all">{log.message}</span>
-                          <span className="text-[10px] text-slate-500 shrink-0">{log.timestamp}</span>
+                          <span className="text-slate-800 dark:text-slate-300 flex-1 break-all">{log.message}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">{log.timestamp}</span>
                         </div>
                       ))
                     )}
@@ -1587,48 +1595,48 @@ export default function SettingsView({
       {showAddDeviceModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddDeviceModal(false)} />
-          <div className="relative w-full max-w-md rounded-3xl bg-slate-900/90 backdrop-blur-md border border-white/15 p-6 shadow-2xl z-10 space-y-4">
-            <div className="flex items-center justify-between border-b pb-3 border-white/10">
-              <h4 className="text-sm font-bold text-white">Register Virtual IoT Device</h4>
-              <button onClick={() => setShowAddDeviceModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
+          <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-white/15 p-6 shadow-2xl z-10 space-y-4">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-200 dark:border-white/10">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Register Virtual IoT Device</h4>
+              <button onClick={() => setShowAddDeviceModal(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white cursor-pointer">
                 <X size={18} />
               </button>
             </div>
             <form onSubmit={handleAddDevice} className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Friendly Name</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Friendly Name</label>
                 <input
                   type="text"
                   placeholder="e.g. Master Bedroom Chandelier"
                   value={newDeviceName}
                   onChange={(e) => setNewDeviceName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white text-xs focus:outline-hidden focus:border-sky-400"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
                   autoFocus
                   required
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Domain Type</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Domain Type</label>
                 <select
                   value={newDeviceDomain}
                   onChange={(e) => setNewDeviceDomain(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white text-xs focus:outline-hidden focus:border-sky-400"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
                 >
-                  <option value="light" className="bg-slate-900 text-white">Light (Dimmable / RGB)</option>
-                  <option value="switch" className="bg-slate-900 text-white">Smart Switch / Socket</option>
-                  <option value="climate" className="bg-slate-900 text-white">Thermostat / Climate</option>
-                  <option value="sensor" className="bg-slate-900 text-white">Telemetry Sensor</option>
+                  <option value="light" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Light (Dimmable / RGB)</option>
+                  <option value="switch" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Smart Switch / Socket</option>
+                  <option value="climate" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Thermostat / Climate</option>
+                  <option value="sensor" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Telemetry Sensor</option>
                 </select>
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Assigned Room</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Assigned Room</label>
                 <select
                   value={newDeviceRoom}
                   onChange={(e) => setNewDeviceRoom(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white text-xs focus:outline-hidden focus:border-sky-400"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
                 >
                   {rooms.map(r => (
-                    <option key={r.id} value={r.name} className="bg-slate-900 text-white">{r.name}</option>
+                    <option key={r.id} value={r.name} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">{r.name}</option>
                   ))}
                 </select>
               </div>
@@ -1636,7 +1644,7 @@ export default function SettingsView({
                 <button
                   type="button"
                   onClick={() => setShowAddDeviceModal(false)}
-                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-semibold cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-300 text-xs font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1656,22 +1664,22 @@ export default function SettingsView({
       {showAddRoomModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddRoomModal(false)} />
-          <div className="relative w-full max-w-md rounded-3xl bg-slate-900/90 backdrop-blur-md border border-white/15 p-6 shadow-2xl z-10 space-y-4">
-            <div className="flex items-center justify-between border-b pb-3 border-white/10">
-              <h4 className="text-sm font-bold text-white">Create New Home Area</h4>
-              <button onClick={() => setShowAddRoomModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
+          <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-white/15 p-6 shadow-2xl z-10 space-y-4">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-200 dark:border-white/10">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Create New Home Area</h4>
+              <button onClick={() => setShowAddRoomModal(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white cursor-pointer">
                 <X size={18} />
               </button>
             </div>
             <form onSubmit={handleAddRoom} className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Room / Area Name</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Room / Area Name</label>
                 <input
                   type="text"
                   placeholder="e.g. Cinema Room, Guest Suite, Patio"
                   value={newRoomName}
                   onChange={(e) => setNewRoomName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white text-xs focus:outline-hidden focus:border-sky-400"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
                   autoFocus
                   required
                 />
@@ -1680,7 +1688,7 @@ export default function SettingsView({
                 <button
                   type="button"
                   onClick={() => setShowAddRoomModal(false)}
-                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-semibold cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-300 text-xs font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1700,19 +1708,19 @@ export default function SettingsView({
       {showResetConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowResetConfirm(false)} />
-          <div className="relative w-full max-w-sm rounded-3xl bg-slate-900/95 backdrop-blur-md border border-white/15 p-6 shadow-2xl z-10 space-y-4 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/30">
+          <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-white/15 p-6 shadow-2xl z-10 space-y-4 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 flex items-center justify-center mx-auto border border-rose-500/30">
               <Warning size={28} weight="duotone" />
             </div>
-            <h4 className="text-base font-black text-white">Reset Dashboard Defaults?</h4>
-            <p className="text-xs text-slate-400">
+            <h4 className="text-base font-black text-slate-900 dark:text-white">Reset Dashboard Defaults?</h4>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               This will reset all custom canvas profiles, cards, and custom user configurations to factory defaults.
             </p>
             <div className="flex justify-center gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setShowResetConfirm(false)}
-                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-300 text-xs font-semibold cursor-pointer"
               >
                 Cancel
               </button>

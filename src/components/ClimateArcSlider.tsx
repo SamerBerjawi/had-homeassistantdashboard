@@ -152,7 +152,7 @@ export default function ClimateArcSlider({
     <motion.div 
       layout
       transition={{ type: "spring", stiffness: 350, damping: 30 }}
-      className={`relative rounded-[32px] p-6 shadow-sm border backdrop-blur-2xl overflow-hidden transition-all duration-300 glass-noise ${
+      className={`relative rounded-4xl p-6 shadow-sm border backdrop-blur-2xl overflow-hidden transition-all duration-300 glass-noise ${
         darkMode ? 'border-white/10 shadow-black/40' : 'border-white/70'
       }`}
       style={{ background: getMeshGradient() }}
@@ -185,7 +185,7 @@ export default function ClimateArcSlider({
                 opacity: [0.4 * glowFactor, 0.75 * glowFactor, 0.4 * glowFactor]
               }}
               transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
-              className="absolute -inset-2 bg-[#7B61FF] rounded-full blur-md pointer-events-none"
+              className="absolute -inset-2 bg-brand-purple rounded-full blur-md pointer-events-none"
               style={{
                 filter: `blur(${6 + 6 * glowFactor}px)`,
                 boxShadow: `0 0 ${16 + 18 * glowFactor}px rgba(123, 97, 255, ${0.5 + 0.4 * glowFactor})`
@@ -197,7 +197,7 @@ export default function ClimateArcSlider({
             onClick={onPowerToggle}
             className={`w-12 h-6.5 rounded-full relative transition-all cursor-pointer z-10 ${
               state === 'on' 
-                ? 'bg-[#7B61FF] shadow-lg ring-2 ring-[#7B61FF]/40' 
+                ? 'bg-brand-purple shadow-lg ring-2 ring-brand-purple/40' 
                 : darkMode
                   ? 'bg-slate-700 hover:bg-slate-600'
                   : 'bg-slate-200 hover:bg-slate-300'
@@ -227,12 +227,12 @@ export default function ClimateArcSlider({
           <motion.div 
             animate={{ opacity: [0.3 * glowFactor, 0.6 * glowFactor, 0.3 * glowFactor] }}
             transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-            className="absolute inset-x-8 top-4 h-24 bg-[#7B61FF] blur-2xl rounded-full pointer-events-none" 
+            className="absolute inset-x-8 top-4 h-24 bg-brand-purple blur-2xl rounded-full pointer-events-none" 
             style={{ filter: `blur(${16 + 12 * glowFactor}px)` }}
           />
         )}
 
-        <svg viewBox="0 0 200 120" className="w-full max-w-[220px] overflow-visible">
+        <svg viewBox="0 0 200 120" className="w-full max-w-55 overflow-visible">
           {/* Background Track dashed */}
           <path 
             d="M 30 100 A 70 70 0 0 1 170 100" 
@@ -343,8 +343,8 @@ export default function ClimateArcSlider({
             disabled={state !== 'on'}
             className={`w-9 h-9 disabled:opacity-40 rounded-full flex items-center justify-center shadow-sm cursor-pointer transition-all border ${
               darkMode 
-                ? 'bg-slate-800/90 hover:bg-[#7B61FF]/20 text-slate-200 border-slate-700 hover:text-indigo-300' 
-                : 'bg-white/90 hover:bg-[#7B61FF]/10 hover:text-[#7B61FF] text-slate-600 border-slate-100'
+                ? 'bg-slate-800/90 hover:bg-brand-purple/20 text-slate-200 border-slate-700 hover:text-indigo-300' 
+                : 'bg-white/90 hover:bg-brand-purple/10 hover:text-brand-purple text-slate-600 border-slate-100'
             }`}
           >
             <Minus size={15} weight="duotone" />
@@ -358,8 +358,8 @@ export default function ClimateArcSlider({
             disabled={state !== 'on'}
             className={`w-9 h-9 disabled:opacity-40 rounded-full flex items-center justify-center shadow-sm cursor-pointer transition-all border ${
               darkMode 
-                ? 'bg-slate-800/90 hover:bg-[#7B61FF]/20 text-slate-200 border-slate-700 hover:text-indigo-300' 
-                : 'bg-white/90 hover:bg-[#7B61FF]/10 hover:text-[#7B61FF] text-slate-600 border-slate-100'
+                ? 'bg-slate-800/90 hover:bg-brand-purple/20 text-slate-200 border-slate-700 hover:text-indigo-300' 
+                : 'bg-white/90 hover:bg-brand-purple/10 hover:text-brand-purple text-slate-600 border-slate-100'
             }`}
           >
             <Plus size={15} weight="duotone" />
@@ -381,7 +381,7 @@ export default function ClimateArcSlider({
             <div key={item.id} className="relative flex flex-col">
               {isActive && (
                 <span 
-                  className="absolute -inset-1 bg-[#7B61FF] rounded-2xl blur-sm animate-pulse pointer-events-none" 
+                  className="absolute -inset-1 bg-brand-purple rounded-2xl blur-sm animate-pulse pointer-events-none" 
                   style={{ opacity: 0.35 + 0.35 * glowFactor }}
                 />
               )}
@@ -391,7 +391,7 @@ export default function ClimateArcSlider({
                 onClick={() => onModeChange(item.id)}
                 className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 border transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed relative z-10 ${
                   isActive 
-                    ? 'bg-[#7B61FF] border-[#7B61FF] text-white ring-2 ring-[#7B61FF]/40' 
+                    ? 'bg-brand-purple border-brand-purple text-white ring-2 ring-brand-purple/40' 
                     : `${item.color}`
                 }`}
                 style={{

@@ -61,7 +61,7 @@ export default function GenericDetailModal({
                     ? 'bg-rose-500 hover:bg-rose-400 text-white shadow-rose-500/30'
                     : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/30'
                   : isOn
-                  ? 'bg-[#7B61FF] hover:bg-[#6A4FE8] text-white'
+                  ? 'bg-brand-purple hover:bg-brand-purple-hover text-white'
                   : 'bg-white/10 hover:bg-white/20 text-slate-200'
               }`}
             >

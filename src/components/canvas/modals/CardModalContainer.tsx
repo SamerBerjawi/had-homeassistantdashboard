@@ -60,13 +60,13 @@ export default function CardModalContainer({
             exit={{ opacity: 0, scale: 0.92, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 350 }}
             onClick={(e) => e.stopPropagation()}
-            className={`relative w-full ${maxWidth} rounded-3xl overflow-hidden bg-slate-900/80 backdrop-blur-md backdrop-saturate-150 border border-white/15 shadow-2xl shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.15)] text-white z-10 my-auto`}
+            className={`relative w-full ${maxWidth} rounded-3xl overflow-hidden bg-slate-900/80 backdrop-blur-md backdrop-saturate-150 border border-white/15 shadow-2xl text-white z-10 my-auto`}
           >
             {/* Top Refractive Highlight */}
             <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
 
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 sm:p-6 border-b border-white/10 bg-white/[0.02]">
+            <div className="flex items-center justify-between p-5 sm:p-6 border-b border-white/10 bg-white/2">
               <div className="flex items-center gap-3 min-w-0">
                 {icon && (
                   <div className="shrink-0 flex items-center justify-center">

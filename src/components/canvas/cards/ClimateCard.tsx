@@ -43,15 +43,15 @@ export default function ClimateCard({
             className="text-sky-400 shrink-0 drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]"
           />
           <div className="min-w-0">
-            <h4 className="text-sm font-bold text-white truncate">{title}</h4>
-            <p className="text-[11px] text-sky-300 font-medium truncate">
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{title}</h4>
+            <p className="text-[11px] text-sky-600 dark:text-sky-300 font-medium truncate">
               {isOff ? 'System Standby' : `${mode} Mode`}
             </p>
           </div>
         </div>
 
         {/* Humidity Pill */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 border border-white/15 text-[11px] text-slate-300 backdrop-blur-md">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/15 text-[11px] text-slate-700 dark:text-slate-300 backdrop-blur-md">
           <Drop size={13} weight="duotone" className="text-cyan-400" />
           <span>{humidity}%</span>
         </div>
@@ -61,21 +61,21 @@ export default function ClimateCard({
       <div className="flex items-center justify-between my-1">
         <div>
           <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-black text-white tracking-tight leading-none font-mono">
+            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-mono">
               {targetTemp.toFixed(1)}°
             </span>
-            <span className="text-xs text-slate-400 font-bold">Target</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">Target</span>
           </div>
-          <p className="text-[10px] text-slate-400 mt-0.5">
-            Ambient: <span className="text-slate-200 font-semibold">{currentTemp.toFixed(1)}°C</span>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+            Ambient: <span className="text-slate-700 dark:text-slate-200 font-semibold">{currentTemp.toFixed(1)}°C</span>
           </p>
         </div>
 
         {/* Quick Stepper Buttons */}
-        <div className="flex items-center gap-1.5 bg-black/30 p-1 rounded-2xl border border-white/10">
+        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-black/30 p-1 rounded-2xl border border-slate-200 dark:border-white/10">
           <button
             onClick={(e) => handleAdjustTemp(-0.5, e)}
-            className="w-7 h-7 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
+            className="w-7 h-7 rounded-xl bg-white dark:bg-white/10 border border-slate-200 dark:border-white/15 text-slate-750 dark:text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
             title="Decrease Target"
           >
             <Minus size={14} weight="duotone" />
@@ -91,11 +91,11 @@ export default function ClimateCard({
       </div>
 
       {/* Bottom status bar */}
-      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-white/10">
-        <span className="flex items-center gap-1 text-slate-300">
+      <div className="flex items-center justify-between text-[10px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
+        <span className="flex items-center gap-1 text-slate-750 dark:text-slate-300">
           <Wind size={13} weight="duotone" className="text-sky-400" /> Auto Fan
         </span>
-        <span className="font-semibold text-emerald-400">Optimal Temp</span>
+        <span className="font-semibold text-emerald-500">Optimal Temp</span>
       </div>
     </div>
   );

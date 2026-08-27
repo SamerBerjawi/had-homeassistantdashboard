@@ -64,8 +64,8 @@ export default function NordpoolCard({
             className="text-amber-400 shrink-0 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]"
           />
           <div className="min-w-0">
-            <h4 className="text-sm font-bold text-white truncate">{title}</h4>
-            <p className="text-[11px] text-slate-400 truncate">SE3 Spot Market</p>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{title}</h4>
+            <p className="text-[11px] text-slate-550 dark:text-slate-400 truncate">SE3 Spot Market</p>
           </div>
         </div>
 
@@ -73,10 +73,10 @@ export default function NordpoolCard({
         <span
           className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold uppercase tracking-wide border backdrop-blur-md ${
             isCheap
-              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+              ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
               : isExpensive
-              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-              : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+              ? 'bg-rose-500/10 text-rose-600 border-rose-500/30 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/40'
+              : 'bg-indigo-500/10 text-indigo-600 border-indigo-500/30 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/40'
           }`}
         >
           {isCheap ? 'Cheap Rate' : isExpensive ? 'Peak Rate' : 'Normal Rate'}
@@ -87,12 +87,12 @@ export default function NordpoolCard({
       <div className="my-2">
         <div className="flex items-baseline justify-between">
           <div className="flex items-baseline gap-1.5">
-            <span className="text-3xl font-black text-white font-mono tracking-tight leading-none">
+            <span className="text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none">
               {(currentPrice * 100).toFixed(1)}
             </span>
-            <span className="text-xs text-slate-400 font-bold">c/kWh</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">c/kWh</span>
           </div>
-          <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
             <TrendDown size={14} weight="bold" /> -12% vs avg
           </span>
         </div>
@@ -119,7 +119,7 @@ export default function NordpoolCard({
                       ? 'bg-emerald-400/80 hover:bg-emerald-300'
                       : isBarPeak
                       ? 'bg-rose-400/80 hover:bg-rose-300'
-                      : 'bg-white/20 hover:bg-white/40'
+                      : 'bg-slate-300 dark:bg-white/20 hover:bg-slate-400 dark:hover:bg-white/40'
                   }`}
                   style={{ height: `${heightPct}%` }}
                 />
@@ -130,11 +130,11 @@ export default function NordpoolCard({
       </div>
 
       {/* Bottom info: Optimal charging window */}
-      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-white/10">
-        <span className="flex items-center gap-1 text-slate-300">
-          <Clock size={12} weight="duotone" className="text-amber-400" /> Best Window: 02:00 - 05:00
+      <div className="flex items-center justify-between text-[10px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
+        <span className="flex items-center gap-1 text-slate-750 dark:text-slate-300">
+          <Clock size={12} weight="duotone" className="text-amber-500 dark:text-amber-400" /> Best Window: 02:00 - 05:00
         </span>
-        <span className="font-mono text-slate-400">
+        <span className="font-mono text-slate-550 dark:text-slate-400">
           Min: {(minPrice * 100).toFixed(0)}c / Max: {(maxPrice * 100).toFixed(0)}c
         </span>
       </div>

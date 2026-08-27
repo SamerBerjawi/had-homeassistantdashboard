@@ -6,7 +6,7 @@ interface ViewProps {
 
 export default function EnergyView({ darkMode }: ViewProps) {
   return (
-    <div className="w-full h-full min-h-[500px] p-6 flex flex-col">
+    <div className="w-full h-full min-h-125 p-6 flex flex-col">
       {/* Blank page canvas ready to build */}
     </div>
   );

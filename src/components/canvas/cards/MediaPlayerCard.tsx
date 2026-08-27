@@ -56,13 +56,13 @@ export default function MediaPlayerCard({
             )}
           </div>
           <div className="min-w-0">
-            <h4 className="text-sm font-bold text-white truncate">{title}</h4>
-            <p className="text-[11px] text-pink-300 font-medium truncate">{artist}</p>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{title}</h4>
+            <p className="text-[11px] text-pink-600 dark:text-pink-300 font-medium truncate">{artist}</p>
           </div>
         </div>
 
         {/* Live Audio Badge */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-pink-500/20 border border-pink-500/30 text-pink-300 text-[10px] font-bold backdrop-blur-md">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-650 dark:bg-pink-500/20 dark:border-pink-500/30 dark:text-pink-300 text-[10px] font-bold backdrop-blur-md">
           <MusicNotes size={13} weight="duotone" className={isPlaying ? 'animate-bounce' : ''} />
           <span>{isPlaying ? 'Sonos Live' : 'Paused'}</span>
         </div>
@@ -77,7 +77,7 @@ export default function MediaPlayerCard({
               className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-md ${
                 isPlaying 
                   ? 'bg-pink-500 hover:bg-pink-400 text-white shadow-pink-500/30' 
-                  : 'bg-white/15 hover:bg-white/25 text-white'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-white/15 dark:hover:bg-white/25 dark:text-white dark:border-transparent'
               }`}
               title={isPlaying ? 'Pause' : 'Play'}
             >
@@ -85,22 +85,22 @@ export default function MediaPlayerCard({
             </button>
             <button
               onClick={handleNext}
-              className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer"
+              className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:border-white/15 dark:text-white flex items-center justify-center transition-all cursor-pointer"
               title="Next Track"
             >
               <SkipForward size={14} weight="duotone" />
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5 text-slate-300 text-xs font-mono">
-            <SpeakerHigh size={15} weight="duotone" className="text-slate-400" />
+          <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 text-xs font-mono">
+            <SpeakerHigh size={15} weight="duotone" className="text-slate-500 dark:text-slate-400" />
             <span>{volume}%</span>
           </div>
         </div>
       </div>
 
       {/* Volume / Progress Bar */}
-      <div className="w-full h-1.5 rounded-full bg-black/40 overflow-hidden border border-white/10 relative z-10">
+      <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-black/40 overflow-hidden border border-slate-300 dark:border-white/10 relative z-10">
         <div 
           className="h-full rounded-full bg-linear-to-r from-pink-500 to-purple-400"
           style={{ width: `${volume}%` }}

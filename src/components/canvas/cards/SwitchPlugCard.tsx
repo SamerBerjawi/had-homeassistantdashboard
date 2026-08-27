@@ -40,12 +40,12 @@ export default function SwitchPlugCard({
             size={24}
             weight="duotone"
             className={`shrink-0 transition-colors ${
-              isOn ? 'text-[#7B61FF] drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]' : 'text-slate-400'
+              isOn ? 'text-brand-purple drop-shadow-[0_0_8px_rgba(123,97,255,0.5)]' : 'text-slate-400'
             }`}
           />
           <div className="min-w-0">
-            <h4 className="text-sm font-bold text-white truncate">{title}</h4>
-            <p className="text-[11px] text-slate-400 truncate">
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{title}</h4>
+            <p className="text-[11px] text-slate-550 dark:text-slate-400 truncate">
               {isOn ? 'Relay Active' : 'Switched Off'}
             </p>
           </div>
@@ -55,7 +55,7 @@ export default function SwitchPlugCard({
         <button
           onClick={handleToggle}
           className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
-            isOn ? 'bg-[#7B61FF] justify-end' : 'bg-white/15 justify-start'
+            isOn ? 'bg-brand-purple justify-end' : 'bg-slate-200 dark:bg-white/15 justify-start'
           }`}
           title={isOn ? 'Switch Off' : 'Switch On'}
         >
@@ -66,20 +66,20 @@ export default function SwitchPlugCard({
       {/* Center Power Demand */}
       <div className="my-1">
         <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-black text-white font-mono tracking-tight leading-none">
+          <span className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none">
             {powerWatts}
           </span>
-          <span className="text-xs text-slate-400 font-bold">Watts</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">Watts</span>
         </div>
       </div>
 
       {/* Bottom info */}
-      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-white/10">
-        <span className="flex items-center gap-1 text-slate-300">
+      <div className="flex items-center justify-between text-[10px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
+        <span className="flex items-center gap-1 text-slate-750 dark:text-slate-300">
           <Lightning size={13} weight="duotone" className={isOn ? 'text-amber-400 animate-pulse' : 'text-slate-500'} />
           {isOn ? 'Drawing Power' : 'Standby 0W'}
         </span>
-        <span className="text-slate-400 font-mono">16A Relay</span>
+        <span className="text-slate-500 dark:text-slate-400 font-mono">16A Relay</span>
       </div>
     </div>
   );

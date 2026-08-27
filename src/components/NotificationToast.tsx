@@ -32,7 +32,7 @@ export default function NotificationToast({ toasts, onDismiss, darkMode }: Notif
     <aside 
       id="toast-notification-container"
       aria-label="System Notifications"
-      className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[100] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-3 sm:px-0"
+      className="fixed top-4 right-4 sm:top-6 sm:right-6 z-100 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-3 sm:px-0"
     >
       <AnimatePresence mode="popLayout">
         {toasts.map((toast) => (
@@ -81,8 +81,8 @@ function ToastItem({ toast, onDismiss, darkMode }: ToastItemProps) {
       case 'vacuum':
         return {
           icon: Robot,
-          iconColor: 'text-[#7B61FF]',
-          progressColor: 'bg-[#7B61FF]'
+          iconColor: 'text-brand-purple',
+          progressColor: 'bg-brand-purple'
         };
       case 'scene':
         return {
@@ -124,8 +124,8 @@ function ToastItem({ toast, onDismiss, darkMode }: ToastItemProps) {
       default:
         return {
           icon: Info,
-          iconColor: 'text-[#7B61FF]',
-          progressColor: 'bg-[#7B61FF]'
+          iconColor: 'text-brand-purple',
+          progressColor: 'bg-brand-purple'
         };
     }
   };
@@ -169,7 +169,7 @@ function ToastItem({ toast, onDismiss, darkMode }: ToastItemProps) {
           </div>
 
           {toast.message && (
-            <p className="text-[11px] text-slate-400 mt-1 leading-snug break-words">
+            <p className="text-[11px] text-slate-400 mt-1 leading-snug wrap-break-word">
               {toast.message}
             </p>
           )}
@@ -180,7 +180,7 @@ function ToastItem({ toast, onDismiss, darkMode }: ToastItemProps) {
                 toast.action?.onClick();
                 onDismiss(toast.id);
               }}
-              className="mt-2 text-[10px] font-black uppercase tracking-wider text-[#7B61FF] hover:underline cursor-pointer"
+              className="mt-2 text-[10px] font-black uppercase tracking-wider text-brand-purple hover:underline cursor-pointer"
             >
               {toast.action.label} &rarr;
             </button>

@@ -586,6 +586,98 @@ export const MOCK_ENTITY_REGISTRY: HAEntityRegistryEntry[] = [
     unit_of_measurement: 'hPa'
   },
 
+  // ---------------- Household Users & Persons ----------------
+  {
+    entity_id: 'person.sarah',
+    name: 'Sarah Jenkins',
+    area_id: 'living_room',
+    platform: 'person'
+  },
+  {
+    entity_id: 'person.alex',
+    name: 'Alex Miller',
+    area_id: 'office',
+    platform: 'person'
+  },
+  {
+    entity_id: 'person.emma',
+    name: 'Emma Miller',
+    area_id: null,
+    platform: 'person'
+  },
+  {
+    entity_id: 'person.liam',
+    name: 'Liam Miller',
+    area_id: 'bedroom',
+    platform: 'person'
+  },
+
+  // ---------------- Climate & Fans ----------------
+  {
+    entity_id: 'fan.living_room_ceiling_fan',
+    name: 'Living Room Ceiling Fan',
+    area_id: 'living_room',
+    platform: 'tuya'
+  },
+  {
+    entity_id: 'fan.master_bedroom_fan',
+    name: 'Master Bedroom Fan',
+    area_id: 'bedroom',
+    platform: 'tuya'
+  },
+  {
+    entity_id: 'fan.office_smart_fan',
+    name: 'Office Smart Fan',
+    area_id: 'office',
+    platform: 'tuya'
+  },
+
+  // ---------------- Security Alarm Control Panel ----------------
+  {
+    entity_id: 'alarm_control_panel.home_alarm',
+    name: 'Homz Security Guard',
+    area_id: 'hallway',
+    platform: 'manual'
+  },
+
+  // ---------------- Perimeter Openings (Doors & Windows) ----------------
+  {
+    entity_id: 'binary_sensor.front_door_contact',
+    name: 'Front Main Door',
+    area_id: 'hallway',
+    device_class: 'door'
+  },
+  {
+    entity_id: 'binary_sensor.patio_sliding_door',
+    name: 'Patio Sliding Door',
+    area_id: 'patio',
+    device_class: 'door'
+  },
+  {
+    entity_id: 'binary_sensor.garage_entry_door',
+    name: 'Garage Utility Door',
+    area_id: 'garage',
+    device_class: 'door'
+  },
+  {
+    entity_id: 'binary_sensor.living_room_bay_window',
+    name: 'Living Room Bay Window',
+    area_id: 'living_room',
+    device_class: 'window'
+  },
+  {
+    entity_id: 'binary_sensor.kitchen_window',
+    name: 'Kitchen Casement Window',
+    area_id: 'kitchen',
+    device_class: 'window'
+  },
+  {
+    entity_id: 'binary_sensor.office_window',
+    name: 'Home Office Window',
+    area_id: 'office',
+    device_class: 'window'
+  },
+
   // ---------------- Disabled Entity (To test automatic filtering!) ----------------
   {
     entity_id: 'light.old_garage_fluorescent_decommissioned',
@@ -1008,6 +1100,165 @@ export const MOCK_STATES: Record<string, HAState> = {
     state: 'off',
     attributes: {
       friendly_name: 'Old Garage Fluorescent (Disabled)'
+    }
+  },
+
+  // ---------------- Household Users & Persons ----------------
+  'person.sarah': {
+    entity_id: 'person.sarah',
+    state: 'home',
+    attributes: {
+      friendly_name: 'Sarah Jenkins',
+      entity_picture: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=250&auto=format&fit=crop',
+      battery: 88,
+      location: 'Living Room',
+      last_changed: 'Today, 8:15 AM'
+    }
+  },
+  'person.alex': {
+    entity_id: 'person.alex',
+    state: 'home',
+    attributes: {
+      friendly_name: 'Alex Miller',
+      entity_picture: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop',
+      battery: 94,
+      location: 'Home Studio & Office',
+      last_changed: 'Today, 7:45 AM'
+    }
+  },
+  'person.emma': {
+    entity_id: 'person.emma',
+    state: 'away',
+    attributes: {
+      friendly_name: 'Emma Miller',
+      entity_picture: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=250&auto=format&fit=crop',
+      battery: 62,
+      location: 'Downtown Campus',
+      last_changed: 'Today, 8:10 AM'
+    }
+  },
+  'person.liam': {
+    entity_id: 'person.liam',
+    state: 'home',
+    attributes: {
+      friendly_name: 'Liam Miller',
+      entity_picture: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=250&auto=format&fit=crop',
+      battery: 76,
+      location: 'Master Bedroom',
+      last_changed: 'Today, 7:55 AM'
+    }
+  },
+
+  // ---------------- Climate & Fans ----------------
+  'fan.living_room_ceiling_fan': {
+    entity_id: 'fan.living_room_ceiling_fan',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Living Room Ceiling Fan',
+      speed: 'medium',
+      percentage: 66,
+      oscillating: true,
+      direction: 'forward',
+      power: 35
+    }
+  },
+  'fan.master_bedroom_fan': {
+    entity_id: 'fan.master_bedroom_fan',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Master Bedroom Fan',
+      speed: 'off',
+      percentage: 0,
+      oscillating: false,
+      direction: 'forward',
+      power: 0
+    }
+  },
+  'fan.office_smart_fan': {
+    entity_id: 'fan.office_smart_fan',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Office Smart Fan',
+      speed: 'high',
+      percentage: 100,
+      oscillating: true,
+      direction: 'forward',
+      power: 45
+    }
+  },
+
+  // ---------------- Security Alarm Control Panel ----------------
+  'alarm_control_panel.home_alarm': {
+    entity_id: 'alarm_control_panel.home_alarm',
+    state: 'armed_home',
+    attributes: {
+      friendly_name: 'Homz Guard Alarm',
+      code_format: 'number',
+      changed_by: 'Sarah Jenkins',
+      armed_at: 'Today, 7:30 AM',
+      perimeter_secure: true
+    }
+  },
+
+  // ---------------- Perimeter Openings (Doors & Windows) ----------------
+  'binary_sensor.front_door_contact': {
+    entity_id: 'binary_sensor.front_door_contact',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Front Main Door',
+      device_class: 'door',
+      battery: 92,
+      last_opened: 'Today, 8:15 AM'
+    }
+  },
+  'binary_sensor.patio_sliding_door': {
+    entity_id: 'binary_sensor.patio_sliding_door',
+    state: 'on', // open
+    attributes: {
+      friendly_name: 'Patio Sliding Door',
+      device_class: 'door',
+      battery: 84,
+      last_opened: 'Just now (8:42 AM)'
+    }
+  },
+  'binary_sensor.garage_entry_door': {
+    entity_id: 'binary_sensor.garage_entry_door',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Garage Utility Door',
+      device_class: 'door',
+      battery: 79,
+      last_opened: 'Today, 7:50 AM'
+    }
+  },
+  'binary_sensor.living_room_bay_window': {
+    entity_id: 'binary_sensor.living_room_bay_window',
+    state: 'on', // open
+    attributes: {
+      friendly_name: 'Living Room Bay Window',
+      device_class: 'window',
+      battery: 88,
+      last_opened: '12 mins ago'
+    }
+  },
+  'binary_sensor.kitchen_window': {
+    entity_id: 'binary_sensor.kitchen_window',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Kitchen Casement Window',
+      device_class: 'window',
+      battery: 95,
+      last_opened: 'Yesterday'
+    }
+  },
+  'binary_sensor.office_window': {
+    entity_id: 'binary_sensor.office_window',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Home Office Window',
+      device_class: 'window',
+      battery: 81,
+      last_opened: 'Yesterday'
     }
   }
 };

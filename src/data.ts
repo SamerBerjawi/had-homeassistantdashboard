@@ -396,6 +396,150 @@ export const INITIAL_ENTITIES: HAEntity[] = [
       today_consumed_kwh: 19.8,
       peak_load_kw: 4.2
     }
+  },
+
+  // Users / Persons
+  {
+    entity_id: 'person.sarah',
+    state: 'home',
+    attributes: {
+      friendly_name: 'Sarah Jenkins',
+      entity_picture: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=250&auto=format&fit=crop',
+      battery: 88,
+      location: 'Living Room'
+    }
+  },
+  {
+    entity_id: 'person.alex',
+    state: 'home',
+    attributes: {
+      friendly_name: 'Alex Miller',
+      entity_picture: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop',
+      battery: 94,
+      location: 'Home Studio & Office'
+    }
+  },
+  {
+    entity_id: 'person.emma',
+    state: 'away',
+    attributes: {
+      friendly_name: 'Emma Miller',
+      entity_picture: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=250&auto=format&fit=crop',
+      battery: 62,
+      location: 'Downtown Campus'
+    }
+  },
+  {
+    entity_id: 'person.liam',
+    state: 'home',
+    attributes: {
+      friendly_name: 'Liam Miller',
+      entity_picture: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=250&auto=format&fit=crop',
+      battery: 76,
+      location: 'Master Bedroom'
+    }
+  },
+
+  // Climate & Fans
+  {
+    entity_id: 'fan.living_room_ceiling_fan',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Living Room Ceiling Fan',
+      room: 'Living Room',
+      speed: 'medium',
+      percentage: 66,
+      power: 35
+    }
+  },
+  {
+    entity_id: 'fan.master_bedroom_fan',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Master Bedroom Fan',
+      room: 'Bedroom',
+      speed: 'off',
+      percentage: 0,
+      power: 0
+    }
+  },
+  {
+    entity_id: 'fan.office_smart_fan',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Office Smart Fan',
+      room: 'Office',
+      speed: 'high',
+      percentage: 100,
+      power: 45
+    }
+  },
+
+  // Security Alarm
+  {
+    entity_id: 'alarm_control_panel.home_alarm',
+    state: 'armed_home',
+    attributes: {
+      friendly_name: 'Homz Security Guard',
+      armed_at: 'Today, 7:30 AM',
+      perimeter_secure: true
+    }
+  },
+
+  // Openings (Doors & Windows)
+  {
+    entity_id: 'binary_sensor.front_door_contact',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Front Main Door',
+      device_class: 'door',
+      battery: 92
+    }
+  },
+  {
+    entity_id: 'binary_sensor.patio_sliding_door',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Patio Sliding Door',
+      device_class: 'door',
+      battery: 84
+    }
+  },
+  {
+    entity_id: 'binary_sensor.garage_entry_door',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Garage Utility Door',
+      device_class: 'door',
+      battery: 79
+    }
+  },
+  {
+    entity_id: 'binary_sensor.living_room_bay_window',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Living Room Bay Window',
+      device_class: 'window',
+      battery: 88
+    }
+  },
+  {
+    entity_id: 'binary_sensor.kitchen_window',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Kitchen Casement Window',
+      device_class: 'window',
+      battery: 95
+    }
+  },
+  {
+    entity_id: 'binary_sensor.office_window',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Home Office Window',
+      device_class: 'window',
+      battery: 81
+    }
   }
 ];
 

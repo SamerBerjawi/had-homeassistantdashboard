@@ -183,12 +183,10 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                   id="btn-weather-select-city"
                   type="button"
                   onClick={() => setShowCityPicker(!showCityPicker)}
-                  className={`flex items-center gap-1 font-black text-xs sm:text-sm truncate cursor-pointer transition-colors ${
-                    darkMode ? 'hover:text-[#9D8BFF]' : 'hover:text-[#7B61FF]'
-                  }`}
+                  className="flex items-center gap-1 font-black text-xs sm:text-sm truncate cursor-pointer transition-colors hover:text-brand-purple"
                   title="Click to change location"
                 >
-                  <MapPin size={14} weight="duotone" className="text-[#7B61FF] shrink-0" />
+                  <MapPin size={14} weight="duotone" className="text-brand-purple shrink-0" />
                   <span className="truncate">{weather.location || selectedCity}</span>
                   <CaretDown size={12} weight="bold" className="text-slate-400 shrink-0" />
                 </button>
@@ -237,7 +235,7 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
               disabled={loading}
               title="Refresh weather with Google Search Grounding"
               className={`w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center transition-all cursor-pointer ${
-                loading ? 'animate-spin text-[#7B61FF]' : darkMode ? 'text-slate-400 hover:text-white hover:bg-white/15' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                loading ? 'animate-spin text-brand-purple' : darkMode ? 'text-slate-400 hover:text-white hover:bg-white/15' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
               <ArrowClockwise size={16} weight="duotone" />
@@ -251,7 +249,7 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
               title={isExpanded ? "Collapse forecast" : "Expand detailed weather & grounding sources"}
               className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
                 isExpanded 
-                  ? 'bg-[#7B61FF] text-white border-white/20 shadow-xs' 
+                  ? 'bg-brand-purple text-white border-white/20 shadow-xs' 
                   : darkMode 
                     ? 'bg-white/10 border-white/15 text-slate-300 hover:bg-white/15' 
                     : 'bg-white/70 border-slate-200 text-slate-700 hover:bg-white'
@@ -279,7 +277,7 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                 <div className={`p-2.5 rounded-xl border text-[11px] leading-relaxed flex items-start gap-2 ${
                   darkMode ? 'bg-indigo-950/40 border-indigo-500/30 text-indigo-200' : 'bg-indigo-50/70 border-indigo-100 text-indigo-900'
                 }`}>
-                  <Sparkle size={15} weight="duotone" className="text-[#7B61FF] shrink-0 mt-0.5" />
+                  <Sparkle size={15} weight="duotone" className="text-brand-purple shrink-0 mt-0.5" />
                   <p>{weather.summary}</p>
                 </div>
               )}
@@ -391,7 +389,7 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                             : 'bg-white border-slate-200 text-indigo-600 hover:text-indigo-800 hover:border-indigo-300'
                         }`}
                       >
-                        <span className="truncate max-w-[140px]">{src.title}</span>
+                        <span className="truncate max-w-35">{src.title}</span>
                         <ArrowSquareOut size={11} weight="duotone" className="shrink-0" />
                       </a>
                     ))}
@@ -459,7 +457,7 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                   placeholder="Enter city (e.g., Seattle, WA)..."
                   value={searchCity}
                   onChange={(e) => setSearchCity(e.target.value)}
-                  className={`w-full text-xs pl-8 pr-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#7B61FF] ${
+                  className={`w-full text-xs pl-8 pr-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-brand-purple ${
                     darkMode 
                       ? 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500' 
                       : 'bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400'
@@ -484,7 +482,7 @@ export default function WeatherWidget({ darkMode, onCityChanged }: WeatherWidget
                     }}
                     className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
                       selectedCity === city
-                        ? 'bg-[#7B61FF] text-white border-[#7B61FF]'
+                        ? 'bg-brand-purple text-white border-brand-purple'
                         : darkMode
                           ? 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
                           : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'

@@ -36,12 +36,12 @@ export default function SensorMetricCard({
             className={`${iconColor} shrink-0`}
           />
           <div className="min-w-0">
-            <h4 className="text-sm font-bold text-white truncate">{title}</h4>
-            <p className="text-[11px] text-slate-400 truncate">Telemetry Metric</p>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{title}</h4>
+            <p className="text-[11px] text-slate-550 dark:text-slate-400 truncate">Telemetry Metric</p>
           </div>
         </div>
 
-        <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-mono text-slate-300">
+        <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-transparent text-[10px] font-mono text-slate-650 dark:text-slate-300">
           Active
         </span>
       </div>
@@ -49,19 +49,19 @@ export default function SensorMetricCard({
       {/* Center value display */}
       <div className="my-1">
         <div className="flex items-baseline gap-1.5">
-          <span className="text-3xl font-black text-white font-mono tracking-tight leading-none">
+          <span className="text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none">
             {cleanVal}
           </span>
-          <span className="text-xs text-slate-400 font-bold">{unit}</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">{unit}</span>
         </div>
       </div>
 
       {/* Bottom Sparkline / Trend Status */}
-      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-white/10">
-        <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+      <div className="flex items-center justify-between text-[10px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
+        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
           <TrendUp size={13} weight="duotone" /> Normal Range
         </span>
-        <span className="text-slate-400 font-mono">24h Logged</span>
+        <span className="text-slate-500 dark:text-slate-400 font-mono">24h Logged</span>
       </div>
     </div>
   );

@@ -90,7 +90,7 @@ export default function PinLockModal({
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className={`relative w-full max-w-sm rounded-3xl overflow-hidden bg-slate-900/80 backdrop-blur-md backdrop-saturate-150 border border-white/15 p-6 shadow-2xl shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.15)] text-white z-10 text-center ${
+        className={`relative w-full max-w-sm rounded-3xl overflow-hidden bg-slate-900/80 backdrop-blur-md backdrop-saturate-150 border border-white/15 p-6 shadow-2xl text-white z-10 text-center ${
           error ? 'animate-[shake_0.4s_ease-in-out]' : ''
         }`}
       >
