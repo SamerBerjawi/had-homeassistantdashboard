@@ -9,11 +9,11 @@ import {
   Broadcast,
   Radio,
   LockKey,
-  ShieldCheck,
   QrCode,
   Check,
   Copy,
-  X
+  X,
+  ArrowsClockwise
 } from '@phosphor-icons/react';
 import { TpLinkRouterMetrics } from '../../../../types/network';
 
@@ -53,7 +53,7 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
           type="button"
           onClick={() =>
             onToggleSwitch(
-              wifiSwitches.host24Ghz.entityId || 'switch.tplink_router_wifi_host_24ghz',
+              wifiSwitches.host24Ghz.entityId || 'switch.archer_ax55_wifi_2_4g',
               wifiSwitches.host24Ghz.enabled
             )
           }
@@ -68,7 +68,7 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
           }`}
         >
           <WifiHigh size={15} weight={wifiSwitches.host24Ghz.enabled ? 'bold' : 'regular'} />
-          <span>2.4 GHz</span>
+          <span>Host 2.4G</span>
           <span
             className={`w-1.5 h-1.5 rounded-full ${
               wifiSwitches.host24Ghz.enabled ? 'bg-sky-400 animate-pulse' : 'bg-slate-400 opacity-40'
@@ -81,7 +81,7 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
           type="button"
           onClick={() =>
             onToggleSwitch(
-              wifiSwitches.host5Ghz.entityId || 'switch.tplink_router_wifi_host_5ghz',
+              wifiSwitches.host5Ghz.entityId || 'switch.archer_ax55_wifi_5g',
               wifiSwitches.host5Ghz.enabled
             )
           }
@@ -96,7 +96,7 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
           }`}
         >
           <WifiHigh size={15} weight={wifiSwitches.host5Ghz.enabled ? 'bold' : 'regular'} />
-          <span>5 GHz</span>
+          <span>Host 5G</span>
           <span
             className={`w-1.5 h-1.5 rounded-full ${
               wifiSwitches.host5Ghz.enabled ? 'bg-indigo-400 animate-pulse' : 'bg-slate-400 opacity-40'
@@ -109,7 +109,7 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
           type="button"
           onClick={() =>
             onToggleSwitch(
-              wifiSwitches.host6Ghz?.entityId || 'switch.tplink_router_wifi_host_6ghz',
+              wifiSwitches.host6Ghz?.entityId || 'switch.archer_ax55_wifi_6g',
               wifiSwitches.host6Ghz?.enabled ?? true
             )
           }
@@ -124,7 +124,7 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
           }`}
         >
           <Broadcast size={15} weight={wifiSwitches.host6Ghz?.enabled ? 'bold' : 'regular'} />
-          <span>6 GHz (6E)</span>
+          <span>Host 6G (6E)</span>
           <span
             className={`w-1.5 h-1.5 rounded-full ${
               wifiSwitches.host6Ghz?.enabled ? 'bg-purple-400 animate-pulse' : 'bg-slate-400 opacity-40'
@@ -132,31 +132,59 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
           />
         </button>
 
-        {/* Guest Wi-Fi Badge */}
+        {/* IoT 2.4G Isolated Badge */}
+        <button
+          type="button"
+          onClick={() =>
+            onToggleSwitch(
+              wifiSwitches.iot24Ghz?.entityId || wifiSwitches.iotNetwork?.entityId || 'switch.archer_ax55_iot_wifi_2_4g',
+              wifiSwitches.iot24Ghz?.enabled ?? wifiSwitches.iotNetwork?.enabled ?? true
+            )
+          }
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
+            wifiSwitches.iot24Ghz?.enabled || wifiSwitches.iotNetwork?.enabled
+              ? darkMode
+                ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                : 'bg-amber-50 border-amber-300 text-amber-700'
+              : darkMode
+              ? 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+              : 'bg-slate-100 border-slate-200 text-slate-500'
+          }`}
+        >
+          <LockKey size={14} />
+          <span>IoT Wi-Fi</span>
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              wifiSwitches.iot24Ghz?.enabled || wifiSwitches.iotNetwork?.enabled ? 'bg-amber-400' : 'bg-slate-400 opacity-40'
+            }`}
+          />
+        </button>
+
+        {/* Guest 2.4G & 5G Badge */}
         <div className="flex items-center rounded-xl border overflow-hidden shadow-sm">
           <button
             type="button"
             onClick={() =>
               onToggleSwitch(
-                wifiSwitches.guest24Ghz.entityId || 'switch.tplink_router_wifi_guest_24ghz',
+                wifiSwitches.guest24Ghz.entityId || 'switch.archer_ax55_guest_wifi_2_4g',
                 wifiSwitches.guest24Ghz.enabled
               )
             }
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
               wifiSwitches.guest24Ghz.enabled
                 ? darkMode
-                  ? 'bg-amber-500/15 text-amber-400'
-                  : 'bg-amber-50 text-amber-700'
+                  ? 'bg-rose-500/15 text-rose-400'
+                  : 'bg-rose-50 text-rose-700'
                 : darkMode
                 ? 'bg-white/5 text-slate-500 hover:text-slate-300'
                 : 'bg-slate-100 text-slate-500'
             }`}
           >
             <Radio size={15} weight={wifiSwitches.guest24Ghz.enabled ? 'bold' : 'regular'} />
-            <span>Guest Network</span>
+            <span>Guest Wi-Fi</span>
             <span
               className={`w-1.5 h-1.5 rounded-full ${
-                wifiSwitches.guest24Ghz.enabled ? 'bg-amber-400 animate-pulse' : 'bg-slate-400 opacity-40'
+                wifiSwitches.guest24Ghz.enabled ? 'bg-rose-400 animate-pulse' : 'bg-slate-400 opacity-40'
               }`}
             />
           </button>
@@ -166,25 +194,26 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
             title="Open Guest Wi-Fi QR Code"
             className={`px-2 py-1.5 border-l transition-all cursor-pointer ${
               darkMode
-                ? 'bg-white/5 border-white/10 hover:bg-white/10 text-amber-400'
-                : 'bg-slate-100 border-slate-200 hover:bg-slate-200 text-amber-600'
+                ? 'bg-white/5 border-white/10 hover:bg-white/10 text-rose-400'
+                : 'bg-slate-100 border-slate-200 hover:bg-slate-200 text-rose-600'
             }`}
           >
             <QrCode size={14} />
           </button>
         </div>
 
-        {/* IoT Isolated SSID Badge */}
+        {/* Router Data Fetching Switch Badge */}
         <button
           type="button"
           onClick={() =>
+            wifiSwitches.routerDataFetching?.entityId &&
             onToggleSwitch(
-              wifiSwitches.iotNetwork?.entityId || 'switch.tplink_router_iot_network',
-              wifiSwitches.iotNetwork?.enabled ?? true
+              wifiSwitches.routerDataFetching.entityId,
+              wifiSwitches.routerDataFetching.enabled
             )
           }
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
-            wifiSwitches.iotNetwork?.enabled
+            wifiSwitches.routerDataFetching?.enabled
               ? darkMode
                 ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
                 : 'bg-emerald-50 border-emerald-300 text-emerald-700'
@@ -193,39 +222,11 @@ export const TpLinkTopBadgesBar: React.FC<TpLinkTopBadgesBarProps> = ({
               : 'bg-slate-100 border-slate-200 text-slate-500'
           }`}
         >
-          <LockKey size={14} />
-          <span>IoT Isolation</span>
+          <ArrowsClockwise size={14} />
+          <span>Polling</span>
           <span
             className={`w-1.5 h-1.5 rounded-full ${
-              wifiSwitches.iotNetwork?.enabled ? 'bg-emerald-400' : 'bg-slate-400 opacity-40'
-            }`}
-          />
-        </button>
-
-        {/* WireGuard VPN Badge */}
-        <button
-          type="button"
-          onClick={() =>
-            onToggleSwitch(
-              wifiSwitches.vpnClient?.entityId || 'switch.tplink_router_vpn_client',
-              wifiSwitches.vpnClient?.enabled ?? true
-            )
-          }
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-sm ${
-            wifiSwitches.vpnClient?.enabled
-              ? darkMode
-                ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-400'
-                : 'bg-cyan-50 border-cyan-300 text-cyan-700'
-              : darkMode
-              ? 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
-              : 'bg-slate-100 border-slate-200 text-slate-500'
-          }`}
-        >
-          <ShieldCheck size={15} weight={wifiSwitches.vpnClient?.enabled ? 'fill' : 'regular'} />
-          <span>WireGuard Router VPN</span>
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${
-              wifiSwitches.vpnClient?.enabled ? 'bg-cyan-400' : 'bg-slate-400 opacity-40'
+              wifiSwitches.routerDataFetching?.enabled ? 'bg-emerald-400' : 'bg-slate-400 opacity-40'
             }`}
           />
         </button>

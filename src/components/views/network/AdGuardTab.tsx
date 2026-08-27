@@ -8,7 +8,6 @@ import { BentoGrid } from '../../ui/bento-grid';
 import { useAdGuardHome } from '../../../hooks/useNetworkData';
 import { AdGuardTopBadgesBar } from './adguard/AdGuardTopBadgesBar';
 import { QueryPerformanceCard } from './adguard/QueryPerformanceCard';
-import { DnsBlockingDonutCard } from './adguard/DnsBlockingDonutCard';
 import { ThreatEnforcementCard } from './adguard/ThreatEnforcementCard';
 import { ArrowClockwise } from '@phosphor-icons/react';
 
@@ -40,12 +39,12 @@ export const AdGuardTab: React.FC<AdGuardTabProps> = ({ darkMode = true }) => {
           <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
             AdGuard Home Network Protection Subsystem
           </span>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300">
-            {isLiveMode ? 'Live HA Integration' : 'Simulated Telemetry'}
-          </span>
         </div>
 
         <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            {isLiveMode ? '● Live Sensor Stream' : '○ Simulated Network'}
+          </span>
           <button
             type="button"
             onClick={refreshHistory}
@@ -67,29 +66,23 @@ export const AdGuardTab: React.FC<AdGuardTabProps> = ({ darkMode = true }) => {
 
       {/* Bento Grid Layout */}
       <BentoGrid className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-3 sm:gap-4.5 auto-rows-auto">
-        {/* Row 1: Hero Query Latency & Volume Line Chart (Spacious 8 columns on desktop) */}
+        {/* Row 1: Threat Intelligence & DNS Query Statistics with Integrated Pie Chart (12 columns full-width) */}
+        <ThreatEnforcementCard
+          dnsQueriesTotal={metrics.dnsQueriesTotal}
+          dnsQueriesBlocked={metrics.dnsQueriesBlocked}
+          blockedRatioPercent={metrics.blockedRatioPercent}
+          safeBrowsingBlockedCount={metrics.safeBrowsingBlockedCount}
+          parentalBlockedCount={metrics.parentalBlockedCount}
+          rulesCount={metrics.rulesCount}
+          darkMode={darkMode}
+        />
+
+        {/* Row 2: Hero Query Latency & 90-Day Volume Timeseries Line Chart (12 columns full-width) */}
         <QueryPerformanceCard
           avgProcessingSpeedMs={metrics.avgProcessingSpeedMs}
           historyData={historyData}
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
-          darkMode={darkMode}
-        />
-
-        {/* Row 1: DNS Blocking Donut Card (4 columns companion on desktop) */}
-        <DnsBlockingDonutCard
-          dnsQueriesTotal={metrics.dnsQueriesTotal}
-          dnsQueriesBlocked={metrics.dnsQueriesBlocked}
-          blockedRatioPercent={metrics.blockedRatioPercent}
-          rulesCount={metrics.rulesCount}
-          darkMode={darkMode}
-        />
-
-        {/* Row 2: Threat Intelligence & Content Enforcement (12 columns full-width) */}
-        <ThreatEnforcementCard
-          safeBrowsingBlockedCount={metrics.safeBrowsingBlockedCount}
-          parentalBlockedCount={metrics.parentalBlockedCount}
-          safeSearchEnabled={metrics.safeSearchEnabled}
           darkMode={darkMode}
         />
       </BentoGrid>

@@ -2682,146 +2682,148 @@ export const MOCK_STATES: Record<string, HAState> = {
   },
 
   // ---------------- TP-Link Router Integration ----------------
-  'sensor.tplink_router_model': {
-    entity_id: 'sensor.tplink_router_model',
-    state: 'Archer AXE300 (Quad-Band 6E)',
+  'sensor.archer_ax55_cpu_used': {
+    entity_id: 'sensor.archer_ax55_cpu_used',
+    state: '14.0',
     attributes: {
-      friendly_name: 'TP-Link Router Model',
-      manufacturer: 'TP-Link'
-    }
-  },
-  'sensor.tplink_router_wan_ipv4': {
-    entity_id: 'sensor.tplink_router_wan_ipv4',
-    state: '84.115.192.42',
-    attributes: {
-      friendly_name: 'WAN Public IPv4',
-      status: 'connected',
-      gateway: '84.115.192.1',
-      dns_servers: ['192.168.68.2', '1.1.1.1']
-    }
-  },
-  'sensor.tplink_router_wan_status': {
-    entity_id: 'sensor.tplink_router_wan_status',
-    state: 'connected',
-    attributes: {
-      friendly_name: 'WAN Connection Status',
-      icon: 'Globe'
-    }
-  },
-  'sensor.tplink_router_cpu_usage': {
-    entity_id: 'sensor.tplink_router_cpu_usage',
-    state: '24.0',
-    attributes: {
-      friendly_name: 'Router CPU Usage',
+      friendly_name: 'Archer AX55 CPU Used',
       unit_of_measurement: '%'
     }
   },
-  'sensor.tplink_router_memory_usage': {
-    entity_id: 'sensor.tplink_router_memory_usage',
-    state: '48.5',
+  'sensor.archer_ax55_memory_used': {
+    entity_id: 'sensor.archer_ax55_memory_used',
+    state: '73.0',
     attributes: {
-      friendly_name: 'Router Memory Usage',
+      friendly_name: 'Archer AX55 Memory Used',
       unit_of_measurement: '%'
     }
   },
-  'sensor.tplink_router_uptime': {
-    entity_id: 'sensor.tplink_router_uptime',
+  'sensor.archer_ax55_wan_ipv4_address': {
+    entity_id: 'sensor.archer_ax55_wan_ipv4_address',
+    state: '192.168.129.2',
+    attributes: {
+      friendly_name: 'Archer AX55 WAN IPv4 Address',
+      status: 'connected'
+    }
+  },
+  'sensor.archer_ax55_lan_ipv4_address': {
+    entity_id: 'sensor.archer_ax55_lan_ipv4_address',
+    state: '192.168.68.1',
+    attributes: {
+      friendly_name: 'Archer AX55 LAN IPv4 Address'
+    }
+  },
+  'sensor.archer_ax55_connection_type': {
+    entity_id: 'sensor.archer_ax55_connection_type',
+    state: 'dynamic_ip',
+    attributes: {
+      friendly_name: 'Archer AX55 Connection Type'
+    }
+  },
+  'sensor.archer_ax55_uptime': {
+    entity_id: 'sensor.archer_ax55_uptime',
     state: '18 days, 4 hours',
     attributes: {
-      friendly_name: 'Router Uptime'
+      friendly_name: 'Archer AX55 Uptime'
     }
   },
-  'sensor.tplink_router_current_download_speed': {
-    entity_id: 'sensor.tplink_router_current_download_speed',
-    state: '28400',
+  'sensor.archer_ax55_total_clients': {
+    entity_id: 'sensor.archer_ax55_total_clients',
+    state: '30',
     attributes: {
-      friendly_name: 'Current Download Speed',
-      unit_of_measurement: 'kB/s'
+      friendly_name: 'Archer AX55 Total Clients'
     }
   },
-  'sensor.tplink_router_current_upload_speed': {
-    entity_id: 'sensor.tplink_router_current_upload_speed',
-    state: '9500',
+  'sensor.archer_ax55_total_main_wifi_clients': {
+    entity_id: 'sensor.archer_ax55_total_main_wifi_clients',
+    state: '24',
     attributes: {
-      friendly_name: 'Current Upload Speed',
-      unit_of_measurement: 'kB/s'
+      friendly_name: 'Archer AX55 Total Main Wi-Fi Clients'
     }
   },
-  'sensor.tplink_router_devices_total': {
-    entity_id: 'sensor.tplink_router_devices_total',
-    state: '38',
+  'sensor.archer_ax55_total_wired_clients': {
+    entity_id: 'sensor.archer_ax55_total_wired_clients',
+    state: '5',
     attributes: {
-      friendly_name: 'Total Connected Clients',
-      wired_count: 8,
-      wireless_count: 30
+      friendly_name: 'Archer AX55 Total Wired Clients'
     }
   },
-  'switch.tplink_router_wifi_host_24ghz': {
-    entity_id: 'switch.tplink_router_wifi_host_24ghz',
+  'sensor.archer_ax55_total_iot_clients': {
+    entity_id: 'sensor.archer_ax55_total_iot_clients',
+    state: '1',
+    attributes: {
+      friendly_name: 'Archer AX55 Total IoT Clients'
+    }
+  },
+  'sensor.archer_ax55_total_guest_wifi_clients': {
+    entity_id: 'sensor.archer_ax55_total_guest_wifi_clients',
+    state: '0',
+    attributes: {
+      friendly_name: 'Archer AX55 Total Guest Wi-Fi Clients'
+    }
+  },
+  'switch.archer_ax55_wifi_2_4g': {
+    entity_id: 'switch.archer_ax55_wifi_2_4g',
     state: 'on',
     attributes: {
-      friendly_name: 'Primary 2.4 GHz Radio',
-      ssid: 'Antigravity-Home',
-      band: '2.4 GHz'
+      friendly_name: 'Archer AX55 Wi-Fi 2.4G',
+      ssid: 'Antigravity-Home'
     }
   },
-  'switch.tplink_router_wifi_host_5ghz': {
-    entity_id: 'switch.tplink_router_wifi_host_5ghz',
+  'switch.archer_ax55_wifi_5g': {
+    entity_id: 'switch.archer_ax55_wifi_5g',
     state: 'on',
     attributes: {
-      friendly_name: 'Primary 5 GHz Radio',
-      ssid: 'Antigravity-Home 5G',
-      band: '5 GHz'
+      friendly_name: 'Archer AX55 Wi-Fi 5G',
+      ssid: 'Antigravity-Home 5G'
     }
   },
-  'switch.tplink_router_wifi_host_6ghz': {
-    entity_id: 'switch.tplink_router_wifi_host_6ghz',
+  'switch.archer_ax55_wifi_6g': {
+    entity_id: 'switch.archer_ax55_wifi_6g',
     state: 'on',
     attributes: {
-      friendly_name: 'Wi-Fi 6E (6 GHz) Radio',
-      ssid: 'Antigravity-Ultra-6E',
-      band: '6 GHz'
+      friendly_name: 'Archer AX55 Wi-Fi 6G (6E)',
+      ssid: 'Antigravity-Ultra-6E'
     }
   },
-  'switch.tplink_router_wifi_guest_24ghz': {
-    entity_id: 'switch.tplink_router_wifi_guest_24ghz',
-    state: 'on',
+  'switch.archer_ax55_guest_wifi_2_4g': {
+    entity_id: 'switch.archer_ax55_guest_wifi_2_4g',
+    state: 'off',
     attributes: {
-      friendly_name: 'Guest 2.4 GHz Wi-Fi',
+      friendly_name: 'Archer AX55 Guest Wi-Fi 2.4G',
       ssid: 'Antigravity-Guest',
       key: 'WelcomeGuest2026!'
     }
   },
-  'switch.tplink_router_wifi_guest_5ghz': {
-    entity_id: 'switch.tplink_router_wifi_guest_5ghz',
-    state: 'on',
+  'switch.archer_ax55_guest_wifi_5g': {
+    entity_id: 'switch.archer_ax55_guest_wifi_5g',
+    state: 'off',
     attributes: {
-      friendly_name: 'Guest 5 GHz Wi-Fi',
+      friendly_name: 'Archer AX55 Guest Wi-Fi 5G',
       ssid: 'Antigravity-Guest-5G',
       key: 'WelcomeGuest2026!'
     }
   },
-  'switch.tplink_router_iot_network': {
-    entity_id: 'switch.tplink_router_iot_network',
+  'switch.archer_ax55_iot_wifi_2_4g': {
+    entity_id: 'switch.archer_ax55_iot_wifi_2_4g',
     state: 'on',
     attributes: {
-      friendly_name: 'Isolated IoT SSID',
+      friendly_name: 'Archer AX55 IoT Wi-Fi 2.4G',
       ssid: 'Antigravity-IoT'
     }
   },
-  'switch.tplink_router_vpn_client': {
-    entity_id: 'switch.tplink_router_vpn_client',
+  'switch.archer_ax55_router_data_fetching': {
+    entity_id: 'switch.archer_ax55_router_data_fetching',
     state: 'on',
     attributes: {
-      friendly_name: 'WireGuard Router VPN Client',
-      server: 'Zurich-Gateway-1'
+      friendly_name: 'Archer AX55 Router Data Fetching'
     }
   },
-  'button.tplink_router_reboot': {
-    entity_id: 'button.tplink_router_reboot',
+  'button.archer_ax55_reboot': {
+    entity_id: 'button.archer_ax55_reboot',
     state: '2026-08-01T12:00:00Z',
     attributes: {
-      friendly_name: 'Reboot Router'
+      friendly_name: 'Archer AX55 Reboot'
     }
   },
 
@@ -2874,58 +2876,65 @@ export const MOCK_STATES: Record<string, HAState> = {
       icon: 'ListBullets'
     }
   },
-  'sensor.adguard_dns_queries': {
-    entity_id: 'sensor.adguard_dns_queries',
-    state: '142580',
+  'sensor.adguard_home_dns_queries': {
+    entity_id: 'sensor.adguard_home_dns_queries',
+    state: '7079596',
     attributes: {
-      friendly_name: 'Total DNS Queries (24h)',
+      friendly_name: 'Total DNS Queries',
       unit_of_measurement: 'queries'
     }
   },
-  'sensor.adguard_dns_queries_blocked': {
-    entity_id: 'sensor.adguard_dns_queries_blocked',
-    state: '35360',
+  'sensor.adguard_home_dns_queries_blocked': {
+    entity_id: 'sensor.adguard_home_dns_queries_blocked',
+    state: '1225081',
     attributes: {
-      friendly_name: 'Blocked DNS Queries (24h)',
+      friendly_name: 'Blocked DNS Queries',
       unit_of_measurement: 'queries'
     }
   },
-  'sensor.adguard_dns_queries_blocked_ratio': {
-    entity_id: 'sensor.adguard_dns_queries_blocked_ratio',
-    state: '24.8',
+  'sensor.adguard_home_dns_queries_blocked_ratio': {
+    entity_id: 'sensor.adguard_home_dns_queries_blocked_ratio',
+    state: '17.31',
     attributes: {
       friendly_name: 'DNS Block Ratio',
       unit_of_measurement: '%'
     }
   },
-  'sensor.adguard_safe_browsing_blocked': {
-    entity_id: 'sensor.adguard_safe_browsing_blocked',
-    state: '184',
+  'sensor.adguard_home_safe_browsing_blocked': {
+    entity_id: 'sensor.adguard_home_safe_browsing_blocked',
+    state: '6',
     attributes: {
-      friendly_name: 'Malware & Phishing Blocked'
+      friendly_name: 'Safe Browsing Blocked'
     }
   },
-  'sensor.adguard_parental_control_blocked': {
-    entity_id: 'sensor.adguard_parental_control_blocked',
-    state: '12',
+  'sensor.adguard_home_parental_control_blocked': {
+    entity_id: 'sensor.adguard_home_parental_control_blocked',
+    state: '52',
     attributes: {
       friendly_name: 'Parental Content Blocked'
     }
   },
-  'sensor.adguard_rules_count': {
-    entity_id: 'sensor.adguard_rules_count',
-    state: '450210',
+  'sensor.adguard_home_rules_count': {
+    entity_id: 'sensor.adguard_home_rules_count',
+    state: '3900756',
     attributes: {
       friendly_name: 'Active Filter Rules',
       rule_lists_count: 14
     }
   },
-  'sensor.adguard_average_processing_speed': {
-    entity_id: 'sensor.adguard_average_processing_speed',
-    state: '12.4',
+  'sensor.adguard_home_average_processing_speed': {
+    entity_id: 'sensor.adguard_home_average_processing_speed',
+    state: '57.28',
     attributes: {
       friendly_name: 'Average Processing Speed',
       unit_of_measurement: 'ms'
+    }
+  },
+  'sensor.adguard_home_safe_searches_enforced': {
+    entity_id: 'sensor.adguard_home_safe_searches_enforced',
+    state: '0',
+    attributes: {
+      friendly_name: 'Safe Searches Enforced'
     }
   },
 
