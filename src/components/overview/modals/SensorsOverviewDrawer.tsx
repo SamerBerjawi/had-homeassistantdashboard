@@ -117,6 +117,104 @@ export default function SensorsOverviewDrawer({
           </div>
         </div>
 
+        {/* 1. HIGHLIGHTED ACTIVE DETECTIONS & LIVE ALERTS SECTION (Motion, Leaks, Smoke) */}
+        {(activeLeaks.length > 0 || activeSmoke.length > 0 || activeMotion.length > 0) && (
+          <div className={`space-y-3 p-4 rounded-3xl border shadow-xs ${
+            activeLeaks.length > 0 || activeSmoke.length > 0
+              ? 'bg-rose-500/10 dark:bg-rose-500/10 border-rose-500/30'
+              : 'bg-amber-500/10 dark:bg-amber-500/10 border-amber-500/30'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full animate-ping ${
+                  activeLeaks.length > 0 || activeSmoke.length > 0 ? 'bg-rose-500' : 'bg-amber-500'
+                }`} />
+                <h3 className={`text-xs font-black uppercase tracking-wider ${
+                  activeLeaks.length > 0 || activeSmoke.length > 0
+                    ? 'text-rose-800 dark:text-rose-300'
+                    : 'text-amber-800 dark:text-amber-300'
+                }`}>
+                  Live Detections & Alerts ({activeLeaks.length + activeSmoke.length + activeMotion.length})
+                </h3>
+              </div>
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                Real-Time
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5">
+              {/* Leaks first */}
+              {activeLeaks.map((sensor) => (
+                <div
+                  key={`act_leak_${sensor.entity_id}`}
+                  className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 border border-rose-500/40 shadow-xs flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-300 flex items-center justify-center shrink-0">
+                      <Drop size={20} weight="duotone" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{sensor.name}</h4>
+                      <p className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold truncate">
+                        {sensor.area?.name || 'Water Hazard Detected'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[10px] font-extrabold uppercase border border-rose-500/30 shrink-0 animate-pulse">
+                    LEAK ALERT
+                  </span>
+                </div>
+              ))}
+
+              {/* Smoke second */}
+              {activeSmoke.map((sensor) => (
+                <div
+                  key={`act_smoke_${sensor.entity_id}`}
+                  className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 border border-rose-500/40 shadow-xs flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-300 flex items-center justify-center shrink-0">
+                      <Flame size={20} weight="duotone" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{sensor.name}</h4>
+                      <p className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold truncate">
+                        {sensor.area?.name || 'Smoke Detected'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[10px] font-extrabold uppercase border border-rose-500/30 shrink-0 animate-pulse">
+                    SMOKE ALERT
+                  </span>
+                </div>
+              ))}
+
+              {/* Motion third */}
+              {activeMotion.map((sensor) => (
+                <div
+                  key={`act_motion_${sensor.entity_id}`}
+                  className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 border border-amber-500/40 shadow-xs flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0">
+                      <PersonSimpleWalk size={20} weight="duotone" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{sensor.name}</h4>
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold truncate">
+                        {sensor.area?.name || sensor.device?.name || 'Motion Detected'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold uppercase border border-amber-500/30 shrink-0">
+                    MOTION
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Tab Filters */}
         <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
           <button

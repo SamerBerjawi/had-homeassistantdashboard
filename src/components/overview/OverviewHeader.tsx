@@ -475,45 +475,69 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       {/* ------------------------------------------------------------- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3.5">
         
-        {/* 2.1 PERSONS */}
+        {/* 2.1 PERSONS / FAMILY PRESENCE */}
         <div
           onClick={() => openUsersDrawer()}
-          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 ${
+          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 isolate [mask-image:linear-gradient(white,white)] ${
             darkMode
               ? 'bg-slate-900/60 hover:bg-slate-900/80 border-white/10 hover:border-indigo-500/40 text-white'
               : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-indigo-300 text-slate-900 shadow-slate-200/60'
           }`}
         >
-          {primaryUserPicture ? (
-            <>
-              <img
-                src={primaryUserPicture}
-                alt={primaryUser?.name || 'User'}
-                className="absolute inset-0 w-full h-full object-cover rounded-3xl group-hover:scale-105 transition-transform duration-500"
-                onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-slate-900/20 rounded-3xl pointer-events-none" />
-            </>
-          ) : (
-            <div className="absolute -top-12 -right-12 w-28 h-28 bg-indigo-500/15 rounded-full blur-2xl group-hover:bg-indigo-500/25 transition-all pointer-events-none" />
-          )}
+          <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+            <div className="absolute -top-6 -right-6 w-24 h-24 bg-indigo-500/15 rounded-full blur-xl group-hover:bg-indigo-500/25 transition-all pointer-events-none" />
+          </div>
 
           <div className="flex items-center justify-between relative z-10">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/25 backdrop-blur-md border border-indigo-400/40 text-indigo-300 flex items-center justify-center shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-xs">
               <Users size={22} weight="duotone" />
             </div>
-            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 backdrop-blur-md">
+            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
               {homeUsers.length} Home
             </span>
           </div>
 
+          <div className="flex items-center -space-x-2.5 my-1 relative z-10">
+            {userEntities.slice(0, 4).map((user) => {
+              const isHome = user.state === 'home';
+              const rawPicture = user.attributes?.entity_picture;
+              const pictureUrl = getHAImageUrl(rawPicture, serverUrl);
+
+              return (
+                <div key={user.entity_id} className="relative group/avatar" title={`${user.name} (${user.state})`}>
+                  {pictureUrl ? (
+                    <img
+                      src={pictureUrl}
+                      alt={user.name}
+                      className={`w-9 h-9 rounded-full object-cover ring-2 transition-all ${
+                        isHome ? 'ring-emerald-500 dark:ring-emerald-400' : 'ring-slate-300 dark:ring-slate-600 opacity-60'
+                      }`}
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white ring-2 ${
+                      isHome ? 'bg-indigo-600 ring-emerald-500 dark:ring-emerald-400' : 'bg-slate-500 dark:bg-slate-700 ring-slate-300 dark:ring-slate-600 opacity-60'
+                    }`}>
+                      {user.name.charAt(0)}
+                    </div>
+                  )}
+                  <span
+                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white dark:border-slate-900 ${
+                      isHome ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-slate-400 dark:bg-slate-500'
+                    }`}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
           <div className="relative z-10">
-            <div className="text-sm font-black text-white truncate drop-shadow-xs">
-              {primaryUser?.name || 'Family Presence'}
-            </div>
-            <div className="text-xs text-slate-300 font-medium truncate flex items-center justify-between mt-0.5">
+            <div className="text-sm font-extrabold text-slate-900 dark:text-white truncate">Family Presence</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
               <span>{homeUsers.map(u => u.name.split(' ')[0]).join(', ') || 'No one home'}</span>
-              <CaretRight size={14} weight="bold" className="text-white/70 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+              <CaretRight size={14} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
             </div>
           </div>
         </div>
@@ -521,7 +545,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.2 LIGHTS */}
         <div
           onClick={() => setDrawerOpen('lights')}
-          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 ${
+          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 isolate [mask-image:linear-gradient(white,white)] ${
             onLights.length > 0
               ? darkMode
                 ? 'bg-slate-900/70 hover:bg-slate-900/90 border-amber-500/30 hover:border-amber-400/60 text-white'
@@ -531,9 +555,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
           }`}
         >
-          <div className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl transition-all pointer-events-none ${
-            onLights.length > 0 ? 'bg-amber-500/20 group-hover:bg-amber-500/30' : 'bg-slate-500/5'
-          }`} />
+          <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+            <div className={`absolute -top-6 -right-6 w-24 h-24 rounded-full blur-xl transition-all pointer-events-none ${
+              onLights.length > 0 ? 'bg-amber-500/20 group-hover:bg-amber-500/30' : 'bg-slate-500/5'
+            }`} />
+          </div>
 
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-xs transition-all ${
@@ -577,7 +603,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.3 SWITCHES */}
         <div
           onClick={() => setDrawerOpen('switches')}
-          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 ${
+          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 isolate [mask-image:linear-gradient(white,white)] ${
             onSwitches.length > 0
               ? darkMode
                 ? 'bg-slate-900/70 hover:bg-slate-900/90 border-emerald-500/30 hover:border-emerald-400/60 text-white'
@@ -587,9 +613,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
           }`}
         >
-          <div className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl transition-all pointer-events-none ${
-            onSwitches.length > 0 ? 'bg-emerald-500/20 group-hover:bg-emerald-500/30' : 'bg-slate-500/5'
-          }`} />
+          <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+            <div className={`absolute -top-6 -right-6 w-24 h-24 rounded-full blur-xl transition-all pointer-events-none ${
+              onSwitches.length > 0 ? 'bg-emerald-500/20 group-hover:bg-emerald-500/30' : 'bg-slate-500/5'
+            }`} />
+          </div>
 
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-xs transition-all ${
@@ -633,7 +661,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.4 FANS */}
         <div
           onClick={() => setDrawerOpen('fans')}
-          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 ${
+          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 isolate [mask-image:linear-gradient(white,white)] ${
             activeFans.length > 0
               ? darkMode
                 ? 'bg-slate-900/70 hover:bg-slate-900/90 border-cyan-500/30 hover:border-cyan-400/60 text-white'
@@ -643,9 +671,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
           }`}
         >
-          <div className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl transition-all pointer-events-none ${
-            activeFans.length > 0 ? 'bg-cyan-500/20 group-hover:bg-cyan-500/30' : 'bg-slate-500/5'
-          }`} />
+          <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+            <div className={`absolute -top-6 -right-6 w-24 h-24 rounded-full blur-xl transition-all pointer-events-none ${
+              activeFans.length > 0 ? 'bg-cyan-500/20 group-hover:bg-cyan-500/30' : 'bg-slate-500/5'
+            }`} />
+          </div>
 
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-xs transition-all ${
@@ -689,7 +719,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.5 AUDIO & MEDIA */}
         <div
           onClick={() => setDrawerOpen('media')}
-          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 ${
+          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 isolate [mask-image:linear-gradient(white,white)] ${
             isPlayingMedia
               ? darkMode
                 ? 'bg-linear-to-br from-purple-950/40 via-slate-900/80 to-slate-900/90 border-purple-500/25 hover:border-purple-400/50 text-white'
@@ -699,7 +729,9 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
           }`}
         >
-          <div className="absolute -top-12 -right-12 w-28 h-28 bg-purple-500/20 rounded-full blur-2xl group-hover:bg-purple-500/30 transition-all pointer-events-none" />
+          <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+            <div className="absolute -top-6 -right-6 w-24 h-24 bg-purple-500/20 rounded-full blur-xl group-hover:bg-purple-500/30 transition-all pointer-events-none" />
+          </div>
 
           <div className="flex items-center justify-between relative z-10">
             <div className="relative w-10 h-10 rounded-2xl overflow-hidden ring-1 ring-slate-300 dark:ring-white/20 shadow-xs">
@@ -755,7 +787,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.6 ALARM & SECURITY */}
         <div
           onClick={() => setDrawerOpen('alarm')}
-          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 ${
+          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 isolate [mask-image:linear-gradient(white,white)] ${
             isAlarmArmed
               ? darkMode
                 ? 'bg-slate-900/70 hover:bg-slate-900/90 border-emerald-500/30 hover:border-emerald-400/60 text-white'
@@ -765,9 +797,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
           }`}
         >
-          <div className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl transition-all pointer-events-none ${
-            isAlarmArmed ? 'bg-emerald-500/20 group-hover:bg-emerald-500/30' : 'bg-slate-500/10'
-          }`} />
+          <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+            <div className={`absolute -top-6 -right-6 w-24 h-24 rounded-full blur-xl transition-all pointer-events-none ${
+              isAlarmArmed ? 'bg-emerald-500/20 group-hover:bg-emerald-500/30' : 'bg-slate-500/10'
+            }`} />
+          </div>
 
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-xs transition-all ${alarmDetails.bg} ${alarmDetails.border} ${alarmDetails.text}`}>
@@ -806,7 +840,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.7 ENTRY DOORS */}
         <div
           onClick={openDoorsDrawer}
-          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 ${
+          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 isolate [mask-image:linear-gradient(white,white)] ${
             openDoors.length > 0
               ? darkMode
                 ? 'bg-slate-900/70 hover:bg-slate-900/90 border-amber-500/30 hover:border-amber-400/60 text-white'
@@ -816,9 +850,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
           }`}
         >
-          <div className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl transition-all pointer-events-none ${
-            openDoors.length > 0 ? 'bg-amber-500/20 group-hover:bg-amber-500/30' : 'bg-emerald-500/10'
-          }`} />
+          <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+            <div className={`absolute -top-6 -right-6 w-24 h-24 rounded-full blur-xl transition-all pointer-events-none ${
+              openDoors.length > 0 ? 'bg-amber-500/20 group-hover:bg-amber-500/30' : 'bg-emerald-500/10'
+            }`} />
+          </div>
 
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-xs transition-all ${
@@ -859,7 +895,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.8 WINDOWS */}
         <div
           onClick={openWindowsDrawer}
-          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 ${
+          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 isolate [mask-image:linear-gradient(white,white)] ${
             openWindows.length > 0
               ? darkMode
                 ? 'bg-slate-900/70 hover:bg-slate-900/90 border-amber-500/30 hover:border-amber-400/60 text-white'
@@ -869,9 +905,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
           }`}
         >
-          <div className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl transition-all pointer-events-none ${
-            openWindows.length > 0 ? 'bg-amber-500/20 group-hover:bg-amber-500/30' : 'bg-emerald-500/10'
-          }`} />
+          <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+            <div className={`absolute -top-6 -right-6 w-24 h-24 rounded-full blur-xl transition-all pointer-events-none ${
+              openWindows.length > 0 ? 'bg-amber-500/20 group-hover:bg-amber-500/30' : 'bg-emerald-500/10'
+            }`} />
+          </div>
 
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-xs transition-all ${
@@ -912,7 +950,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.9 MOTION */}
         <div
           onClick={() => openSensorsDrawer('motion')}
-          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 ${
+          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 isolate [mask-image:linear-gradient(white,white)] ${
             activeMotion.length > 0
               ? darkMode
                 ? 'bg-slate-900/70 hover:bg-slate-900/90 border-amber-500/30 hover:border-amber-400/60 text-white'
@@ -922,9 +960,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
           }`}
         >
-          <div className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl transition-all pointer-events-none ${
-            activeMotion.length > 0 ? 'bg-amber-500/20' : 'bg-emerald-500/10'
-          }`} />
+          <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+            <div className={`absolute -top-6 -right-6 w-24 h-24 rounded-full blur-xl transition-all pointer-events-none ${
+              activeMotion.length > 0 ? 'bg-amber-500/20' : 'bg-emerald-500/10'
+            }`} />
+          </div>
 
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-xs transition-all ${
@@ -963,7 +1003,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.10 LEAKAGE */}
         <div
           onClick={() => openSensorsDrawer('leak')}
-          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 ${
+          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 isolate [mask-image:linear-gradient(white,white)] ${
             activeLeaks.length > 0
               ? 'bg-rose-500/20 border-rose-500/40 text-slate-900 dark:text-white shadow-rose-500/10 animate-pulse'
               : darkMode
@@ -971,9 +1011,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
           }`}
         >
-          <div className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl transition-all pointer-events-none ${
-            activeLeaks.length > 0 ? 'bg-rose-500/30' : 'bg-emerald-500/10'
-          }`} />
+          <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+            <div className={`absolute -top-6 -right-6 w-24 h-24 rounded-full blur-xl transition-all pointer-events-none ${
+              activeLeaks.length > 0 ? 'bg-rose-500/30' : 'bg-emerald-500/10'
+            }`} />
+          </div>
 
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-xs transition-all ${
@@ -1014,7 +1056,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.11 SMOKE */}
         <div
           onClick={() => openSensorsDrawer('smoke')}
-          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 ${
+          className={`group relative h-36 rounded-3xl backdrop-blur-xl border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden hover:translate-y-[-2px] p-4 isolate [mask-image:linear-gradient(white,white)] ${
             activeSmoke.length > 0
               ? 'bg-rose-500/20 border-rose-500/40 text-slate-900 dark:text-white shadow-rose-500/10 animate-pulse'
               : darkMode
@@ -1022,9 +1064,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 : 'bg-white/85 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/60'
           }`}
         >
-          <div className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl transition-all pointer-events-none ${
-            activeSmoke.length > 0 ? 'bg-rose-500/30' : 'bg-emerald-500/10'
-          }`} />
+          <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+            <div className={`absolute -top-6 -right-6 w-24 h-24 rounded-full blur-xl transition-all pointer-events-none ${
+              activeSmoke.length > 0 ? 'bg-rose-500/30' : 'bg-emerald-500/10'
+            }`} />
+          </div>
 
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-xs transition-all ${
@@ -1040,7 +1084,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 ? 'bg-rose-500/25 text-rose-700 dark:text-rose-300 border-rose-500/40'
                 : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
             }`}>
-              {activeSmoke.length > 0 ? 'Alert' : 'Safe'}
+              {activeSmoke.length > 0 ? 'Hazard' : 'Safe'}
             </span>
           </div>
 
@@ -1056,7 +1100,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           <div className="relative z-10">
             <div className="text-sm font-bold text-slate-900 dark:text-white">Smoke & Gas</div>
             <div className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-              <span>{activeSmoke.length > 0 ? 'Smoke detected!' : 'All clear'}</span>
+              <span>{activeSmoke.length > 0 ? 'Smoke hazard detected!' : 'Air quality safe'}</span>
               <CaretRight size={14} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-rose-500 dark:group-hover:text-rose-400 group-hover:translate-x-0.5 transition-all" />
             </div>
           </div>

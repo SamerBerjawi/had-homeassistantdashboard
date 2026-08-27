@@ -150,6 +150,30 @@ export default function NotificationDrawer({
     clearAllNotifications(dismissableIds);
   };
 
+  // Batch Install All Updates
+  const [isUpdatingAll, setIsUpdatingAll] = useState(false);
+  const handleUpdateAll = async () => {
+    setIsUpdatingAll(true);
+    const updateItems = allNotifications.filter(n => n.category === 'update');
+    try {
+      for (const item of updateItems) {
+        if (item.entity_id) {
+          if (installUpdate) {
+            installUpdate(item.entity_id);
+          } else {
+            await callHAService('update', 'install', {}, { entity_id: item.entity_id }).catch(() => {});
+          }
+          if (updateEntityState) {
+            updateEntityState(item.entity_id, 'installing');
+          }
+          dismissNotification(item.id);
+        }
+      }
+    } finally {
+      setTimeout(() => setIsUpdatingAll(false), 800);
+    }
+  };
+
   // Manual Refresh
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -323,6 +347,19 @@ export default function NotificationDrawer({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {counts.updates > 0 && (
+              <button
+                type="button"
+                onClick={handleUpdateAll}
+                disabled={isUpdatingAll}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white border border-sky-400 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Trigger all pending updates in Home Assistant"
+              >
+                <DownloadSimple size={15} weight="bold" className={isUpdatingAll ? 'animate-bounce' : ''} />
+                <span>{isUpdatingAll ? 'Updating...' : `Update All (${counts.updates})`}</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={handleRefresh}

@@ -107,6 +107,78 @@ export default function LightsOverviewModal({
           </div>
         </div>
 
+        {/* 1. HIGHLIGHTED ACTIVE LIGHTS SECTION (Shown at top if any are on) */}
+        {onLights.length > 0 && (
+          <div className="space-y-3 p-4 rounded-3xl bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/30 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                  Active Lights ({onLights.length})
+                </h3>
+              </div>
+              <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">
+                ~{Math.round(totalWatts)}W draw
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5">
+              {onLights.map((light) => {
+                const brightness = typeof light.attributes?.brightness === 'number' ? light.attributes.brightness : 100;
+                return (
+                  <div
+                    key={`active_${light.entity_id}`}
+                    className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 border border-amber-500/40 shadow-xs flex flex-col gap-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleLight(light)}
+                          className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shadow-xs cursor-pointer active:scale-95 shrink-0"
+                          title="Turn off"
+                        >
+                          <Lightbulb size={18} weight="fill" />
+                        </button>
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{light.name}</h4>
+                          <p className="text-[11px] text-amber-600 dark:text-amber-300 font-semibold truncate">
+                            {light.area?.name || light.device?.name || `${Math.round(brightness)}% Brightness`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleLight(light)}
+                        className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold uppercase border border-amber-500/30 hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/30 transition-colors cursor-pointer"
+                      >
+                        Turn Off
+                      </button>
+                    </div>
+
+                    {/* Brightness Slider */}
+                    <div className="flex items-center gap-2.5 pt-1 border-t border-slate-200/60 dark:border-white/10">
+                      <Sun size={13} weight="duotone" className="text-amber-500 shrink-0" />
+                      <input
+                        type="range"
+                        min={1}
+                        max={100}
+                        value={brightness}
+                        onChange={(e) => handleBrightnessChange(light, parseInt(e.target.value, 10))}
+                        className="w-full h-1.5 rounded-lg appearance-none bg-slate-200 dark:bg-white/20 accent-amber-500 cursor-pointer"
+                      />
+                      <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 w-7 text-right">
+                        {Math.round(brightness)}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Grouped Entities: Floor -> Area -> Entity */}
         <div className="space-y-6">
           {grouped.groups.map((floorGroup) => (

@@ -131,6 +131,60 @@ export default function FansOverviewModal({
     >
       <div className="space-y-6">
         
+        {/* 1. HIGHLIGHTED ACTIVE FANS SECTION (Shown at top if any are running) */}
+        {activeFans.length > 0 && (
+          <div className="space-y-3 p-4 rounded-3xl bg-cyan-500/10 dark:bg-cyan-500/10 border border-cyan-500/30 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-cyan-500 animate-ping" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-cyan-800 dark:text-cyan-300">
+                  Active Running Fans ({activeFans.length})
+                </h3>
+              </div>
+              <span className="text-[11px] font-bold text-cyan-700 dark:text-cyan-400">
+                Circulating Air
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5">
+              {activeFans.map((fan) => {
+                const pct = typeof fan.attributes?.percentage === 'number' ? fan.attributes.percentage : 66;
+                return (
+                  <div
+                    key={`active_${fan.entity_id}`}
+                    className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 border border-cyan-500/40 shadow-xs flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleFan(fan)}
+                        className="w-9 h-9 rounded-xl bg-cyan-500 text-white flex items-center justify-center shadow-xs cursor-pointer active:scale-95 shrink-0"
+                        title="Turn off"
+                      >
+                        <Fan size={20} weight="duotone" className="animate-spin" style={{ animationDuration: '2s' }} />
+                      </button>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{fan.name}</h4>
+                        <p className="text-[11px] text-cyan-600 dark:text-cyan-300 font-semibold truncate">
+                          {fan.area?.name || fan.device?.name || `${pct}% Speed`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleFan(fan)}
+                      className="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 text-[10px] font-extrabold uppercase border border-cyan-500/30 hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/30 transition-colors cursor-pointer shrink-0"
+                    >
+                      Turn Off
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Grouped Fans: Floor -> Area -> Entity */}
         <div className="space-y-6">
           {grouped.groups.map((floorGroup) => (

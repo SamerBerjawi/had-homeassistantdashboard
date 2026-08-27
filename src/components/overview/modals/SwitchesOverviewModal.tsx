@@ -109,6 +109,61 @@ export default function SwitchesOverviewModal({
           </div>
         </div>
 
+        {/* 1. HIGHLIGHTED ACTIVE SWITCHES SECTION (Shown at top if any are on) */}
+        {onSwitches.length > 0 && (
+          <div className="space-y-3 p-4 rounded-3xl bg-emerald-500/10 dark:bg-emerald-500/10 border border-emerald-500/30 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                  Active Switches & Outlets ({onSwitches.length})
+                </h3>
+              </div>
+              <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                ~{totalWatts}W load
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5">
+              {onSwitches.map((sw) => (
+                <div
+                  key={`active_${sw.entity_id}`}
+                  className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 border border-emerald-500/40 shadow-xs flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSwitch(sw)}
+                      className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs cursor-pointer active:scale-95 shrink-0"
+                      title="Turn off"
+                    >
+                      <DynamicPhosphorIcon 
+                        name={sw.icon || 'ToggleRight'} 
+                        size={20} 
+                        weight="fill" 
+                      />
+                    </button>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{sw.name}</h4>
+                      <p className="text-[11px] text-emerald-600 dark:text-emerald-300 font-semibold truncate">
+                        {sw.area?.name || sw.device?.name || 'Power Active'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleToggleSwitch(sw)}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold uppercase border border-emerald-500/30 hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/30 transition-colors cursor-pointer shrink-0"
+                  >
+                    Turn Off
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Grouped Switches: Floor -> Area -> Entity */}
         <div className="space-y-6">
           {grouped.groups.map((floorGroup) => (

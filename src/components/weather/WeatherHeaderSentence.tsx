@@ -43,15 +43,20 @@ export default function WeatherHeaderSentence({
     weatherEntities[0];
 
   const weatherData = useMemo(() => {
+    // Default fallback
     if (!activeEntity) {
       return {
         temperature: 22,
-        tempUnit: '°',
+        tempUnit: '°C',
         conditionText: 'Partly Cloudy',
         conditionInfo: getWeatherConditionInfo('partlycloudy', false, 16),
-        trendSentence: 'Conditions will remain pleasant throughout the day.',
-        trendType: 'steady' as const,
-        trendIcon: <Sparkle size={15} weight="duotone" className="text-amber-400" />,
+        trend: {
+          prefix: 'Conditions will',
+          icon: <Sparkle size={15} weight="duotone" className="text-amber-400" />,
+          keyword: 'remain pleasant',
+          keywordClass: 'text-amber-500 dark:text-amber-300 font-bold',
+          suffix: 'throughout the day.'
+        },
         highTemp: 25,
         lowTemp: 16
       };
@@ -82,44 +87,68 @@ export default function WeatherHeaderSentence({
            (h.precipitation_probability !== undefined && h.precipitation_probability >= 40)
     );
 
-    let trendSentence = '';
-    let trendType: 'rain' | 'rise' | 'drop' | 'steady' = 'steady';
-    let trendIcon: React.ReactNode = <Sparkle size={15} weight="duotone" className="text-amber-400" />;
+    let trend = {
+      prefix: 'Temperatures will',
+      icon: <Sparkle size={15} weight="duotone" className="text-emerald-400" /> as React.ReactNode,
+      keyword: 'remain steady',
+      keywordClass: 'text-emerald-600 dark:text-emerald-400 font-bold',
+      suffix: 'with comfortable conditions.'
+    };
 
     if (rainHourIndex !== -1) {
-      trendType = 'rain';
       const hoursAway = rainHourIndex + 1;
-      trendIcon = <CloudRain size={15} weight="duotone" className="text-sky-400 animate-bounce" />;
-      if (hoursAway <= 1) {
-        trendSentence = 'Rain is expected in the next hour.';
-      } else {
-        trendSentence = `Rain is expected in the next ${hoursAway} hours.`;
-      }
+      trend = {
+        prefix: '',
+        icon: <CloudRain size={15} weight="duotone" className="text-sky-400 animate-bounce" />,
+        keyword: 'Rain',
+        keywordClass: 'text-sky-600 dark:text-sky-400 font-bold',
+        suffix: hoursAway <= 1 ? 'is expected in the next hour.' : `is expected in the next ${hoursAway} hours.`
+      };
     } else {
       // Analyze temperature trajectory in next 3-4 hours
       const futureHour = upcomingHours[2] || upcomingHours[1];
       const futureTemp = futureHour?.temperature;
 
       if (futureTemp !== undefined && futureTemp - temp >= 2) {
-        trendType = 'rise';
-        trendIcon = <TrendUp size={15} weight="bold" className="text-amber-400" />;
-        trendSentence = `Temperatures are expected to rise to ${futureTemp}${tempUnit} in the next 3 hours.`;
+        trend = {
+          prefix: 'Temperatures are expected to',
+          icon: <TrendUp size={15} weight="bold" className="text-amber-500 dark:text-amber-400" />,
+          keyword: 'rise',
+          keywordClass: 'text-amber-600 dark:text-amber-300 font-bold',
+          suffix: `to ${futureTemp}${tempUnit} in the next 3 hours.`
+        };
       } else if (futureTemp !== undefined && temp - futureTemp >= 2) {
-        trendType = 'drop';
-        trendIcon = <TrendDown size={15} weight="bold" className="text-sky-400" />;
-        trendSentence = `Temperatures are expected to drop to ${futureTemp}${tempUnit} in the next 3 hours.`;
+        trend = {
+          prefix: 'Temperatures are expected to',
+          icon: <TrendDown size={15} weight="bold" className="text-sky-500 dark:text-sky-400" />,
+          keyword: 'drop',
+          keywordClass: 'text-sky-600 dark:text-sky-300 font-bold',
+          suffix: `to ${futureTemp}${tempUnit} in the next 3 hours.`
+        };
       } else if (highTemp > temp && !isNight) {
-        trendType = 'rise';
-        trendIcon = <TrendUp size={15} weight="bold" className="text-amber-400" />;
-        trendSentence = `Temperatures are expected to reach a high of ${highTemp}${tempUnit} today.`;
+        trend = {
+          prefix: 'Temperatures are expected to',
+          icon: <TrendUp size={15} weight="bold" className="text-amber-500 dark:text-amber-400" />,
+          keyword: 'rise',
+          keywordClass: 'text-amber-600 dark:text-amber-300 font-bold',
+          suffix: `to reach a high of ${highTemp}${tempUnit} today.`
+        };
       } else if (isNight) {
-        trendType = 'drop';
-        trendIcon = <TrendDown size={15} weight="bold" className="text-indigo-300" />;
-        trendSentence = `Temperatures are expected to cool down to ${lowTemp}${tempUnit} overnight.`;
+        trend = {
+          prefix: 'Temperatures are expected to',
+          icon: <TrendDown size={15} weight="bold" className="text-indigo-400" />,
+          keyword: 'drop',
+          keywordClass: 'text-indigo-600 dark:text-indigo-300 font-bold',
+          suffix: `to ${lowTemp}${tempUnit} overnight.`
+        };
       } else {
-        trendType = 'steady';
-        trendIcon = <Sparkle size={15} weight="duotone" className="text-emerald-400" />;
-        trendSentence = 'Temperatures will remain steady with comfortable conditions.';
+        trend = {
+          prefix: 'Temperatures will',
+          icon: <Sparkle size={15} weight="duotone" className="text-emerald-400" />,
+          keyword: 'remain steady',
+          keywordClass: 'text-emerald-600 dark:text-emerald-400 font-bold',
+          suffix: 'with comfortable conditions.'
+        };
       }
     }
 
@@ -128,9 +157,7 @@ export default function WeatherHeaderSentence({
       tempUnit,
       conditionText: conditionInfo.name,
       conditionInfo,
-      trendSentence,
-      trendType,
-      trendIcon,
+      trend,
       highTemp,
       lowTemp
     };
@@ -175,12 +202,14 @@ export default function WeatherHeaderSentence({
 
       <span>.</span>
 
-      {/* 4. Forecast Trend Statement with Trend / Rain Icon */}
-      <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-200">
-        <span>{weatherData.trendSentence}</span>
-        <span className="inline-flex items-center justify-center shrink-0">
-          {weatherData.trendIcon}
+      {/* 4. Forecast Trend Statement with Icon before the word (rise/drop/rain/steady) */}
+      <span className="inline-flex flex-wrap items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
+        {weatherData.trend.prefix && <span>{weatherData.trend.prefix}</span>}
+        <span className="inline-flex items-center gap-1">
+          <span className="shrink-0">{weatherData.trend.icon}</span>
+          <span className={weatherData.trend.keywordClass}>{weatherData.trend.keyword}</span>
         </span>
+        {weatherData.trend.suffix && <span>{weatherData.trend.suffix}</span>}
       </span>
 
       {/* Subtle chevron hint on hover */}

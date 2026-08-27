@@ -188,8 +188,8 @@ export default function App() {
       <div className="flex-1 flex flex-col h-full overflow-hidden relative z-10">
         <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container p-4 sm:p-6 lg:p-8 flex flex-col">
           {/* Header Bar - Title with Animated Wave & Dynamic Weather Overview Subtitle */}
-          <header className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
-            <div className="space-y-1.5 min-w-0">
+          <header className="mb-6 flex flex-row items-start justify-between gap-3.5 pb-1">
+            <div className="space-y-1.5 min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
                   <span>{getTabTitle(activeTab)}</span>
@@ -206,7 +206,8 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
+            {/* Notification Bell firmly pinned to top-right corner */}
+            <div className="shrink-0 pt-0.5 sm:pt-1">
               <NotificationBell
                 darkMode={darkMode}
                 onClick={() => setIsNotificationDrawerOpen(true)}
