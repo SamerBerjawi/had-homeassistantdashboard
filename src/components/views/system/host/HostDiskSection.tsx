@@ -21,7 +21,11 @@ export function HostDiskSection({
   darkMode = true
 }: HostDiskSectionProps) {
   const cardStyle =
-    'rounded-2xl border bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/80 dark:border-white/10 p-3.5 sm:p-4 shadow-sm';
+    'rounded-2xl border backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] ' +
+    (darkMode
+      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10'
+      : 'bg-white/80 border-slate-200/80 shadow-slate-100') +
+    ' p-3.5 sm:p-4';
 
   // Threshold color: ~80/95
   const diskUsageColor =

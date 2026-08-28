@@ -29,7 +29,7 @@ export function HostMonitorTab({ darkMode = true }: HostMonitorTabProps) {
   const timeRanges: HistoryTimeRange[] = ['1h', '6h', '24h'];
 
   return (
-    <div className="space-y-4 max-w-[1600px] mx-auto pb-12">
+    <div className="space-y-4 w-full pb-12">
       {/* Top Toolbar: Time range selector & Refresh */}
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="flex items-center gap-2">

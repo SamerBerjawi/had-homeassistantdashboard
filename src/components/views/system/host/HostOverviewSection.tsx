@@ -5,12 +5,9 @@
 
 import React from 'react';
 import {
-  HouseLine,
   Clock,
-  GlobeHemisphereWest,
-  Cpu,
-  CheckCircle,
-  WifiHigh
+  WifiHigh,
+  HouseLine
 } from '@phosphor-icons/react';
 import { SystemHostMetrics } from '../../../../hooks/useSystemMetrics';
 
@@ -24,42 +21,50 @@ export function HostOverviewSection({
   darkMode = true
 }: HostOverviewSectionProps) {
   const cardStyle =
-    'rounded-2xl border bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/80 dark:border-white/10 p-3 sm:p-4 shadow-sm';
+    'rounded-2xl border backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] ' +
+    (darkMode
+      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10'
+      : 'bg-white/80 border-slate-200/80 shadow-slate-100');
+
+  const subCardStyle =
+    'flex items-center gap-3 p-3 rounded-xl border transition-all ' +
+    (darkMode
+      ? 'bg-white/[0.03] border-white/[0.06]'
+      : 'bg-slate-50 border-slate-200/60');
 
   return (
-    <div className="space-y-3">
-      {/* Top Banner & Info Strip */}
-      <div className={`${cardStyle} flex flex-col md:flex-row md:items-center justify-between gap-3`}>
-        {/* Left: Host Title & Status */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
-            <HouseLine size={24} weight="duotone" />
+    <div className={`${cardStyle} p-3.5 sm:p-4`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Section 1 Header & Live Host Pill */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+            <HouseLine size={18} weight="duotone" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm sm:text-base font-black tracking-tight text-slate-900 dark:text-white">
-                Home Assistant Host
-              </h2>
+              <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                Host Infrastructure Overview
+              </span>
               <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Live Host
               </span>
             </div>
-            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">
-              Debian 12 / Home Assistant OS Core Telemetry (System Monitor)
-            </p>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+              System Monitor Integration (Core Telemetry)
+            </span>
           </div>
         </div>
 
-        {/* Right: Section 1 spec items (Uptime & IPv4 end0) in a clean inline strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-3">
+        {/* Status Strip: Host Uptime & IPv4 end0 */}
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 sm:w-auto">
           {/* Uptime */}
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-100/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/5">
+          <div className={subCardStyle}>
             <div className="w-7 h-7 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center shrink-0">
               <Clock size={16} weight="duotone" />
             </div>
             <div className="min-w-0">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Host Uptime</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">Host Uptime</span>
               <span className="text-xs font-black font-mono text-slate-800 dark:text-slate-200 truncate block">
                 {metrics.uptime || '1 week'}
               </span>
@@ -67,12 +72,12 @@ export function HostOverviewSection({
           </div>
 
           {/* IPv4 Address (end0) */}
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-100/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/5">
+          <div className={subCardStyle}>
             <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
               <WifiHigh size={16} weight="duotone" />
             </div>
             <div className="min-w-0">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">IPv4 (end0)</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">IPv4 (end0)</span>
               <span className="text-xs font-black font-mono text-slate-800 dark:text-slate-200 truncate block">
                 {metrics.ipv4Address || '192.168.68.71'}
               </span>

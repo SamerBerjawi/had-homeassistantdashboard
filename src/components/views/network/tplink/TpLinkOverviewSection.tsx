@@ -6,7 +6,6 @@
 import React, { useState } from 'react';
 import {
   Globe,
-  WifiHigh,
   ArrowsLeftRight,
   ArrowClockwise,
   Power,
@@ -15,7 +14,8 @@ import {
   WarningCircle,
   Broadcast,
   Copy,
-  Check
+  Check,
+  WifiHigh
 } from '@phosphor-icons/react';
 import { TpLinkRouterMetrics } from '../../../../types/network';
 
@@ -39,10 +39,16 @@ export const TpLinkOverviewSection: React.FC<TpLinkOverviewSectionProps> = ({
   const [copiedIp, setCopiedIp] = useState<string | null>(null);
 
   const cardStyle =
-    'relative overflow-hidden rounded-2xl p-4 sm:p-5 border transition-all duration-200 ' +
+    'rounded-2xl border backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] p-4 sm:p-5 ' +
     (darkMode
-      ? 'bg-slate-900/60 border-white/10 backdrop-blur-md shadow-lg shadow-black/20'
-      : 'bg-white/90 border-slate-200/80 backdrop-blur-md shadow-md shadow-slate-200/50');
+      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10'
+      : 'bg-white/80 border-slate-200/80 shadow-slate-100');
+
+  const tileStyle =
+    'p-3 rounded-xl border backdrop-blur-md transition-all ' +
+    (darkMode
+      ? 'bg-white/[0.03] border-white/[0.06]'
+      : 'bg-slate-50 border-slate-200/60');
 
   const isDataFetchingOn = metrics.wifiSwitches.routerDataFetching?.enabled ?? true;
   const isWanConnected = metrics.wanStatus === 'connected';
@@ -67,93 +73,67 @@ export const TpLinkOverviewSection: React.FC<TpLinkOverviewSectionProps> = ({
 
   return (
     <div className="space-y-3">
-      {/* Section Header */}
-      <div className="flex items-center justify-between px-1">
+      {/* Section Header with Reboot Action & Uptime */}
+      <div className="flex items-center justify-between flex-wrap gap-2.5 px-1">
         <div className="flex items-center gap-2">
           <Globe size={18} weight="duotone" className="text-emerald-400" />
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
             Router Overview &amp; Gateway
           </h2>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400">
-            Section 1
+          <span
+            className={`text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 ${
+              isWanConnected
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                : 'bg-rose-500/15 text-rose-400 border border-rose-500/20'
+            }`}
+          >
+            {isWanConnected ? (
+              <>
+                <CheckCircle size={10} weight="fill" /> Online
+              </>
+            ) : (
+              <>
+                <WarningCircle size={10} weight="fill" /> Offline
+              </>
+            )}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="flex h-2 w-2 relative">
-            <span
-              className={`animate-ping absolute inline-flex h-full w-full rounded-full ${
-                isWanConnected ? 'bg-emerald-400' : 'bg-rose-400'
-              } opacity-75`}
-            />
-            <span
-              className={`relative inline-flex rounded-full h-2 w-2 ${
-                isWanConnected ? 'bg-emerald-500' : 'bg-rose-500'
-              }`}
-            />
-          </span>
-          <span className="text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300">
-            {metrics.uptime}
-          </span>
+        <div className="flex items-center gap-3">
+          {/* Uptime Pill */}
+          <div className="flex items-center gap-1.5 text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300">
+            <span className="flex h-2 w-2 relative">
+              <span
+                className={`animate-ping absolute inline-flex h-full w-full rounded-full ${
+                  isWanConnected ? 'bg-emerald-400' : 'bg-rose-400'
+                } opacity-75`}
+              />
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${
+                  isWanConnected ? 'bg-emerald-500' : 'bg-rose-500'
+                }`}
+              />
+            </span>
+            <span>Uptime: {metrics.uptime}</span>
+          </div>
+
+          {/* Action Button: Reboot Router with Confirmation Modal */}
+          <button
+            type="button"
+            onClick={() => setShowRebootModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 active:scale-95 transition-all cursor-pointer shadow-sm"
+          >
+            <Power size={13} weight="bold" />
+            <span>Reboot</span>
+          </button>
         </div>
       </div>
 
-      {/* Overview Main Card */}
+      {/* Overview Main Card (5 Responsive Status Tiles) */}
       <div className={cardStyle}>
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-slate-200/60 dark:border-white/10">
-          {/* Router Identity */}
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
-              <WifiHigh size={24} weight="duotone" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
-                  {metrics.model}
-                </h3>
-                <span
-                  className={`text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                    isWanConnected
-                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                      : 'bg-rose-500/15 text-rose-400 border border-rose-500/20'
-                  }`}
-                >
-                  {isWanConnected ? (
-                    <>
-                      <CheckCircle size={10} weight="fill" /> Online
-                    </>
-                  ) : (
-                    <>
-                      <WarningCircle size={10} weight="fill" /> Offline
-                    </>
-                  )}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
-                <span>Living Room Gateway</span>
-                <span>•</span>
-                <span>{isLiveMode ? 'Live HA WebSocket' : 'HA Integration Mock'}</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Action Button: Reboot with Confirmation */}
-          <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => setShowRebootModal(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 active:scale-95 transition-all cursor-pointer shadow-sm"
-            >
-              <Power size={14} weight="bold" />
-              <span>Reboot Router</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Info Strip Grid (5 Responsive Items) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-4">
-          {/* Connection Type */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 space-y-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* 1. Connection Protocol */}
+          <div className={`${tileStyle} space-y-1`}>
             <div className="flex items-center justify-between">
               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <ArrowsLeftRight size={12} className="text-indigo-400" /> Protocol
@@ -166,8 +146,8 @@ export const TpLinkOverviewSection: React.FC<TpLinkOverviewSectionProps> = ({
             <div className="text-[9px] text-slate-400">WAN Connection Type</div>
           </div>
 
-          {/* Public IP Address */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 space-y-1">
+          {/* 2. Public IP Address */}
+          <div className={`${tileStyle} space-y-1`}>
             <div className="flex items-center justify-between">
               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <Globe size={12} className="text-sky-400" /> Public IP
@@ -194,11 +174,11 @@ export const TpLinkOverviewSection: React.FC<TpLinkOverviewSectionProps> = ({
             <div className="text-sm font-black font-mono text-slate-900 dark:text-white truncate">
               {metrics.publicIp || '84.115.182.49'}
             </div>
-            <div className="text-[9px] text-slate-400">Internet Public IP</div>
+            <div className="text-[9px] text-slate-400">External Internet IP</div>
           </div>
 
-          {/* WAN IPv4 Address */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 space-y-1">
+          {/* 3. WAN IPv4 Address */}
+          <div className={`${tileStyle} space-y-1`}>
             <div className="flex items-center justify-between">
               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <Globe size={12} className="text-cyan-400" /> WAN IPv4
@@ -211,8 +191,8 @@ export const TpLinkOverviewSection: React.FC<TpLinkOverviewSectionProps> = ({
             <div className="text-[9px] text-slate-400">ISP Uplink Gateway IP</div>
           </div>
 
-          {/* LAN IPv4 Address */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 space-y-1">
+          {/* 4. LAN IPv4 Address */}
+          <div className={`${tileStyle} space-y-1`}>
             <div className="flex items-center justify-between">
               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <ShieldCheck size={12} className="text-amber-400" /> LAN IPv4
@@ -225,11 +205,17 @@ export const TpLinkOverviewSection: React.FC<TpLinkOverviewSectionProps> = ({
             <div className="text-[9px] text-slate-400">Router Subnet IP</div>
           </div>
 
-          {/* Live Data Fetching Toggle Switch */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 flex flex-col justify-between">
+          {/* 5. Live Data Fetching Toggle Switch with Active Glow */}
+          <div
+            className={`p-3 rounded-xl border backdrop-blur-md flex flex-col justify-between transition-all duration-200 ${
+              isDataFetchingOn
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
+                : 'bg-white/[0.03] border-white/[0.06] text-slate-400'
+            }`}
+          >
             <div className="flex items-center justify-between">
               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                <Broadcast size={12} className="text-emerald-400" /> Polling
+                <Broadcast size={12} className={isDataFetchingOn ? 'text-emerald-400' : 'text-slate-400'} /> Polling
               </span>
               <span
                 className={`text-[9px] font-mono font-bold uppercase ${

@@ -76,10 +76,10 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
   const isSystemOk = identity.systemStatusCode.toLowerCase() === 'normal' || identity.systemStatusCode.toLowerCase() === 'ok';
   const isTempOk = identity.tempStatusCode.toLowerCase() === 'normal' || identity.tempStatusCode.toLowerCase() === 'ok';
 
-  const cardStyle = `rounded-2xl border p-3.5 sm:p-4 backdrop-blur-xl transition-all ${
+  const cardStyle = `rounded-2xl border p-3.5 sm:p-4 backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] ${
     darkMode
-      ? 'bg-black/50 border-white/10 text-white shadow-lg'
-      : 'bg-white/70 border-slate-200 text-slate-900 shadow-sm'
+      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10 text-white'
+      : 'bg-white/80 border-slate-200/80 text-slate-900 shadow-slate-100'
   }`;
 
   const triggerAction = (id: string, name: string) => {

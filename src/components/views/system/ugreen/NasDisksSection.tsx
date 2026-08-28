@@ -41,10 +41,10 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
   onPressButton,
   darkMode = true
 }) => {
-  const cardStyle = `rounded-2xl border p-3.5 sm:p-4 backdrop-blur-xl transition-all flex flex-col justify-between ${
+  const cardStyle = `rounded-2xl border p-3.5 sm:p-4 backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col justify-between ${
     darkMode
-      ? 'bg-black/50 border-white/10 text-white shadow-lg'
-      : 'bg-white/70 border-slate-200 text-slate-900 shadow-sm'
+      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10 text-white'
+      : 'bg-white/80 border-slate-200/80 text-slate-900 shadow-slate-100'
   }`;
 
   return (

@@ -35,10 +35,10 @@ export const TpLinkDisconnectedClientsSection: React.FC<TpLinkDisconnectedClient
   const [searchQuery, setSearchQuery] = useState('');
 
   const cardStyle =
-    'relative overflow-hidden rounded-2xl p-4 sm:p-5 border transition-all duration-200 ' +
+    'rounded-2xl border backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] p-4 sm:p-5 ' +
     (darkMode
-      ? 'bg-slate-900/60 border-white/10 backdrop-blur-md shadow-lg shadow-black/20'
-      : 'bg-white/90 border-slate-200/80 backdrop-blur-md shadow-md shadow-slate-200/50');
+      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10'
+      : 'bg-white/80 border-slate-200/80 shadow-slate-100');
 
   const clients = metrics.disconnectedClients || [];
 

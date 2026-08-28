@@ -90,6 +90,8 @@ export interface AdGuardTimeseriesPoint {
   date: Date;
   totalQueries: number;
   blockedQueries: number;
+  safeBrowsingBlocked: number;
+  parentalBlocked: number;
 }
 
 export interface AdGuardMetrics {
@@ -112,12 +114,14 @@ export interface AdGuardMetrics {
   };
 
   // Query Stats & Performance
-  dnsQueriesTotal: number;        // sensor.*dns_queries
-  dnsQueriesBlocked: number;      // sensor.*dns_queries_blocked
-  blockedRatioPercent: number;    // sensor.*dns_queries_blocked_ratio (%)
-  safeBrowsingBlockedCount: number;// sensor.*safe_browsing_blocked
-  parentalBlockedCount: number;   // sensor.*parental_control_blocked
-  rulesCount: number;             // sensor.*rules_count
-  avgProcessingSpeedMs: number;   // sensor.*average_processing_speed (ms)
+  dnsQueriesTotal: number;           // sensor.*dns_queries
+  dnsQueriesBlocked: number;         // sensor.*dns_queries_blocked
+  dnsQueriesAllowed: number;         // calculated: Total - Blocked
+  blockedRatioPercent: number;       // sensor.*dns_queries_blocked_ratio (%)
+  safeBrowsingBlockedCount: number;  // sensor.*safe_browsing_blocked
+  parentalBlockedCount: number;      // sensor.*parental_control_blocked
+  rulesCount: number;                // sensor.*rules_count
+  avgProcessingSpeedMs: number;      // sensor.*average_processing_speed (ms)
+  avgProcessingSpeedUnit: string;    // from unit_of_measurement or 'ms'
   safeSearchesEnforcedCount: number; // sensor.*safe_searches_enforced
 }

@@ -150,7 +150,9 @@ function generateCalibratedAdGuardHistory(
       points.push({
         date: d,
         totalQueries: dailyTotal,
-        blockedQueries: dailyBlocked
+        blockedQueries: dailyBlocked,
+        safeBrowsingBlocked: Math.round(dailyBlocked * 0.05),
+        parentalBlocked: Math.round(dailyBlocked * 0.02)
       });
     }
   } else {
@@ -176,7 +178,9 @@ function generateCalibratedAdGuardHistory(
       points.push({
         date: d,
         totalQueries: hourlyTotal,
-        blockedQueries: hourlyBlocked
+        blockedQueries: hourlyBlocked,
+        safeBrowsingBlocked: Math.round(hourlyBlocked * 0.05),
+        parentalBlocked: Math.round(hourlyBlocked * 0.02)
       });
     }
   }
@@ -792,11 +796,13 @@ export function useAdGuardHome() {
       },
       dnsQueriesTotal,
       dnsQueriesBlocked,
+      dnsQueriesAllowed: Math.max(0, dnsQueriesTotal - dnsQueriesBlocked),
       blockedRatioPercent,
       safeBrowsingBlockedCount,
       parentalBlockedCount,
       rulesCount,
       avgProcessingSpeedMs,
+      avgProcessingSpeedUnit: speedEntity?.attributes?.unit_of_measurement || 'ms',
       safeSearchesEnforcedCount
     };
   }, [rawStates]);

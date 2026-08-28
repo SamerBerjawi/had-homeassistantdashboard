@@ -19,12 +19,12 @@ export default function NetworkView({ darkMode = true }: NetworkViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<NetworkSubTab>('tplink_router');
 
   return (
-    <div className="w-full flex-1 flex flex-col gap-5 sm:gap-6">
+    <div className="w-full flex-1 flex flex-col space-y-6">
       {/* Top Segmented Sub-View Switcher */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div
-          className={`p-1.5 rounded-2xl border backdrop-blur-xl flex items-center gap-1.5 transition-all shadow-md ${
-            darkMode ? 'bg-black/60 border-white/10' : 'bg-white/80 border-slate-200 shadow-slate-100'
+          className={`p-1.5 rounded-2xl border backdrop-blur-xl flex items-center gap-1.5 transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] ${
+            darkMode ? 'bg-white/[0.04] border-white/10' : 'bg-white/80 border-slate-200 shadow-slate-100'
           }`}
         >
           {/* TP-Link Router Tab */}
