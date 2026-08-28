@@ -2721,221 +2721,664 @@ export const MOCK_STATES: Record<string, HAState> = {
   },
 
   // ---------------- UGreen NAS Integration ----------------
-  'sensor.ugreen_nas_model': {
-    entity_id: 'sensor.ugreen_nas_model',
+  'sensor.ugreen_nas_nas_name': {
+    entity_id: 'sensor.ugreen_nas_nas_name',
+    state: 'UGREEN-DXP4800',
+    attributes: { friendly_name: 'NAS Name', icon: 'HardDrives' }
+  },
+  'sensor.ugreen_nas_nas_model': {
+    entity_id: 'sensor.ugreen_nas_nas_model',
     state: 'DXP4800 Plus',
-    attributes: {
-      friendly_name: 'UGreen NAS Model',
-      icon: 'HardDrives',
-      manufacturer: 'UGREEN'
-    }
+    attributes: { friendly_name: 'NAS Model', manufacturer: 'UGREEN' }
   },
-  'sensor.ugreen_nas_ugos_version': {
-    entity_id: 'sensor.ugreen_nas_ugos_version',
-    state: 'UGOS Pro v1.1.8',
-    attributes: {
-      friendly_name: 'UGOS Version',
-      icon: 'Tag'
-    }
+  'sensor.ugreen_nas_nas_serial': {
+    entity_id: 'sensor.ugreen_nas_nas_serial',
+    state: 'UG24DXP4800P0982',
+    attributes: { friendly_name: 'Serial Number' }
   },
-  'sensor.ugreen_nas_uptime': {
-    entity_id: 'sensor.ugreen_nas_uptime',
-    state: '4 weeks, 2 days',
-    attributes: {
-      friendly_name: 'NAS Uptime',
-      icon: 'Clock'
-    }
+  'sensor.ugreen_nas_nas_owner': {
+    entity_id: 'sensor.ugreen_nas_nas_owner',
+    state: 'Admin (samer)',
+    attributes: { friendly_name: 'NAS Owner' }
   },
+  'sensor.ugreen_nas_nas_type': {
+    entity_id: 'sensor.ugreen_nas_nas_type',
+    state: '4-Bay Desktop NAS',
+    attributes: { friendly_name: 'Device Type' }
+  },
+  'sensor.ugreen_nas_nas_ugos_version': {
+    entity_id: 'sensor.ugreen_nas_nas_ugos_version',
+    state: 'UGOS Pro v1.1.8 (Build 9842)',
+    attributes: { friendly_name: 'UGOS Version' }
+  },
+  'sensor.ugreen_nas_server_status': {
+    entity_id: 'sensor.ugreen_nas_server_status',
+    state: 'Online',
+    attributes: { friendly_name: 'Server Status' }
+  },
+  'sensor.ugreen_nas_system_status_code': {
+    entity_id: 'sensor.ugreen_nas_system_status_code',
+    state: 'Normal',
+    attributes: { friendly_name: 'System Status Code' }
+  },
+  'sensor.ugreen_nas_system_message': {
+    entity_id: 'sensor.ugreen_nas_system_message',
+    state: 'System operating normally. All services healthy.',
+    attributes: { friendly_name: 'System Message' }
+  },
+  'sensor.ugreen_nas_temperature_status_code': {
+    entity_id: 'sensor.ugreen_nas_temperature_status_code',
+    state: 'Normal',
+    attributes: { friendly_name: 'Temperature Status Code' }
+  },
+  'sensor.ugreen_nas_temperature_message': {
+    entity_id: 'sensor.ugreen_nas_temperature_message',
+    state: 'Thermals within optimal operational thresholds.',
+    attributes: { friendly_name: 'Temperature Message' }
+  },
+  'sensor.ugreen_nas_total_runtime': {
+    entity_id: 'sensor.ugreen_nas_total_runtime',
+    state: '184 days, 14 hours',
+    attributes: { friendly_name: 'Total Runtime' }
+  },
+  'sensor.ugreen_nas_last_boot': {
+    entity_id: 'sensor.ugreen_nas_last_boot',
+    state: '12 days ago (Aug 16, 2026)',
+    attributes: { friendly_name: 'Last Boot' }
+  },
+
+  // CPU & RAM
   'sensor.ugreen_nas_cpu_usage': {
     entity_id: 'sensor.ugreen_nas_cpu_usage',
-    state: '18.5',
-    attributes: {
-      friendly_name: 'NAS CPU Usage',
-      unit_of_measurement: '%',
-      icon: 'Cpu',
-      state_class: 'measurement'
-    }
+    state: '24.5',
+    attributes: { friendly_name: 'CPU Usage', unit_of_measurement: '%' }
   },
   'sensor.ugreen_nas_cpu_temperature': {
     entity_id: 'sensor.ugreen_nas_cpu_temperature',
-    state: '52.0',
-    attributes: {
-      friendly_name: 'NAS CPU Temperature',
-      unit_of_measurement: '°C',
-      device_class: 'temperature',
-      icon: 'Thermometer',
-      state_class: 'measurement'
-    }
+    state: '48.5',
+    attributes: { friendly_name: 'CPU Temperature', unit_of_measurement: '°C' }
   },
-  'sensor.ugreen_nas_system_temperature': {
-    entity_id: 'sensor.ugreen_nas_system_temperature',
-    state: '44.0',
-    attributes: {
-      friendly_name: 'NAS Motherboard Temperature',
-      unit_of_measurement: '°C',
-      device_class: 'temperature',
-      icon: 'Thermometer'
-    }
+  'sensor.ugreen_nas_ram_usage': {
+    entity_id: 'sensor.ugreen_nas_ram_usage',
+    state: '36.8',
+    attributes: { friendly_name: 'RAM Usage', unit_of_measurement: '%' }
   },
-  'sensor.ugreen_nas_memory_usage': {
-    entity_id: 'sensor.ugreen_nas_memory_usage',
-    state: '34.2',
-    attributes: {
-      friendly_name: 'NAS Memory Usage',
-      unit_of_measurement: '%',
-      icon: 'Memory',
-      state_class: 'measurement'
-    }
+  'sensor.ugreen_nas_cpu_model': {
+    entity_id: 'sensor.ugreen_nas_cpu_model',
+    state: 'Intel Pentium Gold 8505',
+    attributes: { friendly_name: 'CPU Model' }
   },
-  'sensor.ugreen_nas_memory_used': {
-    entity_id: 'sensor.ugreen_nas_memory_used',
-    state: '5.47',
-    attributes: {
-      friendly_name: 'NAS Memory Used',
-      unit_of_measurement: 'GB'
-    }
+  'sensor.ugreen_nas_cpu_cores': {
+    entity_id: 'sensor.ugreen_nas_cpu_cores',
+    state: '5',
+    attributes: { friendly_name: 'CPU Cores' }
   },
-  'sensor.ugreen_nas_memory_total': {
-    entity_id: 'sensor.ugreen_nas_memory_total',
-    state: '16.0',
-    attributes: {
-      friendly_name: 'NAS Memory Total',
-      unit_of_measurement: 'GB'
-    }
+  'sensor.ugreen_nas_cpu_threads': {
+    entity_id: 'sensor.ugreen_nas_cpu_threads',
+    state: '6',
+    attributes: { friendly_name: 'CPU Threads' }
   },
-  'sensor.ugreen_nas_fan_speed': {
-    entity_id: 'sensor.ugreen_nas_fan_speed',
-    state: '850',
-    attributes: {
-      friendly_name: 'NAS Fan Speed',
-      unit_of_measurement: 'RPM',
-      icon: 'Fan'
-    }
+  'sensor.ugreen_nas_cpu_speed': {
+    entity_id: 'sensor.ugreen_nas_cpu_speed',
+    state: '3.30 GHz (Boost 4.40 GHz)',
+    attributes: { friendly_name: 'CPU Speed' }
   },
-  'select.ugreen_nas_fan_mode': {
-    entity_id: 'select.ugreen_nas_fan_mode',
+  'sensor.ugreen_nas_ram_total_size': {
+    entity_id: 'sensor.ugreen_nas_ram_total_size',
+    state: '16.0 GB DDR5',
+    attributes: { friendly_name: 'RAM Total Size', unit_of_measurement: 'GB' }
+  },
+  'sensor.ugreen_nas_ram_usage_used_gb': {
+    entity_id: 'sensor.ugreen_nas_ram_usage_used_gb',
+    state: '5.89 GB',
+    attributes: { friendly_name: 'RAM Used', unit_of_measurement: 'GB' }
+  },
+  'sensor.ugreen_nas_ram_usage_free_ram': {
+    entity_id: 'sensor.ugreen_nas_ram_usage_free_ram',
+    state: '4.21 GB',
+    attributes: { friendly_name: 'Free RAM', unit_of_measurement: 'GB' }
+  },
+  'sensor.ugreen_nas_ram_usage_usable_ram': {
+    entity_id: 'sensor.ugreen_nas_ram_usage_usable_ram',
+    state: '15.6 GB',
+    attributes: { friendly_name: 'Usable RAM', unit_of_measurement: 'GB' }
+  },
+  'sensor.ugreen_nas_ram_usage_cache': {
+    entity_id: 'sensor.ugreen_nas_ram_usage_cache',
+    state: '5.90 GB',
+    attributes: { friendly_name: 'RAM Cache Buffer', unit_of_measurement: 'GB' }
+  },
+
+  // Throughput
+  'sensor.ugreen_nas_overall_lan_download': {
+    entity_id: 'sensor.ugreen_nas_overall_lan_download',
+    state: '42.8 MB/s',
+    attributes: { friendly_name: 'LAN Download Rate', unit_of_measurement: 'MB/s' }
+  },
+  'sensor.ugreen_nas_overall_lan_upload': {
+    entity_id: 'sensor.ugreen_nas_overall_lan_upload',
+    state: '18.4 MB/s',
+    attributes: { friendly_name: 'LAN Upload Rate', unit_of_measurement: 'MB/s' }
+  },
+  'sensor.ugreen_nas_overall_lan_download_raw': {
+    entity_id: 'sensor.ugreen_nas_overall_lan_download_raw',
+    state: '42.8',
+    attributes: { friendly_name: 'LAN Download Raw', unit_of_measurement: 'MB/s' }
+  },
+  'sensor.ugreen_nas_overall_lan_upload_raw': {
+    entity_id: 'sensor.ugreen_nas_overall_lan_upload_raw',
+    state: '18.4',
+    attributes: { friendly_name: 'LAN Upload Raw', unit_of_measurement: 'MB/s' }
+  },
+  'sensor.ugreen_nas_overall_disk_read_rate': {
+    entity_id: 'sensor.ugreen_nas_overall_disk_read_rate',
+    state: '88.5 MB/s',
+    attributes: { friendly_name: 'Disk Read Rate', unit_of_measurement: 'MB/s' }
+  },
+  'sensor.ugreen_nas_overall_disk_write_rate': {
+    entity_id: 'sensor.ugreen_nas_overall_disk_write_rate',
+    state: '46.2 MB/s',
+    attributes: { friendly_name: 'Disk Write Rate', unit_of_measurement: 'MB/s' }
+  },
+  'sensor.ugreen_nas_overall_disk_read_rate_raw': {
+    entity_id: 'sensor.ugreen_nas_overall_disk_read_rate_raw',
+    state: '88.5',
+    attributes: { friendly_name: 'Disk Read Rate Raw', unit_of_measurement: 'MB/s' }
+  },
+  'sensor.ugreen_nas_overall_disk_write_rate_raw': {
+    entity_id: 'sensor.ugreen_nas_overall_disk_write_rate_raw',
+    state: '46.2',
+    attributes: { friendly_name: 'Disk Write Rate Raw', unit_of_measurement: 'MB/s' }
+  },
+  'sensor.ugreen_nas_overall_volume_read_rate': {
+    entity_id: 'sensor.ugreen_nas_overall_volume_read_rate',
+    state: '74.1 MB/s',
+    attributes: { friendly_name: 'Volume Read Rate', unit_of_measurement: 'MB/s' }
+  },
+  'sensor.ugreen_nas_overall_volume_write_rate': {
+    entity_id: 'sensor.ugreen_nas_overall_volume_write_rate',
+    state: '38.6 MB/s',
+    attributes: { friendly_name: 'Volume Write Rate', unit_of_measurement: 'MB/s' }
+  },
+  'sensor.ugreen_nas_overall_volume_read_rate_raw': {
+    entity_id: 'sensor.ugreen_nas_overall_volume_read_rate_raw',
+    state: '74.1',
+    attributes: { friendly_name: 'Volume Read Rate Raw', unit_of_measurement: 'MB/s' }
+  },
+  'sensor.ugreen_nas_overall_volume_write_rate_raw': {
+    entity_id: 'sensor.ugreen_nas_overall_volume_write_rate_raw',
+    state: '38.6',
+    attributes: { friendly_name: 'Volume Write Rate Raw', unit_of_measurement: 'MB/s' }
+  },
+
+  // Fans & Power
+  'sensor.ugreen_nas_fan_status_overall': {
+    entity_id: 'sensor.ugreen_nas_fan_status_overall',
+    state: 'Normal (850 RPM)',
+    attributes: { friendly_name: 'Overall Fan Status' }
+  },
+  'sensor.ugreen_nas_cpu_fan': {
+    entity_id: 'sensor.ugreen_nas_cpu_fan',
+    state: '1,120 RPM',
+    attributes: { friendly_name: 'CPU Fan Speed', unit_of_measurement: 'RPM' }
+  },
+  'sensor.ugreen_nas_device_fan': {
+    entity_id: 'sensor.ugreen_nas_device_fan',
+    state: '850 RPM',
+    attributes: { friendly_name: 'Chassis Fan Speed', unit_of_measurement: 'RPM' }
+  },
+  'sensor.dxp_fan_mode': {
+    entity_id: 'sensor.dxp_fan_mode',
+    state: 'Standard',
+    attributes: { friendly_name: 'Current Fan Mode' }
+  },
+  'select.dxp_ugreen_nas_fan_mode': {
+    entity_id: 'select.dxp_ugreen_nas_fan_mode',
     state: 'Standard',
     attributes: {
-      friendly_name: 'NAS Fan Profile',
-      options: ['Standard', 'Quiet', 'Full Speed'],
-      icon: 'Fan'
+      friendly_name: 'Fan Mode Selector',
+      options: ['Standard', 'Quiet', 'Full Speed']
     }
   },
-  'switch.ugreen_nas_led_indicator': {
-    entity_id: 'switch.ugreen_nas_led_indicator',
-    state: 'on',
+  'sensor.dxp_power_mode': {
+    entity_id: 'sensor.dxp_power_mode',
+    state: 'Balanced',
+    attributes: { friendly_name: 'Current Power Mode' }
+  },
+  'select.dxp_ugreen_nas_power_mode': {
+    entity_id: 'select.dxp_ugreen_nas_power_mode',
+    state: 'Balanced',
     attributes: {
-      friendly_name: 'NAS Front LED Indicator',
-      icon: 'Lightbulb'
+      friendly_name: 'Power Mode Selector',
+      options: ['High Performance', 'Balanced', 'Energy Saving']
     }
   },
-  'switch.ugreen_nas_buzzer': {
-    entity_id: 'switch.ugreen_nas_buzzer',
-    state: 'off',
-    attributes: {
-      friendly_name: 'NAS Alert Buzzer',
-      icon: 'SpeakerHigh'
-    }
+
+  // Action Buttons
+  'button.dxp_power_action_reboot': {
+    entity_id: 'button.dxp_power_action_reboot',
+    state: '2026-08-28T09:00:00Z',
+    attributes: { friendly_name: 'Reboot NAS', icon: 'ArrowsCounterClockwise' }
   },
-  'binary_sensor.ugreen_nas_overheat_warning': {
-    entity_id: 'binary_sensor.ugreen_nas_overheat_warning',
-    state: 'off',
-    attributes: {
-      friendly_name: 'NAS Overheat Warning',
-      device_class: 'problem',
-      icon: 'Flame'
-    }
+  'button.dxp_power_action_shutdown': {
+    entity_id: 'button.dxp_power_action_shutdown',
+    state: '2026-08-28T09:00:00Z',
+    attributes: { friendly_name: 'Shutdown NAS', icon: 'Power' }
   },
-  'sensor.ugreen_nas_storage_pool_1_usage': {
-    entity_id: 'sensor.ugreen_nas_storage_pool_1_usage',
-    state: '66.7',
-    attributes: {
-      friendly_name: 'Storage Pool 1 (RAID 5)',
-      unit_of_measurement: '%',
-      raid_type: 'RAID 5',
-      status: 'healthy',
-      used_tb: 14.55,
-      total_tb: 21.82,
-      free_tb: 7.27
-    }
+  'button.dxp_power_action_wake_up': {
+    entity_id: 'button.dxp_power_action_wake_up',
+    state: '2026-08-28T09:00:00Z',
+    attributes: { friendly_name: 'Wake Up (WoL)', icon: 'Sun' }
   },
-  'sensor.ugreen_nas_network_download_speed': {
-    entity_id: 'sensor.ugreen_nas_network_download_speed',
-    state: '14200',
-    attributes: {
-      friendly_name: 'NAS Download Speed',
-      unit_of_measurement: 'kB/s',
-      icon: 'DownloadSimple'
-    }
+  'button.dxp_stand_alone_disks_adopt': {
+    entity_id: 'button.dxp_stand_alone_disks_adopt',
+    state: '2026-08-28T09:00:00Z',
+    attributes: { friendly_name: 'Adopt Disk', icon: 'PlusCircle' }
   },
-  'sensor.ugreen_nas_network_upload_speed': {
-    entity_id: 'sensor.ugreen_nas_network_upload_speed',
-    state: '6800',
-    attributes: {
-      friendly_name: 'NAS Upload Speed',
-      unit_of_measurement: 'kB/s',
-      icon: 'UploadSimple'
-    }
+
+  // Storage Pool 1
+  'sensor.ugreen_nas_pool_1_label': {
+    entity_id: 'sensor.ugreen_nas_pool_1_label',
+    state: 'Storage Pool 1',
+    attributes: { friendly_name: 'Pool 1 Label' }
   },
-  'sensor.ugreen_nas_lan_1_speed': {
-    entity_id: 'sensor.ugreen_nas_lan_1_speed',
-    state: '2.5 Gbps',
-    attributes: {
-      friendly_name: 'LAN 1 Link Speed',
-      interface: 'eth0',
-      status: 'connected',
-      ip_address: '192.168.68.80'
-    }
+  'sensor.ugreen_nas_pool_1_name': {
+    entity_id: 'sensor.ugreen_nas_pool_1_name',
+    state: 'Main Data Array',
+    attributes: { friendly_name: 'Pool 1 Name' }
   },
-  'sensor.ugreen_nas_lan_2_speed': {
-    entity_id: 'sensor.ugreen_nas_lan_2_speed',
-    state: '10 Gbps',
-    attributes: {
-      friendly_name: 'LAN 2 Link Speed',
-      interface: 'eth1',
-      status: 'connected'
-    }
+  'sensor.ugreen_nas_pool_1_level': {
+    entity_id: 'sensor.ugreen_nas_pool_1_level',
+    state: 'RAID 5',
+    attributes: { friendly_name: 'RAID Level' }
   },
-  'sensor.ugreen_nas_ip_address': {
-    entity_id: 'sensor.ugreen_nas_ip_address',
-    state: '192.168.68.80',
-    attributes: {
-      friendly_name: 'NAS IP Address',
-      icon: 'Network'
-    }
+  'sensor.ugreen_nas_pool_1_status': {
+    entity_id: 'sensor.ugreen_nas_pool_1_status',
+    state: 'Healthy',
+    attributes: { friendly_name: 'Pool 1 Status' }
   },
-  'sensor.ugreen_nas_backup_status': {
-    entity_id: 'sensor.ugreen_nas_backup_status',
-    state: 'idle',
-    attributes: {
-      friendly_name: 'Snapshot & Cloud Backup',
-      last_backup_time: 'Today, 03:00 AM',
-      task_name: 'Nightly Btrfs Sync'
-    }
+  'sensor.ugreen_nas_pool_1_disk_count': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_count',
+    state: '3',
+    attributes: { friendly_name: 'Disk Count' }
   },
-  'button.ugreen_nas_start_backup': {
-    entity_id: 'button.ugreen_nas_start_backup',
-    state: '2026-08-27T03:00:00Z',
-    attributes: {
-      friendly_name: 'Run Immediate Backup',
-      icon: 'ArrowsClockwise'
-    }
+  'sensor.ugreen_nas_pool_1_used_size': {
+    entity_id: 'sensor.ugreen_nas_pool_1_used_size',
+    state: '8.42 TB',
+    attributes: { friendly_name: 'Pool 1 Used Size', unit_of_measurement: 'TB' }
   },
-  'button.ugreen_nas_restart': {
-    entity_id: 'button.ugreen_nas_restart',
-    state: '2026-08-01T12:00:00Z',
-    attributes: {
-      friendly_name: 'Restart NAS',
-      icon: 'ArrowsCounterClockwise'
-    }
+  'sensor.ugreen_nas_pool_1_free_size': {
+    entity_id: 'sensor.ugreen_nas_pool_1_free_size',
+    state: '6.12 TB',
+    attributes: { friendly_name: 'Pool 1 Free Size', unit_of_measurement: 'TB' }
   },
-  'button.ugreen_nas_shutdown': {
-    entity_id: 'button.ugreen_nas_shutdown',
-    state: '2026-08-01T12:00:00Z',
-    attributes: {
-      friendly_name: 'Shutdown NAS',
-      icon: 'Power'
-    }
+  'sensor.ugreen_nas_pool_1_total_size': {
+    entity_id: 'sensor.ugreen_nas_pool_1_total_size',
+    state: '14.54 TB',
+    attributes: { friendly_name: 'Pool 1 Total Size', unit_of_measurement: 'TB' }
+  },
+  'sensor.ugreen_nas_pool_1_available_size': {
+    entity_id: 'sensor.ugreen_nas_pool_1_available_size',
+    state: '6.12 TB Available',
+    attributes: { friendly_name: 'Pool 1 Available Size' }
+  },
+
+  // Volume 1
+  'sensor.ugreen_nas_pool_1_volume_1_label': {
+    entity_id: 'sensor.ugreen_nas_pool_1_volume_1_label',
+    state: 'Volume 1',
+    attributes: { friendly_name: 'Volume 1 Label' }
+  },
+  'sensor.ugreen_nas_pool_1_volume_1_name': {
+    entity_id: 'sensor.ugreen_nas_pool_1_volume_1_name',
+    state: 'Shared Storage & Media',
+    attributes: { friendly_name: 'Volume 1 Name' }
+  },
+  'sensor.ugreen_nas_pool_1_volume_1_filesystem': {
+    entity_id: 'sensor.ugreen_nas_pool_1_volume_1_filesystem',
+    state: 'Btrfs (COW with Integrity)',
+    attributes: { friendly_name: 'Filesystem' }
+  },
+  'sensor.ugreen_nas_pool_1_volume_1_health': {
+    entity_id: 'sensor.ugreen_nas_pool_1_volume_1_health',
+    state: 'Healthy',
+    attributes: { friendly_name: 'Volume 1 Health' }
+  },
+  'sensor.ugreen_nas_pool_1_volume_1_status': {
+    entity_id: 'sensor.ugreen_nas_pool_1_volume_1_status',
+    state: 'Normal',
+    attributes: { friendly_name: 'Volume 1 Status' }
+  },
+  'sensor.ugreen_nas_pool_1_volume_1_has_cache': {
+    entity_id: 'sensor.ugreen_nas_pool_1_volume_1_has_cache',
+    state: 'Yes (2x NVMe Read/Write)',
+    attributes: { friendly_name: 'SSD Cache' }
+  },
+  'sensor.ugreen_nas_pool_1_volume_1_pool_name': {
+    entity_id: 'sensor.ugreen_nas_pool_1_volume_1_pool_name',
+    state: 'Storage Pool 1',
+    attributes: { friendly_name: 'Assigned Pool' }
+  },
+  'sensor.ugreen_nas_pool_1_volume_1_used_size': {
+    entity_id: 'sensor.ugreen_nas_pool_1_volume_1_used_size',
+    state: '8.42 TB',
+    attributes: { friendly_name: 'Volume 1 Used Size', unit_of_measurement: 'TB' }
+  },
+  'sensor.ugreen_nas_pool_1_volume_1_available_size': {
+    entity_id: 'sensor.ugreen_nas_pool_1_volume_1_available_size',
+    state: '5.98 TB',
+    attributes: { friendly_name: 'Volume 1 Available Size', unit_of_measurement: 'TB' }
+  },
+  'sensor.ugreen_nas_pool_1_volume_1_total_size': {
+    entity_id: 'sensor.ugreen_nas_pool_1_volume_1_total_size',
+    state: '14.40 TB',
+    attributes: { friendly_name: 'Volume 1 Total Size', unit_of_measurement: 'TB' }
+  },
+  'sensor.dxp_pool_1_volume_1_utilization': {
+    entity_id: 'sensor.dxp_pool_1_volume_1_utilization',
+    state: '58.5',
+    attributes: { friendly_name: 'Volume 1 Utilization', unit_of_measurement: '%' }
+  },
+  'sensor.dxp_pool_1_volume_1_read_iops': {
+    entity_id: 'sensor.dxp_pool_1_volume_1_read_iops',
+    state: '1,420 IOPS',
+    attributes: { friendly_name: 'Volume 1 Read IOPS', unit_of_measurement: 'IOPS' }
+  },
+  'sensor.dxp_pool_1_volume_1_write_iops': {
+    entity_id: 'sensor.dxp_pool_1_volume_1_write_iops',
+    state: '680 IOPS',
+    attributes: { friendly_name: 'Volume 1 Write IOPS', unit_of_measurement: 'IOPS' }
+  },
+
+  // Bay 1: sensor.ugreen_nas_pool_1_disk_1_*
+  'sensor.ugreen_nas_pool_1_disk_1_brand': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_brand',
+    state: 'Seagate',
+    attributes: { friendly_name: 'Bay 1 Disk Brand' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_model': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_model',
+    state: 'IronWolf 8TB (ST8000VN004)',
+    attributes: { friendly_name: 'Bay 1 Disk Model' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_status': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_status',
+    state: 'Normal',
+    attributes: { friendly_name: 'Bay 1 Disk Status' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_serial': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_serial',
+    state: 'WW2900AE89',
+    attributes: { friendly_name: 'Bay 1 Serial' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_slot': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_slot',
+    state: 'Slot 1',
+    attributes: { friendly_name: 'Bay 1 Slot' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_interface_type': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_interface_type',
+    state: 'SATA 6Gb/s',
+    attributes: { friendly_name: 'Bay 1 Interface' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_type': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_type',
+    state: 'HDD (7200 RPM)',
+    attributes: { friendly_name: 'Bay 1 Type' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_size': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_size',
+    state: '8.0 TB',
+    attributes: { friendly_name: 'Bay 1 Capacity' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_sleep_state': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_sleep_state',
+    state: 'Active',
+    attributes: { friendly_name: 'Bay 1 Sleep State' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_smart_last_result': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_smart_last_result',
+    state: 'Pass',
+    attributes: { friendly_name: 'Bay 1 SMART Result' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_smart_last_date': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_smart_last_date',
+    state: 'Aug 26, 2026 03:00',
+    attributes: { friendly_name: 'Bay 1 SMART Last Date' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_smart_next_date': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_smart_next_date',
+    state: 'Sep 02, 2026 03:00',
+    attributes: { friendly_name: 'Bay 1 SMART Next Date' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_power_on_hours': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_power_on_hours',
+    state: '4,416 hrs',
+    attributes: { friendly_name: 'Bay 1 Power On Hours' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_power_on_count': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_power_on_count',
+    state: '18 times',
+    attributes: { friendly_name: 'Bay 1 Power Cycles' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_temperature': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_temperature',
+    state: '36.5',
+    attributes: { friendly_name: 'Bay 1 Temperature', unit_of_measurement: '°C' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_utilization': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_utilization',
+    state: '32.0',
+    attributes: { friendly_name: 'Bay 1 Utilization', unit_of_measurement: '%' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_read_rate': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_read_rate',
+    state: '28.4 MB/s',
+    attributes: { friendly_name: 'Bay 1 Read Rate' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_write_rate': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_write_rate',
+    state: '15.2 MB/s',
+    attributes: { friendly_name: 'Bay 1 Write Rate' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_1_used_for': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_1_used_for',
+    state: 'Pool 1 (RAID 5) / Volume 1',
+    attributes: { friendly_name: 'Bay 1 Used For' }
+  },
+
+  // Bay 2: sensor.ugreen_nas_pool_1_disk_2_*
+  'sensor.ugreen_nas_pool_1_disk_2_brand': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_brand',
+    state: 'Seagate',
+    attributes: { friendly_name: 'Bay 2 Disk Brand' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_model': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_model',
+    state: 'IronWolf 8TB (ST8000VN004)',
+    attributes: { friendly_name: 'Bay 2 Disk Model' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_status': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_status',
+    state: 'Normal',
+    attributes: { friendly_name: 'Bay 2 Disk Status' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_serial': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_serial',
+    state: 'WW2900AE90',
+    attributes: { friendly_name: 'Bay 2 Serial' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_slot': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_slot',
+    state: 'Slot 2',
+    attributes: { friendly_name: 'Bay 2 Slot' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_interface_type': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_interface_type',
+    state: 'SATA 6Gb/s',
+    attributes: { friendly_name: 'Bay 2 Interface' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_type': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_type',
+    state: 'HDD (7200 RPM)',
+    attributes: { friendly_name: 'Bay 2 Type' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_size': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_size',
+    state: '8.0 TB',
+    attributes: { friendly_name: 'Bay 2 Capacity' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_sleep_state': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_sleep_state',
+    state: 'Active',
+    attributes: { friendly_name: 'Bay 2 Sleep State' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_smart_last_result': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_smart_last_result',
+    state: 'Pass',
+    attributes: { friendly_name: 'Bay 2 SMART Result' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_smart_last_date': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_smart_last_date',
+    state: 'Aug 26, 2026 03:00',
+    attributes: { friendly_name: 'Bay 2 SMART Last Date' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_smart_next_date': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_smart_next_date',
+    state: 'Sep 02, 2026 03:00',
+    attributes: { friendly_name: 'Bay 2 SMART Next Date' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_power_on_hours': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_power_on_hours',
+    state: '4,416 hrs',
+    attributes: { friendly_name: 'Bay 2 Power On Hours' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_power_on_count': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_power_on_count',
+    state: '18 times',
+    attributes: { friendly_name: 'Bay 2 Power Cycles' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_temperature': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_temperature',
+    state: '37.0',
+    attributes: { friendly_name: 'Bay 2 Temperature', unit_of_measurement: '°C' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_utilization': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_utilization',
+    state: '31.5',
+    attributes: { friendly_name: 'Bay 2 Utilization', unit_of_measurement: '%' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_read_rate': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_read_rate',
+    state: '30.1 MB/s',
+    attributes: { friendly_name: 'Bay 2 Read Rate' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_write_rate': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_write_rate',
+    state: '15.4 MB/s',
+    attributes: { friendly_name: 'Bay 2 Write Rate' }
+  },
+  'sensor.ugreen_nas_pool_1_disk_2_used_for': {
+    entity_id: 'sensor.ugreen_nas_pool_1_disk_2_used_for',
+    state: 'Pool 1 (RAID 5) / Volume 1',
+    attributes: { friendly_name: 'Bay 2 Used For' }
+  },
+
+  // Bay 3: sensor.dxp_pool_1_disk_3_*
+  'sensor.dxp_pool_1_disk_3_brand': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_brand',
+    state: 'Seagate',
+    attributes: { friendly_name: 'Bay 3 Disk Brand' }
+  },
+  'sensor.dxp_pool_1_disk_3_model': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_model',
+    state: 'IronWolf 8TB (ST8000VN004)',
+    attributes: { friendly_name: 'Bay 3 Disk Model' }
+  },
+  'sensor.dxp_pool_1_disk_3_status': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_status',
+    state: 'Normal',
+    attributes: { friendly_name: 'Bay 3 Disk Status' }
+  },
+  'sensor.dxp_pool_1_disk_3_serial': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_serial',
+    state: 'WW2900AE91',
+    attributes: { friendly_name: 'Bay 3 Serial' }
+  },
+  'sensor.dxp_pool_1_disk_3_slot': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_slot',
+    state: 'Slot 3',
+    attributes: { friendly_name: 'Bay 3 Slot' }
+  },
+  'sensor.dxp_pool_1_disk_3_interface_type': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_interface_type',
+    state: 'SATA 6Gb/s',
+    attributes: { friendly_name: 'Bay 3 Interface' }
+  },
+  'sensor.dxp_pool_1_disk_3_type': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_type',
+    state: 'HDD (7200 RPM)',
+    attributes: { friendly_name: 'Bay 3 Type' }
+  },
+  'sensor.dxp_pool_1_disk_3_size': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_size',
+    state: '8.0 TB',
+    attributes: { friendly_name: 'Bay 3 Capacity' }
+  },
+  'sensor.dxp_pool_1_disk_3_sleep_state': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_sleep_state',
+    state: 'Active',
+    attributes: { friendly_name: 'Bay 3 Sleep State' }
+  },
+  'sensor.dxp_pool_1_disk_3_smart_last_result': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_smart_last_result',
+    state: 'Pass',
+    attributes: { friendly_name: 'Bay 3 SMART Result' }
+  },
+  'sensor.dxp_pool_1_disk_3_smart_last_date': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_smart_last_date',
+    state: 'Aug 26, 2026 03:00',
+    attributes: { friendly_name: 'Bay 3 SMART Last Date' }
+  },
+  'sensor.dxp_pool_1_disk_3_smart_next_date': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_smart_next_date',
+    state: 'Sep 02, 2026 03:00',
+    attributes: { friendly_name: 'Bay 3 SMART Next Date' }
+  },
+  'sensor.dxp_pool_1_disk_3_power_on_hours': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_power_on_hours',
+    state: '4,416 hrs',
+    attributes: { friendly_name: 'Bay 3 Power On Hours' }
+  },
+  'sensor.dxp_pool_1_disk_3_power_on_count': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_power_on_count',
+    state: '18 times',
+    attributes: { friendly_name: 'Bay 3 Power Cycles' }
+  },
+  'sensor.dxp_pool_1_disk_3_temperature': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_temperature',
+    state: '35.8',
+    attributes: { friendly_name: 'Bay 3 Temperature', unit_of_measurement: '°C' }
+  },
+  'sensor.dxp_pool_1_disk_3_utilization': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_utilization',
+    state: '30.0',
+    attributes: { friendly_name: 'Bay 3 Utilization', unit_of_measurement: '%' }
+  },
+  'sensor.dxp_pool_1_disk_3_read_rate': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_read_rate',
+    state: '30.0 MB/s',
+    attributes: { friendly_name: 'Bay 3 Read Rate' }
+  },
+  'sensor.dxp_pool_1_disk_3_write_rate': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_write_rate',
+    state: '15.6 MB/s',
+    attributes: { friendly_name: 'Bay 3 Write Rate' }
+  },
+  'sensor.dxp_pool_1_disk_3_used_for': {
+    entity_id: 'sensor.dxp_pool_1_disk_3_used_for',
+    state: 'Pool 1 (RAID 5) / Volume 1',
+    attributes: { friendly_name: 'Bay 3 Used For' }
   },
 
   // ---------------- TP-Link Router Integration ----------------

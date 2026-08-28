@@ -5,13 +5,16 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
-import { haWebSocketService } from '../services/haWebSocket';
 import {
   UgreenNasMetrics,
-  StoragePool,
-  DriveSlot,
-  NetworkInterface,
-  NasTimeseriesPoint
+  NasIdentity,
+  NasComputeRam,
+  NasThroughputLive,
+  NasFansPower,
+  NasStoragePool1,
+  NasVolume1,
+  NasDiskInfo,
+  NasThroughputPoint
 } from '../types/ugreenNas';
 import { HistoryTimeRange } from './useSystemMetrics';
 
@@ -25,87 +28,27 @@ function parseNum(val: unknown, fallback = 0): number {
   return fallback;
 }
 
-/**
- * Default fallback drive array for UGREEN DXP4800 Plus (4x 8TB HDD + 2x 2TB NVMe)
- */
-const DEFAULT_DRIVES: DriveSlot[] = [
-  {
-    slot: 1,
-    name: 'Drive Bay 1',
-    type: 'hdd',
-    model: 'Seagate IronWolf 8TB (ST8000VN004)',
-    temperature: 36,
-    status: 'normal',
-    isSleeping: false,
-    smartHealthy: true,
-    badSectors: 0
-  },
-  {
-    slot: 2,
-    name: 'Drive Bay 2',
-    type: 'hdd',
-    model: 'Seagate IronWolf 8TB (ST8000VN004)',
-    temperature: 37,
-    status: 'normal',
-    isSleeping: false,
-    smartHealthy: true,
-    badSectors: 0
-  },
-  {
-    slot: 3,
-    name: 'Drive Bay 3',
-    type: 'hdd',
-    model: 'Seagate IronWolf 8TB (ST8000VN004)',
-    temperature: 35,
-    status: 'normal',
-    isSleeping: false,
-    smartHealthy: true,
-    badSectors: 0
-  },
-  {
-    slot: 4,
-    name: 'Drive Bay 4',
-    type: 'hdd',
-    model: 'Seagate IronWolf 8TB (ST8000VN004)',
-    temperature: 31,
-    status: 'standby',
-    isSleeping: true,
-    smartHealthy: true,
-    badSectors: 0
-  },
-  {
-    slot: 5,
-    name: 'M.2 Slot 1 (Cache)',
-    type: 'nvme_ssd',
-    model: 'Samsung 990 Pro 2TB NVMe',
-    temperature: 42,
-    status: 'normal',
-    isSleeping: false,
-    smartHealthy: true,
-    badSectors: 0,
-    lifespanPercent: 98
-  },
-  {
-    slot: 6,
-    name: 'M.2 Slot 2 (Read Pool)',
-    type: 'nvme_ssd',
-    model: 'Samsung 990 Pro 2TB NVMe',
-    temperature: 40,
-    status: 'normal',
-    isSleeping: false,
-    smartHealthy: true,
-    badSectors: 0,
-    lifespanPercent: 99
+function formatWithUnit(val: string | number | undefined, defaultUnit: string): string {
+  if (val === undefined || val === null || val === '') return `0 ${defaultUnit}`;
+  const str = String(val).trim();
+  if (str.includes(defaultUnit) || str.toLowerCase().includes(defaultUnit.toLowerCase())) {
+    return str;
   }
-];
+  return `${str} ${defaultUnit}`;
+}
 
-function generateSyntheticNasHistory(
+function generateSyntheticNasTimeseries(
   hours: number,
   baseDown: number,
   baseUp: number,
-  baseCpu: number
-): NasTimeseriesPoint[] {
-  const points: NasTimeseriesPoint[] = [];
+  baseDiskRead: number,
+  baseDiskWrite: number,
+  baseVolRead: number,
+  baseVolWrite: number,
+  baseVolReadIops: number,
+  baseVolWriteIops: number
+): NasThroughputPoint[] {
+  const points: NasThroughputPoint[] = [];
   const count = hours === 1 ? 24 : hours === 6 ? 36 : 48;
   const intervalMs = (hours * 3600 * 1000) / (count - 1);
   const now = Date.now();
@@ -115,18 +58,36 @@ function generateSyntheticNasHistory(
     const progress = (count - 1 - i) / count;
     const wave = Math.sin(progress * Math.PI * 4);
     const wave2 = Math.cos(progress * Math.PI * 6);
+    const wave3 = Math.sin(progress * Math.PI * 3 + 1.2);
 
-    const down = Math.max(0.5, Math.round((baseDown + wave * 6.5 + (Math.random() * 2.5 - 1.25)) * 10) / 10);
-    const up = Math.max(0.2, Math.round((baseUp + wave2 * 3.8 + (Math.random() * 1.5 - 0.75)) * 10) / 10);
-    const cpu = Math.max(5, Math.min(85, Math.round((baseCpu + wave * 12 + Math.random() * 4) * 10) / 10));
-    const mem = Math.max(25, Math.min(60, Math.round((34.2 + wave2 * 2.5) * 10) / 10));
+    const netDown = Math.max(0.2, Math.round((baseDown + wave * 14 + (Math.random() * 4 - 2)) * 10) / 10);
+    const netUp = Math.max(0.1, Math.round((baseUp + wave2 * 6 + (Math.random() * 2 - 1)) * 10) / 10);
+    
+    const dRead = Math.max(0.5, Math.round((baseDiskRead + wave2 * 22 + (Math.random() * 8 - 4)) * 10) / 10);
+    const dWrite = Math.max(0.2, Math.round((baseDiskWrite + wave * 16 + (Math.random() * 5 - 2.5)) * 10) / 10);
+
+    const vRead = Math.max(0.4, Math.round((baseVolRead + wave2 * 18 + (Math.random() * 6 - 3)) * 10) / 10);
+    const vWrite = Math.max(0.2, Math.round((baseVolWrite + wave * 12 + (Math.random() * 4 - 2)) * 10) / 10);
+
+    const vReadIops = Math.max(10, Math.round(baseVolReadIops + wave3 * 450 + (Math.random() * 120 - 60)));
+    const vWriteIops = Math.max(5, Math.round(baseVolWriteIops + wave * 280 + (Math.random() * 80 - 40)));
 
     points.push({
       date: t,
-      downloadKBps: down,
-      uploadKBps: up,
-      cpuUsage: cpu,
-      memoryUsage: mem
+      netDownload: netDown,
+      netUpload: netUp,
+      diskRead: dRead,
+      diskWrite: dWrite,
+      volumeRead: vRead,
+      volumeWrite: vWrite,
+      volumeReadIops: vReadIops,
+      volumeWriteIops: vWriteIops,
+      disk1Read: Math.max(0.1, Math.round((dRead * 0.35 + wave * 2) * 10) / 10),
+      disk1Write: Math.max(0.1, Math.round((dWrite * 0.34 + wave2 * 1.5) * 10) / 10),
+      disk2Read: Math.max(0.1, Math.round((dRead * 0.33 + wave2 * 2.2) * 10) / 10),
+      disk2Write: Math.max(0.1, Math.round((dWrite * 0.33 + wave * 1.8) * 10) / 10),
+      disk3Read: Math.max(0.1, Math.round((dRead * 0.32 + wave3 * 1.9) * 10) / 10),
+      disk3Write: Math.max(0.1, Math.round((dWrite * 0.33 + wave3 * 1.4) * 10) / 10),
     });
   }
 
@@ -140,180 +101,298 @@ export function useUgreenNas() {
   const isLiveMode = useAutoLayoutStore((s) => s.isLiveMode);
 
   const [timeRange, setTimeRange] = useState<HistoryTimeRange>('24h');
-  const [historyData, setHistoryData] = useState<NasTimeseriesPoint[]>([]);
+  const [historyData, setHistoryData] = useState<NasThroughputPoint[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
 
-  // 1. Live Extraction & Normalization
+  // Helper getters
   const metrics: UgreenNasMetrics = useMemo(() => {
-    const getVal = (prefix: string, fallback = ''): string => {
+    const getVal = (id: string, fallback = ''): string => {
+      if (rawStates[id]?.state !== undefined && rawStates[id]?.state !== null) {
+        return String(rawStates[id].state);
+      }
+      // Pattern fallback
       const match = Object.entries(rawStates).find(([k]) =>
-        k.toLowerCase().includes(prefix.toLowerCase())
+        k.toLowerCase() === id.toLowerCase() ||
+        k.toLowerCase().endsWith(id.toLowerCase().replace(/^(sensor|select|button|switch|binary_sensor)\./, ''))
       );
-      return match ? match[1].state ?? fallback : fallback;
+      return match ? String(match[1].state ?? fallback) : fallback;
     };
 
-    const getAttr = (prefix: string, attr: string, fallback: any = null): any => {
+    const getAttr = (id: string, attr: string, fallback: any = null): any => {
+      if (rawStates[id]?.attributes?.[attr] !== undefined) {
+        return rawStates[id].attributes[attr];
+      }
       const match = Object.entries(rawStates).find(([k]) =>
-        k.toLowerCase().includes(prefix.toLowerCase())
+        k.toLowerCase() === id.toLowerCase() ||
+        k.toLowerCase().endsWith(id.toLowerCase().replace(/^(sensor|select|button|switch|binary_sensor)\./, ''))
       );
       return match?.[1]?.attributes?.[attr] ?? fallback;
     };
 
-    const findId = (pattern: string): string | undefined => {
-      const match = Object.keys(rawStates).find((k) =>
-        k.toLowerCase().includes(pattern.toLowerCase())
-      );
-      return match;
+    const getUnit = (id: string, fallbackUnit = ''): string => {
+      return getAttr(id, 'unit_of_measurement', fallbackUnit);
     };
 
-    // System Info
-    const modelName = getVal('ugreen_nas_model', getVal('dxp4800_model', 'UGREEN DXP4800 Plus'));
-    const ugosVersion = getVal('ugreen_nas_ugos_version', 'UGOS Pro v1.1.8');
-    const uptime = getVal('ugreen_nas_uptime', '4 weeks, 2 days');
-    const fanMode = getVal('ugreen_nas_fan_mode', 'Standard');
-    const fanSpeedRpm = parseNum(getVal('ugreen_nas_fan_speed', '850'), 850);
-    const connectedUsers = parseNum(getVal('ugreen_nas_users', '3'), 3);
+    // 1. Identity & Status Strip
+    const identity: NasIdentity = {
+      name: getVal('sensor.ugreen_nas_nas_name', 'UGREEN-DXP4800'),
+      model: getVal('sensor.ugreen_nas_nas_model', getVal('sensor.ugreen_nas_model', 'DXP4800 Plus')),
+      serial: getVal('sensor.ugreen_nas_nas_serial', 'UG24DXP4800P0982'),
+      owner: getVal('sensor.ugreen_nas_nas_owner', 'Admin'),
+      type: getVal('sensor.ugreen_nas_nas_type', '4-Bay Desktop NAS'),
+      ugosVersion: getVal('sensor.ugreen_nas_nas_ugos_version', getVal('sensor.ugreen_nas_ugos_version', 'UGOS Pro v1.1.8')),
+      serverStatus: getVal('sensor.ugreen_nas_server_status', 'Online'),
+      systemStatusCode: getVal('sensor.ugreen_nas_system_status_code', 'Normal'),
+      systemMessage: getVal('sensor.ugreen_nas_system_message', 'System operating normally.'),
+      tempStatusCode: getVal('sensor.ugreen_nas_temperature_status_code', 'Normal'),
+      tempMessage: getVal('sensor.ugreen_nas_temperature_message', 'Thermals within normal limits.'),
+      totalRuntime: getVal('sensor.ugreen_nas_total_runtime', getVal('sensor.ugreen_nas_uptime', '184 days, 14 hours')),
+      lastBoot: getVal('sensor.ugreen_nas_last_boot', '12 days ago')
+    };
 
-    // Compute & Thermal
-    const cpuUsage = parseNum(getVal('ugreen_nas_cpu_usage', '18.5'), 18.5);
-    const cpuTemp = parseNum(getVal('ugreen_nas_cpu_temperature', '52.0'), 52.0);
-    const systemTemp = parseNum(getVal('ugreen_nas_system_temperature', '44.0'), 44.0);
-    const isOverheating = getVal('ugreen_nas_overheat_warning', 'off') === 'on';
+    // 2. CPU & RAM Gauges & Specs
+    const cpuUsage = parseNum(getVal('sensor.ugreen_nas_cpu_usage', '24.5'), 24.5);
+    const cpuTemp = parseNum(getVal('sensor.ugreen_nas_cpu_temperature', '48.5'), 48.5);
+    const ramUsage = parseNum(getVal('sensor.ugreen_nas_ram_usage', getVal('sensor.ugreen_nas_memory_usage', '36.8')), 36.8);
 
-    // Memory
-    const memoryUsagePercent = parseNum(getVal('ugreen_nas_memory_usage', '34.2'), 34.2);
-    const memoryUsedGB = parseNum(getVal('ugreen_nas_memory_used', '5.47'), 5.47);
-    const memoryTotalGB = parseNum(getVal('ugreen_nas_memory_total', '16.0'), 16.0);
-
-    // Storage Pools
-    const poolUsage = parseNum(getVal('ugreen_nas_storage_pool_1_usage', '66.7'), 66.7);
-    const poolUsedTB = parseNum(getAttr('ugreen_nas_storage_pool_1_usage', 'used_tb', 14.55), 14.55);
-    const poolTotalTB = parseNum(getAttr('ugreen_nas_storage_pool_1_usage', 'total_tb', 21.82), 21.82);
-    const poolFreeTB = parseNum(getAttr('ugreen_nas_storage_pool_1_usage', 'free_tb', 7.27), 7.27);
-    const poolRaid = getAttr('ugreen_nas_storage_pool_1_usage', 'raid_type', 'RAID 5');
-
-    const storagePools: StoragePool[] = [
-      {
-        id: 'pool_1',
-        name: 'Storage Pool 1 (Btrfs Volume)',
-        status: 'healthy',
-        usagePercent: poolUsage,
-        usedTB: poolUsedTB,
-        totalTB: poolTotalTB,
-        freeTB: poolFreeTB,
-        raidType: poolRaid
-      }
-    ];
-
-    // Drives
-    const drives: DriveSlot[] = DEFAULT_DRIVES;
-
-    // Network
-    const downSpeed = parseNum(getVal('ugreen_nas_network_download_speed', '14.2'), 14.2);
-    const upSpeed = parseNum(getVal('ugreen_nas_network_upload_speed', '6.8'), 6.8);
-    const lan1Speed = getVal('ugreen_nas_lan_1_speed', '2.5 Gbps');
-    const lan2Speed = getVal('ugreen_nas_lan_2_speed', '10 Gbps');
-    const ipAddress = getVal('ugreen_nas_ip_address', '192.168.68.80');
-
-    const interfaces: NetworkInterface[] = [
-      {
-        name: 'LAN 1 (Management)',
-        linkSpeed: lan1Speed,
-        ipAddress: ipAddress
-      },
-      {
-        name: 'LAN 2 (High-Speed SFP+/10G)',
-        linkSpeed: lan2Speed,
-        ipAddress: '10.0.0.80'
-      }
-    ];
-
-    // Backup
-    const backupStatus = (getVal('ugreen_nas_backup_status', 'idle') as any) || 'idle';
-    const lastBackupTime = getAttr('ugreen_nas_backup_status', 'last_backup_time', 'Today, 03:00 AM');
-    const backupTriggerButton = findId('ugreen_nas_start_backup') || findId('button.ugreen');
-
-    // Controls
-    const ledSwitchId = findId('ugreen_nas_led_indicator') || findId('switch.ugreen_nas_led');
-    const buzzerSwitchId = findId('ugreen_nas_buzzer') || findId('switch.ugreen_nas_buzzer');
-    const restartButtonId = findId('ugreen_nas_restart');
-    const shutdownButtonId = findId('ugreen_nas_shutdown');
-    const fanSelectId = findId('select.ugreen_nas_fan_mode');
-
-    const ledState = ledSwitchId ? rawStates[ledSwitchId]?.state === 'on' : true;
-    const buzzerState = buzzerSwitchId ? rawStates[buzzerSwitchId]?.state === 'on' : false;
-
-    return {
-      modelName,
-      ugosVersion,
-      uptime,
-      fanMode,
-      fanSpeedRpm,
-      connectedUsers,
+    const compute: NasComputeRam = {
       cpuUsage,
       cpuTemp,
-      systemTemp,
-      isOverheating,
-      memoryUsagePercent,
-      memoryUsedGB,
-      memoryTotalGB,
-      storagePools,
-      drives,
-      network: {
-        uploadSpeedKBps: upSpeed,
-        downloadSpeedKBps: downSpeed,
-        totalBandwidthGB: 342.8,
-        interfaces
-      },
-      backup: {
-        status: backupStatus,
-        lastBackupTime,
-        triggerButtonEntityId: backupTriggerButton,
-        taskName: 'Nightly Btrfs Snapshot'
-      },
-      controls: {
-        ledSwitchEntityId: ledSwitchId,
-        buzzerSwitchEntityId: buzzerSwitchId,
-        ledState,
-        buzzerState,
-        restartButtonId,
-        shutdownButtonId,
-        fanSelectEntityId: fanSelectId
+      ramUsage,
+      cpuModel: getVal('sensor.ugreen_nas_cpu_model', 'Intel Pentium Gold 8505'),
+      cpuCores: getVal('sensor.ugreen_nas_cpu_cores', '5'),
+      cpuThreads: getVal('sensor.ugreen_nas_cpu_threads', '6'),
+      cpuSpeed: getVal('sensor.ugreen_nas_cpu_speed', '3.30 GHz'),
+      ramTotalSize: formatWithUnit(getVal('sensor.ugreen_nas_ram_total_size', getVal('sensor.ugreen_nas_memory_total', '16.0')), 'GB'),
+      ramUsedGB: formatWithUnit(getVal('sensor.ugreen_nas_ram_usage_used_gb', getVal('sensor.ugreen_nas_memory_used', '5.89')), 'GB'),
+      ramFree: formatWithUnit(getVal('sensor.ugreen_nas_ram_usage_free_ram', '4.21'), 'GB'),
+      ramUsable: formatWithUnit(getVal('sensor.ugreen_nas_ram_usage_usable_ram', '15.6'), 'GB'),
+      ramCache: formatWithUnit(getVal('sensor.ugreen_nas_ram_usage_cache', '5.90'), 'GB')
+    };
+
+    // 3. Throughput
+    const netDownStr = getVal('sensor.ugreen_nas_overall_lan_download', '42.8 MB/s');
+    const netUpStr = getVal('sensor.ugreen_nas_overall_lan_upload', '18.4 MB/s');
+    const netDownRaw = parseNum(getVal('sensor.ugreen_nas_overall_lan_download_raw', getVal('sensor.ugreen_nas_overall_lan_download', '42.8')), 42.8);
+    const netUpRaw = parseNum(getVal('sensor.ugreen_nas_overall_lan_upload_raw', getVal('sensor.ugreen_nas_overall_lan_upload', '18.4')), 18.4);
+
+    const diskReadStr = getVal('sensor.ugreen_nas_overall_disk_read_rate', '88.5 MB/s');
+    const diskWriteStr = getVal('sensor.ugreen_nas_overall_disk_write_rate', '46.2 MB/s');
+    const diskReadRaw = parseNum(getVal('sensor.ugreen_nas_overall_disk_read_rate_raw', getVal('sensor.ugreen_nas_overall_disk_read_rate', '88.5')), 88.5);
+    const diskWriteRaw = parseNum(getVal('sensor.ugreen_nas_overall_disk_write_rate_raw', getVal('sensor.ugreen_nas_overall_disk_write_rate', '46.2')), 46.2);
+
+    const volReadStr = getVal('sensor.ugreen_nas_overall_volume_read_rate', '74.1 MB/s');
+    const volWriteStr = getVal('sensor.ugreen_nas_overall_volume_write_rate', '38.6 MB/s');
+    const volReadRaw = parseNum(getVal('sensor.ugreen_nas_overall_volume_read_rate_raw', getVal('sensor.ugreen_nas_overall_volume_read_rate', '74.1')), 74.1);
+    const volWriteRaw = parseNum(getVal('sensor.ugreen_nas_overall_volume_write_rate_raw', getVal('sensor.ugreen_nas_overall_volume_write_rate', '38.6')), 38.6);
+
+    const throughput: NasThroughputLive = {
+      netDownload: netDownStr,
+      netUpload: netUpStr,
+      netDownloadRaw: netDownRaw,
+      netUploadRaw: netUpRaw,
+      diskReadRate: diskReadStr,
+      diskWriteRate: diskWriteStr,
+      diskReadRateRaw: diskReadRaw,
+      diskWriteRateRaw: diskWriteRaw,
+      volumeReadRate: volReadStr,
+      volumeWriteRate: volWriteStr,
+      volumeReadRateRaw: volReadRaw,
+      volumeWriteRateRaw: volWriteRaw
+    };
+
+    // 4. Fans & Power
+    const fanSelectId = 'select.dxp_ugreen_nas_fan_mode';
+    const fanOptions = getAttr(fanSelectId, 'options', ['Standard', 'Quiet', 'Full Speed']);
+    const powerSelectId = 'select.dxp_ugreen_nas_power_mode';
+    const powerOptions = getAttr(powerSelectId, 'options', ['High Performance', 'Balanced', 'Energy Saving']);
+
+    const fansPower: NasFansPower = {
+      fanStatusOverall: getVal('sensor.ugreen_nas_fan_status_overall', getVal('sensor.ugreen_nas_fan_speed', 'Normal (850 RPM)')),
+      cpuFan: getVal('sensor.ugreen_nas_cpu_fan', '1,120 RPM'),
+      deviceFan: getVal('sensor.ugreen_nas_device_fan', '850 RPM'),
+      fanMode: getVal('sensor.dxp_fan_mode', getVal('select.dxp_ugreen_nas_fan_mode', getVal('select.ugreen_nas_fan_mode', 'Standard'))),
+      fanSelectEntityId: fanSelectId,
+      fanOptions: Array.isArray(fanOptions) ? fanOptions : ['Standard', 'Quiet', 'Full Speed'],
+      powerMode: getVal('sensor.dxp_power_mode', getVal('select.dxp_ugreen_nas_power_mode', 'Balanced')),
+      powerSelectEntityId: powerSelectId,
+      powerOptions: Array.isArray(powerOptions) ? powerOptions : ['High Performance', 'Balanced', 'Energy Saving']
+    };
+
+    // 5. Storage Pool 1
+    const poolUsedStr = getVal('sensor.ugreen_nas_pool_1_used_size', '8.42 TB');
+    const poolFreeStr = getVal('sensor.ugreen_nas_pool_1_free_size', '6.12 TB');
+    const poolTotalStr = getVal('sensor.ugreen_nas_pool_1_total_size', '14.54 TB');
+    const poolUsedVal = parseNum(poolUsedStr, 8.42);
+    const poolFreeVal = parseNum(poolFreeStr, 6.12);
+
+    const pool1: NasStoragePool1 = {
+      label: getVal('sensor.ugreen_nas_pool_1_label', 'Storage Pool 1'),
+      name: getVal('sensor.ugreen_nas_pool_1_name', 'Main Data Array'),
+      level: getVal('sensor.ugreen_nas_pool_1_level', 'RAID 5'),
+      status: getVal('sensor.ugreen_nas_pool_1_status', 'Healthy'),
+      diskCount: getVal('sensor.ugreen_nas_pool_1_disk_count', '3'),
+      usedSize: poolUsedStr,
+      usedSizeVal: poolUsedVal,
+      freeSize: poolFreeStr,
+      freeSizeVal: poolFreeVal,
+      totalSize: poolTotalStr,
+      availableSize: getVal('sensor.ugreen_nas_pool_1_available_size', '6.12 TB Available')
+    };
+
+    // 6. Volume 1
+    const volUsedStr = getVal('sensor.ugreen_nas_pool_1_volume_1_used_size', '8.42 TB');
+    const volAvailStr = getVal('sensor.ugreen_nas_pool_1_volume_1_available_size', '5.98 TB');
+    const volTotalStr = getVal('sensor.ugreen_nas_pool_1_volume_1_total_size', '14.40 TB');
+    const volUsedVal = parseNum(volUsedStr, 8.42);
+    const volAvailVal = parseNum(volAvailStr, 5.98);
+
+    const volReadIopsStr = getVal('sensor.dxp_pool_1_volume_1_read_iops', '1,420 IOPS');
+    const volWriteIopsStr = getVal('sensor.dxp_pool_1_volume_1_write_iops', '680 IOPS');
+
+    const volume1: NasVolume1 = {
+      label: getVal('sensor.ugreen_nas_pool_1_volume_1_label', 'Volume 1'),
+      name: getVal('sensor.ugreen_nas_pool_1_volume_1_name', 'Shared Storage & Media'),
+      filesystem: getVal('sensor.ugreen_nas_pool_1_volume_1_filesystem', 'Btrfs (COW with Integrity)'),
+      health: getVal('sensor.ugreen_nas_pool_1_volume_1_health', 'Healthy'),
+      status: getVal('sensor.ugreen_nas_pool_1_volume_1_status', 'Normal'),
+      hasCache: getVal('sensor.ugreen_nas_pool_1_volume_1_has_cache', 'Yes (2x NVMe Read/Write)'),
+      poolName: getVal('sensor.ugreen_nas_pool_1_volume_1_pool_name', 'Storage Pool 1'),
+      usedSize: volUsedStr,
+      usedSizeVal: volUsedVal,
+      availableSize: volAvailStr,
+      availableSizeVal: volAvailVal,
+      totalSize: volTotalStr,
+      utilization: parseNum(getVal('sensor.dxp_pool_1_volume_1_utilization', '58.5'), 58.5),
+      readIops: volReadIopsStr,
+      writeIops: volWriteIopsStr,
+      readIopsRaw: parseNum(volReadIopsStr, 1420),
+      writeIopsRaw: parseNum(volWriteIopsStr, 680)
+    };
+
+    // 7. Disks: Bay 1, 2, 3, 4
+    const getDiskInfo = (bayNum: number, prefix: string): NasDiskInfo => {
+      const readRateStr = getVal(`${prefix}_read_rate`, '28.4 MB/s');
+      const writeRateStr = getVal(`${prefix}_write_rate`, '15.2 MB/s');
+      const readIopsStr = getVal(`${prefix}_read_iops`, '480 IOPS');
+      const writeIopsStr = getVal(`${prefix}_write_iops`, '240 IOPS');
+
+      return {
+        bay: bayNum,
+        isInstalled: true,
+        brand: getVal(`${prefix}_brand`, 'Seagate'),
+        model: getVal(`${prefix}_model`, 'IronWolf 8TB (ST8000VN004)'),
+        status: getVal(`${prefix}_status`, 'Normal'),
+        serial: getVal(`${prefix}_serial`, `WW2900AE${88 + bayNum}`),
+        slot: getVal(`${prefix}_slot`, `Slot ${bayNum}`),
+        interfaceType: getVal(`${prefix}_interface_type`, 'SATA 6Gb/s'),
+        type: getVal(`${prefix}_type`, 'HDD (7200 RPM)'),
+        size: getVal(`${prefix}_size`, '8.0 TB'),
+        sleepState: getVal(`${prefix}_sleep_state`, 'Active'),
+        smartLastResult: getVal(`${prefix}_smart_last_result`, 'Pass'),
+        smartLastDate: getVal(`${prefix}_smart_last_date`, 'Aug 26, 2026 03:00'),
+        smartNextDate: getVal(`${prefix}_smart_next_date`, 'Sep 02, 2026 03:00'),
+        powerOnHours: getVal(`${prefix}_power_on_hours`, '4,416 hrs'),
+        powerOnCount: getVal(`${prefix}_power_on_count`, '18 times'),
+        temperature: parseNum(getVal(`${prefix}_temperature`, String(36 + bayNum * 0.5)), 36.5),
+        utilization: parseNum(getVal(`${prefix}_utilization`, String(30 + bayNum)), 32.0),
+        readRate: readRateStr,
+        writeRate: writeRateStr,
+        readRateRaw: parseNum(readRateStr, 28.4),
+        writeRateRaw: parseNum(writeRateStr, 15.2),
+        readIops: readIopsStr,
+        writeIops: writeIopsStr,
+        readIopsRaw: parseNum(readIopsStr, 480),
+        writeIopsRaw: parseNum(writeIopsStr, 240),
+        usedFor: getVal(`${prefix}_used_for`, 'Pool 1 (RAID 5) / Volume 1')
+      };
+    };
+
+    const disk1 = getDiskInfo(1, 'sensor.ugreen_nas_pool_1_disk_1');
+    const disk2 = getDiskInfo(2, 'sensor.ugreen_nas_pool_1_disk_2');
+    // Bay 3 spec mentions `sensor.dxp_pool_1_disk_3_*` (with fallback to `sensor.ugreen_nas_pool_1_disk_3_*`)
+    const disk3Prefix = rawStates['sensor.dxp_pool_1_disk_3_brand'] ? 'sensor.dxp_pool_1_disk_3' : 'sensor.ugreen_nas_pool_1_disk_3';
+    const disk3 = getDiskInfo(3, disk3Prefix);
+
+    // Bay 4 is uninstalled (empty slot)
+    const disk4: NasDiskInfo = {
+      bay: 4,
+      isInstalled: false,
+      brand: '',
+      model: 'Empty Slot',
+      status: 'Empty',
+      serial: '',
+      slot: 'Slot 4',
+      interfaceType: 'SATA 6Gb/s',
+      type: '',
+      size: '',
+      sleepState: '',
+      smartLastResult: '',
+      smartLastDate: '',
+      smartNextDate: '',
+      powerOnHours: '',
+      powerOnCount: '',
+      temperature: 0,
+      utilization: 0,
+      readRate: '0 MB/s',
+      writeRate: '0 MB/s',
+      readRateRaw: 0,
+      writeRateRaw: 0,
+      usedFor: 'Unallocated (Ready for pool expansion)'
+    };
+
+    return {
+      identity,
+      compute,
+      throughput,
+      fansPower,
+      pool1,
+      volume1,
+      disks: [disk1, disk2, disk3, disk4],
+      buttons: {
+        rebootEntityId: 'button.dxp_power_action_reboot',
+        shutdownEntityId: 'button.dxp_power_action_shutdown',
+        wakeUpEntityId: 'button.dxp_power_action_wake_up',
+        adoptDiskEntityId: 'button.dxp_stand_alone_disks_adopt'
       }
     };
   }, [rawStates]);
 
-  // 2. Telemetry History Generation / WebSocket Query
+  // Timeseries generation & query
   const hours = timeRange === '1h' ? 1 : timeRange === '6h' ? 6 : 24;
 
   const fetchHistory = useCallback(async () => {
     setIsLoadingHistory(true);
-    // In demo or live fallback, synthesize rich curves
-    const points = generateSyntheticNasHistory(
+    const points = generateSyntheticNasTimeseries(
       hours,
-      metrics.network.downloadSpeedKBps || 14.2,
-      metrics.network.uploadSpeedKBps || 6.8,
-      metrics.cpuUsage || 18.5
+      metrics.throughput.netDownloadRaw || 42.8,
+      metrics.throughput.netUploadRaw || 18.4,
+      metrics.throughput.diskReadRateRaw || 88.5,
+      metrics.throughput.diskWriteRateRaw || 46.2,
+      metrics.throughput.volumeReadRateRaw || 74.1,
+      metrics.throughput.volumeWriteRateRaw || 38.6,
+      metrics.volume1.readIopsRaw || 1420,
+      metrics.volume1.writeIopsRaw || 680
     );
     setHistoryData(points);
     setIsLoadingHistory(false);
-  }, [hours, metrics.cpuUsage, metrics.network.downloadSpeedKBps, metrics.network.uploadSpeedKBps]);
+  }, [
+    hours,
+    metrics.throughput.netDownloadRaw,
+    metrics.throughput.netUploadRaw,
+    metrics.throughput.diskReadRateRaw,
+    metrics.throughput.diskWriteRateRaw,
+    metrics.throughput.volumeReadRateRaw,
+    metrics.throughput.volumeWriteRateRaw,
+    metrics.volume1.readIopsRaw,
+    metrics.volume1.writeIopsRaw
+  ]);
 
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
 
-  // 3. Hardware Interactive Control Actions
-  const toggleSwitch = async (entityId: string, currentState: boolean) => {
-    const nextState = currentState ? 'off' : 'on';
-    updateEntityState(entityId, nextState);
-    try {
-      await callHAService('switch', nextState === 'on' ? 'turn_on' : 'turn_off', {}, { entity_id: entityId });
-    } catch {
-      // ignore
-    }
-  };
-
+  // Service Actions
   const pressButton = async (entityId: string) => {
     try {
       await callHAService('button', 'press', {}, { entity_id: entityId });
@@ -323,7 +402,17 @@ export function useUgreenNas() {
   };
 
   const setFanMode = async (mode: string) => {
-    const selectId = metrics.controls.fanSelectEntityId || 'select.ugreen_nas_fan_mode';
+    const selectId = metrics.fansPower.fanSelectEntityId || 'select.dxp_ugreen_nas_fan_mode';
+    updateEntityState(selectId, mode);
+    try {
+      await callHAService('select', 'select_option', { option: mode }, { entity_id: selectId });
+    } catch {
+      // ignore
+    }
+  };
+
+  const setPowerMode = async (mode: string) => {
+    const selectId = metrics.fansPower.powerSelectEntityId || 'select.dxp_ugreen_nas_power_mode';
     updateEntityState(selectId, mode);
     try {
       await callHAService('select', 'select_option', { option: mode }, { entity_id: selectId });
@@ -339,9 +428,9 @@ export function useUgreenNas() {
     setTimeRange,
     isLoadingHistory,
     refreshHistory: fetchHistory,
-    toggleSwitch,
     pressButton,
     setFanMode,
+    setPowerMode,
     isLiveMode
   };
 }
