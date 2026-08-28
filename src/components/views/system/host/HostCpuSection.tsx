@@ -60,7 +60,7 @@ export function HostCpuSection({
 
           <div className="grid grid-cols-2 gap-3 py-2 items-center">
             {/* Processor Use Gauge */}
-            <div className="flex flex-col justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 min-h-[190px]">
+            <div className="flex flex-col justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 min-h-[210px]">
               <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/50 dark:border-white/5">
                 <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
                   <Cpu size={13} className="text-emerald-400" /> Use
@@ -76,7 +76,7 @@ export function HostCpuSection({
                 </span>
               </div>
 
-              <div className="w-full h-[120px] max-w-[145px] mx-auto my-auto flex items-center justify-center">
+              <div className="w-full h-[140px] max-w-[165px] mx-auto my-auto flex items-center justify-center">
                 <Gauge
                   value={metrics.cpuUsage}
                   centerValue={metrics.cpuUsage}
@@ -97,7 +97,7 @@ export function HostCpuSection({
             </div>
 
             {/* Processor Temperature Gauge */}
-            <div className="flex flex-col justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 min-h-[190px]">
+            <div className="flex flex-col justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 min-h-[210px]">
               <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/50 dark:border-white/5">
                 <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
                   <Thermometer size={13} className="text-cyan-400" /> Temp
@@ -113,7 +113,7 @@ export function HostCpuSection({
                 </span>
               </div>
 
-              <div className="w-full h-[120px] max-w-[145px] mx-auto my-auto flex items-center justify-center">
+              <div className="w-full h-[140px] max-w-[165px] mx-auto my-auto flex items-center justify-center">
                 <Gauge
                   value={Math.min(100, (metrics.cpuTemp / 90) * 100)}
                   centerValue={metrics.cpuTemp}
@@ -157,7 +157,7 @@ export function HostCpuSection({
             </div>
           </div>
 
-          <div className="w-full h-[155px] my-auto py-1">
+          <div className="w-full h-[175px] my-auto py-1">
             <LineChart
               data={historyData as unknown as Record<string, unknown>[]}
               xDataKey="date"

@@ -60,7 +60,7 @@ export function HostNetworkSection({
             </div>
           </div>
 
-          <div className="w-full h-[155px] my-auto py-1">
+          <div className="w-full h-[175px] my-auto py-1">
             <LineChart
               data={historyData as unknown as Record<string, unknown>[]}
               xDataKey="date"
@@ -103,7 +103,7 @@ export function HostNetworkSection({
             </div>
           </div>
 
-          <div className="w-full h-[155px] my-auto py-1">
+          <div className="w-full h-[175px] my-auto py-1">
             <LineChart
               data={historyData as unknown as Record<string, unknown>[]}
               xDataKey="date"

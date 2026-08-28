@@ -74,7 +74,7 @@ export function HostDiskSection({
             </span>
           </div>
 
-          <div className="w-full h-[135px] max-w-[170px] mx-auto my-auto flex items-center justify-center py-2">
+          <div className="w-full h-[140px] max-w-[170px] mx-auto my-auto flex items-center justify-center">
             <Gauge
               value={metrics.diskUsagePercent}
               centerValue={metrics.diskUsagePercent}

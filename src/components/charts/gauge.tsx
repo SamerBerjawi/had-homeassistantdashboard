@@ -301,8 +301,8 @@ function GaugeArcInner(props: GaugeInnerProps) {
   const size = Math.min(width, height);
   const centerX = width / 2;
   const centerY = height / 2;
-  const outerRadius = size * 0.42;
-  const innerRadiusBase = size * 0.28;
+  const outerRadius = size * 0.49;
+  const innerRadiusBase = size * 0.35;
   const defaultRadialDepth = outerRadius - innerRadiusBase;
   const depthFactor = Math.min(100, Math.max(5, notchLengthPercent)) / 100;
   const notchLength = defaultRadialDepth * depthFactor;
@@ -433,14 +433,13 @@ function GaugeArcInner(props: GaugeInnerProps) {
       {showCenter ? (
         <div
           className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
-          style={{ paddingTop: size * 0.08 }}
         >
           <PieCenterShell
             centerValue={centerValue}
             contextSize={size}
             defaultLabel={defaultLabel}
             formatOptions={formatOptions}
-            innerRadiusPx={Math.max(size * 0.2, 52)}
+            innerRadiusPx={Math.max(size * 0.32, 38)}
             prefix={prefix}
             suffix={suffix}
           />
@@ -659,7 +658,7 @@ export function Gauge({
   ...props
 }: GaugeProps) {
   const isLinear = orientation === "linear";
-  const resolvedMinWidth = minWidth ?? (isLinear ? 200 : 300);
+  const resolvedMinWidth = minWidth;
   const resolvedLinearHeight = linearHeight ?? DEFAULT_LINEAR_GAUGE_HEIGHT;
 
   if (isLinear) {
@@ -681,7 +680,10 @@ export function Gauge({
 
     return (
       <div className={cn("relative w-full min-w-0 max-w-full", className)}>
-        <div className="w-full min-w-0" style={{ minWidth: resolvedMinWidth }}>
+        <div
+          className="w-full min-w-0"
+          style={resolvedMinWidth != null ? { minWidth: resolvedMinWidth } : undefined}
+        >
           <ParentSize debounceTime={10}>
             {({ width }) =>
               width > 0 ? (
@@ -714,21 +716,23 @@ export function Gauge({
 
   return (
     <div
-      className={cn("relative w-full max-w-full", className)}
-      style={{ minWidth: resolvedMinWidth }}
+      className={cn("relative w-full h-full min-w-0 max-w-full flex items-center justify-center", className)}
+      style={resolvedMinWidth != null ? { minWidth: resolvedMinWidth } : undefined}
     >
-      <div className="mx-auto aspect-[21/16] w-full max-w-[560px]">
+      <div className="w-full h-full min-w-0 max-w-[560px] flex items-center justify-center">
         <ParentSize debounceTime={10}>
-          {({ width, height }) =>
-            width > 0 && height > 0 ? (
+          {({ width, height }) => {
+            const effectiveWidth = width > 0 ? width : (resolvedMinWidth ?? 100);
+            const effectiveHeight = height > 0 ? height : effectiveWidth * (16 / 21);
+            return effectiveWidth > 0 && effectiveHeight > 0 ? (
               <GaugeInner
-                height={height}
+                height={effectiveHeight}
                 orientation="arc"
-                width={width}
+                width={effectiveWidth}
                 {...props}
               />
-            ) : null
-          }
+            ) : null;
+          }}
         </ParentSize>
       </div>
     </div>

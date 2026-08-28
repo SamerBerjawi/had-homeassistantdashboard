@@ -228,8 +228,8 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
               {/* Mini Gauges: Temperature & Utilization */}
               <div className="grid grid-cols-2 gap-2 pt-0.5">
                 {/* Temp Gauge */}
-                <div className="flex flex-col justify-between p-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 min-h-[105px]">
-                  <div className="flex items-center justify-between">
+                <div className="flex flex-col justify-between p-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 min-h-[135px]">
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-200/40 dark:border-white/5">
                     <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
                       <Thermometer size={11} className="text-cyan-400" /> Temp
                     </span>
@@ -237,7 +237,7 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
                       {disk.temperature}°C
                     </span>
                   </div>
-                  <div className="w-full h-[60px] max-w-[90px] mx-auto my-auto flex items-center justify-center py-0.5">
+                  <div className="w-full h-[85px] max-w-[120px] mx-auto my-auto flex items-center justify-center py-1">
                     <Gauge
                       value={Math.min(100, (disk.temperature / 65) * 100)}
                       activeFill={tempColor}
@@ -248,14 +248,14 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
                       className="w-full h-full"
                     />
                   </div>
-                  <div className="text-[8px] font-bold text-center" style={{ color: tempColor }}>
+                  <div className="pt-1 border-t border-slate-200/40 dark:border-white/5 text-[8px] font-bold text-center" style={{ color: tempColor }}>
                     {disk.temperature < 40 ? 'Optimal' : disk.temperature < 50 ? 'Warm' : 'High Temp'}
                   </div>
                 </div>
 
                 {/* Utilization Gauge */}
-                <div className="flex flex-col justify-between p-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 min-h-[105px]">
-                  <div className="flex items-center justify-between">
+                <div className="flex flex-col justify-between p-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 min-h-[135px]">
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-200/40 dark:border-white/5">
                     <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
                       <Pulse size={11} className="text-indigo-400" /> Load
                     </span>
@@ -263,7 +263,7 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
                       {disk.utilization}%
                     </span>
                   </div>
-                  <div className="w-full h-[60px] max-w-[90px] mx-auto my-auto flex items-center justify-center py-0.5">
+                  <div className="w-full h-[85px] max-w-[120px] mx-auto my-auto flex items-center justify-center py-1">
                     <Gauge
                       value={disk.utilization}
                       activeFill={utilColor}
@@ -274,18 +274,18 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
                       className="w-full h-full"
                     />
                   </div>
-                  <div className="text-[8px] font-bold text-center" style={{ color: utilColor }}>
+                  <div className="pt-1 border-t border-slate-200/40 dark:border-white/5 text-[8px] font-bold text-center" style={{ color: utilColor }}>
                     {disk.utilization < 50 ? 'Idle / Normal' : disk.utilization < 80 ? 'Active' : 'High I/O'}
                   </div>
                 </div>
               </div>
 
               {/* Line Chart: Read Rate + Write Rate */}
-              <div className="w-full h-[80px] my-1">
+              <div className="w-full h-[110px] my-1">
                 <LineChart
                   data={historyData as unknown as Record<string, unknown>[]}
                   xDataKey="date"
-                  margin={{ top: 4, right: 4, bottom: 12, left: 16 }}
+                  margin={{ top: 6, right: 6, bottom: 14, left: 18 }}
                   className="w-full h-full"
                 >
                   <Grid stroke={darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} strokeDasharray="2,2" />

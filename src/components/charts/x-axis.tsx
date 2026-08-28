@@ -36,6 +36,9 @@ interface XAxisLabelProps {
   isHovering: boolean;
   tickerHalfWidth: number;
   animatePosition: boolean;
+  marginBottom?: number;
+  marginLeft?: number;
+  isFirst?: boolean;
 }
 
 function XAxisLabel({
@@ -46,6 +49,9 @@ function XAxisLabel({
   isHovering,
   tickerHalfWidth,
   animatePosition,
+  marginBottom = 16,
+  marginLeft = 0,
+  isFirst = false,
 }: XAxisLabelProps) {
   const fadeBuffer = 20;
   const fadeRadius = tickerHalfWidth + fadeBuffer;
@@ -62,12 +68,19 @@ function XAxisLabel({
     }
   }
 
+  // Derive vertical positioning from the chart's configured margin.bottom
+  const bottomOffset = Math.max(0, marginBottom - 14);
+
+  // Prevent overlap with the y-axis bottom origin tick ("0")
+  const adjustedX =
+    isFirst && marginLeft > 0 && x < marginLeft + 14 ? marginLeft + 14 : x;
+
   return (
     <div
       className="absolute"
       style={{
-        left: x,
-        bottom: 12,
+        left: adjustedX,
+        bottom: bottomOffset,
         width: 0,
         display: "flex",
         justifyContent: "center",
@@ -645,7 +658,7 @@ const XAxisInner = memo(function XAxisInner({
 
   return createPortal(
     <div className="pointer-events-none absolute inset-0">
-      {labelsToShow.map((item) => (
+      {labelsToShow.map((item, index) => (
         <XAxisLabel
           animatePosition={xDomain == null}
           crosshairX={crosshairX}
@@ -655,6 +668,9 @@ const XAxisInner = memo(function XAxisInner({
           label={item.label}
           tickerHalfWidth={tickerHalfWidth}
           x={item.x}
+          marginBottom={margin.bottom}
+          marginLeft={margin.left}
+          isFirst={index === 0}
         />
       ))}
     </div>,

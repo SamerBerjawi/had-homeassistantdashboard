@@ -192,8 +192,8 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
           </div>
 
           {/* Top: Mini Utilization Gauge */}
-          <div className="flex items-center justify-between gap-3 py-1 bg-slate-50 dark:bg-white/5 p-2 rounded-xl border border-slate-200/40 dark:border-white/5 my-1">
-            <div className="w-[80px] h-[70px] flex items-center justify-center shrink-0">
+          <div className="flex items-center justify-between gap-3 py-1.5 bg-slate-50 dark:bg-white/5 p-2.5 rounded-xl border border-slate-200/40 dark:border-white/5 my-1">
+            <div className="w-[95px] h-[85px] flex items-center justify-center shrink-0">
               <Gauge
                 value={volume.utilization}
                 activeFill={utilColor}
@@ -212,11 +212,11 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
           </div>
 
           {/* Bottom: IOPS Line Chart */}
-          <div className="w-full h-[95px] my-1">
+          <div className="w-full h-[140px] my-1">
             <LineChart
               data={historyData as unknown as Record<string, unknown>[]}
               xDataKey="date"
-              margin={{ top: 5, right: 6, bottom: 14, left: 20 }}
+              margin={{ top: 6, right: 6, bottom: 16, left: 22 }}
               className="w-full h-full"
             >
               <Grid stroke={darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'} strokeDasharray="3,3" />
