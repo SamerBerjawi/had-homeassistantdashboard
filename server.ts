@@ -288,7 +288,7 @@ function generateRealisticWeather(locationStr: string, lat?: number, lon?: numbe
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   // Security Headers Middleware
   app.use((req, res, next) => {
