@@ -41,11 +41,10 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
   onPressButton,
   darkMode = true
 }) => {
-  const cardStyle = `rounded-2xl border p-3.5 sm:p-4 backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col justify-between ${
-    darkMode
-      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10 text-white'
-      : 'bg-white/80 border-slate-200/80 text-slate-900 shadow-slate-100'
-  }`;
+  const cardStyle = `rounded-2xl border p-3.5 sm:p-4 backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col justify-between ${darkMode
+    ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10 text-white'
+    : 'bg-white/80 border-slate-200/80 text-slate-900 shadow-slate-100'
+    }`;
 
   return (
     <div className="space-y-3">
@@ -72,11 +71,10 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
             return (
               <div
                 key={`bay-${disk.bay}`}
-                className={`rounded-2xl border-2 border-dashed p-4 backdrop-blur-xl transition-all flex flex-col justify-between min-h-[380px] ${
-                  darkMode
-                    ? 'border-white/15 bg-white/[0.02] text-slate-400'
-                    : 'border-slate-300 bg-slate-50/50 text-slate-500'
-                }`}
+                className={`rounded-2xl border-2 border-dashed p-4 backdrop-blur-xl transition-all flex flex-col justify-between min-h-[380px] ${darkMode
+                  ? 'border-white/15 bg-white/[0.02] text-slate-400'
+                  : 'border-slate-300 bg-slate-50/50 text-slate-500'
+                  }`}
               >
                 {/* Empty Card Header */}
                 <div className="flex items-center justify-between pb-2 border-b border-dashed border-slate-200/60 dark:border-white/10">
@@ -159,7 +157,7 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
                         {disk.brand}
                       </span>
                     </div>
-                    <p className="text-xs sm:text-[13px] font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5" title={disk.model}>
+                    <p className="text-xs sm:text-[12px] font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5" title={disk.model}>
                       {disk.model}
                     </p>
                   </div>
@@ -167,11 +165,10 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
 
                 {/* Status Badge (top-right) */}
                 <span
-                  className={`text-[10px] sm:text-xs font-extrabold uppercase px-2.5 py-1 rounded-lg border shrink-0 flex items-center gap-1.5 ${
-                    isHealthy
-                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                      : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
-                  }`}
+                  className={`text-[10px] sm:text-xs font-extrabold uppercase px-2.5 py-1 rounded-lg border shrink-0 flex items-center gap-1.5 ${isHealthy
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                    : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                    }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
                   {disk.status}
@@ -180,15 +177,15 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
 
               {/* Body: Identity Details Row */}
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 space-y-2">
-                <div className="flex items-center justify-between text-xs sm:text-[13px]">
+                <div className="flex items-center justify-between text-xs sm:text-[12px]">
                   <span className="text-slate-400 font-medium">Capacity &amp; Type</span>
                   <span className="font-bold text-slate-900 dark:text-slate-100">{disk.size} • {disk.type}</span>
                 </div>
-                <div className="flex items-center justify-between text-xs sm:text-[13px]">
+                <div className="flex items-center justify-between text-xs sm:text-[12px]">
                   <span className="text-slate-400 font-medium">Serial &amp; Slot</span>
                   <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{disk.serial} ({disk.slot})</span>
                 </div>
-                <div className="flex items-center justify-between text-xs sm:text-[13px]">
+                <div className="flex items-center justify-between text-xs sm:text-[12px]">
                   <span className="text-slate-400 font-medium">Interface</span>
                   <span className="font-semibold text-slate-800 dark:text-slate-300">{disk.interfaceType}</span>
                 </div>
@@ -196,22 +193,21 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
 
               {/* Body: Health & SMART Row */}
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 space-y-2">
-                <div className="flex items-center justify-between text-xs sm:text-[13px]">
+                <div className="flex items-center justify-between text-xs sm:text-[12px]">
                   <span className="text-slate-400 font-medium">SMART Status</span>
                   <span
-                    className={`font-bold px-2 py-0.5 rounded-lg text-[11px] sm:text-xs flex items-center gap-1.5 ${
-                      isSmartPass ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/15 text-rose-400 border border-rose-500/20'
-                    }`}
+                    className={`font-bold px-2 py-0.5 rounded-lg text-[11px] sm:text-xs flex items-center gap-1.5 ${isSmartPass ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/15 text-rose-400 border border-rose-500/20'
+                      }`}
                   >
                     {isSmartPass ? <CheckCircle size={13} weight="fill" /> : <WarningCircle size={13} weight="fill" />}
                     {disk.smartLastResult}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-xs sm:text-[13px]">
+                <div className="flex items-center justify-between text-xs sm:text-[12px]">
                   <span className="text-slate-400 font-medium">Power On Stats</span>
                   <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{disk.powerOnHours} • {disk.powerOnCount}</span>
                 </div>
-                <div className="flex items-center justify-between text-xs sm:text-[13px]">
+                <div className="flex items-center justify-between text-xs sm:text-[12px]">
                   <span className="text-slate-400 font-medium">Sleep State</span>
                   <span className="text-emerald-400 font-bold flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-400" /> {disk.sleepState}

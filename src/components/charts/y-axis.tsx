@@ -39,8 +39,18 @@ function formatLabel(
   if (formatValue) {
     return formatValue(value);
   }
-  if (formatLargeNumbers && value >= 1000) {
-    return `${(value / 1000).toFixed(0)}k`;
+  if (formatLargeNumbers) {
+    const absVal = Math.abs(value);
+    if (absVal >= 1_000_000) {
+      const num = value / 1_000_000;
+      const formatted = num % 1 === 0 ? num.toFixed(0) : num.toFixed(1);
+      return `${formatted}M`;
+    }
+    if (absVal >= 1_000) {
+      const num = value / 1_000;
+      const formatted = num % 1 === 0 ? num.toFixed(0) : num.toFixed(1);
+      return `${formatted}k`;
+    }
   }
   return String(value);
 }

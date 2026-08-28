@@ -9,7 +9,9 @@ export type YDomain = [number, number];
 export function niceYDomain(domain: YDomain): YDomain {
   const scale = scaleLinear({ domain, range: [0, 1], nice: true });
   const niceDomain = scale.domain();
-  return [niceDomain[0] ?? domain[0], niceDomain[1] ?? domain[1]];
+  const lower = niceDomain[0] ?? domain[0];
+  const upper = Math.max(niceDomain[1] ?? domain[1], domain[1]);
+  return [lower, upper];
 }
 
 /**

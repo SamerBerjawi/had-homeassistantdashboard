@@ -99,23 +99,46 @@ function collectNumericExtents(
   return { minValue, maxValue };
 }
 
+/** Round up to clean human-readable step intervals (e.g. 50k, 100k, 250k, 500k, 1M). */
+export function calculateCleanMax(max: number): number {
+  if (max <= 0 || !Number.isFinite(max)) return 100;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(max)));
+  const factor = max / magnitude;
+  let roundFactor = 1;
+  if (factor <= 1.2) roundFactor = 1.2;
+  else if (factor <= 1.5) roundFactor = 1.5;
+  else if (factor <= 2) roundFactor = 2;
+  else if (factor <= 2.5) roundFactor = 2.5;
+  else if (factor <= 5) roundFactor = 5;
+  else if (factor <= 7.5) roundFactor = 7.5;
+  else roundFactor = 10;
+  return roundFactor * magnitude;
+}
+
 function resolveTimeSeriesYDomain(
   data: Record<string, unknown>[],
   dataKeys: string[],
   yScaleDomainMax: number | undefined
 ): [number, number] {
   if (yScaleDomainMax != null && yScaleDomainMax > 0) {
-    return [0, yScaleDomainMax * 1.1];
+    const rawMax = yScaleDomainMax;
+    const padded = rawMax * 1.18;
+    const cleanTop = calculateCleanMax(padded);
+    return [0, Math.max(cleanTop, rawMax * 1.15)];
   }
 
   const { minValue, maxValue } = collectNumericExtents(data, dataKeys);
 
   if (minValue >= 0) {
-    const top = maxValue <= 0 ? 100 : maxValue * 1.1;
-    return [0, top];
+    if (maxValue <= 0) return [0, 100];
+    const rawMax = maxValue;
+    const padded = rawMax * 1.18;
+    const cleanTop = calculateCleanMax(padded);
+    return [0, Math.max(cleanTop, rawMax * 1.15)];
   }
 
-  const padding = (maxValue - minValue) * 0.05 || 1;
+  const span = maxValue - minValue || 1;
+  const padding = span * 0.18;
   return [minValue - padding, maxValue + padding];
 }
 
@@ -647,7 +670,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
       value={referenceAreaRegistration}
     >
       <ChartProvider value={contextValue}>
-        <svg aria-hidden="true" height={height} width={width}>
+        <svg aria-hidden="true" height={height} width={width} className="overflow-visible">
           <defs>
             {defsChildren}
             {useClipReveal ? (
@@ -655,12 +678,12 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
                 animating={isRevealAnimating || isRevealConcealing}
                 clipPathId={clipPathId}
                 enterTransition={effectiveEnterTransition}
-                height={innerHeight + 20}
+                height={innerHeight + 48}
                 mode={isRevealConcealing ? "conceal" : "reveal"}
                 onComplete={
                   isRevealConcealing ? notifyRevealConcealComplete : undefined
                 }
-                padding={revealClipPadding}
+                padding={Math.max(revealClipPadding, 24)}
                 revealEpoch={isRevealConcealing ? concealEpoch : revealEpoch}
                 targetWidth={innerWidth}
               />
