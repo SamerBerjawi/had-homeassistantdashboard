@@ -3,8 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { Cpu, Thermometer, ChartLineUp } from '@phosphor-icons/react';
+import React, { useState } from 'react';
+import {
+  Cpu,
+  Thermometer,
+  ChartLineUp,
+  SquareSplitHorizontal,
+  SquaresFour
+} from '@phosphor-icons/react';
 import { Gauge } from '../../../charts/gauge';
 import { LineChart } from '../../../charts/line-chart';
 import { Line } from '../../../charts/line';
@@ -25,6 +31,8 @@ export function HostCpuSection({
   historyData,
   darkMode = true
 }: HostCpuSectionProps) {
+  const [loadViewMode, setLoadViewMode] = useState<'unified' | 'split'>('unified');
+
   const cardStyle =
     'rounded-2xl border backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] ' +
     (darkMode
@@ -39,20 +47,53 @@ export function HostCpuSection({
   const cpuTempColor =
     metrics.cpuTemp < 60 ? '#06B6D4' : metrics.cpuTemp < 75 ? '#F59E0B' : '#EF4444';
 
+  const loadSeries = [
+    {
+      key: 'load1m' as const,
+      label: '1m Load',
+      value: metrics.load1m,
+      color: '#06B6D4', // Cyan
+      strokeWidth: 2.5,
+      desc: 'Immediate short-term queue'
+    },
+    {
+      key: 'load5m' as const,
+      label: '5m Load',
+      value: metrics.load5m,
+      color: '#F59E0B', // Amber
+      strokeWidth: 2.2,
+      desc: 'Medium-term average'
+    },
+    {
+      key: 'load15m' as const,
+      label: '15m Load',
+      value: metrics.load15m,
+      color: '#A855F7', // Purple
+      strokeWidth: 2.0,
+      desc: 'Long-term trend baseline'
+    }
+  ];
+
   return (
     <div className="space-y-3">
       {/* Section Header */}
-      <div className="flex items-center gap-2 px-1">
-        <Cpu size={18} weight="duotone" className="text-emerald-400" />
-        <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-          CPU & Processor Load
-        </h3>
-        <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400">
-          Section 2
-        </span>
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <Cpu size={18} weight="duotone" className="text-emerald-400" />
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+            CPU &amp; Processor Load
+          </h3>
+          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400">
+            Section 2
+          </span>
+        </div>
+
+        <div className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400">
+          Core Utilization &amp; Multi-Queue Metrics
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch">
         {/* Left: 2 Gauges Side by Side (5 cols) */}
         <div className={`lg:col-span-5 ${cardStyle} flex flex-col justify-between`}>
           <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
@@ -64,10 +105,10 @@ export function HostCpuSection({
 
           <div className="grid grid-cols-2 gap-3 py-2 items-center">
             {/* Processor Use Gauge */}
-            <div className="flex flex-col justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 min-h-[210px]">
+            <div className="flex flex-col justify-between p-3 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 min-h-[210px]">
               <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/50 dark:border-white/5">
                 <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                  <Cpu size={13} className="text-emerald-400" /> Use
+                  <Cpu size={13} weight="duotone" className="text-emerald-400" /> Use
                 </span>
                 <span
                   className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
@@ -95,16 +136,16 @@ export function HostCpuSection({
                 />
               </div>
 
-              <div className="pt-1.5 border-t border-slate-200/50 dark:border-white/5 text-[9px] text-slate-400 text-center">
+              <div className="pt-1.5 border-t border-slate-200/50 dark:border-white/5 text-[9px] text-slate-400 text-center font-mono">
                 Limit: &lt;60% Normal
               </div>
             </div>
 
             {/* Processor Temperature Gauge */}
-            <div className="flex flex-col justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 min-h-[210px]">
+            <div className="flex flex-col justify-between p-3 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 min-h-[210px]">
               <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/50 dark:border-white/5">
                 <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                  <Thermometer size={13} className="text-cyan-400" /> Temp
+                  <Thermometer size={13} weight="duotone" className="text-cyan-400" /> Temp
                 </span>
                 <span
                   className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
@@ -132,51 +173,162 @@ export function HostCpuSection({
                 />
               </div>
 
-              <div className="pt-1.5 border-t border-slate-200/50 dark:border-white/5 text-[9px] text-slate-400 text-center">
+              <div className="pt-1.5 border-t border-slate-200/50 dark:border-white/5 text-[9px] text-slate-400 text-center font-mono">
                 Limit: &lt;60°C Cool
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right: Load Averages Line Chart (7 cols) */}
+        {/* Right: Load Averages Line Chart with Unified vs Split Option (7 cols) */}
         <div className={`lg:col-span-7 ${cardStyle} flex flex-col justify-between`}>
-          <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/60 dark:border-white/10">
             <div className="flex items-center gap-2">
               <ChartLineUp size={16} weight="duotone" className="text-cyan-400" />
               <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                Load Averages (1m, 5m, 15m)
+                Load Averages
               </span>
             </div>
-            <div className="flex items-center gap-3 text-[10px] font-mono">
-              <span className="flex items-center gap-1 text-cyan-400 font-bold">
-                <span className="w-2 h-2 rounded-full bg-cyan-400" /> 1m: {metrics.load1m.toFixed(2)}
-              </span>
-              <span className="flex items-center gap-1 text-amber-400 font-bold">
-                <span className="w-2 h-2 rounded-full bg-amber-400" /> 5m: {metrics.load5m.toFixed(2)}
-              </span>
-              <span className="flex items-center gap-1 text-purple-400 font-bold">
-                <span className="w-2 h-2 rounded-full bg-purple-400" /> 15m: {metrics.load15m.toFixed(2)}
-              </span>
+
+            <div className="flex items-center gap-2">
+              {/* Unified vs Split View Toggle */}
+              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setLoadViewMode('unified')}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                    loadViewMode === 'unified'
+                      ? 'bg-cyan-500 text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Show all load averages on one unified chart"
+                >
+                  <SquareSplitHorizontal size={11} weight="bold" />
+                  <span>Unified</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLoadViewMode('split')}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                    loadViewMode === 'split'
+                      ? 'bg-cyan-500 text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Show 1m, 5m, and 15m separately"
+                >
+                  <SquaresFour size={11} weight="bold" />
+                  <span>Separate</span>
+                </button>
+              </div>
+
+              {/* Value Pills in Unified Mode */}
+              {loadViewMode === 'unified' && (
+                <div className="hidden sm:flex items-center gap-2.5 text-[10px] font-mono">
+                  <span className="flex items-center gap-1 text-cyan-400 font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" /> 1m: {metrics.load1m.toFixed(2)}
+                  </span>
+                  <span className="flex items-center gap-1 text-amber-400 font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> 5m: {metrics.load5m.toFixed(2)}
+                  </span>
+                  <span className="flex items-center gap-1 text-purple-400 font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400" /> 15m: {metrics.load15m.toFixed(2)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="w-full h-[175px] my-auto py-1">
-            <LineChart
-              data={historyData as unknown as Record<string, unknown>[]}
-              xDataKey="date"
-              margin={{ top: 10, right: 10, bottom: 15, left: 25 }}
-              className="w-full h-full"
-            >
-              <Grid stroke={darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'} strokeDasharray="3,3" />
-              <XAxis numTicks={4} />
-              <YAxis numTicks={4} />
-              <ChartTooltip />
-              <Line dataKey="load1m" stroke="#06B6D4" strokeWidth={2.5} animate />
-              <Line dataKey="load5m" stroke="#F59E0B" strokeWidth={2} animate />
-              <Line dataKey="load15m" stroke="#A855F7" strokeWidth={1.5} animate />
-            </LineChart>
-          </div>
+          {/* Chart Area */}
+          {loadViewMode === 'unified' ? (
+            /* Unified Chart: 1m, 5m, 15m lines synchronized */
+            <div className="w-full h-[180px] my-auto py-1">
+              <LineChart
+                data={historyData as unknown as Record<string, unknown>[]}
+                xDataKey="date"
+                margin={{ top: 10, right: 10, bottom: 15, left: 25 }}
+                className="w-full h-full"
+              >
+                <Grid stroke={darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'} strokeDasharray="3,3" />
+                <XAxis numTicks={4} />
+                <YAxis numTicks={4} />
+                <ChartTooltip
+                  showDatePill
+                  showCrosshair
+                  rows={(p) => [
+                    {
+                      label: '1m Load',
+                      value: Number(p.load1m || 0).toFixed(2),
+                      color: '#06B6D4'
+                    },
+                    {
+                      label: '5m Load',
+                      value: Number(p.load5m || 0).toFixed(2),
+                      color: '#F59E0B'
+                    },
+                    {
+                      label: '15m Load',
+                      value: Number(p.load15m || 0).toFixed(2),
+                      color: '#A855F7'
+                    }
+                  ]}
+                />
+                <Line dataKey="load1m" stroke="#06B6D4" strokeWidth={2.5} animate />
+                <Line dataKey="load5m" stroke="#F59E0B" strokeWidth={2} animate />
+                <Line dataKey="load15m" stroke="#A855F7" strokeWidth={1.5} animate />
+              </LineChart>
+            </div>
+          ) : (
+            /* Separate / Split View: 3 individual mini charts */
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 py-1 my-auto">
+              {loadSeries.map((s) => (
+                <div
+                  key={s.key}
+                  className="p-2.5 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 flex flex-col justify-between"
+                >
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-200/40 dark:border-white/5">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                      {s.label}
+                    </span>
+                    <span
+                      className="text-xs font-black font-mono"
+                      style={{ color: s.color }}
+                    >
+                      {s.value.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="w-full h-[110px] py-1">
+                    <LineChart
+                      data={historyData as unknown as Record<string, unknown>[]}
+                      xDataKey="date"
+                      margin={{ top: 6, right: 6, bottom: 12, left: 18 }}
+                      className="w-full h-full"
+                    >
+                      <Grid stroke={darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'} strokeDasharray="2,2" />
+                      <XAxis numTicks={2} />
+                      <YAxis numTicks={3} />
+                      <Line dataKey={s.key} stroke={s.color} strokeWidth={2.2} animate />
+                      <ChartTooltip
+                        showDatePill
+                        showCrosshair
+                        rows={(p) => [
+                          {
+                            label: s.label,
+                            value: Number(p[s.key] || 0).toFixed(2),
+                            color: s.color
+                          }
+                        ]}
+                      />
+                    </LineChart>
+                  </div>
+
+                  <div className="text-[8px] text-slate-400 text-center font-mono truncate">
+                    {s.desc}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
             <span>Core Multi-Queue Load</span>

@@ -37,17 +37,17 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
   const allowedQueries = metrics.dnsQueriesAllowed;
   const blockedRatio = metrics.blockedRatioPercent;
 
-  // Pie chart data
+  // Pie chart data: Blocked (Rose) vs Allowed (Emerald)
   const donutData = useMemo(() => {
     return [
       {
-        label: 'Blocked Queries',
+        label: 'Blocked',
         value: blockedQueries,
         color: '#F43F5E', // Rose
         desc: 'Threats & telemetry blocked'
       },
       {
-        label: 'Allowed Queries',
+        label: 'Allowed',
         value: allowedQueries,
         color: '#10B981', // Emerald
         desc: 'Legitimate resolved DNS'
@@ -74,10 +74,10 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
         </div>
       </div>
 
-      {/* Grid: Left Blocked Ratio Gauge (4 Cols) + Right Donut & Summary (8 Cols) */}
+      {/* Grid: Left Blocked Ratio Gauge (4 Cols) + Right Donut with Vertically Stacked Stats (8 Cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch">
         {/* Left: Blocked Ratio Headline Gauge (4 cols on desktop) */}
-        <div className={`lg:col-span-4 ${cardStyle} flex flex-col justify-between min-h-[250px]`}>
+        <div className={`lg:col-span-4 ${cardStyle} flex flex-col justify-between min-h-[270px]`}>
           <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center">
@@ -92,8 +92,8 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
             </span>
           </div>
 
-          {/* Solid Indigo/Cyan Accent Gauge (not green-to-red danger ramp) */}
-          <div className="w-full h-[145px] max-w-[170px] mx-auto my-auto flex items-center justify-center">
+          {/* Solid Accent Gauge */}
+          <div className="w-full flex-1 min-h-[175px] max-w-[280px] mx-auto flex items-center justify-center py-2">
             <Gauge
               value={blockedRatio}
               centerValue={blockedRatio}
@@ -116,8 +116,8 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
           </div>
         </div>
 
-        {/* Right: Bklit Donut Component & Summary Stat Row (8 cols on desktop) */}
-        <div className={`lg:col-span-8 ${cardStyle} flex flex-col justify-between min-h-[250px]`}>
+        {/* Right: Bklit Donut Component with Vertically Stacked Statistics (8 cols on desktop) */}
+        <div className={`lg:col-span-8 ${cardStyle} flex flex-col justify-between min-h-[270px]`}>
           <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center">
@@ -132,75 +132,97 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
             </span>
           </div>
 
-          {/* Donut Area */}
-          <div className="py-2 my-auto flex items-center justify-center">
-            <div className="relative w-[155px] h-[155px] sm:w-[170px] sm:h-[170px] flex items-center justify-center">
-              <PieChart
-                data={donutData}
-                innerRadius={50}
-                padAngle={0.04}
-                cornerRadius={6}
-                size={170}
-                className="w-full h-full"
-              >
-                {donutData.map((_, i) => (
-                  <PieSlice key={i} index={i} />
-                ))}
-                <PieCenter
-                  defaultLabel="TOTAL"
-                  suffix=" Queries"
+          {/* 2-Column Inside Container: Left Donut + Right Vertically Stacked Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center flex-1 py-2">
+            {/* Left: Large Prominent Donut Chart (7 cols on desktop) */}
+            <div className="md:col-span-7 flex flex-col items-center justify-center">
+              <div className="relative w-[210px] h-[210px] sm:w-[225px] sm:h-[225px] flex items-center justify-center">
+                <PieChart
+                  data={donutData}
+                  innerRadius={72}
+                  padAngle={0.04}
+                  cornerRadius={6}
+                  size={225}
+                  className="w-full h-full"
                 >
-                  {({ isHovered, data }) => (
-                    <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none">
-                      <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">
-                        {isHovered ? data.label : 'TOTAL'}
-                      </span>
-                      <span className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white leading-tight">
-                        {isHovered ? data.value.toLocaleString() : totalQueries.toLocaleString()}
-                      </span>
-                      <span className="text-[8px] font-bold text-cyan-400">
-                        DNS Queries
-                      </span>
-                    </div>
-                  )}
-                </PieCenter>
-              </PieChart>
-            </div>
-          </div>
-
-          {/* Summary Stat Row Under Donut */}
-          <div className="pt-3 border-t border-slate-200/60 dark:border-white/10 grid grid-cols-3 gap-2.5">
-            {/* Total Queries */}
-            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5">
-              <div className="text-[9px] uppercase font-bold text-slate-400 flex items-center gap-1 truncate">
-                <CheckCircle size={11} className="text-cyan-400" /> Total Queries
+                  {donutData.map((_, i) => (
+                    <PieSlice key={i} index={i} />
+                  ))}
+                  <PieCenter
+                    defaultLabel="TOTAL"
+                    suffix=""
+                  >
+                    {({ isHovered, data }) => (
+                      <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none px-2">
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">
+                          {isHovered ? data.label : 'TOTAL'}
+                        </span>
+                        <span className="text-sm sm:text-base font-black font-mono text-slate-900 dark:text-white tracking-tight leading-tight">
+                          {isHovered
+                            ? data.value.toLocaleString()
+                            : totalQueries.toLocaleString()}
+                        </span>
+                        <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-tight">
+                          DNS Queries
+                        </span>
+                      </div>
+                    )}
+                  </PieCenter>
+                </PieChart>
               </div>
-              <div className="text-sm sm:text-base font-black font-mono text-slate-900 dark:text-white pt-0.5">
-                {totalQueries.toLocaleString()}
-              </div>
-              <div className="text-[8px] text-slate-400">All inbound DNS</div>
             </div>
 
-            {/* Blocked Queries */}
-            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5">
-              <div className="text-[9px] uppercase font-bold text-slate-400 flex items-center gap-1 truncate">
-                <Prohibit size={11} className="text-rose-400" /> Blocked
+            {/* Right: Vertically Stacked Statistics (5 cols on desktop) */}
+            <div className="md:col-span-5 flex flex-col justify-center space-y-2.5">
+              {/* Total Queries */}
+              <div className="p-3 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center shrink-0">
+                    <CheckCircle size={18} weight="bold" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">Total Queries</span>
+                    <span className="text-sm font-black font-mono text-slate-900 dark:text-white truncate block">
+                      {totalQueries.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[9px] font-mono text-slate-400 shrink-0">100%</span>
               </div>
-              <div className="text-sm sm:text-base font-black font-mono text-rose-500 pt-0.5">
-                {blockedQueries.toLocaleString()}
-              </div>
-              <div className="text-[8px] text-slate-400">Sinkholed traffic</div>
-            </div>
 
-            {/* Blocked Ratio */}
-            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5">
-              <div className="text-[9px] uppercase font-bold text-slate-400 flex items-center gap-1 truncate">
-                <Percent size={11} className="text-indigo-400" /> Block Ratio
+              {/* Blocked Threats */}
+              <div className="p-3 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
+                    <Prohibit size={18} weight="bold" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">Blocked Threats</span>
+                    <span className="text-sm font-black font-mono text-rose-500 truncate block">
+                      {blockedQueries.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[9px] font-mono text-rose-400 font-bold shrink-0">{blockedRatio.toFixed(1)}%</span>
               </div>
-              <div className="text-sm sm:text-base font-black font-mono text-indigo-400 pt-0.5">
-                {blockedRatio.toFixed(1)}%
+
+              {/* Allowed Queries */}
+              <div className="p-3 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
+                    <ShieldCheck size={18} weight="bold" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">Allowed DNS</span>
+                    <span className="text-sm font-black font-mono text-emerald-400 truncate block">
+                      {allowedQueries.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[9px] font-mono text-emerald-400 font-bold shrink-0">
+                  {(100 - blockedRatio).toFixed(1)}%
+                </span>
               </div>
-              <div className="text-[8px] text-slate-400">Filter percentage</div>
             </div>
           </div>
         </div>

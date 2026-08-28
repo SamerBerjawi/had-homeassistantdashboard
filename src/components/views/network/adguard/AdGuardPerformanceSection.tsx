@@ -138,7 +138,7 @@ export const AdGuardPerformanceSection: React.FC<AdGuardPerformanceSectionProps>
           </div>
 
           {/* Inverted Gauge: lower latency is better */}
-          <div className="w-full h-[140px] max-w-[170px] mx-auto my-auto flex items-center justify-center">
+          <div className="w-full flex-1 min-h-[170px] max-w-[280px] mx-auto flex items-center justify-center py-2">
             <Gauge
               value={Math.min(100, Math.max(0, speed))}
               centerValue={speed}
