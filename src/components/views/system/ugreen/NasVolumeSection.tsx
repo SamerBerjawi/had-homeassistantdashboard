@@ -3,14 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Folder,
   ShieldCheck,
   CheckCircle,
   Lightning,
   ChartLineUp,
-  HardDrive
+  SquareSplitHorizontal,
+  SquaresFour
 } from '@phosphor-icons/react';
 import { PieChart } from '../../../charts/pie-chart';
 import { PieSlice } from '../../../charts/pie-slice';
@@ -35,6 +36,8 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
   historyData,
   darkMode = true
 }) => {
+  const [iopsViewMode, setIopsViewMode] = useState<'unified' | 'split'>('unified');
+
   const isHealthy =
     volume.health.toLowerCase().includes('health') ||
     volume.health.toLowerCase().includes('normal') ||
@@ -71,10 +74,10 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
         </span>
       </div>
 
-      {/* Grid: Volume Summary + Capacity Donut + Activity */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
-        {/* 1. Volume Summary Card (4 cols) */}
-        <div className={`md:col-span-4 ${cardStyle} flex flex-col justify-between`}>
+      {/* 4-Card Grid: 30% Info, 20% Capacity, 20% IOPS Gauge, 30% IOPS Chart */}
+      <div className="grid grid-cols-2 lg:grid-cols-10 gap-3 sm:gap-4 items-stretch">
+        {/* 1. Volume Summary & Info Card (30% on desktop, col-span-3 / col-span-2 on mobile) */}
+        <div className={`col-span-2 lg:col-span-3 ${cardStyle} flex flex-col justify-between min-h-[260px]`}>
           <div>
             <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200/60 dark:border-white/10">
               <div>
@@ -97,7 +100,7 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
               </span>
             </div>
 
-            <div className="space-y-2 py-2.5 text-xs">
+            <div className="space-y-1.5 py-2 text-xs">
               <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 text-[11px]">
                 <span className="text-slate-500 dark:text-slate-400">File System</span>
                 <span className="font-bold text-slate-900 dark:text-white truncate max-w-[150px]">{volume.filesystem}</span>
@@ -121,29 +124,24 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
               </div>
             </div>
           </div>
-
-          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 text-[9px] text-slate-400 flex items-center justify-between">
-            <span>Btrfs Scrub: <strong className="text-emerald-400">Passed</strong></span>
-            <span>Compression: <strong className="text-slate-300">zstd (Auto)</strong></span>
-          </div>
         </div>
 
-        {/* 2. Capacity Pie Chart (4 cols) */}
-        <div className={`md:col-span-4 ${cardStyle} flex flex-col items-center justify-between`}>
+        {/* 2. Capacity Donut Card (20% on desktop, col-span-2 / col-span-1 on mobile) */}
+        <div className={`col-span-1 lg:col-span-2 ${cardStyle} flex flex-col items-center justify-between min-h-[260px]`}>
           <div className="w-full flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-              Volume Capacity
+            <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white truncate">
+              Capacity
             </span>
             <span className="text-[10px] font-mono font-bold text-blue-400">{volume.totalSize}</span>
           </div>
 
-          <div className="relative w-[150px] h-[150px] my-auto flex items-center justify-center">
+          <div className="relative w-[130px] h-[130px] sm:w-[145px] sm:h-[145px] my-auto flex items-center justify-center">
             <PieChart
               data={donutData}
-              innerRadius={48}
+              innerRadius={44}
               padAngle={0.04}
               cornerRadius={6}
-              size={150}
+              size={135}
               className="w-full h-full"
             >
               {donutData.map((_, i) => (
@@ -154,98 +152,194 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
                 suffix=""
               >
                 {({ value, isHovered, data }) => (
-                  <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none">
-                    <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">
+                  <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none px-1">
+                    <span className="text-[7px] sm:text-[8px] font-bold uppercase tracking-wider text-slate-400">
                       {isHovered ? data.label : 'Total Size'}
                     </span>
-                    <span className="text-sm font-black font-mono text-slate-900 dark:text-white tracking-tight leading-none my-0.5">
-                      {isHovered ? `${value.toFixed(2)} TB` : volume.totalSize}
+                    <span className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white tracking-tight leading-none my-0.5">
+                      {isHovered ? `${value.toFixed(1)} TB` : volume.totalSize}
                     </span>
-                    <span className="text-[8px] font-bold text-blue-400">Btrfs</span>
+                    <span className="text-[7px] sm:text-[8px] font-bold text-blue-400">Btrfs</span>
                   </div>
                 )}
               </PieCenter>
             </PieChart>
           </div>
 
-          <div className="w-full pt-2 border-t border-slate-200/60 dark:border-white/10 grid grid-cols-2 gap-2 text-center text-xs">
-            <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <span className="text-[9px] text-slate-400 block">Used Size</span>
-              <span className="text-[11px] font-mono font-black text-blue-400">{volume.usedSize}</span>
+          <div className="w-full pt-2 border-t border-slate-200/60 dark:border-white/10 grid grid-cols-2 gap-1.5 text-center text-xs">
+            <div className="p-1 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <span className="text-[8px] sm:text-[9px] text-slate-400 block">Used</span>
+              <span className="text-[10px] sm:text-[11px] font-mono font-black text-blue-400 truncate block">{volume.usedSize}</span>
             </div>
-            <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <span className="text-[9px] text-slate-400 block">Available</span>
-              <span className="text-[11px] font-mono font-black text-emerald-400">{volume.availableSize}</span>
+            <div className="p-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <span className="text-[8px] sm:text-[9px] text-slate-400 block">Avail</span>
+              <span className="text-[10px] sm:text-[11px] font-mono font-black text-emerald-400 truncate block">{volume.availableSize}</span>
             </div>
           </div>
         </div>
 
-        {/* 3. Activity (Gauge + IOPS Line Chart) (4 cols) */}
-        <div className={`md:col-span-4 ${cardStyle} flex flex-col justify-between`}>
+        {/* 3. Dedicated IOPS Utilization Gauge Card (20% on desktop, col-span-2 / col-span-1 on mobile) */}
+        <div className={`col-span-1 lg:col-span-2 ${cardStyle} flex flex-col justify-between min-h-[260px]`}>
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
+            <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white truncate">
+              Volume Load
+            </span>
+            <span
+              className="text-[8px] sm:text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
+              style={{
+                backgroundColor: `${utilColor}1A`,
+                color: utilColor
+              }}
+            >
+              {volume.utilization < 50 ? 'Optimal' : volume.utilization < 80 ? 'Active' : 'Heavy'}
+            </span>
+          </div>
+
+          <div className="w-full h-[125px] sm:h-[135px] max-w-[155px] mx-auto my-auto flex items-center justify-center">
+            <Gauge
+              value={volume.utilization}
+              centerValue={volume.utilization}
+              defaultLabel="LOAD"
+              suffix="%"
+              activeFill={utilColor}
+              inactiveFill={darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}
+              orientation="arc"
+              notchCornerRadius={2}
+              totalNotches={32}
+              className="w-full h-full"
+            />
+          </div>
+
+          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 grid grid-cols-2 gap-1.5 text-center text-xs">
+            <div className="p-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+              <span className="text-[8px] sm:text-[9px] text-slate-400 block">Read IOPS</span>
+              <span className="text-[10px] sm:text-[11px] font-mono font-black text-cyan-400 truncate block">{volume.readIops}</span>
+            </div>
+            <div className="p-1 rounded-lg bg-purple-500/10 border border-purple-500/20">
+              <span className="text-[8px] sm:text-[9px] text-slate-400 block">Write IOPS</span>
+              <span className="text-[10px] sm:text-[11px] font-mono font-black text-purple-400 truncate block">{volume.writeIops}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Dedicated IOPS Line Chart Card (30% on desktop, col-span-3 / col-span-2 on mobile) */}
+        <div className={`col-span-2 lg:col-span-3 ${cardStyle} flex flex-col justify-between min-h-[260px]`}>
           <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
             <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
-              <ChartLineUp size={14} weight="duotone" className="text-cyan-400" /> Volume Activity & IOPS
+              <ChartLineUp size={14} weight="duotone" className="text-cyan-400" /> IOPS History
             </span>
-            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-400">
-              {volume.utilization.toFixed(1)}% Load
-            </span>
+
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setIopsViewMode('unified')}
+                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                    iopsViewMode === 'unified'
+                      ? 'bg-cyan-500 text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Unified Chart"
+                >
+                  <SquareSplitHorizontal size={10} weight="bold" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIopsViewMode('split')}
+                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                    iopsViewMode === 'split'
+                      ? 'bg-cyan-500 text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Separate Charts"
+                >
+                  <SquaresFour size={10} weight="bold" />
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Top: Mini Utilization Gauge */}
-          <div className="flex items-center justify-between gap-3 py-1.5 bg-slate-50 dark:bg-white/5 p-2.5 rounded-xl border border-slate-200/40 dark:border-white/5 my-1">
-            <div className="w-[95px] h-[85px] flex items-center justify-center shrink-0">
-              <Gauge
-                value={volume.utilization}
-                activeFill={utilColor}
-                inactiveFill={darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}
-                orientation="arc"
-                notchCornerRadius={1.5}
-                totalNotches={24}
+          {/* Line Chart Body */}
+          {iopsViewMode === 'unified' ? (
+            <div className="w-full h-[180px] my-auto">
+              <LineChart
+                data={historyData as unknown as Record<string, unknown>[]}
+                xDataKey="date"
+                margin={{ top: 6, right: 6, bottom: 16, left: 22 }}
                 className="w-full h-full"
-              />
+              >
+                <Grid stroke={darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'} strokeDasharray="3,3" />
+                <XAxis numTicks={3} />
+                <YAxis numTicks={3} />
+                <Line dataKey="volumeReadIops" stroke="#06B6D4" strokeWidth={1.8} animate />
+                <Line dataKey="volumeWriteIops" stroke="#C084FC" strokeWidth={1.5} animate />
+                <ChartTooltip
+                  showDatePill
+                  showCrosshair
+                  showDots
+                  rows={(p) => [
+                    { label: 'Read IOPS', value: `${Number(p.volumeReadIops || 0).toFixed(0)} IOPS`, color: '#06B6D4' },
+                    { label: 'Write IOPS', value: `${Number(p.volumeWriteIops || 0).toFixed(0)} IOPS`, color: '#C084FC' }
+                  ]}
+                />
+              </LineChart>
             </div>
-            <div className="min-w-0 flex-1 space-y-1 text-right">
-              <div className="text-[10px] text-slate-400 uppercase font-bold">Disk IOPS Activity</div>
-              <div className="text-xs font-mono font-black text-cyan-400">Read: {volume.readIops}</div>
-              <div className="text-xs font-mono font-black text-purple-400">Write: {volume.writeIops}</div>
+          ) : (
+            <div className="space-y-1.5 my-auto">
+              <div className="p-1.5 rounded-xl bg-white/[0.02] border border-slate-200/40 dark:border-white/5">
+                <div className="flex items-center justify-between text-[9px] font-mono font-bold px-1 text-cyan-400">
+                  <span>Read IOPS</span>
+                  <span>{volume.readIops}</span>
+                </div>
+                <div className="w-full h-[75px]">
+                  <LineChart
+                    data={historyData as unknown as Record<string, unknown>[]}
+                    xDataKey="date"
+                    margin={{ top: 4, right: 4, bottom: 10, left: 16 }}
+                    className="w-full h-full"
+                  >
+                    <Grid stroke={darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} strokeDasharray="2,2" />
+                    <XAxis numTicks={2} />
+                    <YAxis numTicks={2} />
+                    <Line dataKey="volumeReadIops" stroke="#06B6D4" strokeWidth={1.8} animate />
+                    <ChartTooltip
+                      showDatePill
+                      showCrosshair
+                      rows={(p) => [{ label: 'Read IOPS', value: `${Number(p.volumeReadIops || 0).toFixed(0)} IOPS`, color: '#06B6D4' }]}
+                    />
+                  </LineChart>
+                </div>
+              </div>
+
+              <div className="p-1.5 rounded-xl bg-white/[0.02] border border-slate-200/40 dark:border-white/5">
+                <div className="flex items-center justify-between text-[9px] font-mono font-bold px-1 text-purple-400">
+                  <span>Write IOPS</span>
+                  <span>{volume.writeIops}</span>
+                </div>
+                <div className="w-full h-[75px]">
+                  <LineChart
+                    data={historyData as unknown as Record<string, unknown>[]}
+                    xDataKey="date"
+                    margin={{ top: 4, right: 4, bottom: 10, left: 16 }}
+                    className="w-full h-full"
+                  >
+                    <Grid stroke={darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} strokeDasharray="2,2" />
+                    <XAxis numTicks={2} />
+                    <YAxis numTicks={2} />
+                    <Line dataKey="volumeWriteIops" stroke="#C084FC" strokeWidth={1.8} animate />
+                    <ChartTooltip
+                      showDatePill
+                      showCrosshair
+                      rows={(p) => [{ label: 'Write IOPS', value: `${Number(p.volumeWriteIops || 0).toFixed(0)} IOPS`, color: '#C084FC' }]}
+                    />
+                  </LineChart>
+                </div>
+              </div>
             </div>
-          </div>
-
-          {/* Bottom: IOPS Line Chart */}
-          <div className="w-full h-[140px] my-1">
-            <LineChart
-              data={historyData as unknown as Record<string, unknown>[]}
-              xDataKey="date"
-              margin={{ top: 6, right: 6, bottom: 16, left: 22 }}
-              className="w-full h-full"
-            >
-              <Grid stroke={darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'} strokeDasharray="3,3" />
-              <XAxis numTicks={3} />
-              <YAxis numTicks={3} />
-              <Line dataKey="volumeReadIops" stroke="#06B6D4" strokeWidth={1.8} animate />
-              <Line dataKey="volumeWriteIops" stroke="#C084FC" strokeWidth={1.5} animate />
-              <ChartTooltip
-                showDatePill
-                showCrosshair
-                showDots
-                rows={(p) => [
-                  { label: 'Read IOPS', value: `${Number(p.volumeReadIops || 0).toFixed(0)} IOPS`, color: '#06B6D4' },
-                  { label: 'Write IOPS', value: `${Number(p.volumeWriteIops || 0).toFixed(0)} IOPS`, color: '#C084FC' }
-                ]}
-              />
-            </LineChart>
-          </div>
-
-          <div className="pt-1.5 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[9px] text-slate-400">
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" /> Read IOPS
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-400" /> Write IOPS
-            </span>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
+

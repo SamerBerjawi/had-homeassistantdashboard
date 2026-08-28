@@ -61,15 +61,6 @@ export default function NetworkView({ darkMode = true }: NetworkViewProps) {
           >
             <ShieldCheck size={16} weight={activeSubTab === 'adguard_home' ? 'bold' : 'duotone'} />
             <span>AdGuard Home</span>
-            <span
-              className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md ${
-                activeSubTab === 'adguard_home'
-                  ? 'bg-black/20 text-black dark:text-black'
-                  : 'bg-emerald-500/20 text-emerald-400'
-              }`}
-            >
-              DNS Shield
-            </span>
           </button>
         </div>
 

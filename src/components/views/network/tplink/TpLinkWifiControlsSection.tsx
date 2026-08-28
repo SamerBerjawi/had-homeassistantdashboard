@@ -269,15 +269,6 @@ export const TpLinkWifiControlsSection: React.FC<TpLinkWifiControlsSectionProps>
                   );
                 })}
               </div>
-
-              {/* Column Footer */}
-              <div className="pt-2.5 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[9px] text-slate-400">
-                <span className="flex items-center gap-1">
-                  <Radio size={12} style={{ color: group.accentColor }} />
-                  <span>Band Steering &amp; DFS</span>
-                </span>
-                <span className="font-mono">{group.bands.length} Radios</span>
-              </div>
             </div>
           );
         })}

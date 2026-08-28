@@ -64,7 +64,7 @@ export function HostNetworkSection({
             </div>
           </div>
 
-          <div className="w-full h-[175px] my-auto py-1">
+          <div className="w-full h-[195px] my-auto py-1">
             <LineChart
               data={historyData as unknown as Record<string, unknown>[]}
               xDataKey="date"
@@ -78,13 +78,6 @@ export function HostNetworkSection({
               <Line dataKey="networkInRate" stroke="#06B6D4" strokeWidth={2.5} animate />
               <Line dataKey="networkOutRate" stroke="#A855F7" strokeWidth={2} animate />
             </LineChart>
-          </div>
-
-          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-            <span>Adapter: end0 (Gigabit Ethernet)</span>
-            <span className="font-mono text-slate-700 dark:text-slate-300">
-              IP: {metrics.ipv4Address}
-            </span>
           </div>
         </div>
 
@@ -107,7 +100,7 @@ export function HostNetworkSection({
             </div>
           </div>
 
-          <div className="w-full h-[175px] my-auto py-1">
+          <div className="w-full h-[195px] my-auto py-1">
             <LineChart
               data={historyData as unknown as Record<string, unknown>[]}
               xDataKey="date"
@@ -121,13 +114,6 @@ export function HostNetworkSection({
               <Line dataKey="packetsInRate" stroke="#10B981" strokeWidth={2.5} animate />
               <Line dataKey="packetsOutRate" stroke="#F59E0B" strokeWidth={2} animate />
             </LineChart>
-          </div>
-
-          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-            <span>Link Layer Stats</span>
-            <span className="font-mono text-slate-700 dark:text-slate-300">
-              Total Frames Processed
-            </span>
           </div>
         </div>
       </div>

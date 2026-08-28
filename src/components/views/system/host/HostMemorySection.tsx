@@ -60,15 +60,15 @@ export function HostMemorySection({
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
-        {/* Left: Memory Usage Gauge (5 cols) */}
-        <div className={`md:col-span-5 ${cardStyle} flex flex-col justify-between`}>
+      <div className="grid grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch">
+        {/* Left: Memory Usage Gauge (1/2 on mobile, 5 cols on desktop) */}
+        <div className={`col-span-1 lg:col-span-5 ${cardStyle} flex flex-col justify-between min-h-[220px] sm:min-h-[260px]`}>
           <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+            <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white truncate">
               Memory Utilization
             </span>
             <span
-              className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
+              className="text-[8px] sm:text-[9px] font-extrabold uppercase px-1.5 sm:px-2 py-0.5 rounded-md"
               style={{
                 backgroundColor: `${memUsageColor}1A`,
                 color: memUsageColor
@@ -78,7 +78,7 @@ export function HostMemorySection({
             </span>
           </div>
 
-          <div className="w-full h-[140px] max-w-[170px] mx-auto my-auto flex items-center justify-center">
+          <div className="w-full h-[130px] sm:h-[155px] max-w-[170px] mx-auto my-auto flex items-center justify-center">
             <Gauge
               value={metrics.memoryUsagePercent}
               centerValue={metrics.memoryUsagePercent}
@@ -92,53 +92,46 @@ export function HostMemorySection({
               className="w-full h-full"
             />
           </div>
-
-          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-            <span>Threshold: &lt;70%</span>
-            <span className="font-mono text-slate-700 dark:text-slate-300">
-              {metrics.memoryUsagePercent.toFixed(1)}% Allocated
-            </span>
-          </div>
         </div>
 
-        {/* Right: Used vs Free Pie / Donut Chart (7 cols) */}
-        <div className={`md:col-span-7 ${cardStyle} flex flex-col justify-between`}>
+        {/* Right: Used vs Free Pie / Donut Chart (1/2 on mobile, 7 cols on desktop) */}
+        <div className={`col-span-1 lg:col-span-7 ${cardStyle} flex flex-col justify-between min-h-[220px] sm:min-h-[260px]`}>
           <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-              Memory Allocation (Used vs Free)
+            <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white truncate">
+              Memory Allocation
             </span>
-            <span className="text-[10px] font-mono text-slate-500">
-              Total: {metrics.memoryTotal} {metrics.memoryTotalUnit}
+            <span className="text-[9px] sm:text-[10px] font-mono text-slate-500">
+              {metrics.memoryTotal} {metrics.memoryTotalUnit}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center py-1">
+          <div className="flex flex-col sm:grid sm:grid-cols-12 gap-2 sm:gap-3 items-center py-2 my-auto">
             {/* Donut */}
-            <div className="sm:col-span-6 relative w-[140px] h-[140px] mx-auto flex items-center justify-center">
+            <div className="sm:col-span-6 relative w-[125px] h-[125px] sm:w-[150px] sm:h-[150px] mx-auto flex items-center justify-center">
               <PieChart
                 data={donutData}
-                innerRadius={46}
+                innerRadius={44}
                 padAngle={0.04}
                 cornerRadius={6}
-                size={140}
+                size={135}
                 className="w-full h-full"
               >
                 {donutData.map((_, i) => (
                   <PieSlice key={i} index={i} />
                 ))}
                 <PieCenter
-                  defaultLabel="Total RAM"
-                  suffix={` ${metrics.memoryTotalUnit}`}
+                  defaultLabel="RAM"
+                  suffix=""
                 >
                   {({ isHovered, data }) => (
                     <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none">
                       <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">
-                        {isHovered ? data.label : 'Total RAM'}
+                        {isHovered ? data.label : 'Used'}
                       </span>
                       <span className="text-xs font-black font-mono text-slate-900 dark:text-white leading-tight">
-                        {isHovered ? data.value.toFixed(1) : metrics.memoryTotal}
+                        {isHovered ? data.value.toFixed(1) : metrics.memoryUsed.toFixed(1)}
                       </span>
-                      <span className="text-[8px] font-bold text-indigo-400">
+                      <span className="text-[7px] sm:text-[8px] font-bold text-indigo-400">
                         {metrics.memoryTotalUnit}
                       </span>
                     </div>
@@ -148,42 +141,35 @@ export function HostMemorySection({
             </div>
 
             {/* Breakdown Cards */}
-            <div className="sm:col-span-6 space-y-2">
-              <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between">
+            <div className="w-full sm:col-span-6 space-y-1.5 sm:space-y-2.5">
+              <div className="p-1.5 sm:p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between">
                 <div>
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-400 block">
-                    Used Memory
+                  <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-indigo-400 block">
+                    Used
                   </span>
-                  <span className="text-sm font-black font-mono text-indigo-300">
+                  <span className="text-xs sm:text-sm font-black font-mono text-indigo-300">
                     {metrics.memoryUsed.toFixed(1)} {metrics.memoryUsedUnit}
                   </span>
                 </div>
-                <span className="text-xs font-mono font-bold text-indigo-400">
-                  {metrics.memoryUsagePercent.toFixed(1)}%
+                <span className="text-[10px] sm:text-xs font-mono font-bold text-indigo-400">
+                  {metrics.memoryUsagePercent.toFixed(0)}%
                 </span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-500/10 border border-slate-500/20 flex items-center justify-between">
+              <div className="p-1.5 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 flex items-center justify-between">
                 <div>
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
-                    Free Memory
+                  <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
+                    Free
                   </span>
-                  <span className="text-sm font-black font-mono text-slate-200">
+                  <span className="text-xs sm:text-sm font-black font-mono text-slate-200">
                     {metrics.memoryFree.toFixed(1)} {metrics.memoryFreeUnit}
                   </span>
                 </div>
-                <span className="text-xs font-mono font-bold text-slate-400">
-                  {(100 - metrics.memoryUsagePercent).toFixed(1)}%
+                <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-400">
+                  {(100 - metrics.memoryUsagePercent).toFixed(0)}%
                 </span>
               </div>
             </div>
-          </div>
-
-          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-            <span>Buffer & System Allocations</span>
-            <span className="font-mono text-slate-700 dark:text-slate-300">
-              Available: {metrics.memoryFree.toFixed(1)} {metrics.memoryFreeUnit}
-            </span>
           </div>
         </div>
       </div>

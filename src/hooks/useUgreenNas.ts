@@ -202,21 +202,37 @@ export function useUgreenNas() {
     };
 
     // 4. Fans & Power
-    const fanSelectId = 'select.dxp_ugreen_nas_fan_mode';
-    const fanOptions = getAttr(fanSelectId, 'options', ['Standard', 'Quiet', 'Full Speed']);
-    const powerSelectId = 'select.dxp_ugreen_nas_power_mode';
-    const powerOptions = getAttr(powerSelectId, 'options', ['High Performance', 'Balanced', 'Energy Saving']);
+    const findSelectEntity = (keywords: string[], fallback: string) => {
+      const keys = Object.keys(rawStates);
+      const found = keys.find(k => k.startsWith('select.') && keywords.every(kw => k.toLowerCase().includes(kw)));
+      return found || fallback;
+    };
+
+    const fanSelectId = findSelectEntity(['fan'], 'select.dxp_ugreen_nas_fan_mode');
+    const dynamicFanOptions = getAttr(fanSelectId, 'options', null);
+    const fanOptions = Array.isArray(dynamicFanOptions) && dynamicFanOptions.length > 0
+      ? dynamicFanOptions
+      : ['Quiet', 'Default', 'Full Power'];
+
+    const powerSelectId = findSelectEntity(['power'], 'select.dxp_ugreen_nas_power_mode');
+    const dynamicPowerOptions = getAttr(powerSelectId, 'options', null);
+    const powerOptions = Array.isArray(dynamicPowerOptions) && dynamicPowerOptions.length > 0
+      ? dynamicPowerOptions
+      : ['Balance', 'Performance', 'Power Saving'];
+
+    const currentFanMode = getVal(fanSelectId, getVal('sensor.dxp_fan_mode', getVal('select.ugreen_nas_fan_mode', 'Default')));
+    const currentPowerMode = getVal(powerSelectId, getVal('sensor.dxp_power_mode', getVal('select.ugreen_nas_power_mode', 'Balance')));
 
     const fansPower: NasFansPower = {
       fanStatusOverall: getVal('sensor.ugreen_nas_fan_status_overall', getVal('sensor.ugreen_nas_fan_speed', 'Normal (850 RPM)')),
       cpuFan: getVal('sensor.ugreen_nas_cpu_fan', '1,120 RPM'),
       deviceFan: getVal('sensor.ugreen_nas_device_fan', '850 RPM'),
-      fanMode: getVal('sensor.dxp_fan_mode', getVal('select.dxp_ugreen_nas_fan_mode', getVal('select.ugreen_nas_fan_mode', 'Standard'))),
+      fanMode: currentFanMode,
       fanSelectEntityId: fanSelectId,
-      fanOptions: Array.isArray(fanOptions) ? fanOptions : ['Standard', 'Quiet', 'Full Speed'],
-      powerMode: getVal('sensor.dxp_power_mode', getVal('select.dxp_ugreen_nas_power_mode', 'Balanced')),
+      fanOptions,
+      powerMode: currentPowerMode,
       powerSelectEntityId: powerSelectId,
-      powerOptions: Array.isArray(powerOptions) ? powerOptions : ['High Performance', 'Balanced', 'Energy Saving']
+      powerOptions
     };
 
     // 5. Storage Pool 1
@@ -241,29 +257,48 @@ export function useUgreenNas() {
     };
 
     // 6. Volume 1
-    const volUsedStr = getVal('sensor.ugreen_nas_pool_1_volume_1_used_size', '8.42 TB');
-    const volAvailStr = getVal('sensor.ugreen_nas_pool_1_volume_1_available_size', '5.98 TB');
-    const volTotalStr = getVal('sensor.ugreen_nas_pool_1_volume_1_total_size', '14.40 TB');
+    const getVol1Val = (suffix: string, fallback: string) => {
+      const candidates = [
+        `sensor.ugreen_nas_pool_1_volume_1_${suffix}`,
+        `sensor.dxp_pool_1_volume_1_${suffix}`,
+        `sensor.ugreen_nas_volume_1_${suffix}`,
+        `sensor.dxp_volume_1_${suffix}`
+      ];
+      for (const cand of candidates) {
+        const val = rawStates[cand]?.state;
+        if (val !== undefined && val !== null && val !== 'unknown' && val !== 'unavailable') {
+          return val;
+        }
+      }
+      return fallback;
+    };
+
+    const volUsedStr = getVol1Val('used_size', '8.42 TB');
+    const volAvailStr = getVol1Val('available_size', '5.98 TB');
+    const volTotalStr = getVol1Val('total_size', '14.40 TB');
     const volUsedVal = parseNum(volUsedStr, 8.42);
     const volAvailVal = parseNum(volAvailStr, 5.98);
+    const volTotalVal = parseNum(volTotalStr, volUsedVal + volAvailVal || 14.40);
+    const calculatedUtil = volTotalVal > 0 ? (volUsedVal / volTotalVal) * 100 : 58.5;
+    const volUtilVal = parseNum(getVol1Val('utilization', String(calculatedUtil.toFixed(1))), calculatedUtil);
 
-    const volReadIopsStr = getVal('sensor.dxp_pool_1_volume_1_read_iops', '1,420 IOPS');
-    const volWriteIopsStr = getVal('sensor.dxp_pool_1_volume_1_write_iops', '680 IOPS');
+    const volReadIopsStr = getVol1Val('read_iops', '1,420 IOPS');
+    const volWriteIopsStr = getVol1Val('write_iops', '680 IOPS');
 
     const volume1: NasVolume1 = {
-      label: getVal('sensor.ugreen_nas_pool_1_volume_1_label', 'Volume 1'),
-      name: getVal('sensor.ugreen_nas_pool_1_volume_1_name', 'Shared Storage & Media'),
-      filesystem: getVal('sensor.ugreen_nas_pool_1_volume_1_filesystem', 'Btrfs (COW with Integrity)'),
-      health: getVal('sensor.ugreen_nas_pool_1_volume_1_health', 'Healthy'),
-      status: getVal('sensor.ugreen_nas_pool_1_volume_1_status', 'Normal'),
-      hasCache: getVal('sensor.ugreen_nas_pool_1_volume_1_has_cache', 'Yes (2x NVMe Read/Write)'),
-      poolName: getVal('sensor.ugreen_nas_pool_1_volume_1_pool_name', 'Storage Pool 1'),
+      label: getVol1Val('label', 'Volume 1'),
+      name: getVol1Val('name', 'Shared Storage & Media'),
+      filesystem: getVol1Val('filesystem', 'Btrfs (COW with Integrity)'),
+      health: getVol1Val('health', 'Healthy'),
+      status: getVol1Val('status', 'Normal'),
+      hasCache: getVol1Val('has_cache', 'Yes (2x NVMe Read/Write)'),
+      poolName: getVol1Val('pool_name', 'Storage Pool 1'),
       usedSize: volUsedStr,
       usedSizeVal: volUsedVal,
       availableSize: volAvailStr,
       availableSizeVal: volAvailVal,
       totalSize: volTotalStr,
-      utilization: parseNum(getVal('sensor.dxp_pool_1_volume_1_utilization', '58.5'), 58.5),
+      utilization: volUtilVal,
       readIops: volReadIopsStr,
       writeIops: volWriteIopsStr,
       readIopsRaw: parseNum(volReadIopsStr, 1420),
@@ -341,6 +376,12 @@ export function useUgreenNas() {
       usedFor: 'Unallocated (Ready for pool expansion)'
     };
 
+    const findButton = (keywords: string[], fallback: string) => {
+      const keys = Object.keys(rawStates);
+      const found = keys.find(k => k.startsWith('button.') && keywords.every(kw => k.toLowerCase().includes(kw)));
+      return found || fallback;
+    };
+
     return {
       identity,
       compute,
@@ -350,10 +391,10 @@ export function useUgreenNas() {
       volume1,
       disks: [disk1, disk2, disk3, disk4],
       buttons: {
-        rebootEntityId: 'button.dxp_power_action_reboot',
-        shutdownEntityId: 'button.dxp_power_action_shutdown',
-        wakeUpEntityId: 'button.dxp_power_action_wake_up',
-        adoptDiskEntityId: 'button.dxp_stand_alone_disks_adopt'
+        rebootEntityId: findButton(['reboot'], 'button.dxp_power_action_reboot'),
+        shutdownEntityId: findButton(['shutdown'], 'button.dxp_power_action_shutdown'),
+        wakeUpEntityId: findButton(['wake'], 'button.dxp_power_action_wake_up'),
+        adoptDiskEntityId: findButton(['adopt'], 'button.dxp_stand_alone_disks_adopt')
       }
     };
   }, [rawStates]);
@@ -394,6 +435,7 @@ export function useUgreenNas() {
 
   // Service Actions
   const pressButton = async (entityId: string) => {
+    updateEntityState(entityId, new Date().toISOString(), { last_pressed: new Date().toISOString() });
     try {
       await callHAService('button', 'press', {}, { entity_id: entityId });
     } catch {

@@ -259,12 +259,6 @@ export const TpLinkConnectedClientsSection: React.FC<TpLinkConnectedClientsSecti
             </table>
           </div>
         )}
-
-        {/* Footer summary */}
-        <div className="pt-3 mt-1 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[9px] text-slate-400">
-          <span>Displaying {filteredClients.length} of {clients.length} connected device trackers</span>
-          <span className="font-mono">Live DHCP Lease Table</span>
-        </div>
       </div>
     </div>
   );

@@ -214,12 +214,6 @@ export const TpLinkDisconnectedClientsSection: React.FC<TpLinkDisconnectedClient
               </table>
             </div>
           )}
-
-          {/* Footer */}
-          <div className="pt-3 mt-1 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[9px] text-slate-400">
-            <span>Historical lease entries preserved from Home Assistant</span>
-            <span className="font-mono">{filteredClients.length} Offline Devices</span>
-          </div>
         </div>
       )}
     </div>

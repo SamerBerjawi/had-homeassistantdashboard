@@ -135,14 +135,10 @@ export function HostCpuSection({
                   className="w-full h-full"
                 />
               </div>
-
-              <div className="pt-1.5 border-t border-slate-200/50 dark:border-white/5 text-[9px] text-slate-400 text-center font-mono">
-                Limit: &lt;60% Normal
-              </div>
             </div>
 
             {/* Processor Temperature Gauge */}
-            <div className="flex flex-col justify-between p-3 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 min-h-[210px]">
+            <div className="flex flex-col justify-between p-3 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 min-h-[190px]">
               <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/50 dark:border-white/5">
                 <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
                   <Thermometer size={13} weight="duotone" className="text-cyan-400" /> Temp
@@ -171,10 +167,6 @@ export function HostCpuSection({
                   totalNotches={32}
                   className="w-full h-full"
                 />
-              </div>
-
-              <div className="pt-1.5 border-t border-slate-200/50 dark:border-white/5 text-[9px] text-slate-400 text-center font-mono">
-                Limit: &lt;60°C Cool
               </div>
             </div>
           </div>
@@ -241,7 +233,7 @@ export function HostCpuSection({
           {/* Chart Area */}
           {loadViewMode === 'unified' ? (
             /* Unified Chart: 1m, 5m, 15m lines synchronized */
-            <div className="w-full h-[180px] my-auto py-1">
+            <div className="w-full h-[190px] my-auto py-1">
               <LineChart
                 data={historyData as unknown as Record<string, unknown>[]}
                 xDataKey="date"
@@ -297,7 +289,7 @@ export function HostCpuSection({
                     </span>
                   </div>
 
-                  <div className="w-full h-[110px] py-1">
+                  <div className="w-full h-[120px] py-1">
                     <LineChart
                       data={historyData as unknown as Record<string, unknown>[]}
                       xDataKey="date"
@@ -321,21 +313,10 @@ export function HostCpuSection({
                       />
                     </LineChart>
                   </div>
-
-                  <div className="text-[8px] text-slate-400 text-center font-mono truncate">
-                    {s.desc}
-                  </div>
                 </div>
               ))}
             </div>
           )}
-
-          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-            <span>Core Multi-Queue Load</span>
-            <span className="font-mono text-slate-700 dark:text-slate-300">
-              System Load Status: {metrics.load1m < 2.0 ? 'Optimal' : 'Elevated'}
-            </span>
-          </div>
         </div>
       </div>
     </div>

@@ -142,14 +142,6 @@ export const AdGuardThreatSection: React.FC<AdGuardThreatSectionProps> = ({
                   </p>
                 </div>
               </div>
-
-              {/* Bottom Card Footer */}
-              <div className="pt-2.5 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[9px] text-slate-400">
-                <span>Cumulative Sensor Stream</span>
-                <span className="font-mono" style={{ color: card.accentColor }}>
-                  {card.count > 0 ? 'Threats Mitigated' : 'Zero Infractions'}
-                </span>
-              </div>
             </div>
           );
         })}

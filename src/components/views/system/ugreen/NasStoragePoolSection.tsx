@@ -122,11 +122,6 @@ export const NasStoragePoolSection: React.FC<NasStoragePoolSectionProps> = ({
               />
             </div>
           </div>
-
-          <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-1">
-            <span>RAID Redundancy: <strong className="text-slate-700 dark:text-slate-200">1-Drive Fault Tolerance</strong></span>
-            <span>Array Integrity: <strong className="text-emerald-400">Synchronized</strong></span>
-          </div>
         </div>
 
         {/* Right: Bklit Capacity Pie Chart */}

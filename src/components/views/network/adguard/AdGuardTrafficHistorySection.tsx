@@ -233,11 +233,6 @@ export const AdGuardTrafficHistorySection: React.FC<AdGuardTrafficHistorySection
               />
             </LineChart>
           </div>
-
-          <div className="pt-2.5 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[9px] text-slate-400">
-            <span>Historical time delta series queried via Home Assistant WebSocket</span>
-            <span className="font-mono">{historyData.length} Sample Points</span>
-          </div>
         </div>
       ) : (
         /* Split View: 4 Individual Responsive Mini-Charts in a 4-Column Grid */
@@ -264,29 +259,34 @@ export const AdGuardTrafficHistorySection: React.FC<AdGuardTrafficHistorySection
                   </div>
 
                   <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: s.color }}
-                  />
+                    className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded"
+                    style={{
+                      backgroundColor: `${s.color}1A`,
+                      color: s.color
+                    }}
+                  >
+                    {(historyData[historyData.length - 1]?.[s.id] as number || 0).toLocaleString()}
+                  </span>
                 </div>
 
-                {/* Mini Line Chart */}
-                <div className="w-full h-[105px] my-auto py-1">
+                {/* Individual Series Line Chart */}
+                <div className="w-full h-[140px] my-auto py-1">
                   <LineChart
                     data={historyData as unknown as Record<string, unknown>[]}
                     xDataKey="date"
-                    margin={{ top: 6, right: 6, bottom: 14, left: 24 }}
+                    margin={{ top: 6, right: 6, bottom: 12, left: 20 }}
                     className="w-full h-full"
                   >
                     <Grid
                       stroke={darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}
                       strokeDasharray="2,2"
                     />
-                    <XAxis numTicks={3} />
+                    <XAxis numTicks={2} />
                     <YAxis numTicks={3} />
                     <Line
                       dataKey={s.id}
                       stroke={s.color}
-                      strokeWidth={2.2}
+                      strokeWidth={2}
                       animate
                     />
                     <ChartTooltip
@@ -301,13 +301,6 @@ export const AdGuardTrafficHistorySection: React.FC<AdGuardTrafficHistorySection
                       ]}
                     />
                   </LineChart>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[9px] text-slate-400">
-                  <span>{timeRange} History</span>
-                  <span className="font-mono" style={{ color: s.color }}>
-                    Live Series
-                  </span>
                 </div>
               </div>
             );

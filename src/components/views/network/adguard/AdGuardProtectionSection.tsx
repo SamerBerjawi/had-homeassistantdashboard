@@ -294,11 +294,6 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
               })}
             </div>
           </div>
-
-          <div className="pt-2.5 mt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[9px] text-slate-400">
-            <span>Switches synchronized via Home Assistant WebSocket</span>
-            <span className="font-mono">Instant Policy Enforcement</span>
-          </div>
         </div>
       </div>
     </div>

@@ -9,7 +9,8 @@ import {
   ShieldCheck,
   Prohibit,
   CheckCircle,
-  Percent
+  Percent,
+  GlobeHemisphereWest
 } from '@phosphor-icons/react';
 import { Gauge } from '../../../charts/gauge';
 import { PieChart } from '../../../charts/pie-chart';
@@ -74,26 +75,25 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
         </div>
       </div>
 
-      {/* Grid: Left Blocked Ratio Gauge (4 Cols) + Right Donut with Vertically Stacked Stats (8 Cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch">
-        {/* Left: Blocked Ratio Headline Gauge (4 cols on desktop) */}
-        <div className={`lg:col-span-4 ${cardStyle} flex flex-col justify-between min-h-[270px]`}>
+      {/* Grid: Left Blocked Ratio Gauge (1/2 on mobile, 4 cols on desktop) + Right Donut (1/2 on mobile, 8 cols on desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch">
+        {/* Left: Blocked Ratio Headline Gauge */}
+        <div className={`col-span-1 lg:col-span-4 ${cardStyle} flex flex-col justify-between min-h-[220px] sm:min-h-[270px]`}>
           <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="w-6 h-6 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center">
                 <Percent size={14} weight="bold" />
               </div>
-              <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+              <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white truncate">
                 Blocked Ratio
               </span>
             </div>
-            <span className="text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
-              Sinkhole Efficiency
+            <span className="text-[8px] sm:text-[9px] font-mono font-extrabold uppercase px-1.5 sm:px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+              Sinkhole
             </span>
           </div>
 
-          {/* Solid Accent Gauge */}
-          <div className="w-full flex-1 min-h-[175px] max-w-[280px] mx-auto flex items-center justify-center py-2">
+          <div className="w-full flex-1 min-h-[140px] sm:min-h-[190px] max-w-[280px] mx-auto flex items-center justify-center py-2">
             <Gauge
               value={blockedRatio}
               centerValue={blockedRatio}
@@ -107,42 +107,35 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
               className="w-full h-full"
             />
           </div>
-
-          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-            <span>DNS Request Filter Rate</span>
-            <span className="font-mono text-indigo-400 font-bold">
-              {blockedRatio.toFixed(1)}% Intercepted
-            </span>
-          </div>
         </div>
 
-        {/* Right: Bklit Donut Component with Vertically Stacked Statistics (8 cols on desktop) */}
-        <div className={`lg:col-span-8 ${cardStyle} flex flex-col justify-between min-h-[270px]`}>
+        {/* Right: Bklit Donut Component with Vertically Stacked Statistics */}
+        <div className={`col-span-1 lg:col-span-8 ${cardStyle} flex flex-col justify-between min-h-[220px] sm:min-h-[270px]`}>
           <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="w-6 h-6 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center">
                 <ShieldCheck size={14} weight="duotone" />
               </div>
-              <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                Query Distribution (Blocked vs Allowed)
+              <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white truncate">
+                Query Distribution
               </span>
             </div>
-            <span className="text-[10px] font-mono text-slate-400">
-              Total: {totalQueries.toLocaleString()}
+            <span className="text-[9px] sm:text-[10px] font-mono text-slate-400">
+              {totalQueries.toLocaleString()}
             </span>
           </div>
 
           {/* 2-Column Inside Container: Left Donut + Right Vertically Stacked Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center flex-1 py-2">
-            {/* Left: Large Prominent Donut Chart (7 cols on desktop) */}
-            <div className="md:col-span-7 flex flex-col items-center justify-center">
-              <div className="relative w-[210px] h-[210px] sm:w-[225px] sm:h-[225px] flex items-center justify-center">
+          <div className="flex flex-col md:grid md:grid-cols-12 gap-3 sm:gap-4 items-center flex-1 py-2">
+            {/* Left: Large Prominent Donut Chart */}
+            <div className="w-full md:col-span-7 flex flex-col items-center justify-center">
+              <div className="relative w-[130px] h-[130px] sm:w-[210px] sm:h-[210px] flex items-center justify-center">
                 <PieChart
                   data={donutData}
-                  innerRadius={72}
+                  innerRadius={48}
                   padAngle={0.04}
                   cornerRadius={6}
-                  size={225}
+                  size={145}
                   className="w-full h-full"
                 >
                   {donutData.map((_, i) => (
@@ -153,17 +146,17 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
                     suffix=""
                   >
                     {({ isHovered, data }) => (
-                      <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none px-2">
-                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">
+                      <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none px-1">
+                        <span className="text-[7px] sm:text-[9px] font-extrabold uppercase tracking-wider text-slate-400">
                           {isHovered ? data.label : 'TOTAL'}
                         </span>
-                        <span className="text-sm sm:text-base font-black font-mono text-slate-900 dark:text-white tracking-tight leading-tight">
+                        <span className="text-xs sm:text-base font-black font-mono text-slate-900 dark:text-white tracking-tight leading-tight">
                           {isHovered
                             ? data.value.toLocaleString()
                             : totalQueries.toLocaleString()}
                         </span>
-                        <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-tight">
-                          DNS Queries
+                        <span className="text-[7px] sm:text-[9px] font-bold text-cyan-400 uppercase tracking-tight">
+                          Queries
                         </span>
                       </div>
                     )}
@@ -172,55 +165,44 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
               </div>
             </div>
 
-            {/* Right: Vertically Stacked Statistics (5 cols on desktop) */}
-            <div className="md:col-span-5 flex flex-col justify-center space-y-2.5">
+            {/* Right: Vertically Stacked Statistics */}
+            <div className="w-full md:col-span-5 flex flex-col justify-center space-y-1.5 sm:space-y-2.5">
               {/* Total Queries */}
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center shrink-0">
-                    <CheckCircle size={18} weight="bold" />
+              <div className="p-2 sm:p-3 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">
+                    <GlobeHemisphereWest size={13} weight="duotone" />
                   </div>
-                  <div className="min-w-0">
-                    <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">Total Queries</span>
-                    <span className="text-sm font-black font-mono text-slate-900 dark:text-white truncate block">
-                      {totalQueries.toLocaleString()}
-                    </span>
-                  </div>
+                  <span className="text-[9px] sm:text-xs font-bold text-slate-400 truncate">Total Queries</span>
                 </div>
-                <span className="text-[9px] font-mono text-slate-400 shrink-0">100%</span>
+                <span className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white">
+                  {totalQueries.toLocaleString()}
+                </span>
               </div>
 
-              {/* Blocked Threats */}
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
-                    <Prohibit size={18} weight="bold" />
+              {/* Blocked Queries */}
+              <div className="p-2 sm:p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center shrink-0">
+                    <ShieldCheck size={13} weight="duotone" />
                   </div>
-                  <div className="min-w-0">
-                    <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">Blocked Threats</span>
-                    <span className="text-sm font-black font-mono text-rose-500 truncate block">
-                      {blockedQueries.toLocaleString()}
-                    </span>
-                  </div>
+                  <span className="text-[9px] sm:text-xs font-bold text-indigo-400 truncate">Blocked</span>
                 </div>
-                <span className="text-[9px] font-mono text-rose-400 font-bold shrink-0">{blockedRatio.toFixed(1)}%</span>
+                <span className="text-xs sm:text-sm font-black font-mono text-indigo-300">
+                  {blockedQueries.toLocaleString()}
+                </span>
               </div>
 
               {/* Allowed Queries */}
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
-                    <ShieldCheck size={18} weight="bold" />
+              <div className="p-2 sm:p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                    <CheckCircle size={13} weight="duotone" />
                   </div>
-                  <div className="min-w-0">
-                    <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">Allowed DNS</span>
-                    <span className="text-sm font-black font-mono text-emerald-400 truncate block">
-                      {allowedQueries.toLocaleString()}
-                    </span>
-                  </div>
+                  <span className="text-[9px] sm:text-xs font-bold text-slate-400 truncate">Allowed</span>
                 </div>
-                <span className="text-[9px] font-mono text-emerald-400 font-bold shrink-0">
-                  {(100 - blockedRatio).toFixed(1)}%
+                <span className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white">
+                  {allowedQueries.toLocaleString()}
                 </span>
               </div>
             </div>

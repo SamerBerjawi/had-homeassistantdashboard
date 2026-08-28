@@ -59,15 +59,6 @@ export default function SystemView({ darkMode = true }: SystemViewProps) {
           >
             <HardDrives size={16} weight={activeSubTab === 'ugreen_nas' ? 'bold' : 'duotone'} />
             <span>UGreen NAS</span>
-            <span
-              className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md ${
-                activeSubTab === 'ugreen_nas'
-                  ? 'bg-black/20 text-black dark:text-black'
-                  : 'bg-amber-500/20 text-amber-500'
-              }`}
-            >
-              UGOS API
-            </span>
           </button>
         </div>
 

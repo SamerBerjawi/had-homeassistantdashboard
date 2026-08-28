@@ -92,31 +92,31 @@ export const TpLinkPerformanceThroughputSection: React.FC<TpLinkPerformanceThrou
         </div>
       </div>
 
-      {/* 1 Row on Desktop: 1/4 CPU + 1/4 Memory + 1/2 Bandwidth */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch">
-        {/* 1/4 Width: CPU Utilization (3 cols on desktop) */}
-        <div className={`lg:col-span-3 ${cardStyle} flex flex-col justify-between min-h-[250px]`}>
+      {/* 4-Item Grid: 2 Half-Width Gauges on Mobile + Full-Width Line Chart */}
+      <div className="grid grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4">
+        {/* 1/2 Width on Mobile, 1/4 Width on Desktop: CPU Load Gauge */}
+        <div className={`col-span-1 lg:col-span-3 ${cardStyle} flex flex-col justify-between min-h-[220px] sm:min-h-[250px]`}>
           <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
                 <Cpu size={14} weight="duotone" />
               </div>
-              <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+              <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white truncate">
                 CPU Load
               </span>
             </div>
             <span
-              className="text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full"
+              className="text-[8px] sm:text-[9px] font-mono font-extrabold uppercase px-1.5 sm:px-2 py-0.5 rounded-full"
               style={{
                 backgroundColor: `${cpuUsageColor}1A`,
                 color: cpuUsageColor
               }}
             >
-              {metrics.cpuUsage < 60 ? 'Optimal' : metrics.cpuUsage < 85 ? 'Elevated' : 'High Load'}
+              {metrics.cpuUsage < 60 ? 'Optimal' : metrics.cpuUsage < 85 ? 'Elevated' : 'High'}
             </span>
           </div>
 
-          <div className="w-full h-[140px] max-w-[160px] mx-auto my-auto flex items-center justify-center">
+          <div className="w-full h-[130px] sm:h-[155px] max-w-[160px] mx-auto my-auto flex items-center justify-center">
             <Gauge
               value={metrics.cpuUsage}
               centerValue={metrics.cpuUsage}
@@ -130,38 +130,31 @@ export const TpLinkPerformanceThroughputSection: React.FC<TpLinkPerformanceThrou
               className="w-full h-full"
             />
           </div>
-
-          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-            <span>Threshold: 60/85%</span>
-            <span className="font-mono text-slate-700 dark:text-slate-300 font-bold">
-              {metrics.cpuUsage.toFixed(1)}%
-            </span>
-          </div>
         </div>
 
-        {/* 1/4 Width: Memory Utilization (3 cols on desktop) */}
-        <div className={`lg:col-span-3 ${cardStyle} flex flex-col justify-between min-h-[250px]`}>
+        {/* 1/2 Width on Mobile, 1/4 Width on Desktop: Memory RAM Gauge */}
+        <div className={`col-span-1 lg:col-span-3 ${cardStyle} flex flex-col justify-between min-h-[220px] sm:min-h-[250px]`}>
           <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="w-6 h-6 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center">
                 <Memory size={14} weight="duotone" />
               </div>
-              <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+              <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white truncate">
                 Memory RAM
               </span>
             </div>
             <span
-              className="text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full"
+              className="text-[8px] sm:text-[9px] font-mono font-extrabold uppercase px-1.5 sm:px-2 py-0.5 rounded-full"
               style={{
                 backgroundColor: `${memUsageColor}1A`,
                 color: memUsageColor
               }}
             >
-              {metrics.memoryUsage < 70 ? 'Optimal' : metrics.memoryUsage < 90 ? 'Elevated' : 'High RAM'}
+              {metrics.memoryUsage < 70 ? 'Optimal' : metrics.memoryUsage < 90 ? 'Elevated' : 'High'}
             </span>
           </div>
 
-          <div className="w-full h-[140px] max-w-[160px] mx-auto my-auto flex items-center justify-center">
+          <div className="w-full h-[130px] sm:h-[155px] max-w-[160px] mx-auto my-auto flex items-center justify-center">
             <Gauge
               value={metrics.memoryUsage}
               centerValue={metrics.memoryUsage}
@@ -175,17 +168,10 @@ export const TpLinkPerformanceThroughputSection: React.FC<TpLinkPerformanceThrou
               className="w-full h-full"
             />
           </div>
-
-          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-            <span>Threshold: 70/90%</span>
-            <span className="font-mono text-slate-700 dark:text-slate-300 font-bold">
-              {metrics.memoryUsage.toFixed(1)}%
-            </span>
-          </div>
         </div>
 
-        {/* 1/2 Width: Bandwidth Throughput Line Chart (6 cols on desktop) */}
-        <div className={`md:col-span-2 lg:col-span-6 ${cardStyle} flex flex-col justify-between min-h-[250px]`}>
+        {/* Full Width on Mobile (col-span-2), 1/2 Width on Desktop: Bandwidth Throughput Line Chart */}
+        <div className={`col-span-2 lg:col-span-6 ${cardStyle} flex flex-col justify-between min-h-[220px] sm:min-h-[250px]`}>
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/60 dark:border-white/10">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
@@ -209,7 +195,7 @@ export const TpLinkPerformanceThroughputSection: React.FC<TpLinkPerformanceThrou
           </div>
 
           {/* Line chart area */}
-          <div className="w-full h-[150px] my-auto py-1">
+          <div className="w-full h-[175px] my-auto py-1">
             <LineChart
               data={historyData as unknown as Record<string, unknown>[]}
               xDataKey="date"
@@ -221,7 +207,7 @@ export const TpLinkPerformanceThroughputSection: React.FC<TpLinkPerformanceThrou
                 strokeDasharray="3,3"
               />
               <XAxis numTicks={4} />
-              <YAxis numTicks={3} />
+              <YAxis numTicks={4} />
               <Line
                 dataKey="downloadKBps"
                 stroke="#10B981"
@@ -252,20 +238,6 @@ export const TpLinkPerformanceThroughputSection: React.FC<TpLinkPerformanceThrou
                 ]}
               />
             </LineChart>
-          </div>
-
-          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                <span>Down: <strong className="font-mono text-slate-700 dark:text-slate-300">{metrics.totalDownloadGB} GB</strong></span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                <span>Up: <strong className="font-mono text-slate-700 dark:text-slate-300">{metrics.totalUploadGB} GB</strong></span>
-              </span>
-            </div>
-            <span className="font-mono text-[9px] text-slate-400">Live Metric</span>
           </div>
         </div>
       </div>

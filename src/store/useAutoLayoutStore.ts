@@ -642,6 +642,10 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           } else if (service === 'alarm_trigger') {
             get().updateEntityState(eid, 'triggered', { changed_by: 'Alarm Trigger', last_changed: new Date().toISOString() });
           }
+        } else if (domain === 'button' && service === 'press') {
+          get().updateEntityState(eid, new Date().toISOString(), { last_pressed: new Date().toISOString() });
+        } else if (domain === 'select' && service === 'select_option' && serviceData.option) {
+          get().updateEntityState(eid, String(serviceData.option));
         }
       }
     }
