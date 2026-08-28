@@ -1,0 +1,188 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useMemo } from 'react';
+import { Memory } from '@phosphor-icons/react';
+import { Gauge } from '../../../charts/gauge';
+import { PieChart } from '../../../charts/pie-chart';
+import { PieSlice } from '../../../charts/pie-slice';
+import { PieCenter } from '../../../charts/pie-center';
+import { SystemHostMetrics } from '../../../../hooks/useSystemMetrics';
+
+interface HostMemorySectionProps {
+  metrics: SystemHostMetrics;
+  darkMode?: boolean;
+}
+
+export function HostMemorySection({
+  metrics,
+  darkMode = true
+}: HostMemorySectionProps) {
+  const cardStyle =
+    'rounded-2xl border bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/80 dark:border-white/10 p-3.5 sm:p-4 shadow-sm';
+
+  // Threshold color: ~70/90
+  const memUsageColor =
+    metrics.memoryUsagePercent < 70 ? '#6366F1' : metrics.memoryUsagePercent < 90 ? '#F59E0B' : '#EF4444';
+
+  // Pie chart data: Used vs Free
+  const donutData = useMemo(() => {
+    return [
+      {
+        label: 'Used Memory',
+        value: metrics.memoryUsed,
+        fill: '#6366F1' // Indigo
+      },
+      {
+        label: 'Free Memory',
+        value: metrics.memoryFree,
+        fill: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
+      }
+    ];
+  }, [metrics.memoryUsed, metrics.memoryFree, darkMode]);
+
+  return (
+    <div className="space-y-3">
+      {/* Section Header */}
+      <div className="flex items-center gap-2 px-1">
+        <Memory size={18} weight="duotone" className="text-indigo-400" />
+        <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+          System Memory (RAM)
+        </h3>
+        <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-400">
+          Section 3
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
+        {/* Left: Memory Usage Gauge (5 cols) */}
+        <div className={`md:col-span-5 ${cardStyle} flex flex-col justify-between`}>
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
+            <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+              Memory Utilization
+            </span>
+            <span
+              className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
+              style={{
+                backgroundColor: `${memUsageColor}1A`,
+                color: memUsageColor
+              }}
+            >
+              {metrics.memoryUsagePercent < 70 ? 'Optimal' : metrics.memoryUsagePercent < 90 ? 'High' : 'Critical'}
+            </span>
+          </div>
+
+          <div className="w-full h-[135px] max-w-[170px] mx-auto my-auto flex items-center justify-center py-2">
+            <Gauge
+              value={metrics.memoryUsagePercent}
+              centerValue={metrics.memoryUsagePercent}
+              defaultLabel="RAM"
+              suffix="%"
+              activeFill={memUsageColor}
+              inactiveFill={darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}
+              orientation="arc"
+              notchCornerRadius={2}
+              totalNotches={32}
+              className="w-full h-full"
+            />
+          </div>
+
+          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+            <span>Threshold: &lt;70%</span>
+            <span className="font-mono text-slate-700 dark:text-slate-300">
+              {metrics.memoryUsagePercent.toFixed(1)}% Allocated
+            </span>
+          </div>
+        </div>
+
+        {/* Right: Used vs Free Pie / Donut Chart (7 cols) */}
+        <div className={`md:col-span-7 ${cardStyle} flex flex-col justify-between`}>
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
+            <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+              Memory Allocation (Used vs Free)
+            </span>
+            <span className="text-[10px] font-mono text-slate-500">
+              Total: {metrics.memoryTotal} {metrics.memoryTotalUnit}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center py-1">
+            {/* Donut */}
+            <div className="sm:col-span-6 relative w-[140px] h-[140px] mx-auto flex items-center justify-center">
+              <PieChart
+                data={donutData}
+                innerRadius={46}
+                padAngle={0.04}
+                cornerRadius={6}
+                size={140}
+                className="w-full h-full"
+              >
+                {donutData.map((_, i) => (
+                  <PieSlice key={i} index={i} />
+                ))}
+                <PieCenter
+                  defaultLabel="Total RAM"
+                  suffix={` ${metrics.memoryTotalUnit}`}
+                >
+                  {({ isHovered, data }) => (
+                    <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none">
+                      <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">
+                        {isHovered ? data.label : 'Total RAM'}
+                      </span>
+                      <span className="text-xs font-black font-mono text-slate-900 dark:text-white leading-tight">
+                        {isHovered ? data.value.toFixed(1) : metrics.memoryTotal}
+                      </span>
+                      <span className="text-[8px] font-bold text-indigo-400">
+                        {metrics.memoryTotalUnit}
+                      </span>
+                    </div>
+                  )}
+                </PieCenter>
+              </PieChart>
+            </div>
+
+            {/* Breakdown Cards */}
+            <div className="sm:col-span-6 space-y-2">
+              <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between">
+                <div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-400 block">
+                    Used Memory
+                  </span>
+                  <span className="text-sm font-black font-mono text-indigo-300">
+                    {metrics.memoryUsed.toFixed(1)} {metrics.memoryUsedUnit}
+                  </span>
+                </div>
+                <span className="text-xs font-mono font-bold text-indigo-400">
+                  {metrics.memoryUsagePercent.toFixed(1)}%
+                </span>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-slate-500/10 border border-slate-500/20 flex items-center justify-between">
+                <div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
+                    Free Memory
+                  </span>
+                  <span className="text-sm font-black font-mono text-slate-200">
+                    {metrics.memoryFree.toFixed(1)} {metrics.memoryFreeUnit}
+                  </span>
+                </div>
+                <span className="text-xs font-mono font-bold text-slate-400">
+                  {(100 - metrics.memoryUsagePercent).toFixed(1)}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+            <span>Buffer & System Allocations</span>
+            <span className="font-mono text-slate-700 dark:text-slate-300">
+              Available: {metrics.memoryFree.toFixed(1)} {metrics.memoryFreeUnit}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
