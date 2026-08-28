@@ -93,7 +93,7 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
             </span>
           </div>
 
-          <div className="w-full flex-1 min-h-[140px] sm:min-h-[190px] max-w-[280px] mx-auto flex items-center justify-center py-2">
+          <div className="w-full flex-1 min-h-[160px] sm:min-h-[220px] max-w-[340px] mx-auto flex items-center justify-center py-1">
             <Gauge
               value={blockedRatio}
               centerValue={blockedRatio}
@@ -126,16 +126,16 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
           </div>
 
           {/* 2-Column Inside Container: Left Donut + Right Vertically Stacked Stats */}
-          <div className="flex flex-col md:grid md:grid-cols-12 gap-3 sm:gap-4 items-center flex-1 py-2">
+          <div className="flex flex-col md:grid md:grid-cols-12 gap-3 sm:gap-4 items-center flex-1 py-1">
             {/* Left: Large Prominent Donut Chart */}
             <div className="w-full md:col-span-7 flex flex-col items-center justify-center">
-              <div className="relative w-[130px] h-[130px] sm:w-[210px] sm:h-[210px] flex items-center justify-center">
+              <div className="relative w-[150px] h-[150px] sm:w-[220px] sm:h-[220px] flex items-center justify-center">
                 <PieChart
                   data={donutData}
-                  innerRadius={48}
+                  innerRadius={56}
                   padAngle={0.04}
                   cornerRadius={6}
-                  size={145}
+                  size={200}
                   className="w-full h-full"
                 >
                   {donutData.map((_, i) => (
@@ -147,15 +147,15 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
                   >
                     {({ isHovered, data }) => (
                       <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none px-1">
-                        <span className="text-[7px] sm:text-[9px] font-extrabold uppercase tracking-wider text-slate-400">
+                        <span className="text-[8px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                           {isHovered ? data.label : 'TOTAL'}
                         </span>
-                        <span className="text-xs sm:text-base font-black font-mono text-slate-900 dark:text-white tracking-tight leading-tight">
+                        <span className="text-sm sm:text-lg font-black font-mono text-slate-900 dark:text-white tracking-tight leading-tight my-0.5">
                           {isHovered
                             ? data.value.toLocaleString()
                             : totalQueries.toLocaleString()}
                         </span>
-                        <span className="text-[7px] sm:text-[9px] font-bold text-cyan-400 uppercase tracking-tight">
+                        <span className="text-[8px] sm:text-[10px] font-bold text-cyan-400 uppercase tracking-tight">
                           Queries
                         </span>
                       </div>

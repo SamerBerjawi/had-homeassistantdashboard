@@ -178,7 +178,7 @@ export const AdGuardTrafficHistorySection: React.FC<AdGuardTrafficHistorySection
                 stroke={darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}
                 strokeDasharray="3,3"
               />
-              <XAxis numTicks={5} />
+              <XAxis numTicks={timeRange === '24H' ? 6 : timeRange === '7D' ? 7 : 5} />
               <YAxis numTicks={4} />
               <Line
                 dataKey="totalQueries"

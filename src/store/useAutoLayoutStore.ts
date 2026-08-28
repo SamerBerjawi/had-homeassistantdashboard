@@ -166,21 +166,31 @@ const getCachedServerUrl = (): string => {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem('ha_server_url');
     if (saved && saved.trim()) return saved;
+    const storedAuth = getStoredHAAuth();
+    if (storedAuth?.server_url) return storedAuth.server_url;
   }
-  return 'wss://hass.homz.internal/api/websocket';
+  return 'ws://homeassistant.local:8123/api/websocket';
 };
 
 const getCachedHaToken = (): string => {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem('ha_token');
     if (saved && saved.trim()) return saved;
+    const storedAuth = getStoredHAAuth();
+    if (storedAuth?.access_token) return storedAuth.access_token;
   }
-  return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+  return '';
 };
 
 const getCachedLiveMode = (): boolean => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('ha_live_mode') === 'true';
+    const live = localStorage.getItem('ha_live_mode');
+    if (live === 'true') return true;
+    if (live === 'false') return false;
+    const token = localStorage.getItem('ha_token');
+    if (token && token.trim()) return true;
+    const storedAuth = getStoredHAAuth();
+    if (storedAuth?.access_token) return true;
   }
   return false;
 };
@@ -335,27 +345,39 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       console.error('[HA Auth] OAuth callback processing error:', err);
     }
 
-    // 2. Check for existing stored OAuth tokens
+    // 2. Check for existing stored auth (OAuth or LLAT)
     const storedAuth = getStoredHAAuth();
-    if (storedAuth && storedAuth.auth_type === 'oauth') {
-      let activeTokens = storedAuth;
-      // Check if token is expired or close to expiry (within 2 minutes)
-      if (storedAuth.expires_at && storedAuth.expires_at < Date.now() + 120000) {
-        const refreshed = await refreshHAOAuthToken(storedAuth);
-        if (refreshed) {
-          activeTokens = refreshed;
+    if (storedAuth) {
+      if (storedAuth.auth_type === 'oauth') {
+        let activeTokens = storedAuth;
+        // Check if token is expired or close to expiry (within 2 minutes)
+        if (storedAuth.expires_at && storedAuth.expires_at < Date.now() + 120000) {
+          const refreshed = await refreshHAOAuthToken(storedAuth);
+          if (refreshed) {
+            activeTokens = refreshed;
+          }
         }
-      }
 
-      set({
-        isLiveMode: true,
-        serverUrl: activeTokens.server_url,
-        haToken: activeTokens.access_token,
-        authType: 'oauth'
-      });
-      haWebSocketService.setDemoMode(false);
-      haWebSocketService.connect(activeTokens.server_url, activeTokens.access_token);
-      return;
+        set({
+          isLiveMode: true,
+          serverUrl: activeTokens.server_url,
+          haToken: activeTokens.access_token,
+          authType: 'oauth'
+        });
+        haWebSocketService.setDemoMode(false);
+        haWebSocketService.connect(activeTokens.server_url, activeTokens.access_token);
+        return;
+      } else if (storedAuth.auth_type === 'llat' && storedAuth.access_token) {
+        set({
+          isLiveMode: true,
+          serverUrl: storedAuth.server_url,
+          haToken: storedAuth.access_token,
+          authType: 'llat'
+        });
+        haWebSocketService.setDemoMode(false);
+        haWebSocketService.connect(storedAuth.server_url, storedAuth.access_token);
+        return;
+      }
     }
 
     // 3. Fallback to cached LLAT token if previously configured
@@ -363,7 +385,12 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
     const cachedToken = getCachedHaToken();
     const cachedLive = getCachedLiveMode();
 
-    if (cachedLive && cachedUrl && cachedToken && !cachedUrl.includes('hass.homz.internal')) {
+    if (cachedLive && cachedUrl && cachedToken) {
+      saveStoredHAAuth({
+        access_token: cachedToken,
+        server_url: cachedUrl,
+        auth_type: 'llat'
+      });
       set({ isLiveMode: true, serverUrl: cachedUrl, haToken: cachedToken, authType: 'llat' });
       haWebSocketService.setDemoMode(false);
       haWebSocketService.connect(cachedUrl, cachedToken);
@@ -419,7 +446,15 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       if (nextToken) localStorage.setItem('ha_token', nextToken);
     }
 
-    set({ isLiveMode: live, serverUrl: nextUrl, haToken: nextToken });
+    if (live && nextToken && nextUrl) {
+      saveStoredHAAuth({
+        access_token: nextToken,
+        server_url: nextUrl,
+        auth_type: 'llat'
+      });
+    }
+
+    set({ isLiveMode: live, serverUrl: nextUrl, haToken: nextToken, authType: live ? 'llat' : 'demo' });
 
     haWebSocketService.setDemoMode(!live);
     if (live) {
@@ -435,7 +470,12 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       localStorage.setItem('ha_server_url', url);
       localStorage.setItem('ha_token', token);
     }
-    set({ isLiveMode: true, serverUrl: url, haToken: token });
+    saveStoredHAAuth({
+      access_token: token,
+      server_url: url,
+      auth_type: 'llat'
+    });
+    set({ isLiveMode: true, serverUrl: url, haToken: token, authType: 'llat' });
     haWebSocketService.setDemoMode(false);
     haWebSocketService.connect(url, token);
   },

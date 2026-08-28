@@ -14,6 +14,7 @@ import {
   AdGuardTimeseriesPoint,
   NetworkTimeRange
 } from '../types/network';
+import { fetchAdGuardStatistics } from '../services/haAdGuardStatistics';
 
 function parseNum(val: unknown, fallback = 0): number {
   if (typeof val === 'number') return isNaN(val) ? fallback : val;
@@ -809,15 +810,20 @@ export function useAdGuardHome() {
 
   const fetchHistory = useCallback(async () => {
     setIsLoadingHistory(true);
-    const points = generateCalibratedAdGuardHistory(
-      timeRange,
-      metrics.dnsQueriesTotal,
-      metrics.dnsQueriesBlocked,
-      metrics.blockedRatioPercent
-    );
-    setHistoryData(points);
-    setIsLoadingHistory(false);
-  }, [timeRange, metrics.dnsQueriesTotal, metrics.dnsQueriesBlocked, metrics.blockedRatioPercent]);
+    try {
+      const points = await fetchAdGuardStatistics(timeRange, {
+        total: metrics.dnsQueriesTotal,
+        blocked: metrics.dnsQueriesBlocked,
+        safeBrowsing: metrics.safeBrowsingBlockedCount,
+        parental: metrics.parentalBlockedCount
+      });
+      setHistoryData(points);
+    } catch {
+      setHistoryData([]);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, [timeRange, metrics.dnsQueriesTotal, metrics.dnsQueriesBlocked, metrics.safeBrowsingBlockedCount, metrics.parentalBlockedCount]);
 
   useEffect(() => {
     fetchHistory();

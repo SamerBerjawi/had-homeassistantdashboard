@@ -1,6 +1,10 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ * 
+ * useAdGuardData Hook
+ * Binds strictly to live Home Assistant entities and recorder statistics
+ * with zero hardcoded/mock data fallbacks.
  */
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -10,6 +14,7 @@ import {
   AdGuardTimeseriesPoint,
   NetworkTimeRange
 } from '../types/network';
+import { fetchAdGuardStatistics, ADGUARD_ENTITY_IDS } from '../services/haAdGuardStatistics';
 
 /**
  * Flexible entity lookup supporting wildcards and friendly names
@@ -33,7 +38,7 @@ function findEntity(
   });
 }
 
-function parseNum(val: any, fallback = 0): number {
+function parseNum(val: unknown, fallback = 0): number {
   if (typeof val === 'number') return isNaN(val) ? fallback : val;
   if (typeof val === 'string') {
     const clean = val.replace(/[^0-9.-]/g, '');
@@ -48,71 +53,6 @@ const isEntityOn = (ent: any, defaultState = false): boolean => {
   const s = String(ent.state ?? '').trim().toLowerCase();
   return s === 'on' || s === 'home' || s === 'connected' || s === 'enabled' || s === 'true' || s === '1' || ent.state === true;
 };
-
-function getTimeRangeConfig(range: NetworkTimeRange): { count: number; totalHours: number } {
-  switch (range) {
-    case '24H':
-    case '1D':
-      return { count: 24, totalHours: 24 };
-    case '7D':
-    case '1W':
-      return { count: 14, totalHours: 24 * 7 };
-    case '30D':
-    case '1M':
-      return { count: 30, totalHours: 24 * 30 };
-    case '90D':
-    case '3M':
-    default:
-      return { count: 45, totalHours: 24 * 90 };
-  }
-}
-
-/**
- * Generate 4-series DNS traffic history (Total, Blocked, Safe Browsing, Parental)
- */
-function generateAdGuardHistory(
-  range: NetworkTimeRange,
-  baseTotal: number,
-  baseBlocked: number,
-  baseSafeBrowsing: number,
-  baseParental: number
-): AdGuardTimeseriesPoint[] {
-  const { count, totalHours } = getTimeRangeConfig(range);
-  const points: AdGuardTimeseriesPoint[] = [];
-  const intervalMs = (totalHours * 3600 * 1000) / (count - 1);
-  const now = Date.now();
-
-  const totalSafe = Math.max(baseTotal, 1200);
-  const blockedSafe = Math.max(baseBlocked, 280);
-  const safeBrowsingSafe = Math.max(baseSafeBrowsing, 18);
-  const parentalSafe = Math.max(baseParental, 12);
-
-  for (let i = count - 1; i >= 0; i--) {
-    const t = new Date(now - i * intervalMs);
-    const progress = (count - 1 - i) / count;
-
-    // Diurnal sinusoidal pattern + mild noise
-    const diurnal = 0.35 * Math.sin(progress * Math.PI * 4 - Math.PI / 2) + 0.65;
-    const noise = 0.9 + 0.2 * Math.sin(i * 1.73 + 0.4);
-
-    const hourlyTotal = Math.round((totalSafe / (range === '24H' ? 24 : 14)) * diurnal * noise);
-    const blockRatio = Math.min(0.38, Math.max(0.18, (blockedSafe / totalSafe) * (0.95 + 0.1 * Math.sin(i * 0.9))));
-    const hourlyBlocked = Math.round(hourlyTotal * blockRatio);
-
-    const hourlySafeBrowsing = Math.max(0, Math.round((safeBrowsingSafe / (range === '24H' ? 24 : 14)) * diurnal * noise));
-    const hourlyParental = Math.max(0, Math.round((parentalSafe / (range === '24H' ? 24 : 14)) * diurnal * noise));
-
-    points.push({
-      date: t,
-      totalQueries: Math.max(hourlyTotal, 50),
-      blockedQueries: Math.max(hourlyBlocked, 10),
-      safeBrowsingBlocked: hourlySafeBrowsing,
-      parentalBlocked: hourlyParental
-    });
-  }
-
-  return points;
-}
 
 export function useAdGuardData() {
   const rawStates = useAutoLayoutStore((s) => s.rawStates);
@@ -161,22 +101,22 @@ export function useAdGuardData() {
       rawStates['sensor.adguard_home_dns_queries'] ||
       rawStates['sensor.adguard_dns_queries'] ||
       findEntity(rawStates, 'sensor', ['dns_queries', 'adguard_dns_queries', 'adguard_home_dns_queries']);
-    const dnsQueriesTotal = parseNum(queriesEntity?.state, 248920);
+    const dnsQueriesTotal = parseNum(queriesEntity?.state, 0);
 
     const blockedEntity =
       rawStates['sensor.adguard_home_dns_queries_blocked'] ||
       rawStates['sensor.adguard_dns_queries_blocked'] ||
       findEntity(rawStates, 'sensor', ['dns_queries_blocked', 'adguard_dns_queries_blocked', 'adguard_home_dns_queries_blocked']);
-    const dnsQueriesBlocked = parseNum(blockedEntity?.state, 58240);
+    const dnsQueriesBlocked = parseNum(blockedEntity?.state, 0);
 
     const ratioEntity =
       rawStates['sensor.adguard_home_dns_queries_blocked_ratio'] ||
       rawStates['sensor.adguard_dns_queries_blocked_ratio'] ||
       findEntity(rawStates, 'sensor', ['dns_queries_blocked_ratio', 'blocked_ratio', 'adguard_dns_queries_blocked_ratio']);
     
-    // Auto-calculate ratio if sensor returns 0 or missing
+    // Calculate ratio from live total / blocked if ratio entity is missing
     const calculatedRatio =
-      dnsQueriesTotal > 0 ? Number(((dnsQueriesBlocked / dnsQueriesTotal) * 100).toFixed(1)) : 23.4;
+      dnsQueriesTotal > 0 ? Number(((dnsQueriesBlocked / dnsQueriesTotal) * 100).toFixed(1)) : 0;
     const blockedRatioPercent =
       ratioEntity?.state !== undefined ? parseNum(ratioEntity.state, calculatedRatio) : calculatedRatio;
 
@@ -184,32 +124,32 @@ export function useAdGuardData() {
       rawStates['sensor.adguard_home_safe_browsing_blocked'] ||
       rawStates['sensor.adguard_safe_browsing_blocked'] ||
       findEntity(rawStates, 'sensor', ['safe_browsing_blocked', 'safebrowsing_blocked']);
-    const safeBrowsingBlockedCount = parseNum(safeBrowsingEntity?.state, 142);
+    const safeBrowsingBlockedCount = parseNum(safeBrowsingEntity?.state, 0);
 
     const parentalEntity =
       rawStates['sensor.adguard_home_parental_control_blocked'] ||
       rawStates['sensor.adguard_parental_control_blocked'] ||
       findEntity(rawStates, 'sensor', ['parental_control_blocked', 'parental_blocked']);
-    const parentalBlockedCount = parseNum(parentalEntity?.state, 86);
+    const parentalBlockedCount = parseNum(parentalEntity?.state, 0);
 
     const rulesEntity =
       rawStates['sensor.adguard_home_rules_count'] ||
       rawStates['sensor.adguard_rules_count'] ||
       findEntity(rawStates, 'sensor', ['rules_count', 'adguard_rules_count']);
-    const rulesCount = parseNum(rulesEntity?.state, 128450);
+    const rulesCount = parseNum(rulesEntity?.state, 0);
 
     const speedEntity =
       rawStates['sensor.adguard_home_average_processing_speed'] ||
       rawStates['sensor.adguard_average_processing_speed'] ||
       findEntity(rawStates, 'sensor', ['average_processing_speed', 'processing_speed']);
-    const avgProcessingSpeedMs = parseNum(speedEntity?.state, 14.8);
+    const avgProcessingSpeedMs = parseNum(speedEntity?.state, 0);
     const avgProcessingSpeedUnit = speedEntity?.attributes?.unit_of_measurement || 'ms';
 
     const safeSearchesEntity =
       rawStates['sensor.adguard_home_safe_searches_enforced'] ||
       rawStates['sensor.adguard_safe_searches_enforced'] ||
       findEntity(rawStates, 'sensor', ['safe_searches_enforced', 'safe_search_enforced']);
-    const safeSearchesEnforcedCount = parseNum(safeSearchesEntity?.state, 328);
+    const safeSearchesEnforcedCount = parseNum(safeSearchesEntity?.state, 0);
 
     const dnsQueriesAllowed = Math.max(0, dnsQueriesTotal - dnsQueriesBlocked);
 
@@ -243,15 +183,20 @@ export function useAdGuardData() {
 
   const fetchHistory = useCallback(async () => {
     setIsLoadingHistory(true);
-    const points = generateAdGuardHistory(
-      timeRange,
-      metrics.dnsQueriesTotal,
-      metrics.dnsQueriesBlocked,
-      metrics.safeBrowsingBlockedCount,
-      metrics.parentalBlockedCount
-    );
-    setHistoryData(points);
-    setIsLoadingHistory(false);
+    try {
+      const points = await fetchAdGuardStatistics(timeRange, {
+        total: metrics.dnsQueriesTotal,
+        blocked: metrics.dnsQueriesBlocked,
+        safeBrowsing: metrics.safeBrowsingBlockedCount,
+        parental: metrics.parentalBlockedCount
+      });
+      setHistoryData(points);
+    } catch (e) {
+      console.warn('[AdGuard Hook] Failed to load statistics history:', e);
+      setHistoryData([]);
+    } finally {
+      setIsLoadingHistory(false);
+    }
   }, [timeRange, metrics.dnsQueriesTotal, metrics.dnsQueriesBlocked, metrics.safeBrowsingBlockedCount, metrics.parentalBlockedCount]);
 
   useEffect(() => {

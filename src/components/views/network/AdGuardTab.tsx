@@ -6,6 +6,7 @@
 import React from 'react';
 import { useAdGuardData } from '../../../hooks/useAdGuardData';
 import { AdGuardProtectionSection } from './adguard/AdGuardProtectionSection';
+import { AdGuardSparklineGrid } from './adguard/AdGuardSparklineGrid';
 import { AdGuardQueryActivitySection } from './adguard/AdGuardQueryActivitySection';
 import { AdGuardTrafficHistorySection } from './adguard/AdGuardTrafficHistorySection';
 import { AdGuardThreatSection } from './adguard/AdGuardThreatSection';
@@ -26,14 +27,23 @@ export const AdGuardTab: React.FC<AdGuardTabProps> = ({ darkMode = true }) => {
 
   return (
     <div className="space-y-6 sm:space-y-7 pb-10">
-      {/* Section 1: Protection Controls (Master Switch & Sub-Toggles Grid) */}
+      {/* Section 1: Native AdGuard 4-Card Sparkline Overview Grid */}
+      <AdGuardSparklineGrid
+        metrics={metrics}
+        historyData={historyData}
+        timeRange={timeRange}
+        onTimeRangeChange={setTimeRange}
+        darkMode={darkMode}
+      />
+
+      {/* Section 2: Protection Controls (Master Switch & Sub-Toggles Grid) */}
       <AdGuardProtectionSection
         metrics={metrics}
         onToggleSwitch={toggleSwitch}
         darkMode={darkMode}
       />
 
-      {/* Section 2: Query Activity (Blocked Ratio Gauge, Donut Breakdown & Summary Stats) */}
+      {/* Section 3: Query Activity (Blocked Ratio Gauge, Donut Breakdown & Summary Stats) */}
       <AdGuardQueryActivitySection
         metrics={metrics}
         darkMode={darkMode}

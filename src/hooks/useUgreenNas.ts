@@ -202,19 +202,17 @@ export function useUgreenNas() {
     };
 
     // 4. Fans & Power
-    const findSelectEntity = (keywords: string[], fallback: string) => {
-      const keys = Object.keys(rawStates);
-      const found = keys.find(k => k.startsWith('select.') && keywords.every(kw => k.toLowerCase().includes(kw)));
-      return found || fallback;
-    };
-
-    const fanSelectId = findSelectEntity(['fan'], 'select.dxp_ugreen_nas_fan_mode');
+    const fanSelectId = rawStates['select.dxp_ugreen_nas_fan_mode']
+      ? 'select.dxp_ugreen_nas_fan_mode'
+      : (Object.keys(rawStates).find(k => k.startsWith('select.') && k.includes('fan')) || 'select.dxp_ugreen_nas_fan_mode');
     const dynamicFanOptions = getAttr(fanSelectId, 'options', null);
     const fanOptions = Array.isArray(dynamicFanOptions) && dynamicFanOptions.length > 0
       ? dynamicFanOptions
       : ['Quiet', 'Default', 'Full Power'];
 
-    const powerSelectId = findSelectEntity(['power'], 'select.dxp_ugreen_nas_power_mode');
+    const powerSelectId = rawStates['select.dxp_ugreen_nas_power_mode']
+      ? 'select.dxp_ugreen_nas_power_mode'
+      : (Object.keys(rawStates).find(k => k.startsWith('select.') && k.includes('power')) || 'select.dxp_ugreen_nas_power_mode');
     const dynamicPowerOptions = getAttr(powerSelectId, 'options', null);
     const powerOptions = Array.isArray(dynamicPowerOptions) && dynamicPowerOptions.length > 0
       ? dynamicPowerOptions
