@@ -14,21 +14,30 @@ import {
   Check
 } from '@phosphor-icons/react';
 import { TimeseriesEnergyPoint } from './energyCalculator';
+import type { EnergyHistoryPeriod } from '../../services/haEnergyStatistics';
 
 interface PowerSourcesChartProps {
+  /** Active-period timeseries (whatever period is currently selected) */
   timeseries24h: TimeseriesEnergyPoint[];
+  /** Individual period caches passed from parent so chart always shows the right data */
+  timeseriesYesterday?: TimeseriesEnergyPoint[];
   timeseries7d?: TimeseriesEnergyPoint[];
   timeseriesMonth?: TimeseriesEnergyPoint[];
+  timeseriesYear?: TimeseriesEnergyPoint[];
+  /** Current period selected in EnergyDashboardView — drives dataset selection */
+  period?: EnergyHistoryPeriod;
   darkMode?: boolean;
 }
 
 export default function PowerSourcesChart({
   timeseries24h,
+  timeseriesYesterday,
   timeseries7d,
   timeseriesMonth,
+  timeseriesYear,
+  period = 'today',
   darkMode = true
 }: PowerSourcesChartProps) {
-  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number>(1100);
   
@@ -58,16 +67,22 @@ export default function PowerSourcesChart({
     return () => ro.disconnect();
   }, []);
 
-  // Active dataset based on time range
+  // Active dataset driven by the global period prop (no internal toggle needed)
   const activeSourceData = useMemo(() => {
-    if (timeRange === 'week' && timeseries7d && timeseries7d.length > 0) {
+    if (period === 'yesterday' && timeseriesYesterday && timeseriesYesterday.length > 0) {
+      return timeseriesYesterday;
+    }
+    if (period === '7d' && timeseries7d && timeseries7d.length > 0) {
       return timeseries7d;
     }
-    if (timeRange === 'month' && timeseriesMonth && timeseriesMonth.length > 0) {
+    if (period === 'month' && timeseriesMonth && timeseriesMonth.length > 0) {
       return timeseriesMonth;
     }
+    if (period === 'year' && timeseriesYear && timeseriesYear.length > 0) {
+      return timeseriesYear;
+    }
     return timeseries24h || [];
-  }, [timeRange, timeseries24h, timeseries7d, timeseriesMonth]);
+  }, [period, timeseries24h, timeseriesYesterday, timeseries7d, timeseriesMonth, timeseriesYear]);
 
   const data = activeSourceData;
 
@@ -276,27 +291,16 @@ export default function PowerSourcesChart({
           </div>
         </div>
 
-        {/* Timeframe Filter Buttons */}
-        <div className={`flex items-center p-1 rounded-2xl border ${
-          darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'
+        {/* Active period badge — synced to parent's global period selector */}
+        <span className={`text-[11px] font-bold px-3 py-1.5 rounded-xl border ${
+          darkMode ? 'bg-white/5 border-white/10 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-600'
         }`}>
-          {(['today', 'week', 'month'] as const).map(tab => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setTimeRange(tab)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
-                timeRange === tab
-                  ? darkMode
-                    ? 'bg-white text-black shadow-md'
-                    : 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {tab === 'today' ? 'Today (24h)' : tab === 'week' ? 'Last 7 Days' : 'Month'}
-            </button>
-          ))}
-        </div>
+          {period === 'today' ? 'Today (24h)'
+            : period === 'yesterday' ? 'Yesterday'
+            : period === '7d' ? 'Last 7 Days'
+            : period === 'month' ? 'This Month'
+            : 'This Year'}
+        </span>
       </div>
 
       {/* SVG Zero-Baseline Stacked Area Graph */}

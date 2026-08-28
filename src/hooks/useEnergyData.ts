@@ -78,9 +78,12 @@ export interface UseEnergyDataResult {
   deviceConsumers: DeviceConsumer[];
   timeseriesPoints: TimeseriesEnergyPoint[];
   timeseriesToday: TimeseriesEnergyPoint[];
+  timeseriesYesterday: TimeseriesEnergyPoint[];
   timeseries7d: TimeseriesEnergyPoint[];
   timeseriesMonth: TimeseriesEnergyPoint[];
+  timeseriesYear: TimeseriesEnergyPoint[];
 }
+
 
 function convertBucketToChartPoint(b: HourlyEnergyBucket, idx: number): TimeseriesEnergyPoint {
   const d = new Date(b.isoTime || Date.now());
@@ -217,9 +220,11 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
       const res = await loadPreferences();
       if (isCurrent && res) {
         await loadStatisticsForPeriod('today', res.parsed, false);
-        // Pre-cache other periods silently
+        // Pre-cache all periods silently so switching periods is instant
+        loadStatisticsForPeriod('yesterday', res.parsed, true).catch(() => {});
         loadStatisticsForPeriod('7d', res.parsed, true).catch(() => {});
         loadStatisticsForPeriod('month', res.parsed, true).catch(() => {});
+        loadStatisticsForPeriod('year', res.parsed, true).catch(() => {});
         initializedRef.current = true;
       }
     };
@@ -306,6 +311,13 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     return res.hourlyTimeseries.map(convertBucketToChartPoint);
   }, [resolvedIds, statsCache, activeCurrency, importTariff, exportTariff]);
 
+  const timeseriesYesterday = useMemo(() => {
+    if (!resolvedIds) return [];
+    const stats = statsCache['yesterday'] || {};
+    const res = computeEnergyModel(resolvedIds, stats, { currencySymbol: activeCurrency, defaultImportTariff: importTariff, defaultExportTariff: exportTariff });
+    return res.hourlyTimeseries.map(convertBucketToChartPoint);
+  }, [resolvedIds, statsCache, activeCurrency, importTariff, exportTariff]);
+
   const timeseries7d = useMemo(() => {
     if (!resolvedIds) return [];
     const stats = statsCache['7d'] || {};
@@ -316,6 +328,13 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
   const timeseriesMonth = useMemo(() => {
     if (!resolvedIds) return [];
     const stats = statsCache['month'] || {};
+    const res = computeEnergyModel(resolvedIds, stats, { currencySymbol: activeCurrency, defaultImportTariff: importTariff, defaultExportTariff: exportTariff });
+    return res.hourlyTimeseries.map(convertBucketToChartPoint);
+  }, [resolvedIds, statsCache, activeCurrency, importTariff, exportTariff]);
+
+  const timeseriesYear = useMemo(() => {
+    if (!resolvedIds) return [];
+    const stats = statsCache['year'] || {};
     const res = computeEnergyModel(resolvedIds, stats, { currencySymbol: activeCurrency, defaultImportTariff: importTariff, defaultExportTariff: exportTariff });
     return res.hourlyTimeseries.map(convertBucketToChartPoint);
   }, [resolvedIds, statsCache, activeCurrency, importTariff, exportTariff]);
@@ -352,12 +371,56 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     exportTariffPerKWh: computedModel.financials.exportTariffPerKWh
   }), [computedModel]);
 
-  const environmentalEnergy: EnvironmentalEnergy = useMemo(() => ({
-    co2AvoidedKg: computedModel.environmental.co2AvoidedKg,
-    coalSavedKg: computedModel.environmental.coalSavedKg,
-    treesPlantedEquivalent: computedModel.environmental.treesPlantedEquivalent,
-    gasOffsetM3: Number((computedModel.totals.solarGeneratedKWh * 0.098).toFixed(2))
-  }), [computedModel]);
+  const environmentalEnergy: EnvironmentalEnergy = useMemo(() => {
+    // ── Read directly from HA lifetime environmental sensors ──────────────────
+    // These are FusionSolar/Huawei-specific lifetime accumulator entities.
+    // We fall back to the stats-derived model values if they are unavailable.
+
+    const co2State   = states['sensor.energy_information_lifetime_co2_emission_reduction'];
+    const coalState  = states['sensor.energy_information_lifetime_standard_coal_saved'];
+    const treeState  = states['sensor.energy_information_lifetime_equivalent_tree_planted'];
+
+    const parseHA = (s: any, fallback: number): number => {
+      if (!s || s.state === 'unavailable' || s.state === 'unknown') return fallback;
+      const v = parseFloat(s.state);
+      return isNaN(v) ? fallback : v;
+    };
+
+    // CO2 entity — FusionSolar reports in tonnes; convert to kg for UI consistency ("kg" label)
+    // If the entity already reports in kg (unit_of_measurement = 'kg'), skip the ×1000 conversion.
+    const co2RawVal = parseHA(co2State, -1);
+    let co2AvoidedKg: number;
+    if (co2RawVal < 0) {
+      co2AvoidedKg = computedModel.environmental.co2AvoidedKg;
+    } else {
+      const co2Unit = (co2State?.attributes?.unit_of_measurement || '').toLowerCase();
+      const isTonnes = co2Unit === 't' || co2Unit === 'ton' || co2Unit === 'tonne' || co2Unit === 'tonnes' || co2Unit === '';
+      co2AvoidedKg = Number((isTonnes ? co2RawVal * 1000 : co2RawVal).toFixed(2));
+    }
+
+    // Standard coal saved — FusionSolar reports in tonnes; convert to kg
+    const coalRaw = parseHA(coalState, -1);
+    let coalSavedKg: number;
+    if (coalRaw < 0) {
+      coalSavedKg = computedModel.environmental.coalSavedKg;
+    } else {
+      const coalUnit = (coalState?.attributes?.unit_of_measurement || '').toLowerCase();
+      const isTonnes = coalUnit === 't' || coalUnit === 'ton' || coalUnit === 'tonne' || coalUnit === 'tonnes' || coalUnit === '';
+      coalSavedKg = Number((isTonnes ? coalRaw * 1000 : coalRaw).toFixed(2));
+    }
+
+    // Equivalent trees planted — entity is a count (may be decimal)
+    const treeRaw = parseHA(treeState, -1);
+    const treesPlantedEquivalent = treeRaw >= 0
+      ? Number(treeRaw.toFixed(2))
+      : computedModel.environmental.treesPlantedEquivalent;
+
+    // Gas offset has no dedicated HA entity — keep the derived formula
+    const gasOffsetM3 = Number((computedModel.totals.solarGeneratedKWh * 0.098).toFixed(2));
+
+    return { co2AvoidedKg, coalSavedKg, treesPlantedEquivalent, gasOffsetM3 };
+  }, [states, computedModel]);
+
 
   const deviceConsumers: DeviceConsumer[] = useMemo(() => {
     return computedModel.devices.map(d => ({
@@ -398,7 +461,9 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     deviceConsumers,
     timeseriesPoints,
     timeseriesToday,
+    timeseriesYesterday,
     timeseries7d,
-    timeseriesMonth
+    timeseriesMonth,
+    timeseriesYear
   };
 }

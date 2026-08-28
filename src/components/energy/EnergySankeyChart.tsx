@@ -26,48 +26,60 @@ export default function EnergySankeyChart({
   deviceConsumers,
   darkMode = true
 }: EnergySankeyChartProps) {
-  const totalInputKWh = Number((dailyTotals.solarProductionKWh + dailyTotals.gridImportKWh + dailyTotals.batteryDischargedKWh).toFixed(2));
+  const MIN_KWH = 0.01;
+  const totalInputKWh = Number((
+    (dailyTotals.solarProductionKWh  >= MIN_KWH ? dailyTotals.solarProductionKWh  : 0) +
+    (dailyTotals.gridImportKWh       >= MIN_KWH ? dailyTotals.gridImportKWh       : 0) +
+    (dailyTotals.batteryDischargedKWh>= MIN_KWH ? dailyTotals.batteryDischargedKWh: 0)
+  ).toFixed(2));
+
 
   // Build SankeyData format for @bklit SankeyChart
   const sankeyData = useMemo(() => {
-    // 1. Define Nodes Array
-    const nodes = [
-      // Sources (Indices 0, 1, 2)
-      { name: 'Solar PV', color: '#F59E0B' },
-      { name: 'Grid Import', color: '#0284C7' },
-      { name: 'Battery Discharge', color: '#10B981' },
-      
-      // Central Distribution Panel (Index 3)
-      { name: 'Main Distribution Panel', color: '#8B5CF6' },
+    const MIN_KWH = 0.01; // suppress ghost links below 10 Wh
 
-      // Sinks (Indices 4, 5, 6...)
-      { name: 'Grid Feed-in', color: '#6366F1' },
-      { name: 'Battery Storage', color: '#06B6D4' },
-      ...deviceConsumers.map(dev => ({
-        name: dev.name,
-        color: dev.color
-      }))
-    ];
+    // Determine which sources are actually active
+    const hasSolar    = dailyTotals.solarProductionKWh  >= MIN_KWH;
+    const hasImport   = dailyTotals.gridImportKWh       >= MIN_KWH;
+    const hasDischarge= dailyTotals.batteryDischargedKWh>= MIN_KWH;
+    const hasExport   = dailyTotals.gridExportKWh       >= MIN_KWH;
+    const hasCharge   = dailyTotals.batteryChargedKWh   >= MIN_KWH;
 
-    // 2. Define Links Array
-    const links = [
-      // Sources -> Main Panel (Target = 3)
-      { source: 0, target: 3, value: Math.max(0.1, dailyTotals.solarProductionKWh), color: '#F59E0B' },
-      { source: 1, target: 3, value: Math.max(0.1, dailyTotals.gridImportKWh), color: '#0284C7' },
-      { source: 2, target: 3, value: Math.max(0.1, dailyTotals.batteryDischargedKWh), color: '#10B981' },
+    // Build nodes dynamically (only include active sources/sinks + panel + devices)
+    type SankeyNodeDef = { name: string; color: string };
+    const nodeList: SankeyNodeDef[] = [];
 
-      // Main Panel (Source = 3) -> Sinks
-      { source: 3, target: 4, value: Math.max(0.1, dailyTotals.gridExportKWh), color: '#6366F1' },
-      { source: 3, target: 5, value: Math.max(0.1, dailyTotals.batteryChargedKWh), color: '#06B6D4' },
-      ...deviceConsumers.map((dev, idx) => ({
-        source: 3,
-        target: 6 + idx,
-        value: Math.max(0.1, dev.energyKWh),
-        color: dev.color
-      }))
-    ];
+    // Source indices
+    const solarIdx     = hasSolar    ? (nodeList.push({ name: 'Solar PV',           color: '#F59E0B' }), nodeList.length - 1) : -1;
+    const importIdx    = hasImport   ? (nodeList.push({ name: 'Grid Import',         color: '#0284C7' }), nodeList.length - 1) : -1;
+    const dischargeIdx = hasDischarge? (nodeList.push({ name: 'Battery Discharge',   color: '#10B981' }), nodeList.length - 1) : -1;
 
-    return { nodes, links };
+    // Central panel
+    nodeList.push({ name: 'Main Distribution Panel', color: '#8B5CF6' });
+    const panelIdx = nodeList.length - 1;
+
+    // Sink indices
+    const exportIdx  = hasExport ? (nodeList.push({ name: 'Grid Feed-in',   color: '#6366F1' }), nodeList.length - 1) : -1;
+    const chargeIdx  = hasCharge ? (nodeList.push({ name: 'Battery Storage', color: '#06B6D4' }), nodeList.length - 1) : -1;
+    const deviceStart = nodeList.length;
+    deviceConsumers.forEach(dev => nodeList.push({ name: dev.name, color: dev.color }));
+
+    // Build links (only for active sources/sinks)
+    type SankeyLinkDef = { source: number; target: number; value: number; color: string };
+    const linkList: SankeyLinkDef[] = [];
+
+    if (solarIdx    >= 0) linkList.push({ source: solarIdx,     target: panelIdx, value: dailyTotals.solarProductionKWh,   color: '#F59E0B' });
+    if (importIdx   >= 0) linkList.push({ source: importIdx,    target: panelIdx, value: dailyTotals.gridImportKWh,        color: '#0284C7' });
+    if (dischargeIdx>= 0) linkList.push({ source: dischargeIdx, target: panelIdx, value: dailyTotals.batteryDischargedKWh, color: '#10B981' });
+    if (exportIdx   >= 0) linkList.push({ source: panelIdx, target: exportIdx,  value: dailyTotals.gridExportKWh,       color: '#6366F1' });
+    if (chargeIdx   >= 0) linkList.push({ source: panelIdx, target: chargeIdx,  value: dailyTotals.batteryChargedKWh,   color: '#06B6D4' });
+    deviceConsumers.forEach((dev, idx) => {
+      if (dev.energyKWh >= MIN_KWH) {
+        linkList.push({ source: panelIdx, target: deviceStart + idx, value: dev.energyKWh, color: dev.color });
+      }
+    });
+
+    return { nodes: nodeList, links: linkList };
   }, [dailyTotals, deviceConsumers]);
 
   return (

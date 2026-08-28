@@ -815,6 +815,93 @@ export const MOCK_ENTITY_REGISTRY: HAEntityRegistryEntry[] = [
     device_class: 'window'
   },
 
+  // ---------------- Smart Perimeter Locks ----------------
+  {
+    entity_id: 'lock.front_door_lock',
+    name: 'Front Entrance Deadbolt',
+    area_id: 'hallway',
+    platform: 'august'
+  },
+  {
+    entity_id: 'lock.backyard_gate_lock',
+    name: 'Backyard Garden Gate',
+    area_id: 'patio',
+    platform: 'yale'
+  },
+  {
+    entity_id: 'lock.garage_side_door_lock',
+    name: 'Garage Utility Side Lock',
+    area_id: 'garage',
+    platform: 'schlage'
+  },
+
+  // ---------------- Surveillance & Security Cameras ----------------
+  {
+    entity_id: 'camera.front_entrance',
+    name: 'Front Entrance & Doorbell Cam',
+    area_id: 'hallway',
+    platform: 'unifi_protect'
+  },
+  {
+    entity_id: 'camera.driveway_garage',
+    name: 'Driveway & Garage Wide Cam',
+    area_id: 'garage',
+    platform: 'unifi_protect'
+  },
+  {
+    entity_id: 'camera.backyard_patio',
+    name: 'Backyard & Patio Garden Cam',
+    area_id: 'patio',
+    platform: 'reolink'
+  },
+  {
+    entity_id: 'camera.living_room_indoor',
+    name: 'Living Room 360 Indoor Cam',
+    area_id: 'living_room',
+    platform: 'eufy'
+  },
+
+  // ---------------- Motion & Occupancy Zones ----------------
+  {
+    entity_id: 'binary_sensor.front_porch_motion',
+    name: 'Front Porch Motion Zone',
+    area_id: 'hallway',
+    device_class: 'motion'
+  },
+  {
+    entity_id: 'binary_sensor.hallway_motion',
+    name: 'Hallway Corridor Motion',
+    area_id: 'hallway',
+    device_class: 'motion'
+  },
+  {
+    entity_id: 'binary_sensor.backyard_motion',
+    name: 'Backyard Perimeter Motion',
+    area_id: 'patio',
+    device_class: 'motion'
+  },
+
+  // ---------------- Environmental Hazard & Leak Detectors ----------------
+  {
+    entity_id: 'binary_sensor.kitchen_leak_detector',
+    name: 'Kitchen Sink Water Leak Sensor',
+    area_id: 'kitchen',
+    device_class: 'moisture'
+  },
+  {
+    entity_id: 'binary_sensor.utility_leak_detector',
+    name: 'Utility & Laundry Water Sensor',
+    area_id: 'garage',
+    device_class: 'moisture'
+  },
+  {
+    entity_id: 'binary_sensor.hallway_smoke_detector',
+    name: 'First Floor Nest Smoke & CO Alarm',
+    area_id: 'hallway',
+    device_class: 'smoke'
+  },
+
+
   // ---------------- Software Updates & System Notifications ----------------
   {
     entity_id: 'update.home_assistant_core_update',
@@ -2023,6 +2110,176 @@ export const MOCK_STATES: Record<string, HAState> = {
       device_class: 'window',
       battery: 81,
       last_opened: 'Yesterday'
+    }
+  },
+
+  // ---------------- Smart Perimeter Locks ----------------
+  'lock.front_door_lock': {
+    entity_id: 'lock.front_door_lock',
+    state: 'locked',
+    attributes: {
+      friendly_name: 'Front Entrance Deadbolt',
+      battery_level: 89,
+      lock_status: 'Locked & Secure',
+      changed_by: 'Auto-Lock Routine',
+      last_changed: '20 mins ago'
+    }
+  },
+  'lock.backyard_gate_lock': {
+    entity_id: 'lock.backyard_gate_lock',
+    state: 'locked',
+    attributes: {
+      friendly_name: 'Backyard Garden Gate',
+      battery_level: 94,
+      lock_status: 'Locked & Secure',
+      changed_by: 'Keypad Code (Samer)',
+      last_changed: '1 hour ago'
+    }
+  },
+  'lock.garage_side_door_lock': {
+    entity_id: 'lock.garage_side_door_lock',
+    state: 'unlocked',
+    attributes: {
+      friendly_name: 'Garage Utility Side Lock',
+      battery_level: 76,
+      lock_status: 'Unlocked',
+      changed_by: 'Manual Turn',
+      last_changed: '14 mins ago'
+    }
+  },
+
+  // ---------------- Surveillance & Security Cameras ----------------
+  'camera.front_entrance': {
+    entity_id: 'camera.front_entrance',
+    state: 'idle',
+    attributes: {
+      friendly_name: 'Front Entrance & Doorbell Cam',
+      model_name: 'UniFi G4 Doorbell Pro',
+      motion_detection: true,
+      stream_type: 'webrtc',
+      fps: 30,
+      resolution: '2K HDR',
+      ptz_supported: false,
+      two_way_audio: true,
+      last_motion: '2 mins ago',
+      entity_picture: 'https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&fit=crop&q=80&w=1200'
+    }
+  },
+  'camera.driveway_garage': {
+    entity_id: 'camera.driveway_garage',
+    state: 'idle',
+    attributes: {
+      friendly_name: 'Driveway & Garage Wide Cam',
+      model_name: 'UniFi Protect AI Bullet',
+      motion_detection: true,
+      stream_type: 'webrtc',
+      fps: 30,
+      resolution: '4K Ultra HD',
+      ptz_supported: true,
+      two_way_audio: false,
+      last_motion: '15 mins ago',
+      entity_picture: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&q=80&w=1200'
+    }
+  },
+  'camera.backyard_patio': {
+    entity_id: 'camera.backyard_patio',
+    state: 'idle',
+    attributes: {
+      friendly_name: 'Backyard & Patio Garden Cam',
+      model_name: 'Reolink Argus PT Ultra',
+      motion_detection: true,
+      stream_type: 'webrtc',
+      fps: 25,
+      resolution: '4K ColorX',
+      ptz_supported: true,
+      two_way_audio: true,
+      last_motion: '1 hour ago',
+      entity_picture: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1200'
+    }
+  },
+  'camera.living_room_indoor': {
+    entity_id: 'camera.living_room_indoor',
+    state: 'idle',
+    attributes: {
+      friendly_name: 'Living Room 360 Indoor Cam',
+      model_name: 'Eufy Indoor Cam S350',
+      motion_detection: true,
+      stream_type: 'hls',
+      fps: 30,
+      resolution: '4K Dual-Cam',
+      ptz_supported: true,
+      two_way_audio: true,
+      privacy_mode: false,
+      last_motion: 'Just now',
+      entity_picture: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=1200'
+    }
+  },
+
+  // ---------------- Motion & Occupancy Zones ----------------
+  'binary_sensor.front_porch_motion': {
+    entity_id: 'binary_sensor.front_porch_motion',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Front Porch Motion Zone',
+      device_class: 'motion',
+      battery: 91,
+      last_triggered: '6 mins ago'
+    }
+  },
+  'binary_sensor.hallway_motion': {
+    entity_id: 'binary_sensor.hallway_motion',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Hallway Corridor Motion',
+      device_class: 'motion',
+      battery: 86,
+      last_triggered: 'Just now'
+    }
+  },
+  'binary_sensor.backyard_motion': {
+    entity_id: 'binary_sensor.backyard_motion',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Backyard Perimeter Motion',
+      device_class: 'motion',
+      battery: 93,
+      last_triggered: '42 mins ago'
+    }
+  },
+
+  // ---------------- Environmental Hazard & Leak Detectors ----------------
+  'binary_sensor.kitchen_leak_detector': {
+    entity_id: 'binary_sensor.kitchen_leak_detector',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Kitchen Sink Water Leak Sensor',
+      device_class: 'moisture',
+      battery: 98,
+      moisture_detected: false,
+      last_test: 'Yesterday'
+    }
+  },
+  'binary_sensor.utility_leak_detector': {
+    entity_id: 'binary_sensor.utility_leak_detector',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Utility & Laundry Water Sensor',
+      device_class: 'moisture',
+      battery: 89,
+      moisture_detected: false,
+      last_test: '3 days ago'
+    }
+  },
+  'binary_sensor.hallway_smoke_detector': {
+    entity_id: 'binary_sensor.hallway_smoke_detector',
+    state: 'off',
+    attributes: {
+      friendly_name: 'First Floor Nest Smoke & CO Alarm',
+      device_class: 'smoke',
+      battery: 100,
+      smoke_detected: false,
+      co_detected: false,
+      last_tested: 'Today, 6:00 AM'
     }
   },
 

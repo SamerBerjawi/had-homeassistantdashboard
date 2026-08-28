@@ -51,9 +51,11 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
     financialTotals,
     environmentalTotals,
     deviceConsumers,
-    timeseriesPoints,
+    timeseriesToday,
+    timeseriesYesterday,
     timeseries7d,
-    timeseriesMonth
+    timeseriesMonth,
+    timeseriesYear
   } = useEnergyData({
     importTariff,
     exportTariff,
@@ -327,9 +329,12 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
       {/* ------------------------------------------------------------- */}
       <div className="w-full">
         <PowerSourcesChart
-          timeseries24h={timeseriesPoints}
+          timeseries24h={timeseriesToday}
+          timeseriesYesterday={timeseriesYesterday}
           timeseries7d={timeseries7d}
           timeseriesMonth={timeseriesMonth}
+          timeseriesYear={timeseriesYear}
+          period={period}
           darkMode={darkMode}
         />
       </div>

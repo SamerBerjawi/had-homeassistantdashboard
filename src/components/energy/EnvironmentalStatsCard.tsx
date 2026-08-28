@@ -151,7 +151,7 @@ export default function EnvironmentalStatsCard({
 
           <div className="my-2">
             <div className="text-2xl sm:text-3xl font-black font-mono text-teal-600 dark:text-teal-400 tracking-tight">
-              {treesPlantedEquivalent} <span className="text-xs font-bold font-sans text-slate-500 dark:text-slate-400">Trees/yr</span>
+              {(treesPlantedEquivalent as number).toFixed(2)} <span className="text-xs font-bold font-sans text-slate-500 dark:text-slate-400">Trees/yr</span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
               Annual biological carbon absorption equivalent
@@ -162,12 +162,12 @@ export default function EnvironmentalStatsCard({
           <div className="pt-2 border-t border-teal-500/20">
             <div className="flex items-center justify-between text-[10px] font-bold text-teal-600 dark:text-teal-400 mb-1">
               <span>Goal: 100 Trees</span>
-              <span>{Math.min(100, treesPlantedEquivalent)}%</span>
+              <span>{Math.min(100, (treesPlantedEquivalent as number)).toFixed(1)}%</span>
             </div>
             <div className="w-full h-1.5 rounded-full bg-teal-500/20 overflow-hidden">
               <div 
                 className="h-full rounded-full bg-teal-500 transition-all duration-1000"
-                style={{ width: `${Math.min(100, treesPlantedEquivalent)}%` }}
+                style={{ width: `${Math.min(100, treesPlantedEquivalent as number)}%` }}
               />
             </div>
           </div>

@@ -97,40 +97,199 @@ export interface RealtimePowerModel {
 }
 
 // -------------------------------------------------------------
-// Real-Time Instantaneous Power Calculation (Inverted Polarity)
+// Helper: Parse a power-entity state to kW (handles W, kW, MW)
+// -------------------------------------------------------------
+
+function parsePowerStateToKW(stateObj: any): number | null {
+  if (!stateObj) return null;
+  const s = stateObj.state;
+  if (!s || s === 'unavailable' || s === 'unknown') return null;
+  const val = parseFloat(s);
+  if (isNaN(val)) return null;
+  const uom = (stateObj.attributes?.unit_of_measurement || '').trim().toLowerCase();
+  if (uom === 'w') return val / 1000;
+  if (uom === 'kw') return val;
+  if (uom === 'mw') return val * 1000;
+  // Heuristic: values > 100 with no UoM are almost certainly watts
+  return Math.abs(val) > 100 ? val / 1000 : val;
+}
+
+// -------------------------------------------------------------
+// Real-Time Instantaneous Power Calculation
+// Candidate-scanning approach — works with any HA integration.
+// Convention returned:
+//   gridPower   > 0 → Importing,  < 0 → Exporting
+//   batteryPower> 0 → Discharging, < 0 → Charging
 // -------------------------------------------------------------
 
 export function computeRealtimePower(states: Record<string, any> = {}): RealtimePowerModel {
-  const solarKW = Math.max(0, parseFloat(states['sensor.mppt_total_input_power']?.state || '0') || 0);
-  const rawGridKW = parseFloat(states['sensor.meter_active_power_inverted']?.state || '0') || 0;
-  const rawBatteryKW = parseFloat(states['sensor.battery_charge_discharge_power_inverted']?.state || '0') || 0;
-  const rawBatterySoC = parseFloat(states['sensor.battery_state_of_charge_soc']?.state || '85');
+  const entityKeys = Object.keys(states);
 
-  // Polarity:
-  // Grid: > 0 Export, < 0 Import
-  const gridExportKW = Math.max(0, rawGridKW);
-  const gridImportKW = Math.max(0, -rawGridKW);
+  // ── 1. Solar PV power ────────────────────────────────────────
+  let solarKW: number | null = null;
+  const solarCandidates = [
+    'sensor.mppt_total_input_power',
+    'sensor.solaredge_solar_power',
+    'sensor.solar_power',
+    'sensor.pv_power',
+    'sensor.inverter_power',
+    'sensor.envoy_current_power_production',
+    'sensor.fronius_power_photovoltaics',
+    'sensor.huawei_solar_active_power',
+    'sensor.sun2000_active_power',
+    'sensor.sungrow_sg_active_power',
+    'sensor.sma_power',
+    'sensor.goodwe_pv_power',
+    'sensor.solar_panels_power',
+    'sensor.power_production',
+  ];
+  for (const id of solarCandidates) {
+    const v = parsePowerStateToKW(states[id]);
+    if (v !== null && v >= 0) { solarKW = v; break; }
+  }
+  if (solarKW === null) {
+    for (const key of entityKeys) {
+      const ent = states[key];
+      const name = ((ent?.attributes?.friendly_name || key) as string).toLowerCase();
+      if ((name.includes('solar') || name.includes('pv ') || name.includes('photovoltaic') || name.includes('inverter yield')) &&
+          (ent?.attributes?.device_class === 'power' || ['w','kw'].includes((ent?.attributes?.unit_of_measurement || '').toLowerCase()))) {
+        const v = parsePowerStateToKW(ent);
+        if (v !== null && v >= 0) { solarKW = v; break; }
+      }
+    }
+  }
+  solarKW = Math.max(0, solarKW ?? 0);
 
-  // Battery: > 0 Charge, < 0 Discharge
-  const batteryChargeKW = Math.max(0, rawBatteryKW);
-  const batteryDischargeKW = Math.max(0, -rawBatteryKW);
+  // ── 2. Grid power (positive = import, negative = export) ─────
+  let rawGridKW: number | null = null;
 
-  // Home load
-  const directSolarKW = Math.max(0, solarKW - gridExportKW - batteryChargeKW);
+  // First try a single signed meter sensor
+  const gridSignedCandidates = [
+    'sensor.meter_active_power_inverted',
+    'sensor.grid_power',
+    'sensor.power_meter_active_power',
+    'sensor.meter_power',
+    'sensor.smart_meter_active_power',
+    'sensor.grid_active_power',
+    'sensor.shelly_em_grid_power',
+    'sensor.shelly_3em_grid_power',
+    'sensor.envoy_current_power_consumption',
+  ];
+  for (const id of gridSignedCandidates) {
+    const v = parsePowerStateToKW(states[id]);
+    if (v !== null) { rawGridKW = v; break; }
+  }
+
+  // Fallback: separate import + export sensors → net = import - export (positive = importing)
+  if (rawGridKW === null) {
+    let importKW: number | null = null;
+    let exportKW: number | null = null;
+    for (const key of entityKeys) {
+      const lower = key.toLowerCase();
+      if ((lower.includes('grid') || lower.includes('meter')) && lower.includes('import') && (lower.includes('power') || lower.includes('_w'))) {
+        importKW = parsePowerStateToKW(states[key]) ?? importKW;
+      }
+      if ((lower.includes('grid') || lower.includes('meter') || lower.includes('feed_in')) &&
+          (lower.includes('export') || lower.includes('return') || lower.includes('feed_in')) &&
+          (lower.includes('power') || lower.includes('_w'))) {
+        exportKW = parsePowerStateToKW(states[key]) ?? exportKW;
+      }
+    }
+    if (importKW !== null || exportKW !== null) {
+      rawGridKW = (importKW ?? 0) - (exportKW ?? 0);
+    }
+  }
+  rawGridKW = rawGridKW ?? 0;
+
+  const gridImportKW = Math.max(0, rawGridKW);
+  const gridExportKW = Math.max(0, -rawGridKW);
+
+  // ── 3. Battery power (positive = discharging, negative = charging) ──
+  let rawBatteryKW: number | null = null;
+  const batterySignedCandidates = [
+    'sensor.battery_charge_discharge_power_inverted',
+    'sensor.tesla_powerwall_flow',
+    'sensor.battery_power',
+    'sensor.powerwall_power',
+    'sensor.storage_power',
+    'sensor.huawei_battery_charge_discharge_power',
+    'sensor.luna2000_charge_discharge_power',
+    'sensor.sungrow_battery_power',
+  ];
+  for (const id of batterySignedCandidates) {
+    const v = parsePowerStateToKW(states[id]);
+    if (v !== null) { rawBatteryKW = v; break; }
+  }
+  // Fallback: separate charge / discharge sensors → net = discharge - charge
+  if (rawBatteryKW === null) {
+    let chargeKW: number | null = null;
+    let dischargeKW: number | null = null;
+    for (const key of entityKeys) {
+      const lower = key.toLowerCase();
+      if (lower.includes('battery') && lower.includes('charg') && !lower.includes('discharg')) {
+        chargeKW = parsePowerStateToKW(states[key]) ?? chargeKW;
+      }
+      if (lower.includes('battery') && lower.includes('discharg')) {
+        dischargeKW = parsePowerStateToKW(states[key]) ?? dischargeKW;
+      }
+    }
+    if (chargeKW !== null || dischargeKW !== null) {
+      rawBatteryKW = (dischargeKW ?? 0) - (chargeKW ?? 0);
+    }
+  }
+  rawBatteryKW = rawBatteryKW ?? 0;
+
+  const batteryDischargeKW = Math.max(0, rawBatteryKW);
+  const batteryChargeKW   = Math.max(0, -rawBatteryKW);
+
+  // ── 4. Battery SoC ─────────────────────────────────────────
+  let rawBatterySoC: number | null = null;
+  const socCandidates = [
+    'sensor.battery_state_of_charge_soc',
+    'sensor.battery_state_of_charge',
+    'sensor.tesla_powerwall_battery_level',
+    'sensor.home_battery_soc',
+    'sensor.storage_soc',
+    'sensor.battery_level',
+    'sensor.huawei_battery_soc',
+    'sensor.luna2000_battery_soc',
+    'sensor.sungrow_battery_level',
+    'sensor.byd_battery_soc',
+  ];
+  for (const id of socCandidates) {
+    const v = parseFloat(states[id]?.state);
+    if (!isNaN(v)) { rawBatterySoC = v; break; }
+  }
+  if (rawBatterySoC === null) {
+    for (const key of entityKeys) {
+      if (key.toLowerCase().includes('battery') && (key.toLowerCase().includes('soc') || key.toLowerCase().includes('level'))) {
+        const v = parseFloat(states[key]?.state);
+        if (!isNaN(v) && v >= 0 && v <= 100) { rawBatterySoC = v; break; }
+      }
+    }
+  }
+  const batterySoC = rawBatterySoC !== null ? Math.round(Math.max(0, Math.min(100, rawBatterySoC))) : 85;
+
+  // ── 5. Home consumption = solar + gridImport + batteryDischarge - gridExport - batteryCharge ──
   const homeConsumptionKW = Math.max(0, solarKW + gridImportKW + batteryDischargeKW - gridExportKW - batteryChargeKW);
+
+  // gridPower sign convention for downstream: positive = import, negative = export
+  const gridPowerSigned = gridImportKW - gridExportKW;
+  // batteryPower sign convention: positive = discharge, negative = charge
+  const batteryPowerSigned = batteryDischargeKW - batteryChargeKW;
 
   return {
     solarPower: Number(solarKW.toFixed(2)),
-    gridPower: Number(rawGridKW.toFixed(2)),
+    gridPower: Number(gridPowerSigned.toFixed(2)),
     gridImportKW: Number(gridImportKW.toFixed(2)),
     gridExportKW: Number(gridExportKW.toFixed(2)),
-    batteryPower: Number(rawBatteryKW.toFixed(2)),
+    batteryPower: Number(batteryPowerSigned.toFixed(2)),
     batteryChargeKW: Number(batteryChargeKW.toFixed(2)),
     batteryDischargeKW: Number(batteryDischargeKW.toFixed(2)),
-    batterySoC: isNaN(rawBatterySoC) ? 85 : Math.round(rawBatterySoC),
+    batterySoC,
     homeConsumption: Number(homeConsumptionKW.toFixed(2)),
-    directSolar: Number(directSolarKW.toFixed(2)),
-    inverterEfficiency: 97.4
+    directSolar: Number(Math.max(0, solarKW - gridExportKW - batteryChargeKW).toFixed(2)),
+    inverterEfficiency: 97.4,
   };
 }
 
@@ -270,14 +429,27 @@ export function computeEnergyModel(
         const delta = extractChange(entry, prevEntry);
         bGridImport += delta;
 
-        // Cost Calculation
+        // Cost Calculation priority:
+        // 1. statCost accumulator (pre-multiplied running cost stat) — most accurate
+        // 2. priceEntity stat mean for this bucket × delta kWh — Nordpool / dynamic price
+        // 3. fixedPrice from HA Energy prefs
+        // 4. defaultImportTariff fallback
         let unitCost = item.fixedPrice ?? defaultImportTariff;
         if (item.statCost && statLookup[item.statCost]?.get(ts)) {
           const costEntry = statLookup[item.statCost]!.get(ts)!;
           totalImportCost += extractChange(costEntry);
+        } else if (item.priceEntity && statLookup[item.priceEntity]?.get(ts)) {
+          // Dynamic price sensor (e.g. Nordpool spot price): read mean or state as €/kWh
+          const priceEntry = statLookup[item.priceEntity]!.get(ts)!;
+          const spotPrice = priceEntry.mean ?? priceEntry.state ?? unitCost;
+          if (typeof spotPrice === 'number' && !isNaN(spotPrice) && spotPrice > 0) {
+            unitCost = spotPrice;
+          }
+          totalImportCost += delta * unitCost;
         } else {
           totalImportCost += delta * unitCost;
         }
+
       }
     }
 

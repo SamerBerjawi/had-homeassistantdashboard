@@ -39,11 +39,12 @@ export function computePeriodTimeRange(period: EnergyHistoryPeriod): PeriodTimeR
 
   if (period === 'yesterday') {
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
-    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 55, 0, 0);
+    const end   = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 0);
     return {
       start: start.toISOString(),
       end: end.toISOString(),
-      periodType: '5minute'
+      // Use hourly buckets — HA only keeps 5-min granularity for the current recording day
+      periodType: 'hour'
     };
   }
 

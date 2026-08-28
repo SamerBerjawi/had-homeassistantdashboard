@@ -279,11 +279,16 @@ function LowPolyHouse({
 
   // Window glow intensity scales with home load
   const windowGlowIntensity = Math.min(3.8, Math.max(0.9, homeConsumption * 1.6));
-  const isSolarActive = solarPower > 0.05;
-  const isBatteryCharging = batteryPower < -0.05;
+  const isSolarActive       = solarPower > 0.05;
+  // After RC-1 fix: batteryPower > 0 = discharging, < 0 = charging
+  const isBatteryCharging    = batteryPower < -0.05;
   const isBatteryDischarging = batteryPower > 0.05;
+  // After RC-1 fix: gridPower > 0 = importing, < 0 = exporting
   const isGridExporting = gridPower < -0.05;
   const isGridImporting = gridPower > 0.05;
+  // EV wallbox active when there is surplus power (charging battery or exporting) or significant home load
+  const isEvCharging = isBatteryCharging || isGridExporting || homeConsumption > 1.5;
+
 
   // Battery bar segment count (5 segments)
   const filledBars = Math.max(1, Math.min(5, Math.ceil((batterySoC / 100) * 5)));
@@ -677,7 +682,7 @@ function LowPolyHouse({
         curve={wallboxToEvCurve}
         color="#10B981"
         speed={1.3}
-        active={homeConsumption > 1.2}
+        active={isEvCharging}
       />
 
       {/* --------------------------------------------------------- */}
