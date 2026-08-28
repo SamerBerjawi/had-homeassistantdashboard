@@ -4,14 +4,18 @@
  */
 
 export interface ConnectedClient {
-  mac: string;
+  entityId: string;
+  mac?: string;
   name: string;
   ip?: string;
-  connectionType: '2.4ghz' | '5ghz' | '6ghz' | 'ethernet';
+  connectionType?: '2.4ghz' | '5ghz' | '6ghz' | 'ethernet' | '2.4G' | '5G' | '6G' | 'wired' | 'guest' | 'iot' | string;
   signalDbm?: number;          // e.g. -52 dBm
   downloadSpeedKBps?: number;
   uploadSpeedKBps?: number;
   isOnline: boolean;
+  state: string;               // 'home' | 'not_home'
+  lastSeen?: string;
+  ssid?: string;
 }
 
 export type NetworkTimeRange =
@@ -37,6 +41,7 @@ export interface TpLinkRouterMetrics {
   // Router Info & Hardware
   model: string;
   wanIpv4: string;               // sensor.*wan_ipv4_address
+  publicIp?: string;             // External Public IPv4 Address
   lanIpv4?: string;              // sensor.*lan_ipv4_address
   connectionType?: string;       // sensor.*connection_type
   wanStatus: 'connected' | 'disconnected';
@@ -74,6 +79,8 @@ export interface TpLinkRouterMetrics {
   guestClientsCount: number;     // sensor.*total_guest_wifi_clients
   wirelessClientsCount: number;
   clients: ConnectedClient[];
+  connectedClients: ConnectedClient[];
+  disconnectedClients: ConnectedClient[];
 
   // Power Actions
   rebootButtonEntityId?: string; // button.*reboot

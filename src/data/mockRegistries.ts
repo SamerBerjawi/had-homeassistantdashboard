@@ -3382,148 +3382,170 @@ export const MOCK_STATES: Record<string, HAState> = {
   },
 
   // ---------------- TP-Link Router Integration ----------------
-  'sensor.archer_ax55_cpu_used': {
-    entity_id: 'sensor.archer_ax55_cpu_used',
-    state: '14.0',
+  'sensor.living_room_tp_link_router_cpu_used': {
+    entity_id: 'sensor.living_room_tp_link_router_cpu_used',
+    state: '28.5',
     attributes: {
-      friendly_name: 'Archer AX55 CPU Used',
+      friendly_name: 'TP-Link Router CPU Used',
       unit_of_measurement: '%'
     }
   },
-  'sensor.archer_ax55_memory_used': {
-    entity_id: 'sensor.archer_ax55_memory_used',
-    state: '73.0',
+  'sensor.living_room_tp_link_router_memory_used': {
+    entity_id: 'sensor.living_room_tp_link_router_memory_used',
+    state: '64.2',
     attributes: {
-      friendly_name: 'Archer AX55 Memory Used',
+      friendly_name: 'TP-Link Router Memory Used',
       unit_of_measurement: '%'
     }
   },
-  'sensor.archer_ax55_wan_ipv4_address': {
-    entity_id: 'sensor.archer_ax55_wan_ipv4_address',
-    state: '192.168.129.2',
+  'sensor.living_room_tp_link_router_wan_ipv4_address': {
+    entity_id: 'sensor.living_room_tp_link_router_wan_ipv4_address',
+    state: '84.115.182.49',
     attributes: {
-      friendly_name: 'Archer AX55 WAN IPv4 Address',
+      friendly_name: 'TP-Link Router WAN IPv4 Address',
       status: 'connected'
     }
   },
-  'sensor.archer_ax55_lan_ipv4_address': {
-    entity_id: 'sensor.archer_ax55_lan_ipv4_address',
+  'sensor.living_room_tp_link_router_lan_ipv4_address': {
+    entity_id: 'sensor.living_room_tp_link_router_lan_ipv4_address',
     state: '192.168.68.1',
     attributes: {
-      friendly_name: 'Archer AX55 LAN IPv4 Address'
+      friendly_name: 'TP-Link Router LAN IPv4 Address'
     }
   },
-  'sensor.archer_ax55_connection_type': {
-    entity_id: 'sensor.archer_ax55_connection_type',
-    state: 'dynamic_ip',
+  'sensor.living_room_tp_link_router_connection_type': {
+    entity_id: 'sensor.living_room_tp_link_router_connection_type',
+    state: 'Dynamic IP',
     attributes: {
-      friendly_name: 'Archer AX55 Connection Type'
+      friendly_name: 'TP-Link Router Connection Type'
     }
   },
-  'sensor.archer_ax55_uptime': {
-    entity_id: 'sensor.archer_ax55_uptime',
-    state: '18 days, 4 hours',
+  'sensor.living_room_tp_link_router_uptime': {
+    entity_id: 'sensor.living_room_tp_link_router_uptime',
+    state: '24 days, 6 hours',
     attributes: {
-      friendly_name: 'Archer AX55 Uptime'
+      friendly_name: 'TP-Link Router Uptime'
     }
   },
-  'sensor.archer_ax55_total_clients': {
-    entity_id: 'sensor.archer_ax55_total_clients',
-    state: '30',
+  'sensor.living_room_tp_link_router_total_clients': {
+    entity_id: 'sensor.living_room_tp_link_router_total_clients',
+    state: '8',
     attributes: {
-      friendly_name: 'Archer AX55 Total Clients'
+      friendly_name: 'TP-Link Router Total Clients'
     }
   },
-  'sensor.archer_ax55_total_main_wifi_clients': {
-    entity_id: 'sensor.archer_ax55_total_main_wifi_clients',
-    state: '24',
+  'sensor.living_room_tp_link_router_total_main_wifi_clients': {
+    entity_id: 'sensor.living_room_tp_link_router_total_main_wifi_clients',
+    state: '4',
     attributes: {
-      friendly_name: 'Archer AX55 Total Main Wi-Fi Clients'
+      friendly_name: 'TP-Link Router Total Main Wi-Fi Clients'
     }
   },
-  'sensor.archer_ax55_total_wired_clients': {
-    entity_id: 'sensor.archer_ax55_total_wired_clients',
-    state: '5',
+  'sensor.living_room_tp_link_router_total_wired_clients': {
+    entity_id: 'sensor.living_room_tp_link_router_total_wired_clients',
+    state: '2',
     attributes: {
-      friendly_name: 'Archer AX55 Total Wired Clients'
+      friendly_name: 'TP-Link Router Total Wired Clients'
     }
   },
-  'sensor.archer_ax55_total_iot_clients': {
-    entity_id: 'sensor.archer_ax55_total_iot_clients',
-    state: '1',
+  'sensor.living_room_tp_link_router_total_iot_clients': {
+    entity_id: 'sensor.living_room_tp_link_router_total_iot_clients',
+    state: '2',
     attributes: {
-      friendly_name: 'Archer AX55 Total IoT Clients'
+      friendly_name: 'TP-Link Router Total IoT Clients'
     }
   },
-  'sensor.archer_ax55_total_guest_wifi_clients': {
-    entity_id: 'sensor.archer_ax55_total_guest_wifi_clients',
+  'sensor.living_room_tp_link_router_total_guest_wifi_clients': {
+    entity_id: 'sensor.living_room_tp_link_router_total_guest_wifi_clients',
     state: '0',
     attributes: {
-      friendly_name: 'Archer AX55 Total Guest Wi-Fi Clients'
+      friendly_name: 'TP-Link Router Total Guest Wi-Fi Clients'
     }
   },
-  'switch.archer_ax55_wifi_2_4g': {
-    entity_id: 'switch.archer_ax55_wifi_2_4g',
+  'switch.living_room_tp_link_router_wifi_2_4g': {
+    entity_id: 'switch.living_room_tp_link_router_wifi_2_4g',
     state: 'on',
     attributes: {
-      friendly_name: 'Archer AX55 Wi-Fi 2.4G',
+      friendly_name: 'Main Wi-Fi 2.4G',
       ssid: 'Antigravity-Home'
     }
   },
-  'switch.archer_ax55_wifi_5g': {
-    entity_id: 'switch.archer_ax55_wifi_5g',
+  'switch.living_room_tp_link_router_wifi_5g': {
+    entity_id: 'switch.living_room_tp_link_router_wifi_5g',
     state: 'on',
     attributes: {
-      friendly_name: 'Archer AX55 Wi-Fi 5G',
+      friendly_name: 'Main Wi-Fi 5G',
       ssid: 'Antigravity-Home 5G'
     }
   },
-  'switch.archer_ax55_wifi_6g': {
-    entity_id: 'switch.archer_ax55_wifi_6g',
+  'switch.living_room_tp_link_router_wifi_6g': {
+    entity_id: 'switch.living_room_tp_link_router_wifi_6g',
     state: 'on',
     attributes: {
-      friendly_name: 'Archer AX55 Wi-Fi 6G (6E)',
+      friendly_name: 'Main Wi-Fi 6G (6E)',
       ssid: 'Antigravity-Ultra-6E'
     }
   },
-  'switch.archer_ax55_guest_wifi_2_4g': {
-    entity_id: 'switch.archer_ax55_guest_wifi_2_4g',
+  'switch.living_room_tp_link_router_guest_wifi_2_4g': {
+    entity_id: 'switch.living_room_tp_link_router_guest_wifi_2_4g',
     state: 'off',
     attributes: {
-      friendly_name: 'Archer AX55 Guest Wi-Fi 2.4G',
-      ssid: 'Antigravity-Guest',
-      key: 'WelcomeGuest2026!'
+      friendly_name: 'Guest Wi-Fi 2.4G',
+      ssid: 'Antigravity-Guest'
     }
   },
-  'switch.archer_ax55_guest_wifi_5g': {
-    entity_id: 'switch.archer_ax55_guest_wifi_5g',
+  'switch.living_room_tp_link_router_guest_wifi_5g': {
+    entity_id: 'switch.living_room_tp_link_router_guest_wifi_5g',
     state: 'off',
     attributes: {
-      friendly_name: 'Archer AX55 Guest Wi-Fi 5G',
-      ssid: 'Antigravity-Guest-5G',
-      key: 'WelcomeGuest2026!'
+      friendly_name: 'Guest Wi-Fi 5G',
+      ssid: 'Antigravity-Guest-5G'
     }
   },
-  'switch.archer_ax55_iot_wifi_2_4g': {
-    entity_id: 'switch.archer_ax55_iot_wifi_2_4g',
+  'switch.living_room_tp_link_router_guest_wifi_6g': {
+    entity_id: 'switch.living_room_tp_link_router_guest_wifi_6g',
+    state: 'off',
+    attributes: {
+      friendly_name: 'Guest Wi-Fi 6G',
+      ssid: 'Antigravity-Guest-6E'
+    }
+  },
+  'switch.living_room_tp_link_router_iot_wifi_2_4g': {
+    entity_id: 'switch.living_room_tp_link_router_iot_wifi_2_4g',
     state: 'on',
     attributes: {
-      friendly_name: 'Archer AX55 IoT Wi-Fi 2.4G',
+      friendly_name: 'IoT Wi-Fi 2.4G',
       ssid: 'Antigravity-IoT'
     }
   },
-  'switch.archer_ax55_router_data_fetching': {
-    entity_id: 'switch.archer_ax55_router_data_fetching',
+  'switch.living_room_tp_link_router_iot_wifi_5g': {
+    entity_id: 'switch.living_room_tp_link_router_iot_wifi_5g',
     state: 'on',
     attributes: {
-      friendly_name: 'Archer AX55 Router Data Fetching'
+      friendly_name: 'IoT Wi-Fi 5G',
+      ssid: 'Antigravity-IoT-5G'
     }
   },
-  'button.archer_ax55_reboot': {
-    entity_id: 'button.archer_ax55_reboot',
+  'switch.living_room_tp_link_router_iot_wifi_6g': {
+    entity_id: 'switch.living_room_tp_link_router_iot_wifi_6g',
+    state: 'off',
+    attributes: {
+      friendly_name: 'IoT Wi-Fi 6G',
+      ssid: 'Antigravity-IoT-6G'
+    }
+  },
+  'switch.living_room_tp_link_router_router_data_fetching': {
+    entity_id: 'switch.living_room_tp_link_router_router_data_fetching',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Live Data Fetching'
+    }
+  },
+  'button.living_room_tp_link_router_reboot': {
+    entity_id: 'button.living_room_tp_link_router_reboot',
     state: '2026-08-01T12:00:00Z',
     attributes: {
-      friendly_name: 'Archer AX55 Reboot'
+      friendly_name: 'Reboot Router'
     }
   },
 
@@ -3748,6 +3770,54 @@ export const MOCK_STATES: Record<string, HAState> = {
       signal_strength: -64,
       download_speed_kbps: 5,
       upload_speed_kbps: 12,
+      source_type: 'router'
+    }
+  },
+  'device_tracker.samers_iphone_15_pro': {
+    entity_id: 'device_tracker.samers_iphone_15_pro',
+    state: 'not_home',
+    attributes: {
+      friendly_name: "Samer's iPhone 15 Pro",
+      ip_address: '192.168.68.103',
+      mac_address: '3A:88:9C:21:44:D1',
+      band: '5ghz',
+      last_seen: '2 hours ago',
+      source_type: 'router'
+    }
+  },
+  'device_tracker.nintendo_switch_oled': {
+    entity_id: 'device_tracker.nintendo_switch_oled',
+    state: 'not_home',
+    attributes: {
+      friendly_name: 'Nintendo Switch OLED',
+      ip_address: '192.168.68.120',
+      mac_address: '9C:E6:E7:55:66:77',
+      band: '5ghz',
+      last_seen: '1 day ago',
+      source_type: 'router'
+    }
+  },
+  'device_tracker.guests_pixel_8': {
+    entity_id: 'device_tracker.guests_pixel_8',
+    state: 'not_home',
+    attributes: {
+      friendly_name: "Guest's Pixel 8",
+      ip_address: '192.168.68.199',
+      mac_address: 'F8:4D:89:12:88:99',
+      band: 'guest',
+      last_seen: '3 days ago',
+      source_type: 'router'
+    }
+  },
+  'device_tracker.sonos_move_portable': {
+    entity_id: 'device_tracker.sonos_move_portable',
+    state: 'not_home',
+    attributes: {
+      friendly_name: 'Sonos Move Portable',
+      ip_address: '192.168.68.160',
+      mac_address: '5C:AA:FD:33:22:11',
+      band: '2.4ghz',
+      last_seen: '5 hours ago',
       source_type: 'router'
     }
   }

@@ -196,115 +196,351 @@ export function useTpLinkRouter() {
   const [timeRange, setTimeRange] = useState<NetworkTimeRange>('1D');
   const [historyData, setHistoryData] = useState<RouterTimeseriesPoint[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
+  const [fetchedPublicIp, setFetchedPublicIp] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch('https://api.ipify.org?format=json')
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data?.ip) {
+          setFetchedPublicIp(data.ip);
+        }
+      })
+      .catch(() => {
+        // graceful fallback if offline or restricted
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const metrics: TpLinkRouterMetrics = useMemo(() => {
-    // 1. Hardware & System Telemetry
-    const cpuEntity = findEntity(rawStates, 'sensor', ['cpu_used', 'cpu_usage', 'cpu used']);
-    const cpuUsage = parseNum(cpuEntity?.state, 14.0);
+    // 1. Hardware & System Telemetry (Strict TP-Link router entity lookup)
+    const cpuEntity =
+      rawStates['sensor.living_room_tp_link_router_cpu_used'] ||
+      findEntity(rawStates, 'sensor', [
+        'living_room_tp_link_router_cpu_used',
+        'tplink_router_cpu_used',
+        'archer_ax55_cpu_used'
+      ]);
+    const cpuUsage = parseNum(cpuEntity?.state, 28.5);
 
-    const memEntity = findEntity(rawStates, 'sensor', ['memory_used', 'memory_usage', 'memory used', 'ram_used']);
-    const memoryUsage = parseNum(memEntity?.state, 73.0);
+    const memEntity =
+      rawStates['sensor.living_room_tp_link_router_memory_used'] ||
+      findEntity(rawStates, 'sensor', [
+        'living_room_tp_link_router_memory_used',
+        'tplink_router_memory_used',
+        'archer_ax55_memory_used'
+      ]);
+    const memoryUsage = parseNum(memEntity?.state, 64.2);
 
-    const wanIpEntity = findEntity(rawStates, 'sensor', ['wan_ipv4_address', 'wan_ipv4', 'wan ipv4']);
+    const wanIpEntity =
+      rawStates['sensor.living_room_tp_link_router_wan_ipv4_address'] ||
+      findEntity(rawStates, 'sensor', [
+        'living_room_tp_link_router_wan_ipv4_address',
+        'tplink_router_wan_ipv4_address',
+        'archer_ax55_wan_ipv4_address'
+      ]);
     const wanIpv4 = wanIpEntity?.state || '192.168.129.2';
 
-    const lanIpEntity = findEntity(rawStates, 'sensor', ['lan_ipv4_address', 'lan_ipv4', 'lan ipv4']);
+    // Public IP Detection (via HA integration sensor or resolved external gateway IP)
+    const publicIpSensor =
+      rawStates['sensor.public_ip'] ||
+      rawStates['sensor.external_ip'] ||
+      rawStates['sensor.myip'] ||
+      rawStates['sensor.my_ip'] ||
+      rawStates['sensor.current_public_ip'] ||
+      findEntity(rawStates, 'sensor', ['public_ip', 'external_ip', 'myip', 'my_ip']);
+
+    const isWanAlreadyPublic =
+      wanIpv4 &&
+      !wanIpv4.startsWith('192.168.') &&
+      !wanIpv4.startsWith('10.') &&
+      !wanIpv4.startsWith('172.') &&
+      !wanIpv4.startsWith('127.');
+
+    const publicIp =
+      publicIpSensor?.state && publicIpSensor.state !== 'unknown' && publicIpSensor.state !== 'unavailable'
+        ? publicIpSensor.state
+        : isWanAlreadyPublic
+        ? wanIpv4
+        : fetchedPublicIp || '84.115.182.49';
+
+    const lanIpEntity =
+      rawStates['sensor.living_room_tp_link_router_lan_ipv4_address'] ||
+      findEntity(rawStates, 'sensor', [
+        'living_room_tp_link_router_lan_ipv4_address',
+        'tplink_router_lan_ipv4_address',
+        'archer_ax55_lan_ipv4_address'
+      ]);
     const lanIpv4 = lanIpEntity?.state || '192.168.68.1';
 
-    const connTypeEntity = findEntity(rawStates, 'sensor', ['connection_type', 'wan_connection_type']);
+    const connTypeEntity =
+      rawStates['sensor.living_room_tp_link_router_connection_type'] ||
+      findEntity(rawStates, 'sensor', [
+        'living_room_tp_link_router_connection_type',
+        'tplink_router_connection_type',
+        'archer_ax55_connection_type'
+      ]);
     const connectionType = connTypeEntity?.state || 'Dynamic IP';
 
-    const wanStatusEntity = findEntity(rawStates, 'sensor', ['wan_status', 'connection_status', 'wan connection status']);
+    const wanStatusEntity = findEntity(rawStates, 'sensor', [
+      'living_room_tp_link_router_wan_status',
+      'tplink_router_wan_status'
+    ]);
     const wanStatus: 'connected' | 'disconnected' =
       wanStatusEntity?.state === 'disconnected' || wanStatusEntity?.state === 'off' ? 'disconnected' : 'connected';
 
-    const modelEntity = findEntity(rawStates, 'sensor', ['tplink_router_model', 'router_model', 'model']);
+    const modelEntity =
+      rawStates['sensor.living_room_tp_link_router_model'] ||
+      findEntity(rawStates, 'sensor', [
+        'living_room_tp_link_router_model',
+        'tplink_router_model'
+      ]);
     const model =
       modelEntity?.state ||
-      cpuEntity?.attributes?.friendly_name?.replace(' CPU Used', '')?.replace(' cpu used', '') ||
       'TP-Link Archer Router';
 
-    const uptimeEntity = findEntity(rawStates, 'sensor', ['uptime', 'router_uptime']);
-    const uptime = uptimeEntity?.state || '18 days, 4 hours';
+    const uptimeEntity =
+      rawStates['sensor.living_room_tp_link_router_uptime'] ||
+      findEntity(rawStates, 'sensor', [
+        'living_room_tp_link_router_uptime',
+        'tplink_router_uptime',
+        'archer_ax55_uptime'
+      ]);
+    const uptime = uptimeEntity?.state || '24 days, 6 hours';
 
     // 2. Client Counts Breakdown
-    const totalClientsEntity = findEntity(rawStates, 'sensor', ['total_clients', 'devices_total', 'connected_clients']);
-    const totalClientsCount = parseNum(totalClientsEntity?.state, 30);
+    const mainWifiEntity = findEntity(rawStates, 'sensor', [
+      'living_room_tp_link_router_total_main_wifi_clients',
+      'total_main_wifi_clients',
+      'main_wifi_clients'
+    ]);
+    const mainWifiClientsCount = parseNum(mainWifiEntity?.state, 4);
 
-    const mainWifiEntity = findEntity(rawStates, 'sensor', ['total_main_wifi_clients', 'main_wifi_clients']);
-    const mainWifiClientsCount = parseNum(mainWifiEntity?.state, 24);
+    const wiredEntity = findEntity(rawStates, 'sensor', [
+      'living_room_tp_link_router_total_wired_clients',
+      'total_wired_clients',
+      'wired_clients'
+    ]);
+    const wiredClientsCount = parseNum(wiredEntity?.state, 2);
 
-    const wiredEntity = findEntity(rawStates, 'sensor', ['total_wired_clients', 'wired_clients']);
-    const wiredClientsCount = parseNum(wiredEntity?.state, 5);
+    const iotClientsEntity = findEntity(rawStates, 'sensor', [
+      'living_room_tp_link_router_total_iot_clients',
+      'total_iot_clients',
+      'iot_clients'
+    ]);
+    const iotClientsCount = parseNum(iotClientsEntity?.state, 2);
 
-    const iotClientsEntity = findEntity(rawStates, 'sensor', ['total_iot_clients', 'iot_clients']);
-    const iotClientsCount = parseNum(iotClientsEntity?.state, 1);
-
-    const guestClientsEntity = findEntity(rawStates, 'sensor', ['total_guest_wifi_clients', 'guest_wifi_clients']);
+    const guestClientsEntity = findEntity(rawStates, 'sensor', [
+      'living_room_tp_link_router_total_guest_wifi_clients',
+      'total_guest_wifi_clients',
+      'guest_wifi_clients'
+    ]);
     const guestClientsCount = parseNum(guestClientsEntity?.state, 0);
+
+    const totalClientsEntity = findEntity(rawStates, 'sensor', [
+      'living_room_tp_link_router_total_clients',
+      'total_clients',
+      'devices_total',
+      'connected_clients'
+    ]);
+    const calculatedSum = mainWifiClientsCount + wiredClientsCount + iotClientsCount + guestClientsCount;
+    const totalClientsCount = totalClientsEntity?.state ? parseNum(totalClientsEntity.state, calculatedSum) : calculatedSum;
 
     const wirelessClientsCount = mainWifiClientsCount + iotClientsCount + guestClientsCount;
 
-    // 3. Live Traffic Speeds (Non-LTE fallback graceful handling)
+    // 3. Live Traffic Speeds
     const downEntity = findEntity(rawStates, 'sensor', ['current_download_speed', 'download_speed', 'rx_speed']);
     const upEntity = findEntity(rawStates, 'sensor', ['current_upload_speed', 'upload_speed', 'tx_speed']);
     const currentDownloadSpeedKBps = parseNum(downEntity?.state, 28400);
     const currentUploadSpeedKBps = parseNum(upEntity?.state, 9500);
 
-    // 4. Dynamic Connected Device Trackers
-    const discoveredClients: ConnectedClient[] = Object.entries(rawStates)
-      .filter(([id, s]) => id.startsWith('device_tracker.') && (s.state === 'home' || s.state === 'on' || s.state !== 'not_home'))
+    // 4. Dynamic Device Trackers (Live discovery from HA entity registry)
+    const allDiscoveredTrackers: ConnectedClient[] = Object.entries(rawStates)
+      .filter(([id]) => id.startsWith('device_tracker.'))
       .map(([id, entity]) => {
         const attrs = entity.attributes || {};
-        const name = attrs.friendly_name || id.replace('device_tracker.', '').replace(/_/g, ' ');
-        const ip = attrs.ip || attrs.ip_address || attrs.ip4 || undefined;
-        const mac = attrs.mac || attrs.mac_address || id;
-        const bandRaw = (attrs.band || attrs.connection_type || (attrs.source_type === 'router' ? '5ghz' : '2.4ghz')).toLowerCase();
-        const signal = attrs.signal_strength || attrs.signal_dbm || attrs.rssi || undefined;
-        const down = attrs.download_speed_kbps || undefined;
-        const up = attrs.upload_speed_kbps || undefined;
-        const connectionTypeMap: ConnectedClient['connectionType'] =
-          bandRaw.includes('6')
-            ? '6ghz'
-            : bandRaw.includes('5')
-            ? '5ghz'
-            : bandRaw.includes('lan') || bandRaw.includes('eth') || bandRaw.includes('wire')
-            ? 'ethernet'
-            : '2.4ghz';
+        const isOnline = entity.state === 'home' || entity.state === 'on';
+        const name =
+          attrs.friendly_name ||
+          attrs.host_name ||
+          attrs.name ||
+          id.replace('device_tracker.', '').replace(/_/g, ' ');
+        const ip = attrs.ip_address || attrs.ip || attrs.ip4 || undefined;
+        const mac = attrs.mac_address || attrs.mac || undefined;
+        
+        // Derive connection type
+        const bandRaw = (
+          attrs.connection_type ||
+          attrs.band ||
+          attrs.network_type ||
+          attrs.ssid ||
+          (attrs.source_type === 'router' ? 'Wi-Fi' : '')
+        ).toString().toLowerCase();
+
+        let connType: ConnectedClient['connectionType'] = '2.4G';
+        if (bandRaw.includes('lan') || bandRaw.includes('eth') || bandRaw.includes('wire')) {
+          connType = 'wired';
+        } else if (bandRaw.includes('guest')) {
+          connType = 'guest';
+        } else if (bandRaw.includes('iot')) {
+          connType = 'iot';
+        } else if (bandRaw.includes('6')) {
+          connType = '6G';
+        } else if (bandRaw.includes('5')) {
+          connType = '5G';
+        } else if (bandRaw.includes('2.4') || bandRaw.includes('24')) {
+          connType = '2.4G';
+        } else if (attrs.is_wired === true || attrs.wired === true) {
+          connType = 'wired';
+        }
+
+        // Derive last seen
+        const lastSeen =
+          attrs.last_seen ||
+          attrs.last_time ||
+          attrs.connected_time ||
+          (entity.last_changed ? new Date(entity.last_changed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined) ||
+          'Recently';
 
         return {
+          entityId: id,
           mac,
           name,
           ip,
-          connectionType: connectionTypeMap,
-          signalDbm: typeof signal === 'number' ? signal : undefined,
-          downloadSpeedKBps: typeof down === 'number' ? down : undefined,
-          uploadSpeedKBps: typeof up === 'number' ? up : undefined,
-          isOnline: true
+          connectionType: connType,
+          signalDbm: typeof attrs.signal_strength === 'number' ? attrs.signal_strength : undefined,
+          downloadSpeedKBps: typeof attrs.download_speed_kbps === 'number' ? attrs.download_speed_kbps : undefined,
+          uploadSpeedKBps: typeof attrs.upload_speed_kbps === 'number' ? attrs.upload_speed_kbps : undefined,
+          isOnline,
+          state: entity.state,
+          lastSeen,
+          ssid: attrs.ssid
         };
       });
 
-    // 5. Wi-Fi Radio Switches (Main, Guest, IoT)
-    const swMain24 = findEntity(rawStates, 'switch', ['wifi_2_4g', 'wifi_24g', 'wifi_2.4g', 'wifi 2.4g', 'main_wifi_2_4g']);
-    const swMain5G = findEntity(rawStates, 'switch', ['wifi_5g', 'wifi 5g', 'main_wifi_5g']);
-    const swMain6G = findEntity(rawStates, 'switch', ['wifi_6g', 'wifi 6g', 'main_wifi_6g']);
+    const connectedClients = allDiscoveredTrackers
+      .filter((c) => c.isOnline)
+      .sort((a, b) => a.name.localeCompare(b.name));
 
-    const swGuest24 = findEntity(rawStates, 'switch', ['guest_wifi_2_4g', 'guest_wifi_24g', 'guest 2.4g', 'guest_wifi']);
-    const swGuest5G = findEntity(rawStates, 'switch', ['guest_wifi_5g', 'guest 5g']);
-    const swGuest6G = findEntity(rawStates, 'switch', ['guest_wifi_6g', 'guest 6g']);
+    const disconnectedClients = allDiscoveredTrackers
+      .filter((c) => !c.isOnline)
+      .sort((a, b) => a.name.localeCompare(b.name));
 
-    const swIot24 = findEntity(rawStates, 'switch', ['iot_wifi_2_4g', 'iot_wifi_24g', 'iot 2.4g', 'iot_network', 'iot_wifi']);
-    const swIot5G = findEntity(rawStates, 'switch', ['iot_wifi_5g', 'iot 5g']);
-    const swIot6G = findEntity(rawStates, 'switch', ['iot_wifi_6g', 'iot 6g']);
+    // 5. Wi-Fi Radio Switches (3x3 Grid: Main, Guest, IoT)
+    const isEntityActive = (ent: any, defaultVal = false): boolean => {
+      if (!ent) return defaultVal;
+      const s = String(ent.state ?? '').trim().toLowerCase();
+      return s === 'on' || s === 'home' || s === 'connected' || s === 'enabled' || s === 'true' || s === '1' || ent.state === true;
+    };
+
+    const swMain24 =
+      rawStates['switch.living_room_tp_link_router_wifi_2_4g'] ||
+      findEntity(rawStates, 'switch', [
+        'living_room_tp_link_router_wifi_2_4g',
+        'living_room_tp_link_router_2_4g',
+        'wifi_2_4g',
+        'wifi_24g',
+        'wifi_2.4g',
+        'main_wifi_2_4g'
+      ]);
+
+    const swMain5G =
+      rawStates['switch.living_room_tp_link_router_wifi_5g'] ||
+      findEntity(rawStates, 'switch', [
+        'living_room_tp_link_router_wifi_5g',
+        'living_room_tp_link_router_5g',
+        'wifi_5g',
+        'wifi 5g',
+        'main_wifi_5g'
+      ]);
+
+    const swMain6G =
+      rawStates['switch.living_room_tp_link_router_wifi_6g'] ||
+      findEntity(rawStates, 'switch', [
+        'living_room_tp_link_router_wifi_6g',
+        'living_room_tp_link_router_6g',
+        'wifi_6g',
+        'wifi 6g',
+        'main_wifi_6g'
+      ]);
+
+    const swGuest24 =
+      rawStates['switch.living_room_tp_link_router_guest_wifi_2_4g'] ||
+      findEntity(rawStates, 'switch', [
+        'living_room_tp_link_router_guest_wifi_2_4g',
+        'living_room_tp_link_router_guest_2_4g',
+        'guest_wifi_2_4g',
+        'guest_wifi_24g',
+        'guest_wifi'
+      ]);
+
+    const swGuest5G =
+      rawStates['switch.living_room_tp_link_router_guest_wifi_5g'] ||
+      findEntity(rawStates, 'switch', [
+        'living_room_tp_link_router_guest_wifi_5g',
+        'living_room_tp_link_router_guest_5g',
+        'guest_wifi_5g'
+      ]);
+
+    const swGuest6G =
+      rawStates['switch.living_room_tp_link_router_guest_wifi_6g'] ||
+      findEntity(rawStates, 'switch', [
+        'living_room_tp_link_router_guest_wifi_6g',
+        'living_room_tp_link_router_guest_6g',
+        'guest_wifi_6g'
+      ]);
+
+    const swIot24 =
+      rawStates['switch.living_room_tp_link_router_iot_wifi_2_4g'] ||
+      findEntity(rawStates, 'switch', [
+        'living_room_tp_link_router_iot_wifi_2_4g',
+        'living_room_tp_link_router_iot_2_4g',
+        'iot_wifi_2_4g',
+        'iot_wifi_24g',
+        'iot_network'
+      ]);
+
+    const swIot5G =
+      rawStates['switch.living_room_tp_link_router_iot_wifi_5g'] ||
+      findEntity(rawStates, 'switch', [
+        'living_room_tp_link_router_iot_wifi_5g',
+        'living_room_tp_link_router_iot_5g',
+        'iot_wifi_5g'
+      ]);
+
+    const swIot6G =
+      rawStates['switch.living_room_tp_link_router_iot_wifi_6g'] ||
+      findEntity(rawStates, 'switch', [
+        'living_room_tp_link_router_iot_wifi_6g',
+        'living_room_tp_link_router_iot_6g',
+        'iot_wifi_6g'
+      ]);
+
+    const swPolling =
+      rawStates['switch.living_room_tp_link_router_router_data_fetching'] ||
+      findEntity(rawStates, 'switch', [
+        'living_room_tp_link_router_router_data_fetching',
+        'router_data_fetching',
+        'data_fetching'
+      ]);
 
     const swVpn = findEntity(rawStates, 'switch', ['vpn_client', 'wireguard_vpn', 'router_vpn']);
-    const swPolling = findEntity(rawStates, 'switch', ['router_data_fetching', 'data_fetching']);
 
-    const rebootBtn = findEntity(rawStates, 'button', ['reboot', 'restart']);
+    const rebootBtn =
+      rawStates['button.living_room_tp_link_router_reboot'] ||
+      findEntity(rawStates, 'button', [
+        'living_room_tp_link_router_reboot',
+        'reboot',
+        'restart'
+      ]);
 
     return {
       model,
       wanIpv4,
+      publicIp,
       lanIpv4,
       connectionType,
       wanStatus,
@@ -317,74 +553,76 @@ export function useTpLinkRouter() {
       totalUploadGB: 384.2,
       wifiSwitches: {
         host24Ghz: {
-          entityId: swMain24?.entity_id || 'switch.archer_ax55_wifi_2_4g',
-          enabled: swMain24 ? swMain24.state === 'on' : true,
+          entityId: swMain24?.entity_id || 'switch.living_room_tp_link_router_wifi_2_4g',
+          enabled: isEntityActive(swMain24, true),
           ssid: swMain24?.attributes?.ssid || 'Antigravity-Home'
         },
         host5Ghz: {
-          entityId: swMain5G?.entity_id || 'switch.archer_ax55_wifi_5g',
-          enabled: swMain5G ? swMain5G.state === 'on' : true,
+          entityId: swMain5G?.entity_id || 'switch.living_room_tp_link_router_wifi_5g',
+          enabled: isEntityActive(swMain5G, true),
           ssid: swMain5G?.attributes?.ssid || 'Antigravity-Home 5G'
         },
         host6Ghz: {
-          entityId: swMain6G?.entity_id || 'switch.archer_ax55_wifi_6g',
-          enabled: swMain6G ? swMain6G.state === 'on' : true,
+          entityId: swMain6G?.entity_id || 'switch.living_room_tp_link_router_wifi_6g',
+          enabled: isEntityActive(swMain6G, true),
           ssid: swMain6G?.attributes?.ssid || 'Antigravity-Ultra-6E'
         },
         guest24Ghz: {
-          entityId: swGuest24?.entity_id || 'switch.archer_ax55_guest_wifi_2_4g',
-          enabled: swGuest24 ? swGuest24.state === 'on' : true,
+          entityId: swGuest24?.entity_id || 'switch.living_room_tp_link_router_guest_wifi_2_4g',
+          enabled: isEntityActive(swGuest24, false),
           ssid: swGuest24?.attributes?.ssid || 'Antigravity-Guest',
           key: swGuest24?.attributes?.key || 'WelcomeGuest2026!'
         },
         guest5Ghz: {
-          entityId: swGuest5G?.entity_id || 'switch.archer_ax55_guest_wifi_5g',
-          enabled: swGuest5G ? swGuest5G.state === 'on' : true,
+          entityId: swGuest5G?.entity_id || 'switch.living_room_tp_link_router_guest_wifi_5g',
+          enabled: isEntityActive(swGuest5G, false),
           ssid: swGuest5G?.attributes?.ssid || 'Antigravity-Guest-5G',
           key: swGuest5G?.attributes?.key || 'WelcomeGuest2026!'
         },
         guest6Ghz: {
-          entityId: swGuest6G?.entity_id || 'switch.archer_ax55_guest_wifi_6g',
-          enabled: swGuest6G ? swGuest6G.state === 'on' : true,
+          entityId: swGuest6G?.entity_id || 'switch.living_room_tp_link_router_guest_wifi_6g',
+          enabled: isEntityActive(swGuest6G, false),
           ssid: swGuest6G?.attributes?.ssid || 'Antigravity-Guest-6E'
         },
         iot24Ghz: {
-          entityId: swIot24?.entity_id || 'switch.archer_ax55_iot_wifi_2_4g',
-          enabled: swIot24 ? swIot24.state === 'on' : true,
+          entityId: swIot24?.entity_id || 'switch.living_room_tp_link_router_iot_wifi_2_4g',
+          enabled: isEntityActive(swIot24, true),
           ssid: swIot24?.attributes?.ssid || 'Antigravity-IoT'
         },
         iot5Ghz: {
-          entityId: swIot5G?.entity_id || 'switch.archer_ax55_iot_wifi_5g',
-          enabled: swIot5G ? swIot5G.state === 'on' : true,
+          entityId: swIot5G?.entity_id || 'switch.living_room_tp_link_router_iot_wifi_5g',
+          enabled: isEntityActive(swIot5G, true),
           ssid: swIot5G?.attributes?.ssid || 'Antigravity-IoT-5G'
         },
         iot6Ghz: {
-          entityId: swIot6G?.entity_id || 'switch.archer_ax55_iot_wifi_6g',
-          enabled: swIot6G ? swIot6G.state === 'on' : true,
+          entityId: swIot6G?.entity_id || 'switch.living_room_tp_link_router_iot_wifi_6g',
+          enabled: isEntityActive(swIot6G, false),
           ssid: swIot6G?.attributes?.ssid || 'Antigravity-IoT-6G'
         },
         iotNetwork: {
-          entityId: swIot24?.entity_id || 'switch.archer_ax55_iot_wifi_2_4g',
-          enabled: swIot24 ? swIot24.state === 'on' : true,
+          entityId: swIot24?.entity_id || 'switch.living_room_tp_link_router_iot_wifi_2_4g',
+          enabled: isEntityActive(swIot24, true),
           ssid: swIot24?.attributes?.ssid || 'Antigravity-IoT'
         },
         vpnClient: {
           entityId: swVpn?.entity_id || 'switch.tplink_router_vpn_client',
-          enabled: swVpn ? swVpn.state === 'on' : true
+          enabled: isEntityActive(swVpn, true)
         },
         routerDataFetching: {
-          entityId: swPolling?.entity_id || 'switch.archer_ax55_router_data_fetching',
-          enabled: swPolling ? swPolling.state === 'on' : true
+          entityId: swPolling?.entity_id || 'switch.living_room_tp_link_router_router_data_fetching',
+          enabled: isEntityActive(swPolling, true)
         }
       },
-      connectedClientsCount: Math.max(discoveredClients.length, totalClientsCount),
+      connectedClientsCount: totalClientsCount,
       mainWifiClientsCount,
       wiredClientsCount,
       iotClientsCount,
       guestClientsCount,
       wirelessClientsCount,
-      clients: discoveredClients,
-      rebootButtonEntityId: rebootBtn?.entity_id || 'button.archer_ax55_reboot'
+      clients: allDiscoveredTrackers,
+      connectedClients,
+      disconnectedClients,
+      rebootButtonEntityId: rebootBtn?.entity_id || 'button.living_room_tp_link_router_reboot'
     };
   }, [rawStates]);
 
