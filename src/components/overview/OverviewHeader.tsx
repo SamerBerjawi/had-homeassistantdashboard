@@ -240,7 +240,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       <div className="flex flex-wrap items-center gap-2">
         
         {/* ========================================================= */}
-        {/* 1.1 PERSONS BADGES (EDGE-TO-EDGE PICTURE, SAME RADIUS)     */}
+        {/* 1.1 PERSONS BADGES (SECURITY DASHBOARD STYLE)              */}
         {/* ========================================================= */}
         {userEntities.map((user) => {
           const isHome = user.state === 'home';
@@ -251,7 +251,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
               key={user.entity_id}
               type="button"
               onClick={() => openUsersDrawer(user)}
-              className={`h-9 pl-0.5 pr-3 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 border flex items-center gap-2 shadow-xs overflow-hidden ${
+              className={`h-9 pl-0.5 pr-2.5 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 border flex items-center gap-1.5 shadow-xs select-none ${
                 isHome
                   ? darkMode
                     ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
@@ -269,12 +269,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 isHome={isHome}
                 size="sm"
                 showPresenceDot={false}
-                className="w-8 h-8 shrink-0"
+                className="w-7 h-7 shrink-0"
               />
-              <div className="flex items-center gap-1.5">
-                <span>{firstName}</span>
-                <span className={`w-2 h-2 rounded-full shrink-0 ${isHome ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-              </div>
+              <span>{firstName}</span>
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isHome ? 'bg-emerald-500' : 'bg-slate-400'}`} />
             </button>
           );
         })}

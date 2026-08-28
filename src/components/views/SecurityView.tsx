@@ -148,7 +148,8 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
               smokeSensors={smokeSensors}
               resolvedFloors={resolvedFloors}
               resolvedAreas={resolvedAreas}
-              initialCategory="all"
+              activeCategory="all"
+              onSelectCategory={(cat) => setActiveFilter(cat)}
             />
           </div>
 
@@ -195,7 +196,8 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
           smokeSensors={smokeSensors}
           resolvedFloors={resolvedFloors}
           resolvedAreas={resolvedAreas}
-          initialCategory={activeFilter}
+          activeCategory={activeFilter}
+          onSelectCategory={(cat) => setActiveFilter(cat)}
         />
       )}
 

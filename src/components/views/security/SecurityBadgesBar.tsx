@@ -119,14 +119,11 @@ export default function SecurityBadgesBar({
       {/* 1. ALARM STATUS BADGE */}
       <button
         type="button"
-        onClick={() => {
-          onSelectFilter('alarm');
-          onOpenKeypadModal?.();
-        }}
+        onClick={() => onSelectFilter(activeFilter === 'alarm' ? 'all' : 'alarm')}
         className={`h-9 px-3.5 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-2 shadow-xs ${
           alarmBadge.bg
         } ${activeFilter === 'alarm' ? 'ring-2 ring-emerald-400/50' : ''}`}
-        title={`Alarm Status: ${alarmBadge.label} (Click for Keypad)`}
+        title={`Alarm Status: ${alarmBadge.label} (Click to toggle view)`}
       >
         <AlarmIcon size={16} weight="duotone" className="shrink-0" />
         <span>{alarmBadge.label}</span>

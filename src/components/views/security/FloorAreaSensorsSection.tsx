@@ -20,16 +20,18 @@ import {
   BatteryLow, 
   BatteryWarning, 
   MagnifyingGlass, 
-  CheckCircle,
-  WarningCircle,
-  Building,
-  Stack,
-  Tree,
-  ArrowsClockwise,
-  CaretRight
+  CheckCircle, 
+  WarningCircle, 
+  Building, 
+  Stack, 
+  Tree, 
+  ArrowsClockwise, 
+  CaretRight 
 } from '@phosphor-icons/react';
 import { ResolvedEntity, ResolvedArea, ResolvedFloor } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+
+export type SecurityCategoryType = 'all' | 'openings' | 'locks' | 'motion' | 'hazards';
 
 interface FloorAreaSensorsSectionProps {
   darkMode?: boolean;
@@ -41,7 +43,8 @@ interface FloorAreaSensorsSectionProps {
   smokeSensors: ResolvedEntity[];
   resolvedFloors: ResolvedFloor[];
   resolvedAreas: ResolvedArea[];
-  initialCategory?: 'all' | 'openings' | 'locks' | 'motion' | 'hazards';
+  activeCategory?: SecurityCategoryType;
+  onSelectCategory?: (category: SecurityCategoryType) => void;
 }
 
 export default function FloorAreaSensorsSection({
@@ -54,12 +57,20 @@ export default function FloorAreaSensorsSection({
   smokeSensors,
   resolvedFloors,
   resolvedAreas,
-  initialCategory = 'all'
+  activeCategory: controlledCategory,
+  onSelectCategory
 }: FloorAreaSensorsSectionProps) {
   const [selectedFloorId, setSelectedFloorId] = useState<string>('all');
-  const [activeCategory, setActiveCategory] = useState<'all' | 'openings' | 'locks' | 'motion' | 'hazards'>(initialCategory);
+  const [internalCategory, setInternalCategory] = useState<SecurityCategoryType>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [togglingLockId, setTogglingLockId] = useState<string | null>(null);
+
+  const activeCategory = controlledCategory !== undefined ? controlledCategory : internalCategory;
+
+  const handleCategoryChange = (cat: SecurityCategoryType) => {
+    setInternalCategory(cat);
+    onSelectCategory?.(cat);
+  };
 
   const callHAService = useAutoLayoutStore(s => s.callHAService);
   const updateEntityState = useAutoLayoutStore(s => s.updateEntityState);
@@ -117,30 +128,40 @@ export default function FloorAreaSensorsSection({
     ? [{ floor_id: 'all', name: 'All Floors', icon: 'Layers' }, ...resolvedFloors]
     : defaultFloors;
 
-  // Filter areas based on selected floor and search
-  const filteredAreas = resolvedAreas.filter(area => {
-    if (selectedFloorId !== 'all' && area.floor_id !== selectedFloorId) {
-      return false;
-    }
-    const secData = areaSecurityEntitiesMap.get(area.area_id);
-    if (!secData || secData.totalCount === 0) {
-      return false;
-    }
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const matchName = area.name.toLowerCase().includes(q);
-      const matchDevice = [
-        ...secData.locks,
-        ...secData.doors,
-        ...secData.windows,
-        ...secData.motion,
-        ...secData.leaks,
-        ...secData.smoke
-      ].some(d => (d.name || d.entity_id).toLowerCase().includes(q));
-      return matchName || matchDevice;
-    }
-    return true;
-  });
+  // Filter areas strictly based on selected floor, active category, and search query
+  const filteredAreas = useMemo(() => {
+    return resolvedAreas.filter(area => {
+      if (selectedFloorId !== 'all' && area.floor_id !== selectedFloorId) {
+        return false;
+      }
+      const secData = areaSecurityEntitiesMap.get(area.area_id);
+      if (!secData) {
+        return false;
+      }
+
+      // Check if area has entities for the active category
+      if (activeCategory === 'locks' && secData.locks.length === 0) return false;
+      if (activeCategory === 'openings' && secData.doors.length === 0 && secData.windows.length === 0) return false;
+      if (activeCategory === 'motion' && secData.motion.length === 0) return false;
+      if (activeCategory === 'hazards' && secData.leaks.length === 0 && secData.smoke.length === 0) return false;
+      if (activeCategory === 'all' && secData.totalCount === 0) return false;
+
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const matchName = area.name.toLowerCase().includes(q);
+        const matchDevice = [
+          ...secData.locks,
+          ...secData.doors,
+          ...secData.windows,
+          ...secData.motion,
+          ...secData.leaks,
+          ...secData.smoke
+        ].some(d => (d.name || d.entity_id).toLowerCase().includes(q));
+        return matchName || matchDevice;
+      }
+      return true;
+    });
+  }, [resolvedAreas, selectedFloorId, areaSecurityEntitiesMap, activeCategory, searchQuery]);
 
   const handleToggleLock = async (lock: ResolvedEntity) => {
     const isCurrentlyLocked = lock.state === 'locked';
@@ -177,9 +198,27 @@ export default function FloorAreaSensorsSection({
             <Stack size={18} weight="duotone" />
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-black tracking-tight">Perimeter & Sensors by Floor</h2>
+            <h2 className="text-base sm:text-lg font-black tracking-tight">
+              {activeCategory === 'locks'
+                ? 'Smart Perimeter Locks by Room'
+                : activeCategory === 'openings'
+                  ? 'Doors & Windows Openings by Room'
+                  : activeCategory === 'motion'
+                    ? 'Motion & Occupancy Zones by Room'
+                    : activeCategory === 'hazards'
+                      ? 'Environmental Safety & Leak Sensors'
+                      : 'Perimeter & Sensors by Floor'}
+            </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Smart locks, entry contacts, motion zones, and safety sensors organized room-by-room
+              {activeCategory === 'locks'
+                ? 'Control and monitor all exterior deadbolts and smart door locks'
+                : activeCategory === 'openings'
+                  ? 'Check open doors, windows, and perimeter breach contacts'
+                  : activeCategory === 'motion'
+                    ? 'Live PIR movement detectors and occupancy zones'
+                    : activeCategory === 'hazards'
+                      ? 'Smoke, CO, and water moisture leak detectors'
+                      : 'Smart locks, entry contacts, motion zones, and safety sensors organized room-by-room'}
             </p>
           </div>
         </div>
@@ -230,16 +269,16 @@ export default function FloorAreaSensorsSection({
           darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'
         }`}>
           {[
-            { id: 'all', label: 'All' },
-            { id: 'locks', label: 'Locks' },
-            { id: 'openings', label: 'Openings' },
-            { id: 'motion', label: 'Motion' },
-            { id: 'hazards', label: 'Safety' }
+            { id: 'all' as const, label: 'All' },
+            { id: 'locks' as const, label: `Locks (${lockEntities.length})` },
+            { id: 'openings' as const, label: `Openings (${doorSensors.length + windowSensors.length})` },
+            { id: 'motion' as const, label: `Motion (${motionSensors.length})` },
+            { id: 'hazards' as const, label: `Safety (${leakSensors.length + smokeSensors.length})` }
           ].map((cat) => (
             <button
               key={cat.id}
               type="button"
-              onClick={() => setActiveCategory(cat.id as any)}
+              onClick={() => handleCategoryChange(cat.id)}
               className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeCategory === cat.id
                   ? darkMode
@@ -258,319 +297,338 @@ export default function FloorAreaSensorsSection({
 
       {/* Area Cards Container */}
       <div className="space-y-4">
-        {filteredAreas.map((area) => {
-          const sec = areaSecurityEntitiesMap.get(area.area_id);
-          if (!sec) return null;
-
-          const openDoorsList = sec.doors.filter(d => d.state === 'on');
-          const openWindowsList = sec.windows.filter(w => w.state === 'on');
-          const totalOpenOpenings = openDoorsList.length + openWindowsList.length;
-          const unlockedLocksList = sec.locks.filter(l => l.state === 'unlocked' || l.state === 'open');
-          const activeMotionList = sec.motion.filter(m => m.state === 'on');
-          const activeHazardsList = [...sec.leaks, ...sec.smoke].filter(h => h.state === 'on' || h.state === 'detected' || h.state === 'wet');
-
-          const isAreaBreached = totalOpenOpenings > 0 || unlockedLocksList.length > 0 || activeHazardsList.length > 0;
-
-          return (
-            <div
-              key={area.area_id}
-              className={`rounded-3xl border backdrop-blur-xl overflow-hidden transition-all duration-300 ${
-                isAreaBreached
-                  ? darkMode
-                    ? 'bg-black/60 border-amber-500/30'
-                    : 'bg-white/90 border-amber-300 shadow-sm'
-                  : darkMode
-                    ? 'bg-black/40 border-white/10'
-                    : 'bg-white/80 border-slate-200 shadow-sm'
-              }`}
+        {filteredAreas.length === 0 ? (
+          <div className={`p-8 rounded-3xl border text-center ${
+            darkMode ? 'bg-black/30 border-white/10 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
+          }`}>
+            <p className="text-sm font-semibold">No sensors found matching the active floor or category filter.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedFloorId('all');
+                handleCategoryChange('all');
+                setSearchQuery('');
+              }}
+              className="mt-2 text-xs font-bold text-emerald-400 hover:underline cursor-pointer"
             >
-              {/* Area Header Bar with Room Picture & Status Chips */}
-              <div className="p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3 border-b border-white/10">
-                <div className="flex items-center gap-3">
-                  {area.picture ? (
-                    <img
-                      src={area.picture}
-                      alt={area.name}
-                      className="w-10 h-10 rounded-2xl object-cover border border-white/10"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center font-bold text-slate-300">
-                      {area.name.charAt(0)}
-                    </div>
-                  )}
+              Reset Filters
+            </button>
+          </div>
+        ) : (
+          filteredAreas.map((area) => {
+            const sec = areaSecurityEntitiesMap.get(area.area_id);
+            if (!sec) return null;
 
-                  <div>
-                    <h3 className="text-sm sm:text-base font-black tracking-tight">{area.name}</h3>
-                    <p className="text-[11px] text-slate-400 capitalize">
-                      {area.floor_id ? area.floor_id.replace('floor_', '').replace('_', ' ') : 'Area'} • {sec.totalCount} Security Sensors
-                    </p>
+            const openDoorsList = sec.doors.filter(d => d.state === 'on');
+            const openWindowsList = sec.windows.filter(w => w.state === 'on');
+            const totalOpenOpenings = openDoorsList.length + openWindowsList.length;
+            const unlockedLocksList = sec.locks.filter(l => l.state === 'unlocked' || l.state === 'open');
+            const activeMotionList = sec.motion.filter(m => m.state === 'on');
+            const activeHazardsList = [...sec.leaks, ...sec.smoke].filter(h => h.state === 'on' || h.state === 'detected' || h.state === 'wet');
+
+            const isAreaBreached = totalOpenOpenings > 0 || unlockedLocksList.length > 0 || activeHazardsList.length > 0;
+
+            return (
+              <div
+                key={area.area_id}
+                className={`rounded-3xl border backdrop-blur-xl overflow-hidden transition-all duration-300 ${
+                  isAreaBreached
+                    ? darkMode
+                      ? 'bg-black/60 border-amber-500/30'
+                      : 'bg-white/90 border-amber-300 shadow-sm'
+                    : darkMode
+                      ? 'bg-black/40 border-white/10'
+                      : 'bg-white/80 border-slate-200 shadow-sm'
+                }`}
+              >
+                {/* Area Header Bar with Room Picture & Status Chips */}
+                <div className="p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3 border-b border-white/10">
+                  <div className="flex items-center gap-3">
+                    {area.picture ? (
+                      <img
+                        src={area.picture}
+                        alt={area.name}
+                        className="w-10 h-10 rounded-2xl object-cover border border-white/10"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center font-bold text-slate-300">
+                        {area.name.charAt(0)}
+                      </div>
+                    )}
+
+                    <div>
+                      <h3 className="text-sm sm:text-base font-black tracking-tight">{area.name}</h3>
+                      <p className="text-[11px] text-slate-400 capitalize">
+                        {area.floor_id ? area.floor_id.replace('floor_', '').replace('_', ' ') : 'Area'} • {sec.totalCount} Security Sensors
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Area Status Quick Summary Badges */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {/* Locks Status */}
+                    {sec.locks.length > 0 && (
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 border ${
+                        unlockedLocksList.length > 0
+                          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                          : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                      }`}>
+                        {unlockedLocksList.length > 0 ? <LockOpen size={12} weight="bold" /> : <Lock size={12} weight="bold" />}
+                        <span>{unlockedLocksList.length > 0 ? `${unlockedLocksList.length} Unlocked` : `${sec.locks.length} Locked`}</span>
+                      </span>
+                    )}
+
+                    {/* Openings Status */}
+                    {(sec.doors.length > 0 || sec.windows.length > 0) && (
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 border ${
+                        totalOpenOpenings > 0
+                          ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                          : 'bg-white/5 text-slate-400 border-white/10'
+                      }`}>
+                        {totalOpenOpenings > 0 ? <DoorOpen size={12} weight="bold" /> : <Door size={12} weight="bold" />}
+                        <span>{totalOpenOpenings > 0 ? `${totalOpenOpenings} Open` : 'Closed'}</span>
+                      </span>
+                    )}
+
+                    {/* Motion Status */}
+                    {sec.motion.length > 0 && (
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 border ${
+                        activeMotionList.length > 0
+                          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
+                          : 'bg-white/5 text-slate-400 border-white/10'
+                      }`}>
+                        <PersonSimpleWalk size={12} weight="bold" />
+                        <span>{activeMotionList.length > 0 ? 'Motion' : 'Idle'}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* Area Status Quick Summary Badges */}
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {/* Locks Status */}
-                  {sec.locks.length > 0 && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 border ${
-                      unlockedLocksList.length > 0
-                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                        : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                    }`}>
-                      {unlockedLocksList.length > 0 ? <LockOpen size={12} weight="bold" /> : <Lock size={12} weight="bold" />}
-                      <span>{unlockedLocksList.length > 0 ? `${unlockedLocksList.length} Unlocked` : `${sec.locks.length} Locked`}</span>
-                    </span>
-                  )}
+                {/* Area Sensors Grid */}
+                <div className="p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  
+                  {/* 1. Smart Locks */}
+                  {(activeCategory === 'all' || activeCategory === 'locks') &&
+                    sec.locks.map((lock) => {
+                      const isLocked = lock.state === 'locked';
+                      const isToggling = togglingLockId === lock.entity_id;
+                      const battery = lock.attributes?.battery_level || lock.attributes?.battery;
 
-                  {/* Openings Status */}
-                  {(sec.doors.length > 0 || sec.windows.length > 0) && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 border ${
-                      totalOpenOpenings > 0
-                        ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                        : 'bg-white/5 text-slate-400 border-white/10'
-                    }`}>
-                      {totalOpenOpenings > 0 ? <DoorOpen size={12} weight="bold" /> : <Door size={12} weight="bold" />}
-                      <span>{totalOpenOpenings > 0 ? `${totalOpenOpenings} Open` : 'Closed'}</span>
-                    </span>
-                  )}
-
-                  {/* Motion Status */}
-                  {sec.motion.length > 0 && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 border ${
-                      activeMotionList.length > 0
-                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
-                        : 'bg-white/5 text-slate-400 border-white/10'
-                    }`}>
-                      <PersonSimpleWalk size={12} weight="bold" />
-                      <span>{activeMotionList.length > 0 ? 'Motion' : 'Idle'}</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Area Sensors Grid */}
-              <div className="p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                
-                {/* 1. Smart Locks */}
-                {(activeCategory === 'all' || activeCategory === 'locks') &&
-                  sec.locks.map((lock) => {
-                    const isLocked = lock.state === 'locked';
-                    const isToggling = togglingLockId === lock.entity_id;
-                    const battery = lock.attributes?.battery_level || lock.attributes?.battery;
-
-                    return (
-                      <div
-                        key={lock.entity_id}
-                        className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                          isLocked
-                            ? darkMode
-                              ? 'bg-white/5 border-emerald-500/30'
-                              : 'bg-white border-emerald-200 shadow-2xs'
-                            : darkMode
-                              ? 'bg-amber-500/15 border-amber-500/40'
-                              : 'bg-amber-50 border-amber-300 shadow-2xs'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${
+                      return (
+                        <div
+                          key={lock.entity_id}
+                          className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                             isLocked
-                              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                              : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                          }`}>
-                            {isLocked ? <Lock size={16} weight="duotone" /> : <LockOpen size={16} weight="duotone" />}
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <h5 className="text-xs font-bold truncate">{lock.name || lock.entity_id}</h5>
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                              <span>{isLocked ? 'Locked' : 'Unlocked'}</span>
-                              {battery !== undefined && (
-                                <>
-                                  <span>•</span>
-                                  <span className="flex items-center gap-0.5 font-mono">
-                                    {renderBatteryIcon(battery)}
-                                    <span>{battery}%</span>
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleToggleLock(lock)}
-                          disabled={isToggling}
-                          className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all cursor-pointer active:scale-95 shrink-0 ${
-                            isLocked
-                              ? 'bg-white/10 hover:bg-white/20 border-white/10 text-white'
-                              : 'bg-amber-500 text-black border-amber-400 shadow-xs'
+                              ? darkMode
+                                ? 'bg-white/5 border-emerald-500/30'
+                                : 'bg-white border-emerald-200 shadow-2xs'
+                              : darkMode
+                                ? 'bg-amber-500/15 border-amber-500/40'
+                                : 'bg-amber-50 border-amber-300 shadow-2xs'
                           }`}
                         >
-                          {isToggling ? '...' : isLocked ? 'Unlock' : 'Lock'}
-                        </button>
-                      </div>
-                    );
-                  })}
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${
+                              isLocked
+                                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                                : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                            }`}>
+                              {isLocked ? <Lock size={16} weight="duotone" /> : <LockOpen size={16} weight="duotone" />}
+                            </div>
 
-                {/* 2. Openings (Doors & Windows) */}
-                {(activeCategory === 'all' || activeCategory === 'openings') &&
-                  [...sec.doors, ...sec.windows].map((sensor) => {
-                    const isOpen = sensor.state === 'on';
-                    const isDoor = sensor.attributes?.device_class === 'door' || sensor.entity_id.includes('door');
-                    const battery = sensor.attributes?.battery;
-
-                    return (
-                      <div
-                        key={sensor.entity_id}
-                        className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                          isOpen
-                            ? darkMode
-                              ? 'bg-rose-500/15 border-rose-500/40'
-                              : 'bg-rose-50 border-rose-300 shadow-2xs'
-                            : darkMode
-                              ? 'bg-white/5 border-white/10'
-                              : 'bg-white border-slate-200 shadow-2xs'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${
-                            isOpen
-                              ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
-                              : 'bg-white/10 border-white/15 text-slate-400'
-                          }`}>
-                            {isDoor ? (
-                              isOpen ? <DoorOpen size={16} weight="duotone" /> : <Door size={16} weight="duotone" />
-                            ) : (
-                              <CheckCircle size={16} weight="duotone" />
-                            )}
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <h5 className="text-xs font-bold truncate">{sensor.name || sensor.entity_id}</h5>
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                              <span className={isOpen ? 'text-rose-400 font-bold' : ''}>
-                                {isOpen ? 'Open' : 'Closed'}
-                              </span>
-                              {battery !== undefined && (
-                                <>
-                                  <span>•</span>
-                                  <span className="flex items-center gap-0.5 font-mono">
-                                    {renderBatteryIcon(battery)}
-                                    <span>{battery}%</span>
-                                  </span>
-                                </>
-                              )}
+                            <div className="min-w-0 flex-1">
+                              <h5 className="text-xs font-bold truncate">{lock.name || lock.entity_id}</h5>
+                              <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                                <span>{isLocked ? 'Locked' : 'Unlocked'}</span>
+                                {battery !== undefined && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-0.5 font-mono">
+                                      {renderBatteryIcon(battery)}
+                                      <span>{battery}%</span>
+                                    </span>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleToggleLock(lock)}
+                            disabled={isToggling}
+                            className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all cursor-pointer active:scale-95 shrink-0 ${
+                              isLocked
+                                ? 'bg-white/10 hover:bg-white/20 border-white/10 text-white'
+                                : 'bg-amber-500 text-black border-amber-400 shadow-xs'
+                            }`}
+                          >
+                            {isToggling ? '...' : isLocked ? 'Unlock' : 'Lock'}
+                          </button>
                         </div>
+                      );
+                    })}
 
-                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
-                          isOpen ? 'bg-rose-500 text-white' : 'bg-emerald-500/15 text-emerald-400'
-                        }`}>
-                          {isOpen ? 'Open' : 'Secure'}
-                        </span>
-                      </div>
-                    );
-                  })}
+                  {/* 2. Openings (Doors & Windows) */}
+                  {(activeCategory === 'all' || activeCategory === 'openings') &&
+                    [...sec.doors, ...sec.windows].map((sensor) => {
+                      const isOpen = sensor.state === 'on';
+                      const isDoor = sensor.attributes?.device_class === 'door' || sensor.entity_id.includes('door');
+                      const battery = sensor.attributes?.battery;
 
-                {/* 3. Motion Detectors */}
-                {(activeCategory === 'all' || activeCategory === 'motion') &&
-                  sec.motion.map((motion) => {
-                    const isActive = motion.state === 'on';
-                    const battery = motion.attributes?.battery;
+                      return (
+                        <div
+                          key={sensor.entity_id}
+                          className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                            isOpen
+                              ? darkMode
+                                ? 'bg-rose-500/15 border-rose-500/40'
+                                : 'bg-rose-50 border-rose-300 shadow-2xs'
+                              : darkMode
+                                ? 'bg-white/5 border-white/10'
+                                : 'bg-white border-slate-200 shadow-2xs'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${
+                              isOpen
+                                ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
+                                : 'bg-white/10 border-white/15 text-slate-400'
+                            }`}>
+                              {isDoor ? (
+                                isOpen ? <DoorOpen size={16} weight="duotone" /> : <Door size={16} weight="duotone" />
+                              ) : (
+                                <CheckCircle size={16} weight="duotone" />
+                              )}
+                            </div>
 
-                    return (
-                      <div
-                        key={motion.entity_id}
-                        className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                          isActive
-                            ? darkMode
-                              ? 'bg-amber-500/15 border-amber-500/40'
-                              : 'bg-amber-50 border-amber-300 shadow-2xs'
-                            : darkMode
-                              ? 'bg-white/5 border-white/10'
-                              : 'bg-white border-slate-200 shadow-2xs'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${
+                            <div className="min-w-0 flex-1">
+                              <h5 className="text-xs font-bold truncate">{sensor.name || sensor.entity_id}</h5>
+                              <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                                <span className={isOpen ? 'text-rose-400 font-bold' : ''}>
+                                  {isOpen ? 'Open' : 'Closed'}
+                                </span>
+                                {battery !== undefined && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-0.5 font-mono">
+                                      {renderBatteryIcon(battery)}
+                                      <span>{battery}%</span>
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                            isOpen ? 'bg-rose-500 text-white' : 'bg-emerald-500/15 text-emerald-400'
+                          }`}>
+                            {isOpen ? 'Open' : 'Secure'}
+                          </span>
+                        </div>
+                      );
+                    })}
+
+                  {/* 3. Motion Detectors */}
+                  {(activeCategory === 'all' || activeCategory === 'motion') &&
+                    sec.motion.map((motion) => {
+                      const isActive = motion.state === 'on';
+                      const battery = motion.attributes?.battery;
+
+                      return (
+                        <div
+                          key={motion.entity_id}
+                          className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                             isActive
-                              ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
-                              : 'bg-white/10 border-white/15 text-slate-400'
+                              ? darkMode
+                                ? 'bg-amber-500/15 border-amber-500/40'
+                                : 'bg-amber-50 border-amber-300 shadow-2xs'
+                              : darkMode
+                                ? 'bg-white/5 border-white/10'
+                                : 'bg-white border-slate-200 shadow-2xs'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${
+                              isActive
+                                ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
+                                : 'bg-white/10 border-white/15 text-slate-400'
+                            }`}>
+                              <PersonSimpleWalk size={16} weight="duotone" />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <h5 className="text-xs font-bold truncate">{motion.name || motion.entity_id}</h5>
+                              <span className="text-[10px] text-slate-400">
+                                {isActive ? 'Active Motion' : 'Idle'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                            isActive ? 'bg-amber-500 text-black' : 'bg-white/10 text-slate-400'
                           }`}>
-                            <PersonSimpleWalk size={16} weight="duotone" />
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <h5 className="text-xs font-bold truncate">{motion.name || motion.entity_id}</h5>
-                            <span className="text-[10px] text-slate-400">
-                              {isActive ? 'Active Motion' : 'Idle'}
-                            </span>
-                          </div>
+                            {isActive ? 'Detected' : 'Clear'}
+                          </span>
                         </div>
+                      );
+                    })}
 
-                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
-                          isActive ? 'bg-amber-500 text-black' : 'bg-white/10 text-slate-400'
-                        }`}>
-                          {isActive ? 'Detected' : 'Clear'}
-                        </span>
-                      </div>
-                    );
-                  })}
+                  {/* 4. Hazard & Safety (Leaks & Smoke) */}
+                  {(activeCategory === 'all' || activeCategory === 'hazards') &&
+                    [...sec.leaks, ...sec.smoke].map((hazard) => {
+                      const isAlert = hazard.state === 'on' || hazard.state === 'detected' || hazard.state === 'wet';
+                      const isSmoke = hazard.attributes?.device_class === 'smoke' || hazard.entity_id.includes('smoke');
 
-                {/* 4. Hazard & Safety (Leaks & Smoke) */}
-                {(activeCategory === 'all' || activeCategory === 'hazards') &&
-                  [...sec.leaks, ...sec.smoke].map((hazard) => {
-                    const isAlert = hazard.state === 'on' || hazard.state === 'detected' || hazard.state === 'wet';
-                    const isSmoke = hazard.attributes?.device_class === 'smoke' || hazard.entity_id.includes('smoke');
-
-                    return (
-                      <div
-                        key={hazard.entity_id}
-                        className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                          isAlert
-                            ? darkMode
-                              ? 'bg-rose-500/20 border-rose-500/50 animate-pulse'
-                              : 'bg-rose-100 border-rose-400 animate-pulse shadow-2xs'
-                            : darkMode
-                              ? 'bg-white/5 border-white/10'
-                              : 'bg-white border-slate-200 shadow-2xs'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${
+                      return (
+                        <div
+                          key={hazard.entity_id}
+                          className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                             isAlert
-                              ? 'bg-rose-500/25 border-rose-500/40 text-rose-400'
-                              : 'bg-white/10 border-white/15 text-slate-400'
+                              ? darkMode
+                                ? 'bg-rose-500/20 border-rose-500/50 animate-pulse'
+                                : 'bg-rose-100 border-rose-400 animate-pulse shadow-2xs'
+                              : darkMode
+                                ? 'bg-white/5 border-white/10'
+                                : 'bg-white border-slate-200 shadow-2xs'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${
+                              isAlert
+                                ? 'bg-rose-500/25 border-rose-500/40 text-rose-400'
+                                : 'bg-white/10 border-white/15 text-slate-400'
+                            }`}>
+                              {isSmoke ? (
+                                <Flame size={16} weight="duotone" className={isAlert ? 'text-rose-500' : 'text-slate-400'} />
+                              ) : (
+                                <Drop size={16} weight="duotone" className={isAlert ? 'text-cyan-400' : 'text-slate-400'} />
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <h5 className="text-xs font-bold truncate">{hazard.name || hazard.entity_id}</h5>
+                              <span className="text-[10px] text-slate-400">
+                                {isAlert ? 'Safety Warning' : 'Normal'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                            isAlert ? 'bg-rose-500 text-white' : 'bg-emerald-500/15 text-emerald-400'
                           }`}>
-                            {isSmoke ? (
-                              <Flame size={16} weight="duotone" className={isAlert ? 'text-rose-500' : 'text-slate-400'} />
-                            ) : (
-                              <Drop size={16} weight="duotone" className={isAlert ? 'text-cyan-400' : 'text-slate-400'} />
-                            )}
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <h5 className="text-xs font-bold truncate">{hazard.name || hazard.entity_id}</h5>
-                            <span className="text-[10px] text-slate-400">
-                              {isAlert ? 'Safety Warning' : 'Normal'}
-                            </span>
-                          </div>
+                            {isAlert ? 'Alert' : 'Normal'}
+                          </span>
                         </div>
+                      );
+                    })}
 
-                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
-                          isAlert ? 'bg-rose-500 text-white' : 'bg-emerald-500/15 text-emerald-400'
-                        }`}>
-                          {isAlert ? 'Alert' : 'Normal'}
-                        </span>
-                      </div>
-                    );
-                  })}
-
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );
