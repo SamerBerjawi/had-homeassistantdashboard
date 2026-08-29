@@ -66,9 +66,11 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
     async function queryGo2Rtc() {
       try {
         const streams = await fetchGo2RtcStreams(serverUrl);
-        if (!isCancelled && streams && Object.keys(streams).length > 0) {
-          const detected = detectGo2RtcRtspStreams(streams, rawCameras, serverUrl);
-          setGo2RtcCameras(detected);
+        if (!isCancelled) {
+          if (streams && Object.keys(streams).length > 0) {
+            const detected = detectGo2RtcRtspStreams(streams, rawCameras, serverUrl);
+            setGo2RtcCameras(detected);
+          }
         }
       } catch (err) {
         console.warn('[SecurityView] Failed to query go2rtc streams:', err);
@@ -76,10 +78,21 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
     }
 
     queryGo2Rtc();
-    const timer = setInterval(queryGo2Rtc, 30000);
+    const timer = setInterval(queryGo2Rtc, 20000);
+
+    const handleUpdate = () => queryGo2Rtc();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleUpdate);
+      window.addEventListener('go2rtc_updated', handleUpdate);
+    }
+
     return () => {
       isCancelled = true;
       clearInterval(timer);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', handleUpdate);
+        window.removeEventListener('go2rtc_updated', handleUpdate);
+      }
     };
   }, [serverUrl, rawCameras]);
 

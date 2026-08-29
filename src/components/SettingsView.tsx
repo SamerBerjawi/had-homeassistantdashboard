@@ -75,7 +75,7 @@ import {
   MapPin,
   Briefcase,
   GraduationCap,
-  Barbell,
+  VideoCamera,
   Info
 } from '@phosphor-icons/react';
 import { HAEntity, Room, LogMessage, ToastNotification, HAArea, HAFloor, HALabel, HAZone } from '../types';
@@ -85,6 +85,7 @@ import { useCanvasStore } from '../store/useCanvasStore';
 import { WeatherBackdropType } from '../types/canvas';
 import CustomDropdown from './ui/CustomDropdown';
 import { PwaStatusCard } from './pwa/PwaStatusCard';
+import { getGo2RtcBaseUrls, testGo2RtcConnection } from '../services/go2rtcService';
 
 interface SettingsViewProps {
   darkMode: boolean;
@@ -733,6 +734,69 @@ export default function SettingsView({
   const [pingLatency, setPingLatency] = useState<number | null>(12);
   const [logFilter, setLogFilter] = useState<'all' | 'service_call' | 'state_changed' | 'info' | 'error'>('all');
 
+  const [go2RtcUrlInput, setGo2RtcUrlInput] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('homz_go2rtc_url');
+      if (saved) return saved;
+    }
+    return getGo2RtcBaseUrls(storeServerUrl).httpUrl;
+  });
+  const [go2RtcStatus, setGo2RtcStatus] = useState<{
+    tested: boolean;
+    loading: boolean;
+    success?: boolean;
+    streamsCount?: number;
+    streamNames?: string[];
+    error?: string;
+  }>({ tested: false, loading: false });
+
+  const handleTestGo2Rtc = async () => {
+    setGo2RtcStatus({ tested: true, loading: true });
+    addLog('service_call', `Probing go2rtc streaming endpoint at ${go2RtcUrlInput}`);
+    const res = await testGo2RtcConnection(go2RtcUrlInput.trim());
+    setGo2RtcStatus({
+      tested: true,
+      loading: false,
+      success: res.success,
+      streamsCount: res.streamsCount,
+      streamNames: res.streamNames,
+      error: res.error
+    });
+    if (res.success) {
+      addToast?.({
+        type: 'success',
+        title: 'go2rtc Online',
+        message: `Discovered ${res.streamsCount} stream(s): ${res.streamNames.join(', ') || 'None'}`
+      });
+      addLog('info', `go2rtc online: found ${res.streamsCount} stream(s) [${res.streamNames.join(', ')}]`);
+    } else {
+      addToast?.({
+        type: 'warning',
+        title: 'go2rtc Not Responding',
+        message: res.error || 'Could not connect to go2rtc on specified port.'
+      });
+      addLog('error', `go2rtc connection error: ${res.error}`);
+    }
+  };
+
+  const handleSaveGo2RtcUrl = () => {
+    const clean = go2RtcUrlInput.trim();
+    if (typeof window !== 'undefined') {
+      if (clean) {
+        localStorage.setItem('homz_go2rtc_url', clean);
+      } else {
+        localStorage.removeItem('homz_go2rtc_url');
+      }
+      window.dispatchEvent(new CustomEvent('go2rtc_updated'));
+    }
+    addToast?.({
+      type: 'success',
+      title: 'go2rtc Endpoint Saved',
+      message: clean ? `Updated go2rtc URL to ${clean}` : 'Reset go2rtc URL to automatic detection.'
+    });
+    handleTestGo2Rtc();
+  };
+
   // Keep input fields in sync if store updates externally
   useEffect(() => {
     if (storeServerUrl && !storeServerUrl.includes('hass.homz.internal')) {
@@ -743,6 +807,9 @@ export default function SettingsView({
           .replace('ws://', 'http://')
           .replace('/api/websocket', '')
       );
+      if (!localStorage.getItem('homz_go2rtc_url')) {
+        setGo2RtcUrlInput(getGo2RtcBaseUrls(storeServerUrl).httpUrl);
+      }
     }
   }, [storeServerUrl]);
 
@@ -2616,6 +2683,88 @@ export default function SettingsView({
                     )}
                   </div>
                 )}
+
+                {/* go2rtc RTSP & WebRTC Streaming Configuration */}
+                <div className="p-5 rounded-3xl bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center">
+                        <VideoCamera size={18} weight="duotone" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <span>go2rtc RTSP Stream Discovery</span>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+                            RTSP & WebRTC
+                          </span>
+                        </h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Auto-detects RTSP camera streams configured in go2rtc without requiring explicit Home Assistant camera entities
+                        </p>
+                      </div>
+                    </div>
+
+                    {go2RtcStatus.tested && (
+                      <div className={`px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 border ${
+                        go2RtcStatus.success
+                          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                          : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                      }`}>
+                        {go2RtcStatus.success ? <CheckCircle size={14} weight="bold" /> : <Warning size={14} weight="bold" />}
+                        <span>
+                          {go2RtcStatus.success
+                            ? `${go2RtcStatus.streamsCount} Stream(s) Online`
+                            : 'Endpoint Unreachable'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-2.5">
+                    <div className="relative flex-1 w-full">
+                      <input
+                        type="text"
+                        placeholder="http://homeassistant.local:1984"
+                        value={go2RtcUrlInput}
+                        onChange={(e) => setGo2RtcUrlInput(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-amber-500 shadow-xs"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={handleTestGo2Rtc}
+                        disabled={go2RtcStatus.loading}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/15 text-slate-800 dark:text-white text-xs font-semibold cursor-pointer transition-all disabled:opacity-50"
+                      >
+                        <ArrowsClockwise size={14} className={go2RtcStatus.loading ? 'animate-spin' : ''} />
+                        <span>{go2RtcStatus.loading ? 'Probing...' : 'Test & Detect Streams'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveGo2RtcUrl}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-all cursor-pointer"
+                      >
+                        <FloppyDisk size={14} weight="bold" />
+                        <span>Save Endpoint</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {go2RtcStatus.tested && go2RtcStatus.streamNames && go2RtcStatus.streamNames.length > 0 && (
+                    <div className="p-3 rounded-2xl bg-black/30 border border-white/10 flex flex-wrap gap-2 items-center">
+                      <span className="text-[11px] font-semibold text-slate-400">Discovered Stream Feeds:</span>
+                      {go2RtcStatus.streamNames.map((stream) => (
+                        <span
+                          key={stream}
+                          className="px-2 py-0.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 font-mono text-[11px] font-semibold"
+                        >
+                          {stream}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Real-time Telemetry Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

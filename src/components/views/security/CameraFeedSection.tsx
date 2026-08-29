@@ -21,7 +21,8 @@ import {
 import { ResolvedEntity } from '../../../types';
 import CameraStreamModal from './CameraStreamModal';
 import HaWebRtcPlayer from './HaWebRtcPlayer';
-import Go2RtcPlayer from './Go2RtcPlayer';
+import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { getCameraMotionStatus, captureAndDownloadSnapshot } from '../../../services/cameraIntegrationService';
 
 interface CameraFeedSectionProps {
   darkMode?: boolean;
@@ -34,6 +35,7 @@ export default function CameraFeedSection({
   cameraEntities,
   columns = 4
 }: CameraFeedSectionProps) {
+  const { domainGroups, serverUrl } = useAutoLayoutStore();
   const [selectedCamera, setSelectedCamera] = useState<ResolvedEntity | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [areaFilter, setAreaFilter] = useState<'all' | 'perimeter' | 'garage' | 'indoors'>('all');
@@ -148,54 +150,54 @@ export default function CameraFeedSection({
     setIsModalOpen(true);
   };
 
-  const handleTriggerSnapshot = (e: React.MouseEvent, entityId: string) => {
+  const handleTriggerSnapshot = async (e: React.MouseEvent, cam: ResolvedEntity) => {
     e.stopPropagation();
-    setSnapshottingId(entityId);
-    setTimeout(() => setSnapshottingId(null), 1000);
+    setSnapshottingId(cam.entity_id);
+    await captureAndDownloadSnapshot(null, cam, serverUrl);
+    setTimeout(() => setSnapshottingId(null), 1200);
   };
 
   return (
-    <section className="w-full flex flex-col space-y-4">
-      {/* Section Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-1">
+    <section className="space-y-4">
+      {/* Header with Camera Counter & Filters */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center">
-            <VideoCamera size={18} weight="duotone" />
+          <div className="p-2 rounded-2xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+            <VideoCamera size={20} weight="duotone" />
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-black tracking-tight">Surveillance & Camera Feeds</h2>
+            <h3 className="text-base sm:text-lg font-black tracking-tight flex items-center gap-2">
+              <span>Live Surveillance Feeds</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 font-mono font-bold">
+                {cameraEntities.length} Feeds
+              </span>
+            </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Live WebRTC encrypted streams with active motion detection zones
+              Low-latency WebRTC streams with live motion detection
             </p>
           </div>
         </div>
 
-        {/* Filter Chips */}
-        <div className={`flex items-center p-1 rounded-2xl border backdrop-blur-md ${
-          darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'
-        }`}>
-          {(['all', 'perimeter', 'garage', 'indoors'] as const).map((filterKey) => (
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs font-semibold">
+          {(['all', 'perimeter', 'garage', 'indoors'] as const).map((filter) => (
             <button
-              key={filterKey}
+              key={filter}
               type="button"
-              onClick={() => setAreaFilter(filterKey)}
-              className={`px-3 py-1 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer ${
-                areaFilter === filterKey
-                  ? darkMode
-                    ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20'
-                    : 'bg-cyan-600 text-white shadow-xs'
-                  : darkMode
-                    ? 'text-slate-400 hover:text-white'
-                    : 'text-slate-600 hover:text-slate-900'
+              onClick={() => setAreaFilter(filter)}
+              className={`px-3 py-1.5 rounded-xl capitalize transition-all cursor-pointer ${
+                areaFilter === filter
+                  ? 'bg-white dark:bg-cyan-500 text-slate-900 dark:text-slate-950 font-bold shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              {filterKey === 'all' ? 'All Feeds' : filterKey}
+              {filter}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Camera Grid */}
+      {/* Grid of Camera Feeds */}
       <div className={
         columns === 1
           ? 'grid grid-cols-1 gap-4'
@@ -207,12 +209,8 @@ export default function CameraFeedSection({
       }>
         {filteredCameras.map((camera) => {
           const name = camera.name || camera.attributes?.friendly_name || camera.entity_id;
-          const resolution = camera.attributes?.resolution || '2K HDR';
-          const lastMotion = camera.attributes?.last_motion || 'No motion';
-          const snapshotUrl =
-            camera.attributes?.entity_picture ||
-            'https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&fit=crop&q=80&w=1000';
           const isSnapshotting = snapshottingId === camera.entity_id;
+          const motionStatus = getCameraMotionStatus(camera, domainGroups['binary_sensor'] || []);
 
           return (
             <div
@@ -238,11 +236,11 @@ export default function CameraFeedSection({
                   {/* Capture button */}
                   <button
                     type="button"
-                    onClick={(e) => handleTriggerSnapshot(e, camera.entity_id)}
-                    title="Save Instant Frame"
+                    onClick={(e) => handleTriggerSnapshot(e, camera)}
+                    title="Download Instant Snapshot"
                     className="p-1.5 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white border border-white/10 transition-all cursor-pointer shadow-md"
                   >
-                    <Camera size={14} weight="duotone" className="text-cyan-400" />
+                    <Camera size={14} weight="duotone" className={isSnapshotting ? 'text-emerald-400 animate-spin' : 'text-cyan-400'} />
                   </button>
 
                   {/* Expand Fullscreen */}
@@ -261,9 +259,13 @@ export default function CameraFeedSection({
 
                 {/* Bottom HUD: Motion Alert Indicator */}
                 <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none z-20">
-                  <div className="px-2 py-1 rounded-xl bg-black/65 backdrop-blur-md text-slate-200 text-[10px] font-medium border border-white/10 flex items-center gap-1.5">
-                    <PersonSimpleWalk size={13} weight="duotone" className="text-amber-400" />
-                    <span>{lastMotion}</span>
+                  <div className={`px-2.5 py-1 rounded-xl backdrop-blur-md text-[10px] sm:text-[11px] font-semibold border flex items-center gap-1.5 shadow-md ${
+                    motionStatus.isMotionActive
+                      ? 'bg-rose-600/90 text-white border-rose-400 animate-pulse shadow-rose-600/40'
+                      : 'bg-black/65 text-slate-200 border-white/10'
+                  }`}>
+                    <PersonSimpleWalk size={13} weight="duotone" className={motionStatus.isMotionActive ? 'text-white' : 'text-amber-400'} />
+                    <span>{motionStatus.lastMotionText}</span>
                   </div>
                 </div>
               </div>

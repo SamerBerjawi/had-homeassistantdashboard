@@ -307,6 +307,76 @@ async function startServer() {
     res.json({ status: 'ok', serverTime: new Date().toISOString() });
   });
 
+  // Proxy endpoint to query go2rtc streams bypassing any browser CORS / Private Network Access restrictions
+  app.get('/api/go2rtc/streams', async (req, res) => {
+    const rawUrl = (req.query.url as string) || '';
+    const cleanUrl = rawUrl.trim().replace(/\/+$/, '');
+    
+    const candidates: string[] = [];
+    if (cleanUrl) {
+      candidates.push(cleanUrl);
+      if (cleanUrl.includes(':1984')) {
+        candidates.push(cleanUrl.replace(':1984', ':11984'));
+      }
+    }
+    candidates.push('http://localhost:1984', 'http://127.0.0.1:1984', 'http://homeassistant.local:1984', 'http://localhost:11984');
+
+    for (const base of candidates) {
+      try {
+        const endpoint = base.endsWith('/api/streams') ? base : `${base.replace(/\/+$/, '')}/api/streams`;
+        const response = await fetch(endpoint, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          signal: AbortSignal.timeout(2500)
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data && typeof data === 'object') {
+            return res.json({ success: true, base_url: base.replace(/\/api\/streams$/, ''), streams: data });
+          }
+        }
+      } catch {
+        // continue to next candidate
+      }
+    }
+
+    return res.status(502).json({ success: false, error: 'Could not connect to go2rtc API endpoint on probed ports.' });
+  });
+
+  // Proxy endpoint to dispatch go2rtc PTZ commands
+  app.get('/api/go2rtc/ptz', async (req, res) => {
+    const rawUrl = (req.query.url as string) || '';
+    const src = (req.query.src as string) || '';
+    const dir = (req.query.dir as string) || '';
+
+    if (!rawUrl || !src || !dir) {
+      return res.status(400).json({ error: 'Missing url, src, or dir parameter' });
+    }
+
+    try {
+      const cleanUrl = rawUrl.trim().replace(/\/+$/, '');
+      let query = `src=${encodeURIComponent(src)}`;
+      if (dir === 'left' || dir === 'right') query += `&pan=${dir}`;
+      if (dir === 'up' || dir === 'down') query += `&tilt=${dir}`;
+      if (dir === 'zoom_in') query += `&zoom=in`;
+      if (dir === 'zoom_out') query += `&zoom=out`;
+
+      const ptzEndpoint = `${cleanUrl}/api/ptz?${query}`;
+      const response = await fetch(ptzEndpoint, {
+        method: 'GET',
+        signal: AbortSignal.timeout(3000)
+      });
+
+      if (response.ok) {
+        return res.json({ success: true });
+      }
+      return res.status(response.status).json({ error: `go2rtc PTZ returned ${response.status}` });
+    } catch (err: any) {
+      return res.status(502).json({ error: `Failed to dispatch go2rtc PTZ: ${err.message}` });
+    }
+  });
+
   // Rate limiter middleware for /api/weather
   const weatherRateLimiter = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';

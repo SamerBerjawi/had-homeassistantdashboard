@@ -129,16 +129,18 @@ function formatStreamFriendlyName(streamName: string): string {
 
 /**
  * Queries go2rtc's `/api/streams` endpoint to retrieve all active configured streams.
+ * Tries direct browser fetch first, then seamlessly falls back to the backend proxy.
  */
 export async function fetchGo2RtcStreams(serverUrl?: string): Promise<Record<string, Go2RtcStreamInfo>> {
   const { httpUrl } = getGo2RtcBaseUrls(serverUrl);
-  const endpoint = `${httpUrl}/api/streams`;
+  const directEndpoint = `${httpUrl}/api/streams`;
 
+  // 1. Try direct browser fetch
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3500);
+    const timer = setTimeout(() => controller.abort(), 2000);
 
-    const response = await fetch(endpoint, {
+    const response = await fetch(directEndpoint, {
       method: 'GET',
       headers: { Accept: 'application/json' },
       signal: controller.signal
@@ -146,18 +148,59 @@ export async function fetchGo2RtcStreams(serverUrl?: string): Promise<Record<str
 
     clearTimeout(timer);
 
-    if (!response.ok) {
-      return {};
+    if (response.ok) {
+      const data = await response.json();
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        return data;
+      }
     }
+  } catch (err) {
+    // Direct fetch failed (e.g. CORS/Private Network Access/Port mismatch). Proceed to backend proxy.
+  }
 
-    const data = await response.json();
-    if (data && typeof data === 'object') {
-      return data;
+  // 2. Try backend proxy
+  try {
+    const proxyEndpoint = `/api/go2rtc/streams?url=${encodeURIComponent(httpUrl)}`;
+    const proxyResponse = await fetch(proxyEndpoint, {
+      method: 'GET',
+      headers: { Accept: 'application/json' }
+    });
+
+    if (proxyResponse.ok) {
+      const result = await proxyResponse.json();
+      if (result.success && result.streams && typeof result.streams === 'object') {
+        return result.streams;
+      }
+      if (result && typeof result === 'object' && !Array.isArray(result) && !result.error) {
+        return result;
+      }
     }
-    return {};
+  } catch (err) {
+    // Backend proxy query failed
+  }
+
+  return {};
+}
+
+/**
+ * Tests connection to go2rtc and returns stream count and names.
+ */
+export async function testGo2RtcConnection(
+  targetUrl?: string
+): Promise<{ success: boolean; streamsCount: number; streamNames: string[]; error?: string }> {
+  try {
+    const streams = await fetchGo2RtcStreams(targetUrl);
+    const names = Object.keys(streams);
+    if (names.length >= 0) {
+      return {
+        success: true,
+        streamsCount: names.length,
+        streamNames: names
+      };
+    }
+    return { success: false, streamsCount: 0, streamNames: [], error: 'No streams returned' };
   } catch (err: any) {
-    // go2rtc might be running on another host/port or offline, fail gracefully
-    return {};
+    return { success: false, streamsCount: 0, streamNames: [], error: err?.message || 'Connection failed' };
   }
 }
 
@@ -175,12 +218,11 @@ export function detectGo2RtcRtspStreams(
   }
 
   const { httpUrl } = getGo2RtcBaseUrls(serverUrl);
-  const existingEntityIds = new Set(existingCameras.map(c => c.entity_id.toLowerCase()));
-  const existingNames = new Set(
-    existingCameras.map(c => (c.name || c.attributes?.friendly_name || '').toLowerCase())
-  );
-  const existingGo2RtcStreams = new Set(
-    existingCameras.map(c => (c.attributes?.go2rtc_stream || '').toLowerCase()).filter(Boolean)
+  // Collect existing HA camera entity IDs in lower case
+  const existingEntityIds = new Set(
+    existingCameras
+      .filter(c => !c.entity_id.startsWith('go2rtc.'))
+      .map(c => c.entity_id.toLowerCase())
   );
 
   const detectedEntities: ResolvedEntity[] = [];
@@ -191,13 +233,8 @@ export function detectGo2RtcRtspStreams(
     const lowerStream = streamName.toLowerCase();
     const potentialEntityId = `camera.${lowerStream}`;
 
-    // Skip if an HA camera entity already represents this stream
-    if (
-      existingEntityIds.has(potentialEntityId) ||
-      existingEntityIds.has(lowerStream) ||
-      existingNames.has(lowerStream) ||
-      existingGo2RtcStreams.has(lowerStream)
-    ) {
+    // Skip only if an existing real HA camera entity matches camera.<stream_name>
+    if (existingEntityIds.has(potentialEntityId) || existingEntityIds.has(lowerStream)) {
       continue;
     }
 
@@ -228,7 +265,7 @@ export function detectGo2RtcRtspStreams(
         stream_type: 'webrtc',
         frontend_stream_types: ['web_rtc'],
         model_name: isRtsp ? 'go2rtc RTSP Stream' : 'go2rtc Live Stream',
-        resolution: isRtsp ? 'HD RTSP 30fps' : 'WebRTC Stream',
+        resolution: isRtsp ? 'HD RTSP Stream' : 'Live WebRTC',
         entity_picture: `${httpUrl}/api/frame.jpeg?src=${encodeURIComponent(streamName)}`
       }
     };
