@@ -10,6 +10,8 @@ import Sidebar from './components/Sidebar';
 import NotificationToast from './components/NotificationToast';
 import NotificationBell from './components/notifications/NotificationBell';
 import NotificationDrawer from './components/notifications/NotificationDrawer';
+import { InstallPrompt } from './components/pwa/InstallPrompt';
+import { UpdateToast } from './components/pwa/UpdateToast';
 import { Key, SignIn } from '@phosphor-icons/react';
 
 import { PAGE_THEMES } from './config/pageThemes';
@@ -220,7 +222,7 @@ export default function App() {
   const pageTitle = activeTab === 'overview' ? `${getTimeGreeting()}, ${userName}` : currentTheme.title;
 
   return (
-    <div className={`flex h-screen w-screen overflow-hidden font-sans select-none ${
+    <div className={`flex h-screen h-[100dvh] w-screen overflow-hidden font-sans select-none pwa-safe-container ${
       darkMode ? 'bg-black text-white dark' : 'bg-slate-100/80 text-slate-900'
     }`}>
       {/* Ambient background decoration with distinct page accent glows */}
@@ -371,7 +373,11 @@ export default function App() {
         darkMode={darkMode} 
       />
 
+      {/* In-App PWA Install Prompt (Chromium / iOS) */}
+      <InstallPrompt />
 
+      {/* In-App PWA Service Worker Update Notice */}
+      <UpdateToast />
     </div>
   );
 }

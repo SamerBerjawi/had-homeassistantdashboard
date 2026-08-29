@@ -3,14 +3,37 @@
 
 @custom-variant dark (&:is(.dark *));
 
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --titlebar-x: env(titlebar-area-x, 0px);
+  --titlebar-y: env(titlebar-area-y, 0px);
+  --titlebar-w: env(titlebar-area-width, 100%);
+  --titlebar-h: env(titlebar-area-height, 0px);
+}
+
 html, body, #root {
   height: 100%;
+  height: 100dvh;
   width: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
   overscroll-behavior: none;
+  overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Eliminate 300ms tap delay on mobile browsers */
+button, a, input, select, textarea, [role="button"], [tabindex] {
+  touch-action: manipulation;
+}
+
+/* Prevent accidental iOS long-press callouts on interactive chrome */
+.no-callout {
+  -webkit-touch-callout: none;
 }
 
 @theme {
@@ -629,5 +652,52 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
   }
   to {
     stroke-dashoffset: 0;
+  }
+}
+
+/* ==========================================================================
+   PWA Standalone Mode Styling (Scoped specifically to installed app mode)
+   Standard browser tab visits are completely unaffected.
+   ========================================================================== */
+@media (display-mode: standalone) {
+  /* Safe-area insets for iPhone notch, Dynamic Island, and home indicator */
+  .pwa-safe-container {
+    padding-top: var(--sat);
+    padding-right: var(--sar);
+    padding-bottom: var(--sab);
+    padding-left: var(--sal);
+  }
+
+  .pwa-safe-top {
+    padding-top: var(--sat);
+  }
+
+  .pwa-safe-bottom {
+    padding-bottom: var(--sab);
+  }
+
+  .pwa-safe-left {
+    padding-left: var(--sal);
+  }
+
+  .pwa-safe-right {
+    padding-right: var(--sar);
+  }
+
+  /* Desktop Chromium Window Controls Overlay integration */
+  .pwa-desktop-titlebar {
+    position: fixed;
+    top: 0;
+    left: var(--titlebar-x);
+    width: var(--titlebar-w);
+    height: var(--titlebar-h, 38px);
+    app-region: drag;
+    -webkit-app-region: drag;
+    z-index: 9999;
+  }
+
+  .pwa-no-drag {
+    app-region: no-drag;
+    -webkit-app-region: no-drag;
   }
 }

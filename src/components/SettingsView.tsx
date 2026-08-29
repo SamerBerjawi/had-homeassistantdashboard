@@ -84,6 +84,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useCanvasStore } from '../store/useCanvasStore';
 import { WeatherBackdropType } from '../types/canvas';
 import CustomDropdown from './ui/CustomDropdown';
+import { PwaStatusCard } from './pwa/PwaStatusCard';
 
 interface SettingsViewProps {
   darkMode: boolean;
@@ -2295,6 +2296,9 @@ export default function SettingsView({
                     <span>{connectionStatus || (isLiveMode ? 'Connected' : 'Standalone Demo')}</span>
                   </div>
                 </div>
+
+                {/* PWA & Secure Context Status */}
+                <PwaStatusCard darkMode={darkMode} />
 
                 {/* Authentication Method Tabs */}
                 <div className="space-y-2">
