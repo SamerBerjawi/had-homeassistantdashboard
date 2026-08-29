@@ -25,6 +25,7 @@ import {
 import { ResolvedEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { haWebSocketService } from '../../../services/haWebSocket';
+import { negotiateGo2RtcWebRtcSession } from '../../../services/go2rtcService';
 
 export interface HaWebRtcPlayerProps {
   camera: ResolvedEntity;
@@ -59,7 +60,7 @@ export default function HaWebRtcPlayer({
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const timeoutRef = useRef<any>(null);
 
-  const { isLiveMode } = useAutoLayoutStore();
+  const { isLiveMode, serverUrl } = useAutoLayoutStore();
 
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [statusMessage, setStatusMessage] = useState<string>('Initializing WebRTC...');
@@ -67,6 +68,11 @@ export default function HaWebRtcPlayer({
   const [retryCount, setRetryCount] = useState<number>(0);
 
   const entityId = camera.entity_id;
+  const isGo2RtcDirect =
+    camera.attributes?.stream_source === 'go2rtc' ||
+    entityId.startsWith('go2rtc.') ||
+    !!camera.attributes?.is_rtsp_stream ||
+    !entityId.startsWith('camera.');
   const cameraName = camera.name || camera.attributes?.friendly_name || entityId;
   const snapshotFallbackUrl =
     camera.attributes?.entity_picture ||
@@ -245,7 +251,40 @@ export default function HaWebRtcPlayer({
         }
       };
 
-      // 6. Create SDP offer and set local description
+      // Direct go2rtc stream path (for RTSP streams configured in go2rtc without an HA entity)
+      if (isGo2RtcDirect) {
+        setStatusMessage('Connecting to go2rtc RTSP stream...');
+        const streamName =
+          camera.attributes?.go2rtc_stream ||
+          entityId.replace(/^go2rtc\./, '').replace(/^camera\./, '');
+
+        const unsubscribeGo2Rtc = await negotiateGo2RtcWebRtcSession(
+          pc,
+          streamName,
+          serverUrl,
+          () => {
+            isConnected = true;
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+              timeoutRef.current = null;
+            }
+            setStatus('connected');
+            setStatusMessage('go2rtc RTSP WebRTC Live');
+            onReady?.();
+          },
+          (err) => {
+            console.warn('[HaWebRtcPlayer] Direct go2rtc error:', err);
+            setStatus('error');
+            setStatusMessage(`go2rtc stream error: ${err?.message || err}`);
+            onError?.(err);
+          }
+        );
+
+        unsubscribeRef.current = unsubscribeGo2Rtc;
+        return;
+      }
+
+      // 6. Create SDP offer and set local description for HA native signaling
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
@@ -318,13 +357,49 @@ export default function HaWebRtcPlayer({
 
       unsubscribeRef.current = unsubscribe;
     } catch (err: any) {
-      console.error('[HaWebRtcPlayer] Initialization failed:', err);
+      console.warn('[HaWebRtcPlayer] HA native signaling error, trying go2rtc fallback:', err);
+
+      try {
+        if (pcRef.current) {
+          setStatusMessage('Attempting go2rtc stream fallback...');
+          const fallbackStreamName =
+            camera.attributes?.go2rtc_stream ||
+            entityId.replace(/^camera\./, '');
+
+          const unsubscribeFallback = await negotiateGo2RtcWebRtcSession(
+            pcRef.current,
+            fallbackStreamName,
+            serverUrl,
+            () => {
+              isConnected = true;
+              if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+              }
+              setStatus('connected');
+              setStatusMessage('go2rtc WebRTC Live');
+              onReady?.();
+            },
+            (fallbackErr) => {
+              console.error('[HaWebRtcPlayer] go2rtc fallback failed:', fallbackErr);
+              setStatus('error');
+              setStatusMessage(err?.message || 'WebRTC initialization failed');
+              onError?.(err);
+            }
+          );
+          unsubscribeRef.current = unsubscribeFallback;
+          return;
+        }
+      } catch (fallbackError) {
+        console.error('[HaWebRtcPlayer] Fallback attempt error:', fallbackError);
+      }
+
       setStatus('error');
       setStatusMessage(err?.message || 'WebRTC initialization failed');
       onError?.(err);
       cleanup();
     }
-  }, [entityId, isLiveMode, isIntercomActive, onReady, onError, cleanup]);
+  }, [entityId, isLiveMode, isIntercomActive, isGo2RtcDirect, serverUrl, camera.attributes?.go2rtc_stream, onReady, onError, cleanup]);
 
   // Trigger stream negotiation on mount, camera change, or retry
   useEffect(() => {

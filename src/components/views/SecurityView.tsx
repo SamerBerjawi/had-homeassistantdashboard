@@ -21,6 +21,7 @@ import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { classifyBinarySensors } from '../../lib/entityClassifiers';
 import { ResolvedEntity } from '../../types';
 import { haWebSocketService } from '../../services/haWebSocket';
+import { fetchGo2RtcStreams, detectGo2RtcRtspStreams } from '../../services/go2rtcService';
 
 import SecurityBadgesBar, { SecurityFilterTab } from './security/SecurityBadgesBar';
 import AlarmPanelSection from './security/AlarmPanelSection';
@@ -38,22 +39,57 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
     selectedAlarmEntityId, 
     updateEntityState,
     resolvedFloors,
-    resolvedAreas
+    resolvedAreas,
+    serverUrl
   } = useAutoLayoutStore(
     useShallow((s) => ({
       domainGroups: s.domainGroups,
       selectedAlarmEntityId: s.selectedAlarmEntityId,
       updateEntityState: s.updateEntityState,
       resolvedFloors: s.resolvedFloors,
-      resolvedAreas: s.resolvedAreas
+      resolvedAreas: s.resolvedAreas,
+      serverUrl: s.serverUrl
     }))
   );
 
   const [activeFilter, setActiveFilter] = useState<SecurityFilterTab>('all');
   const [isKeypadModalOpen, setIsKeypadModalOpen] = useState<boolean>(false);
   const [webRtcCapabilities, setWebRtcCapabilities] = useState<Record<string, boolean>>({});
+  const [go2RtcCameras, setGo2RtcCameras] = useState<ResolvedEntity[]>([]);
 
   const rawCameras: ResolvedEntity[] = useMemo(() => domainGroups['camera'] || [], [domainGroups]);
+
+  // Query go2rtc directly for any configured RTSP streams that lack an explicit HA camera entity
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function queryGo2Rtc() {
+      try {
+        const streams = await fetchGo2RtcStreams(serverUrl);
+        if (!isCancelled && streams && Object.keys(streams).length > 0) {
+          const detected = detectGo2RtcRtspStreams(streams, rawCameras, serverUrl);
+          setGo2RtcCameras(detected);
+        }
+      } catch (err) {
+        console.warn('[SecurityView] Failed to query go2rtc streams:', err);
+      }
+    }
+
+    queryGo2Rtc();
+    const timer = setInterval(queryGo2Rtc, 30000);
+    return () => {
+      isCancelled = true;
+      clearInterval(timer);
+    };
+  }, [serverUrl, rawCameras]);
+
+  // Combine HA camera entities with detected go2rtc RTSP streams
+  const allCameras: ResolvedEntity[] = useMemo(() => {
+    if (go2RtcCameras.length === 0) return rawCameras;
+    const existingIds = new Set(rawCameras.map(c => c.entity_id.toLowerCase()));
+    const uniqueGo2Rtc = go2RtcCameras.filter(c => !existingIds.has(c.entity_id.toLowerCase()));
+    return [...rawCameras, ...uniqueGo2Rtc];
+  }, [rawCameras, go2RtcCameras]);
 
   // Query camera capabilities via HA WebSocket signaling (camera/capabilities)
   useEffect(() => {
@@ -61,8 +97,14 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
       return;
     }
 
-    rawCameras.forEach((cam) => {
+    allCameras.forEach((cam) => {
       if (webRtcCapabilities[cam.entity_id] !== undefined) return;
+
+      // go2rtc detected streams are always WebRTC capable
+      if (cam.attributes?.stream_source === 'go2rtc' || cam.entity_id.startsWith('go2rtc.')) {
+        setWebRtcCapabilities(prev => ({ ...prev, [cam.entity_id]: true }));
+        return;
+      }
 
       haWebSocketService.sendRequest<{ frontend_stream_types?: string[] }>('camera/capabilities', {
         entity_id: cam.entity_id
@@ -79,7 +121,7 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
           setWebRtcCapabilities(prev => ({ ...prev, [cam.entity_id]: !!supportsWebRtc }));
         });
     });
-  }, [rawCameras, webRtcCapabilities]);
+  }, [allCameras, webRtcCapabilities]);
 
   // Classify all sensors, locks, cameras, and alarms
   const {
@@ -102,7 +144,16 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
     const users: ResolvedEntity[] = [...(domainGroups['person'] || []), ...(domainGroups['device_tracker'] || [])];
 
     // Filter cameras for WebRTC (go2rtc) capability with safety allowlist override
-    const eligibleCameras = rawCameras.filter((cam) => {
+    const eligibleCameras = allCameras.filter((cam) => {
+      // Streams sourced directly from go2rtc or RTSP streams are always eligible
+      if (
+        cam.attributes?.stream_source === 'go2rtc' ||
+        cam.entity_id.startsWith('go2rtc.') ||
+        cam.attributes?.is_rtsp_stream
+      ) {
+        return true;
+      }
+
       // Manual allow-list override from localStorage
       if (typeof window !== 'undefined') {
         try {

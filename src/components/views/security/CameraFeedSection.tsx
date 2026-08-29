@@ -271,7 +271,14 @@ export default function CameraFeedSection({
               {/* Card Footer */}
               <div className="p-3.5 sm:p-4 flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-bold tracking-tight">{name}</h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold tracking-tight">{name}</h4>
+                    {(camera.attributes?.is_rtsp_stream || camera.attributes?.stream_source === 'go2rtc') && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+                        RTSP
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {camera.attributes?.model_name || 'Encrypted Video Stream'}
                   </p>

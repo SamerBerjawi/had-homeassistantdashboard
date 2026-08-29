@@ -84,7 +84,14 @@ export default function CameraStreamModal({
               <Camera size={22} weight="duotone" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-black tracking-tight">{cameraName}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-black tracking-tight">{cameraName}</h3>
+                {(camera.attributes?.is_rtsp_stream || camera.attributes?.stream_source === 'go2rtc') && (
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
+                    go2rtc RTSP
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-slate-400 flex items-center gap-2">
                 <span>{modelName}</span>
                 <span>•</span>
