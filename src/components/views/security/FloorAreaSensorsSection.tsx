@@ -194,32 +194,21 @@ export default function FloorAreaSensorsSection({
       {/* Section Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-1">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 dark:text-amber-400 flex items-center justify-center">
             <Stack size={18} weight="duotone" />
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-black tracking-tight">
+            <h2 className="text-base font-black tracking-tight text-slate-900 dark:text-white">
               {activeCategory === 'locks'
-                ? 'Smart Perimeter Locks by Room'
+                ? 'Perimeter Locks'
                 : activeCategory === 'openings'
-                  ? 'Doors & Windows Openings by Room'
+                  ? 'Doors & Windows'
                   : activeCategory === 'motion'
-                    ? 'Motion & Occupancy Zones by Room'
+                    ? 'Motion & Occupancy'
                     : activeCategory === 'hazards'
-                      ? 'Environmental Safety & Leak Sensors'
-                      : 'Perimeter & Sensors by Floor'}
+                      ? 'Hazards & Leaks'
+                      : 'Perimeter & Sensors'}
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {activeCategory === 'locks'
-                ? 'Control and monitor all exterior deadbolts and smart door locks'
-                : activeCategory === 'openings'
-                  ? 'Check open doors, windows, and perimeter breach contacts'
-                  : activeCategory === 'motion'
-                    ? 'Live PIR movement detectors and occupancy zones'
-                    : activeCategory === 'hazards'
-                      ? 'Smoke, CO, and water moisture leak detectors'
-                      : 'Smart locks, entry contacts, motion zones, and safety sensors organized room-by-room'}
-            </p>
           </div>
         </div>
 

@@ -45,7 +45,7 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
       enabled: metrics.filteringEnabled,
       entityId: metrics.switches.filtering,
       color: '#10B981', // Emerald
-      glowClass: 'bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
+      glowClass: 'bg-emerald-500/10'
     },
     {
       id: 'safe_browsing',
@@ -55,7 +55,7 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
       enabled: metrics.safeBrowsingEnabled,
       entityId: metrics.switches.safeBrowsing,
       color: '#F43F5E', // Rose
-      glowClass: 'bg-rose-500/10 border-rose-500/30 shadow-[0_0_12px_rgba(244,63,94,0.2)]'
+      glowClass: 'bg-rose-500/10'
     },
     {
       id: 'parental_control',
@@ -65,7 +65,7 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
       enabled: metrics.parentalControlEnabled,
       entityId: metrics.switches.parentalControl,
       color: '#F59E0B', // Amber
-      glowClass: 'bg-amber-500/10 border-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+      glowClass: 'bg-amber-500/10'
     },
     {
       id: 'safe_search',
@@ -75,7 +75,7 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
       enabled: metrics.safeSearchEnabled,
       entityId: metrics.switches.safeSearch,
       color: '#06B6D4', // Cyan
-      glowClass: 'bg-cyan-500/10 border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.2)]'
+      glowClass: 'bg-cyan-500/10'
     },
     {
       id: 'query_log',
@@ -85,7 +85,7 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
       enabled: metrics.queryLogEnabled,
       entityId: metrics.switches.queryLog,
       color: '#8B5CF6', // Purple
-      glowClass: 'bg-purple-500/10 border-purple-500/30 shadow-[0_0_12px_rgba(139,92,246,0.2)]'
+      glowClass: 'bg-purple-500/10'
     }
   ];
 
@@ -98,13 +98,6 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
             Protection Controls
           </h2>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400">
-            Section 1
-          </span>
-        </div>
-
-        <div className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400">
-          Native Home Assistant Switch Service
         </div>
       </div>
 
@@ -231,10 +224,10 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
                 return (
                   <div
                     key={item.id}
-                    className={`p-3 rounded-xl border backdrop-blur-md transition-all duration-200 flex items-center justify-between gap-3 ${
+                    className={`p-3 rounded-xl transition-all duration-200 flex items-center justify-between gap-3 ${
                       isEnabled
                         ? item.glowClass
-                        : 'bg-white/[0.02] border-white/5 opacity-60 text-slate-400'
+                        : 'bg-slate-900/[0.02] dark:bg-white/[0.02] opacity-60 text-slate-400'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">

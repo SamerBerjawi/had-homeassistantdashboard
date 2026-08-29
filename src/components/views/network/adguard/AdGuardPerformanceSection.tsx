@@ -46,15 +46,8 @@ export const AdGuardPerformanceSection: React.FC<AdGuardPerformanceSectionProps>
         <div className="flex items-center gap-2">
           <Lightning size={18} weight="duotone" className="text-emerald-400" />
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-            Filtering &amp; Performance
+            Performance
           </h2>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400">
-            Section 5
-          </span>
-        </div>
-
-        <div className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400">
-          Engine Latency &amp; Blocklist Database
         </div>
       </div>
 

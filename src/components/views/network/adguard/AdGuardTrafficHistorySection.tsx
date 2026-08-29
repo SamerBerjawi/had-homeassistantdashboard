@@ -85,11 +85,8 @@ export const AdGuardTrafficHistorySection: React.FC<AdGuardTrafficHistorySection
         <div className="flex items-center gap-2">
           <ChartLineUp size={18} weight="duotone" className="text-indigo-400" />
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-            DNS Traffic History
+            Traffic History
           </h2>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-400">
-            Section 3
-          </span>
         </div>
 
         <div className="flex items-center gap-2">

@@ -76,11 +76,11 @@ export function HostMonitorTab({ darkMode = true }: HostMonitorTabProps) {
         darkMode={darkMode}
       />
 
-      {/* Section 3: Memory */}
-      <HostMemorySection metrics={metrics} darkMode={darkMode} />
-
-      {/* Section 4: Disk */}
-      <HostDiskSection metrics={metrics} darkMode={darkMode} />
+      {/* Sections 3 & 4: Memory & Storage Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+        <HostMemorySection metrics={metrics} darkMode={darkMode} />
+        <HostDiskSection metrics={metrics} darkMode={darkMode} />
+      </div>
 
       {/* Section 5: Network (interface: end0) */}
       <HostNetworkSection

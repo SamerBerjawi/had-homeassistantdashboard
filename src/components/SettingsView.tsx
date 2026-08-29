@@ -85,6 +85,8 @@ import { useCanvasStore } from '../store/useCanvasStore';
 import { WeatherBackdropType } from '../types/canvas';
 import CustomDropdown from './ui/CustomDropdown';
 import { PwaStatusCard } from './pwa/PwaStatusCard';
+import IconPickerModal from './ui/IconPickerModal';
+import DynamicPhosphorIcon from './ui/DynamicPhosphorIcon';
 import { getGo2RtcBaseUrls, testGo2RtcConnection } from '../services/go2rtcService';
 
 interface SettingsViewProps {
@@ -374,6 +376,7 @@ export default function SettingsView({
   // Floor & Area Customization State (Icons & Colors only; names/hierarchy are read-only from HA)
   const [editingFloor, setEditingFloor] = useState<HAFloor | null>(null);
   const [editingArea, setEditingArea] = useState<HAArea | null>(null);
+  const [iconPickerTarget, setIconPickerTarget] = useState<'floor' | 'area' | null>(null);
 
   const filteredEntities = entities.filter(e => {
     const nameMatch = (e.attributes?.friendly_name || e.entity_id).toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -2008,7 +2011,42 @@ export default function SettingsView({
                   <form onSubmit={handleSaveFloorEdit} className="space-y-4">
                     {/* Icon Selection */}
                     <div>
-                      <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">Choose Floor Icon</label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Choose Floor Icon</label>
+                        <button
+                          type="button"
+                          onClick={() => setIconPickerTarget('floor')}
+                          className="flex items-center gap-1 text-[11px] font-bold text-sky-500 hover:text-sky-400 cursor-pointer"
+                        >
+                          <MagnifyingGlass size={13} weight="bold" />
+                          <span>Search in Phosphor Icons</span>
+                        </button>
+                      </div>
+
+                      {/* Selected Icon Hero Preview & Search Button */}
+                      <button
+                        type="button"
+                        onClick={() => setIconPickerTarget('floor')}
+                        className="w-full mb-2.5 p-3 rounded-2xl bg-sky-500/10 hover:bg-sky-500/15 border border-sky-500/30 text-sky-600 dark:text-sky-400 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99]"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <DynamicPhosphorIcon
+                            name={editingFloor.icon || 'Stack'}
+                            size={24}
+                            weight="duotone"
+                            style={{ color: editingFloor.color || '#0ea5e9' }}
+                          />
+                          <div className="text-left">
+                            <span className="text-[10px] uppercase font-bold text-slate-500 block">Selected Icon</span>
+                            <span className="text-xs font-black text-slate-900 dark:text-white">{editingFloor.icon || 'Stack'}</span>
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-xl bg-sky-500 text-white text-[11px] font-bold shadow-xs">
+                          Change Icon
+                        </span>
+                      </button>
+
+                      {/* Preset Quick Picks */}
                       <div className="grid grid-cols-5 gap-2">
                         {FLOOR_ICON_OPTIONS.map(iconOpt => (
                           <button
@@ -2021,7 +2059,7 @@ export default function SettingsView({
                                 : 'bg-slate-100/80 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                             }`}
                           >
-                            {renderIconByName(iconOpt, 20)}
+                            <DynamicPhosphorIcon name={iconOpt} size={20} weight="duotone" />
                             <span className="text-[9px] font-semibold truncate max-w-full">{iconOpt}</span>
                           </button>
                         ))}
@@ -2114,7 +2152,42 @@ export default function SettingsView({
                   <form onSubmit={handleSaveAreaEdit} className="space-y-4">
                     {/* Icon Selection */}
                     <div>
-                      <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">Choose Area Icon</label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Choose Area Icon</label>
+                        <button
+                          type="button"
+                          onClick={() => setIconPickerTarget('area')}
+                          className="flex items-center gap-1 text-[11px] font-bold text-indigo-500 hover:text-indigo-400 cursor-pointer"
+                        >
+                          <MagnifyingGlass size={13} weight="bold" />
+                          <span>Search in Phosphor Icons</span>
+                        </button>
+                      </div>
+
+                      {/* Selected Icon Hero Preview & Search Button */}
+                      <button
+                        type="button"
+                        onClick={() => setIconPickerTarget('area')}
+                        className="w-full mb-2.5 p-3 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99]"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <DynamicPhosphorIcon
+                            name={editingArea.icon || 'Armchair'}
+                            size={24}
+                            weight="duotone"
+                            style={{ color: editingArea.color || '#6366f1' }}
+                          />
+                          <div className="text-left">
+                            <span className="text-[10px] uppercase font-bold text-slate-500 block">Selected Icon</span>
+                            <span className="text-xs font-black text-slate-900 dark:text-white">{editingArea.icon || 'Armchair'}</span>
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-xl bg-indigo-500 text-white text-[11px] font-bold shadow-xs">
+                          Change Icon
+                        </span>
+                      </button>
+
+                      {/* Preset Quick Picks */}
                       <div className="grid grid-cols-6 gap-2">
                         {AREA_ICON_OPTIONS.map(iconOpt => (
                           <button
@@ -2127,7 +2200,7 @@ export default function SettingsView({
                                 : 'bg-slate-100/80 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                             }`}
                           >
-                            {renderIconByName(iconOpt, 18)}
+                            <DynamicPhosphorIcon name={iconOpt} size={18} weight="duotone" />
                             <span className="text-[8px] font-semibold truncate max-w-full">{iconOpt}</span>
                           </button>
                         ))}
@@ -2179,6 +2252,23 @@ export default function SettingsView({
                 </motion.div>
               </div>
             )}
+
+            {/* Phosphor Icon Picker Modal for Floors & Areas */}
+            <IconPickerModal
+              isOpen={iconPickerTarget !== null}
+              darkMode={darkMode}
+              title={iconPickerTarget === 'floor' ? `Choose Icon for ${editingFloor?.name || 'Floor'}` : `Choose Icon for ${editingArea?.name || 'Area'}`}
+              currentIcon={iconPickerTarget === 'floor' ? editingFloor?.icon : editingArea?.icon}
+              accentColor={iconPickerTarget === 'floor' ? editingFloor?.color || '#0ea5e9' : editingArea?.color || '#6366f1'}
+              onSelectIcon={(iconName) => {
+                if (iconPickerTarget === 'floor' && editingFloor) {
+                  setEditingFloor({ ...editingFloor, icon: iconName });
+                } else if (iconPickerTarget === 'area' && editingArea) {
+                  setEditingArea({ ...editingArea, icon: iconName });
+                }
+              }}
+              onClose={() => setIconPickerTarget(null)}
+            />
 
             {/* ========================================================================= */}
             {/* 4. BACKUP AND RESTORE SECTION */}

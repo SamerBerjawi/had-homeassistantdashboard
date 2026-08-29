@@ -66,11 +66,8 @@ export const TpLinkPerformanceThroughputSection: React.FC<TpLinkPerformanceThrou
         <div className="flex items-center gap-2">
           <GaugeIcon size={18} weight="duotone" className="text-cyan-400" />
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-            Performance &amp; Bandwidth Throughput
+            Performance &amp; Bandwidth
           </h2>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-400">
-            Section 2
-          </span>
         </div>
 
         {/* Time range selector pills for throughput */}

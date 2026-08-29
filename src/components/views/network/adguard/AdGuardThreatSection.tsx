@@ -76,15 +76,8 @@ export const AdGuardThreatSection: React.FC<AdGuardThreatSectionProps> = ({
         <div className="flex items-center gap-2">
           <Target size={18} weight="duotone" className="text-amber-400" />
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-            Threat &amp; Enforcement Breakdown
+            Threat Protection
           </h2>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400">
-            Section 4
-          </span>
-        </div>
-
-        <div className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400">
-          Independent Policy Counter Metrics
         </div>
       </div>
 

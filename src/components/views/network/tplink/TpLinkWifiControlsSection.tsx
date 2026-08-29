@@ -41,7 +41,7 @@ export const TpLinkWifiControlsSection: React.FC<TpLinkWifiControlsSectionProps>
       subtitle: 'Primary high-speed home network',
       icon: WifiHigh,
       accentColor: '#10B981', // Emerald
-      activeGlow: 'bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]',
+      activeGlow: 'bg-emerald-500/10',
       badgeBg: 'bg-emerald-500/15',
       badgeText: 'text-emerald-400',
       badgeBorder: 'border-emerald-500/20',
@@ -72,7 +72,7 @@ export const TpLinkWifiControlsSection: React.FC<TpLinkWifiControlsSectionProps>
       subtitle: 'Isolated visitor access subnet',
       icon: UserSwitch,
       accentColor: '#F59E0B', // Amber
-      activeGlow: 'bg-amber-500/10 border-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.15)]',
+      activeGlow: 'bg-amber-500/10',
       badgeBg: 'bg-amber-500/15',
       badgeText: 'text-amber-400',
       badgeBorder: 'border-amber-500/20',
@@ -103,7 +103,7 @@ export const TpLinkWifiControlsSection: React.FC<TpLinkWifiControlsSectionProps>
       subtitle: 'Dedicated smart device 2.4/5G band',
       icon: DeviceMobile,
       accentColor: '#8B5CF6', // Purple
-      activeGlow: 'bg-purple-500/10 border-purple-500/30 shadow-[0_0_12px_rgba(139,92,246,0.15)]',
+      activeGlow: 'bg-purple-500/10',
       badgeBg: 'bg-purple-500/15',
       badgeText: 'text-purple-400',
       badgeBorder: 'border-purple-500/20',
@@ -137,15 +137,8 @@ export const TpLinkWifiControlsSection: React.FC<TpLinkWifiControlsSectionProps>
         <div className="flex items-center gap-2">
           <Broadcast size={18} weight="duotone" className="text-cyan-400" />
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-            Wi-Fi Radio Controls
+            Wi-Fi Radios
           </h2>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-400">
-            Section 4
-          </span>
-        </div>
-
-        <div className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400">
-          Independent 2.4 / 5 / 6 GHz Radio Toggles
         </div>
       </div>
 
@@ -196,10 +189,10 @@ export const TpLinkWifiControlsSection: React.FC<TpLinkWifiControlsSectionProps>
                   return (
                     <div
                       key={bandItem.band}
-                      className={`p-3 rounded-xl border backdrop-blur-md transition-all duration-200 flex items-center justify-between gap-3 ${
+                      className={`p-3 rounded-xl transition-all duration-200 flex items-center justify-between gap-3 ${
                         isEnabled
                           ? group.activeGlow
-                          : 'bg-white/[0.02] border-white/5 opacity-60 text-slate-400'
+                          : 'bg-slate-900/[0.02] dark:bg-white/[0.02] opacity-60 text-slate-400'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">

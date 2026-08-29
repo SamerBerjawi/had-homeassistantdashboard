@@ -27,10 +27,10 @@ export function HostOverviewSection({
       : 'bg-white/70 border-slate-200/80 text-slate-900');
 
   const subCardStyle =
-    'flex items-center gap-3 p-3 rounded-xl border transition-all ' +
+    'flex items-center gap-3 p-2.5 rounded-xl transition-all ' +
     (darkMode
-      ? 'bg-white/[0.03] border-white/[0.06]'
-      : 'bg-slate-900/[0.03] border-slate-900/[0.06]');
+      ? 'bg-white/[0.03]'
+      : 'bg-slate-900/[0.03]');
 
   return (
     <div className={`${cardStyle} p-3.5 sm:p-4`}>

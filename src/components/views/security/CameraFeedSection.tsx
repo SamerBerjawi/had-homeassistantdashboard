@@ -216,15 +216,12 @@ export default function CameraFeedSection({
             <VideoCamera size={20} weight="duotone" />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-black tracking-tight flex items-center gap-2 text-slate-900 dark:text-white">
+            <h3 className="text-base font-black tracking-tight flex items-center gap-2 text-slate-900 dark:text-white">
               <span>Live Surveillance Feeds</span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 border border-cyan-500/30 font-mono font-bold">
                 {activeCameras.length} Feeds
               </span>
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-              Low-latency WebRTC streams with live motion detection
-            </p>
           </div>
         </div>
 

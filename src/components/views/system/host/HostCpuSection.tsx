@@ -103,15 +103,15 @@ export function HostCpuSection({
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono font-semibold">60% / 85% Limits</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 py-2 items-center">
+          <div className="grid grid-cols-2 gap-3 py-2 items-stretch">
             {/* Processor Use Gauge */}
-            <div className="flex flex-col justify-between p-3 rounded-xl bg-slate-900/[0.02] dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/5 min-h-[210px]">
-              <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/60 dark:border-white/5">
+            <div className="flex flex-col justify-between p-3 rounded-xl bg-slate-900/[0.02] dark:bg-white/[0.03] min-h-[200px]">
+              <div className="flex items-center justify-between pb-1.5">
                 <span className="text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-300 flex items-center gap-1">
                   <Cpu size={13} weight="duotone" className="text-emerald-500 dark:text-emerald-400" /> Use
                 </span>
                 <span
-                  className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
+                  className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md"
                   style={{
                     backgroundColor: `${cpuUsageColor}1A`,
                     color: cpuUsageColor
@@ -138,13 +138,13 @@ export function HostCpuSection({
             </div>
 
             {/* Processor Temperature Gauge */}
-            <div className="flex flex-col justify-between p-3 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 min-h-[190px]">
-              <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/50 dark:border-white/5">
-                <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
+            <div className="flex flex-col justify-between p-3 rounded-xl bg-slate-900/[0.02] dark:bg-white/[0.03] min-h-[200px]">
+              <div className="flex items-center justify-between pb-1.5">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-300 flex items-center gap-1">
                   <Thermometer size={13} weight="duotone" className="text-cyan-400" /> Temp
                 </span>
                 <span
-                  className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
+                  className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md"
                   style={{
                     backgroundColor: `${cpuTempColor}1A`,
                     color: cpuTempColor
@@ -184,13 +184,13 @@ export function HostCpuSection({
 
             <div className="flex items-center gap-2">
               {/* Unified vs Split View Toggle */}
-              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-900/[0.04] dark:bg-white/5 border border-slate-900/[0.08] dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => setLoadViewMode('unified')}
                   className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
                     loadViewMode === 'unified'
-                      ? 'bg-cyan-500 text-white shadow-sm'
+                      ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                   }`}
                   title="Show all load averages on one unified chart"
@@ -203,41 +203,35 @@ export function HostCpuSection({
                   onClick={() => setLoadViewMode('split')}
                   className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
                     loadViewMode === 'split'
-                      ? 'bg-cyan-500 text-white shadow-sm'
+                      ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                   }`}
                   title="Show 1m, 5m, and 15m separately"
                 >
                   <SquaresFour size={11} weight="bold" />
-                  <span>Separate</span>
+                  <span>Split</span>
                 </button>
               </div>
 
-              {/* Value Pills in Unified Mode */}
-              {loadViewMode === 'unified' && (
-                <div className="hidden sm:flex items-center gap-2.5 text-[10px] font-mono">
-                  <span className="flex items-center gap-1 text-cyan-400 font-bold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" /> 1m: {metrics.load1m.toFixed(2)}
+              <div className="hidden sm:flex items-center gap-2.5 text-[10px] font-mono">
+                {loadSeries.map((s) => (
+                  <span key={s.key} className="flex items-center gap-1 font-bold" style={{ color: s.color }}>
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                    {s.label}: {s.value.toFixed(2)}
                   </span>
-                  <span className="flex items-center gap-1 text-amber-400 font-bold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> 5m: {metrics.load5m.toFixed(2)}
-                  </span>
-                  <span className="flex items-center gap-1 text-purple-400 font-bold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400" /> 15m: {metrics.load15m.toFixed(2)}
-                  </span>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Chart Area */}
+          {/* Chart Content Area */}
           {loadViewMode === 'unified' ? (
-            /* Unified Chart: 1m, 5m, 15m lines synchronized */
-            <div className="w-full h-[190px] my-auto py-1">
+            /* Unified Single Chart with All 3 Series */
+            <div className="w-full h-[180px] my-auto py-1">
               <LineChart
                 data={historyData as unknown as Record<string, unknown>[]}
                 xDataKey="date"
-                margin={{ top: 10, right: 10, bottom: 15, left: 25 }}
+                margin={{ top: 10, right: 12, bottom: 15, left: 20 }}
                 className="w-full h-full"
               >
                 <Grid stroke={darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'} strokeDasharray="3,3" />
@@ -246,27 +240,23 @@ export function HostCpuSection({
                 <ChartTooltip
                   showDatePill
                   showCrosshair
-                  rows={(p) => [
-                    {
-                      label: '1m Load',
-                      value: Number(p.load1m || 0).toFixed(2),
-                      color: '#06B6D4'
-                    },
-                    {
-                      label: '5m Load',
-                      value: Number(p.load5m || 0).toFixed(2),
-                      color: '#F59E0B'
-                    },
-                    {
-                      label: '15m Load',
-                      value: Number(p.load15m || 0).toFixed(2),
-                      color: '#A855F7'
-                    }
-                  ]}
+                  rows={(p) =>
+                    loadSeries.map((s) => ({
+                      label: s.label,
+                      value: Number(p[s.key] || 0).toFixed(2),
+                      color: s.color
+                    }))
+                  }
                 />
-                <Line dataKey="load1m" stroke="#06B6D4" strokeWidth={2.5} animate />
-                <Line dataKey="load5m" stroke="#F59E0B" strokeWidth={2} animate />
-                <Line dataKey="load15m" stroke="#A855F7" strokeWidth={1.5} animate />
+                {loadSeries.map((s) => (
+                  <Line
+                    key={s.key}
+                    dataKey={s.key}
+                    stroke={s.color}
+                    strokeWidth={s.strokeWidth}
+                    animate
+                  />
+                ))}
               </LineChart>
             </div>
           ) : (
@@ -275,9 +265,9 @@ export function HostCpuSection({
               {loadSeries.map((s) => (
                 <div
                   key={s.key}
-                  className="p-2.5 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 flex flex-col justify-between"
+                  className="p-2.5 rounded-xl bg-slate-900/[0.02] dark:bg-white/[0.03] flex flex-col justify-between"
                 >
-                  <div className="flex items-center justify-between pb-1 border-b border-slate-200/40 dark:border-white/5">
+                  <div className="flex items-center justify-between pb-1">
                     <span className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
                       {s.label}
                     </span>

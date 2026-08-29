@@ -134,9 +134,6 @@ export const TpLinkConnectedClientsSection: React.FC<TpLinkConnectedClientsSecti
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
             Connected Clients
           </h2>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400">
-            Section 5
-          </span>
 
           {/* Connected Count Badge */}
           <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">

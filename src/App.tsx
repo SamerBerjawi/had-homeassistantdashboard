@@ -12,9 +12,11 @@ import NotificationBell from './components/notifications/NotificationBell';
 import NotificationDrawer from './components/notifications/NotificationDrawer';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
 import { UpdateToast } from './components/pwa/UpdateToast';
-import { Key, SignIn } from '@phosphor-icons/react';
+import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power } from '@phosphor-icons/react';
 
 import { PAGE_THEMES } from './config/pageThemes';
+import DynamicPhosphorIcon from './components/ui/DynamicPhosphorIcon';
+import { useRoomsData } from './hooks/useRoomsData';
 
 // Eagerly-loaded views (always visible)
 import OverviewView from './components/views/OverviewView';
@@ -35,6 +37,7 @@ const SettingsView = lazy(() => import('./components/SettingsView'));
 
 import WeatherHeaderSentence from './components/weather/WeatherHeaderSentence';
 import WeatherOverviewDrawer from './components/weather/WeatherOverviewDrawer';
+import RoomsHeaderSentence from './components/rooms/RoomsHeaderSentence';
 
 const VALID_TABS = [
   'overview',
@@ -217,9 +220,21 @@ export default function App() {
     return 'Good Night';
   };
 
+  const selectedAreaId = useAutoLayoutStore((s) => s.selectedAreaId);
+  const setSelectedAreaId = useAutoLayoutStore((s) => s.setSelectedAreaId);
+  const rawAreas = useAutoLayoutStore((s) => s.rawAreas);
+  const currentSelectedArea = (activeTab === 'rooms' && selectedAreaId) ? rawAreas.find((a) => a.area_id === selectedAreaId) : null;
+
+  const { areasDataList, toggleAreaLights, toggleAreaLocks, turnOffAllAreaEntities } = useRoomsData();
+  const activeRoomData = (activeTab === 'rooms' && selectedAreaId) ? areasDataList.find((a) => a.areaId === selectedAreaId) : null;
+
   const currentTheme = PAGE_THEMES[activeTab] || PAGE_THEMES['overview'];
   const PageIcon = currentTheme.icon;
-  const pageTitle = activeTab === 'overview' ? `${getTimeGreeting()}, ${userName}` : currentTheme.title;
+  const pageTitle = activeTab === 'overview'
+    ? `${getTimeGreeting()}, ${userName}`
+    : currentSelectedArea
+    ? currentSelectedArea.name
+    : currentTheme.title;
 
   return (
     <div className={`flex h-screen h-[100dvh] w-screen overflow-hidden font-sans select-none pwa-safe-container ${
@@ -258,9 +273,31 @@ export default function App() {
           <header className="mb-6 flex flex-row items-start justify-between gap-3.5 pb-1">
             <div className="space-y-1.5 min-w-0 flex-1">
               <div className="flex items-center gap-3 flex-wrap">
+                {/* Back Button when viewing room detail */}
+                {activeTab === 'rooms' && selectedAreaId && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAreaId(null)}
+                    className="p-1.5 -ml-1 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 dark:hover:bg-white/10 transition-all cursor-pointer active:scale-90 mr-0.5"
+                    title="Back to Rooms"
+                  >
+                    <ArrowLeft size={24} weight="bold" />
+                  </button>
+                )}
+
                 <h1 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5 sm:gap-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                   {activeTab !== 'overview' && (
-                    <PageIcon size={30} weight="duotone" className={`${currentTheme.color} shrink-0`} />
+                    currentSelectedArea ? (
+                      <DynamicPhosphorIcon
+                        name={currentSelectedArea.icon || 'HouseLine'}
+                        size={30}
+                        weight="duotone"
+                        style={{ color: currentSelectedArea.color || undefined }}
+                        className={`shrink-0 ${currentSelectedArea.color ? '' : currentTheme.color}`}
+                      />
+                    ) : (
+                      <PageIcon size={30} weight="duotone" className={`${currentTheme.color} shrink-0`} />
+                    )
                   )}
                   <span>{pageTitle}</span>
                   {activeTab === 'overview' && (
@@ -276,6 +313,10 @@ export default function App() {
                     darkMode={darkMode}
                     onOpenWeatherModal={() => setIsWeatherDrawerOpen(true)}
                   />
+                ) : activeTab === 'rooms' ? (
+                  <RoomsHeaderSentence
+                    darkMode={darkMode}
+                  />
                 ) : (
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed">
                     {currentTheme.subtitle}
@@ -284,8 +325,70 @@ export default function App() {
               </div>
             </div>
 
-            {/* Notification Bell firmly pinned to top-right corner */}
-            <div className="shrink-0 pt-0.5 sm:pt-1">
+            {/* Header Right Actions: Room Quick Actions & Notification Bell */}
+            <div className="flex items-center gap-2 shrink-0 pt-0.5 sm:pt-1">
+              {activeTab === 'rooms' && activeRoomData && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Turn On/Off Lights Toggle */}
+                  {activeRoomData.totalLightsCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => toggleAreaLights(activeRoomData.areaId, activeRoomData.activeLightsCount === 0)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+                        activeRoomData.activeLightsCount > 0
+                          ? 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/40 text-amber-300'
+                          : darkMode
+                          ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400'
+                          : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <Lightbulb
+                        size={15}
+                        weight={activeRoomData.activeLightsCount > 0 ? 'fill' : 'duotone'}
+                        className={activeRoomData.activeLightsCount > 0 ? 'text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)]' : ''}
+                      />
+                      <span className="hidden sm:inline">{activeRoomData.activeLightsCount > 0 ? 'Turn Off Lights' : 'Turn On Lights'}</span>
+                      <span className="sm:hidden">{activeRoomData.activeLightsCount > 0 ? 'Off' : 'On'}</span>
+                    </button>
+                  )}
+
+                  {/* Lock / Unlock All Doors Toggle */}
+                  {activeRoomData.totalLocksCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => toggleAreaLocks(activeRoomData.areaId)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+                        activeRoomData.unlockedLocksCount > 0
+                          ? 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/40 text-amber-300'
+                          : 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/35 text-emerald-300'
+                      }`}
+                    >
+                      {activeRoomData.unlockedLocksCount > 0 ? (
+                        <>
+                          <LockOpen size={15} weight="bold" className="animate-pulse" />
+                          <span className="hidden sm:inline">Lock All</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock size={15} weight="fill" className="text-emerald-400" />
+                          <span className="hidden sm:inline">Locked</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {/* All Off Button */}
+                  <button
+                    type="button"
+                    onClick={() => turnOffAllAreaEntities(activeRoomData.areaId)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 hover:text-rose-300 transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5"
+                  >
+                    <Power size={15} weight="bold" />
+                    <span>All Off</span>
+                  </button>
+                </div>
+              )}
+
               <NotificationBell
                 darkMode={darkMode}
                 onClick={() => setIsNotificationDrawerOpen(true)}

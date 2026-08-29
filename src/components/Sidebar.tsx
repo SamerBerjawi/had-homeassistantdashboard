@@ -134,8 +134,8 @@ export default function Sidebar({
           isCollapsed ? 'w-20 items-center' : 'w-64'
         } ${
           darkMode 
-            ? 'bg-black/60 backdrop-blur-md border-white/10 text-white' 
-            : 'bg-white/70 backdrop-blur-md border-slate-200/90 text-slate-900 shadow-xs'
+            ? 'bg-slate-950/20 backdrop-blur-2xl border-white/10 text-white shadow-2xl' 
+            : 'bg-white/30 backdrop-blur-2xl border-slate-200/60 text-slate-900 shadow-xs'
         }`}
       >
         {/* Header Branding & Collapse Toggle */}
@@ -354,11 +354,11 @@ export default function Sidebar({
       {/* MORE MENU BOTTOM SHEET */}
       {showMoreMenu && (
         <div 
-          id="mobile-more-sheet"
-          className={`md:hidden fixed bottom-20 left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto p-5 rounded-[28px] border shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-5 duration-200 ${
+          id="sidebar-more-menu"
+          className={`md:hidden fixed bottom-22 left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto rounded-3xl p-4 border shadow-2xl z-50 animate-fadeIn ${
             darkMode 
-              ? 'bg-black/55 backdrop-blur-sm border-white/15 text-white shadow-2xl shadow-black/90' 
-              : 'bg-white/65 backdrop-blur-sm border-white/50 text-slate-900 shadow-2xl shadow-slate-900/15'
+              ? 'bg-slate-950/50 backdrop-blur-2xl border-white/15 text-white shadow-black/90' 
+              : 'bg-white/60 backdrop-blur-2xl border-slate-200/80 text-slate-900 shadow-slate-400/20'
           }`}
         >
           {/* Sheet Header */}
@@ -465,8 +465,8 @@ export default function Sidebar({
         id="sidebar-mobile" 
         className={`md:hidden fixed bottom-3 left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto h-16 rounded-[26px] border shadow-2xl z-50 px-3 flex items-center justify-around transition-all ${
           darkMode 
-            ? 'bg-black/45 backdrop-blur-sm border-white/15 text-white shadow-2xl shadow-black/80' 
-            : 'bg-white/55 backdrop-blur-sm border-white/40 text-slate-900 shadow-xl shadow-slate-900/10'
+            ? 'bg-slate-950/30 backdrop-blur-2xl border-white/15 text-white shadow-2xl shadow-black/80' 
+            : 'bg-white/35 backdrop-blur-2xl border-white/50 text-slate-900 shadow-xl shadow-slate-900/10'
         }`}
       >
         {mobilePrimaryItems.map((item) => {

@@ -4,9 +4,6 @@
  */
 
 import React, { useMemo } from 'react';
-import { PieChart } from '../../../charts/pie-chart';
-import { PieSlice } from '../../../charts/pie-slice';
-import { PieCenter } from '../../../charts/pie-center';
 import {
   UsersThree,
   WifiHigh,
@@ -26,10 +23,10 @@ export const TpLinkClientsBreakdownSection: React.FC<TpLinkClientsBreakdownSecti
   darkMode = true
 }) => {
   const cardStyle =
-    'rounded-2xl border backdrop-blur-md transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] p-4 sm:p-5 ' +
+    'rounded-2xl border backdrop-blur-md transition-all shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] p-4 sm:p-5 ' +
     (darkMode
-      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10'
-      : 'bg-white/80 border-slate-200/80 shadow-slate-100');
+      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10 text-white'
+      : 'bg-white/70 border-slate-200/80 text-slate-900');
 
   const mainWifiCount = metrics.mainWifiClientsCount;
   const guestWifiCount = metrics.guestClientsCount;
@@ -37,146 +34,128 @@ export const TpLinkClientsBreakdownSection: React.FC<TpLinkClientsBreakdownSecti
   const wiredCount = metrics.wiredClientsCount;
   const totalCount = metrics.connectedClientsCount || (mainWifiCount + guestWifiCount + iotCount + wiredCount);
 
-  const pieData = useMemo(() => {
+  const categories = useMemo(() => {
     return [
       {
+        id: 'main',
         label: 'Main Wi-Fi',
         value: mainWifiCount,
         color: '#10B981',
+        bgLight: 'bg-emerald-500/10',
+        textColor: 'text-emerald-700 dark:text-emerald-400',
         icon: WifiHigh,
-        desc: 'Primary SSID clients'
+        desc: 'Primary 2.4/5/6G'
       },
       {
+        id: 'guest',
         label: 'Guest Wi-Fi',
         value: guestWifiCount,
         color: '#F59E0B',
+        bgLight: 'bg-amber-500/10',
+        textColor: 'text-amber-700 dark:text-amber-400',
         icon: UserSwitch,
-        desc: 'Isolated guest clients'
+        desc: 'Isolated Guests'
       },
       {
+        id: 'iot',
         label: 'IoT Network',
         value: iotCount,
         color: '#8B5CF6',
+        bgLight: 'bg-purple-500/10',
+        textColor: 'text-purple-700 dark:text-purple-400',
         icon: DeviceMobile,
-        desc: 'Smart home & 2.4G sensors'
+        desc: 'Smart Home Devices'
       },
       {
+        id: 'wired',
         label: 'Wired LAN',
         value: wiredCount,
         color: '#06B6D4',
+        bgLight: 'bg-cyan-500/10',
+        textColor: 'text-cyan-700 dark:text-cyan-400',
         icon: HardDrives,
-        desc: 'Direct Ethernet patch'
+        desc: 'Ethernet Ports'
       }
     ];
   }, [mainWifiCount, guestWifiCount, iotCount, wiredCount]);
 
-  const activeSlices = pieData.filter((d) => d.value > 0);
-  const displayPieData = activeSlices.length > 0 ? pieData : [{ label: 'No Clients', value: 1, color: '#64748B', icon: WifiHigh, desc: 'Empty' }];
-
   return (
-    <div className="space-y-3">
-      {/* Section Header */}
-      <div className="flex items-center justify-between px-1">
+    <div className={`${cardStyle} space-y-3.5`}>
+      {/* Clean Compact Header */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <UsersThree size={18} weight="duotone" className="text-purple-400" />
-          <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-            Clients Breakdown
-          </h2>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-400">
-            Section 3
-          </span>
+          <UsersThree size={18} weight="duotone" className="text-purple-500 dark:text-purple-400" />
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+            Client Distribution
+          </h3>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono font-black text-purple-400">
-            {totalCount} Total Devices
+          <span className="text-xs font-mono font-black text-purple-600 dark:text-purple-400">
+            {totalCount} Active Devices
           </span>
         </div>
       </div>
 
-      {/* Main Breakdown Card */}
-      <div className={`${cardStyle} flex flex-col justify-between`}>
-        <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-white/10">
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-              Client Distribution by Network Layer
-            </h3>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">
-              Live device categorization across Wi-Fi radios and Ethernet LAN ports
-            </p>
-          </div>
-          <div className="text-right font-mono text-[11px] font-bold text-slate-700 dark:text-slate-300">
-            <span>{activeSlices.length} Active Segment{activeSlices.length !== 1 ? 's' : ''}</span>
-          </div>
+      {/* Proportional Segmented Progress Bar */}
+      <div className="space-y-1.5">
+        <div className="w-full h-2.5 rounded-full overflow-hidden bg-slate-900/[0.05] dark:bg-white/[0.08] flex">
+          {totalCount > 0 ? (
+            categories.map((cat) => {
+              const widthPct = (cat.value / totalCount) * 100;
+              if (widthPct === 0) return null;
+              return (
+                <div
+                  key={cat.id}
+                  style={{
+                    width: `${widthPct}%`,
+                    backgroundColor: cat.color
+                  }}
+                  className="h-full transition-all duration-300 first:rounded-l-full last:rounded-r-full"
+                  title={`${cat.label}: ${cat.value} (${widthPct.toFixed(0)}%)`}
+                />
+              );
+            })
+          ) : (
+            <div className="w-full h-full bg-slate-300 dark:bg-slate-700 rounded-full" />
+          )}
         </div>
+      </div>
 
-        {/* Center: Pie Chart */}
-        <div className="py-4 my-auto flex flex-col items-center justify-center">
-          <div className="relative w-[180px] h-[180px] sm:w-[200px] sm:h-[200px] flex items-center justify-center">
-            <PieChart
-              data={displayPieData}
-              innerRadius={58}
-              padAngle={0.04}
-              cornerRadius={6}
-              size={200}
-              className="w-full h-full"
+      {/* 4 High-Density Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+        {categories.map((cat) => {
+          const Icon = cat.icon;
+          const percent = totalCount > 0 ? ((cat.value / totalCount) * 100).toFixed(0) : '0';
+
+          return (
+            <div
+              key={cat.id}
+              className={`p-3 rounded-xl ${cat.bgLight} flex flex-col justify-between transition-all hover:scale-[1.02]`}
             >
-              {displayPieData.map((_, i) => (
-                <PieSlice key={i} index={i} />
-              ))}
-              <PieCenter
-                defaultLabel="TOTAL"
-                suffix=" Clients"
-              >
-                {({ isHovered, data }) => (
-                  <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none">
-                    <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">
-                      {isHovered ? data.label : 'TOTAL'}
-                    </span>
-                    <span className="text-sm font-black font-mono text-slate-900 dark:text-white leading-tight">
-                      {isHovered ? data.value : totalCount}
-                    </span>
-                    <span className="text-[8px] font-bold text-purple-400">
-                      Clients
-                    </span>
-                  </div>
-                )}
-              </PieCenter>
-            </PieChart>
-          </div>
-        </div>
-
-        {/* Small Legend/Stat Row under the chart */}
-        <div className="pt-3 border-t border-slate-200/60 dark:border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {pieData.map((item) => {
-            const Icon = item.icon;
-            const percent = totalCount > 0 ? ((item.value / totalCount) * 100).toFixed(0) : '0';
-            return (
-              <div
-                key={item.label}
-                className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 flex flex-col justify-between"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5 truncate">
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <Icon size={12} style={{ color: item.color }} />
-                    <span className="truncate">{item.label}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Icon size={14} style={{ color: cat.color }} weight="duotone" />
+                  <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate">
+                    {cat.label}
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400">{percent}%</span>
                 </div>
-                <div className="flex items-baseline justify-between pt-1">
-                  <span className="text-base font-black font-mono text-slate-900 dark:text-white">
-                    {item.value}
-                  </span>
-                  <span className="text-[9px] text-slate-400">{item.desc}</span>
-                </div>
+                <span className={`text-[10px] font-mono font-bold ${cat.textColor}`}>
+                  {percent}%
+                </span>
               </div>
-            );
-          })}
-        </div>
+
+              <div className="flex items-baseline justify-between pt-2">
+                <span className="text-lg font-black font-mono text-slate-900 dark:text-white">
+                  {cat.value}
+                </span>
+                <span className="text-[9px] font-medium text-slate-500 dark:text-slate-400">
+                  {cat.desc}
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
