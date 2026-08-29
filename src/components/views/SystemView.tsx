@@ -23,8 +23,8 @@ export default function SystemView({ darkMode = true }: SystemViewProps) {
       {/* Top Segmented Sub-View Switcher */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div
-          className={`p-1.5 rounded-2xl border backdrop-blur-xl flex items-center gap-1.5 transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] ${
-            darkMode ? 'bg-white/[0.04] border-white/10' : 'bg-white/80 border-slate-200 shadow-slate-100'
+          className={`p-1.5 rounded-2xl border backdrop-blur-md flex items-center gap-1.5 transition-all ${
+            darkMode ? 'bg-white/[0.04] border-white/10' : 'bg-slate-900/[0.04] border-slate-900/[0.08] shadow-xs'
           }`}
         >
           <button
@@ -34,10 +34,10 @@ export default function SystemView({ darkMode = true }: SystemViewProps) {
               activeSubTab === 'ha_host'
                 ? darkMode
                   ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
-                  : 'bg-cyan-600 text-white shadow-md shadow-cyan-600/20'
+                  : 'bg-cyan-500 text-slate-950 shadow-sm'
                 : darkMode
                 ? 'text-slate-400 hover:text-white hover:bg-white/5'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-900/[0.04]'
             }`}
           >
             <HouseLine size={16} weight={activeSubTab === 'ha_host' ? 'bold' : 'duotone'} />
@@ -51,10 +51,10 @@ export default function SystemView({ darkMode = true }: SystemViewProps) {
               activeSubTab === 'ugreen_nas'
                 ? darkMode
                   ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
-                  : 'bg-amber-600 text-white shadow-md shadow-amber-600/20'
+                  : 'bg-amber-500 text-slate-950 shadow-sm'
                 : darkMode
                 ? 'text-slate-400 hover:text-white hover:bg-white/5'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-900/[0.04]'
             }`}
           >
             <HardDrives size={16} weight={activeSubTab === 'ugreen_nas' ? 'bold' : 'duotone'} />
@@ -62,7 +62,7 @@ export default function SystemView({ darkMode = true }: SystemViewProps) {
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>System Infrastructure Monitor</span>
         </div>

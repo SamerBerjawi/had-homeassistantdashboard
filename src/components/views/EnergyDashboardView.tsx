@@ -96,7 +96,7 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
         <div className="flex flex-wrap items-center gap-2">
           {/* Period Tabs */}
           <div className={`flex items-center p-1 rounded-2xl border backdrop-blur-md ${
-            darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'
+            darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-900/[0.04] border-slate-900/[0.08]'
           }`}>
             {periodOptions.map(opt => (
               <button
@@ -105,12 +105,10 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
                 onClick={() => setPeriod(opt.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   period === opt.id
-                    ? darkMode
-                      ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                      : 'bg-white text-slate-900 shadow-xs'
+                    ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
                     : darkMode
                       ? 'text-slate-400 hover:text-white'
-                      : 'text-slate-600 hover:text-slate-900'
+                      : 'text-slate-700 hover:text-slate-900'
                 }`}
               >
                 {opt.label}
@@ -124,10 +122,10 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
             onClick={() => refresh()}
             disabled={isFetchingStats}
             title="Refresh statistics"
-            className={`p-2 rounded-2xl border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+            className={`p-2 rounded-2xl border text-xs font-bold transition-all shadow-xs cursor-pointer ${
               darkMode 
                 ? 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-200 hover:text-white' 
-                : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-slate-900'
+                : 'bg-white/80 hover:bg-white border-slate-200/80 text-slate-800 hover:text-slate-900 backdrop-blur-sm'
             }`}
           >
             <ArrowsClockwise size={16} weight="bold" className={`text-amber-500 ${isFetchingStats ? 'animate-spin' : ''}`} />
@@ -141,7 +139,7 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         
         {/* STAT 1: SOLAR LIVE */}
-        <div className={`p-3.5 sm:p-4 rounded-3xl backdrop-blur-xl border transition-all duration-300 flex flex-col justify-between ${
+        <div className={`p-3.5 sm:p-4 rounded-3xl backdrop-blur-md border transition-all duration-300 flex flex-col justify-between ${
           darkMode 
             ? 'bg-black/60 hover:bg-black/80 border-amber-500/30 text-white shadow-amber-500/5' 
             : 'bg-white/70 hover:bg-white/90 border-amber-200/90 text-slate-900 shadow-sm'
@@ -167,7 +165,7 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
         </div>
 
         {/* STAT 2: BATTERY STORAGE */}
-        <div className={`p-3.5 sm:p-4 rounded-3xl backdrop-blur-xl border transition-all duration-300 flex flex-col justify-between ${
+        <div className={`p-3.5 sm:p-4 rounded-3xl backdrop-blur-md border transition-all duration-300 flex flex-col justify-between ${
           darkMode 
             ? 'bg-black/60 hover:bg-black/80 border-emerald-500/30 text-white shadow-emerald-500/5' 
             : 'bg-white/70 hover:bg-white/90 border-emerald-200/90 text-slate-900 shadow-sm'
@@ -195,7 +193,7 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
         </div>
 
         {/* STAT 3: HOME CONSUMPTION */}
-        <div className={`p-3.5 sm:p-4 rounded-3xl backdrop-blur-xl border transition-all duration-300 flex flex-col justify-between ${
+        <div className={`p-3.5 sm:p-4 rounded-3xl backdrop-blur-md border transition-all duration-300 flex flex-col justify-between ${
           darkMode 
             ? 'bg-black/60 hover:bg-black/80 border-purple-500/30 text-white shadow-purple-500/5' 
             : 'bg-white/70 hover:bg-white/90 border-purple-200/90 text-slate-900 shadow-sm'
@@ -221,7 +219,7 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
         </div>
 
         {/* STAT 4: GRID EXCHANGE */}
-        <div className={`p-3.5 sm:p-4 rounded-3xl backdrop-blur-xl border transition-all duration-300 flex flex-col justify-between ${
+        <div className={`p-3.5 sm:p-4 rounded-3xl backdrop-blur-md border transition-all duration-300 flex flex-col justify-between ${
           darkMode 
             ? 'bg-black/60 hover:bg-black/80 border-sky-500/30 text-white shadow-sky-500/5' 
             : 'bg-white/70 hover:bg-white/90 border-sky-200/90 text-slate-900 shadow-sm'
@@ -249,7 +247,7 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
         </div>
 
         {/* STAT 5: AUTARKY (SELF-SUFFICIENCY) */}
-        <div className={`p-3.5 sm:p-4 rounded-3xl backdrop-blur-xl border transition-all duration-300 flex flex-col justify-between ${
+        <div className={`p-3.5 sm:p-4 rounded-3xl backdrop-blur-md border transition-all duration-300 flex flex-col justify-between ${
           darkMode 
             ? 'bg-black/60 hover:bg-black/80 border-emerald-500/30 text-white shadow-emerald-500/5' 
             : 'bg-white/70 hover:bg-white/90 border-emerald-200/90 text-slate-900 shadow-sm'
@@ -275,7 +273,7 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
         </div>
 
         {/* STAT 6: SELF CONSUMPTION RATE */}
-        <div className={`p-3.5 sm:p-4 rounded-3xl backdrop-blur-xl border transition-all duration-300 flex flex-col justify-between ${
+        <div className={`p-3.5 sm:p-4 rounded-3xl backdrop-blur-md border transition-all duration-300 flex flex-col justify-between ${
           darkMode 
             ? 'bg-black/60 hover:bg-black/80 border-cyan-500/30 text-white shadow-cyan-500/5' 
             : 'bg-white/70 hover:bg-white/90 border-cyan-200/90 text-slate-900 shadow-sm'

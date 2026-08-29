@@ -235,7 +235,7 @@ export default function CardCatalogDrawer({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-            className="relative w-full max-w-xl h-full bg-slate-900/95 backdrop-blur-2xl border-l border-white/15 shadow-2xl text-white flex flex-col z-10"
+            className="relative w-full max-w-xl h-full bg-slate-900/95 backdrop-blur-md border-l border-white/15 shadow-2xl text-white flex flex-col z-10"
           >
             {/* Drawer Header */}
             <div className="flex items-center justify-between p-5 border-b border-white/10">

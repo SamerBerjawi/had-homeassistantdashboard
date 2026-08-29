@@ -33,18 +33,18 @@ export function HostMonitorTab({ darkMode = true }: HostMonitorTabProps) {
       {/* Top Toolbar: Time range selector & Refresh */}
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Telemetry Window:
           </span>
-          <div className="flex items-center gap-1 bg-slate-200/50 dark:bg-white/5 p-0.5 rounded-xl border border-slate-200/60 dark:border-white/5">
+          <div className="flex items-center gap-1 bg-slate-900/[0.04] dark:bg-white/5 p-0.5 rounded-xl border border-slate-900/[0.08] dark:border-white/5">
             {timeRanges.map((r) => (
               <button
                 key={r}
                 onClick={() => setTimeRange(r)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
                   timeRange === r
-                    ? 'bg-cyan-500 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                 }`}
               >
                 {r}
@@ -56,11 +56,11 @@ export function HostMonitorTab({ darkMode = true }: HostMonitorTabProps) {
         <button
           onClick={() => refreshHistory()}
           disabled={isLoadingHistory}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition-all shadow-sm disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-slate-300 hover:bg-white dark:hover:bg-white/10 transition-all shadow-xs disabled:opacity-50 cursor-pointer active:scale-95"
         >
           <ArrowsClockwise
             size={14}
-            className={`text-cyan-400 ${isLoadingHistory ? 'animate-spin' : ''}`}
+            className={`text-cyan-500 dark:text-cyan-400 ${isLoadingHistory ? 'animate-spin' : ''}`}
           />
           <span className="hidden sm:inline">Refresh Data</span>
         </button>

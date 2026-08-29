@@ -692,7 +692,7 @@ function LowPolyHouse({
       {/* PV BADGE (Anchored above rooftop solar array) */}
       <Html position={[-1.2, 3.2, 0.2]} center distanceFactor={8.5}>
         <div className="flex flex-col items-center pointer-events-none select-none">
-          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${darkMode
+          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-md border shadow-xl transition-all ${darkMode
               ? 'bg-black/75 border-amber-500/40 text-white shadow-amber-500/10'
               : 'bg-white/85 border-amber-400 text-slate-900 shadow-slate-300'
             }`}>
@@ -708,7 +708,7 @@ function LowPolyHouse({
       {/* HOME DEMAND BADGE (Anchored above main living space) */}
       <Html position={[1.0, 2.5, 0.1]} center distanceFactor={8.5}>
         <div className="flex flex-col items-center pointer-events-none select-none">
-          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${darkMode
+          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-md border shadow-xl transition-all ${darkMode
               ? 'bg-black/75 border-purple-500/40 text-white shadow-purple-500/10'
               : 'bg-white/85 border-purple-400 text-slate-900 shadow-slate-300'
             }`}>
@@ -724,7 +724,7 @@ function LowPolyHouse({
       {/* BATTERY STORAGE BADGE (Anchored next to battery pack) */}
       <Html position={[-2.85, 0.65, 0.4]} center distanceFactor={8.5}>
         <div className="flex flex-col items-end pointer-events-none select-none pr-1">
-          <div className={`flex flex-col items-start px-3 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${darkMode
+          <div className={`flex flex-col items-start px-3 py-1.5 rounded-2xl backdrop-blur-md border shadow-xl transition-all ${darkMode
               ? 'bg-black/75 border-emerald-500/40 text-white shadow-emerald-500/10'
               : 'bg-white/85 border-emerald-400 text-slate-900 shadow-slate-300'
             }`}>
@@ -744,7 +744,7 @@ function LowPolyHouse({
       {/* GRID FLOW BADGE (Anchored near grid path terminal) */}
       <Html position={[1.5, 0.4, 2.5]} center distanceFactor={8.5}>
         <div className="flex flex-col items-center pointer-events-none select-none">
-          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all ${darkMode
+          <div className={`flex flex-col items-center px-3.5 py-1.5 rounded-2xl backdrop-blur-md border shadow-xl transition-all ${darkMode
               ? 'bg-black/75 border-sky-500/40 text-white shadow-sky-500/10'
               : 'bg-white/85 border-sky-400 text-slate-900 shadow-slate-300'
             }`}>
@@ -778,7 +778,7 @@ export default function FusionSolarHouseFlow({
   };
 
   return (
-    <div className={`relative w-full rounded-3xl p-4 sm:p-6 border backdrop-blur-xl transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[480px] sm:min-h-[530px] ${darkMode
+    <div className={`relative w-full rounded-3xl p-4 sm:p-6 border backdrop-blur-md transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[480px] sm:min-h-[530px] ${darkMode
         ? 'bg-black/60 border-white/10 text-white shadow-2xl'
         : 'bg-white/70 border-slate-200/90 text-slate-900 shadow-lg'
       }`}>

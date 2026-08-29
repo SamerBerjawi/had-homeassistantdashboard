@@ -27,6 +27,7 @@ import { Badge, BadgeWithDot } from '../base/badges/badges';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { useShallow } from 'zustand/react/shallow';
 import { ResolvedEntity } from '../../types';
+import CustomDropdown from '../ui/CustomDropdown';
 
 interface ViewProps {
   darkMode?: boolean;
@@ -248,8 +249,8 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
     <div className="w-full flex-1 flex flex-col space-y-5">
       
       {/* Search and Filters Bar */}
-      <div className={`p-4 rounded-2xl backdrop-blur-xl border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 ${
-        darkMode ? 'bg-black/60 border-white/10' : 'bg-white/60 backdrop-blur-xl border-slate-200/90 shadow-xs'
+      <div className={`p-4 rounded-2xl backdrop-blur-md border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 ${
+        darkMode ? 'bg-black/60 border-white/10' : 'bg-white/60 backdrop-blur-md border-slate-200/90 shadow-xs'
       }`}>
         {/* Filter Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto touch-scroll-container pb-1 sm:pb-0">
@@ -289,20 +290,20 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
         {/* Search & Area Filter */}
         <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
           {/* Area Filter */}
-          <select
-            value={selectedAreaFilter}
-            onChange={(e) => setSelectedAreaFilter(e.target.value)}
-            className={`h-8 px-2.5 rounded-xl text-xs font-semibold border outline-none cursor-pointer transition-all ${
-              darkMode ? 'bg-neutral-900 border-white/10 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'
-            }`}
-          >
-            <option value="all">All Rooms</option>
-            {availableAreas.map(areaId => (
-              <option key={areaId} value={areaId}>
-                {areasMap[areaId] || areaId}
-              </option>
-            ))}
-          </select>
+          <div className="w-44">
+            <CustomDropdown
+              value={selectedAreaFilter}
+              onChange={(val) => setSelectedAreaFilter(val)}
+              size="sm"
+              options={[
+                { value: 'all', label: 'All Rooms' },
+                ...availableAreas.map(areaId => ({
+                  value: areaId,
+                  label: areasMap[areaId] || areaId
+                }))
+              ]}
+            />
+          </div>
 
           {/* Search Box */}
           <div className="relative flex-1 sm:w-56">
@@ -323,7 +324,7 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
       </div>
 
       {/* Untitled UI Table with Alternating Fills */}
-      <TableCard.Root className={darkMode ? 'bg-black/60 backdrop-blur-xl border border-white/10 shadow-lg' : 'bg-white/70 backdrop-blur-xl border border-slate-200/90 shadow-sm'}>
+      <TableCard.Root className={darkMode ? 'bg-black/60 backdrop-blur-md border border-white/10 shadow-lg' : 'bg-white/70 backdrop-blur-md border border-slate-200/90 shadow-sm'}>
         <TableCard.Header
           title="Automations & Scenes"
           badge={`${sortedItems.length} items`}

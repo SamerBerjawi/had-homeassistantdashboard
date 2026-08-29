@@ -458,7 +458,7 @@ export default function NotificationDrawer({
               return (
                 <div
                   key={item.id}
-                  className={`p-4.5 rounded-3xl border backdrop-blur-xl transition-all duration-200 shadow-sm flex flex-col justify-between gap-3 group hover:border-sky-500/40 ${
+                  className={`p-4.5 rounded-3xl border backdrop-blur-md transition-all duration-200 shadow-sm flex flex-col justify-between gap-3 group hover:border-sky-500/40 ${
                     item.severity === 'critical'
                       ? 'bg-rose-500/10 border-rose-500/30'
                       : item.severity === 'warning'

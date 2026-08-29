@@ -223,15 +223,21 @@ export default function App() {
 
   return (
     <div className={`flex h-screen h-[100dvh] w-screen overflow-hidden font-sans select-none pwa-safe-container ${
-      darkMode ? 'bg-black text-white dark' : 'bg-slate-100/80 text-slate-900'
+      darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
     }`}>
       {/* Ambient background decoration with distinct page accent glows */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className={`absolute top-0 right-1/4 w-96 h-96 rounded-full blur-3xl opacity-35 dark:opacity-20 transform-gpu transition-colors duration-1000 ${
+        {/* Primary Top-Right Accent Bloom */}
+        <div className={`absolute -top-24 right-0 sm:right-1/6 w-[450px] sm:w-[620px] h-[450px] sm:h-[620px] rounded-full blur-[100px] sm:blur-[140px] opacity-16 dark:opacity-28 transform-gpu transition-all duration-1000 ${
           currentTheme.glow1
         }`} />
-        <div className={`absolute bottom-0 left-1/3 w-[500px] h-[500px] rounded-full blur-3xl opacity-30 dark:opacity-15 transform-gpu transition-colors duration-1000 ${
+        {/* Secondary Bottom-Left Accent Bloom */}
+        <div className={`absolute -bottom-24 left-0 sm:left-1/6 w-[400px] sm:w-[550px] h-[400px] sm:h-[550px] rounded-full blur-[100px] sm:blur-[140px] opacity-14 dark:opacity-24 transform-gpu transition-all duration-1000 ${
           currentTheme.glow2
+        }`} />
+        {/* Tertiary Center Accent Radiance */}
+        <div className={`absolute top-1/3 left-1/3 w-[300px] sm:w-[450px] h-[300px] sm:h-[450px] rounded-full blur-[90px] sm:blur-[120px] opacity-10 dark:opacity-18 transform-gpu transition-all duration-1000 ${
+          currentTheme.glow3 || currentTheme.glow1
         }`} />
       </div>
 
@@ -252,7 +258,7 @@ export default function App() {
           <header className="mb-6 flex flex-row items-start justify-between gap-3.5 pb-1">
             <div className="space-y-1.5 min-w-0 flex-1">
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5 sm:gap-3 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                <h1 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5 sm:gap-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                   {activeTab !== 'overview' && (
                     <PageIcon size={30} weight="duotone" className={`${currentTheme.color} shrink-0`} />
                   )}
@@ -271,7 +277,7 @@ export default function App() {
                     onOpenWeatherModal={() => setIsWeatherDrawerOpen(true)}
                   />
                 ) : (
-                  <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 max-w-3xl leading-relaxed">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed">
                     {currentTheme.subtitle}
                   </p>
                 )}

@@ -40,7 +40,7 @@ export const AdGuardTrafficHistorySection: React.FC<AdGuardTrafficHistorySection
   const [viewMode, setViewMode] = useState<'unified' | 'split'>('unified');
 
   const cardStyle =
-    'rounded-2xl border backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] p-4 sm:p-5 ' +
+    'rounded-2xl border backdrop-blur-md transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] p-4 sm:p-5 ' +
     (darkMode
       ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10'
       : 'bg-white/80 border-slate-200/80 shadow-slate-100');

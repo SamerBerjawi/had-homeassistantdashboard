@@ -180,7 +180,7 @@ function TooltipBoxInner({
     panelStyle?.backgroundColor === undefined &&
       backgroundColor === chartCssVars.tooltipBackground &&
       "bg-chart-tooltip-background",
-    panelStyle?.backdropFilter === undefined && "backdrop-blur-xl"
+    panelStyle?.backdropFilter === undefined && "backdrop-blur-md"
   );
   const panelStyleResolved = {
     transformOrigin,

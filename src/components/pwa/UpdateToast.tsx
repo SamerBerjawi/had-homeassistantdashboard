@@ -48,7 +48,7 @@ export const UpdateToast: React.FC = () => {
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className="fixed top-4 right-4 z-50 max-w-sm w-[calc(100vw-2rem)] sm:w-auto"
       >
-        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/95 dark:bg-black/90 backdrop-blur-xl border border-sky-500/30 text-white shadow-2xl flex items-center justify-between gap-3">
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/95 dark:bg-black/90 backdrop-blur-md border border-sky-500/30 text-white shadow-2xl flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0 border border-sky-500/30 shadow-xs">
               <Sparkle size={16} weight="duotone" />

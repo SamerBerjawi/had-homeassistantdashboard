@@ -398,14 +398,16 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           onClick={openDoorsDrawer}
           className={`h-9 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs ${
             openDoors.length > 0
-              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/30'
+              ? darkMode
+                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                : 'bg-amber-50/90 text-amber-950 border-amber-200/90 shadow-2xs'
               : darkMode
                 ? 'bg-white/5 text-slate-400 border-white/10'
                 : 'bg-slate-100 text-slate-600 border-slate-200'
           }`}
         >
           {openDoors.length > 0 ? (
-            <DoorOpen size={16} weight="duotone" className="text-amber-500 shrink-0" />
+            <DoorOpen size={16} weight="duotone" className="text-amber-600 dark:text-amber-400 shrink-0" />
           ) : (
             <Door size={16} weight="duotone" className="text-slate-400 shrink-0" />
           )}
@@ -418,13 +420,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           onClick={openWindowsDrawer}
           className={`h-9 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs ${
             openWindows.length > 0
-              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/30'
+              ? darkMode
+                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                : 'bg-amber-50/90 text-amber-950 border-amber-200/90 shadow-2xs'
               : darkMode
                 ? 'bg-white/5 text-slate-400 border-white/10'
                 : 'bg-slate-100 text-slate-600 border-slate-200'
           }`}
         >
-          <FrameCorners size={16} weight="duotone" className={openWindows.length > 0 ? 'text-amber-500 shrink-0' : 'text-slate-400 shrink-0'} />
+          <FrameCorners size={16} weight="duotone" className={openWindows.length > 0 ? 'text-amber-600 dark:text-amber-400 shrink-0' : 'text-slate-400 shrink-0'} />
           <span>{openWindows.length} Windows</span>
         </button>
 
@@ -434,13 +438,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           onClick={() => openSensorsDrawer('motion')}
           className={`h-9 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs ${
             activeMotion.length > 0
-              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/30'
+              ? darkMode
+                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                : 'bg-amber-50/90 text-amber-950 border-amber-200/90 shadow-2xs'
               : darkMode
                 ? 'bg-white/5 text-slate-400 border-white/10'
                 : 'bg-slate-100 text-slate-600 border-slate-200'
           }`}
         >
-          <PersonSimpleWalk size={16} weight="duotone" className={activeMotion.length > 0 ? 'text-amber-500 shrink-0' : 'text-slate-400 shrink-0'} />
+          <PersonSimpleWalk size={16} weight="duotone" className={activeMotion.length > 0 ? 'text-amber-600 dark:text-amber-400 shrink-0' : 'text-slate-400 shrink-0'} />
           <span>{activeMotion.length} Motion</span>
         </button>
 
@@ -801,7 +807,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
             openDoors.length > 0
               ? darkMode
                 ? 'bg-slate-900/90 hover:bg-slate-900 border-amber-500/30 hover:border-amber-400/60 text-white'
-                : 'bg-amber-50/80 hover:bg-amber-50 border-amber-200/90 hover:border-amber-300 text-slate-900'
+                : 'bg-amber-50/90 hover:bg-amber-50 border-amber-200 hover:border-amber-300 text-slate-900 shadow-2xs'
               : darkMode
                 ? 'bg-slate-900/80 hover:bg-slate-900 border-white/10 hover:border-white/20 text-white'
                 : 'bg-white/80 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/40'
@@ -810,7 +816,9 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center border shadow-xs transition-all ${
               openDoors.length > 0
-                ? 'bg-amber-500/20 border-amber-400/40 text-amber-600 dark:text-amber-300 animate-pulse'
+                ? darkMode
+                  ? 'bg-amber-500/20 border-amber-400/40 text-amber-300 animate-pulse'
+                  : 'bg-amber-100/90 border-amber-300/60 text-amber-800'
                 : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
             }`}>
               {openDoors.length > 0 ? <DoorOpen size={20} weight="duotone" /> : <Door size={20} weight="duotone" />}
@@ -818,7 +826,9 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
             <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
               openDoors.length > 0
-                ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                ? darkMode
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                  : 'bg-amber-100 text-amber-950 border-amber-300/60 font-bold'
                 : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
             }`}>
               {openDoors.length > 0 ? `${openDoors.length} Open` : 'Secure'}
@@ -827,7 +837,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
           <div className="relative z-10 my-0.5">
             <div className="flex items-baseline gap-1.5">
-              <span className={`text-xl sm:text-2xl font-black font-mono ${openDoors.length > 0 ? 'text-amber-600 dark:text-amber-300' : 'text-slate-900 dark:text-white'}`}>
+              <span className={`text-xl sm:text-2xl font-black font-mono ${openDoors.length > 0 ? 'text-amber-900 dark:text-amber-300' : 'text-slate-900 dark:text-white'}`}>
                 {openDoors.length}
               </span>
               <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">/ {doorSensors.length} Doors</span>
@@ -850,7 +860,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
             openWindows.length > 0
               ? darkMode
                 ? 'bg-slate-900/90 hover:bg-slate-900 border-amber-500/30 hover:border-amber-400/60 text-white'
-                : 'bg-amber-50/80 hover:bg-amber-50 border-amber-200/90 hover:border-amber-300 text-slate-900'
+                : 'bg-amber-50/90 hover:bg-amber-50 border-amber-200 hover:border-amber-300 text-slate-900 shadow-2xs'
               : darkMode
                 ? 'bg-slate-900/80 hover:bg-slate-900 border-white/10 hover:border-white/20 text-white'
                 : 'bg-white/80 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/40'
@@ -859,15 +869,19 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center border shadow-xs transition-all ${
               openWindows.length > 0
-                ? 'bg-amber-500/20 border-amber-400/40 text-amber-600 dark:text-amber-300 animate-pulse'
+                ? darkMode
+                  ? 'bg-amber-500/20 border-amber-400/40 text-amber-300 animate-pulse'
+                  : 'bg-amber-100/90 border-amber-300/60 text-amber-800'
                 : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
             }`}>
-              <FrameCorners size={20} weight="duotone" className={openWindows.length > 0 ? 'text-amber-600 dark:text-amber-300' : 'text-emerald-600 dark:text-emerald-400'} />
+              <FrameCorners size={20} weight="duotone" className={openWindows.length > 0 ? (darkMode ? 'text-amber-300' : 'text-amber-800') : 'text-emerald-600 dark:text-emerald-400'} />
             </div>
 
             <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
               openWindows.length > 0
-                ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                ? darkMode
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                  : 'bg-amber-100 text-amber-950 border-amber-300/60 font-bold'
                 : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
             }`}>
               {openWindows.length > 0 ? `${openWindows.length} Open` : 'Sealed'}
@@ -876,7 +890,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
           <div className="relative z-10 my-0.5">
             <div className="flex items-baseline gap-1.5">
-              <span className={`text-xl sm:text-2xl font-black font-mono ${openWindows.length > 0 ? 'text-amber-600 dark:text-amber-300' : 'text-slate-900 dark:text-white'}`}>
+              <span className={`text-xl sm:text-2xl font-black font-mono ${openWindows.length > 0 ? 'text-amber-900 dark:text-amber-300' : 'text-slate-900 dark:text-white'}`}>
                 {openWindows.length}
               </span>
               <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">/ {windowSensors.length} Windows</span>
@@ -899,7 +913,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
             activeMotion.length > 0
               ? darkMode
                 ? 'bg-slate-900/90 hover:bg-slate-900 border-amber-500/30 hover:border-amber-400/60 text-white'
-                : 'bg-amber-50/80 hover:bg-amber-50 border-amber-200/90 hover:border-amber-300 text-slate-900'
+                : 'bg-amber-50/90 hover:bg-amber-50 border-amber-200 hover:border-amber-300 text-slate-900 shadow-2xs'
               : darkMode
                 ? 'bg-slate-900/80 hover:bg-slate-900 border-white/10 hover:border-white/20 text-white'
                 : 'bg-white/80 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-slate-200/40'
@@ -908,7 +922,9 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center border shadow-xs transition-all ${
               activeMotion.length > 0
-                ? 'bg-amber-500/20 border-amber-400/40 text-amber-600 dark:text-amber-300'
+                ? darkMode
+                  ? 'bg-amber-500/20 border-amber-400/40 text-amber-300'
+                  : 'bg-amber-100/90 border-amber-300/60 text-amber-800'
                 : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
             }`}>
               <PersonSimpleWalk size={20} weight="duotone" />
@@ -916,7 +932,9 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
             <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
               activeMotion.length > 0
-                ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                ? darkMode
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                  : 'bg-amber-100 text-amber-950 border-amber-300/60 font-bold'
                 : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
             }`}>
               {activeMotion.length > 0 ? 'Motion' : 'Clear'}

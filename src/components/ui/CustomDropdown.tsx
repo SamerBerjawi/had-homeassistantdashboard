@@ -128,8 +128,8 @@ export default function CustomDropdown({
   };
 
   const sizeClasses = {
-    sm: 'h-8 px-2.5 text-[11px] rounded-xl gap-1.5',
-    md: 'h-[38px] px-3.5 text-xs rounded-xl gap-2',
+    sm: 'h-8 px-3 text-xs rounded-xl gap-2',
+    md: 'h-9 px-3.5 text-xs rounded-2xl gap-2',
     lg: 'h-11 px-4 text-sm rounded-2xl gap-2.5'
   }[size];
 
@@ -146,12 +146,12 @@ export default function CustomDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(prev => !prev)}
-        className={`w-full flex items-center justify-between font-semibold border transition-all cursor-pointer select-none shadow-2xs ${sizeClasses} ${
+        className={`w-full flex items-center justify-between font-bold border transition-all cursor-pointer select-none backdrop-blur-md shadow-2xs ${sizeClasses} ${
           disabled
             ? 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400'
             : isOpen
-              ? 'bg-white dark:bg-slate-900 border-sky-500 ring-2 ring-sky-500/20 text-slate-900 dark:text-white shadow-md'
-              : 'bg-slate-100/90 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 border-slate-300/80 dark:border-white/15 text-slate-800 dark:text-slate-200 hover:border-slate-400 dark:hover:border-white/25'
+              ? 'bg-white/95 dark:bg-slate-900/95 border-cyan-500/80 ring-2 ring-cyan-500/20 text-slate-950 dark:text-white shadow-md'
+              : 'bg-slate-900/[0.04] hover:bg-white/90 dark:bg-white/5 dark:hover:bg-white/10 border-slate-900/[0.08] dark:border-white/10 text-slate-800 dark:text-slate-200 hover:border-slate-300 dark:hover:border-white/20'
         }`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
@@ -163,17 +163,17 @@ export default function CustomDropdown({
             {selectedOption ? selectedOption.label : placeholder}
           </span>
           {selectedOption?.badge && (
-            <span className="px-1.5 py-0.2 rounded-md bg-sky-500/15 text-sky-600 dark:text-sky-400 text-[9px] font-bold shrink-0">
+            <span className="px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-800 dark:text-cyan-300 border border-cyan-500/30 text-[9px] font-extrabold shrink-0">
               {selectedOption.badge}
             </span>
           )}
         </div>
 
         <CaretDown
-          size={14}
+          size={13}
           weight="bold"
           className={`shrink-0 text-slate-400 dark:text-slate-400 transition-transform duration-200 ml-2 ${
-            isOpen ? 'rotate-180 text-sky-500' : ''
+            isOpen ? 'rotate-180 text-cyan-500' : ''
           }`}
         />
       </button>
@@ -186,7 +186,7 @@ export default function CustomDropdown({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: actualPlacement === 'top' ? 4 : -4, scale: 0.98 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className={`absolute z-70 w-full min-w-[180px] rounded-2xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-white/20 shadow-2xl overflow-hidden ${
+            className={`absolute z-70 w-full min-w-[200px] rounded-2xl border bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-slate-200/90 dark:border-white/15 shadow-2xl overflow-hidden ${
               actualPlacement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
             } ${menuClassName}`}
             style={{ maxHeight: '260px' }}
@@ -202,7 +202,7 @@ export default function CustomDropdown({
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-8 pr-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-white/10 border-0 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden"
+                    className="w-full pl-8 pr-2.5 py-1.5 text-xs rounded-xl bg-slate-100 dark:bg-white/10 border-0 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden"
                   />
                 </div>
               </div>
@@ -228,8 +228,8 @@ export default function CustomDropdown({
                         option.disabled
                           ? 'opacity-40 cursor-not-allowed text-slate-400'
                           : isSelected
-                            ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 font-black'
-                            : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
+                            ? 'bg-cyan-500/15 text-cyan-900 dark:text-cyan-300 font-black'
+                            : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-white/10'
                       }`}
                       role="option"
                       aria-selected={isSelected}
@@ -248,13 +248,11 @@ export default function CustomDropdown({
 
                       <div className="flex items-center gap-1.5 shrink-0 ml-2">
                         {option.badge && (
-                          <span className="px-1.5 py-0.5 rounded-md bg-slate-200/80 dark:bg-white/10 text-slate-600 dark:text-slate-400 text-[9px] font-bold">
+                          <span className="px-1.5 py-0.2 rounded-md bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300 text-[9px] font-bold">
                             {option.badge}
                           </span>
                         )}
-                        {isSelected && (
-                          <Check size={14} weight="bold" className="text-sky-500 shrink-0" />
-                        )}
+                        {isSelected && <Check size={14} weight="bold" className="text-cyan-600 dark:text-cyan-400" />}
                       </div>
                     </button>
                   );

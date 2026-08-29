@@ -38,7 +38,7 @@ export default function FinancialCostCard({
   const isNetPositive = netCost <= 0; // Net earnings/savings
 
   return (
-    <div className={`relative w-full rounded-3xl p-5 sm:p-7 border backdrop-blur-xl transition-all duration-300 overflow-hidden flex flex-col justify-between ${
+    <div className={`relative w-full rounded-3xl p-5 sm:p-7 border backdrop-blur-md transition-all duration-300 overflow-hidden flex flex-col justify-between ${
       darkMode 
         ? 'bg-black/60 border-white/10 text-white shadow-2xl' 
         : 'bg-white/70 border-slate-200/90 text-slate-900 shadow-lg'

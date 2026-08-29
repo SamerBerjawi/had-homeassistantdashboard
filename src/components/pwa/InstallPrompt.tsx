@@ -115,7 +115,7 @@ export const InstallPrompt: React.FC = () => {
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           className="fixed bottom-4 left-4 sm:left-auto sm:right-4 z-50 max-w-sm w-[calc(100vw-2rem)] sm:w-auto"
         >
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/90 dark:bg-black/85 backdrop-blur-xl border border-sky-500/30 dark:border-white/15 text-white shadow-2xl shadow-sky-500/10 flex items-center justify-between gap-3">
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/90 dark:bg-black/85 backdrop-blur-md border border-sky-500/30 dark:border-white/15 text-white shadow-2xl shadow-sky-500/10 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-xl bg-linear-to-br from-sky-400 to-indigo-600 flex items-center justify-center shrink-0 shadow-md">
                 <Sparkle size={20} weight="fill" className="text-white" />
@@ -166,7 +166,7 @@ export const InstallPrompt: React.FC = () => {
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-50 max-w-sm mx-auto sm:mx-0"
         >
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/95 dark:bg-black/90 backdrop-blur-xl border border-sky-500/30 dark:border-white/15 text-white shadow-2xl">
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/95 dark:bg-black/90 backdrop-blur-md border border-sky-500/30 dark:border-white/15 text-white shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-linear-to-br from-sky-400 to-indigo-600 flex items-center justify-center shrink-0 shadow-md">

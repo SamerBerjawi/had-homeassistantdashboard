@@ -35,10 +35,10 @@ export default function CameraFeedSection({
   cameraEntities,
   columns = 4
 }: CameraFeedSectionProps) {
-  const { domainGroups, serverUrl } = useAutoLayoutStore();
+  const { domainGroups, serverUrl, areasMap } = useAutoLayoutStore();
   const [selectedCamera, setSelectedCamera] = useState<ResolvedEntity | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [areaFilter, setAreaFilter] = useState<'all' | 'perimeter' | 'garage' | 'indoors'>('all');
+  const [areaFilter, setAreaFilter] = useState<string>('all');
   const [snapshottingId, setSnapshottingId] = useState<string | null>(null);
 
   // Fallback cameras if none in registry
@@ -135,15 +135,65 @@ export default function CameraFeedSection({
 
   const activeCameras = cameraEntities.length > 0 ? cameraEntities : defaultCameras;
 
-  const filteredCameras = activeCameras.filter(c => {
-    if (areaFilter === 'all') return true;
-    const id = c.entity_id.toLowerCase();
-    const name = (c.name || '').toLowerCase();
-    if (areaFilter === 'perimeter') return id.includes('entrance') || id.includes('doorbell') || id.includes('backyard') || name.includes('patio');
-    if (areaFilter === 'garage') return id.includes('garage') || id.includes('driveway') || name.includes('driveway');
-    if (areaFilter === 'indoors') return id.includes('indoor') || id.includes('living') || name.includes('room');
-    return true;
-  });
+  // Dynamically derive filters matching the actual loaded camera feeds
+  const filterTabs = React.useMemo(() => {
+    const tabs: { id: string; label: string; count: number }[] = [
+      { id: 'all', label: 'All Feeds', count: activeCameras.length }
+    ];
+
+    // Extract area groupings or individual camera locations
+    const areaCounts: Record<string, { label: string; count: number }> = {};
+    activeCameras.forEach(cam => {
+      const rawAreaId = cam.area_id || '';
+      const resolvedAreaName = rawAreaId && areasMap[rawAreaId]?.name 
+        ? areasMap[rawAreaId].name 
+        : rawAreaId 
+          ? rawAreaId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+          : (cam.name || cam.attributes?.friendly_name || cam.entity_id.replace('camera.', '')).split(' ')[0];
+      
+      const filterKey = rawAreaId || cam.entity_id;
+      if (!areaCounts[filterKey]) {
+        areaCounts[filterKey] = { label: resolvedAreaName, count: 0 };
+      }
+      areaCounts[filterKey].count += 1;
+    });
+
+    const distinctKeys = Object.keys(areaCounts);
+    if (distinctKeys.length > 1) {
+      distinctKeys.forEach(key => {
+        tabs.push({
+          id: key,
+          label: areaCounts[key].label,
+          count: areaCounts[key].count
+        });
+      });
+    } else {
+      // If all cameras are in the same area or unassigned, list individual camera names
+      activeCameras.forEach(cam => {
+        const shortName = cam.name || cam.attributes?.friendly_name || cam.entity_id.replace('camera.', '');
+        tabs.push({
+          id: cam.entity_id,
+          label: shortName,
+          count: 1
+        });
+      });
+    }
+
+    return tabs;
+  }, [activeCameras, areasMap]);
+
+  // Filter cameras based on active dynamic filter
+  const filteredCameras = React.useMemo(() => {
+    if (areaFilter === 'all') return activeCameras;
+    return activeCameras.filter(c => {
+      if (c.entity_id === areaFilter) return true;
+      if (c.area_id && c.area_id === areaFilter) return true;
+      const areaName = c.area_id && areasMap[c.area_id]?.name ? areasMap[c.area_id].name.toLowerCase() : '';
+      if (areaName && areaName === areaFilter.toLowerCase()) return true;
+      const camName = (c.name || c.attributes?.friendly_name || '').toLowerCase();
+      return camName.includes(areaFilter.toLowerCase());
+    });
+  }, [activeCameras, areaFilter, areasMap]);
 
   const handleOpenStream = (camera: ResolvedEntity) => {
     setSelectedCamera(camera);
@@ -162,36 +212,43 @@ export default function CameraFeedSection({
       {/* Header with Camera Counter & Filters */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-2xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+          <div className="p-2 rounded-2xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30">
             <VideoCamera size={20} weight="duotone" />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-black tracking-tight flex items-center gap-2">
+            <h3 className="text-base sm:text-lg font-black tracking-tight flex items-center gap-2 text-slate-900 dark:text-white">
               <span>Live Surveillance Feeds</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 font-mono font-bold">
-                {cameraEntities.length} Feeds
+              <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 border border-cyan-500/30 font-mono font-bold">
+                {activeCameras.length} Feeds
               </span>
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
               Low-latency WebRTC streams with live motion detection
             </p>
           </div>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs font-semibold">
-          {(['all', 'perimeter', 'garage', 'indoors'] as const).map((filter) => (
+        {/* Dynamic Filter Tabs */}
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-900/[0.04] dark:bg-white/5 border border-slate-900/[0.08] dark:border-white/10 text-xs font-semibold backdrop-blur-md overflow-x-auto max-w-full custom-scrollbar">
+          {filterTabs.map((tab) => (
             <button
-              key={filter}
+              key={tab.id}
               type="button"
-              onClick={() => setAreaFilter(filter)}
-              className={`px-3 py-1.5 rounded-xl capitalize transition-all cursor-pointer ${
-                areaFilter === filter
-                  ? 'bg-white dark:bg-cyan-500 text-slate-900 dark:text-slate-950 font-bold shadow-sm'
+              onClick={() => setAreaFilter(tab.id)}
+              className={`px-3 py-1.5 rounded-xl capitalize transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                areaFilter === tab.id
+                  ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              {filter}
+              <span>{tab.label}</span>
+              {tab.id !== 'all' && (
+                <span className={`text-[10px] px-1 py-0.2 rounded-full font-bold ${
+                  areaFilter === tab.id ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-900/[0.06] dark:bg-white/10 text-slate-500 dark:text-slate-400'
+                }`}>
+                  {tab.count}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -216,10 +273,10 @@ export default function CameraFeedSection({
             <div
               key={camera.entity_id}
               onClick={() => handleOpenStream(camera)}
-              className={`rounded-3xl border overflow-hidden backdrop-blur-xl transition-all duration-300 group cursor-pointer hover:shadow-xl ${
+              className={`rounded-3xl border overflow-hidden backdrop-blur-md transition-all duration-300 group cursor-pointer hover:shadow-xl ${
                 darkMode
                   ? 'bg-black/60 hover:bg-black/80 border-white/10 hover:border-cyan-500/40 text-white'
-                  : 'bg-white/80 hover:bg-white border-slate-200 hover:border-cyan-400 text-slate-900 shadow-sm'
+                  : 'bg-white/70 hover:bg-white/90 border-slate-200/80 hover:border-cyan-500/40 text-slate-900 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]'
               }`}
             >
               {/* Video Stream Frame with Native HA WebRTC (go2rtc-backed) engine */}

@@ -452,7 +452,7 @@ export default function Go2RtcPlayer({
       {showConfigModal && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute inset-0 bg-black/85 backdrop-blur-xl z-30 p-5 flex flex-col justify-between animate-in fade-in"
+          className="absolute inset-0 bg-black/85 backdrop-blur-md z-30 p-5 flex flex-col justify-between animate-in fade-in"
         >
           <div className="space-y-3">
             <div className="flex items-center justify-between">

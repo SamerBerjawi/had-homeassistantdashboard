@@ -242,7 +242,7 @@ export default function FloorAreaSensorsSection({
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Floor Switcher */}
         <div className={`flex flex-wrap items-center p-1 rounded-2xl border backdrop-blur-md ${
-          darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'
+          darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-900/[0.03] border-slate-900/[0.06]'
         }`}>
           {floorTabs.map((floor) => (
             <button
@@ -252,8 +252,8 @@ export default function FloorAreaSensorsSection({
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedFloorId === floor.floor_id
                   ? darkMode
-                    ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                    : 'bg-amber-500 text-slate-900 shadow-xs'
+                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                    : 'bg-amber-500 text-slate-950 shadow-xs'
                   : darkMode
                     ? 'text-slate-400 hover:text-white'
                     : 'text-slate-600 hover:text-slate-900'
@@ -266,7 +266,7 @@ export default function FloorAreaSensorsSection({
 
         {/* Category Filter Chips */}
         <div className={`flex flex-wrap items-center p-1 rounded-2xl border backdrop-blur-md ${
-          darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'
+          darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-900/[0.03] border-slate-900/[0.06]'
         }`}>
           {[
             { id: 'all' as const, label: 'All' },
@@ -282,7 +282,7 @@ export default function FloorAreaSensorsSection({
               className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeCategory === cat.id
                   ? darkMode
-                    ? 'bg-emerald-500 text-black shadow-xs'
+                    ? 'bg-emerald-500 text-slate-950 shadow-xs'
                     : 'bg-emerald-600 text-white shadow-xs'
                   : darkMode
                     ? 'text-slate-400 hover:text-white'
@@ -298,8 +298,8 @@ export default function FloorAreaSensorsSection({
       {/* Area Cards Container */}
       <div className="space-y-4">
         {filteredAreas.length === 0 ? (
-          <div className={`p-8 rounded-3xl border text-center ${
-            darkMode ? 'bg-black/30 border-white/10 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
+          <div className={`p-8 rounded-3xl border text-center backdrop-blur-md ${
+            darkMode ? 'bg-black/30 border-white/10 text-slate-400' : 'bg-white/70 border-slate-200/80 text-slate-600'
           }`}>
             <p className="text-sm font-semibold">No sensors found matching the active floor or category filter.</p>
             <button
@@ -309,7 +309,7 @@ export default function FloorAreaSensorsSection({
                 handleCategoryChange('all');
                 setSearchQuery('');
               }}
-              className="mt-2 text-xs font-bold text-emerald-400 hover:underline cursor-pointer"
+              className="mt-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
             >
               Reset Filters
             </button>
@@ -331,34 +331,38 @@ export default function FloorAreaSensorsSection({
             return (
               <div
                 key={area.area_id}
-                className={`rounded-3xl border backdrop-blur-xl overflow-hidden transition-all duration-300 ${
+                className={`rounded-3xl border backdrop-blur-md overflow-hidden transition-all duration-300 ${
                   isAreaBreached
                     ? darkMode
                       ? 'bg-black/60 border-amber-500/30'
-                      : 'bg-white/90 border-amber-300 shadow-sm'
+                      : 'bg-white/85 border-amber-400/40 shadow-[0_4px_24px_-6px_rgba(245,158,11,0.15)]'
                     : darkMode
                       ? 'bg-black/40 border-white/10'
-                      : 'bg-white/80 border-slate-200 shadow-sm'
+                      : 'bg-white/70 border-slate-200/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]'
                 }`}
               >
                 {/* Area Header Bar with Room Picture & Status Chips */}
-                <div className="p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3 border-b border-white/10">
+                <div className={`p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3 border-b ${
+                  darkMode ? 'border-white/10' : 'border-slate-200/80'
+                }`}>
                   <div className="flex items-center gap-3">
                     {area.picture ? (
                       <img
                         src={area.picture}
                         alt={area.name}
-                        className="w-10 h-10 rounded-2xl object-cover border border-white/10"
+                        className={`w-10 h-10 rounded-2xl object-cover border ${darkMode ? 'border-white/10' : 'border-slate-200'}`}
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center font-bold text-slate-300">
+                      <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center font-bold ${
+                        darkMode ? 'bg-white/10 border-white/10 text-slate-300' : 'bg-slate-900/[0.04] border-slate-900/[0.08] text-slate-700'
+                      }`}>
                         {area.name.charAt(0)}
                       </div>
                     )}
 
                     <div>
-                      <h3 className="text-sm sm:text-base font-black tracking-tight">{area.name}</h3>
-                      <p className="text-[11px] text-slate-400 capitalize">
+                      <h3 className="text-sm sm:text-base font-black tracking-tight text-slate-900 dark:text-white">{area.name}</h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 capitalize">
                         {area.floor_id ? area.floor_id.replace('floor_', '').replace('_', ' ') : 'Area'} • {sec.totalCount} Security Sensors
                       </p>
                     </div>
@@ -368,10 +372,14 @@ export default function FloorAreaSensorsSection({
                   <div className="flex flex-wrap items-center gap-1.5">
                     {/* Locks Status */}
                     {sec.locks.length > 0 && (
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 border ${
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 border backdrop-blur-md ${
                         unlockedLocksList.length > 0
-                          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                          : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                          ? darkMode
+                            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                            : 'bg-amber-500/10 text-amber-800 border-amber-500/25'
+                          : darkMode
+                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                            : 'bg-emerald-500/10 text-emerald-800 border-emerald-500/25'
                       }`}>
                         {unlockedLocksList.length > 0 ? <LockOpen size={12} weight="bold" /> : <Lock size={12} weight="bold" />}
                         <span>{unlockedLocksList.length > 0 ? `${unlockedLocksList.length} Unlocked` : `${sec.locks.length} Locked`}</span>
@@ -380,10 +388,14 @@ export default function FloorAreaSensorsSection({
 
                     {/* Openings Status */}
                     {(sec.doors.length > 0 || sec.windows.length > 0) && (
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 border ${
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 border backdrop-blur-md ${
                         totalOpenOpenings > 0
-                          ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                          : 'bg-white/5 text-slate-400 border-white/10'
+                          ? darkMode
+                            ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                            : 'bg-rose-500/10 text-rose-800 border-rose-500/25'
+                          : darkMode
+                            ? 'bg-white/5 text-slate-400 border-white/10'
+                            : 'bg-slate-900/[0.04] text-slate-600 border-slate-900/[0.08]'
                       }`}>
                         {totalOpenOpenings > 0 ? <DoorOpen size={12} weight="bold" /> : <Door size={12} weight="bold" />}
                         <span>{totalOpenOpenings > 0 ? `${totalOpenOpenings} Open` : 'Closed'}</span>
@@ -392,10 +404,14 @@ export default function FloorAreaSensorsSection({
 
                     {/* Motion Status */}
                     {sec.motion.length > 0 && (
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 border ${
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 border backdrop-blur-md ${
                         activeMotionList.length > 0
-                          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
-                          : 'bg-white/5 text-slate-400 border-white/10'
+                          ? darkMode
+                            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
+                            : 'bg-amber-50/95 text-amber-950 border-amber-200/90 shadow-2xs animate-pulse'
+                          : darkMode
+                            ? 'bg-white/5 text-slate-400 border-white/10'
+                            : 'bg-slate-900/[0.04] text-slate-600 border-slate-900/[0.08]'
                       }`}>
                         <PersonSimpleWalk size={12} weight="bold" />
                         <span>{activeMotionList.length > 0 ? 'Motion' : 'Idle'}</span>
@@ -417,28 +433,32 @@ export default function FloorAreaSensorsSection({
                       return (
                         <div
                           key={lock.entity_id}
-                          className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                          className={`p-3 rounded-2xl border backdrop-blur-md transition-all flex items-center justify-between gap-3 ${
                             isLocked
                               ? darkMode
                                 ? 'bg-white/5 border-emerald-500/30'
-                                : 'bg-white border-emerald-200 shadow-2xs'
+                                : 'bg-white/80 hover:bg-white border-emerald-500/25 shadow-2xs'
                               : darkMode
                                 ? 'bg-amber-500/15 border-amber-500/40'
-                                : 'bg-amber-50 border-amber-300 shadow-2xs'
+                                : 'bg-amber-500/10 hover:bg-amber-500/15 border-amber-500/30 shadow-2xs'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${
                               isLocked
-                                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                                : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                                ? darkMode
+                                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                                  : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-700'
+                                : darkMode
+                                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                                  : 'bg-amber-500/10 border-amber-500/25 text-amber-700'
                             }`}>
                               {isLocked ? <Lock size={16} weight="duotone" /> : <LockOpen size={16} weight="duotone" />}
                             </div>
 
                             <div className="min-w-0 flex-1">
-                              <h5 className="text-xs font-bold truncate">{lock.name || lock.entity_id}</h5>
-                              <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                              <h5 className="text-xs font-bold truncate text-slate-900 dark:text-white">{lock.name || lock.entity_id}</h5>
+                              <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
                                 <span>{isLocked ? 'Locked' : 'Unlocked'}</span>
                                 {battery !== undefined && (
                                   <>
@@ -459,8 +479,10 @@ export default function FloorAreaSensorsSection({
                             disabled={isToggling}
                             className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all cursor-pointer active:scale-95 shrink-0 ${
                               isLocked
-                                ? 'bg-white/10 hover:bg-white/20 border-white/10 text-white'
-                                : 'bg-amber-500 text-black border-amber-400 shadow-xs'
+                                ? darkMode
+                                  ? 'bg-white/10 hover:bg-white/20 border-white/10 text-white'
+                                  : 'bg-slate-900/[0.05] hover:bg-slate-900/[0.09] border-slate-900/[0.08] text-slate-800'
+                                : 'bg-amber-500 text-slate-950 border-amber-400 shadow-xs font-black'
                             }`}
                           >
                             {isToggling ? '...' : isLocked ? 'Unlock' : 'Lock'}
@@ -479,21 +501,25 @@ export default function FloorAreaSensorsSection({
                       return (
                         <div
                           key={sensor.entity_id}
-                          className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                          className={`p-3 rounded-2xl border backdrop-blur-md transition-all flex items-center justify-between gap-3 ${
                             isOpen
                               ? darkMode
                                 ? 'bg-rose-500/15 border-rose-500/40'
-                                : 'bg-rose-50 border-rose-300 shadow-2xs'
+                                : 'bg-rose-500/10 hover:bg-rose-500/15 border-rose-500/25 shadow-2xs'
                               : darkMode
                                 ? 'bg-white/5 border-white/10'
-                                : 'bg-white border-slate-200 shadow-2xs'
+                                : 'bg-white/80 hover:bg-white border-slate-200/80 shadow-2xs'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${
                               isOpen
-                                ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
-                                : 'bg-white/10 border-white/15 text-slate-400'
+                                ? darkMode
+                                  ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
+                                  : 'bg-rose-500/10 border-rose-500/25 text-rose-700'
+                                : darkMode
+                                  ? 'bg-white/10 border-white/15 text-slate-400'
+                                  : 'bg-slate-900/[0.04] border-slate-900/[0.08] text-slate-600'
                             }`}>
                               {isDoor ? (
                                 isOpen ? <DoorOpen size={16} weight="duotone" /> : <Door size={16} weight="duotone" />
@@ -503,9 +529,9 @@ export default function FloorAreaSensorsSection({
                             </div>
 
                             <div className="min-w-0 flex-1">
-                              <h5 className="text-xs font-bold truncate">{sensor.name || sensor.entity_id}</h5>
-                              <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                                <span className={isOpen ? 'text-rose-400 font-bold' : ''}>
+                              <h5 className="text-xs font-bold truncate text-slate-900 dark:text-white">{sensor.name || sensor.entity_id}</h5>
+                              <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
+                                <span className={isOpen ? 'text-rose-600 dark:text-rose-400 font-bold' : ''}>
                                   {isOpen ? 'Open' : 'Closed'}
                                 </span>
                                 {battery !== undefined && (
@@ -522,7 +548,11 @@ export default function FloorAreaSensorsSection({
                           </div>
 
                           <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
-                            isOpen ? 'bg-rose-500 text-white' : 'bg-emerald-500/15 text-emerald-400'
+                            isOpen
+                              ? 'bg-rose-500 text-white'
+                              : darkMode
+                                ? 'bg-emerald-500/15 text-emerald-400'
+                                : 'bg-emerald-500/10 text-emerald-700'
                           }`}>
                             {isOpen ? 'Open' : 'Secure'}
                           </span>
@@ -534,40 +564,47 @@ export default function FloorAreaSensorsSection({
                   {(activeCategory === 'all' || activeCategory === 'motion') &&
                     sec.motion.map((motion) => {
                       const isActive = motion.state === 'on';
-                      const battery = motion.attributes?.battery;
 
                       return (
                         <div
                           key={motion.entity_id}
-                          className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                          className={`p-3 rounded-2xl border backdrop-blur-md transition-all flex items-center justify-between gap-3 ${
                             isActive
                               ? darkMode
                                 ? 'bg-amber-500/15 border-amber-500/40'
-                                : 'bg-amber-50 border-amber-300 shadow-2xs'
+                                : 'bg-amber-500/10 hover:bg-amber-500/15 border-amber-500/25 shadow-2xs'
                               : darkMode
                                 ? 'bg-white/5 border-white/10'
-                                : 'bg-white border-slate-200 shadow-2xs'
+                                : 'bg-white/80 hover:bg-white border-slate-200/80 shadow-2xs'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${
                               isActive
-                                ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
-                                : 'bg-white/10 border-white/15 text-slate-400'
+                                ? darkMode
+                                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
+                                  : 'bg-amber-500/10 border-amber-500/25 text-amber-700'
+                                : darkMode
+                                  ? 'bg-white/10 border-white/15 text-slate-400'
+                                  : 'bg-slate-900/[0.04] border-slate-900/[0.08] text-slate-600'
                             }`}>
                               <PersonSimpleWalk size={16} weight="duotone" />
                             </div>
 
                             <div className="min-w-0 flex-1">
-                              <h5 className="text-xs font-bold truncate">{motion.name || motion.entity_id}</h5>
-                              <span className="text-[10px] text-slate-400">
+                              <h5 className="text-xs font-bold truncate text-slate-900 dark:text-white">{motion.name || motion.entity_id}</h5>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400">
                                 {isActive ? 'Active Motion' : 'Idle'}
                               </span>
                             </div>
                           </div>
 
                           <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
-                            isActive ? 'bg-amber-500 text-black' : 'bg-white/10 text-slate-400'
+                            isActive
+                              ? 'bg-amber-500 text-slate-950 font-black'
+                              : darkMode
+                                ? 'bg-white/10 text-slate-400'
+                                : 'bg-slate-900/[0.05] text-slate-600'
                           }`}>
                             {isActive ? 'Detected' : 'Clear'}
                           </span>
@@ -584,21 +621,25 @@ export default function FloorAreaSensorsSection({
                       return (
                         <div
                           key={hazard.entity_id}
-                          className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                          className={`p-3 rounded-2xl border backdrop-blur-md transition-all flex items-center justify-between gap-3 ${
                             isAlert
                               ? darkMode
                                 ? 'bg-rose-500/20 border-rose-500/50 animate-pulse'
-                                : 'bg-rose-100 border-rose-400 animate-pulse shadow-2xs'
+                                : 'bg-rose-500/15 border-rose-500/35 animate-pulse shadow-2xs'
                               : darkMode
                                 ? 'bg-white/5 border-white/10'
-                                : 'bg-white border-slate-200 shadow-2xs'
+                                : 'bg-white/80 hover:bg-white border-slate-200/80 shadow-2xs'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${
                               isAlert
-                                ? 'bg-rose-500/25 border-rose-500/40 text-rose-400'
-                                : 'bg-white/10 border-white/15 text-slate-400'
+                                ? darkMode
+                                  ? 'bg-rose-500/25 border-rose-500/40 text-rose-400'
+                                  : 'bg-rose-500/10 border-rose-500/25 text-rose-700'
+                                : darkMode
+                                  ? 'bg-white/10 border-white/15 text-slate-400'
+                                  : 'bg-slate-900/[0.04] border-slate-900/[0.08] text-slate-600'
                             }`}>
                               {isSmoke ? (
                                 <Flame size={16} weight="duotone" className={isAlert ? 'text-rose-500' : 'text-slate-400'} />
@@ -608,15 +649,19 @@ export default function FloorAreaSensorsSection({
                             </div>
 
                             <div className="min-w-0 flex-1">
-                              <h5 className="text-xs font-bold truncate">{hazard.name || hazard.entity_id}</h5>
-                              <span className="text-[10px] text-slate-400">
+                              <h5 className="text-xs font-bold truncate text-slate-900 dark:text-white">{hazard.name || hazard.entity_id}</h5>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400">
                                 {isAlert ? 'Safety Warning' : 'Normal'}
                               </span>
                             </div>
                           </div>
 
                           <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
-                            isAlert ? 'bg-rose-500 text-white' : 'bg-emerald-500/15 text-emerald-400'
+                            isAlert
+                              ? 'bg-rose-500 text-white'
+                              : darkMode
+                                ? 'bg-emerald-500/15 text-emerald-400'
+                                : 'bg-emerald-500/10 text-emerald-700'
                           }`}>
                             {isAlert ? 'Alert' : 'Normal'}
                           </span>

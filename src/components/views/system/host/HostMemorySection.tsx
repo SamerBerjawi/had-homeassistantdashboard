@@ -21,10 +21,10 @@ export function HostMemorySection({
   darkMode = true
 }: HostMemorySectionProps) {
   const cardStyle =
-    'rounded-2xl border backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] ' +
+    'rounded-2xl border backdrop-blur-md transition-all shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] ' +
     (darkMode
-      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10'
-      : 'bg-white/80 border-slate-200/80 shadow-slate-100') +
+      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10 text-white'
+      : 'bg-white/70 border-slate-200/80 text-slate-900') +
     ' p-3.5 sm:p-4';
 
   // Threshold color: ~70/90
@@ -51,11 +51,11 @@ export function HostMemorySection({
     <div className="space-y-3">
       {/* Section Header */}
       <div className="flex items-center gap-2 px-1">
-        <Memory size={18} weight="duotone" className="text-indigo-400" />
+        <Memory size={18} weight="duotone" className="text-indigo-500 dark:text-indigo-400" />
         <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
           System Memory (RAM)
         </h3>
-        <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-400">
+        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-800 dark:text-indigo-400 border-indigo-500/25">
           Section 3
         </span>
       </div>

@@ -28,10 +28,10 @@ export default function MobilityView({ darkMode = true }: MobilityViewProps) {
       <div className="flex items-center justify-between flex-wrap gap-4">
         {/* Switcher Pills (Cleaned: No emojis) */}
         <div
-          className={`p-1.5 rounded-2xl border backdrop-blur-2xl flex items-center gap-1.5 transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.1)] ${
+          className={`p-1.5 rounded-2xl border backdrop-blur-md flex items-center gap-1.5 transition-all ${
             darkMode
               ? 'bg-slate-900/60 border-white/10'
-              : 'bg-white/85 border-slate-200 shadow-slate-100 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)]'
+              : 'bg-slate-900/[0.04] border-slate-900/[0.08] shadow-xs'
           }`}
         >
           {/* EV Tab */}
@@ -42,10 +42,10 @@ export default function MobilityView({ darkMode = true }: MobilityViewProps) {
               activeSubTab === 'car'
                 ? darkMode
                   ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
-                  : 'bg-cyan-600 text-white shadow-md shadow-cyan-600/20'
+                  : 'bg-cyan-500 text-slate-950 shadow-sm'
                 : darkMode
                 ? 'text-slate-400 hover:text-white hover:bg-white/5'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-900/[0.04]'
             }`}
           >
             <Car size={16} weight={activeSubTab === 'car' ? 'bold' : 'duotone'} />
@@ -60,10 +60,10 @@ export default function MobilityView({ darkMode = true }: MobilityViewProps) {
               activeSubTab === 'bike'
                 ? darkMode
                   ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
-                  : 'bg-amber-600 text-white shadow-md shadow-amber-600/20'
+                  : 'bg-amber-500 text-slate-950 shadow-sm'
                 : darkMode
                 ? 'text-slate-400 hover:text-white hover:bg-white/5'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-900/[0.04]'
             }`}
           >
             <Bicycle size={16} weight={activeSubTab === 'bike' ? 'bold' : 'duotone'} />

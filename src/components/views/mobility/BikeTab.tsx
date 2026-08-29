@@ -54,7 +54,7 @@ export function BikeTab({
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
 
   const cardStyle =
-    'rounded-3xl border backdrop-blur-2xl transition-all ' +
+    'rounded-3xl border backdrop-blur-md transition-all ' +
     (darkMode
       ? 'bg-slate-900/60 dark:bg-slate-900/50 border-white/10 text-white shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]'
       : 'bg-white/85 border-slate-200/90 text-slate-900 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)]') +
@@ -117,7 +117,7 @@ export function BikeTab({
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="fixed top-20 right-6 z-50 px-4 py-2.5 rounded-2xl bg-slate-950/90 text-white border border-amber-500/40 backdrop-blur-xl shadow-2xl flex items-center gap-2.5 text-xs font-bold"
+            className="fixed top-20 right-6 z-50 px-4 py-2.5 rounded-2xl bg-slate-950/90 text-white border border-amber-500/40 backdrop-blur-md shadow-2xl flex items-center gap-2.5 text-xs font-bold"
           >
             <Sparkle size={16} weight="duotone" className="text-amber-400 animate-spin" />
             <span>{actionFeedback}</span>

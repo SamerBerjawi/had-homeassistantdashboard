@@ -75,7 +75,7 @@ export const ConnectedClientsCard: React.FC<ConnectedClientsCardProps> = ({
     }
   };
 
-  const cardBaseStyle = `rounded-3xl p-4 sm:p-5 md:p-6 border backdrop-blur-xl transition-all duration-300 flex flex-col justify-between min-h-[340px] ${
+  const cardBaseStyle = `rounded-3xl p-4 sm:p-5 md:p-6 border backdrop-blur-md transition-all duration-300 flex flex-col justify-between min-h-[340px] ${
     darkMode
       ? 'bg-black/60 border-white/10 text-white shadow-xl hover:border-white/20'
       : 'bg-white/70 border-slate-200/90 text-slate-900 shadow-md hover:border-slate-300'

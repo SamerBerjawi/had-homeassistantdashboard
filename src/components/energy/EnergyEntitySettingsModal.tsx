@@ -186,7 +186,7 @@ export default function EnergyEntitySettingsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className={`relative w-full max-w-3xl max-h-[90vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden backdrop-blur-2xl transition-all ${
+        className={`relative w-full max-w-3xl max-h-[90vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden backdrop-blur-md transition-all ${
           darkMode 
             ? 'bg-[#0F141C]/95 border-white/15 text-white' 
             : 'bg-white/95 border-slate-200 text-slate-900'

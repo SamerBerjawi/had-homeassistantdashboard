@@ -140,7 +140,7 @@ function ToastItem({ toast, onDismiss, darkMode }: ToastItemProps) {
       animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
       exit={{ opacity: 0, scale: 0.9, y: -12, transition: { duration: 0.2 } }}
       transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-      className={`pointer-events-auto relative overflow-hidden rounded-2xl border p-3.5 sm:p-4 shadow-xl backdrop-blur-2xl transition-colors select-none ${
+      className={`pointer-events-auto relative overflow-hidden rounded-2xl border p-3.5 sm:p-4 shadow-xl backdrop-blur-md transition-colors select-none ${
         darkMode 
           ? 'bg-slate-900/85 border-white/15 text-slate-100 shadow-black/50' 
           : 'bg-white/90 border-white/80 text-slate-800 shadow-slate-300/60'

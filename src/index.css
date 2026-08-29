@@ -47,57 +47,67 @@ button, a, input, select, textarea, [role="button"], [tabindex] {
   --color-glass-white: rgba(255, 255, 255, 0.4);
 }
 
+/* Global WebKit backdrop-filter & filter blur acceleration for cross-browser parity */
+[class*="backdrop-blur"] {
+  -webkit-backdrop-filter: var(--tw-backdrop-blur);
+  backdrop-filter: var(--tw-backdrop-blur);
+}
+
 @layer utilities {
-  /* Apple HIG Frosted Glassmorphism Tokens */
+  /* Apple HIG Frosted Glassmorphism Tokens (Standardized to sm / md blurs) */
   .apple-glass-card {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
   }
   .dark .apple-glass-card {
-    background: rgba(15, 23, 42, 0.65);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
   }
 
   .apple-glass-subtle {
-    background: rgba(241, 245, 249, 0.6);
-    border: 1px solid rgba(0, 0, 0, 0.04);
+    background: rgba(241, 245, 249, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
   }
   .dark .apple-glass-subtle {
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .apple-glass-modal {
     background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(32px);
-    -webkit-backdrop-filter: blur(32px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
   }
   .dark .apple-glass-modal {
-    background: rgba(15, 23, 42, 0.92);
-    backdrop-filter: blur(32px);
-    -webkit-backdrop-filter: blur(32px);
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
   }
 
   .apple-glass-control {
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
   }
   .dark .apple-glass-control {
-    background: rgba(30, 41, 59, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(30, 41, 59, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
@@ -109,36 +119,36 @@ button, a, input, select, textarea, [role="button"], [tabindex] {
       radial-gradient(700px circle at 15% 85%, rgba(99, 102, 241, 0.05), transparent 60%);
   }
 
-  /* Refined Glassmorphism Tiers with Layered Backdrop Blurs */
+  /* Refined Glassmorphism Tiers with Compact Backdrop Blurs */
   .glass-card-sm {
-    background: rgba(255, 255, 255, 0.45);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
   }
   .glass-card-md {
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
   }
   .glass-card-lg {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(32px);
-    -webkit-backdrop-filter: blur(32px);
-    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
   }
   .glass-sidebar {
-    background: rgba(255, 255, 255, 0.35);
-    backdrop-filter: blur(36px);
-    -webkit-backdrop-filter: blur(36px);
-    border-right: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
   }
   .glass-panel {
-    background: rgba(255, 255, 255, 0.48);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.62);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
   }
 
   /* Tactile Noise Texture Overlay for Rich Depth */

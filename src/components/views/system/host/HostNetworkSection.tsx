@@ -25,21 +25,21 @@ export function HostNetworkSection({
   darkMode = true
 }: HostNetworkSectionProps) {
   const cardStyle =
-    'rounded-2xl border backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] ' +
+    'rounded-2xl border backdrop-blur-md transition-all shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] ' +
     (darkMode
-      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10'
-      : 'bg-white/80 border-slate-200/80 shadow-slate-100') +
+      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10 text-white'
+      : 'bg-white/70 border-slate-200/80 text-slate-900') +
     ' p-3.5 sm:p-4';
 
   return (
     <div className="space-y-3">
       {/* Section Header */}
       <div className="flex items-center gap-2 px-1">
-        <WifiHigh size={18} weight="duotone" className="text-cyan-400" />
+        <WifiHigh size={18} weight="duotone" className="text-cyan-500 dark:text-cyan-400" />
         <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
           Network Interface (end0)
         </h3>
-        <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-400">
+        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-800 dark:text-cyan-400 border-cyan-500/25">
           Section 5
         </span>
       </div>

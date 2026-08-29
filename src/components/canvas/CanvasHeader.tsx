@@ -114,7 +114,7 @@ export default function CanvasHeader({
         <div className="relative">
           <button
             onClick={() => setShowProfileMenu(!showProfileMenu)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-white backdrop-blur-xl shadow-lg transition-all cursor-pointer group"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-white backdrop-blur-md shadow-lg transition-all cursor-pointer group"
           >
             <Stack size={18} weight="duotone" className="text-[#9D8BFF] shrink-0" />
             <span className="text-sm font-extrabold tracking-tight">{activeProfile.name}</span>
@@ -128,7 +128,7 @@ export default function CanvasHeader({
                 className="fixed inset-0 z-30" 
                 onClick={() => setShowProfileMenu(false)} 
               />
-              <div className="absolute top-full left-0 mt-2 w-72 rounded-2xl bg-slate-900/95 backdrop-blur-2xl border border-white/20 p-2.5 shadow-2xl z-40 text-white space-y-1">
+              <div className="absolute top-full left-0 mt-2 w-72 rounded-2xl bg-slate-900/95 backdrop-blur-md border border-white/20 p-2.5 shadow-2xl z-40 text-white space-y-1">
                 <span className="text-[10px] font-black uppercase text-slate-400 px-2 py-1 block">
                   Dashboard Profiles
                 </span>
@@ -234,7 +234,7 @@ export default function CanvasHeader({
         <div className="relative">
           <button
             onClick={() => setShowWeatherMenu(!showWeatherMenu)}
-            className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-white backdrop-blur-xl shadow-lg transition-all cursor-pointer text-xs font-bold"
+            className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-white backdrop-blur-md shadow-lg transition-all cursor-pointer text-xs font-bold"
             title="Choose Animated Weather Backdrop"
           >
             <CloudSun size={16} weight="duotone" className="text-amber-400" />
@@ -247,7 +247,7 @@ export default function CanvasHeader({
           {showWeatherMenu && (
             <>
               <div className="fixed inset-0 z-30" onClick={() => setShowWeatherMenu(false)} />
-              <div className="absolute top-full right-0 mt-2 w-56 rounded-2xl bg-slate-900/95 backdrop-blur-2xl border border-white/20 p-2 shadow-2xl z-40 text-white space-y-1">
+              <div className="absolute top-full right-0 mt-2 w-56 rounded-2xl bg-slate-900/95 backdrop-blur-md border border-white/20 p-2 shadow-2xl z-40 text-white space-y-1">
                 <span className="text-[10px] font-black uppercase text-slate-400 px-2 py-1 block">
                   Atmospheric Backdrops
                 </span>
@@ -280,7 +280,7 @@ export default function CanvasHeader({
         {/* PIN Security Settings button */}
         <button
           onClick={() => onOpenPinModal(hasPinSet ? 'remove_pin' : 'set_pin')}
-          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer backdrop-blur-xl ${
+          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer backdrop-blur-md ${
             hasPinSet
               ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
               : 'bg-white/10 border-white/15 text-slate-400 hover:text-white'
@@ -293,7 +293,7 @@ export default function CanvasHeader({
         {/* Edit Mode vs Kiosk Mode Toggle */}
         <button
           onClick={onToggleEditMode}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border font-bold text-xs transition-all cursor-pointer shadow-lg backdrop-blur-xl ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border font-bold text-xs transition-all cursor-pointer shadow-lg backdrop-blur-md ${
             isEditMode
               ? 'bg-amber-500 hover:bg-amber-400 text-black border-amber-400 shadow-amber-500/25 scale-105'
               : 'bg-white/10 hover:bg-white/15 border-white/20 text-white'

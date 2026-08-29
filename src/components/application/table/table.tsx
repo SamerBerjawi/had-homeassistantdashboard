@@ -50,7 +50,7 @@ const TableContext = createContext<{ size: "sm" | "md" }>({ size: "md" });
 const TableCardRoot = ({ children, className, size = "md", ...props }: HTMLAttributes<HTMLDivElement> & { size?: "sm" | "md" }) => {
     return (
         <TableContext.Provider value={{ size }}>
-            <div {...props} className={cx("overflow-hidden rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xs backdrop-blur-xl", className)}>
+            <div {...props} className={cx("overflow-hidden rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xs backdrop-blur-md", className)}>
                 {children}
             </div>
         </TableContext.Provider>

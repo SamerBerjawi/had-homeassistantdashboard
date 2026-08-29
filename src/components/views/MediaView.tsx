@@ -10,7 +10,7 @@ export default function MediaView({ darkMode = true }: ViewProps) {
     <div className="w-full flex-1 flex flex-col">
       {/* 4-column mobile grid / adaptive desktop grid container */}
       <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-3.5 sm:gap-4.5">
-        <div className={`col-span-4 sm:col-span-6 md:col-span-8 lg:col-span-12 p-8 sm:p-12 rounded-3xl backdrop-blur-xl border flex flex-col items-center justify-center text-center transition-all duration-300 min-h-[360px] ${
+        <div className={`col-span-4 sm:col-span-6 md:col-span-8 lg:col-span-12 p-8 sm:p-12 rounded-3xl backdrop-blur-md border flex flex-col items-center justify-center text-center transition-all duration-300 min-h-[360px] ${
           darkMode 
             ? 'bg-black/60 border-white/10 text-white' 
             : 'bg-white/80 border-slate-200/90 text-slate-900 shadow-sm'

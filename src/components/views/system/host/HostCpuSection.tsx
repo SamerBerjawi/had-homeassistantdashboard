@@ -34,10 +34,10 @@ export function HostCpuSection({
   const [loadViewMode, setLoadViewMode] = useState<'unified' | 'split'>('unified');
 
   const cardStyle =
-    'rounded-2xl border backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] ' +
+    'rounded-2xl border backdrop-blur-md transition-all shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] ' +
     (darkMode
       ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10'
-      : 'bg-white/80 border-slate-200/80 shadow-slate-100') +
+      : 'bg-white/70 border-slate-200/80 text-slate-900') +
     ' p-3.5 sm:p-4';
 
   // Threshold colors matching NAS page conventions
@@ -79,11 +79,11 @@ export function HostCpuSection({
       {/* Section Header */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <Cpu size={18} weight="duotone" className="text-emerald-400" />
+          <Cpu size={18} weight="duotone" className="text-emerald-500 dark:text-emerald-400" />
           <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
             CPU &amp; Processor Load
           </h3>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400">
+          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border-emerald-500/25">
             Section 2
           </span>
         </div>
@@ -96,19 +96,19 @@ export function HostCpuSection({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch">
         {/* Left: 2 Gauges Side by Side (5 cols) */}
         <div className={`lg:col-span-5 ${cardStyle} flex flex-col justify-between`}>
-          <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/10">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-white/10">
             <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
               Processor Metrics
             </span>
-            <span className="text-[10px] text-slate-500 font-mono">60% / 85% Limits</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono font-semibold">60% / 85% Limits</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 py-2 items-center">
             {/* Processor Use Gauge */}
-            <div className="flex flex-col justify-between p-3 rounded-xl bg-white/[0.03] border border-slate-200/40 dark:border-white/5 min-h-[210px]">
-              <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/50 dark:border-white/5">
-                <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                  <Cpu size={13} weight="duotone" className="text-emerald-400" /> Use
+            <div className="flex flex-col justify-between p-3 rounded-xl bg-slate-900/[0.02] dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/5 min-h-[210px]">
+              <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/60 dark:border-white/5">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-300 flex items-center gap-1">
+                  <Cpu size={13} weight="duotone" className="text-emerald-500 dark:text-emerald-400" /> Use
                 </span>
                 <span
                   className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"

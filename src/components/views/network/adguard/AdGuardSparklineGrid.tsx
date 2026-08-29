@@ -217,7 +217,7 @@ export const AdGuardSparklineGrid: React.FC<AdGuardSparklineGridProps> = ({
           return (
             <div
               key={card.id}
-              className={`relative overflow-hidden rounded-2xl border backdrop-blur-xl transition-all p-4.5 flex flex-col justify-between min-h-[140px] ${cardBgStyle}`}
+              className={`relative overflow-hidden rounded-2xl border backdrop-blur-md transition-all p-4.5 flex flex-col justify-between min-h-[140px] ${cardBgStyle}`}
             >
               {/* Top Row: Big Primary Metric + Top-Right Percentage Badge */}
               <div className="flex items-start justify-between">

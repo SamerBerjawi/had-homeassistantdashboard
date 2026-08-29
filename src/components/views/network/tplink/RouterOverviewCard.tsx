@@ -44,7 +44,7 @@ export const RouterOverviewCard: React.FC<RouterOverviewCardProps> = ({
   const cpuColor = metrics.cpuUsage > 80 ? '#F43F5E' : metrics.cpuUsage > 60 ? '#F59E0B' : '#06B6D4';
   const memColor = metrics.memoryUsage > 80 ? '#F43F5E' : metrics.memoryUsage > 60 ? '#F59E0B' : '#8B5CF6';
 
-  const cardBaseStyle = `rounded-3xl p-4 sm:p-5 md:p-6 border backdrop-blur-xl transition-all duration-300 flex flex-col justify-between min-h-[360px] sm:min-h-[400px] ${
+  const cardBaseStyle = `rounded-3xl p-4 sm:p-5 md:p-6 border backdrop-blur-md transition-all duration-300 flex flex-col justify-between min-h-[360px] sm:min-h-[400px] ${
     darkMode
       ? 'bg-black/60 border-white/10 text-white shadow-xl hover:border-white/20'
       : 'bg-white/70 border-slate-200/90 text-slate-900 shadow-md hover:border-slate-300'

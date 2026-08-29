@@ -23,8 +23,8 @@ export default function NetworkView({ darkMode = true }: NetworkViewProps) {
       {/* Top Segmented Sub-View Switcher */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div
-          className={`p-1.5 rounded-2xl border backdrop-blur-xl flex items-center gap-1.5 transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] ${
-            darkMode ? 'bg-white/[0.04] border-white/10' : 'bg-white/80 border-slate-200 shadow-slate-100'
+          className={`p-1.5 rounded-2xl border backdrop-blur-md flex items-center gap-1.5 transition-all ${
+            darkMode ? 'bg-white/[0.04] border-white/10' : 'bg-slate-900/[0.04] border-slate-900/[0.08] shadow-xs'
           }`}
         >
           {/* TP-Link Router Tab */}
@@ -35,10 +35,10 @@ export default function NetworkView({ darkMode = true }: NetworkViewProps) {
               activeSubTab === 'tplink_router'
                 ? darkMode
                   ? 'bg-sky-500 text-black shadow-lg shadow-sky-500/20'
-                  : 'bg-sky-600 text-white shadow-md shadow-sky-600/20'
+                  : 'bg-sky-500 text-slate-950 shadow-sm'
                 : darkMode
                 ? 'text-slate-400 hover:text-white hover:bg-white/5'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-900/[0.04]'
             }`}
           >
             <Globe size={16} weight={activeSubTab === 'tplink_router' ? 'bold' : 'duotone'} />
@@ -53,10 +53,10 @@ export default function NetworkView({ darkMode = true }: NetworkViewProps) {
               activeSubTab === 'adguard_home'
                 ? darkMode
                   ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
-                  : 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                  : 'bg-emerald-500 text-slate-950 shadow-sm'
                 : darkMode
                 ? 'text-slate-400 hover:text-white hover:bg-white/5'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-900/[0.04]'
             }`}
           >
             <ShieldCheck size={16} weight={activeSubTab === 'adguard_home' ? 'bold' : 'duotone'} />
@@ -64,9 +64,9 @@ export default function NetworkView({ darkMode = true }: NetworkViewProps) {
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-          <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-          <span>Network Infrastructure Gateway</span>
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Local Network Infrastructure</span>
         </div>
       </div>
 

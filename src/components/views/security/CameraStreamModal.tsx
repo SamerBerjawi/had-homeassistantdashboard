@@ -115,15 +115,17 @@ export default function CameraStreamModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-xl bg-black/80 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-md bg-black/80 animate-in fade-in duration-200">
       <div
         ref={modalContainerRef}
         className={`w-full max-w-4xl rounded-3xl border shadow-2xl overflow-hidden flex flex-col transition-all ${
-          darkMode ? 'bg-slate-950/95 border-white/15 text-white' : 'bg-white border-slate-200 text-slate-900'
+          darkMode ? 'bg-slate-950/95 border-white/15 text-white backdrop-blur-md' : 'bg-white/95 border-slate-200/90 text-slate-900 backdrop-blur-md'
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-white/10">
+        <div className={`flex items-center justify-between p-4 sm:p-5 border-b ${
+          darkMode ? 'border-white/10' : 'border-slate-200/80'
+        }`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center">
               <Camera size={22} weight="duotone" />
@@ -137,21 +139,23 @@ export default function CameraStreamModal({
                   </span>
                 )}
                 {/* Real-time Motion Badge */}
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 border uppercase tracking-wider ${
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 border uppercase tracking-wider backdrop-blur-md ${
                   motionStatus.isMotionActive
                     ? 'bg-rose-600/20 text-rose-400 border-rose-500/40 animate-pulse'
-                    : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                    : darkMode
+                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                      : 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25'
                 }`}>
                   <PersonSimpleWalk size={12} weight="bold" />
                   <span>{motionStatus.isMotionActive ? 'Motion Active' : 'Motion Clear'}</span>
                 </span>
               </div>
-              <p className="text-xs text-slate-400 flex items-center gap-2">
+              <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
                 <span>{modelName}</span>
                 <span>•</span>
-                <span className="text-cyan-400 font-semibold">{resolution}</span>
+                <span className="text-cyan-600 dark:text-cyan-400 font-semibold">{resolution}</span>
                 <span>•</span>
-                <span className="text-slate-400 font-mono text-[11px]">{motionStatus.lastMotionText}</span>
+                <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">{motionStatus.lastMotionText}</span>
               </p>
             </div>
           </div>
@@ -160,7 +164,7 @@ export default function CameraStreamModal({
             type="button"
             onClick={onClose}
             className={`p-2 rounded-2xl border transition-all cursor-pointer ${
-              darkMode ? 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-300' : 'bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-700'
+              darkMode ? 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-300' : 'bg-slate-900/[0.04] border-slate-900/[0.08] hover:bg-slate-900/[0.08] text-slate-700'
             }`}
           >
             <X size={18} weight="bold" />
@@ -206,7 +210,7 @@ export default function CameraStreamModal({
 
         {/* Action Controls & PTZ Toolbar */}
         <div className={`p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 border-t ${
-          darkMode ? 'bg-black/40 border-white/10' : 'bg-slate-50 border-slate-200'
+          darkMode ? 'bg-black/40 border-white/10' : 'bg-white/80 border-slate-200/80'
         }`}>
           {/* Audio & Snapshot Buttons */}
           <div className="flex flex-wrap items-center gap-2">
@@ -219,7 +223,7 @@ export default function CameraStreamModal({
                   ? 'bg-rose-500 text-white shadow-rose-500/30 animate-pulse'
                   : darkMode
                     ? 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
-                    : 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-200'
+                    : 'bg-slate-900/[0.05] hover:bg-slate-900/[0.09] text-slate-800 border border-slate-900/[0.08]'
               }`}
             >
               {isMicActive ? <MicrophoneSlash size={16} weight="bold" /> : <Microphone size={16} weight="duotone" />}
@@ -235,7 +239,7 @@ export default function CameraStreamModal({
                   ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
                   : darkMode
                     ? 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
-                    : 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-200'
+                    : 'bg-slate-900/[0.05] hover:bg-slate-900/[0.09] text-slate-800 border border-slate-900/[0.08]'
               }`}
               title={isAudioMuted ? 'Unmute camera audio' : 'Mute camera audio'}
             >
@@ -250,10 +254,10 @@ export default function CameraStreamModal({
               className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
                 darkMode
                   ? 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
-                  : 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-200'
+                  : 'bg-slate-900/[0.05] hover:bg-slate-900/[0.09] text-slate-800 border border-slate-900/[0.08]'
               }`}
             >
-              <DownloadSimple size={16} weight="duotone" className="text-cyan-400" />
+              <DownloadSimple size={16} weight="duotone" className="text-cyan-500 dark:text-cyan-400" />
               <span>{isSnapshotting ? 'Saving HD Frame...' : 'Capture Snapshot'}</span>
             </button>
           </div>
@@ -261,7 +265,9 @@ export default function CameraStreamModal({
           {/* Real PTZ Controls Cluster & Deterrent Siren */}
           <div className="flex items-center gap-3">
             {/* PTZ Pan/Tilt/Zoom Controller */}
-            <div className="flex items-center gap-1 bg-black/40 dark:bg-white/5 p-1 rounded-2xl border border-white/10">
+            <div className={`flex items-center gap-1 p-1 rounded-2xl border ${
+              darkMode ? 'bg-black/40 border-white/10' : 'bg-slate-900/[0.03] border-slate-900/[0.06]'
+            }`}>
               {/* Pan Left */}
               <button
                 type="button"

@@ -134,8 +134,8 @@ export default function Sidebar({
           isCollapsed ? 'w-20 items-center' : 'w-64'
         } ${
           darkMode 
-            ? 'bg-black/60 backdrop-blur-2xl border-white/10 text-white' 
-            : 'bg-white/65 backdrop-blur-2xl border-slate-200/90 text-slate-900 shadow-xs'
+            ? 'bg-black/60 backdrop-blur-md border-white/10 text-white' 
+            : 'bg-white/70 backdrop-blur-md border-slate-200/90 text-slate-900 shadow-xs'
         }`}
       >
         {/* Header Branding & Collapse Toggle */}

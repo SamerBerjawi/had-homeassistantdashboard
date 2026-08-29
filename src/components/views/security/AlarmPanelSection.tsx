@@ -22,6 +22,7 @@ import {
 } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import CustomDropdown from '../../ui/CustomDropdown';
 
 interface AlarmPanelSectionProps {
   darkMode?: boolean;
@@ -145,49 +146,59 @@ export default function AlarmPanelSection({
   const getStatusColorConfig = () => {
     if (isTriggered) {
       return {
-        bg: 'from-rose-500/20 to-red-600/30 border-rose-500/50',
-        text: 'text-rose-400',
+        bg: darkMode
+          ? 'from-rose-500/20 to-red-600/30 border-rose-500/50'
+          : 'from-rose-500/[0.12] to-red-600/[0.08] border-rose-500/35 bg-white/70 shadow-[0_4px_24px_-6px_rgba(244,63,94,0.2)]',
+        text: darkMode ? 'text-rose-300' : 'text-rose-800',
         glow: 'shadow-rose-500/30 shadow-2xl',
-        badge: 'bg-rose-500 text-white',
+        badge: 'bg-rose-500 text-white font-black',
         title: 'ALARM TRIGGERED',
         desc: 'Intrusion alert active! Sirens and notifications broadcasting.'
       };
     }
     if (currentState === 'armed_away') {
       return {
-        bg: 'from-emerald-500/15 to-teal-500/10 border-emerald-500/40',
-        text: 'text-emerald-400',
-        glow: 'shadow-emerald-500/20 shadow-xl',
-        badge: 'bg-emerald-500 text-black',
+        bg: darkMode
+          ? 'from-emerald-500/15 to-teal-500/10 border-emerald-500/40 bg-black/40'
+          : 'from-emerald-500/[0.08] to-teal-500/[0.04] border-emerald-500/30 bg-white/70 shadow-[0_4px_24px_-6px_rgba(16,185,129,0.15)]',
+        text: darkMode ? 'text-emerald-300' : 'text-emerald-800',
+        glow: darkMode ? 'shadow-emerald-500/20 shadow-xl' : 'shadow-emerald-500/10 shadow-lg',
+        badge: 'bg-emerald-500 text-slate-950 font-black',
         title: 'ARMED AWAY',
         desc: 'Maximum perimeter and interior motion protection active.'
       };
     }
     if (currentState === 'armed_home') {
       return {
-        bg: 'from-emerald-500/15 to-teal-500/10 border-emerald-500/40',
-        text: 'text-emerald-400',
-        glow: 'shadow-emerald-500/20 shadow-xl',
-        badge: 'bg-emerald-500 text-black',
+        bg: darkMode
+          ? 'from-emerald-500/15 to-teal-500/10 border-emerald-500/40 bg-black/40'
+          : 'from-emerald-500/[0.08] to-teal-500/[0.04] border-emerald-500/30 bg-white/70 shadow-[0_4px_24px_-6px_rgba(16,185,129,0.15)]',
+        text: darkMode ? 'text-emerald-300' : 'text-emerald-800',
+        glow: darkMode ? 'shadow-emerald-500/20 shadow-xl' : 'shadow-emerald-500/10 shadow-lg',
+        badge: 'bg-emerald-500 text-slate-950 font-black',
         title: 'ARMED HOME',
         desc: 'Perimeter doors, windows, and outdoor zones secured.'
       };
     }
     if (currentState === 'armed_night') {
       return {
-        bg: 'from-indigo-500/15 to-purple-500/10 border-indigo-500/40',
-        text: 'text-indigo-400',
-        glow: 'shadow-indigo-500/20 shadow-xl',
-        badge: 'bg-indigo-500 text-white',
+        bg: darkMode
+          ? 'from-indigo-500/15 to-purple-500/10 border-indigo-500/40 bg-black/40'
+          : 'from-indigo-500/[0.08] to-purple-500/[0.04] border-indigo-500/30 bg-white/70 shadow-[0_4px_24px_-6px_rgba(99,102,241,0.15)]',
+        text: darkMode ? 'text-indigo-300' : 'text-indigo-800',
+        glow: darkMode ? 'shadow-indigo-500/20 shadow-xl' : 'shadow-indigo-500/10 shadow-lg',
+        badge: 'bg-indigo-500 text-white font-black',
         title: 'ARMED NIGHT',
         desc: 'Exterior perimeter and downstairs sensors armed for sleep.'
       };
     }
     return {
-      bg: 'from-slate-500/10 to-slate-600/5 border-white/10',
-      text: 'text-amber-400',
+      bg: darkMode
+        ? 'from-slate-500/10 to-slate-600/5 border-white/10 bg-black/40'
+        : 'from-slate-500/[0.04] to-slate-600/[0.02] border-slate-200/80 bg-white/70 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]',
+      text: darkMode ? 'text-amber-400' : 'text-amber-700',
       glow: 'shadow-none',
-      badge: 'bg-amber-500 text-black',
+      badge: 'bg-amber-500 text-slate-950 font-black',
       title: 'DISARMED',
       desc: 'Standby mode. All sensors active in telemetry-only monitoring.'
     };
@@ -214,20 +225,18 @@ export default function AlarmPanelSection({
         {/* Partition Dropdown if multiple alarms */}
         {alarmEntities.length > 1 && (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 font-semibold hidden sm:inline">Partition:</span>
-            <select
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-bold hidden sm:inline">Partition:</span>
+            <CustomDropdown
               value={entityId}
-              onChange={(e) => setSelectedAlarmEntityId(e.target.value)}
-              className={`px-3 py-1.5 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
-                darkMode ? 'bg-black/60 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
-              }`}
-            >
-              {alarmEntities.map((a) => (
-                <option key={a.entity_id} value={a.entity_id}>
-                  {a.name || a.attributes?.friendly_name || a.entity_id}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedAlarmEntityId(val)}
+              size="sm"
+              className="w-56"
+              options={alarmEntities.map((a) => ({
+                value: a.entity_id,
+                label: a.name || a.attributes?.friendly_name || a.entity_id,
+                badge: a.state ? (a.state.startsWith('armed') ? 'ARMED' : 'DISARMED') : undefined
+              }))}
+            />
           </div>
         )}
       </div>
@@ -236,7 +245,7 @@ export default function AlarmPanelSection({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         
         {/* LEFT COLUMN: Status Visualizer & Mode Switcher (7 cols) */}
-        <div className={`lg:col-span-7 p-6 sm:p-8 rounded-3xl backdrop-blur-xl border bg-gradient-to-br transition-all flex flex-col justify-between ${
+        <div className={`lg:col-span-7 p-6 sm:p-8 rounded-3xl backdrop-blur-md border bg-gradient-to-br transition-all flex flex-col justify-between ${
           statusConfig.bg
         } ${statusConfig.glow}`}>
           
@@ -247,7 +256,7 @@ export default function AlarmPanelSection({
                 {statusConfig.title}
               </span>
 
-              <div className="flex items-center gap-2 text-xs text-slate-400">
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span>Partition 01 • Hallway</span>
               </div>
@@ -260,8 +269,8 @@ export default function AlarmPanelSection({
                   isTriggered
                     ? 'bg-rose-500/20 border-rose-500/40 text-rose-400 animate-bounce'
                     : isArmed
-                      ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
-                      : 'bg-white/10 border-white/15 text-slate-400'
+                      ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-slate-900/[0.04] dark:bg-white/10 border-slate-900/[0.08] dark:border-white/15 text-slate-500 dark:text-slate-400'
                 }`}>
                   {isArmed ? (
                     <ShieldCheck size={48} weight="duotone" />
@@ -280,13 +289,13 @@ export default function AlarmPanelSection({
               </div>
 
               <div className="space-y-1 text-center sm:text-left">
-                <h3 className="text-xl sm:text-2xl font-black tracking-tight">
+                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
                   {activeAlarm.name || activeAlarm.attributes?.friendly_name || 'Homz Security Guard'}
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-md">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md font-medium">
                   {statusConfig.desc}
                 </p>
-                <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-slate-400 font-medium">
+                <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-slate-500 dark:text-slate-400 font-medium">
                   <span>Last changed: {activeAlarm.attributes?.armed_at || 'Today, 7:30 AM'}</span>
                   <span>•</span>
                   <span>By: {activeAlarm.attributes?.changed_by || 'User'}</span>
@@ -297,9 +306,11 @@ export default function AlarmPanelSection({
 
           {/* Open Openings Readiness Warning Banner */}
           {totalOpenOpenings > 0 && (
-            <div className="my-4 p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 text-amber-300">
-                <DoorOpen size={18} weight="duotone" className="shrink-0 text-amber-400" />
+            <div className={`my-4 p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs font-medium ${
+              darkMode ? 'bg-amber-500/15 border-amber-500/30 text-amber-300' : 'bg-amber-500/10 border-amber-500/30 text-amber-950'
+            }`}>
+              <div className="flex items-center gap-2">
+                <DoorOpen size={18} weight="duotone" className="shrink-0 text-amber-600 dark:text-amber-400" />
                 <span>
                   <strong>{totalOpenOpenings} perimeter opening(s) are open.</strong> (
                   {[...openDoors, ...openWindows].map(e => e.name || e.attributes?.friendly_name).join(', ')}
@@ -311,8 +322,10 @@ export default function AlarmPanelSection({
                 onClick={() => setIsBypassMode(!isBypassMode)}
                 className={`px-2.5 py-1 rounded-xl font-bold uppercase text-[10px] transition-all cursor-pointer ${
                   isBypassMode
-                    ? 'bg-amber-500 text-black'
-                    : 'bg-white/10 hover:bg-white/20 text-white'
+                    ? 'bg-amber-500 text-slate-950 font-black'
+                    : darkMode
+                      ? 'bg-white/10 hover:bg-white/20 text-white'
+                      : 'bg-slate-900/[0.08] hover:bg-slate-900/[0.14] text-slate-900'
                 }`}
               >
                 {isBypassMode ? 'Bypassed' : 'Bypass Zones'}
@@ -329,10 +342,12 @@ export default function AlarmPanelSection({
                 onClick={() => handleSetMode('disarmed')}
                 className={`py-3 px-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
                   currentState === 'disarmed'
-                    ? 'bg-white text-black border-white shadow-md'
+                    ? darkMode
+                      ? 'bg-white text-slate-950 border-white shadow-md'
+                      : 'bg-slate-900 text-white border-slate-900 shadow-md'
                     : darkMode
-                      ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300'
-                      : 'bg-white/60 hover:bg-white border-slate-200 text-slate-700'
+                      ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 backdrop-blur-sm'
+                      : 'bg-slate-900/[0.04] hover:bg-slate-900/[0.08] border-slate-900/[0.08] text-slate-700 backdrop-blur-sm shadow-2xs'
                 }`}
               >
                 <LockOpen size={20} weight={currentState === 'disarmed' ? 'bold' : 'duotone'} />
@@ -345,10 +360,10 @@ export default function AlarmPanelSection({
                 onClick={() => handleSetMode('armed_home')}
                 className={`py-3 px-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
                   currentState === 'armed_home'
-                    ? 'bg-emerald-500 text-black border-emerald-400 shadow-md shadow-emerald-500/20'
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/20 font-black'
                     : darkMode
-                      ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300'
-                      : 'bg-white/60 hover:bg-white border-slate-200 text-slate-700'
+                      ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 backdrop-blur-sm'
+                      : 'bg-slate-900/[0.04] hover:bg-slate-900/[0.08] border-slate-900/[0.08] text-slate-700 backdrop-blur-sm shadow-2xs'
                 }`}
               >
                 <ShieldCheck size={20} weight={currentState === 'armed_home' ? 'bold' : 'duotone'} />
@@ -361,10 +376,10 @@ export default function AlarmPanelSection({
                 onClick={() => handleSetMode('armed_away')}
                 className={`py-3 px-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
                   currentState === 'armed_away'
-                    ? 'bg-emerald-500 text-black border-emerald-400 shadow-md shadow-emerald-500/20'
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/20 font-black'
                     : darkMode
-                      ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300'
-                      : 'bg-white/60 hover:bg-white border-slate-200 text-slate-700'
+                      ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 backdrop-blur-sm'
+                      : 'bg-slate-900/[0.04] hover:bg-slate-900/[0.08] border-slate-900/[0.08] text-slate-700 backdrop-blur-sm shadow-2xs'
                 }`}
               >
                 <Shield size={20} weight={currentState === 'armed_away' ? 'bold' : 'duotone'} />
@@ -377,10 +392,12 @@ export default function AlarmPanelSection({
                 onClick={() => handleSetMode('armed_night')}
                 className={`py-3 px-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
                   currentState === 'armed_night'
-                    ? 'bg-indigo-500 text-white border-indigo-400 shadow-md shadow-indigo-500/20'
+                    ? darkMode
+                      ? 'bg-indigo-500 text-white border-indigo-400 shadow-md shadow-indigo-500/20'
+                      : 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-500/20'
                     : darkMode
-                      ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300'
-                      : 'bg-white/60 hover:bg-white border-slate-200 text-slate-700'
+                      ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 backdrop-blur-sm'
+                      : 'bg-slate-900/[0.04] hover:bg-slate-900/[0.08] border-slate-900/[0.08] text-slate-700 backdrop-blur-sm shadow-2xs'
                 }`}
               >
                 <Moon size={20} weight={currentState === 'armed_night' ? 'bold' : 'duotone'} />
@@ -402,7 +419,9 @@ export default function AlarmPanelSection({
                   <button
                     type="button"
                     onClick={() => setShowPanicConfirm(false)}
-                    className="py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold cursor-pointer"
+                    className={`py-2 px-3 rounded-xl text-xs font-bold cursor-pointer transition-all ${
+                      darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+                    }`}
                   >
                     Cancel
                   </button>
@@ -411,7 +430,11 @@ export default function AlarmPanelSection({
                 <button
                   type="button"
                   onClick={() => setShowPanicConfirm(true)}
-                  className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  className={`w-full py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    darkMode
+                      ? 'bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/30 text-rose-400'
+                      : 'bg-rose-500/[0.08] hover:bg-rose-500/15 border-rose-500/25 text-rose-700'
+                  }`}
                 >
                   <BellRinging size={16} weight="duotone" />
                   <span>Emergency SOS / Panic Trigger</span>
@@ -422,18 +445,18 @@ export default function AlarmPanelSection({
         </div>
 
         {/* RIGHT COLUMN: Interactive Security PIN Keypad (5 cols) */}
-        <div className={`lg:col-span-5 p-6 rounded-3xl backdrop-blur-xl border flex flex-col justify-between ${
-          darkMode ? 'bg-black/60 border-white/10 text-white' : 'bg-white/80 border-slate-200 text-slate-900 shadow-sm'
+        <div className={`lg:col-span-5 p-6 rounded-3xl backdrop-blur-md border flex flex-col justify-between ${
+          darkMode ? 'bg-black/60 border-white/10 text-white' : 'bg-white/75 border-slate-200/80 text-slate-900 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]'
         }`}>
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h4 className="text-sm font-black tracking-tight">Security PIN Keypad</h4>
-              <span className="text-[11px] text-slate-400 font-mono">Optional 4-Digit PIN</span>
+              <h4 className="text-sm font-black tracking-tight text-slate-900 dark:text-white">Security PIN Keypad</h4>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">Optional 4-Digit PIN</span>
             </div>
 
             {/* PIN Code Masked Indicators */}
             <div className={`py-3.5 px-4 rounded-2xl border flex items-center justify-center gap-3 mb-4 ${
-              darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'
+              darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-900/[0.03] border-slate-900/[0.06]'
             }`}>
               {[0, 1, 2, 3].map((idx) => {
                 const isFilled = pin.length > idx;
@@ -454,14 +477,18 @@ export default function AlarmPanelSection({
 
             {/* Error or Success Notice */}
             {errorMessage && (
-              <div className="mb-3 p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-                <WarningCircle size={15} weight="fill" className="shrink-0 text-rose-400" />
+              <div className={`mb-3 p-2.5 rounded-xl border text-xs flex items-center gap-2 ${
+                darkMode ? 'bg-rose-500/15 border-rose-500/30 text-rose-300' : 'bg-rose-500/10 border-rose-500/25 text-rose-700'
+              }`}>
+                <WarningCircle size={15} weight="fill" className="shrink-0 text-rose-500" />
                 <span>{errorMessage}</span>
               </div>
             )}
             {successMessage && (
-              <div className="mb-3 p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
-                <CheckCircle size={15} weight="fill" className="shrink-0 text-emerald-400" />
+              <div className={`mb-3 p-2.5 rounded-xl border text-xs flex items-center gap-2 ${
+                darkMode ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-700'
+              }`}>
+                <CheckCircle size={15} weight="fill" className="shrink-0 text-emerald-500" />
                 <span>{successMessage}</span>
               </div>
             )}
@@ -476,7 +503,7 @@ export default function AlarmPanelSection({
                   className={`h-11 rounded-2xl border font-mono text-base font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center ${
                     darkMode
                       ? 'bg-white/5 hover:bg-white/15 border-white/10 text-white'
-                      : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800 shadow-2xs'
+                      : 'bg-white/90 hover:bg-white border-slate-200/90 text-slate-900 shadow-2xs backdrop-blur-sm'
                   }`}
                 >
                   {num}
@@ -488,7 +515,7 @@ export default function AlarmPanelSection({
                 type="button"
                 onClick={handleClear}
                 className={`h-11 rounded-2xl border text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center ${
-                  darkMode ? 'bg-white/5 hover:bg-white/15 border-white/10 text-slate-400' : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
+                  darkMode ? 'bg-white/5 hover:bg-white/15 border-white/10 text-slate-400' : 'bg-slate-100 hover:bg-slate-200 border-slate-200/90 text-slate-700'
                 }`}
               >
                 CLEAR
@@ -501,7 +528,7 @@ export default function AlarmPanelSection({
                 className={`h-11 rounded-2xl border font-mono text-base font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center ${
                   darkMode
                     ? 'bg-white/5 hover:bg-white/15 border-white/10 text-white'
-                    : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800 shadow-2xs'
+                    : 'bg-white/90 hover:bg-white border-slate-200/90 text-slate-900 shadow-2xs backdrop-blur-sm'
                 }`}
               >
                 0
@@ -512,7 +539,7 @@ export default function AlarmPanelSection({
                 type="button"
                 onClick={handleBackspace}
                 className={`h-11 rounded-2xl border text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center ${
-                  darkMode ? 'bg-white/5 hover:bg-white/15 border-white/10 text-slate-400' : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
+                  darkMode ? 'bg-white/5 hover:bg-white/15 border-white/10 text-slate-400' : 'bg-slate-100 hover:bg-slate-200 border-slate-200/90 text-slate-700'
                 }`}
               >
                 <Backspace size={18} weight="duotone" />
