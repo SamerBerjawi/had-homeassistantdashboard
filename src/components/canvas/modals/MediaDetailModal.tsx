@@ -25,6 +25,7 @@ import AppleRemoteControl from '../../media/AppleRemoteControl';
 import CustomDropdown from '../../ui/CustomDropdown';
 import AudioWaveformScrubber from '../../media/AudioWaveformScrubber';
 import { useMediaPosition } from '../../../hooks/useMediaPosition';
+import { useAlbumArtColor } from '../../../hooks/useAlbumArtColor';
 
 interface MediaDetailModalProps {
   isOpen: boolean;
@@ -64,6 +65,12 @@ export default function MediaDetailModal({
 
   const rawArt = entity.attributes?.media_image || entity.attributes?.entity_picture;
   const albumArt = getHAImageUrl(rawArt, serverUrl) || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400&auto=format&fit=crop';
+
+  const palette = useAlbumArtColor(albumArt, {
+    title,
+    artist,
+    darkMode: true
+  });
 
   useEffect(() => {
     if (entity.attributes?.volume_level !== undefined) {
@@ -153,9 +160,14 @@ export default function MediaDetailModal({
               onClick={() => setActiveTab('playback')}
               className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 activeTab === 'playback'
-                  ? 'bg-pink-600 text-white shadow-xs'
+                  ? 'text-white shadow-xs'
                   : 'text-slate-400 hover:text-white'
               }`}
+              style={
+                activeTab === 'playback'
+                  ? { backgroundColor: palette.primary, color: '#ffffff' }
+                  : undefined
+              }
             >
               <MusicNotes size={14} weight="duotone" />
               <span>Now Playing</span>
@@ -188,7 +200,7 @@ export default function MediaDetailModal({
                   <img
                     src={albumArt}
                     alt=""
-                    className="w-full h-full object-cover scale-110 blur-2xl opacity-40 mix-blend-screen transition-opacity duration-700"
+                    className="w-full h-full object-cover scale-110 blur-xl opacity-40 mix-blend-screen transition-opacity duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/35 backdrop-blur-xs" />
                 </div>
@@ -218,7 +230,12 @@ export default function MediaDetailModal({
               {/* Track Metadata */}
               <div className="text-center max-w-sm relative z-10">
                 <h4 className="text-base font-extrabold text-white tracking-tight truncate">{title}</h4>
-                <p className="text-xs text-pink-300 font-semibold mt-0.5 truncate">{artist}</p>
+                <p 
+                  className="text-xs font-semibold mt-0.5 truncate transition-colors duration-300"
+                  style={{ color: palette.light }}
+                >
+                  {artist}
+                </p>
                 {album && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{album}</p>}
               </div>
 
@@ -231,7 +248,7 @@ export default function MediaDetailModal({
                   currentPosition={playbackPos}
                   isPlaying={isPlaying}
                   onSeek={handleSeekCommit}
-                  accentColor="pink"
+                  palette={palette}
                   darkMode={true}
                   barCount={44}
                 />
@@ -252,7 +269,11 @@ export default function MediaDetailModal({
                 <button
                   type="button"
                   onClick={handlePlayPause}
-                  className="w-15 h-15 rounded-3xl bg-pink-500 hover:bg-pink-400 text-white flex items-center justify-center transition-all cursor-pointer shadow-xl shadow-pink-500/30 hover:scale-105 active:scale-95"
+                  className="w-15 h-15 rounded-3xl text-white flex items-center justify-center transition-all duration-300 cursor-pointer shadow-xl hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: palette.primary,
+                    boxShadow: `0 12px 28px -4px ${palette.glow}`,
+                  }}
                   title={isPlaying ? 'Pause' : 'Play'}
                 >
                   {isPlaying ? <Pause size={26} weight="fill" /> : <Play size={26} weight="fill" className="ml-1" />}

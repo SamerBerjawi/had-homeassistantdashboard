@@ -31,6 +31,7 @@ import { groupEntitiesByFloorAndArea } from '../../../lib/grouping';
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import AudioWaveformScrubber from '../../media/AudioWaveformScrubber';
 import { useMediaPosition } from '../../../hooks/useMediaPosition';
+import { useAlbumArtColor } from '../../../hooks/useAlbumArtColor';
 import { Stairs, HouseLine } from '@phosphor-icons/react';
 
 interface MediaOverviewDrawerProps {
@@ -108,6 +109,13 @@ export default function MediaOverviewDrawer({
   const sourceList: string[] = currentMedia?.attributes?.source_list || [];
   const soundModeList: string[] = currentMedia?.attributes?.sound_mode_list || [];
   const soundMode = currentMedia?.attributes?.sound_mode;
+
+  // Extract dynamic accent palette from album art
+  const palette = useAlbumArtColor(albumArt, {
+    title,
+    artist,
+    darkMode
+  });
 
   // Volume state
   const currentVol = typeof currentMedia?.attributes?.volume_level === 'number' 
@@ -251,9 +259,14 @@ export default function MediaOverviewDrawer({
               onClick={() => setActiveTab('playback')}
               className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 activeTab === 'playback'
-                  ? 'bg-white text-slate-900 dark:bg-purple-600 dark:text-white shadow-xs'
+                  ? 'text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
+              style={
+                activeTab === 'playback'
+                  ? { backgroundColor: palette.primary, color: '#ffffff' }
+                  : undefined
+              }
             >
               <MusicNotes size={14} weight="duotone" />
               <span>Now Playing</span>
@@ -288,7 +301,7 @@ export default function MediaOverviewDrawer({
                 <img
                   src={albumArt}
                   alt=""
-                  className={`w-full h-full object-cover scale-110 blur-2xl transition-opacity duration-700 ${
+                  className={`w-full h-full object-cover scale-110 blur-xl transition-opacity duration-700 ${
                     darkMode ? 'opacity-35' : 'opacity-20'
                   }`}
                 />
@@ -300,7 +313,7 @@ export default function MediaOverviewDrawer({
               </div>
             ) : (
               <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
-                <div className={`absolute top-0 inset-x-0 h-32 blur-2xl ${
+                <div className={`absolute top-0 inset-x-0 h-32 blur-xl ${
                   darkMode ? 'bg-radial from-purple-500/20 to-transparent' : 'bg-radial from-purple-400/15 to-transparent'
                 }`} />
               </div>
@@ -340,11 +353,16 @@ export default function MediaOverviewDrawer({
             {/* Track Info */}
             <div className="w-full max-w-sm mb-2 relative z-10">
               <h3 className="text-base font-black text-slate-900 dark:text-white truncate">{title}</h3>
-              <p className="text-xs font-semibold text-purple-600 dark:text-purple-300 truncate mt-0.5">{artist}</p>
+              <p
+                className="text-xs font-semibold truncate mt-0.5 transition-colors duration-300"
+                style={{ color: darkMode ? palette.light : palette.primary }}
+              >
+                {artist}
+              </p>
               {album && <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{album}</p>}
             </div>
 
-            {/* REAL AUDIO WAVEFORM SCRUBBER */}
+            {/* REAL AUDIO WAVEFORM SCRUBBER (DYNAMIC ARTWORK ACCENT COLOR) */}
             <div className="w-full max-w-xs z-10">
               <AudioWaveformScrubber
                 title={title}
@@ -353,7 +371,7 @@ export default function MediaOverviewDrawer({
                 currentPosition={playbackPos}
                 isPlaying={isPlaying}
                 onSeek={handleSeekCommit}
-                accentColor="purple"
+                palette={palette}
                 darkMode={darkMode}
                 barCount={44}
               />
@@ -374,7 +392,11 @@ export default function MediaOverviewDrawer({
               <button
                 type="button"
                 onClick={handlePlayPause}
-                className="w-14 h-14 rounded-3xl bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center shadow-lg shadow-purple-500/30 transition-all cursor-pointer active:scale-95 hover:scale-105"
+                className="w-14 h-14 rounded-3xl text-white flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-95 hover:scale-105"
+                style={{
+                  backgroundColor: palette.primary,
+                  boxShadow: `0 12px 28px -4px ${palette.glow}`,
+                }}
                 title={isPlaying ? 'Pause' : 'Play'}
               >
                 {isPlaying ? <Pause size={22} weight="fill" /> : <Play size={22} weight="fill" className="ml-0.5" />}
@@ -403,7 +425,7 @@ export default function MediaOverviewDrawer({
                   {isMuted || volume === 0 ? (
                     <SpeakerSlash size={18} weight="duotone" className="text-rose-500" />
                   ) : (
-                    <SpeakerHigh size={18} weight="duotone" className="text-purple-500" />
+                    <SpeakerHigh size={18} weight="duotone" style={{ color: palette.primary }} />
                   )}
                 </button>
 
@@ -413,7 +435,8 @@ export default function MediaOverviewDrawer({
                   max={100}
                   value={isMuted ? 0 : volume}
                   onChange={(e) => handleVolumeChange(parseInt(e.target.value, 10))}
-                  className="w-full h-1.5 rounded-lg appearance-none bg-slate-300 dark:bg-white/20 accent-purple-500 cursor-pointer"
+                  style={{ accentColor: palette.primary }}
+                  className="w-full h-1.5 rounded-lg appearance-none bg-slate-300 dark:bg-white/20 cursor-pointer"
                 />
 
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200 w-8 text-right shrink-0 font-mono">

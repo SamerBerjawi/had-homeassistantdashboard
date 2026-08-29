@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef, useMemo } from 'react';
+import { AlbumArtPalette } from '../../hooks/useAlbumArtColor';
 
 interface AudioWaveformScrubberProps {
   title?: string;
@@ -13,6 +14,7 @@ interface AudioWaveformScrubberProps {
   isPlaying: boolean;
   onSeek: (seconds: number) => void;
   accentColor?: 'purple' | 'pink' | 'cyan' | 'emerald';
+  palette?: AlbumArtPalette;
   darkMode?: boolean;
   barCount?: number;
   layout?: 'stacked' | 'inline';
@@ -87,6 +89,7 @@ export default function AudioWaveformScrubber({
   isPlaying,
   onSeek,
   accentColor = 'purple',
+  palette,
   darkMode = true,
   barCount = 64,
   layout = 'stacked'
@@ -150,7 +153,7 @@ export default function AudioWaveformScrubber({
     }
   };
 
-  const themeGradients = {
+  const defaultThemeGradients = {
     purple: {
       played: 'bg-gradient-to-t from-violet-600 via-purple-500 to-pink-300 shadow-purple-500/60',
       head: 'bg-pink-300 ring-purple-400',
@@ -172,6 +175,10 @@ export default function AudioWaveformScrubber({
       glow: 'from-emerald-500/35 via-emerald-500/20'
     }
   }[accentColor];
+
+  const timeTextColor = palette
+    ? (darkMode ? palette.light : palette.primary)
+    : undefined;
 
   const waveformCanvas = (
     <div
@@ -209,7 +216,9 @@ export default function AudioWaveformScrubber({
             <div
               className={`w-full rounded-full transition-all duration-100 ${
                 isPlayed
-                  ? `${themeGradients.played} shadow-xs`
+                  ? palette
+                    ? 'shadow-xs'
+                    : `${defaultThemeGradients.played} shadow-xs`
                   : darkMode
                     ? 'bg-white/18 hover:bg-white/35'
                     : 'bg-slate-300/80 hover:bg-slate-400'
@@ -222,7 +231,9 @@ export default function AudioWaveformScrubber({
               }`}
               style={{
                 height: `${heightPercent}%`,
-                minHeight: '3px'
+                minHeight: '3px',
+                background: isPlayed && palette ? palette.waveformPlayedGradient : undefined,
+                boxShadow: isPlayed && palette ? `0 0 6px ${palette.glowSubtle}` : undefined
               }}
             />
           </div>
@@ -237,8 +248,28 @@ export default function AudioWaveformScrubber({
           transform: 'translateX(-50%)'
         }}
       >
-        <div className={`w-full h-full ${themeGradients.head} shadow-md shadow-purple-500/80`} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white ring-2 ring-purple-500 shadow-md" />
+        <div
+          className={`w-full h-full ${palette ? '' : defaultThemeGradients.head}`}
+          style={
+            palette
+              ? {
+                  backgroundColor: palette.light,
+                  boxShadow: `0 0 10px ${palette.glow}`,
+                }
+              : undefined
+          }
+        />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white shadow-md"
+          style={
+            palette
+              ? {
+                  border: `2px solid ${palette.primary}`,
+                  boxShadow: `0 0 8px ${palette.glow}`,
+                }
+              : undefined
+          }
+        />
       </div>
     </div>
   );
@@ -246,7 +277,12 @@ export default function AudioWaveformScrubber({
   if (layout === 'inline') {
     return (
       <div className="w-full flex items-center gap-2 sm:gap-2.5 select-none py-0.5">
-        <span className="text-[11px] font-mono font-bold text-purple-600 dark:text-purple-300 shrink-0 min-w-[32px]">
+        <span
+          className={`text-[11px] font-mono font-bold shrink-0 min-w-[32px] ${
+            !timeTextColor ? 'text-purple-600 dark:text-purple-300' : ''
+          }`}
+          style={timeTextColor ? { color: timeTextColor } : undefined}
+        >
           {formatTime(activePosition)}
         </span>
         {waveformCanvas}
@@ -262,7 +298,12 @@ export default function AudioWaveformScrubber({
       {waveformCanvas}
       {/* Time Legend (Elapsed / Remaining / Total) */}
       <div className="flex justify-between items-center text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 px-1">
-        <span className="text-purple-600 dark:text-purple-300 font-bold">{formatTime(activePosition)}</span>
+        <span
+          className={`font-bold ${!timeTextColor ? 'text-purple-600 dark:text-purple-300' : ''}`}
+          style={timeTextColor ? { color: timeTextColor } : undefined}
+        >
+          {formatTime(activePosition)}
+        </span>
         <span className="text-slate-400 dark:text-slate-500">-{formatTime(Math.max(0, effectiveDuration - activePosition))} / {formatTime(effectiveDuration)}</span>
       </div>
     </div>

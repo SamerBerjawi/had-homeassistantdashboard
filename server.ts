@@ -428,6 +428,45 @@ async function startServer() {
     return res.status(502).json({ success: false, error: 'Could not connect to go2rtc API endpoint on probed ports.' });
   });
 
+  // Universal Image Proxy to bypass CORS / Private Network restrictions for artwork color extraction
+  app.get('/api/image-proxy', async (req, res) => {
+    const rawUrl = (req.query.url as string) || '';
+    if (!rawUrl) {
+      return res.status(400).json({ error: 'Missing url parameter' });
+    }
+
+    try {
+      const authHeader = (req.headers['authorization'] as string) || '';
+      const headers: Record<string, string> = {
+        'User-Agent': 'HomeAssistantDashboard/1.0',
+        Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+      };
+      if (authHeader) {
+        headers['Authorization'] = authHeader;
+      }
+
+      const response = await fetch(rawUrl, {
+        headers,
+        signal: AbortSignal.timeout(6000),
+      });
+
+      if (!response.ok) {
+        return res.status(response.status).json({ error: `Remote image fetch failed with status ${response.status}` });
+      }
+
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+      return res.send(buffer);
+    } catch (err: any) {
+      return res.status(502).json({ error: 'Failed to proxy image: ' + (err?.message || 'Network error') });
+    }
+  });
+
   // Proxy endpoint to dispatch go2rtc PTZ commands
   app.get('/api/go2rtc/ptz', async (req, res) => {
     const rawUrl = (req.query.url as string) || '';

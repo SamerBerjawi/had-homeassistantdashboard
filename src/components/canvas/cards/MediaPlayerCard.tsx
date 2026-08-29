@@ -10,6 +10,7 @@ import { HAEntity } from '../../../types';
 import { detectMediaPlayerType, MediaPlayerService } from '../../../services/mediaPlayerClassification';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { getHAImageUrl } from '../../../lib/utils';
+import { useAlbumArtColor } from '../../../hooks/useAlbumArtColor';
 
 interface MediaPlayerCardProps {
   config: CardConfig;
@@ -37,6 +38,12 @@ export default function MediaPlayerCard({
 
   const rawArt = entity.attributes?.media_image || entity.attributes?.entity_picture;
   const albumArt = getHAImageUrl(rawArt, serverUrl) || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=300&auto=format&fit=crop';
+
+  const palette = useAlbumArtColor(albumArt, {
+    title,
+    artist,
+    darkMode: true
+  });
 
   const handlePlayPause = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -82,7 +89,14 @@ export default function MediaPlayerCard({
       );
     }
     return (
-      <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-pink-500/15 border border-pink-500/30 text-pink-600 dark:text-pink-300 text-[10px] font-bold">
+      <div 
+        className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-colors duration-300"
+        style={{
+          backgroundColor: palette.badgeBg,
+          borderColor: palette.badgeBorder,
+          color: palette.badgeText
+        }}
+      >
         <MusicNotes size={12} weight="duotone" />
         <span>{isPlaying ? 'Live Audio' : 'Paused'}</span>
       </div>
@@ -96,7 +110,7 @@ export default function MediaPlayerCard({
     >
       {/* Ambient Artwork Glow */}
       <div 
-        className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-cover bg-center blur-2xl opacity-30 pointer-events-none"
+        className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-cover bg-center blur-xl opacity-30 pointer-events-none"
         style={{ backgroundImage: `url(${albumArt})` }}
       />
 
@@ -107,13 +121,21 @@ export default function MediaPlayerCard({
             <img src={albumArt} alt={title} className="w-full h-full object-cover" />
             {isPlaying && (
               <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                <span className="w-2 h-2 rounded-full bg-pink-400 animate-ping" />
+                <span 
+                  className="w-2 h-2 rounded-full animate-ping" 
+                  style={{ backgroundColor: palette.light }}
+                />
               </div>
             )}
           </div>
           <div className="min-w-0">
             <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{title}</h4>
-            <p className="text-[11px] text-pink-600 dark:text-pink-300 font-medium truncate">{artist}</p>
+            <p 
+              className="text-[11px] font-medium truncate transition-colors duration-300"
+              style={{ color: palette.light }}
+            >
+              {artist}
+            </p>
           </div>
         </div>
 
@@ -129,10 +151,18 @@ export default function MediaPlayerCard({
               type="button"
               onClick={handlePlayPause}
               className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95 ${
-                isPlaying 
-                  ? 'bg-pink-500 hover:bg-pink-400 text-white shadow-pink-500/30' 
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-white/15 dark:hover:bg-white/25 dark:text-white dark:border-transparent'
+                !isPlaying 
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-white/15 dark:hover:bg-white/25 dark:text-white dark:border-transparent'
+                  : 'text-white'
               }`}
+              style={
+                isPlaying
+                  ? {
+                      backgroundColor: palette.primary,
+                      boxShadow: `0 4px 14px 0 ${palette.glow}`,
+                    }
+                  : undefined
+              }
               title={isPlaying ? 'Pause' : 'Play'}
             >
               {isPlaying ? <Pause size={16} weight="fill" /> : <Play size={16} weight="fill" className="ml-0.5" />}
@@ -158,8 +188,11 @@ export default function MediaPlayerCard({
       {/* Volume / Progress Bar */}
       <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-black/40 overflow-hidden border border-slate-300 dark:border-white/10 relative z-10">
         <div 
-          className="h-full rounded-full bg-linear-to-r from-pink-500 to-purple-400"
-          style={{ width: `${volumePct}%` }}
+          className="h-full rounded-full transition-all duration-300"
+          style={{ 
+            width: `${volumePct}%`,
+            background: `linear-gradient(to right, ${palette.dark}, ${palette.primary}, ${palette.light})` 
+          }}
         />
       </div>
     </div>

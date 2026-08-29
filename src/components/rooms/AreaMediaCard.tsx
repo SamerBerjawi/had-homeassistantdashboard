@@ -26,6 +26,7 @@ import {
 } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../types';
 import { useMediaPosition } from '../../hooks/useMediaPosition';
+import { useAlbumArtColor } from '../../hooks/useAlbumArtColor';
 import AudioWaveformScrubber from '../media/AudioWaveformScrubber';
 import { getHAImageUrl } from '../../lib/utils';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
@@ -66,6 +67,13 @@ export default function AreaMediaCard({
 
   const rawPicture = media.attributes?.entity_picture || media.attributes?.media_image;
   const albumArtUrl = rawPicture ? getHAImageUrl(rawPicture, serverUrl) : null;
+
+  // Extract dynamic accent palette from album art
+  const palette = useAlbumArtColor(albumArtUrl, {
+    title,
+    artist,
+    darkMode
+  });
 
   // Device classification
   const deviceName = media.attributes?.friendly_name || media.name;
@@ -110,7 +118,7 @@ export default function AreaMediaCard({
     return (
       <div
         onClick={() => onOpenDrawer(media)}
-        className={`col-span-1 p-4 rounded-2xl backdrop-blur-xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 hover:scale-[1.01] active:scale-[0.99] shadow-xs hover:shadow-md ${
+        className={`col-span-1 p-4 rounded-2xl backdrop-blur-lg border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 hover:scale-[1.01] active:scale-[0.99] shadow-xs hover:shadow-md ${
           darkMode
             ? 'bg-white/[0.04] hover:bg-white/[0.07] border-white/10 text-white'
             : 'bg-white/80 hover:bg-white border-slate-200 text-slate-900 shadow-sm'
@@ -154,7 +162,7 @@ export default function AreaMediaCard({
   return (
     <div
       onClick={() => onOpenDrawer(media)}
-      className={`col-span-2 md:col-span-3 lg:col-span-2 group relative rounded-3xl p-4 sm:p-5 border shadow-xl relative overflow-hidden backdrop-blur-2xl transition-all duration-300 cursor-pointer flex flex-col justify-between gap-3 hover:scale-[1.004] active:scale-[0.995] ${
+      className={`col-span-2 md:col-span-3 lg:col-span-2 group relative rounded-3xl p-4 sm:p-5 border shadow-xl relative overflow-hidden backdrop-blur-xl transition-all duration-300 cursor-pointer flex flex-col justify-between gap-3 hover:scale-[1.004] active:scale-[0.995] ${
         albumArtUrl
           ? 'bg-slate-950/60 border-white/20 text-white shadow-2xl'
           : darkMode
@@ -169,7 +177,7 @@ export default function AreaMediaCard({
           <img
             src={albumArtUrl}
             alt=""
-            className="w-full h-full object-cover scale-135 filter blur-3xl opacity-60 dark:opacity-55 transition-opacity duration-700"
+            className="w-full h-full object-cover scale-125 filter blur-2xl opacity-60 dark:opacity-55 transition-opacity duration-700"
           />
           <div
             className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/30 dark:block hidden"
@@ -202,7 +210,14 @@ export default function AreaMediaCard({
           <div className="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
             {/* Device / Output Badge */}
             <div className="flex items-center gap-2 mb-0.5">
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 flex items-center gap-1 truncate max-w-[150px]">
+              <span
+                className="px-2 py-0.5 rounded-md text-[10px] font-bold border flex items-center gap-1 truncate max-w-[150px] transition-colors duration-300"
+                style={{
+                  backgroundColor: palette.badgeBg,
+                  borderColor: palette.badgeBorder,
+                  color: palette.badgeText
+                }}
+              >
                 {isHeadphones ? (
                   <Headphones size={11} weight="bold" />
                 ) : isTv ? (
@@ -220,7 +235,10 @@ export default function AreaMediaCard({
             </h4>
 
             {/* Artist Name */}
-            <p className="text-xs font-semibold text-purple-600 dark:text-purple-300 truncate">
+            <p
+              className="text-xs font-semibold truncate transition-colors duration-300"
+              style={{ color: darkMode ? palette.light : palette.primary }}
+            >
               {artist}
             </p>
 
@@ -247,7 +265,11 @@ export default function AreaMediaCard({
           <button
             type="button"
             onClick={handlePlayPause}
-            className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center shadow-lg shadow-purple-500/35 transition-all cursor-pointer active:scale-90 hover:scale-105"
+            className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl text-white flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:scale-105"
+            style={{
+              backgroundColor: palette.primary,
+              boxShadow: `0 10px 25px -4px ${palette.glow}`,
+            }}
             title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? <Pause size={19} weight="fill" /> : <Play size={19} weight="fill" className="ml-0.5" />}
@@ -273,7 +295,7 @@ export default function AreaMediaCard({
           currentPosition={currentPosition}
           isPlaying={isPlaying}
           onSeek={handleSeek}
-          accentColor="purple"
+          palette={palette}
           darkMode={darkMode}
           barCount={56}
           layout="inline"
