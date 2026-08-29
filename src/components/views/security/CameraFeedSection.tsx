@@ -20,6 +20,7 @@ import {
 } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
 import CameraStreamModal from './CameraStreamModal';
+import HaWebRtcPlayer from './HaWebRtcPlayer';
 import Go2RtcPlayer from './Go2RtcPlayer';
 
 interface CameraFeedSectionProps {
@@ -223,9 +224,9 @@ export default function CameraFeedSection({
                   : 'bg-white/80 hover:bg-white border-slate-200 hover:border-cyan-400 text-slate-900 shadow-sm'
               }`}
             >
-              {/* Video Stream Frame with WebRTC / go2rtc engine */}
+              {/* Video Stream Frame with Native HA WebRTC (go2rtc-backed) engine */}
               <div className="relative w-full aspect-video bg-black overflow-hidden">
-                <Go2RtcPlayer
+                <HaWebRtcPlayer
                   camera={camera}
                   darkMode={darkMode}
                   showControls={true}

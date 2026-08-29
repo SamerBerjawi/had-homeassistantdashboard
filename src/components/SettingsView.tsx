@@ -720,12 +720,36 @@ export default function SettingsView({
     }
     return 'http://homeassistant.local:8123';
   });
-  const [wsUrlInput, setWsUrlInput] = useState(storeServerUrl || 'wss://hass.homz.internal/api/websocket');
+  const [wsUrlInput, setWsUrlInput] = useState(() => {
+    if (storeServerUrl && !storeServerUrl.includes('hass.homz.internal')) {
+      return storeServerUrl;
+    }
+    return 'ws://homeassistant.local:8123/api/websocket';
+  });
   const [tokenInput, setTokenInput] = useState(storeHaToken || '');
   const [showToken, setShowToken] = useState(false);
   const [isPinging, setIsPinging] = useState(false);
   const [pingLatency, setPingLatency] = useState<number | null>(12);
   const [logFilter, setLogFilter] = useState<'all' | 'service_call' | 'state_changed' | 'info' | 'error'>('all');
+
+  // Keep input fields in sync if store updates externally
+  useEffect(() => {
+    if (storeServerUrl && !storeServerUrl.includes('hass.homz.internal')) {
+      setWsUrlInput(storeServerUrl);
+      setHaHttpUrlInput(
+        storeServerUrl
+          .replace('wss://', 'https://')
+          .replace('ws://', 'http://')
+          .replace('/api/websocket', '')
+      );
+    }
+  }, [storeServerUrl]);
+
+  useEffect(() => {
+    if (storeHaToken) {
+      setTokenInput(storeHaToken);
+    }
+  }, [storeHaToken]);
 
   const handleStartOAuthLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -742,14 +766,25 @@ export default function SettingsView({
 
   const handleConnectWs = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!wsUrlInput.trim()) return;
+    const targetWsUrl = wsUrlInput.trim();
+    const targetToken = tokenInput.trim();
 
-    connectToHA(wsUrlInput.trim(), tokenInput.trim());
-    addLog('info', `Connecting WebSocket endpoint: ${wsUrlInput.trim()}`);
+    if (!targetWsUrl) return;
+    if (!targetToken) {
+      addToast?.({
+        type: 'warning',
+        title: 'Token Required',
+        message: 'Please paste your Long-Lived Access Token to connect.'
+      });
+      return;
+    }
+
+    connectToHA(targetWsUrl, targetToken);
+    addLog('info', `Connecting WebSocket endpoint: ${targetWsUrl}`);
     addToast?.({
       type: 'info',
       title: 'Connecting to HA',
-      message: `Establishing connection to ${wsUrlInput.trim()}...`
+      message: `Establishing connection to ${targetWsUrl}...`
     });
   };
 

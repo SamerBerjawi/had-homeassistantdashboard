@@ -101,11 +101,12 @@ export default function App() {
 
     window.addEventListener('popstate', handlePopState);
 
-    // Ensure root '/' or malformed path cleanly normalizes in the address bar
+    // Ensure root '/' or malformed path cleanly normalizes in the address bar while preserving query params (e.g. ?code=...&state=...)
     const initialTab = getTabFromUrl();
     const expectedPath = `/${initialTab}`;
     if (window.location.pathname !== expectedPath) {
-      window.history.replaceState({ tab: initialTab }, '', expectedPath);
+      const search = window.location.search || '';
+      window.history.replaceState({ tab: initialTab }, '', `${expectedPath}${search}`);
     }
 
     return () => {

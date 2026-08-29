@@ -303,7 +303,8 @@ function scheduleOAuthTokenRefresh(tokens: HAAuthTokens, set: any, get: any) {
                 });
                 haWebSocketService.updateToken(refreshed.access_token);
                 scheduleOAuthTokenRefresh(refreshed, set, get);
-              } else {
+              } else if (currentNow >= targetExpiry) {
+                // Only disconnect and clear credentials if token has actually expired
                 clearStoredHAAuth();
                 clearOAuthTokenRefresh();
                 haWebSocketService.disconnect();
@@ -399,17 +400,28 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           } catch (e) {
             console.error('[HA Auth] onAuthInvalid refresh attempt failed:', e);
           }
+
+          console.warn('[HA Auth] OAuth token could not be refreshed. Forcing re-login.');
+          clearStoredHAAuth();
+          clearOAuthTokenRefresh();
+          set({
+            isLiveMode: false,
+            authType: 'demo',
+            haToken: '',
+            connectionStatus: 'auth_failed',
+            connectionError: 'Session expired. Please sign in again.'
+          });
+          get().reloadDemoData();
+          return null;
         }
 
-        console.warn('[HA Auth] Authentication rejected and token could not be refreshed. Forcing re-login.');
-        clearStoredHAAuth();
+        // For LLAT: do NOT erase the user's token or configuration
+        console.warn('[HA Auth] LLAT authentication rejected. Please check your Long-Lived Access Token in Settings.');
         clearOAuthTokenRefresh();
         set({
           isLiveMode: false,
-          authType: 'demo',
-          haToken: '',
           connectionStatus: 'auth_failed',
-          connectionError: 'Session expired. Please sign in again.'
+          connectionError: 'Invalid Long-Lived Access Token. Please verify token in Settings.'
         });
         get().reloadDemoData();
         return null;
@@ -573,10 +585,10 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
 
   loginWithHA: (url: string) => {
     clearOAuthTokenRefresh();
+    haWebSocketService.clearRejectedToken();
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('ha_token');
-      localStorage.removeItem('ha_server_url');
       localStorage.setItem('ha_live_mode', 'true');
+      if (url) localStorage.setItem('ha_server_url', url.trim());
     }
     startHAOAuthFlow(url);
   },
@@ -622,8 +634,8 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       return;
     }
 
-    const nextUrl = url || get().serverUrl;
-    const nextToken = token || get().haToken;
+    const nextUrl = (url || get().serverUrl || '').trim();
+    const nextToken = (token || get().haToken || '').trim();
     
     if (typeof window !== 'undefined') {
       localStorage.setItem('ha_live_mode', 'true');
@@ -639,27 +651,46 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       });
     }
 
-    set({ isLiveMode: true, serverUrl: nextUrl, haToken: nextToken, authType: 'llat' });
+    set({
+      isLiveMode: true,
+      serverUrl: nextUrl,
+      haToken: nextToken,
+      authType: 'llat',
+      connectionStatus: 'connecting',
+      connectionError: null
+    });
+    haWebSocketService.clearRejectedToken();
     haWebSocketService.setDemoMode(false);
     haWebSocketService.connect(nextUrl, nextToken);
   },
 
   connectToHA: (url: string, token: string) => {
     // Switching to LLAT: purge all OAuth tokens and OAuth refresh timers
-    clearAllStoredHACredentials();
+    clearOAuthTokenRefresh();
+    haWebSocketService.clearRejectedToken();
+    const cleanUrl = url.trim();
+    const cleanToken = token.trim();
+
     if (typeof window !== 'undefined') {
       localStorage.setItem('ha_live_mode', 'true');
-      localStorage.setItem('ha_server_url', url);
-      localStorage.setItem('ha_token', token);
+      localStorage.setItem('ha_server_url', cleanUrl);
+      localStorage.setItem('ha_token', cleanToken);
     }
     saveStoredHAAuth({
-      access_token: token,
-      server_url: url,
+      access_token: cleanToken,
+      server_url: cleanUrl,
       auth_type: 'llat'
     });
-    set({ isLiveMode: true, serverUrl: url, haToken: token, authType: 'llat' });
+    set({
+      isLiveMode: true,
+      serverUrl: cleanUrl,
+      haToken: cleanToken,
+      authType: 'llat',
+      connectionStatus: 'connecting',
+      connectionError: null
+    });
     haWebSocketService.setDemoMode(false);
-    haWebSocketService.connect(url, token);
+    haWebSocketService.connect(cleanUrl, cleanToken);
   },
 
   disconnectFromHA: () => {

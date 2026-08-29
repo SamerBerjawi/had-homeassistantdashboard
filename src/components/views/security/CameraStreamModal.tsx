@@ -24,6 +24,7 @@ import {
   Sliders
 } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
+import HaWebRtcPlayer from './HaWebRtcPlayer';
 import Go2RtcPlayer from './Go2RtcPlayer';
 
 interface CameraStreamModalProps {
@@ -103,9 +104,9 @@ export default function CameraStreamModal({
           </button>
         </div>
 
-        {/* Video Canvas Container powered by Go2RtcPlayer */}
+        {/* Video Canvas Container powered by HaWebRtcPlayer */}
         <div className="relative w-full aspect-video bg-black overflow-hidden flex items-center justify-center">
-          <Go2RtcPlayer
+          <HaWebRtcPlayer
             camera={camera}
             darkMode={darkMode}
             isIntercomActive={isMicActive}

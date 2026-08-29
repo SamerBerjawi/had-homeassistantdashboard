@@ -55,13 +55,13 @@ export function normalizeHAUrl(rawUrl: string): { httpUrl: string; wsUrl: string
 
 /**
  * Canonical Client ID and Redirect URI for OAuth.
- * Uses origin only (e.g. http://192.168.1.50:5173 or https://dashboard.example.com)
- * without pathname, ensuring the client_id remains completely stable across browser tabs,
- * subroutes, and iOS Home Screen PWA launches.
+ * Uses origin with trailing slash (e.g. http://localhost:3000/ or https://dashboard.example.com/)
+ * as required by Home Assistant IndieAuth / OAuth specification (MUST contain path component).
  */
 export function getCanonicalClientId(): string {
   if (typeof window === 'undefined') return '';
-  return window.location.origin;
+  const origin = window.location.origin.replace(/\/+$/, '');
+  return `${origin}/`;
 }
 
 /**
@@ -77,13 +77,14 @@ export function getHARedirectUri(): string {
 export function startHAOAuthFlow(serverUrl: string): void {
   const { httpUrl } = normalizeHAUrl(serverUrl);
   const clientId = getCanonicalClientId();
+  const redirectUri = getHARedirectUri();
   const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
   sessionStorage.setItem(STORAGE_KEY_PENDING_URL, httpUrl);
   sessionStorage.setItem(STORAGE_KEY_PENDING_STATE, state);
   sessionStorage.setItem(STORAGE_KEY_PENDING_CLIENT_ID, clientId);
 
-  const authUrl = `${httpUrl}/auth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(clientId)}&state=${encodeURIComponent(state)}&response_type=code`;
+  const authUrl = `${httpUrl}/auth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}&response_type=code`;
 
   window.location.href = authUrl;
 }
@@ -127,6 +128,7 @@ export async function handleHAOAuthCallback(): Promise<{ success: boolean; token
     bodyParams.append('grant_type', 'authorization_code');
     bodyParams.append('code', code);
     bodyParams.append('client_id', clientId);
+    bodyParams.append('redirect_uri', clientId);
 
     const tokenEndpoint = `${httpUrl}/auth/token`;
     const response = await fetch(tokenEndpoint, {

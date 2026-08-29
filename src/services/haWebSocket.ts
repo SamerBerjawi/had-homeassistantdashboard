@@ -67,6 +67,7 @@ class HAWebSocketClient {
   private socket: WebSocket | null = null;
   private messageId = 1;
   private pendingRequests = new Map<number, { resolve: (res: any) => void; reject: (err: any) => void }>();
+  private subscriptions = new Map<number, (event: any) => void>();
   private callbacks: HAWebSocketCallbacks | null = null;
   private status: HAConnectionStatus = 'disconnected';
   private currentUrl = '';
@@ -187,28 +188,34 @@ class HAWebSocketClient {
         !(this.rejectedToken && this.currentToken === this.rejectedToken) &&
         this.status !== 'auth_failed'
       ) {
-        this.connect(this.currentUrl, this.currentToken);
+        this.connect(this.currentUrl, this.currentToken, true);
       }
     }, delay);
   }
 
-  public connect(url: string, token: string) {
+  public clearRejectedToken() {
+    this.rejectedToken = null;
+  }
+
+  public connect(url: string, token: string, isAutoReconnect = false) {
     if (this.isDemoMode) {
       this.loadDemoRegistries();
       return;
     }
 
-    // Never retry with credentials known to be rejected — prevents tripping HA http.ban IP bans
-    if (this.rejectedToken && token === this.rejectedToken) {
-      this.status = 'auth_failed';
-      this.isExplicitDisconnect = true;
-      this.callbacks?.onStatusChange('auth_failed', 'Session expired. Please sign in again.');
-      this.callbacks?.onLogMessage('error', 'Skipping connection attempt: credentials were confirmed invalid. Please re-authenticate.');
-      return;
-    }
-
-    if (token && token !== this.rejectedToken) {
+    if (!isAutoReconnect) {
+      // Manual or explicit connect: clear rejected token memory and explicit disconnect state
       this.rejectedToken = null;
+      this.isExplicitDisconnect = false;
+    } else {
+      // Auto-reconnect: avoid looping on confirmed rejected credentials
+      if (this.rejectedToken && token === this.rejectedToken) {
+        this.status = 'auth_failed';
+        this.isExplicitDisconnect = true;
+        this.callbacks?.onStatusChange('auth_failed', 'Session expired. Please sign in again.');
+        this.callbacks?.onLogMessage('error', 'Skipping auto-reconnect: credentials were confirmed invalid. Please re-authenticate.');
+        return;
+      }
     }
 
     const normalizedUrl = normalizeHAWebSocketUrl(url);
@@ -217,6 +224,10 @@ class HAWebSocketClient {
     this.isExplicitDisconnect = false;
 
     if (this.socket) {
+      this.socket.onopen = null;
+      this.socket.onmessage = null;
+      this.socket.onerror = null;
+      this.socket.onclose = null;
       this.socket.close();
       this.socket = null;
     }
@@ -248,6 +259,12 @@ class HAWebSocketClient {
       };
 
       this.socket.onclose = () => {
+        for (const [, pending] of this.pendingRequests.entries()) {
+          pending.reject(new Error('WebSocket closed'));
+        }
+        this.pendingRequests.clear();
+        this.subscriptions.clear();
+
         if ((this.status as HAConnectionStatus) === 'auth_failed') {
           return;
         }
@@ -279,9 +296,18 @@ class HAWebSocketClient {
       this.reconnectTimer = null;
     }
     if (this.socket) {
+      this.socket.onopen = null;
+      this.socket.onmessage = null;
+      this.socket.onerror = null;
+      this.socket.onclose = null;
       this.socket.close();
       this.socket = null;
     }
+    for (const [, pending] of this.pendingRequests.entries()) {
+      pending.reject(new Error('WebSocket disconnected'));
+    }
+    this.pendingRequests.clear();
+    this.subscriptions.clear();
     this.status = 'disconnected';
     this.callbacks?.onStatusChange('disconnected');
   }
@@ -352,6 +378,12 @@ class HAWebSocketClient {
     }
 
     if (msg.type === 'event') {
+      const subCallback = this.subscriptions.get(msg.id);
+      if (subCallback) {
+        subCallback(msg.event !== undefined ? msg.event : msg);
+        return;
+      }
+
       const data = msg.event?.data || msg.data;
       const entityId = data?.entity_id || msg.event?.entity_id;
       const newState = data?.new_state || data?.state || msg.event?.new_state;
@@ -368,6 +400,10 @@ class HAWebSocketClient {
     this.rejectedToken = this.currentToken;
     this.isExplicitDisconnect = true;
     if (this.socket) {
+      this.socket.onopen = null;
+      this.socket.onmessage = null;
+      this.socket.onerror = null;
+      this.socket.onclose = null;
       this.socket.close();
       this.socket = null;
     }
@@ -536,6 +572,63 @@ class HAWebSocketClient {
       const payload = { id, type, ...extra };
       this.pendingRequests.set(id, { resolve, reject });
       this.socket.send(JSON.stringify(payload));
+    });
+  }
+
+  public subscribeMessage<T = any>(
+    callback: (event: T) => void,
+    payload: Record<string, any>
+  ): Promise<() => void> {
+    return new Promise((resolve, reject) => {
+      if (this.isDemoMode) {
+        // In demo mode, provide safe no-op subscription
+        resolve(() => {});
+        return;
+      }
+
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        reject(new Error('WebSocket is not connected'));
+        return;
+      }
+
+      const id = this.messageId++;
+      let unsubscribed = false;
+
+      const unsubscribe = () => {
+        if (unsubscribed) return;
+        unsubscribed = true;
+        this.subscriptions.delete(id);
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+          this.sendRequest('unsubscribe_events', { subscription: id }).catch(() => {});
+        }
+      };
+
+      this.subscriptions.set(id, (event: T) => {
+        if (!unsubscribed) {
+          callback(event);
+        }
+      });
+
+      this.pendingRequests.set(id, {
+        resolve: () => {
+          if (unsubscribed) {
+            unsubscribe();
+          }
+          resolve(unsubscribe);
+        },
+        reject: (err) => {
+          this.subscriptions.delete(id);
+          reject(err);
+        }
+      });
+
+      try {
+        this.socket.send(JSON.stringify({ id, ...payload }));
+      } catch (err) {
+        this.subscriptions.delete(id);
+        this.pendingRequests.delete(id);
+        reject(err);
+      }
     });
   }
 

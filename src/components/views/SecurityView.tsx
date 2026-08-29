@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { 
   ShieldCheck, 
@@ -20,6 +20,7 @@ import {
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { classifyBinarySensors } from '../../lib/entityClassifiers';
 import { ResolvedEntity } from '../../types';
+import { haWebSocketService } from '../../services/haWebSocket';
 
 import SecurityBadgesBar, { SecurityFilterTab } from './security/SecurityBadgesBar';
 import AlarmPanelSection from './security/AlarmPanelSection';
@@ -50,6 +51,35 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
 
   const [activeFilter, setActiveFilter] = useState<SecurityFilterTab>('all');
   const [isKeypadModalOpen, setIsKeypadModalOpen] = useState<boolean>(false);
+  const [webRtcCapabilities, setWebRtcCapabilities] = useState<Record<string, boolean>>({});
+
+  const rawCameras: ResolvedEntity[] = useMemo(() => domainGroups['camera'] || [], [domainGroups]);
+
+  // Query camera capabilities via HA WebSocket signaling (camera/capabilities)
+  useEffect(() => {
+    if (haWebSocketService.isDemo() || haWebSocketService.getStatus() !== 'connected') {
+      return;
+    }
+
+    rawCameras.forEach((cam) => {
+      if (webRtcCapabilities[cam.entity_id] !== undefined) return;
+
+      haWebSocketService.sendRequest<{ frontend_stream_types?: string[] }>('camera/capabilities', {
+        entity_id: cam.entity_id
+      })
+        .then((res) => {
+          const supportsWebRtc = Array.isArray(res?.frontend_stream_types) && res.frontend_stream_types.includes('web_rtc');
+          setWebRtcCapabilities(prev => ({ ...prev, [cam.entity_id]: supportsWebRtc }));
+        })
+        .catch(() => {
+          const supportsWebRtc =
+            cam.attributes?.frontend_stream_types?.includes('web_rtc') ||
+            cam.attributes?.stream_type === 'webrtc' ||
+            (cam as any).platform === 'go2rtc';
+          setWebRtcCapabilities(prev => ({ ...prev, [cam.entity_id]: !!supportsWebRtc }));
+        });
+    });
+  }, [rawCameras, webRtcCapabilities]);
 
   // Classify all sensors, locks, cameras, and alarms
   const {
@@ -69,8 +99,45 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
     const allBinary: ResolvedEntity[] = domainGroups['binary_sensor'] || [];
     const alarms: ResolvedEntity[] = domainGroups['alarm_control_panel'] || [];
     const locks: ResolvedEntity[] = domainGroups['lock'] || [];
-    const cameras: ResolvedEntity[] = domainGroups['camera'] || [];
     const users: ResolvedEntity[] = [...(domainGroups['person'] || []), ...(domainGroups['device_tracker'] || [])];
+
+    // Filter cameras for WebRTC (go2rtc) capability with safety allowlist override
+    const eligibleCameras = rawCameras.filter((cam) => {
+      // Manual allow-list override from localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const saved = localStorage.getItem('homz_webrtc_camera_allowlist');
+          if (saved) {
+            const list: string[] = JSON.parse(saved);
+            if (list.includes(cam.entity_id)) return true;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // Check queried capability response
+      if (webRtcCapabilities[cam.entity_id] !== undefined) {
+        return webRtcCapabilities[cam.entity_id];
+      }
+
+      // In demo mode, all cameras are eligible
+      if (haWebSocketService.isDemo()) {
+        return true;
+      }
+
+      // Fallback attributes & platform check
+      if (
+        cam.attributes?.frontend_stream_types?.includes('web_rtc') ||
+        cam.attributes?.stream_type === 'webrtc' ||
+        (cam as any).platform === 'go2rtc'
+      ) {
+        return true;
+      }
+
+      // Pending capability check: keep visible until capability result arrives
+      return true;
+    });
 
     const {
       doorSensors: doors,
@@ -87,7 +154,7 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
       alarmEntities: alarms,
       activeAlarm: activeAlarmEntity,
       lockEntities: locks,
-      cameraEntities: cameras,
+      cameraEntities: eligibleCameras,
       userEntities: users,
       doorSensors: doors,
       windowSensors: windows,
@@ -97,7 +164,7 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
       openDoors: doors.filter((d) => d.state === 'on'),
       openWindows: windows.filter((w) => w.state === 'on')
     };
-  }, [domainGroups, selectedAlarmEntityId]);
+  }, [domainGroups, selectedAlarmEntityId, rawCameras, webRtcCapabilities]);
 
   return (
     <div className="w-full flex-1 flex flex-col space-y-6 pb-12">
