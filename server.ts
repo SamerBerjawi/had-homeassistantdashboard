@@ -5,6 +5,7 @@
 
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
@@ -299,12 +300,95 @@ async function startServer() {
     next();
   });
 
-  // Payload Limit Middleware (prevent oversized requests)
-  app.use(express.json({ limit: '64kb' }));
+  // Ensure persistent NAS storage folders exist
+  const dataDir = path.join(process.cwd(), 'data');
+  const assetsDir = path.join(dataDir, 'assets');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  if (!fs.existsSync(assetsDir)) {
+    fs.mkdirSync(assetsDir, { recursive: true });
+  }
+
+  // Payload Limit Middleware (allows asset sync and large configs)
+  app.use(express.json({ limit: '15mb' }));
+
+  // Static Assets Directory for NAS uploaded vehicle PNGs / brand logos
+  app.use('/data/assets', express.static(assetsDir));
 
   // Health check endpoint
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', serverTime: new Date().toISOString() });
+  });
+
+  // NAS REST Configuration Persistence API
+  const configFilePath = path.join(dataDir, 'config.json');
+
+  app.get('/api/config', (req, res) => {
+    try {
+      if (fs.existsSync(configFilePath)) {
+        const raw = fs.readFileSync(configFilePath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        return res.json({ success: true, config: parsed });
+      }
+      return res.json({ success: true, config: null });
+    } catch (err: any) {
+      console.error('[NAS Config] Error reading config:', err);
+      return res.status(500).json({ success: false, error: 'Failed to read persistent config' });
+    }
+  });
+
+  app.post('/api/config', (req, res) => {
+    try {
+      const incomingConfig = req.body;
+      if (!incomingConfig || typeof incomingConfig !== 'object') {
+        return res.status(400).json({ success: false, error: 'Invalid config payload' });
+      }
+      fs.writeFileSync(configFilePath, JSON.stringify(incomingConfig, null, 2), 'utf-8');
+      return res.json({ success: true, config: incomingConfig });
+    } catch (err: any) {
+      console.error('[NAS Config] Error saving config:', err);
+      return res.status(500).json({ success: false, error: 'Failed to save persistent config' });
+    }
+  });
+
+  // NAS Custom Asset Upload API (vehicle PNGs / brand logos)
+  app.post('/api/assets', (req, res) => {
+    try {
+      const { dataUrl, key, filename } = req.body;
+      if (!dataUrl || typeof dataUrl !== 'string') {
+        return res.status(400).json({ success: false, error: 'Missing or invalid dataUrl' });
+      }
+
+      // Parse base64 dataUrl (e.g. data:image/png;base64,...)
+      const match = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (!match) {
+        return res.status(400).json({ success: false, error: 'Invalid base64 DataURL format' });
+      }
+
+      const mimeType = match[1];
+      const base64Data = match[2];
+      const buffer = Buffer.from(base64Data, 'base64');
+
+      let ext = 'png';
+      if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = 'jpg';
+      if (mimeType.includes('svg')) ext = 'svg';
+      if (mimeType.includes('webp')) ext = 'webp';
+
+      const safeKey = (key || 'asset').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safeName = filename 
+        ? filename.replace(/[^a-zA-Z0-9._-]/g, '_')
+        : `${safeKey}_${Date.now()}.${ext}`;
+      
+      const targetPath = path.join(assetsDir, safeName);
+      fs.writeFileSync(targetPath, buffer);
+
+      const publicUrl = `/data/assets/${safeName}`;
+      return res.json({ success: true, url: publicUrl, filename: safeName });
+    } catch (err: any) {
+      console.error('[NAS Assets] Error saving asset:', err);
+      return res.status(500).json({ success: false, error: 'Failed to save asset to persistent volume' });
+    }
   });
 
   // Proxy endpoint to query go2rtc streams bypassing any browser CORS / Private Network Access restrictions

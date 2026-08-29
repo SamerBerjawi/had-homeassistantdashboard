@@ -76,7 +76,9 @@ import {
   Briefcase,
   GraduationCap,
   VideoCamera,
-  Info
+  Info,
+  SignIn,
+  SignOut
 } from '@phosphor-icons/react';
 import { HAEntity, Room, LogMessage, ToastNotification, HAArea, HAFloor, HALabel, HAZone } from '../types';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
@@ -88,6 +90,9 @@ import { PwaStatusCard } from './pwa/PwaStatusCard';
 import IconPickerModal from './ui/IconPickerModal';
 import DynamicPhosphorIcon from './ui/DynamicPhosphorIcon';
 import { getGo2RtcBaseUrls, testGo2RtcConnection } from '../services/go2rtcService';
+import { useAuth } from '../contexts/AuthContext';
+import { useUserConfig } from '../contexts/ConfigContext';
+import SettingsModal from './settings/SettingsModal';
 
 interface SettingsViewProps {
   darkMode: boolean;
@@ -211,6 +216,18 @@ export default function SettingsView({
     importProfilesJson,
     resetToDefaults
   } = useCanvasStore();
+
+  const { authState, openAuthModal, logout } = useAuth();
+  const { 
+    driverType, 
+    driverName, 
+    isSyncingRemote, 
+    isSaving: isConfigSaving, 
+    lastSaved: configLastSaved, 
+    exportConfigJson, 
+    importConfigJson, 
+    resetConfig: resetDashboardConfig 
+  } = useUserConfig();
 
   const [activeSection, setActiveSection] = useState<SettingsSection>('user_profile');
 
@@ -988,21 +1005,138 @@ export default function SettingsView({
                   </div>
                 </div>
 
-                {/* Profile Avatar Card */}
-                <div className="flex flex-col sm:flex-row items-center gap-5 p-5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10">
-                  <div className="w-16 h-16 rounded-2xl bg-linear-to-tr from-sky-500 to-indigo-600 text-white font-black text-xl flex items-center justify-center shadow-lg shadow-sky-500/20 shrink-0">
-                    {profileData.avatarInitials || 'AM'}
+                {/* Account & Storage Synchronization Status Card */}
+                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-linear-to-tr from-sky-500 to-indigo-600 text-white font-black text-xl flex items-center justify-center shadow-lg shadow-sky-500/20 shrink-0">
+                        {authState.user?.name ? authState.user.name.charAt(0).toUpperCase() : profileData.avatarInitials || 'AM'}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                            {authState.user?.name || profileData.displayName}
+                          </h4>
+                          {authState.user?.isOwner && (
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                              Owner
+                            </span>
+                          )}
+                          <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30">
+                            {profileData.role}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono truncate max-w-sm">
+                          {authState.haUrl || (authState.isDemo ? 'Local Browser Sandbox' : profileData.email)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Connection Method Badge */}
+                    <div className="flex items-center gap-2 self-start sm:self-center">
+                      <span className="px-3 py-1.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 shadow-xs">
+                        {authState.authMethod === 'oauth' && (
+                          <>
+                            <Key size={14} weight="fill" className="text-sky-500" />
+                            <span>OAuth2 Signed In</span>
+                          </>
+                        )}
+                        {authState.authMethod === 'llat' && (
+                          <>
+                            <Key size={14} weight="fill" className="text-cyan-500" />
+                            <span>LLAT Connected</span>
+                          </>
+                        )}
+                        {authState.isDemo && (
+                          <>
+                            <Sparkle size={14} weight="fill" className="text-amber-500" />
+                            <span>Demo Sandbox</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
                   </div>
-                  <div className="min-w-0 text-center sm:text-left flex-1">
-                    <h4 className="text-base font-bold text-slate-900 dark:text-white">{profileData.displayName}</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{profileData.email}</p>
-                    <div className="flex items-center justify-center sm:justify-start gap-2 mt-2">
-                      <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30">
-                        {profileData.role}
+
+                  {/* Live Backend Indicator */}
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-black/30 border border-slate-200 dark:border-white/10 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="flex h-2.5 w-2.5 relative shrink-0">
+                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                          isSyncingRemote ? 'bg-emerald-400' : 'bg-amber-400'
+                        }`}></span>
+                        <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                          isSyncingRemote ? 'bg-emerald-500' : 'bg-amber-500'
+                        }`}></span>
                       </span>
-                      <span className="text-[10px] font-mono text-slate-500">
-                        Session Active
+                      <div className="truncate">
+                        {isSyncingRemote ? (
+                          <span className="text-emerald-700 dark:text-emerald-300 font-bold">
+                            🟢 Sync: Connected to Home Assistant & NAS Storage (Cross-device active)
+                          </span>
+                        ) : (
+                          <span className="text-amber-700 dark:text-amber-300 font-bold">
+                            🟡 Sync: Isolated Local Storage (Demo Mode)
+                          </span>
+                        )}
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          Active Driver: <code className="text-slate-700 dark:text-slate-300 font-semibold">{driverName}</code> • Last Saved: {configLastSaved ? new Date(configLastSaved).toLocaleTimeString() : 'Just now'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {isConfigSaving && (
+                      <span className="flex items-center gap-1.5 text-xs text-sky-500 font-semibold shrink-0">
+                        <ArrowsClockwise size={14} className="animate-spin" />
+                        <span>Syncing...</span>
                       </span>
+                    )}
+                  </div>
+
+                  {/* Account Action Buttons */}
+                  <div className="flex items-center justify-between gap-3 pt-1 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      {authState.isDemo ? (
+                        <button
+                          type="button"
+                          onClick={openAuthModal}
+                          className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md shadow-sky-600/20 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                        >
+                          <SignIn size={15} weight="bold" />
+                          <span>Switch to Live HA Account</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={logout}
+                          className="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:text-rose-700 font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                        >
+                          <SignOut size={15} weight="bold" />
+                          <span>Sign Out</span>
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const jsonStr = exportConfigJson();
+                          const blob = new Blob([jsonStr], { type: 'application/json' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `homz_config_backup_${new Date().toISOString().slice(0, 10)}.json`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                          if (addToast) {
+                            addToast({ title: 'Configuration Backed Up', message: 'Saved JSON backup to your downloads folder.', type: 'success' });
+                          }
+                        }}
+                        className="px-3 py-2 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 font-semibold text-xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                      >
+                        <DownloadSimple size={15} weight="bold" className="text-sky-500" />
+                        <span>Backup Configuration (JSON)</span>
+                      </button>
                     </div>
                   </div>
                 </div>

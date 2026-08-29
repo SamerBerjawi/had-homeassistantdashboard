@@ -12,6 +12,8 @@ import NotificationBell from './components/notifications/NotificationBell';
 import NotificationDrawer from './components/notifications/NotificationDrawer';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
 import { UpdateToast } from './components/pwa/UpdateToast';
+import AuthModal from './components/auth/AuthModal';
+import DemoBanner from './components/auth/DemoBanner';
 import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power } from '@phosphor-icons/react';
 
 import { PAGE_THEMES } from './config/pageThemes';
@@ -268,6 +270,9 @@ export default function App() {
 
       {/* Main Dynamic Viewport Container */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative z-10">
+        {/* Persistent Demo Mode Status Banner */}
+        <DemoBanner />
+
         <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container p-4 sm:p-6 lg:p-8 flex flex-col">
           {/* Header Bar - Title with Animated Wave / Page Icon & Subtitle */}
           <header className="mb-6 flex flex-row items-start justify-between gap-3.5 pb-1">
@@ -487,6 +492,9 @@ export default function App() {
 
       {/* In-App PWA Service Worker Update Notice */}
       <UpdateToast />
+
+      {/* Security Auth Gatekeeper Modal */}
+      <AuthModal darkMode={darkMode} />
     </div>
   );
 }

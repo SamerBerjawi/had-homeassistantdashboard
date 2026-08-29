@@ -1,0 +1,103 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+export interface UserDashboardConfig {
+  version: number;
+  updatedAt: string;
+  theme: {
+    accentColor: string;
+    glassOpacity: number;
+    backgroundBlur: number;
+  };
+  mobility: {
+    car: {
+      customName?: string;
+      brandLogoUrl?: string;
+      vehicleImageUrl?: string;
+      targetSocDefault: number;
+    };
+    bike: {
+      customName?: string;
+      brandLogoUrl?: string;
+      bikeImageUrl?: string;
+    };
+  };
+  rooms: {
+    hiddenAreas: string[];
+    favoriteAreas: string[];
+    areaSortOrder: string[];
+  };
+  network: {
+    adguardTimelineDefault: '24H' | '7D' | '30D' | '90D';
+    defaultChartMode: 'unified' | 'split';
+  };
+  energy: {
+    defaultPeriod: 'today' | 'yesterday' | '7d' | 'month' | 'year';
+    carbonIntensityFactor?: number;
+  };
+}
+
+export interface IConfigStorageDriver {
+  loadConfig(): Promise<UserDashboardConfig>;
+  saveConfig(config: Partial<UserDashboardConfig>): Promise<UserDashboardConfig>;
+  uploadAsset?(file: File, key: string): Promise<string>;
+}
+
+export type StorageDriverType = 'remote_ha' | 'remote_nas' | 'local_storage';
+
+export interface ConfigContextType {
+  config: UserDashboardConfig;
+  isLoading: boolean;
+  isSaving: boolean;
+  lastSaved: string | null;
+  driverType: StorageDriverType;
+  driverName: string;
+  isSyncingRemote: boolean;
+  updateConfig: (
+    partialOrUpdater:
+      | Partial<UserDashboardConfig>
+      | ((prev: UserDashboardConfig) => Partial<UserDashboardConfig>)
+  ) => Promise<UserDashboardConfig>;
+  uploadVehicleAsset: (file: File, key: string) => Promise<string>;
+  resetConfig: () => Promise<UserDashboardConfig>;
+  exportConfigJson: () => string;
+  importConfigJson: (jsonStr: string) => Promise<boolean>;
+}
+
+export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
+  version: 1,
+  updatedAt: new Date().toISOString(),
+  theme: {
+    accentColor: '#38bdf8', // sky-400
+    glassOpacity: 0.75,
+    backgroundBlur: 16
+  },
+  mobility: {
+    car: {
+      customName: 'Porsche Taycan 4S',
+      brandLogoUrl: undefined,
+      vehicleImageUrl: undefined,
+      targetSocDefault: 80
+    },
+    bike: {
+      customName: 'VanMoof S3',
+      brandLogoUrl: undefined,
+      bikeImageUrl: undefined
+    }
+  },
+  rooms: {
+    hiddenAreas: [],
+    favoriteAreas: [],
+    areaSortOrder: []
+  },
+  network: {
+    adguardTimelineDefault: '24H',
+    defaultChartMode: 'unified'
+  },
+  energy: {
+    defaultPeriod: 'today',
+    carbonIntensityFactor: 0.385
+  }
+};
