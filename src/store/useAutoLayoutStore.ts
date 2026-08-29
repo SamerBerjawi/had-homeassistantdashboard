@@ -34,7 +34,8 @@ import {
   clearStoredHAAuth, 
   refreshHAOAuthToken,
   saveStoredHAAuth,
-  normalizeHAUrl
+  normalizeHAUrl,
+  HAAuthTokens
 } from '../services/haAuth';
 import { MOCK_AREAS, MOCK_DEVICES, MOCK_ENTITY_REGISTRY, MOCK_FLOORS, MOCK_LABELS, MOCK_STATES } from '../data/mockRegistries';
 
@@ -195,6 +196,17 @@ const getCachedLiveMode = (): boolean => {
   return false;
 };
 
+// Check if user has credentials configured
+export const hasConfiguredHACredentials = (): boolean => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('ha_token');
+    if (token && token.trim()) return true;
+    const storedAuth = getStoredHAAuth();
+    if (storedAuth?.access_token) return true;
+  }
+  return false;
+};
+
 let recomputeTimer: any = null;
 const scheduleRecompute = (get: any) => {
   if (recomputeTimer) return;
@@ -210,6 +222,109 @@ const scheduleRecompute = (get: any) => {
     }, 16);
   }
 };
+
+let oauthRefreshTimer: any = null;
+let oauthVisibilityListenerAttached = false;
+
+function clearOAuthTokenRefresh() {
+  if (oauthRefreshTimer) {
+    clearTimeout(oauthRefreshTimer);
+    oauthRefreshTimer = null;
+  }
+}
+
+function clearAllStoredHACredentials() {
+  clearOAuthTokenRefresh();
+  clearStoredHAAuth();
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('ha_live_mode', 'false');
+    localStorage.removeItem('ha_token');
+    localStorage.removeItem('ha_server_url');
+    localStorage.removeItem('had_last_ha_url');
+  }
+}
+
+function scheduleOAuthTokenRefresh(tokens: HAAuthTokens, set: any, get: any) {
+  clearOAuthTokenRefresh();
+
+  if (tokens.auth_type !== 'oauth' || !tokens.refresh_token) {
+    return;
+  }
+
+  const now = Date.now();
+  const expiresAt = tokens.expires_at || (now + (tokens.expires_in || 1800) * 1000);
+  const safetyMargin = 180000; // 3 minutes safety margin before expiry
+  const refreshDelay = Math.max(5000, expiresAt - now - safetyMargin);
+
+  oauthRefreshTimer = setTimeout(async () => {
+    try {
+      const refreshed = await refreshHAOAuthToken(tokens);
+      if (refreshed) {
+        set({
+          haToken: refreshed.access_token,
+          serverUrl: refreshed.server_url
+        });
+        haWebSocketService.updateToken(refreshed.access_token);
+        scheduleOAuthTokenRefresh(refreshed, set, get);
+      } else {
+        console.error('[HA Auth] Proactive OAuth token refresh failed. Terminating stale session.');
+        clearStoredHAAuth();
+        clearOAuthTokenRefresh();
+        haWebSocketService.disconnect();
+        set({
+          isLiveMode: false,
+          authType: 'demo',
+          haToken: '',
+          connectionStatus: 'auth_failed',
+          connectionError: 'Session expired. Please sign in again.'
+        });
+        get().reloadDemoData();
+      }
+    } catch (e) {
+      console.error('[HA Auth] Exception in proactive token refresh timer:', e);
+    }
+  }, refreshDelay);
+
+  if (typeof document !== 'undefined' && !oauthVisibilityListenerAttached) {
+    oauthVisibilityListenerAttached = true;
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible') {
+        const stored = getStoredHAAuth();
+        if (stored && stored.auth_type === 'oauth' && stored.refresh_token) {
+          const currentNow = Date.now();
+          const targetExpiry = stored.expires_at || (currentNow + (stored.expires_in || 1800) * 1000);
+          if (targetExpiry < currentNow + safetyMargin) {
+            try {
+              const refreshed = await refreshHAOAuthToken(stored);
+              if (refreshed) {
+                set({
+                  haToken: refreshed.access_token,
+                  serverUrl: refreshed.server_url
+                });
+                haWebSocketService.updateToken(refreshed.access_token);
+                scheduleOAuthTokenRefresh(refreshed, set, get);
+              } else {
+                clearStoredHAAuth();
+                clearOAuthTokenRefresh();
+                haWebSocketService.disconnect();
+                set({
+                  isLiveMode: false,
+                  authType: 'demo',
+                  haToken: '',
+                  connectionStatus: 'auth_failed',
+                  connectionError: 'Session expired. Please sign in again.'
+                });
+                get().reloadDemoData();
+              }
+            } catch (e) {
+              console.error('[HA Auth] Visibility change refresh error:', e);
+            }
+          }
+        }
+      }
+    });
+  }
+}
 
 export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   isLiveMode: getCachedLiveMode(),
@@ -266,6 +381,38 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           isLoading: status === 'connecting',
           error: errorMsg || null
         });
+      },
+      onAuthInvalid: async () => {
+        const stored = getStoredHAAuth();
+        if (stored && stored.auth_type === 'oauth' && stored.refresh_token) {
+          try {
+            const refreshed = await refreshHAOAuthToken(stored);
+            if (refreshed) {
+              set({
+                haToken: refreshed.access_token,
+                serverUrl: refreshed.server_url
+              });
+              haWebSocketService.updateToken(refreshed.access_token);
+              scheduleOAuthTokenRefresh(refreshed, set, get);
+              return refreshed.access_token;
+            }
+          } catch (e) {
+            console.error('[HA Auth] onAuthInvalid refresh attempt failed:', e);
+          }
+        }
+
+        console.warn('[HA Auth] Authentication rejected and token could not be refreshed. Forcing re-login.');
+        clearStoredHAAuth();
+        clearOAuthTokenRefresh();
+        set({
+          isLiveMode: false,
+          authType: 'demo',
+          haToken: '',
+          connectionStatus: 'auth_failed',
+          connectionError: 'Session expired. Please sign in again.'
+        });
+        get().reloadDemoData();
+        return null;
       },
       onRegistriesLoaded: (payload) => {
         set({
@@ -331,6 +478,12 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       const oauthResult = await handleHAOAuthCallback();
       if (oauthResult.success && oauthResult.tokens) {
         const tokens = oauthResult.tokens;
+        // Purge any stale LLAT cached values
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('ha_token');
+          localStorage.removeItem('ha_server_url');
+          localStorage.setItem('ha_live_mode', 'true');
+        }
         set({
           isLiveMode: true,
           serverUrl: tokens.server_url,
@@ -339,6 +492,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         });
         haWebSocketService.setDemoMode(false);
         haWebSocketService.connect(tokens.server_url, tokens.access_token);
+        scheduleOAuthTokenRefresh(tokens, set, get);
         return;
       }
     } catch (err) {
@@ -350,11 +504,25 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
     if (storedAuth) {
       if (storedAuth.auth_type === 'oauth') {
         let activeTokens = storedAuth;
-        // Check if token is expired or close to expiry (within 2 minutes)
-        if (storedAuth.expires_at && storedAuth.expires_at < Date.now() + 120000) {
+        // Check if token is expired or close to expiry (within 3 minutes)
+        if (!storedAuth.expires_at || storedAuth.expires_at < Date.now() + 180000) {
           const refreshed = await refreshHAOAuthToken(storedAuth);
           if (refreshed) {
             activeTokens = refreshed;
+          } else {
+            // NEVER fall back to stale expired token!
+            console.warn('[HA Auth] Stored OAuth token expired and refresh failed. Clearing credentials.');
+            clearStoredHAAuth();
+            clearOAuthTokenRefresh();
+            set({
+              isLiveMode: false,
+              authType: 'demo',
+              haToken: '',
+              connectionStatus: 'auth_failed',
+              connectionError: 'Session expired. Please sign in again.'
+            });
+            get().reloadDemoData();
+            return;
           }
         }
 
@@ -366,8 +534,10 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         });
         haWebSocketService.setDemoMode(false);
         haWebSocketService.connect(activeTokens.server_url, activeTokens.access_token);
+        scheduleOAuthTokenRefresh(activeTokens, set, get);
         return;
       } else if (storedAuth.auth_type === 'llat' && storedAuth.access_token) {
+        clearOAuthTokenRefresh();
         set({
           isLiveMode: true,
           serverUrl: storedAuth.server_url,
@@ -386,6 +556,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
     const cachedLive = getCachedLiveMode();
 
     if (cachedLive && cachedUrl && cachedToken) {
+      clearOAuthTokenRefresh();
       saveStoredHAAuth({
         access_token: cachedToken,
         server_url: cachedUrl,
@@ -401,17 +572,26 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   },
 
   loginWithHA: (url: string) => {
+    clearOAuthTokenRefresh();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('ha_token');
+      localStorage.removeItem('ha_server_url');
+      localStorage.setItem('ha_live_mode', 'true');
+    }
     startHAOAuthFlow(url);
   },
 
   logoutHA: () => {
-    clearStoredHAAuth();
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('ha_live_mode', 'false');
-      localStorage.removeItem('ha_token');
-    }
+    clearAllStoredHACredentials();
     haWebSocketService.disconnect();
-    set({ isLiveMode: false, authType: 'demo', haToken: '' });
+    set({
+      isLiveMode: false,
+      authType: 'demo',
+      haToken: '',
+      serverUrl: '',
+      connectionStatus: 'disconnected',
+      connectionError: null
+    });
     get().reloadDemoData();
   },
 
@@ -437,16 +617,21 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   },
 
   setLiveMode: (live: boolean, url?: string, token?: string) => {
+    if (!live) {
+      get().disconnectFromHA();
+      return;
+    }
+
     const nextUrl = url || get().serverUrl;
     const nextToken = token || get().haToken;
     
     if (typeof window !== 'undefined') {
-      localStorage.setItem('ha_live_mode', live ? 'true' : 'false');
+      localStorage.setItem('ha_live_mode', 'true');
       if (nextUrl) localStorage.setItem('ha_server_url', nextUrl);
       if (nextToken) localStorage.setItem('ha_token', nextToken);
     }
 
-    if (live && nextToken && nextUrl) {
+    if (nextToken && nextUrl) {
       saveStoredHAAuth({
         access_token: nextToken,
         server_url: nextUrl,
@@ -454,17 +639,14 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       });
     }
 
-    set({ isLiveMode: live, serverUrl: nextUrl, haToken: nextToken, authType: live ? 'llat' : 'demo' });
-
-    haWebSocketService.setDemoMode(!live);
-    if (live) {
-      haWebSocketService.connect(nextUrl, nextToken);
-    } else {
-      get().reloadDemoData();
-    }
+    set({ isLiveMode: true, serverUrl: nextUrl, haToken: nextToken, authType: 'llat' });
+    haWebSocketService.setDemoMode(false);
+    haWebSocketService.connect(nextUrl, nextToken);
   },
 
   connectToHA: (url: string, token: string) => {
+    // Switching to LLAT: purge all OAuth tokens and OAuth refresh timers
+    clearAllStoredHACredentials();
     if (typeof window !== 'undefined') {
       localStorage.setItem('ha_live_mode', 'true');
       localStorage.setItem('ha_server_url', url);
@@ -481,11 +663,16 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   },
 
   disconnectFromHA: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('ha_live_mode', 'false');
-    }
+    clearAllStoredHACredentials();
     haWebSocketService.disconnect();
-    set({ isLiveMode: false });
+    set({
+      isLiveMode: false,
+      authType: 'demo',
+      haToken: '',
+      serverUrl: '',
+      connectionStatus: 'disconnected',
+      connectionError: null
+    });
     get().reloadDemoData();
   },
 

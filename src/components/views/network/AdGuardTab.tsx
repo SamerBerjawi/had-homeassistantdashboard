@@ -49,14 +49,6 @@ export const AdGuardTab: React.FC<AdGuardTabProps> = ({ darkMode = true }) => {
         darkMode={darkMode}
       />
 
-      {/* Section 3: DNS Traffic History (Bklit Line Chart with Unified vs. Split View Toggle) */}
-      <AdGuardTrafficHistorySection
-        historyData={historyData}
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
-        darkMode={darkMode}
-      />
-
       {/* Section 4: Threat & Enforcement Breakdown (Independent Metric Cards) */}
       <AdGuardThreatSection
         metrics={metrics}

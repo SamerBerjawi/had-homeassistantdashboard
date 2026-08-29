@@ -1,6 +1,6 @@
 "use client";
 
-import { curveNatural } from "@visx/curve";
+import { curveMonotoneX } from "@visx/curve";
 import { LinePath } from "@visx/shape";
 
 // CurveFactory type - simplified version compatible with visx
@@ -39,7 +39,6 @@ import { SeriesHighlightLayer } from "./series-highlight-layer";
 import { SeriesHoverDim } from "./series-hover-dim";
 import { SeriesMarkers } from "./series-markers";
 import type { SeriesPointMarkerStyle } from "./series-point-marker";
-import { useAnimatedSeriesPath } from "./use-animated-series-path";
 
 export interface LineProps {
   /** Key in data to use for y values */
@@ -50,7 +49,7 @@ export interface LineProps {
   stroke?: string;
   /** Stroke width. Default: 2.5 */
   strokeWidth?: number;
-  /** Curve function. Default: curveNatural */
+  /** Curve function. Default: curveMonotoneX */
   curve?: CurveFactory;
   /** Whether to animate the line. Default: true */
   animate?: boolean;
@@ -96,41 +95,24 @@ export interface LineProps {
 }
 
 function LineSeriesStroke({
-  animatedPathD,
   curve,
   getY,
   pathRef,
   renderData,
   strokeWidth,
-  useDataTransitionPath,
   visibleStroke,
   xAccessor,
   xScale,
 }: {
-  animatedPathD: string;
   curve: CurveFactory;
   getY: (datum: Record<string, unknown>) => number;
   pathRef: RefObject<SVGPathElement | null>;
   renderData: Record<string, unknown>[];
   strokeWidth: number;
-  useDataTransitionPath: boolean;
   visibleStroke: string;
   xAccessor: (datum: Record<string, unknown>) => Date;
   xScale: (value: Date) => number | undefined;
 }) {
-  if (useDataTransitionPath && animatedPathD) {
-    return (
-      <path
-        d={animatedPathD}
-        fill="none"
-        ref={pathRef}
-        stroke={visibleStroke}
-        strokeLinecap="round"
-        strokeWidth={strokeWidth}
-      />
-    );
-  }
-
   return (
     <LinePath
       curve={curve}
@@ -208,7 +190,7 @@ export function Line({
   yAxisId,
   stroke = chartCssVars.linePrimary,
   strokeWidth = 2.5,
-  curve = curveNatural,
+  curve = curveMonotoneX,
   animate = true,
   fadeEdges = true,
   showHighlight = true,
@@ -239,22 +221,8 @@ export function Line({
     lines,
     chartPhase,
     notifyLoadingPulseComplete,
-    yDomainTweenDuration,
   } = useChartStable();
   const yScale = useYScale(yAxisId);
-  const useDataTransitionPath = animate && chartPhase === "ready";
-  const { pathD: animatedPathD } = useAnimatedSeriesPath({
-    chartPhase,
-    curve,
-    dataKey,
-    durationMs: yDomainTweenDuration,
-    enabled: useDataTransitionPath,
-    innerWidth,
-    renderData,
-    xAccessor,
-    xScale,
-    yScale,
-  });
 
   const phasePulseMode = resolveLineLoadingPulseMode(chartPhase);
   const pulseMode =
@@ -286,8 +254,7 @@ export function Line({
     renderData,
     innerWidth,
     dashFromIndex,
-    animate,
-    useDataTransitionPath ? animatedPathD : null,
+    yScale,
   ]);
 
   const reactId = useId();
@@ -339,13 +306,11 @@ export function Line({
         seriesIndex={seriesIndex}
       >
         <LineSeriesStroke
-          animatedPathD={animatedPathD}
           curve={curve}
           getY={getY}
           pathRef={pathRef}
           renderData={renderData}
           strokeWidth={strokeWidth}
-          useDataTransitionPath={useDataTransitionPath}
           visibleStroke={visibleStroke}
           xAccessor={xAccessor}
           xScale={xScale}

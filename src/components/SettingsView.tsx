@@ -680,7 +680,40 @@ export default function SettingsView({
   // ==========================================
   // 5. CONNECTION + WEBSOCKET + STATUS STATE
   // ==========================================
-  const [authMethodTab, setAuthMethodTab] = useState<'oauth' | 'llat'>('oauth');
+  const [authMethodTab, setAuthMethodTab] = useState<'oauth' | 'llat'>(() => {
+    return isLiveMode && authType === 'llat' ? 'llat' : 'oauth';
+  });
+  const [switchMethodConfirmTarget, setSwitchMethodConfirmTarget] = useState<'oauth' | 'llat' | null>(null);
+
+  // Automatically sync tab with active live connection
+  useEffect(() => {
+    if (isLiveMode && (authType === 'oauth' || authType === 'llat')) {
+      setAuthMethodTab(authType);
+    }
+  }, [isLiveMode, authType]);
+
+  const handleSelectAuthTab = (target: 'oauth' | 'llat') => {
+    if (target === authMethodTab) return;
+    if (isLiveMode) {
+      setSwitchMethodConfirmTarget(target);
+    } else {
+      setAuthMethodTab(target);
+    }
+  };
+
+  const handleConfirmSwitchMethod = () => {
+    if (switchMethodConfirmTarget) {
+      disconnectFromHA();
+      setAuthMethodTab(switchMethodConfirmTarget);
+      setSwitchMethodConfirmTarget(null);
+      addToast?.({
+        type: 'info',
+        title: 'Session Disconnected',
+        message: `Switched sign-in mode to ${switchMethodConfirmTarget === 'oauth' ? 'Home Assistant OAuth' : 'Long-Lived Access Token'}. Previous credentials cleared.`
+      });
+    }
+  };
+
   const [haHttpUrlInput, setHaHttpUrlInput] = useState(() => {
     if (storeServerUrl && !storeServerUrl.includes('hass.homz.internal')) {
       return storeServerUrl.replace('wss://', 'https://').replace('ws://', 'http://').replace('/api/websocket', '');
@@ -2229,36 +2262,118 @@ export default function SettingsView({
                 </div>
 
                 {/* Authentication Method Tabs */}
-                <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => setAuthMethodTab('oauth')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      authMethodTab === 'oauth'
-                        ? 'bg-white dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 shadow-sm border border-slate-200 dark:border-sky-500/30'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    <House size={16} weight="duotone" />
-                    <span>Sign In with HA Credentials (OAuth)</span>
-                    <span className="text-[10px] uppercase px-1.5 py-0.5 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-300 font-extrabold">
-                      Recommended
-                    </span>
-                  </button>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectAuthTab('oauth')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+                        authMethodTab === 'oauth'
+                          ? 'bg-white dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 shadow-sm border border-slate-200 dark:border-sky-500/30'
+                          : isLiveMode && authType === 'llat'
+                            ? 'text-slate-400 dark:text-slate-500 opacity-60 hover:opacity-80'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <House size={16} weight="duotone" />
+                      <span>Sign In with HA Credentials (OAuth)</span>
+                      <span className="text-[10px] uppercase px-1.5 py-0.5 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-300 font-extrabold">
+                        Recommended
+                      </span>
+                      {isLiveMode && authType === 'oauth' && (
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0 ml-0.5" title="Active Session" />
+                      )}
+                      {isLiveMode && authType === 'llat' && (
+                        <Lock size={12} className="text-slate-400 dark:text-slate-500 shrink-0 ml-1" />
+                      )}
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setAuthMethodTab('llat')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      authMethodTab === 'llat'
-                        ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-sm border border-slate-200 dark:border-white/15'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    <Key size={16} weight="duotone" />
-                    <span>Long-Lived Access Token (Manual)</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectAuthTab('llat')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+                        authMethodTab === 'llat'
+                          ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-sm border border-slate-200 dark:border-white/15'
+                          : isLiveMode && authType === 'oauth'
+                            ? 'text-slate-400 dark:text-slate-500 opacity-60 hover:opacity-80'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <Key size={16} weight="duotone" />
+                      <span>Long-Lived Access Token (Manual)</span>
+                      <span className="text-[10px] uppercase px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300 font-bold">
+                        Advanced
+                      </span>
+                      {isLiveMode && authType === 'llat' && (
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0 ml-0.5" title="Active Session" />
+                      )}
+                      {isLiveMode && authType === 'oauth' && (
+                        <Lock size={12} className="text-slate-400 dark:text-slate-500 shrink-0 ml-1" />
+                      )}
+                    </button>
+                  </div>
+
+                  {isLiveMode && (
+                    <div className="flex items-center gap-1.5 px-2 text-[11px] text-slate-500 dark:text-slate-400">
+                      <Lock size={12} className="text-amber-500 shrink-0" />
+                      <span>
+                        Active session running via {authType === 'oauth' ? 'Home Assistant OAuth' : 'Long-Lived Access Token'}. Select the other tab to disconnect and switch sign-in methods.
+                      </span>
+                    </div>
+                  )}
                 </div>
+
+                {/* Confirmation Modal for Switching Auth Method while Connected */}
+                <AnimatePresence>
+                  {switchMethodConfirmTarget && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+                      onClick={() => setSwitchMethodConfirmTarget(null)}
+                    >
+                      <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.95, opacity: 0 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 shadow-2xl space-y-4"
+                      >
+                        <div className="flex items-start gap-3.5">
+                          <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                            <Warning size={22} weight="duotone" />
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                              Switch Sign-In Method?
+                            </h3>
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                              Switching to {switchMethodConfirmTarget === 'oauth' ? 'Home Assistant OAuth' : 'Long-Lived Access Token'} will disconnect your current active session and clear previous credentials to prevent conflicts. Continue?
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => setSwitchMethodConfirmTarget(null)}
+                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleConfirmSwitchMethod}
+                            className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-500/20 transition-all cursor-pointer active:scale-95"
+                          >
+                            Disconnect & Switch
+                          </button>
+                        </div>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* TAB 1: HOME ASSISTANT OAUTH LOGIN (Official Credentials) */}
                 {authMethodTab === 'oauth' && (
@@ -2341,79 +2456,126 @@ export default function SettingsView({
 
                 {/* TAB 2: MANUAL LONG-LIVED ACCESS TOKEN */}
                 {authMethodTab === 'llat' && (
-                  <form onSubmit={handleConnectWs} className="p-5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Home Assistant WebSocket URL</label>
-                      <input
-                        type="text"
-                        placeholder="wss://your-homeassistant.local:8123/api/websocket"
-                        value={wsUrlInput}
-                        onChange={(e) => setWsUrlInput(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
-                        required
-                      />
+                  <div className="space-y-4">
+                    {/* Guidance Explaining when to use LLAT vs OAuth */}
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2.5">
+                      <Info size={18} weight="duotone" className="text-sky-500 dark:text-sky-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5 text-[11px] leading-relaxed">
+                        <p className="font-semibold text-slate-800 dark:text-slate-200">When to use a Long-Lived Access Token:</p>
+                        <p className="text-slate-500 dark:text-slate-400">
+                          Use this manual fallback method if OAuth sign-in isn't available for your setup, such as a reverse proxy without OAuth redirect support, an isolated VLAN, or manual headless configurations.
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Long-Lived Access Token</label>
-                        <button
-                          type="button"
-                          onClick={() => setShowToken(!showToken)}
-                          className="text-[11px] text-sky-600 dark:text-sky-400 hover:underline cursor-pointer flex items-center gap-1"
-                        >
-                          {showToken ? <EyeSlash size={13} /> : <Eye size={13} />}
-                          <span>{showToken ? 'Hide Token' : 'Show Token'}</span>
-                        </button>
-                      </div>
-                      <input
-                        type={showToken ? 'text' : 'password'}
-                        placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                        value={tokenInput}
-                        onChange={(e) => setTokenInput(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
-                      />
-                    </div>
+                    {isLiveMode && authType === 'llat' ? (
+                      <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30 shadow-md">
+                            <Key size={28} weight="duotone" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                                Authenticated via Long-Lived Token (LLAT)
+                              </h4>
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase">
+                                Active Session
+                              </span>
+                            </div>
+                            <p className="text-xs font-mono text-slate-600 dark:text-slate-300 mt-0.5 truncate max-w-md">
+                              {storeServerUrl}
+                            </p>
+                          </div>
+                        </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handleTestLatency}
-                          disabled={isPinging}
-                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:border-white/15 dark:text-white text-xs font-semibold cursor-pointer transition-all disabled:opacity-50 shadow-xs"
-                        >
-                          <ArrowsClockwise size={14} className={isPinging ? 'animate-spin' : ''} />
-                          <span>{isPinging ? 'Pinging Socket...' : 'Test Latency Ping'}</span>
-                        </button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={handleTestLatency}
+                            disabled={isPinging}
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/20 border border-slate-200 dark:border-white/15 text-slate-800 dark:text-white text-xs font-semibold cursor-pointer transition-all disabled:opacity-50 shadow-xs"
+                          >
+                            <ArrowsClockwise size={14} className={isPinging ? 'animate-spin' : ''} />
+                            <span>{isPinging ? 'Pinging...' : pingLatency !== null ? `${pingLatency}ms` : 'Test Ping'}</span>
+                          </button>
 
-                        {pingLatency !== null && (
-                          <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-500/30">
-                            {pingLatency}ms Roundtrip
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {isLiveMode && (
                           <button
                             type="button"
                             onClick={() => disconnectFromHA()}
-                            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-300 text-xs font-semibold cursor-pointer transition-colors"
+                            className="px-4 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-600 dark:text-rose-300 font-bold text-xs transition-all cursor-pointer active:scale-95"
                           >
-                            Disconnect
+                            Sign Out / Disconnect
                           </button>
-                        )}
-                        <button
-                          type="submit"
-                          className="flex items-center gap-2 px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs shadow-[0_0_20px_rgba(14,165,233,0.35)] transition-all cursor-pointer"
-                        >
-                          <WifiHigh size={16} weight="bold" />
-                          <span>Save & Connect Token</span>
-                        </button>
+                        </div>
                       </div>
-                    </div>
-                  </form>
+                    ) : (
+                      <form onSubmit={handleConnectWs} className="p-5 rounded-2xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Home Assistant WebSocket URL</label>
+                          <input
+                            type="text"
+                            placeholder="wss://your-homeassistant.local:8123/api/websocket"
+                            value={wsUrlInput}
+                            onChange={(e) => setWsUrlInput(e.target.value)}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
+                            required
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Long-Lived Access Token</label>
+                            <button
+                              type="button"
+                              onClick={() => setShowToken(!showToken)}
+                              className="text-[11px] text-sky-600 dark:text-sky-400 hover:underline cursor-pointer flex items-center gap-1"
+                            >
+                              {showToken ? <EyeSlash size={13} /> : <Eye size={13} />}
+                              <span>{showToken ? 'Hide Token' : 'Show Token'}</span>
+                            </button>
+                          </div>
+                          <input
+                            type={showToken ? 'text' : 'password'}
+                            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                            value={tokenInput}
+                            onChange={(e) => setTokenInput(e.target.value)}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
+                          />
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={handleTestLatency}
+                              disabled={isPinging}
+                              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:border-white/15 dark:text-white text-xs font-semibold cursor-pointer transition-all disabled:opacity-50 shadow-xs"
+                            >
+                              <ArrowsClockwise size={14} className={isPinging ? 'animate-spin' : ''} />
+                              <span>{isPinging ? 'Pinging Socket...' : 'Test Latency Ping'}</span>
+                            </button>
+
+                            {pingLatency !== null && (
+                              <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-500/30">
+                                {pingLatency}ms Roundtrip
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="submit"
+                              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs shadow-[0_0_20px_rgba(14,165,233,0.35)] transition-all cursor-pointer"
+                            >
+                              <WifiHigh size={16} weight="bold" />
+                              <span>Save & Connect Token</span>
+                            </button>
+                          </div>
+                        </div>
+                      </form>
+                    )}
+                  </div>
                 )}
 
                 {/* Real-time Telemetry Stats */}

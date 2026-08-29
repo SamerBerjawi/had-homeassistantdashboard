@@ -14,11 +14,13 @@ export interface HAAuthTokens {
   expires_at?: number;
   server_url: string;
   auth_type: 'oauth' | 'llat';
+  client_id?: string;
 }
 
 const STORAGE_KEY_AUTH = 'had_ha_auth_tokens';
 const STORAGE_KEY_PENDING_URL = 'had_pending_ha_url';
 const STORAGE_KEY_PENDING_STATE = 'had_pending_ha_state';
+const STORAGE_KEY_PENDING_CLIENT_ID = 'had_pending_ha_client_id';
 
 /**
  * Standardize Home Assistant Base URL (ensure no trailing slashes or /api/websocket)
@@ -52,11 +54,21 @@ export function normalizeHAUrl(rawUrl: string): { httpUrl: string; wsUrl: string
 }
 
 /**
+ * Canonical Client ID and Redirect URI for OAuth.
+ * Uses origin only (e.g. http://192.168.1.50:5173 or https://dashboard.example.com)
+ * without pathname, ensuring the client_id remains completely stable across browser tabs,
+ * subroutes, and iOS Home Screen PWA launches.
+ */
+export function getCanonicalClientId(): string {
+  if (typeof window === 'undefined') return '';
+  return window.location.origin;
+}
+
+/**
  * Get current Redirect URI for OAuth
  */
 export function getHARedirectUri(): string {
-  if (typeof window === 'undefined') return '';
-  return window.location.origin + window.location.pathname;
+  return getCanonicalClientId();
 }
 
 /**
@@ -64,13 +76,14 @@ export function getHARedirectUri(): string {
  */
 export function startHAOAuthFlow(serverUrl: string): void {
   const { httpUrl } = normalizeHAUrl(serverUrl);
-  const redirectUri = getHARedirectUri();
+  const clientId = getCanonicalClientId();
   const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
   sessionStorage.setItem(STORAGE_KEY_PENDING_URL, httpUrl);
   sessionStorage.setItem(STORAGE_KEY_PENDING_STATE, state);
+  sessionStorage.setItem(STORAGE_KEY_PENDING_CLIENT_ID, clientId);
 
-  const authUrl = `${httpUrl}/auth/authorize?client_id=${encodeURIComponent(redirectUri)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}&response_type=code`;
+  const authUrl = `${httpUrl}/auth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(clientId)}&state=${encodeURIComponent(state)}&response_type=code`;
 
   window.location.href = authUrl;
 }
@@ -91,6 +104,7 @@ export async function handleHAOAuthCallback(): Promise<{ success: boolean; token
 
   const savedUrl = sessionStorage.getItem(STORAGE_KEY_PENDING_URL) || localStorage.getItem('had_last_ha_url') || 'http://homeassistant.local:8123';
   const savedState = sessionStorage.getItem(STORAGE_KEY_PENDING_STATE);
+  const savedClientId = sessionStorage.getItem(STORAGE_KEY_PENDING_CLIENT_ID) || getCanonicalClientId();
 
   // Clean URL parameters immediately
   const cleanUrl = window.location.origin + window.location.pathname;
@@ -103,15 +117,16 @@ export async function handleHAOAuthCallback(): Promise<{ success: boolean; token
 
   sessionStorage.removeItem(STORAGE_KEY_PENDING_URL);
   sessionStorage.removeItem(STORAGE_KEY_PENDING_STATE);
+  sessionStorage.removeItem(STORAGE_KEY_PENDING_CLIENT_ID);
 
   const { httpUrl, wsUrl } = normalizeHAUrl(savedUrl);
-  const redirectUri = getHARedirectUri();
+  const clientId = savedClientId;
 
   try {
     const bodyParams = new URLSearchParams();
     bodyParams.append('grant_type', 'authorization_code');
     bodyParams.append('code', code);
-    bodyParams.append('client_id', redirectUri);
+    bodyParams.append('client_id', clientId);
 
     const tokenEndpoint = `${httpUrl}/auth/token`;
     const response = await fetch(tokenEndpoint, {
@@ -138,7 +153,8 @@ export async function handleHAOAuthCallback(): Promise<{ success: boolean; token
       token_type: data.token_type || 'Bearer',
       expires_at: expiresAt,
       server_url: wsUrl,
-      auth_type: 'oauth'
+      auth_type: 'oauth',
+      client_id: clientId
     };
 
     saveStoredHAAuth(tokens);
@@ -158,13 +174,14 @@ export async function refreshHAOAuthToken(tokens?: HAAuthTokens): Promise<HAAuth
   }
 
   const { httpUrl } = normalizeHAUrl(current.server_url);
-  const redirectUri = getHARedirectUri();
+  // Ensure the exact client_id used at login is resent during refresh
+  const clientId = current.client_id || getCanonicalClientId();
 
   try {
     const bodyParams = new URLSearchParams();
     bodyParams.append('grant_type', 'refresh_token');
     bodyParams.append('refresh_token', current.refresh_token);
-    bodyParams.append('client_id', redirectUri);
+    bodyParams.append('client_id', clientId);
 
     const tokenEndpoint = `${httpUrl}/auth/token`;
     const response = await fetch(tokenEndpoint, {
@@ -185,8 +202,10 @@ export async function refreshHAOAuthToken(tokens?: HAAuthTokens): Promise<HAAuth
     const updated: HAAuthTokens = {
       ...current,
       access_token: data.access_token,
+      refresh_token: data.refresh_token || current.refresh_token,
       expires_in: expiresInSec,
-      expires_at: Date.now() + expiresInSec * 1000
+      expires_at: Date.now() + expiresInSec * 1000,
+      client_id: clientId
     };
 
     saveStoredHAAuth(updated);

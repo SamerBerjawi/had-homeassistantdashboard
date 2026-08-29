@@ -10,6 +10,7 @@ import Sidebar from './components/Sidebar';
 import NotificationToast from './components/NotificationToast';
 import NotificationBell from './components/notifications/NotificationBell';
 import NotificationDrawer from './components/notifications/NotificationDrawer';
+import { Key, SignIn } from '@phosphor-icons/react';
 
 import { PAGE_THEMES } from './config/pageThemes';
 
@@ -127,11 +128,15 @@ export default function App() {
   const {
     init: initAutoLayout,
     resolvedEntities,
-    isLiveMode
+    isLiveMode,
+    connectionStatus,
+    connectionError
   } = useAutoLayoutStore(useShallow(s => ({
     init: s.init,
     resolvedEntities: s.resolvedEntities,
-    isLiveMode: s.isLiveMode
+    isLiveMode: s.isLiveMode,
+    connectionStatus: s.connectionStatus,
+    connectionError: s.connectionError
   })));
 
   useEffect(() => {
@@ -278,6 +283,36 @@ export default function App() {
               />
             </div>
           </header>
+
+          {/* Session Expired / Re-authentication Prompt Banner */}
+          {connectionStatus === 'auth_failed' && (
+            <div className="mb-6 p-4 rounded-2xl bg-rose-500/10 dark:bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-rose-500/5 backdrop-blur-md">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/30">
+                  <Key size={22} weight="duotone" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Home Assistant Session Expired
+                  </h4>
+                  <p className="text-xs text-rose-600 dark:text-rose-300/90 mt-0.5">
+                    {connectionError || 'Authentication token expired or rejected. Please sign in again to restore live controls.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('settings')}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md shadow-rose-500/20 transition-all cursor-pointer active:scale-95 flex items-center gap-1.5"
+                >
+                  <SignIn size={15} weight="bold" />
+                  <span>Sign In Again</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* PAGE ROUTING (Views lazy-loaded on first visit) */}
           <div className="flex-1 flex flex-col">
