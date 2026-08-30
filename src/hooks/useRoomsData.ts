@@ -432,24 +432,20 @@ export function useRoomsData() {
 
     let activeVacuum: HouseStateSummary['activeVacuum'] | undefined;
 
-    // Check vacuum entities
+    // Check vacuum entities - only register if in active or noteworthy state
     const allEntities = Object.values(resolvedEntities || {});
     for (const e of allEntities) {
       if (e.domain === 'vacuum') {
         const isCleaning = e.state === 'cleaning' || e.state === 'on';
         const isReturning = e.state === 'returning';
+        const isPaused = e.state === 'paused';
         const isError = e.state === 'error';
-        if (isCleaning || isReturning || isError) {
+        if (isCleaning || isReturning || isPaused || isError) {
           activeVacuum = {
             name: e.name || 'Roborock Vacuum',
             status: e.state
           };
           break;
-        } else if (!activeVacuum && (e.state === 'docked' || e.state === 'idle')) {
-          activeVacuum = {
-            name: e.name || 'Roborock Vacuum',
-            status: e.state
-          };
         }
       }
     }

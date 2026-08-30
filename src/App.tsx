@@ -14,13 +14,46 @@ import { InstallPrompt } from './components/pwa/InstallPrompt';
 import { UpdateToast } from './components/pwa/UpdateToast';
 import AuthModal from './components/auth/AuthModal';
 import DemoBanner from './components/auth/DemoBanner';
-import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power, ArrowsClockwise } from '@phosphor-icons/react';
+import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power, ArrowsClockwise, SlidersHorizontal, Palette, User, WifiHigh, DownloadSimple, GearSix } from '@phosphor-icons/react';
 import { useUserConfig } from './contexts/ConfigContext';
 
 import { PAGE_THEMES } from './config/pageThemes';
 import DynamicPhosphorIcon from './components/ui/DynamicPhosphorIcon';
 import { useRoomsData } from './hooks/useRoomsData';
 import { haWebSocketService } from './services/haWebSocket';
+
+const SETTINGS_SECTIONS_META: Record<string, { title: string; subtitle: string; icon: React.ComponentType<any>; color: string }> = {
+  devices_rooms: {
+    title: 'Devices & Entity Visibility',
+    subtitle: 'Manage device visibility, room assignments, and entity hierarchy.',
+    icon: SlidersHorizontal,
+    color: 'text-emerald-400'
+  },
+  theme_customization: {
+    title: 'Theme & Customization',
+    subtitle: 'Visual theme, temperature units, clock format, and energy tariff.',
+    icon: Palette,
+    color: 'text-purple-400'
+  },
+  user_profile: {
+    title: 'User Profile & Security',
+    subtitle: 'Account details, permissions, and wall display Kiosk PIN.',
+    icon: User,
+    color: 'text-sky-400'
+  },
+  connection_websocket: {
+    title: 'Connection & Home Assistant',
+    subtitle: 'WebSocket server credentials, connection status, and go2rtc streams.',
+    icon: WifiHigh,
+    color: 'text-indigo-400'
+  },
+  backup_restore: {
+    title: 'Backup & Restore',
+    subtitle: 'Configuration export, snapshots, and recovery options.',
+    icon: DownloadSimple,
+    color: 'text-amber-400'
+  }
+};
 
 // Eagerly-loaded views (always visible)
 import OverviewView from './components/views/OverviewView';
@@ -71,24 +104,59 @@ function getTabFromUrl(): TabKey {
 }
 
 export default function App() {
-  // Theme State
+  // Theme Mode State: 'auto' (system OS) | 'dark' (OLED) | 'light' (Daylight)
+  const [themeMode, setThemeMode] = useState<'auto' | 'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme_mode');
+      if (saved === 'auto' || saved === 'dark' || saved === 'light') return saved;
+      const oldTheme = localStorage.getItem('theme');
+      if (oldTheme === 'dark') return 'dark';
+      if (oldTheme === 'light') return 'light';
+    }
+    return 'auto';
+  });
+
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme');
-      if (saved) return saved === 'dark';
-      return document.documentElement.classList.contains('dark');
+      const savedMode = localStorage.getItem('theme_mode');
+      if (savedMode === 'dark') return true;
+      if (savedMode === 'light') return false;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
     return false;
   });
 
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    const applyTheme = () => {
+      let isDark = false;
+      if (themeMode === 'dark') {
+        isDark = true;
+      } else if (themeMode === 'light') {
+        isDark = false;
+      } else {
+        isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      setDarkMode(isDark);
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+
+    applyTheme();
+    localStorage.setItem('theme_mode', themeMode);
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
-  }, [darkMode]);
+
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemChange = () => {
+      if (themeMode === 'auto') {
+        applyTheme();
+      }
+    };
+    mql.addEventListener('change', handleSystemChange);
+    return () => mql.removeEventListener('change', handleSystemChange);
+  }, [themeMode, darkMode]);
 
   // Tab State with URL Path Synchronization
   const [activeTab, setActiveTabState] = useState<string>(getTabFromUrl);
@@ -228,8 +296,11 @@ export default function App() {
 
   const selectedAreaId = useAutoLayoutStore((s) => s.selectedAreaId);
   const setSelectedAreaId = useAutoLayoutStore((s) => s.setSelectedAreaId);
+  const selectedSettingsSection = useAutoLayoutStore((s) => s.selectedSettingsSection);
+  const setSelectedSettingsSection = useAutoLayoutStore((s) => s.setSelectedSettingsSection);
   const rawAreas = useAutoLayoutStore((s) => s.rawAreas);
   const currentSelectedArea = (activeTab === 'rooms' && selectedAreaId) ? rawAreas.find((a) => a.area_id === selectedAreaId) : null;
+  const currentSettingsMeta = (activeTab === 'settings' && selectedSettingsSection) ? SETTINGS_SECTIONS_META[selectedSettingsSection] : null;
 
   const { areasDataList, toggleAreaLights, toggleAreaLocks, turnOffAllAreaEntities } = useRoomsData();
   const activeRoomData = (activeTab === 'rooms' && selectedAreaId) ? areasDataList.find((a) => a.areaId === selectedAreaId) : null;
@@ -240,6 +311,8 @@ export default function App() {
     ? `${getTimeGreeting()}, ${userName}`
     : currentSelectedArea
     ? currentSelectedArea.name
+    : currentSettingsMeta
+    ? currentSettingsMeta.title
     : currentTheme.title;
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
@@ -299,46 +372,81 @@ export default function App() {
         {/* Persistent Demo Mode Status Banner */}
         <DemoBanner />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container p-4 sm:p-6 lg:p-8 flex flex-col">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container p-4 pb-28 sm:p-6 sm:pb-8 lg:p-8 lg:pb-8 flex flex-col">
           {/* Header Bar - Title with Animated Wave / Page Icon & Subtitle */}
-          <header className="mb-6 flex flex-row items-start justify-between gap-3.5 pb-1">
-            <div className="space-y-1.5 min-w-0 flex-1">
-              <div className="flex items-center gap-3 flex-wrap">
-                {/* Back Button when viewing room detail */}
-                {activeTab === 'rooms' && selectedAreaId && (
+          <header className="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 pb-1">
+            <div className="space-y-2 min-w-0 w-full flex-1">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap min-w-0">
+                  {/* Back Button when viewing room detail or settings subpage */}
+                  {((activeTab === 'rooms' && selectedAreaId) || (activeTab === 'settings' && selectedSettingsSection)) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (activeTab === 'rooms') setSelectedAreaId(null);
+                        if (activeTab === 'settings') setSelectedSettingsSection(null);
+                      }}
+                      className="p-1.5 -ml-1 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 dark:hover:bg-white/10 transition-all cursor-pointer active:scale-90 mr-0.5"
+                      title={activeTab === 'rooms' ? 'Back to Rooms' : 'Back to Settings'}
+                    >
+                      <ArrowLeft size={24} weight="bold" />
+                    </button>
+                  )}
+
+                  <h1 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5 sm:gap-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {activeTab !== 'overview' && (
+                      currentSelectedArea ? (
+                        <DynamicPhosphorIcon
+                          name={currentSelectedArea.icon || 'HouseLine'}
+                          size={30}
+                          weight="duotone"
+                          style={{ color: currentSelectedArea.color || undefined }}
+                          className={`shrink-0 ${currentSelectedArea.color ? '' : currentTheme.color}`}
+                        />
+                      ) : currentSettingsMeta ? (
+                        React.createElement(currentSettingsMeta.icon, {
+                          size: 30,
+                          weight: 'duotone',
+                          className: `${currentSettingsMeta.color} shrink-0`
+                        })
+                      ) : (
+                        <PageIcon size={30} weight="duotone" className={`${currentTheme.color} shrink-0`} />
+                      )
+                    )}
+                    <span>{pageTitle}</span>
+                    {activeTab === 'overview' && (
+                      <span className="inline-block animate-wave cursor-default select-none text-2xl sm:text-3xl" title="Welcome!">👋</span>
+                    )}
+                  </h1>
+                </div>
+
+                {/* Mobile-Only Header Controls (Sync, Refresh, Notif Bell) */}
+                <div className="flex sm:hidden items-center gap-1.5 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setSelectedAreaId(null)}
-                    className="p-1.5 -ml-1 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 dark:hover:bg-white/10 transition-all cursor-pointer active:scale-90 mr-0.5"
-                    title="Back to Rooms"
+                    onClick={handleManualRefresh}
+                    disabled={isManualRefreshing}
+                    className={`p-2 rounded-xl border transition-all cursor-pointer active:scale-90 flex items-center justify-center ${
+                      isManualRefreshing
+                        ? 'bg-sky-500/20 border-sky-500/40 text-sky-400'
+                        : darkMode
+                        ? 'bg-slate-900/80 border-white/10 text-slate-300'
+                        : 'bg-white border-slate-200 text-slate-700 shadow-xs'
+                    }`}
+                    title="Refresh Dashboard"
                   >
-                    <ArrowLeft size={24} weight="bold" />
+                    <ArrowsClockwise size={16} weight="bold" className={isManualRefreshing ? 'animate-spin text-sky-400' : ''} />
                   </button>
-                )}
 
-                <h1 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5 sm:gap-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {activeTab !== 'overview' && (
-                    currentSelectedArea ? (
-                      <DynamicPhosphorIcon
-                        name={currentSelectedArea.icon || 'HouseLine'}
-                        size={30}
-                        weight="duotone"
-                        style={{ color: currentSelectedArea.color || undefined }}
-                        className={`shrink-0 ${currentSelectedArea.color ? '' : currentTheme.color}`}
-                      />
-                    ) : (
-                      <PageIcon size={30} weight="duotone" className={`${currentTheme.color} shrink-0`} />
-                    )
-                  )}
-                  <span>{pageTitle}</span>
-                  {activeTab === 'overview' && (
-                    <span className="inline-block animate-wave cursor-default select-none text-2xl sm:text-3xl" title="Welcome!">👋</span>
-                  )}
-                </h1>
+                  <NotificationBell
+                    darkMode={darkMode}
+                    onClick={() => setIsNotificationDrawerOpen(true)}
+                  />
+                </div>
               </div>
 
-              {/* Dynamic Weather Sentence on Overview, or Page Description Sentence on other tabs */}
-              <div className="pt-0.5">
+              {/* Dynamic Weather / Area Telemetry Sentence (100% Full Width) */}
+              <div className="pt-0.5 w-full">
                 {activeTab === 'overview' ? (
                   <WeatherHeaderSentence
                     darkMode={darkMode}
@@ -354,76 +462,14 @@ export default function App() {
                   />
                 ) : (
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed">
-                    {currentTheme.subtitle}
+                    {currentSettingsMeta ? currentSettingsMeta.subtitle : currentTheme.subtitle}
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Header Right Actions: Room Quick Actions & Notification Bell */}
-            <div className="flex items-center gap-2 shrink-0 pt-0.5 sm:pt-1">
-              {activeTab === 'rooms' && activeRoomData && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Turn On/Off Lights Toggle */}
-                  {activeRoomData.totalLightsCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => toggleAreaLights(activeRoomData.areaId, activeRoomData.activeLightsCount === 0)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
-                        activeRoomData.activeLightsCount > 0
-                          ? 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/40 text-amber-300'
-                          : darkMode
-                          ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400'
-                          : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
-                      }`}
-                    >
-                      <Lightbulb
-                        size={15}
-                        weight={activeRoomData.activeLightsCount > 0 ? 'fill' : 'duotone'}
-                        className={activeRoomData.activeLightsCount > 0 ? 'text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)]' : ''}
-                      />
-                      <span className="hidden sm:inline">{activeRoomData.activeLightsCount > 0 ? 'Turn Off Lights' : 'Turn On Lights'}</span>
-                      <span className="sm:hidden">{activeRoomData.activeLightsCount > 0 ? 'Off' : 'On'}</span>
-                    </button>
-                  )}
-
-                  {/* Lock / Unlock All Doors Toggle */}
-                  {activeRoomData.totalLocksCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => toggleAreaLocks(activeRoomData.areaId)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
-                        activeRoomData.unlockedLocksCount > 0
-                          ? 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/40 text-amber-300'
-                          : 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/35 text-emerald-300'
-                      }`}
-                    >
-                      {activeRoomData.unlockedLocksCount > 0 ? (
-                        <>
-                          <LockOpen size={15} weight="bold" className="animate-pulse" />
-                          <span className="hidden sm:inline">Lock All</span>
-                        </>
-                      ) : (
-                        <>
-                          <Lock size={15} weight="fill" className="text-emerald-400" />
-                          <span className="hidden sm:inline">Locked</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {/* All Off Button */}
-                  <button
-                    type="button"
-                    onClick={() => turnOffAllAreaEntities(activeRoomData.areaId)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 hover:text-rose-300 transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5"
-                  >
-                    <Power size={15} weight="bold" />
-                    <span>All Off</span>
-                  </button>
-                </div>
-              )}
-
+            {/* Desktop-Only Header Right Actions */}
+            <div className="hidden sm:flex items-center gap-2 shrink-0 pt-0.5 sm:pt-1">
               {/* Subtle Boot & Background Sync Indicator */}
               {isConfigLoading && (
                 <div 
@@ -510,7 +556,9 @@ export default function App() {
               {activeTab === 'settings' && (
                 <SettingsView
                   darkMode={darkMode}
-                  toggleDarkMode={() => setDarkMode(!darkMode)}
+                  themeMode={themeMode}
+                  setThemeMode={setThemeMode}
+                  toggleDarkMode={(next) => setThemeMode(next ? 'dark' : 'light')}
                   entities={entities}
                   setEntities={setEntities}
                   rooms={rooms}

@@ -90,6 +90,7 @@ export interface AutoLayoutStoreState {
   // Filter & Navigation
   selectedFloorId: string | 'all';
   selectedAreaId: string | null;
+  selectedSettingsSection: string | null;
   selectedWeatherEntityId: string | null;
   selectedAlarmEntityId: string | null;
   showDiagnosticEntities: boolean;
@@ -109,7 +110,10 @@ export interface AutoLayoutStoreState {
   addFloor: (floor: Partial<HAFloor>) => void;
   addArea: (area: Partial<HAArea>) => void;
   deleteFloor: (floorId: string) => void;
-  deleteArea: (areaId: string) => void;
+  // Entity Customization & Visibility Actions
+  entityCustomizations: Record<string, { customName?: string; hidden?: boolean }>;
+  setEntityHidden: (entityId: string, hidden: boolean) => void;
+  bulkSetEntitiesHidden: (entityIds: string[], hidden: boolean) => void;
   applyConfigCustomizations: (config: any) => void;
 
   // Notification & Alert Management
@@ -126,6 +130,7 @@ export interface AutoLayoutStoreState {
   // Navigation Setters
   setSelectedFloorId: (floorId: string | 'all') => void;
   setSelectedAreaId: (areaId: string | null) => void;
+  setSelectedSettingsSection: (section: string | null) => void;
   setSelectedWeatherEntityId: (id: string | null) => void;
   setSelectedAlarmEntityId: (id: string | null) => void;
   setShowDiagnosticEntities: (show: boolean) => void;
@@ -364,6 +369,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
 
   selectedFloorId: 'all',
   selectedAreaId: null,
+  selectedSettingsSection: null,
   selectedWeatherEntityId: typeof window !== 'undefined' ? localStorage.getItem('ha_selected_weather_id') : null,
   selectedAlarmEntityId: typeof window !== 'undefined' ? localStorage.getItem('ha_selected_alarm_id') : null,
   nativeNotifications: [],
@@ -371,6 +377,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   dismissedNotificationIds: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('ha_dismissed_notifications') || '[]') : [],
   showDiagnosticEntities: false,
   searchQuery: '',
+  entityCustomizations: {},
 
   authType: 'demo',
 
@@ -616,9 +623,10 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   },
 
   recomputeGraph: () => {
-    const { areas, devices, entityRegistry, floors, labels, states, showDiagnosticEntities } = get();
+    const { areas, devices, entityRegistry, floors, labels, states, showDiagnosticEntities, entityCustomizations } = get();
     const result = resolveHAGraph(areas, devices, entityRegistry, floors, states, labels, {
-      includeDiagnostics: showDiagnosticEntities
+      includeDiagnostics: showDiagnosticEntities,
+      entityOverrides: entityCustomizations
     });
 
     set({
@@ -1074,14 +1082,71 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         }
       }
 
-      if (!changed) return prev;
+      const nextEntityCustomizations = {
+        ...prev.entityCustomizations,
+        ...(config.entities && typeof config.entities === 'object' ? config.entities : {})
+      };
 
       return {
         areas: newAreas,
         rawAreas: newAreas,
         floors: newFloors,
         rawFloors: newFloors,
-        resolvedEntities: newResolved
+        resolvedEntities: newResolved,
+        entityCustomizations: nextEntityCustomizations
+      };
+    });
+    get().recomputeGraph();
+  },
+
+  setEntityHidden: (entityId: string, hidden: boolean) => {
+    set(prev => {
+      const nextCustomizations = {
+        ...prev.entityCustomizations,
+        [entityId]: {
+          ...(prev.entityCustomizations[entityId] || {}),
+          hidden
+        }
+      };
+
+      const updatedResolved = { ...prev.resolvedEntities };
+      if (updatedResolved[entityId]) {
+        updatedResolved[entityId] = {
+          ...updatedResolved[entityId],
+          hidden
+        };
+      }
+
+      return {
+        entityCustomizations: nextCustomizations,
+        resolvedEntities: updatedResolved
+      };
+    });
+    get().recomputeGraph();
+  },
+
+  bulkSetEntitiesHidden: (entityIds: string[], hidden: boolean) => {
+    if (!entityIds || entityIds.length === 0) return;
+    set(prev => {
+      const nextCustomizations = { ...prev.entityCustomizations };
+      const updatedResolved = { ...prev.resolvedEntities };
+
+      for (const eid of entityIds) {
+        nextCustomizations[eid] = {
+          ...(nextCustomizations[eid] || {}),
+          hidden
+        };
+        if (updatedResolved[eid]) {
+          updatedResolved[eid] = {
+            ...updatedResolved[eid],
+            hidden
+          };
+        }
+      }
+
+      return {
+        entityCustomizations: nextCustomizations,
+        resolvedEntities: updatedResolved
       };
     });
     get().recomputeGraph();
@@ -1183,6 +1248,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   setSelectedFloorId: (floorId: string | 'all') => set({ selectedFloorId: floorId }),
 
   setSelectedAreaId: (areaId: string | null) => set({ selectedAreaId: areaId }),
+  setSelectedSettingsSection: (section: string | null) => set({ selectedSettingsSection: section }),
   setSelectedWeatherEntityId: (id: string | null) => {
     if (typeof window !== 'undefined') {
       if (id) {

@@ -61,7 +61,10 @@ export function resolveHAGraph(
   floors: HAFloor[],
   states: Record<string, HAState>,
   labels: HALabel[] = [],
-  options: { includeDiagnostics?: boolean } = {}
+  options: { 
+    includeDiagnostics?: boolean;
+    entityOverrides?: Record<string, { customName?: string; hidden?: boolean }>;
+  } = {}
 ): GraphResolutionResult {
   const areaMap = new Map<string, HAArea>(areas.map(a => [a.area_id, a]));
   const deviceMap = new Map<string, HADevice>(devices.map(d => [d.id, d]));
@@ -226,10 +229,14 @@ export function resolveHAGraph(
       securityAlertsCount++;
     }
 
+    const customOverride = options.entityOverrides?.[entityId];
+    const isExplicitlyHidden = customOverride?.hidden !== undefined ? customOverride.hidden : Boolean(regEntry?.hidden_by);
+    const finalFriendlyName = customOverride?.customName || friendlyName;
+
     const resolved: ResolvedEntity = {
       entity_id: entityId,
       domain,
-      name: friendlyName,
+      name: finalFriendlyName,
       state: liveState.state,
       attributes: liveState.attributes,
       area_id: assignedAreaId,
@@ -241,7 +248,7 @@ export function resolveHAGraph(
       resolutionSource,
       entity_category: regEntry?.entity_category || null,
       disabled_by: regEntry?.disabled_by || null,
-      hidden: Boolean(regEntry?.hidden_by),
+      hidden: isExplicitlyHidden,
       isDiagnostic: isDiag,
       powerWatts,
       batteryPct,

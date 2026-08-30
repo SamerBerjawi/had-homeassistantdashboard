@@ -31,8 +31,11 @@ import AudioWaveformScrubber from '../media/AudioWaveformScrubber';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { useHAImage } from '../../services/haImageService';
 
+import { formatEntityDisplayName } from '../../lib/utils';
+
 interface AreaMediaCardProps {
   media: ResolvedEntity;
+  areaName?: string;
   darkMode?: boolean;
   onOpenDrawer: (media: ResolvedEntity) => void;
   callHAService: (
@@ -50,6 +53,7 @@ interface AreaMediaCardProps {
 
 export default function AreaMediaCard({
   media,
+  areaName,
   darkMode = true,
   onOpenDrawer,
   callHAService,
@@ -62,7 +66,8 @@ export default function AreaMediaCard({
   const { currentPosition, duration } = useMediaPosition(media);
 
   const title = media.attributes?.media_title || media.attributes?.app_name || (isOff ? 'Powered Off' : 'Idle / Stopped');
-  const artist = media.attributes?.media_artist || media.attributes?.friendly_name || media.name;
+  const rawArtist = media.attributes?.media_artist || media.attributes?.friendly_name || media.name;
+  const artist = formatEntityDisplayName(rawArtist, areaName);
   const album = media.attributes?.media_album_name || media.attributes?.source;
 
   const rawPicture = media.attributes?.entity_picture || media.attributes?.media_image;
@@ -76,7 +81,8 @@ export default function AreaMediaCard({
   });
 
   // Device classification
-  const deviceName = media.attributes?.friendly_name || media.name;
+  const rawDeviceName = media.attributes?.friendly_name || media.name;
+  const deviceName = formatEntityDisplayName(rawDeviceName, areaName);
   const isTv = media.attributes?.device_class === 'tv' || media.entity_id.includes('tv') || media.entity_id.includes('apple_tv');
   const isHeadphones = media.entity_id.includes('buds') || media.entity_id.includes('headphones') || media.entity_id.includes('airpods') || media.entity_id.includes('ear');
 
