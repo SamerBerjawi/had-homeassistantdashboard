@@ -1,3 +1,8 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import { memo, useEffect, useMemo, useState } from "react";
@@ -29,6 +34,8 @@ export interface YAxisProps {
   formatLargeNumbers?: boolean;
   /** Custom formatter for tick labels (e.g. USD). Overrides formatLargeNumbers when set. */
   formatValue?: (value: number) => string;
+  /** Optional axis title or unit label (e.g. "kW", "kWh") */
+  label?: string;
 }
 
 function formatLabel(
@@ -106,6 +113,7 @@ const YAxisInner = memo(function YAxisInner({
   numTicks = Y_AXIS_DEFAULT_TICK_COUNT,
   formatLargeNumbers = true,
   formatValue,
+  label,
   container,
 }: YAxisProps & { container: HTMLDivElement }) {
   const { margin, referenceAreas } = useChartStable();
@@ -149,6 +157,26 @@ const YAxisInner = memo(function YAxisInner({
             : { right: 0, width: margin.right }
         }
       >
+        {label && (
+          <div
+            className="absolute z-10 flex items-center font-bold tracking-wider text-[11px] text-zinc-400 dark:text-zinc-500 uppercase select-none"
+            style={
+              isLeft
+                ? {
+                    right: 8,
+                    top: Math.max(2, margin.top - 18),
+                    justifyContent: "flex-end",
+                  }
+                : {
+                    left: 8,
+                    top: Math.max(2, margin.top - 18),
+                    justifyContent: "flex-start",
+                  }
+            }
+          >
+            {label}
+          </div>
+        )}
         {ticks.map((tick) => (
           <div
             className="absolute flex items-center"
@@ -163,7 +191,7 @@ const YAxisInner = memo(function YAxisInner({
             }}
           >
             <span
-              className="text-chart-label text-xs"
+              className="text-chart-label text-xs font-mono"
               style={tick.labelColor ? { color: tick.labelColor } : undefined}
             >
               {tick.label}

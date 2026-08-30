@@ -19,6 +19,7 @@ import { LineChart } from '../charts/line-chart';
 import { Line } from '../charts/line';
 import { Grid } from '../charts/grid';
 import { XAxis } from '../charts/x-axis';
+import { YAxis } from '../charts/y-axis';
 import { ChartTooltip } from '../charts/tooltip';
 
 interface PowerSourcesLineChartCardProps {
@@ -74,10 +75,11 @@ export default function PowerSourcesLineChartCard({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative flex flex-col justify-between overflow-hidden shadow-2xl ${darkMode
-        ? 'bg-slate-900/80 border-white/10 text-white'
-        : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/80'
-        }`}
+      className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative flex flex-col justify-between overflow-hidden shadow-2xl ${
+        darkMode
+          ? 'bg-slate-900/80 border-white/10 text-white'
+          : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/80'
+      }`}
     >
       {/* Ambient background glow */}
       <div className="absolute top-0 left-1/3 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -86,10 +88,11 @@ export default function PowerSourcesLineChartCard({
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4 z-10">
         <div className="flex items-center gap-2.5">
           <div
-            className={`p-2 rounded-2xl border ${darkMode
-              ? 'bg-purple-500/15 text-purple-400 border-purple-500/30'
-              : 'bg-purple-50 text-purple-600 border-purple-200'
-              }`}
+            className={`p-2 rounded-2xl border ${
+              darkMode
+                ? 'bg-purple-500/15 text-purple-400 border-purple-500/30'
+                : 'bg-purple-50 text-purple-600 border-purple-200'
+            }`}
           >
             <Lightning size={18} weight="fill" />
           </div>
@@ -108,10 +111,11 @@ export default function PowerSourcesLineChartCard({
           <div className="flex flex-wrap items-center gap-2 text-xs font-mono font-bold">
             {hasSolar && (
               <div
-                className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${darkMode
-                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                  : 'bg-amber-50 border-amber-200 text-amber-700'
-                  }`}
+                className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
+                  darkMode
+                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                    : 'bg-amber-50 border-amber-200 text-amber-700'
+                }`}
               >
                 <Sun size={14} weight="fill" />
                 <span>{realtime.solarPowerKW.toFixed(2)} kW</span>
@@ -119,10 +123,11 @@ export default function PowerSourcesLineChartCard({
             )}
 
             <div
-              className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${darkMode
-                ? 'bg-sky-500/15 border-sky-500/30 text-sky-400'
-                : 'bg-sky-50 border-sky-200 text-sky-700'
-                }`}
+              className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
+                darkMode
+                  ? 'bg-sky-500/15 border-sky-500/30 text-sky-400'
+                  : 'bg-sky-50 border-sky-200 text-sky-700'
+              }`}
             >
               <Plug size={14} weight="fill" />
               <span>{netLiveGridKW >= 0 ? `+${netLiveGridKW.toFixed(2)}` : netLiveGridKW.toFixed(2)} kW</span>
@@ -130,10 +135,11 @@ export default function PowerSourcesLineChartCard({
 
             {hasBattery && (
               <div
-                className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${darkMode
-                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                  : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                  }`}
+                className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
+                  darkMode
+                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                    : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                }`}
               >
                 <BatteryCharging size={14} weight="fill" />
                 <span>{netLiveBatteryKW >= 0 ? `+${netLiveBatteryKW.toFixed(2)}` : netLiveBatteryKW.toFixed(2)} kW</span>
@@ -141,10 +147,11 @@ export default function PowerSourcesLineChartCard({
             )}
 
             <div
-              className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${darkMode
-                ? 'bg-purple-500/15 border-purple-500/30 text-purple-400'
-                : 'bg-purple-50 border-purple-200 text-purple-700'
-                }`}
+              className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
+                darkMode
+                  ? 'bg-purple-500/15 border-purple-500/30 text-purple-400'
+                  : 'bg-purple-50 border-purple-200 text-purple-700'
+              }`}
             >
               <House size={14} weight="fill" />
               <span>{realtime.homeConsumptionKW.toFixed(2)} kW</span>
@@ -159,14 +166,15 @@ export default function PowerSourcesLineChartCard({
         <button
           type="button"
           onClick={() => setShowHome(!showHome)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${showHome
-            ? darkMode
-              ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
-              : 'bg-purple-50 border-purple-300 text-purple-700 shadow-xs'
-            : darkMode
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+            showHome
+              ? darkMode
+                ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
+                : 'bg-purple-50 border-purple-300 text-purple-700 shadow-xs'
+              : darkMode
               ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
               : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
-            }`}
+          }`}
         >
           <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-xs" />
           <span>Home Load</span>
@@ -178,14 +186,15 @@ export default function PowerSourcesLineChartCard({
           <button
             type="button"
             onClick={() => setShowSolar(!showSolar)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${showSolar
-              ? darkMode
-                ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                : 'bg-amber-50 border-amber-300 text-amber-700 shadow-xs'
-              : darkMode
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+              showSolar
+                ? darkMode
+                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                  : 'bg-amber-50 border-amber-300 text-amber-700 shadow-xs'
+                : darkMode
                 ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
                 : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
-              }`}
+            }`}
           >
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-xs" />
             <span>Solar Generation</span>
@@ -197,14 +206,15 @@ export default function PowerSourcesLineChartCard({
         <button
           type="button"
           onClick={() => setShowGrid(!showGrid)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${showGrid
-            ? darkMode
-              ? 'bg-sky-500/20 border-sky-500/40 text-sky-300'
-              : 'bg-sky-50 border-sky-300 text-sky-700 shadow-xs'
-            : darkMode
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+            showGrid
+              ? darkMode
+                ? 'bg-sky-500/20 border-sky-500/40 text-sky-300'
+                : 'bg-sky-50 border-sky-300 text-sky-700 shadow-xs'
+              : darkMode
               ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
               : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
-            }`}
+          }`}
         >
           <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-xs" />
           <span>Grid (Import + / Export -)</span>
@@ -216,14 +226,15 @@ export default function PowerSourcesLineChartCard({
           <button
             type="button"
             onClick={() => setShowBattery(!showBattery)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${showBattery
-              ? darkMode
-                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                : 'bg-emerald-50 border-emerald-300 text-emerald-700 shadow-xs'
-              : darkMode
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+              showBattery
+                ? darkMode
+                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                  : 'bg-emerald-50 border-emerald-300 text-emerald-700 shadow-xs'
+                : darkMode
                 ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
                 : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
-              }`}
+            }`}
           >
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs" />
             <span>Battery (Discharge + / Charge -)</span>
@@ -243,13 +254,14 @@ export default function PowerSourcesLineChartCard({
             data={chartData}
             xDataKey="date"
             className="w-full h-full"
-            margin={{ top: 20, right: 20, bottom: 35, left: 35 }}
+            margin={{ top: 25, right: 20, bottom: 35, left: 50 }}
           >
             <Grid
               stroke={darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}
               highlightRowValues={[0]}
               highlightRowStroke={darkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
             />
+            <YAxis label="kW" numTicks={5} formatValue={(v) => `${v.toFixed(1)}`} />
             <XAxis numTicks={Math.min(10, chartData.length)} />
 
             {showHome && (
@@ -287,5 +299,4 @@ export default function PowerSourcesLineChartCard({
       </div>
     </div>
   );
-}
 }
