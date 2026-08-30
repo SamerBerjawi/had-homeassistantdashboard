@@ -54,10 +54,10 @@ export function BikeTab({
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
 
   const cardStyle =
-    'rounded-3xl border backdrop-blur-md transition-all ' +
+    'rounded-3xl backdrop-blur-md transition-all overflow-hidden isolate ' +
     (darkMode
-      ? 'bg-slate-900/60 dark:bg-slate-900/50 border-white/10 text-white shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]'
-      : 'bg-white/85 border-slate-200/90 text-slate-900 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)]') +
+      ? 'bg-slate-900/60 text-white'
+      : 'bg-white/60 text-slate-900 shadow-xs') +
     ' p-4 sm:p-5 flex flex-col justify-between';
 
   const batteryColor =

@@ -45,18 +45,18 @@ export default function EnergyUsageGraphCard({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative flex flex-col justify-between overflow-hidden shadow-2xl ${darkMode
-        ? 'bg-slate-900/80 border-white/10 text-white'
-        : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/80'
+      className={`w-full rounded-3xl p-5 sm:p-6 backdrop-blur-md transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate shadow-xs ${darkMode
+        ? 'bg-slate-900/60 text-white'
+        : 'bg-white/60 text-slate-900'
         }`}
     >
       {/* Header with Title and Total Badge */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2.5">
           <div
-            className={`p-2 rounded-2xl border ${darkMode
-              ? 'bg-purple-500/15 text-purple-400 border-purple-500/30'
-              : 'bg-purple-50 text-purple-600 border-purple-200'
+            className={`p-2 rounded-2xl ${darkMode
+              ? 'bg-purple-500/15 text-purple-400'
+              : 'bg-purple-50 text-purple-600'
               }`}
           >
             <ChartBar size={18} weight="fill" />

@@ -55,7 +55,9 @@ import {
   ShieldWarning,
   CheckCircle,
   Pause,
-  Play
+  Play,
+  Broom,
+  ArrowArcLeft
 } from '@phosphor-icons/react';
 import { AreaData } from '../../types/rooms';
 import { ResolvedEntity } from '../../types';
@@ -423,6 +425,18 @@ export default function AreaDetailView({
     );
   };
 
+  // Vacuum toggle & control
+  const handleVacuumToggle = async (vac: ResolvedEntity) => {
+    const isCleaning = (vac.state || '').toLowerCase() === 'cleaning' || (vac.state || '').toLowerCase() === 'on';
+    if (isCleaning) {
+      updateEntityState(vac.entity_id, 'returning');
+      await callHAService('vacuum', 'return_to_base', {}, { entity_id: vac.entity_id });
+    } else {
+      updateEntityState(vac.entity_id, 'cleaning');
+      await callHAService('vacuum', 'start', {}, { entity_id: vac.entity_id });
+    }
+  };
+
   const handleFanSpeed = (fan: ResolvedEntity, percentage: number) => {
     const nextState = percentage > 0 ? 'on' : 'off';
     updateEntityState(fan.entity_id, nextState, {
@@ -523,14 +537,12 @@ export default function AreaDetailView({
               <button
                 type="button"
                 onClick={() => onToggleLights(area.areaId, activeLightsCount === 0)}
-                className={`px-2.5 py-1 rounded-xl text-xs font-semibold backdrop-blur-md transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+                className={`px-2.5 py-1 rounded-xl text-xs font-semibold backdrop-blur-md transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 ${
                   activeLightsCount > 0
-                    ? darkMode
-                      ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/30 text-amber-300'
-                      : 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-800'
+                    ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 hover:bg-amber-500/30'
                     : darkMode
-                    ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300'
-                    : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+                    ? 'bg-white/10 hover:bg-white/15 text-slate-300'
+                    : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-700'
                 }`}
               >
                 <Power size={13} weight="bold" />
@@ -548,14 +560,14 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={light.entity_id}
-                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-xl border transition-all duration-300 flex flex-col justify-between gap-3 ${
+                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all duration-300 flex flex-col justify-between gap-3 overflow-hidden isolate shadow-xs ${
                       darkMode
                         ? isOn
-                          ? 'bg-slate-900/80 border-amber-500/30 shadow-md shadow-amber-500/5'
-                          : 'bg-white/[0.04] border-white/10'
+                          ? 'bg-slate-900/80 text-white'
+                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
                         : isOn
-                        ? 'bg-amber-50/80 border-amber-300 shadow-sm'
-                        : 'bg-white/80 border-slate-200 shadow-sm'
+                        ? 'bg-amber-50/80 text-slate-900'
+                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -565,7 +577,7 @@ export default function AreaDetailView({
                           weight={isOn ? 'fill' : 'duotone'}
                           className={`shrink-0 transition-all duration-300 ${
                             isOn
-                              ? 'text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.85)] scale-105'
+                              ? 'text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.85)] scale-105'
                               : 'text-slate-400'
                           }`}
                         />
@@ -590,12 +602,12 @@ export default function AreaDetailView({
                       <button
                         type="button"
                         onClick={() => handleToggleLight(light)}
-                        className={`p-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 border ${
+                        className={`p-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 ${
                           isOn
-                            ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
+                            ? 'bg-amber-500 text-slate-950 shadow-xs'
                             : darkMode
-                            ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400'
-                            : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
+                            ? 'bg-white/10 hover:bg-white/15 text-slate-400'
+                            : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-600'
                         }`}
                       >
                         <Power size={15} weight="bold" />
@@ -659,14 +671,14 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={cs.entity_id}
-                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-xl border transition-all flex items-center justify-between gap-3 ${
+                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all flex items-center justify-between gap-3 overflow-hidden isolate shadow-xs ${
                       darkMode
                         ? isOpen
-                          ? 'bg-amber-950/25 border-amber-500/40 text-amber-200 shadow-md shadow-amber-950/20'
-                          : 'bg-white/[0.04] border-white/10 text-white'
+                          ? 'bg-amber-500/15 text-amber-200'
+                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
                         : isOpen
-                        ? 'bg-amber-50 border-amber-300 text-amber-950 shadow-sm'
-                        : 'bg-white/80 border-slate-200 text-slate-900 shadow-sm'
+                        ? 'bg-amber-50 text-amber-950'
+                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -706,10 +718,10 @@ export default function AreaDetailView({
                       </div>
                     </div>
 
-                    <span className={`px-2.5 py-1 rounded-xl text-xs font-bold border shrink-0 ${
+                    <span className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 ${
                       isOpen
-                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40'
-                        : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10'
+                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                        : 'bg-slate-900/[0.06] dark:bg-white/10 text-slate-600 dark:text-slate-300'
                     }`}>
                       {isOpen ? 'Open' : 'Closed'}
                     </span>
@@ -748,14 +760,14 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={climate.entity_id}
-                    className={`col-span-1 p-4.5 rounded-3xl backdrop-blur-xl border flex flex-col justify-between gap-3.5 transition-all ${
+                    className={`col-span-1 p-4.5 rounded-3xl backdrop-blur-md flex flex-col justify-between gap-3.5 transition-all overflow-hidden isolate shadow-xs ${
                       darkMode
                         ? !isOff
-                          ? 'bg-slate-900/80 border-rose-500/30 shadow-md shadow-rose-950/20'
-                          : 'bg-white/[0.04] border-white/10 text-white'
+                          ? 'bg-rose-500/15 text-white'
+                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
                         : !isOff
-                        ? 'bg-rose-50/80 border-rose-200 text-slate-900 shadow-sm'
-                        : 'bg-white/80 border-slate-200 text-slate-900 shadow-sm'
+                        ? 'bg-rose-50/90 text-slate-900'
+                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -798,17 +810,17 @@ export default function AreaDetailView({
                         <button
                           type="button"
                           onClick={() => handleTempAdjust(climate, -0.5)}
-                          className="w-7 h-7 rounded-xl bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/15 border border-white/10 flex items-center justify-center text-xs font-bold cursor-pointer active:scale-90 transition-all"
+                          className="w-7 h-7 rounded-xl bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 flex items-center justify-center text-xs font-bold cursor-pointer active:scale-90 transition-all"
                         >
                           <Minus size={12} weight="bold" />
                         </button>
-                        <div className="px-2 py-0.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 font-black text-sm min-w-[48px] text-center">
+                        <div className="px-2 py-0.5 rounded-xl bg-rose-500/15 text-rose-400 font-black text-sm min-w-[48px] text-center">
                           {targetTemp}°
                         </div>
                         <button
                           type="button"
                           onClick={() => handleTempAdjust(climate, 0.5)}
-                          className="w-7 h-7 rounded-xl bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/15 border border-white/10 flex items-center justify-center text-xs font-bold cursor-pointer active:scale-90 transition-all"
+                          className="w-7 h-7 rounded-xl bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 flex items-center justify-center text-xs font-bold cursor-pointer active:scale-90 transition-all"
                         >
                           <Plus size={12} weight="bold" />
                         </button>
@@ -833,7 +845,7 @@ export default function AreaDetailView({
                     </div>
 
                     {/* HVAC Mode Selector */}
-                    <div className="flex items-center gap-1 flex-wrap pt-1 border-t border-white/10 dark:border-white/10 border-slate-200/80">
+                    <div className="flex items-center gap-1 flex-wrap pt-1">
                       {hvacModes.map((mode) => {
                         const isSelected = currentHvacMode === mode;
                         return (
@@ -841,14 +853,14 @@ export default function AreaDetailView({
                             key={mode}
                             type="button"
                             onClick={() => handleHvacModeChange(climate, mode)}
-                            className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
+                            className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                               isSelected
                                 ? darkMode
-                                  ? 'bg-white/20 border-white/40 text-white shadow-sm'
-                                  : 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                                  ? 'bg-white/20 text-white shadow-xs'
+                                  : 'bg-slate-900 text-white shadow-xs'
                                 : darkMode
-                                ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400'
-                                : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
+                                ? 'bg-white/5 hover:bg-white/10 text-slate-400'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
                             }`}
                           >
                             <span className="capitalize">{mode === 'fan_only' ? 'Fan' : mode}</span>
@@ -868,14 +880,14 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={fan.entity_id}
-                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-xl border transition-all flex flex-col justify-between gap-3 ${
+                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all flex flex-col justify-between gap-3 overflow-hidden isolate shadow-xs ${
                       darkMode
                         ? isOn
-                          ? 'bg-teal-950/30 border-teal-500/30 shadow-md'
-                          : 'bg-white/[0.04] border-white/10'
+                          ? 'bg-teal-500/15 text-white'
+                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
                         : isOn
-                        ? 'bg-teal-50/80 border-teal-300 shadow-sm'
-                        : 'bg-white/80 border-slate-200 shadow-sm'
+                        ? 'bg-teal-50 text-slate-900'
+                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -902,12 +914,12 @@ export default function AreaDetailView({
                       <button
                         type="button"
                         onClick={() => handleToggleFan(fan)}
-                        className={`p-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 border ${
+                        className={`p-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 ${
                           isOn
-                            ? 'bg-teal-500 text-slate-950 border-teal-400 shadow-md shadow-teal-500/20'
+                            ? 'bg-teal-500 text-slate-950 shadow-xs'
                             : darkMode
-                            ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400'
-                            : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
+                            ? 'bg-white/10 hover:bg-white/15 text-slate-400'
+                            : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-600'
                         }`}
                       >
                         <Power size={15} weight="bold" />
@@ -952,7 +964,7 @@ export default function AreaDetailView({
                 <button
                   type="button"
                   onClick={handleBulkPauseMedia}
-                  className="px-2.5 py-1 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                  className="px-2.5 py-1 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/15 text-slate-300 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                 >
                   <Pause size={13} weight="bold" />
                   <span>Pause All</span>
@@ -993,14 +1005,10 @@ export default function AreaDetailView({
               <button
                 type="button"
                 onClick={handleBulkToggleLocks}
-                className={`px-2.5 py-1 rounded-xl text-xs font-semibold backdrop-blur-md transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+                className={`px-2.5 py-1 rounded-xl text-xs font-semibold backdrop-blur-md transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 ${
                   unlockedLocksCount > 0
-                    ? darkMode
-                      ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/30 text-amber-300'
-                      : 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-800'
-                    : darkMode
-                    ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/30 text-emerald-300'
-                    : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-800'
+                    ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                    : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
                 }`}
               >
                 {unlockedLocksCount > 0 ? (
@@ -1025,14 +1033,14 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={lock.entity_id}
-                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-xl border transition-all flex items-center justify-between gap-3 ${
+                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all flex items-center justify-between gap-3 overflow-hidden isolate shadow-xs ${
                       darkMode
                         ? !isLocked
-                          ? 'bg-amber-950/20 border-amber-500/35 shadow-md'
-                          : 'bg-white/[0.04] border-white/10'
+                          ? 'bg-amber-500/15 text-amber-200'
+                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
                         : !isLocked
-                        ? 'bg-amber-50/80 border-amber-300 shadow-sm'
-                        : 'bg-white/80 border-slate-200 shadow-sm'
+                        ? 'bg-amber-50 text-amber-950'
+                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1061,12 +1069,12 @@ export default function AreaDetailView({
                     <button
                       type="button"
                       onClick={() => handleToggleLock(lock)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 border flex items-center gap-1 shrink-0 ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 shrink-0 ${
                         isLocked
                           ? darkMode
-                            ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white'
-                            : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
-                          : 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/20'
+                            ? 'bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white'
+                            : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-700'
+                          : 'bg-emerald-500 text-slate-950 shadow-xs'
                       }`}
                     >
                       {isLocked ? (
@@ -1105,14 +1113,12 @@ export default function AreaDetailView({
               <button
                 type="button"
                 onClick={() => handleBulkToggleSwitches(activeSwitchesCount === 0)}
-                className={`px-2.5 py-1 rounded-xl text-xs font-semibold backdrop-blur-md transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+                className={`px-2.5 py-1 rounded-xl text-xs font-semibold backdrop-blur-md transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 ${
                   activeSwitchesCount > 0
-                    ? darkMode
-                      ? 'bg-indigo-500/15 hover:bg-indigo-500/25 border-indigo-500/30 text-indigo-300'
-                      : 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-800'
+                    ? 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
                     : darkMode
-                    ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300'
-                    : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+                    ? 'bg-white/10 hover:bg-white/15 text-slate-300'
+                    : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-700'
                 }`}
               >
                 <Power size={13} weight="bold" />
@@ -1129,14 +1135,14 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={sw.entity_id}
-                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-xl border transition-all flex items-center justify-between gap-3 ${
+                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all flex items-center justify-between gap-3 overflow-hidden isolate shadow-xs ${
                       darkMode
                         ? isOn
-                          ? 'bg-indigo-950/30 border-indigo-500/30 shadow-md'
-                          : 'bg-white/[0.04] border-white/10'
+                          ? 'bg-indigo-500/15 text-white'
+                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
                         : isOn
-                        ? 'bg-indigo-50/80 border-indigo-300 shadow-sm'
-                        : 'bg-white/80 border-slate-200 shadow-sm'
+                        ? 'bg-indigo-50 text-slate-900'
+                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1170,12 +1176,12 @@ export default function AreaDetailView({
                     <button
                       type="button"
                       onClick={() => handleToggleSwitch(sw)}
-                      className={`p-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 border ${
+                      className={`p-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 ${
                         isOn
-                          ? 'bg-indigo-500 text-white border-indigo-400 shadow-md shadow-indigo-500/20'
+                          ? 'bg-indigo-500 text-white shadow-xs'
                           : darkMode
-                          ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400'
-                          : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
+                          ? 'bg-white/10 hover:bg-white/15 text-slate-400'
+                          : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-600'
                       }`}
                     >
                       <Power size={15} weight="bold" />
@@ -1209,14 +1215,14 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={ms.entity_id}
-                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-xl border flex items-center justify-between gap-2.5 transition-all ${
+                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-md flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate shadow-xs ${
                       darkMode
                         ? isActive
-                          ? 'bg-emerald-950/25 border-emerald-500/40 text-emerald-200 shadow-md shadow-emerald-950/20'
-                          : 'bg-white/[0.04] border-white/10 text-white'
+                          ? 'bg-emerald-500/15 text-emerald-200'
+                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
                         : isActive
-                        ? 'bg-emerald-50 border-emerald-300 text-emerald-950 shadow-sm'
-                        : 'bg-white/80 border-slate-200 text-slate-900 shadow-sm'
+                        ? 'bg-emerald-50 text-emerald-950'
+                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1244,10 +1250,10 @@ export default function AreaDetailView({
                       </div>
                     </div>
 
-                    <span className={`px-2 py-0.5 rounded-lg text-[11px] font-bold border shrink-0 ${
+                    <span className={`px-2 py-0.5 rounded-lg text-[11px] font-bold shrink-0 ${
                       isActive
-                        ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40'
-                        : 'bg-slate-100 dark:bg-white/10 text-slate-500 border-slate-200 dark:border-white/10'
+                        ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                        : 'bg-slate-900/[0.06] dark:bg-white/10 text-slate-500'
                     }`}>
                       {isActive ? 'Active' : 'Idle'}
                     </span>
@@ -1284,18 +1290,18 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={bs.entity_id}
-                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-xl border flex flex-col justify-between gap-2.5 transition-all ${
+                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-md flex flex-col justify-between gap-2.5 transition-all overflow-hidden isolate shadow-xs ${
                       darkMode
                         ? isCritical
-                          ? 'bg-rose-950/25 border-rose-500/40 text-rose-200'
+                          ? 'bg-rose-500/15 text-rose-200'
                           : isLow
-                          ? 'bg-amber-950/20 border-amber-500/30 text-amber-200'
-                          : 'bg-white/[0.04] border-white/10 text-white'
+                          ? 'bg-amber-500/15 text-amber-200'
+                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
                         : isCritical
-                        ? 'bg-rose-50 border-rose-300 text-rose-950 shadow-sm'
+                        ? 'bg-rose-50 text-rose-950'
                         : isLow
-                        ? 'bg-amber-50 border-amber-200 text-amber-900 shadow-sm'
-                        : 'bg-white/80 border-slate-200 text-slate-900 shadow-sm'
+                        ? 'bg-amber-50 text-amber-900'
+                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -1372,8 +1378,8 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={sensor.entity_id}
-                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-xl border flex items-center justify-between gap-2.5 transition-all ${
-                      darkMode ? 'bg-white/[0.04] border-white/10 text-white' : 'bg-white/80 border-slate-200 text-slate-900 shadow-sm'
+                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-md flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate shadow-xs ${
+                      darkMode ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white' : 'bg-white/60 hover:bg-white/80 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1429,8 +1435,8 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={sensor.entity_id}
-                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-xl border flex items-center justify-between gap-2.5 transition-all ${
-                      darkMode ? 'bg-white/[0.04] border-white/10 text-white' : 'bg-white/80 border-slate-200 text-slate-900 shadow-sm'
+                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-md flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate shadow-xs ${
+                      darkMode ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white' : 'bg-white/60 hover:bg-white/80 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1475,14 +1481,14 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={hs.entity_id}
-                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-xl border flex items-center justify-between gap-2.5 transition-all ${
+                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-md flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate shadow-xs ${
                       darkMode
                         ? isProblem
-                          ? 'bg-rose-950/40 border-rose-500 text-rose-200 shadow-md shadow-rose-950/40'
-                          : 'bg-white/[0.04] border-white/10 text-white'
+                          ? 'bg-rose-500/20 text-rose-200'
+                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
                         : isProblem
-                        ? 'bg-rose-100 border-rose-400 text-rose-950 shadow-sm'
-                        : 'bg-white/80 border-slate-200 text-slate-900 shadow-sm'
+                        ? 'bg-rose-50 text-rose-950'
+                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1514,10 +1520,10 @@ export default function AreaDetailView({
                       </div>
                     </div>
 
-                    <span className={`px-2 py-0.5 rounded-lg text-[11px] font-bold border shrink-0 ${
+                    <span className={`px-2 py-0.5 rounded-lg text-[11px] font-bold shrink-0 ${
                       isProblem
-                        ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/40 animate-pulse'
-                        : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                        ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 animate-pulse'
+                        : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
                     }`}>
                       {isProblem ? 'Hazard' : 'Safe'}
                     </span>
@@ -1546,14 +1552,14 @@ export default function AreaDetailView({
                 <button
                   type="button"
                   onClick={() => handleBulkCovers('open_cover')}
-                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-all cursor-pointer active:scale-95"
+                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/15 text-slate-300 transition-all cursor-pointer active:scale-95"
                 >
                   Open All
                 </button>
                 <button
                   type="button"
                   onClick={() => handleBulkCovers('close_cover')}
-                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-all cursor-pointer active:scale-95"
+                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/15 text-slate-300 transition-all cursor-pointer active:scale-95"
                 >
                   Close All
                 </button>
@@ -1564,8 +1570,8 @@ export default function AreaDetailView({
               {entities.covers.map((cover) => (
                 <div
                   key={cover.entity_id}
-                  className={`col-span-1 p-4 rounded-2xl backdrop-blur-xl border transition-all flex items-center justify-between gap-3 ${
-                    darkMode ? 'bg-white/[0.04] border-white/10' : 'bg-white/80 border-slate-200'
+                  className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all flex items-center justify-between gap-3 overflow-hidden isolate shadow-xs ${
+                    darkMode ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white' : 'bg-white/60 hover:bg-white/80 text-slate-900'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -1580,27 +1586,106 @@ export default function AreaDetailView({
                     <button
                       type="button"
                       onClick={() => handleCoverCommand(cover, 'open_cover')}
-                      className="px-2 py-1 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer active:scale-95"
+                      className="px-2 py-1 rounded-xl text-xs font-bold bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 cursor-pointer active:scale-95"
                     >
                       Open
                     </button>
                     <button
                       type="button"
                       onClick={() => handleCoverCommand(cover, 'stop_cover')}
-                      className="px-2 py-1 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer active:scale-95"
+                      className="px-2 py-1 rounded-xl text-xs font-bold bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 cursor-pointer active:scale-95"
                     >
                       Stop
                     </button>
                     <button
                       type="button"
                       onClick={() => handleCoverCommand(cover, 'close_cover')}
-                      className="px-2 py-1 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer active:scale-95"
+                      className="px-2 py-1 rounded-xl text-xs font-bold bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 cursor-pointer active:scale-95"
                     >
                       Close
                     </button>
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+        {entities.vacuums && entities.vacuums.length > 0 && (
+          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Broom size={22} weight="duotone" className="text-teal-400 shrink-0" />
+                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  Robotic Vacuums & Cleaners ({entities.vacuums.length})
+                </h3>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3 items-start">
+              {entities.vacuums.map((vac) => {
+                const rawState = (vac.state || 'docked').toLowerCase();
+                const isCleaning = rawState === 'cleaning' || rawState === 'on';
+                const battery = getEntityBattery(vac);
+
+                return (
+                  <div
+                    key={vac.entity_id}
+                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all flex items-center justify-between gap-3 overflow-hidden isolate shadow-xs ${
+                      darkMode ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white' : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all shrink-0 ${
+                          isCleaning
+                            ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/20'
+                            : 'bg-white/80 dark:bg-white/10 text-slate-500 dark:text-slate-400'
+                        }`}
+                      >
+                        <Broom
+                          size={20}
+                          weight={isCleaning ? 'fill' : 'duotone'}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <h5 className="text-sm font-bold truncate">{formatEntityDisplayName(vac.name, area.name)}</h5>
+                        <p className="text-xs text-slate-500 capitalize flex items-center gap-1.5 mt-0.5">
+                          <span>{rawState}</span>
+                          {battery !== undefined && (
+                            <span className="flex items-center gap-0.5 text-slate-400">
+                              • <BatteryMedium size={12} weight="bold" /> {battery}%
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleVacuumToggle(vac)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 ${
+                          isCleaning
+                            ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/30'
+                            : 'bg-teal-600 hover:bg-teal-500 text-white shadow-xs'
+                        }`}
+                      >
+                        {isCleaning ? (
+                          <>
+                            <ArrowArcLeft size={13} weight="bold" />
+                            <span>Dock</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play size={13} weight="fill" />
+                            <span>Clean</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -1625,8 +1710,8 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={sensor.entity_id}
-                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-xl border flex items-center justify-between gap-2.5 transition-all ${
-                      darkMode ? 'bg-white/[0.04] border-white/10 text-white' : 'bg-white/80 border-slate-200 text-slate-900 shadow-sm'
+                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-md flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate shadow-xs ${
+                      darkMode ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white' : 'bg-white/60 hover:bg-white/80 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">

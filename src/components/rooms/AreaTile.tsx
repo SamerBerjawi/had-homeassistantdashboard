@@ -76,49 +76,41 @@ export default function AreaTile({
   return (
     <div
       onClick={() => onSelectArea(area.areaId)}
-      style={{
-        clipPath: 'inset(0 round 1rem)',
-        borderColor: customAccentColor ? `${customAccentColor}45` : undefined
-      }}
-      className={`group relative flex flex-col justify-between rounded-2xl p-4 sm:p-4.5 backdrop-blur-xl transition-all duration-300 cursor-pointer overflow-hidden isolate border ${
-        darkMode
-          ? isHazardActive
-            ? 'bg-rose-950/20 border-rose-500/40 shadow-lg shadow-rose-950/30'
-            : isLightActive
-            ? 'bg-slate-900/70 hover:bg-slate-900/90 border-amber-500/25 hover:border-amber-500/40 shadow-md shadow-amber-500/5'
-            : 'bg-white/[0.04] hover:bg-white/[0.07] border-white/10 hover:border-white/20'
-          : isHazardActive
-          ? 'bg-rose-50/90 border-rose-300 shadow-md'
-          : isLightActive
-          ? 'bg-amber-50/70 hover:bg-amber-50/90 border-amber-200/90 hover:border-amber-300 shadow-sm'
-          : 'bg-white/80 hover:bg-white border-slate-200/80 hover:border-slate-300 shadow-sm'
+      style={{ clipPath: 'inset(0 round 1.5rem)' }}
+      className={`group relative flex flex-col justify-between rounded-3xl p-4 sm:p-4.5 backdrop-blur-md transition-all duration-300 cursor-pointer overflow-hidden isolate ${
+        isHazardActive
+          ? 'bg-rose-500/15 text-rose-200'
+          : darkMode
+          ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
+          : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
       }`}
     >
       {/* Background ambient room picture with corner-bleed protection */}
       {area.picture && (
         <div
-          style={{ clipPath: 'inset(0 round 1rem)' }}
-          className="absolute inset-0 z-0 opacity-10 dark:opacity-15 group-hover:opacity-20 transition-opacity duration-500 overflow-hidden pointer-events-none rounded-2xl"
+          className="absolute inset-0 z-0 opacity-10 dark:opacity-15 group-hover:opacity-20 transition-opacity duration-500 overflow-hidden pointer-events-none rounded-3xl"
         >
           <img
             src={area.picture}
             alt={area.name}
-            className="w-full h-full object-cover rounded-2xl"
+            className="w-full h-full object-cover rounded-3xl"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent dark:block hidden rounded-2xl" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent dark:block hidden rounded-3xl" />
         </div>
       )}
 
-      {/* Top Ambient Highlight Glow */}
-      {isLightActive && (
-        <div
-          style={{ backgroundColor: customAccentColor ? `${customAccentColor}30` : undefined }}
-          className={`absolute -top-12 -right-12 w-32 h-32 rounded-full ${customAccentColor ? '' : 'bg-amber-500/20'} blur-2xl pointer-events-none`}
-        />
-      )}
-      {isMotionActive && !isLightActive && (
-        <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-emerald-500/15 blur-2xl pointer-events-none" />
-      )}
+      {/* Top Ambient Highlight Glow with strict containment - Subtle motion/light glow */}
+      <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+        {isLightActive && (
+          <div
+            style={{ backgroundColor: customAccentColor ? `${customAccentColor}18` : undefined }}
+            className={`absolute -top-8 -right-8 w-24 h-24 rounded-full ${customAccentColor ? '' : 'bg-amber-500/15'} blur-xl pointer-events-none`}
+          />
+        )}
+        {isMotionActive && !isLightActive && (
+          <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-emerald-500/15 blur-xl pointer-events-none" />
+        )}
+      </div>
 
       <div className="relative z-10 flex flex-col gap-3">
         {/* Card Header: Clean unboxed icon + Room Name + Active Status Indicator */}

@@ -103,12 +103,13 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
     };
   }, [serverUrl, rawCameras]);
 
-  // Combine HA camera entities with detected go2rtc RTSP streams
+  // Strictly limit live surveillance feed cameras to cameras defined in go2rtc
   const allCameras: ResolvedEntity[] = useMemo(() => {
-    if (go2RtcCameras.length === 0) return rawCameras;
-    const existingIds = new Set(rawCameras.map(c => c.entity_id.toLowerCase()));
-    const uniqueGo2Rtc = go2RtcCameras.filter(c => !existingIds.has(c.entity_id.toLowerCase()));
-    return [...rawCameras, ...uniqueGo2Rtc];
+    if (go2RtcCameras.length > 0) {
+      return go2RtcCameras;
+    }
+    // Fallback if go2rtc is offline or during initial boot: only return cameras that are explicitly go2rtc
+    return rawCameras.filter(c => c.attributes?.stream_source === 'go2rtc' || c.entity_id.startsWith('go2rtc.'));
   }, [rawCameras, go2RtcCameras]);
 
   // Query camera capabilities via HA WebSocket signaling (camera/capabilities)

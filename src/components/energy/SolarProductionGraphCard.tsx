@@ -32,18 +32,18 @@ export default function SolarProductionGraphCard({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative flex flex-col justify-between shadow-2xl ${darkMode
-        ? 'bg-slate-900/80 border-white/10 text-white'
-        : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/80'
+      className={`w-full rounded-3xl p-5 sm:p-6 backdrop-blur-md transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate shadow-xs ${darkMode
+        ? 'bg-slate-900/60 text-white'
+        : 'bg-white/60 text-slate-900'
         }`}
     >
       {/* Header with Title and Total Badge */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-2.5">
           <div
-            className={`p-2 rounded-2xl border ${darkMode
-              ? 'bg-amber-500/15 text-amber-500 border-amber-500/30'
-              : 'bg-amber-50 text-amber-600 border-amber-200'
+            className={`p-2 rounded-2xl ${darkMode
+              ? 'bg-amber-500/15 text-amber-500'
+              : 'bg-amber-50 text-amber-600'
               }`}
           >
             <Sun size={18} weight="fill" />

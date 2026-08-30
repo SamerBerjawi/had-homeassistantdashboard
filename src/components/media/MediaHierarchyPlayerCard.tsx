@@ -108,14 +108,14 @@ export default function MediaHierarchyPlayerCard({
   return (
     <div
       onClick={() => onOpenDetail(media)}
-      className={`group relative flex flex-col justify-between p-4 rounded-2xl border transition-all duration-200 cursor-pointer ${
+      className={`group relative flex flex-col justify-between p-4 rounded-2xl backdrop-blur-md transition-all duration-200 cursor-pointer overflow-hidden isolate shadow-xs ${
         isPlaying
           ? darkMode
-            ? 'bg-slate-900/90 border-purple-500/30 shadow-md shadow-purple-500/5'
-            : 'bg-white border-purple-300 shadow-md shadow-purple-500/5'
+            ? 'bg-purple-500/15 text-purple-200'
+            : 'bg-purple-50 text-purple-900 shadow-xs'
           : darkMode
-          ? 'bg-white/5 hover:bg-white/10 border-white/10 hover:border-white/20 text-white'
-          : 'bg-slate-50/80 hover:bg-white border-slate-200/80 hover:border-slate-300 text-slate-900 shadow-xs'
+          ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
+          : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
       }`}
     >
       {/* Top Row: Thumbnail + Details + Badges */}

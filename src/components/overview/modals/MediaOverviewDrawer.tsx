@@ -291,10 +291,10 @@ export default function MediaOverviewDrawer({
         {/* VIEW A: NOW PLAYING / TRACK CONTROLS                           */}
         {/* ------------------------------------------------------------- */}
         {activeTab === 'playback' && currentMedia && (
-          <div className={`p-6 rounded-3xl border shadow-xl relative flex flex-col items-center text-center transition-all duration-300 ${
+          <div className={`p-6 rounded-3xl shadow-xl relative flex flex-col items-center text-center transition-all duration-300 ${
             darkMode
-              ? 'bg-slate-900/80 border-purple-500/25'
-              : 'bg-white/95 border-purple-200/80 shadow-slate-200/60'
+              ? 'bg-slate-900/80 shadow-slate-950/50'
+              : 'bg-white/95 shadow-slate-200/60'
           }`}>
             {/* Blurred Album Artwork covering the entire tile */}
             {albumArt ? (
@@ -329,7 +329,7 @@ export default function MediaOverviewDrawer({
               <button
                 type="button"
                 onClick={handlePowerToggle}
-                className="w-8 h-8 rounded-xl bg-slate-100/80 hover:bg-rose-100 dark:bg-white/10 dark:hover:bg-rose-500/20 text-slate-700 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 border border-slate-200/80 dark:border-white/10 flex items-center justify-center transition-all cursor-pointer shadow-2xs backdrop-blur-md"
+                className="w-8 h-8 rounded-xl bg-slate-100/80 hover:bg-rose-100 dark:bg-white/10 dark:hover:bg-rose-500/20 text-slate-700 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 flex items-center justify-center transition-all cursor-pointer shadow-2xs backdrop-blur-md"
                 title="Toggle Device Power"
               >
                 <Power size={14} weight="bold" />
@@ -448,7 +448,7 @@ export default function MediaOverviewDrawer({
 
             {/* Modern Custom Dropdowns for Source & Sound Mode */}
             {(sourceList.length > 0 || soundModeList.length > 0) && (
-              <div className="w-full max-w-xs grid grid-cols-2 gap-2.5 pt-3 border-t border-slate-200/80 dark:border-white/10 mt-3 text-left relative z-10">
+              <div className="w-full max-w-xs grid grid-cols-2 gap-2.5 pt-3 mt-3 text-left relative z-10">
                 {sourceList.length > 0 && (
                   <div>
                     <CustomDropdown
@@ -587,14 +587,14 @@ export default function MediaOverviewDrawer({
                                 <div
                                   key={player.entity_id}
                                   onClick={() => setSelectedId(player.entity_id)}
-                                  className={`p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 ${
+                                  className={`p-3.5 rounded-2xl transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 ${
                                     isSel
-                                      ? 'bg-purple-500/15 border-purple-500/50 shadow-md ring-1 ring-purple-500/40'
-                                      : 'bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border-slate-200 dark:border-white/10'
+                                      ? 'bg-purple-500/20 text-white shadow-md'
+                                      : 'bg-slate-100/90 dark:bg-white/[0.04] hover:bg-slate-200/80 dark:hover:bg-white/[0.08]'
                                   }`}
                                 >
                                   <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-purple-100 dark:bg-purple-950/60 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0">
+                                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-purple-100 dark:bg-purple-950/60 flex items-center justify-center shrink-0">
                                       {playerArt ? (
                                         <img src={playerArt} alt={player.name} className="w-full h-full object-cover" />
                                       ) : playerClass.isApple ? (

@@ -30,15 +30,15 @@ export default function MobilityView({ darkMode = true }: MobilityViewProps) {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1 flex flex-col">
+    <div className="w-full space-y-6 flex-1 flex flex-col">
       {/* Top Segmented Sub-View Switcher & Global Mobility Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
-        {/* Switcher Pills (Cleaned: No emojis) */}
+        {/* Switcher Pills */}
         <div
-          className={`p-1.5 rounded-2xl border backdrop-blur-md flex items-center gap-1.5 transition-all ${
+          className={`p-1.5 rounded-2xl flex items-center gap-1.5 transition-all ${
             darkMode
-              ? 'bg-slate-900/60 border-white/10'
-              : 'bg-slate-900/[0.04] border-slate-900/[0.08] shadow-xs'
+              ? 'bg-white/[0.04]'
+              : 'bg-slate-900/[0.04] shadow-xs'
           }`}
         >
           {/* EV Tab */}

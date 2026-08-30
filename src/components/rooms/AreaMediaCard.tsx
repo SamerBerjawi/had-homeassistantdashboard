@@ -124,10 +124,10 @@ export default function AreaMediaCard({
     return (
       <div
         onClick={() => onOpenDrawer(media)}
-        className={`col-span-1 p-4 rounded-2xl backdrop-blur-lg border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 hover:scale-[1.01] active:scale-[0.99] shadow-xs hover:shadow-md ${
+        className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 overflow-hidden isolate shadow-xs ${
           darkMode
-            ? 'bg-white/[0.04] hover:bg-white/[0.07] border-white/10 text-white'
-            : 'bg-white/80 hover:bg-white border-slate-200 text-slate-900 shadow-sm'
+            ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
+            : 'bg-white/60 hover:bg-white/80 text-slate-900'
         }`}
       >
         <div className="flex items-center gap-2.5 min-w-0">
@@ -152,7 +152,7 @@ export default function AreaMediaCard({
           <button
             type="button"
             onClick={handlePlayPause}
-            className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-700 dark:text-white transition-all cursor-pointer active:scale-90"
+            className="w-8 h-8 rounded-xl bg-slate-900/[0.06] dark:bg-white/10 hover:bg-slate-900/10 dark:hover:bg-white/15 flex items-center justify-center text-slate-700 dark:text-white transition-all cursor-pointer active:scale-90"
             title="Play"
           >
             <Play size={14} weight="fill" className="ml-0.5" />
@@ -168,14 +168,14 @@ export default function AreaMediaCard({
   return (
     <div
       onClick={() => onOpenDrawer(media)}
-      className={`col-span-2 md:col-span-3 lg:col-span-2 group relative rounded-3xl p-4 sm:p-5 border shadow-xl relative overflow-hidden backdrop-blur-xl transition-all duration-300 cursor-pointer flex flex-col justify-between gap-3 hover:scale-[1.004] active:scale-[0.995] ${
-        albumArtUrl
-          ? 'bg-slate-950/60 border-white/20 text-white shadow-2xl'
-          : darkMode
-          ? 'bg-slate-900/80 border-purple-500/30 text-white shadow-purple-950/20'
-          : 'bg-white/95 border-purple-200/80 text-slate-900 shadow-slate-200/60'
-      }`}
       style={{ clipPath: 'inset(0 round 1.5rem)' }}
+      className={`col-span-2 md:col-span-3 lg:col-span-2 group relative rounded-3xl p-4 sm:p-5 shadow-xs overflow-hidden isolate backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between gap-3 ${
+        albumArtUrl
+          ? 'bg-slate-950/60 text-white'
+          : darkMode
+          ? 'bg-slate-900/60 text-white'
+          : 'bg-white/60 text-slate-900'
+      }`}
     >
       {/* Dynamic Blurred Album Artwork Background */}
       {albumArtUrl && (

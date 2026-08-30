@@ -20,20 +20,20 @@ export default function EnergySourcesTableCard({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative flex flex-col justify-between shadow-2xl ${
+      className={`w-full rounded-3xl p-5 sm:p-6 backdrop-blur-md transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate shadow-xs ${
         darkMode
-          ? 'bg-slate-900/80 border-white/10 text-white'
-          : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/80'
+          ? 'bg-slate-900/60 text-white'
+          : 'bg-white/60 text-slate-900'
       }`}
     >
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2.5">
           <div
-            className={`p-2 rounded-2xl border ${
+            className={`p-2 rounded-2xl ${
               darkMode
-                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                : 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                ? 'bg-emerald-500/15 text-emerald-400'
+                : 'bg-emerald-50 text-emerald-600'
             }`}
           >
             <Receipt size={18} weight="fill" />

@@ -161,10 +161,10 @@ export default function NowPlayingHighlightCard({
   return (
     <div
       onClick={() => onOpenDetail(media)}
-      className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl ${
+      className={`group relative overflow-hidden isolate rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer shadow-xs ${
         darkMode
-          ? 'bg-slate-900/80 hover:bg-slate-900 border-white/10 hover:border-white/20 text-white'
-          : 'bg-white/90 hover:bg-white border-slate-200 hover:border-slate-300 text-slate-900 shadow-slate-200/50'
+          ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
+          : 'bg-white/60 hover:bg-white/80 text-slate-900'
       }`}
       style={{
         boxShadow: darkMode
@@ -172,18 +172,20 @@ export default function NowPlayingHighlightCard({
           : `0 10px 25px -10px ${palette.glowSubtle}`
       }}
     >
-      {/* Ambient background bloom from album artwork / dominant color */}
-      {albumArt ? (
-        <div
-          className="absolute -right-12 -top-12 w-64 h-64 rounded-full bg-cover bg-center blur-2xl opacity-25 dark:opacity-35 pointer-events-none transition-opacity duration-700 group-hover:opacity-45"
-          style={{ backgroundImage: `url(${albumArt})` }}
-        />
-      ) : (
-        <div
-          className="absolute -right-12 -top-12 w-64 h-64 rounded-full blur-2xl opacity-20 pointer-events-none transition-opacity duration-700"
-          style={{ backgroundColor: palette.primary }}
-        />
-      )}
+      {/* Ambient background bloom with strict containment */}
+      <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+        {albumArt ? (
+          <div
+            className="absolute -right-8 -top-8 w-56 h-56 rounded-full bg-cover bg-center blur-2xl opacity-25 dark:opacity-35 pointer-events-none transition-opacity duration-700 group-hover:opacity-45"
+            style={{ backgroundImage: `url(${albumArt})` }}
+          />
+        ) : (
+          <div
+            className="absolute -right-8 -top-8 w-56 h-56 rounded-full blur-2xl opacity-20 pointer-events-none transition-opacity duration-700"
+            style={{ backgroundColor: palette.primary }}
+          />
+        )}
+      </div>
 
       <div className="relative z-10 p-5 sm:p-6 flex flex-col justify-between gap-5">
         {/* Header Row: Room/Floor context + Classification Badge + Power */}

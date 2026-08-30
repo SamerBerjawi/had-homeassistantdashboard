@@ -23,8 +23,8 @@ export default function SystemView({ darkMode = true }: SystemViewProps) {
       {/* Top Segmented Sub-View Switcher */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div
-          className={`p-1.5 rounded-2xl border backdrop-blur-md flex items-center gap-1.5 transition-all ${
-            darkMode ? 'bg-white/[0.04] border-white/10' : 'bg-slate-900/[0.04] border-slate-900/[0.08] shadow-xs'
+          className={`p-1.5 rounded-2xl flex items-center gap-1.5 transition-all ${
+            darkMode ? 'bg-white/[0.04]' : 'bg-slate-900/[0.04] shadow-xs'
           }`}
         >
           <button

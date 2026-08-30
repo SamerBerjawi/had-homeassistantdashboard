@@ -248,81 +248,81 @@ export default function NotificationDrawer({
       icon={<Bell size={22} weight="duotone" className="text-sky-500" />}
       darkMode={darkMode}
     >
-      <div className="space-y-5 pb-6">
+      <div className="space-y-4 pb-24 sm:pb-6">
         
-        {/* Top Summary Bento Grid (Issues -> Messages -> Updates -> Sensors) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        {/* Top Summary Bento Grid (Clean & Borderless) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div 
             onClick={() => setActiveTab('repairs')}
-            className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+            className={`p-3 rounded-2xl transition-all cursor-pointer ${
               activeTab === 'repairs'
-                ? 'bg-amber-500/15 border-amber-500/40 ring-1 ring-amber-500/30'
-                : darkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                ? 'bg-amber-500/20 text-amber-300'
+                : darkMode ? 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
             }`}
           >
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>Issues</span>
-              <Warning size={15} weight="duotone" className="text-amber-500" />
+            <div className="flex items-center justify-between text-xs font-medium">
+              <span className="opacity-70">Issues</span>
+              <Warning size={15} weight="duotone" className="text-amber-400" />
             </div>
-            <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+            <div className="text-xl font-black mt-1">
               {counts.repairs}
             </div>
           </div>
 
           <div 
             onClick={() => setActiveTab('notifications')}
-            className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+            className={`p-3 rounded-2xl transition-all cursor-pointer ${
               activeTab === 'notifications'
-                ? 'bg-indigo-500/15 border-indigo-500/40 ring-1 ring-indigo-500/30'
-                : darkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                ? 'bg-indigo-500/20 text-indigo-300'
+                : darkMode ? 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
             }`}
           >
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>Messages</span>
-              <Info size={15} weight="duotone" className="text-indigo-500" />
+            <div className="flex items-center justify-between text-xs font-medium">
+              <span className="opacity-70">Messages</span>
+              <Info size={15} weight="duotone" className="text-indigo-400" />
             </div>
-            <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+            <div className="text-xl font-black mt-1">
               {counts.notifications}
             </div>
           </div>
 
           <div 
             onClick={() => setActiveTab('updates')}
-            className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+            className={`p-3 rounded-2xl transition-all cursor-pointer ${
               activeTab === 'updates'
-                ? 'bg-sky-500/15 border-sky-500/40 ring-1 ring-sky-500/30'
-                : darkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                ? 'bg-sky-500/20 text-sky-300'
+                : darkMode ? 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
             }`}
           >
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>Updates</span>
-              <DownloadSimple size={15} weight="duotone" className="text-sky-500" />
+            <div className="flex items-center justify-between text-xs font-medium">
+              <span className="opacity-70">Updates</span>
+              <DownloadSimple size={15} weight="duotone" className="text-sky-400" />
             </div>
-            <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+            <div className="text-xl font-black mt-1">
               {counts.updates}
             </div>
           </div>
 
           <div 
             onClick={() => setActiveTab('sensors')}
-            className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+            className={`p-3 rounded-2xl transition-all cursor-pointer ${
               activeTab === 'sensors'
-                ? 'bg-rose-500/15 border-rose-500/40 ring-1 ring-rose-500/30'
-                : darkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                ? 'bg-rose-500/20 text-rose-300'
+                : darkMode ? 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
             }`}
           >
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>Sensors</span>
-              <ShieldWarning size={15} weight="duotone" className="text-rose-500" />
+            <div className="flex items-center justify-between text-xs font-medium">
+              <span className="opacity-70">Sensors</span>
+              <ShieldWarning size={15} weight="duotone" className="text-rose-400" />
             </div>
-            <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+            <div className="text-xl font-black mt-1">
               {counts.sensors}
             </div>
           </div>
         </div>
 
-        {/* Action Bar (Refresh + Search + Clear All) */}
-        <div className="flex items-center justify-between gap-2 pt-1">
+        {/* Action Bar (Refresh + Search + Clear All - Borderless) */}
+        <div className="flex items-center justify-between gap-2 pt-0.5">
           <div className="relative flex-1">
             <MagnifyingGlass size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -330,10 +330,10 @@ export default function NotificationDrawer({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search notifications, updates..."
-              className={`w-full pl-9.5 pr-4 py-2 rounded-xl text-xs border transition-all focus:outline-hidden ${
+              className={`w-full pl-9.5 pr-4 py-2.5 rounded-xl text-xs transition-all focus:outline-hidden ${
                 darkMode
-                  ? 'bg-white/5 border-white/10 text-white placeholder-slate-500 focus:border-sky-500/50 focus:bg-white/10'
-                  : 'bg-slate-100 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:bg-white'
+                  ? 'bg-white/[0.05] text-white placeholder-slate-500 focus:bg-white/[0.08]'
+                  : 'bg-slate-100 text-slate-900 placeholder-slate-400 focus:bg-slate-200/70'
               }`}
             />
             {searchQuery && (
@@ -353,7 +353,7 @@ export default function NotificationDrawer({
                 type="button"
                 onClick={handleUpdateAll}
                 disabled={isUpdatingAll}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white border border-sky-400 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Trigger all pending updates in Home Assistant"
               >
                 <DownloadSimple size={15} weight="bold" className={isUpdatingAll ? 'animate-bounce' : ''} />
@@ -364,10 +364,10 @@ export default function NotificationDrawer({
             <button
               type="button"
               onClick={handleRefresh}
-              className={`p-2 rounded-xl border transition-all cursor-pointer ${
+              className={`p-2.5 rounded-xl transition-all cursor-pointer ${
                 darkMode
-                  ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300'
-                  : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+                  ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-300'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
               }`}
               title="Refresh States & Notifications"
             >
@@ -378,10 +378,10 @@ export default function NotificationDrawer({
               <button
                 type="button"
                 onClick={handleDismissAll}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   darkMode
-                    ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-rose-300'
-                    : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700 hover:text-rose-700'
+                    ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-300 hover:text-rose-300'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-rose-700'
                 }`}
                 title="Dismiss all dismissable notifications"
               >
@@ -393,7 +393,7 @@ export default function NotificationDrawer({
         </div>
 
         {/* Tab Filters Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 touch-scroll-container">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 touch-scroll-container">
           {[
             { id: 'all', label: 'All', count: counts.all },
             { id: 'repairs', label: 'Issues', count: counts.repairs },
@@ -401,7 +401,6 @@ export default function NotificationDrawer({
             { id: 'updates', label: 'Updates', count: counts.updates },
             { id: 'sensors', label: 'Sensors', count: counts.sensors }
           ].map((tab) => {
-
             const isActive = activeTab === tab.id;
             return (
               <button
@@ -412,7 +411,7 @@ export default function NotificationDrawer({
                   isActive
                     ? 'bg-sky-500 text-white shadow-xs'
                     : darkMode
-                      ? 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white'
+                      ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-white'
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -427,15 +426,15 @@ export default function NotificationDrawer({
           })}
         </div>
 
-        {/* Notifications List */}
-        <div className="space-y-3.5">
+        {/* Notifications List (Clean, Borderless Grouped Items) */}
+        <div className="space-y-2.5">
           {filteredNotifications.length === 0 ? (
             /* Empty State */
-            <div className={`p-8 rounded-3xl border text-center flex flex-col items-center justify-center gap-3 ${
-              darkMode ? 'bg-white/2 border-white/5' : 'bg-slate-50 border-slate-200'
+            <div className={`p-8 rounded-2xl text-center flex flex-col items-center justify-center gap-3 ${
+              darkMode ? 'bg-white/[0.02]' : 'bg-slate-50'
             }`}>
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shadow-xs">
-                <CheckCircle size={32} weight="duotone" />
+              <div className="w-13 h-13 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shadow-xs">
+                <CheckCircle size={30} weight="duotone" />
               </div>
               <div>
                 <h4 className="text-base font-bold text-slate-900 dark:text-white">
@@ -458,26 +457,22 @@ export default function NotificationDrawer({
               return (
                 <div
                   key={item.id}
-                  className={`p-4.5 rounded-3xl border backdrop-blur-md transition-all duration-200 shadow-sm flex flex-col justify-between gap-3 group hover:border-sky-500/40 ${
-                    item.severity === 'critical'
-                      ? 'bg-rose-500/10 border-rose-500/30'
-                      : item.severity === 'warning'
-                        ? 'bg-amber-500/10 border-amber-500/30'
-                        : item.category === 'update'
-                          ? darkMode ? 'bg-sky-950/25 border-sky-500/25' : 'bg-sky-50/70 border-sky-200'
-                          : darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white border-slate-200'
+                  className={`p-4 rounded-2xl transition-all duration-200 flex flex-col justify-between gap-2.5 group ${
+                    darkMode
+                      ? 'bg-white/[0.035] hover:bg-white/[0.06] text-white'
+                      : 'bg-slate-50/90 hover:bg-slate-100/90 text-slate-900 shadow-xs'
                   }`}
                 >
                   {/* Card Header: Icon + Category Badge + Time Ago + Dismiss */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-white/10 dark:bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-xl bg-white/10 dark:bg-white/5 flex items-center justify-center shrink-0">
                         {visuals.icon}
                       </div>
 
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${visuals.badgeBg}`}>
+                          <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${visuals.badgeBg.replace(/border[^\s]*/g, '')}`}>
                             {visuals.label}
                           </span>
 
@@ -516,7 +511,7 @@ export default function NotificationDrawer({
 
                   {/* Message / Description Body with Markdown & Embedded Image Support */}
                   {item.message ? (
-                    <div className="pl-11.5">
+                    <div className="pl-10.5">
                       <NotificationRichContent 
                         content={item.message} 
                         imageUrl={item.image} 
@@ -525,24 +520,23 @@ export default function NotificationDrawer({
                     </div>
                   ) : null}
 
-
                   {/* Software Update Version Badge */}
                   {item.category === 'update' && (
-                    <div className="pl-11.5 flex items-center gap-2 flex-wrap text-xs font-semibold">
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                    <div className="pl-10.5 flex items-center gap-2 flex-wrap text-xs font-semibold">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-white/5">
                         <span className="text-slate-400">Current:</span>
                         <span className="font-mono text-slate-700 dark:text-slate-300">{item.installedVersion || 'Installed'}</span>
                       </div>
 
                       <span className="text-slate-400">➔</span>
 
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-700 dark:text-sky-300">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-500/15 text-sky-700 dark:text-sky-300">
                         <span>Latest:</span>
                         <span className="font-mono font-bold">{item.latestVersion || 'New'}</span>
                       </div>
 
                       {item.skippedVersion && (
-                        <span className="text-[10px] text-amber-500 font-bold px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+                        <span className="text-[10px] text-amber-500 font-bold px-2 py-0.5 rounded-md bg-amber-500/10">
                           Skipped
                         </span>
                       )}
@@ -551,7 +545,7 @@ export default function NotificationDrawer({
 
                   {/* Update In Progress Visual Bar */}
                   {isProgress && (
-                    <div className="pl-11.5 space-y-1.5">
+                    <div className="pl-10.5 space-y-1.5">
                       <div className="flex items-center justify-between text-[11px] font-bold text-sky-500">
                         <span className="flex items-center gap-1.5">
                           <ArrowsClockwise size={13} className="animate-spin" />
@@ -570,7 +564,7 @@ export default function NotificationDrawer({
 
                   {/* Actions Footer Bar */}
                   {item.actions && item.actions.length > 0 && (
-                    <div className="pl-11.5 flex items-center gap-2 flex-wrap pt-1">
+                    <div className="pl-10.5 flex items-center gap-2 flex-wrap pt-0.5">
                       {item.actions.map((act) => {
                         const isLoading = actionLoadingIds[act.id];
                         const isPrimary = act.variant === 'primary';
@@ -586,10 +580,10 @@ export default function NotificationDrawer({
                               isPrimary
                                 ? 'bg-sky-500 hover:bg-sky-400 text-white shadow-xs active:scale-95'
                                 : isDanger
-                                  ? 'bg-rose-500 hover:bg-rose-400 text-white shadow-xs active:scale-95'
+                                  ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 active:scale-95'
                                   : darkMode
-                                    ? 'bg-white/10 hover:bg-white/15 text-slate-200 border border-white/10 active:scale-95'
-                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 active:scale-95'
+                                    ? 'bg-white/10 hover:bg-white/15 text-slate-200 active:scale-95'
+                                    : 'bg-slate-200 hover:bg-slate-300 text-slate-700 active:scale-95'
                             }`}
                           >
                             {isLoading ? (

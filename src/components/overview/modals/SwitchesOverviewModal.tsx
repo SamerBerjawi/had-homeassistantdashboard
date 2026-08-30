@@ -26,8 +26,8 @@ export default function SwitchesOverviewModal({
   onUpdateEntity,
   darkMode = true
 }: SwitchesOverviewModalProps) {
-  const customFloors = useAutoLayoutStore(s => s.floors);
-  const customAreas = useAutoLayoutStore(s => s.areas);
+  const customFloors = useAutoLayoutStore((s) => s.floors);
+  const customAreas = useAutoLayoutStore((s) => s.areas);
 
   const { onSwitches, totalWatts, grouped } = useMemo(() => {
     if (!isOpen) {
@@ -37,7 +37,7 @@ export default function SwitchesOverviewModal({
         grouped: { hasFloors: false, hasAreas: false, groups: [], totalEntities: 0 }
       };
     }
-    const onS = switches.filter(s => s.state === 'on');
+    const onS = switches.filter((s) => s.state === 'on');
     const watts = switches.reduce((sum, s) => sum + (s.state === 'on' ? (s.attributes?.power || s.powerWatts || 15) : 0), 0);
     const grp = groupEntitiesByFloorAndArea(switches, customFloors, customAreas);
     return { onSwitches: onS, totalWatts: watts, grouped: grp };
@@ -50,13 +50,13 @@ export default function SwitchesOverviewModal({
   };
 
   const handleTurnAllOff = () => {
-    onSwitches.forEach(s => {
+    onSwitches.forEach((s) => {
       onUpdateEntity(s.entity_id, 'off');
     });
   };
 
   const handleTurnAllOn = () => {
-    switches.forEach(s => {
+    switches.forEach((s) => {
       onUpdateEntity(s.entity_id, 'on');
     });
   };
@@ -70,11 +70,9 @@ export default function SwitchesOverviewModal({
       icon={<ToggleRight size={22} weight="duotone" className="text-emerald-500" />}
       darkMode={darkMode}
     >
-      <div className="space-y-6">
-        {/* Top Summary & Bulk Control Card */}
-        <div className={`p-4 rounded-2xl border ${
-          darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-slate-50 border-slate-200'
-        }`}>
+      <div className="space-y-5 pb-24 sm:pb-6">
+        {/* Top Summary & Bulk Control Card (Borderless) */}
+        <div className="p-4 rounded-2xl bg-slate-100/90 dark:bg-white/[0.04]">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
@@ -99,9 +97,7 @@ export default function SwitchesOverviewModal({
                 type="button"
                 onClick={handleTurnAllOff}
                 disabled={onSwitches.length === 0}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
-                  darkMode ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10' : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
-                }`}
+                className="px-3 py-1.5 text-xs font-bold rounded-xl bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 All Off
               </button>
@@ -109,9 +105,9 @@ export default function SwitchesOverviewModal({
           </div>
         </div>
 
-        {/* 1. HIGHLIGHTED ACTIVE SWITCHES SECTION (Shown at top if any are on) */}
+        {/* 1. HIGHLIGHTED ACTIVE SWITCHES SECTION */}
         {onSwitches.length > 0 && (
-          <div className="space-y-3 p-4 rounded-3xl bg-emerald-500/10 dark:bg-emerald-500/10 border border-emerald-500/30 shadow-xs">
+          <div className="space-y-2.5 p-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/10 shadow-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
@@ -124,11 +120,11 @@ export default function SwitchesOverviewModal({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-2.5">
+            <div className="grid grid-cols-1 gap-2">
               {onSwitches.map((sw) => (
                 <div
                   key={`active_${sw.entity_id}`}
-                  className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 border border-emerald-500/40 shadow-xs flex items-center justify-between gap-3"
+                  className="p-3 rounded-2xl bg-white/95 dark:bg-slate-900/80 shadow-xs flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <button
@@ -154,7 +150,7 @@ export default function SwitchesOverviewModal({
                   <button
                     type="button"
                     onClick={() => handleToggleSwitch(sw)}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold uppercase border border-emerald-500/30 hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/30 transition-colors cursor-pointer shrink-0"
+                    className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold uppercase hover:bg-rose-500/20 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
                   >
                     Turn Off
                   </button>
@@ -165,24 +161,23 @@ export default function SwitchesOverviewModal({
         )}
 
         {/* Grouped Switches: Floor -> Area -> Entity */}
-        <div className="space-y-6">
+        <div className="space-y-5">
           {grouped.groups.map((floorGroup) => (
-            <div key={floorGroup.floorId || 'no-floor'} className="space-y-4">
+            <div key={floorGroup.floorId || 'no-floor'} className="space-y-3">
               {/* Floor Header */}
               {grouped.hasFloors && (
-                <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200 dark:border-white/10">
+                <div className="flex items-center gap-2 px-1">
                   <div 
-                    className="w-7 h-7 rounded-xl flex items-center justify-center border shadow-2xs shrink-0"
+                    className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
                     style={{
                       backgroundColor: `${floorGroup.color || '#6366f1'}1a`,
-                      borderColor: `${floorGroup.color || '#6366f1'}40`,
                       color: floorGroup.color || '#6366f1'
                     }}
                   >
                     <DynamicPhosphorIcon 
                       name={floorGroup.icon} 
                       fallback={Stairs} 
-                      size={15} 
+                      size={14} 
                       weight="duotone" 
                       style={{ color: floorGroup.color || '#6366f1' }}
                     />
@@ -200,17 +195,16 @@ export default function SwitchesOverviewModal({
               )}
 
               {/* Area Groups */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {floorGroup.areaGroups.map((areaGroup) => (
-                  <div key={areaGroup.areaId || 'no-area'} className="space-y-2.5">
+                  <div key={areaGroup.areaId || 'no-area'} className="space-y-2">
                     {(grouped.hasAreas || grouped.hasFloors) && (
                       <div className="flex items-center justify-between px-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <div 
-                            className="w-5 h-5 rounded-lg flex items-center justify-center border shrink-0"
+                            className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0"
                             style={{
                               backgroundColor: `${areaGroup.color || '#10b981'}1a`,
-                              borderColor: `${areaGroup.color || '#10b981'}40`,
                               color: areaGroup.color || '#10b981'
                             }}
                           >
@@ -230,7 +224,7 @@ export default function SwitchesOverviewModal({
                           </span>
                         </div>
                         <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-                          {areaGroup.entities.filter(e => e.state === 'on').length}/{areaGroup.entities.length} on
+                          {areaGroup.entities.filter((e) => e.state === 'on').length}/{areaGroup.entities.length} on
                         </span>
                       </div>
                     )}
@@ -242,21 +236,17 @@ export default function SwitchesOverviewModal({
                         return (
                           <div
                             key={sw.entity_id}
-                            className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
+                            className={`p-3.5 rounded-2xl transition-all flex items-center justify-between ${
                               isOn
-                                ? darkMode
-                                  ? 'bg-emerald-500/10 border-emerald-500/30'
-                                  : 'bg-emerald-50/70 border-emerald-200'
-                                : darkMode
-                                  ? 'bg-slate-900/40 border-white/5 opacity-80'
-                                  : 'bg-white border-slate-200'
+                                ? 'bg-emerald-500/15 dark:bg-emerald-500/10'
+                                : 'bg-slate-100/90 dark:bg-white/[0.04] hover:bg-slate-200/80 dark:hover:bg-white/[0.08]'
                             }`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center border shadow-xs transition-colors shrink-0 ${
+                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-xs transition-colors shrink-0 ${
                                 isOn
-                                  ? 'bg-emerald-500 text-white border-emerald-400'
-                                  : 'bg-slate-100 dark:bg-white/5 text-slate-400 border-slate-200 dark:border-white/10'
+                                  ? 'bg-emerald-500 text-white'
+                                  : 'bg-white/80 dark:bg-white/5 text-slate-400'
                               }`}>
                                 <DynamicPhosphorIcon 
                                   name={sw.icon || 'ToggleRight'} 
@@ -277,10 +267,10 @@ export default function SwitchesOverviewModal({
                             <button
                               type="button"
                               onClick={() => handleToggleSwitch(sw)}
-                              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 ${
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 ${
                                 isOn
-                                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500'
-                                  : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/15'
+                                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                                  : 'bg-white/80 dark:bg-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/15'
                               }`}
                               title={isOn ? 'Turn Off' : 'Turn On'}
                             >

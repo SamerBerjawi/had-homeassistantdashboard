@@ -1,3 +1,8 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState, useMemo } from 'react';
 import { 
   PersonSimpleWalk, 
@@ -9,9 +14,6 @@ import {
   BatteryHigh, 
   BatteryLow, 
   BatteryWarning, 
-  Clock, 
-  Warning, 
-  Waves,
   Stairs,
   HouseLine
 } from '@phosphor-icons/react';
@@ -41,8 +43,8 @@ export default function SensorsOverviewDrawer({
   initialTab = 'all',
   darkMode = true
 }: SensorsOverviewDrawerProps) {
-  const customFloors = useAutoLayoutStore(s => s.floors);
-  const customAreas = useAutoLayoutStore(s => s.areas);
+  const customFloors = useAutoLayoutStore((s) => s.floors);
+  const customAreas = useAutoLayoutStore((s) => s.areas);
   const [activeTab, setActiveTab] = useState<'all' | 'motion' | 'leak' | 'smoke'>(initialTab);
 
   React.useEffect(() => {
@@ -61,9 +63,9 @@ export default function SensorsOverviewDrawer({
       };
     }
     const all = [...motionSensors, ...leakSensors, ...smokeSensors];
-    const aM = motionSensors.filter(m => m.state === 'on');
-    const aL = leakSensors.filter(l => l.state === 'on' || l.state === 'wet' || l.state === 'detected');
-    const aS = smokeSensors.filter(s => s.state === 'on' || s.state === 'detected' || s.state === 'smoke');
+    const aM = motionSensors.filter((m) => m.state === 'on');
+    const aL = leakSensors.filter((l) => l.state === 'on' || l.state === 'wet' || l.state === 'detected');
+    const aS = smokeSensors.filter((s) => s.state === 'on' || s.state === 'detected' || s.state === 'smoke');
     const currentDisplayList = 
       activeTab === 'motion' ? motionSensors :
       activeTab === 'leak' ? leakSensors :
@@ -80,7 +82,6 @@ export default function SensorsOverviewDrawer({
     };
   }, [isOpen, motionSensors, leakSensors, smokeSensors, activeTab, customFloors, customAreas]);
 
-
   return (
     <DetailsRightDrawer
       isOpen={isOpen}
@@ -90,13 +91,13 @@ export default function SensorsOverviewDrawer({
       icon={<ShieldCheck size={22} weight="duotone" className="text-emerald-500" />}
       darkMode={darkMode}
     >
-      <div className="space-y-6">
-        {/* Status Summary Banner */}
+      <div className="space-y-5 pb-24 sm:pb-6">
+        {/* Status Summary Banner (Borderless) */}
         <div
-          className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${
+          className={`p-4 rounded-2xl flex items-center justify-between gap-3 ${
             totalAlerts > 0
-              ? 'bg-rose-500/15 border-rose-500/30 text-rose-800 dark:text-rose-300 shadow-lg shadow-rose-500/10'
-              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
+              ? 'bg-rose-500/15 text-rose-800 dark:text-rose-300'
+              : 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300'
           }`}
         >
           <div className="flex items-center gap-3">
@@ -118,12 +119,12 @@ export default function SensorsOverviewDrawer({
           </div>
         </div>
 
-        {/* 1. HIGHLIGHTED ACTIVE DETECTIONS & LIVE ALERTS SECTION (Motion, Leaks, Smoke) */}
+        {/* 1. HIGHLIGHTED ACTIVE DETECTIONS & LIVE ALERTS SECTION */}
         {(activeLeaks.length > 0 || activeSmoke.length > 0 || activeMotion.length > 0) && (
-          <div className={`space-y-3 p-4 rounded-3xl border shadow-xs ${
+          <div className={`space-y-2.5 p-4 rounded-2xl shadow-xs ${
             activeLeaks.length > 0 || activeSmoke.length > 0
-              ? 'bg-rose-500/10 dark:bg-rose-500/10 border-rose-500/30'
-              : 'bg-amber-500/10 dark:bg-amber-500/10 border-amber-500/30'
+              ? 'bg-rose-500/10 dark:bg-rose-500/10'
+              : 'bg-amber-500/10 dark:bg-amber-500/10'
           }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -143,12 +144,12 @@ export default function SensorsOverviewDrawer({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-2.5">
+            <div className="grid grid-cols-1 gap-2">
               {/* Leaks first */}
               {activeLeaks.map((sensor) => (
                 <div
                   key={`act_leak_${sensor.entity_id}`}
-                  className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 border border-rose-500/40 shadow-xs flex items-center justify-between gap-3"
+                  className="p-3 rounded-2xl bg-white/95 dark:bg-slate-900/80 shadow-xs flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-300 flex items-center justify-center shrink-0">
@@ -161,7 +162,7 @@ export default function SensorsOverviewDrawer({
                       </p>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[10px] font-extrabold uppercase border border-rose-500/30 shrink-0 animate-pulse">
+                  <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[10px] font-extrabold uppercase shrink-0 animate-pulse">
                     LEAK ALERT
                   </span>
                 </div>
@@ -171,7 +172,7 @@ export default function SensorsOverviewDrawer({
               {activeSmoke.map((sensor) => (
                 <div
                   key={`act_smoke_${sensor.entity_id}`}
-                  className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 border border-rose-500/40 shadow-xs flex items-center justify-between gap-3"
+                  className="p-3 rounded-2xl bg-white/95 dark:bg-slate-900/80 shadow-xs flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-300 flex items-center justify-center shrink-0">
@@ -184,7 +185,7 @@ export default function SensorsOverviewDrawer({
                       </p>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[10px] font-extrabold uppercase border border-rose-500/30 shrink-0 animate-pulse">
+                  <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[10px] font-extrabold uppercase shrink-0 animate-pulse">
                     SMOKE ALERT
                   </span>
                 </div>
@@ -194,7 +195,7 @@ export default function SensorsOverviewDrawer({
               {activeMotion.map((sensor) => (
                 <div
                   key={`act_motion_${sensor.entity_id}`}
-                  className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 border border-amber-500/40 shadow-xs flex items-center justify-between gap-3"
+                  className="p-3 rounded-2xl bg-white/95 dark:bg-slate-900/80 shadow-xs flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0">
@@ -207,7 +208,7 @@ export default function SensorsOverviewDrawer({
                       </p>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold uppercase border border-amber-500/30 shrink-0">
+                  <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold uppercase shrink-0">
                     MOTION
                   </span>
                 </div>
@@ -216,8 +217,8 @@ export default function SensorsOverviewDrawer({
           </div>
         )}
 
-        {/* Tab Filters */}
-        <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+        {/* Tab Filters (Borderless) */}
+        <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-white/[0.04]">
           <button
             type="button"
             onClick={() => setActiveTab('all')}
@@ -271,25 +272,24 @@ export default function SensorsOverviewDrawer({
         </div>
 
         {/* Grouped Sensors: Floor -> Area -> Entity */}
-        <div className="space-y-6">
+        <div className="space-y-5">
           {grouped.groups.map((floorGroup) => (
-            <div key={floorGroup.floorId || 'no-floor'} className="space-y-4">
+            <div key={floorGroup.floorId || 'no-floor'} className="space-y-3">
               
               {/* Floor Header */}
               {grouped.hasFloors && (
-                <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200 dark:border-white/10">
+                <div className="flex items-center gap-2 px-1">
                   <div 
-                    className="w-7 h-7 rounded-xl flex items-center justify-center border shadow-2xs shrink-0"
+                    className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
                     style={{
                       backgroundColor: `${floorGroup.color || '#10b981'}1a`,
-                      borderColor: `${floorGroup.color || '#10b981'}40`,
                       color: floorGroup.color || '#10b981'
                     }}
                   >
                     <DynamicPhosphorIcon 
                       name={floorGroup.icon} 
                       fallback={Stairs} 
-                      size={15} 
+                      size={14} 
                       weight="duotone" 
                       style={{ color: floorGroup.color || '#10b981' }}
                     />
@@ -307,19 +307,18 @@ export default function SensorsOverviewDrawer({
               )}
 
               {/* Area Groups */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {floorGroup.areaGroups.map((areaGroup) => (
-                  <div key={areaGroup.areaId || 'no-area'} className="space-y-2.5">
+                  <div key={areaGroup.areaId || 'no-area'} className="space-y-2">
                     
                     {/* Area Header */}
                     {(grouped.hasAreas || grouped.hasFloors) && (
                       <div className="flex items-center justify-between px-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <div 
-                            className="w-5 h-5 rounded-lg flex items-center justify-center border shrink-0"
+                            className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0"
                             style={{
                               backgroundColor: `${areaGroup.color || '#10b981'}1a`,
-                              borderColor: `${areaGroup.color || '#10b981'}40`,
                               color: areaGroup.color || '#10b981'
                             }}
                           >
@@ -345,7 +344,7 @@ export default function SensorsOverviewDrawer({
                     )}
 
                     {/* Sensor List */}
-                    <div className="space-y-2.5">
+                    <div className="space-y-2">
                       {areaGroup.entities.map((sensor) => {
                         const devClass = sensor.attributes?.device_class || '';
                         const isMotion = isMotionSensor(sensor);
@@ -366,22 +365,22 @@ export default function SensorsOverviewDrawer({
                         return (
                           <div
                             key={sensor.entity_id}
-                            className={`p-4 rounded-2xl border transition-all duration-200 flex items-center justify-between gap-4 ${
+                            className={`p-3.5 rounded-2xl transition-all duration-200 flex items-center justify-between gap-3 ${
                               isAlert
-                                ? 'bg-rose-500/15 border-rose-500/40 shadow-xs shadow-rose-500/10'
+                                ? 'bg-rose-500/15 dark:bg-rose-500/10 shadow-xs'
                                 : isActiveMotion
-                                  ? 'bg-amber-500/10 border-amber-500/30'
-                                  : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10'
+                                  ? 'bg-amber-500/15 dark:bg-amber-500/10'
+                                  : 'bg-slate-100/90 dark:bg-white/[0.04] hover:bg-slate-200/80 dark:hover:bg-white/[0.08]'
                             }`}
                           >
-                            <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="flex items-center gap-3 min-w-0">
                               <div
-                                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all shrink-0 ${
                                   isAlert
-                                    ? 'bg-rose-500/25 border border-rose-500/50 text-rose-500 animate-pulse'
+                                    ? 'bg-rose-500/25 text-rose-500 animate-pulse'
                                     : isActiveMotion
-                                      ? 'bg-amber-500/20 border border-amber-500/40 text-amber-500'
-                                      : 'bg-slate-200 dark:bg-white/10 border border-slate-300 dark:border-white/15 text-slate-600 dark:text-slate-300'
+                                      ? 'bg-amber-500/20 text-amber-500'
+                                      : 'bg-white/80 dark:bg-white/10 text-slate-600 dark:text-slate-300'
                                 }`}
                               >
                                 {isSmoke ? (
@@ -394,18 +393,18 @@ export default function SensorsOverviewDrawer({
                               </div>
 
                               <div className="min-w-0">
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{sensor.name}</h4>
+                                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{sensor.name}</h4>
 
-                                <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
                                   <span className="capitalize">{devClass || (isMotion ? 'Motion' : isLeak ? 'Moisture' : 'Smoke')}</span>
                                   {battery !== undefined && (
                                     <>
                                       <span>•</span>
                                       <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
                                         {battery <= 20 ? (
-                                          <BatteryWarning size={14} weight="duotone" className="text-rose-500" />
+                                          <BatteryWarning size={13} weight="duotone" className="text-rose-500" />
                                         ) : (
-                                          <BatteryHigh size={14} weight="duotone" className="text-slate-400" />
+                                          <BatteryHigh size={13} weight="duotone" className="text-slate-400" />
                                         )}
                                         {Math.round(battery)}%
                                       </span>
@@ -415,18 +414,18 @@ export default function SensorsOverviewDrawer({
                               </div>
                             </div>
 
-                            {/* Single State Badge on the right (No duplicated text) */}
+                            {/* Single State Badge on the right */}
                             <div className="shrink-0 flex items-center">
                               <span
-                                className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border ${
+                                className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full ${
                                   isAlert
-                                    ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300 border-rose-500/40 animate-pulse'
+                                    ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300 animate-pulse'
                                     : isActiveMotion
-                                      ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/40'
-                                      : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                                      ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300'
+                                      : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
                                 }`}
                               >
-                                {isAlert ? 'HAZARD DETECTED' : isActiveMotion ? 'MOTION DETECTED' : isLeak ? 'DRY' : isSmoke ? 'SAFE' : 'CLEAR'}
+                                {isAlert ? 'HAZARD' : isActiveMotion ? 'MOTION' : isLeak ? 'DRY' : isSmoke ? 'SAFE' : 'CLEAR'}
                               </span>
                             </div>
                           </div>

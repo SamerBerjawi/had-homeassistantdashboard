@@ -1,7 +1,17 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * DetailsRightDrawer:
+ * Clean, borderless sidebar drawer / mobile bottom sheet modal.
+ * - Desktop/Tablet: Graceful slide-in from right (max-w-lg lg:max-w-xl)
+ * - Mobile: Native full-width sheet with top drag handle, safe-area insets, and bottom nav clearance (pb-32)
+ */
+
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { X } from '@phosphor-icons/react';
+import { X, CaretLeft } from '@phosphor-icons/react';
 
 interface DetailsRightDrawerProps {
   isOpen: boolean;
@@ -55,41 +65,52 @@ export default function DetailsRightDrawer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/40 transition-opacity cursor-pointer"
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity cursor-pointer"
           />
 
-          {/* Slide-over Right Sidebar Panel */}
-          <div className="fixed inset-y-0 right-0 flex max-w-full pl-4 sm:pl-8 pointer-events-none z-10">
+          {/* Slide-over Container: Full width on mobile, right-aligned on tablet/desktop */}
+          <div className="fixed inset-y-0 right-0 flex max-w-full w-full sm:w-auto pointer-events-none z-10">
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 320, mass: 0.8 }}
-              className={`pointer-events-auto w-screen max-w-md sm:max-w-lg lg:max-w-xl h-full backdrop-blur-md border-l shadow-2xl flex flex-col overflow-hidden transition-colors ${
+              transition={{ type: 'spring', damping: 32, stiffness: 340, mass: 0.8 }}
+              className={`pointer-events-auto w-full sm:w-[480px] lg:w-[540px] xl:w-[580px] h-full backdrop-blur-3xl shadow-2xl flex flex-col overflow-hidden transition-colors ${
                 darkMode
-                  ? 'bg-black/60 border-white/15 text-white shadow-black/90'
-                  : 'bg-white/70 border-slate-200/90 text-slate-900 shadow-2xl'
+                  ? 'bg-slate-950/95 text-white shadow-black/90'
+                  : 'bg-white/95 text-slate-900 shadow-2xl'
               }`}
             >
-              {/* Top Accent Gradient Line */}
-              <div className="h-1.5 w-full bg-linear-to-r from-sky-500 via-indigo-500 to-purple-500 shrink-0" />
+              {/* Top Mobile Grab Handle */}
+              <div className="sm:hidden pt-3 pb-1 flex justify-center shrink-0">
+                <div className="w-12 h-1.5 rounded-full bg-slate-400/30 dark:bg-white/20" />
+              </div>
 
-              {/* Sidebar Header */}
-              <div className="flex items-center justify-between p-5 sm:p-6 border-b border-slate-200/80 dark:border-white/10 bg-white/40 dark:bg-white/5 backdrop-blur-xs shrink-0">
-                <div className="flex items-center gap-3.5 min-w-0">
+              {/* Sidebar Header (Clean & Borderless) */}
+              <div className="flex items-center justify-between px-5 py-4 sm:px-6 sm:py-5 bg-white/40 dark:bg-white/[0.03] backdrop-blur-xs shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* Mobile Back button */}
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="sm:hidden p-1.5 -ml-1 rounded-xl bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 active:scale-95 transition-all"
+                  >
+                    <CaretLeft size={18} weight="bold" />
+                  </button>
+
                   {icon && (
-                    <div className="w-10 h-10 rounded-2xl bg-white/60 dark:bg-white/10 border border-slate-200/80 dark:border-white/15 flex items-center justify-center shrink-0 shadow-xs">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-slate-100 dark:bg-white/[0.08] flex items-center justify-center shrink-0 shadow-xs">
                       {icon}
                     </div>
                   )}
                   <div className="min-w-0">
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight truncate">
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight truncate">
                       {title}
                     </h3>
                     {subtitle && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
+                      <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
                         {subtitle}
                       </p>
                     )}
@@ -100,21 +121,21 @@ export default function DetailsRightDrawer({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/15 border border-slate-200 dark:border-white/10 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0"
-                  title="Close sidebar"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/15 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+                  title="Close"
                 >
-                  <X size={18} weight="bold" />
+                  <X size={16} weight="bold" />
                 </button>
               </div>
 
-              {/* Scrollable Sidebar Body */}
-              <div className="flex-1 p-5 sm:p-6 overflow-y-auto space-y-6 touch-scroll-container">
+              {/* Scrollable Body: pb-32 on mobile for bottom bar clearance */}
+              <div className="flex-1 px-4 py-3 sm:px-6 sm:py-5 overflow-y-auto space-y-4 pb-32 sm:pb-6 touch-scroll-container">
                 {children}
               </div>
 
               {/* Optional Footer */}
               {footerActions && (
-                <div className="p-4 border-t border-slate-200/80 dark:border-white/10 flex justify-end gap-3 bg-white/40 dark:bg-black/40 backdrop-blur-xs shrink-0">
+                <div className="p-4 flex justify-end gap-3 bg-white/40 dark:bg-black/40 backdrop-blur-xs shrink-0">
                   {footerActions}
                 </div>
               )}

@@ -7,7 +7,6 @@ import React, { useState } from 'react';
 import { 
   ShieldCheck, 
   ShieldWarning, 
-  Lock, 
   LockOpen, 
   Moon, 
   Shield, 
@@ -36,19 +35,19 @@ export default function AlarmKeypadModal({
   onUpdateEntity,
   darkMode = true
 }: AlarmKeypadModalProps) {
-  const domainGroups = useAutoLayoutStore(s => s.domainGroups);
-  const selectedAlarmEntityId = useAutoLayoutStore(s => s.selectedAlarmEntityId);
-  const setSelectedAlarmEntityId = useAutoLayoutStore(s => s.setSelectedAlarmEntityId);
-  const callHAService = useAutoLayoutStore(s => s.callHAService);
+  const domainGroups = useAutoLayoutStore((s) => s.domainGroups);
+  const selectedAlarmEntityId = useAutoLayoutStore((s) => s.selectedAlarmEntityId);
+  const setSelectedAlarmEntityId = useAutoLayoutStore((s) => s.setSelectedAlarmEntityId);
+  const callHAService = useAutoLayoutStore((s) => s.callHAService);
 
   const alarmEntities: ResolvedEntity[] = domainGroups['alarm_control_panel'] || [];
   const activeAlarm: ResolvedEntity | undefined = 
     (alarmEntity && !selectedAlarmEntityId ? alarmEntity : undefined) ||
-    alarmEntities.find(a => a.entity_id === selectedAlarmEntityId) || 
+    alarmEntities.find((a) => a.entity_id === selectedAlarmEntityId) || 
     alarmEntity ||
     alarmEntities[0];
 
-  const entityOptions = alarmEntities.map(a => ({
+  const entityOptions = alarmEntities.map((a) => ({
     value: a.entity_id,
     label: a.name || a.attributes?.friendly_name || a.entity_id
   }));
@@ -62,13 +61,13 @@ export default function AlarmKeypadModal({
 
   const handleKeyPress = (num: string) => {
     if (pin.length < 6) {
-      setPin(prev => prev + num);
+      setPin((prev) => prev + num);
       setErrorMessage(null);
     }
   };
 
   const handleBackspace = () => {
-    setPin(prev => prev.slice(0, -1));
+    setPin((prev) => prev.slice(0, -1));
     setErrorMessage(null);
   };
 
@@ -110,21 +109,21 @@ export default function AlarmKeypadModal({
       case 'armed_home':
         return {
           label: 'Armed (Home)',
-          color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+          color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
           icon: ShieldCheck,
           iconColor: 'text-emerald-500'
         };
       case 'armed_away':
         return {
           label: 'Armed (Away)',
-          color: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
+          color: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
           icon: ShieldWarning,
           iconColor: 'text-rose-500'
         };
       case 'armed_night':
         return {
           label: 'Armed (Night)',
-          color: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
+          color: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300',
           icon: Moon,
           iconColor: 'text-indigo-500'
         };
@@ -132,7 +131,7 @@ export default function AlarmKeypadModal({
       default:
         return {
           label: 'Disarmed',
-          color: 'bg-slate-200 dark:bg-slate-700/40 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600/40',
+          color: 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300',
           icon: LockOpen,
           iconColor: 'text-slate-500'
         };
@@ -151,10 +150,10 @@ export default function AlarmKeypadModal({
       icon={<Shield size={22} weight="duotone" className="text-indigo-500" />}
       darkMode={darkMode}
     >
-      <div className="space-y-6">
-        {/* Multi-Alarm Entity Selector (if multiple exist) */}
+      <div className="space-y-5 pb-24 sm:pb-6">
+        {/* Multi-Alarm Entity Selector (Borderless) */}
         {alarmEntities.length > 1 && (
-          <div className="p-3.5 rounded-2xl bg-white/5 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 flex flex-col gap-1.5">
+          <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-white/[0.04] flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <MapPin size={14} weight="duotone" className="text-indigo-500" />
@@ -174,14 +173,14 @@ export default function AlarmKeypadModal({
           </div>
         )}
 
-        {/* Status Header */}
-        <div className={`p-5 rounded-3xl border shadow-xl flex items-center justify-between transition-colors ${
+        {/* Status Header (Borderless) */}
+        <div className={`p-5 rounded-3xl shadow-xl flex items-center justify-between transition-colors ${
           darkMode
-            ? 'bg-linear-to-b from-slate-900 via-slate-900 to-slate-950 border-white/10'
-            : 'bg-linear-to-b from-slate-50 to-white border-slate-200 shadow-slate-200/60'
+            ? 'bg-linear-to-b from-slate-900 via-slate-900 to-slate-950 text-white shadow-slate-950/50'
+            : 'bg-linear-to-b from-slate-50 to-white text-slate-900 shadow-slate-200/60'
         }`}>
           <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-lg ${badge.color}`}>
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${badge.color}`}>
               <StateIcon size={32} weight="duotone" className={badge.iconColor} />
             </div>
             <div>
@@ -190,20 +189,20 @@ export default function AlarmKeypadModal({
             </div>
           </div>
 
-          <span className={`text-[10px] font-extrabold uppercase px-3 py-1 rounded-full border shadow-xs ${badge.color}`}>
+          <span className={`text-[10px] font-extrabold uppercase px-3 py-1 rounded-full ${badge.color}`}>
             Live Active
           </span>
         </div>
 
-        {/* Mode Selector Buttons */}
-        <div className="grid grid-cols-2 gap-2.5">
+        {/* Mode Selector Buttons (Borderless) */}
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => handleSetMode('disarmed')}
-            className={`p-3.5 rounded-2xl border font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`p-3.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
               currentState === 'disarmed'
-                ? 'bg-slate-300 dark:bg-slate-700/60 text-slate-900 dark:text-white border-slate-400 dark:border-slate-500 shadow-md ring-1 ring-slate-400/50'
-                : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10'
+                ? 'bg-slate-300 dark:bg-slate-700/60 text-slate-900 dark:text-white shadow-md'
+                : 'bg-slate-100/90 dark:bg-white/[0.04] hover:bg-slate-200/80 dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-300'
             }`}
           >
             <LockOpen size={16} weight="duotone" />
@@ -213,10 +212,10 @@ export default function AlarmKeypadModal({
           <button
             type="button"
             onClick={() => handleSetMode('armed_home')}
-            className={`p-3.5 rounded-2xl border font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`p-3.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
               currentState === 'armed_home'
-                ? 'bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/30'
-                : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10'
+                ? 'bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 shadow-md'
+                : 'bg-slate-100/90 dark:bg-white/[0.04] hover:bg-slate-200/80 dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-300'
             }`}
           >
             <ShieldCheck size={16} weight="duotone" />
@@ -226,10 +225,10 @@ export default function AlarmKeypadModal({
           <button
             type="button"
             onClick={() => handleSetMode('armed_away')}
-            className={`p-3.5 rounded-2xl border font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`p-3.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
               currentState === 'armed_away'
-                ? 'bg-rose-500/25 text-rose-800 dark:text-rose-300 border-rose-500/50 shadow-md ring-1 ring-rose-500/30'
-                : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10'
+                ? 'bg-rose-500/25 text-rose-800 dark:text-rose-300 shadow-md'
+                : 'bg-slate-100/90 dark:bg-white/[0.04] hover:bg-slate-200/80 dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-300'
             }`}
           >
             <ShieldWarning size={16} weight="duotone" />
@@ -239,10 +238,10 @@ export default function AlarmKeypadModal({
           <button
             type="button"
             onClick={() => handleSetMode('armed_night')}
-            className={`p-3.5 rounded-2xl border font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`p-3.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
               currentState === 'armed_night'
-                ? 'bg-indigo-500/25 text-indigo-800 dark:text-indigo-300 border-indigo-500/50 shadow-md ring-1 ring-indigo-500/30'
-                : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10'
+                ? 'bg-indigo-500/25 text-indigo-800 dark:text-indigo-300 shadow-md'
+                : 'bg-slate-100/90 dark:bg-white/[0.04] hover:bg-slate-200/80 dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-300'
             }`}
           >
             <Moon size={16} weight="duotone" />
@@ -250,8 +249,8 @@ export default function AlarmKeypadModal({
           </button>
         </div>
 
-        {/* PIN Code Display (Optional) */}
-        <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+        {/* PIN Code Display (Borderless) */}
+        <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-100 dark:bg-white/[0.04]">
           <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">
             Optional Keypad PIN
           </div>
@@ -259,10 +258,10 @@ export default function AlarmKeypadModal({
             {[0, 1, 2, 3].map((idx) => (
               <div
                 key={idx}
-                className={`w-4 h-4 rounded-full border-2 transition-all ${
+                className={`w-4 h-4 rounded-full transition-all ${
                   pin.length > idx
-                    ? 'bg-indigo-500 border-indigo-500 shadow-xs shadow-indigo-500/50 scale-110'
-                    : 'bg-transparent border-slate-400 dark:border-slate-600'
+                    ? 'bg-indigo-500 shadow-xs shadow-indigo-500/50 scale-110'
+                    : 'bg-slate-300 dark:bg-slate-700'
                 }`}
               />
             ))}
@@ -281,14 +280,14 @@ export default function AlarmKeypadModal({
           )}
         </div>
 
-        {/* Numeric Keypad Grid */}
-        <div className="grid grid-cols-3 gap-2.5 max-w-xs mx-auto">
+        {/* Numeric Keypad Grid (Borderless) */}
+        <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
           {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
             <button
               key={num}
               type="button"
               onClick={() => handleKeyPress(num)}
-              className="h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/15 active:bg-slate-300 dark:active:bg-white/20 border border-slate-200 dark:border-white/10 text-lg font-bold text-slate-900 dark:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-xs"
+              className="h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] active:bg-slate-300 dark:active:bg-white/15 text-lg font-bold text-slate-900 dark:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
             >
               {num}
             </button>
@@ -297,7 +296,7 @@ export default function AlarmKeypadModal({
           <button
             type="button"
             onClick={handleClear}
-            className="h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-extrabold uppercase text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-95"
+            className="h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] text-xs font-extrabold uppercase text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-95"
           >
             Clear
           </button>
@@ -305,7 +304,7 @@ export default function AlarmKeypadModal({
           <button
             type="button"
             onClick={() => handleKeyPress('0')}
-            className="h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/15 active:bg-slate-300 dark:active:bg-white/20 border border-slate-200 dark:border-white/10 text-lg font-bold text-slate-900 dark:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-xs"
+            className="h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] active:bg-slate-300 dark:active:bg-white/15 text-lg font-bold text-slate-900 dark:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
           >
             0
           </button>
@@ -313,7 +312,7 @@ export default function AlarmKeypadModal({
           <button
             type="button"
             onClick={handleBackspace}
-            className="h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
+            className="h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
           >
             <Backspace size={20} weight="duotone" />
           </button>

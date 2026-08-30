@@ -373,139 +373,115 @@ export default function App() {
         <DemoBanner />
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container p-4 pb-28 sm:p-6 sm:pb-8 lg:p-8 lg:pb-8 flex flex-col">
-          {/* Header Bar - Title with Animated Wave / Page Icon & Subtitle */}
-          <header className="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 pb-1">
-            <div className="space-y-2 min-w-0 w-full flex-1">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap min-w-0">
-                  {/* Back Button when viewing room detail or settings subpage */}
-                  {((activeTab === 'rooms' && selectedAreaId) || (activeTab === 'settings' && selectedSettingsSection)) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (activeTab === 'rooms') setSelectedAreaId(null);
-                        if (activeTab === 'settings') setSelectedSettingsSection(null);
-                      }}
-                      className="p-1.5 -ml-1 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 dark:hover:bg-white/10 transition-all cursor-pointer active:scale-90 mr-0.5"
-                      title={activeTab === 'rooms' ? 'Back to Rooms' : 'Back to Settings'}
-                    >
-                      <ArrowLeft size={24} weight="bold" />
-                    </button>
-                  )}
-
-                  <h1 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5 sm:gap-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {activeTab !== 'overview' && (
-                      currentSelectedArea ? (
-                        <DynamicPhosphorIcon
-                          name={currentSelectedArea.icon || 'HouseLine'}
-                          size={30}
-                          weight="duotone"
-                          style={{ color: currentSelectedArea.color || undefined }}
-                          className={`shrink-0 ${currentSelectedArea.color ? '' : currentTheme.color}`}
-                        />
-                      ) : currentSettingsMeta ? (
-                        React.createElement(currentSettingsMeta.icon, {
-                          size: 30,
-                          weight: 'duotone',
-                          className: `${currentSettingsMeta.color} shrink-0`
-                        })
-                      ) : (
-                        <PageIcon size={30} weight="duotone" className={`${currentTheme.color} shrink-0`} />
-                      )
-                    )}
-                    <span>{pageTitle}</span>
-                    {activeTab === 'overview' && (
-                      <span className="inline-block animate-wave cursor-default select-none text-2xl sm:text-3xl" title="Welcome!">👋</span>
-                    )}
-                  </h1>
-                </div>
-
-                {/* Mobile-Only Header Controls (Sync, Refresh, Notif Bell) */}
-                <div className="flex sm:hidden items-center gap-1.5 shrink-0">
+          {/* Header Bar - Title & Actions Top Row, 100% Full-Width Sentence Below */}
+          <header className="mb-6 flex flex-col gap-3 pb-1 w-full">
+            {/* Top Row: Title on Left, Global Action Controls on Right */}
+            <div className="flex items-center justify-between gap-3 sm:gap-4 w-full">
+              <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap min-w-0">
+                {/* Back Button when viewing room detail or settings subpage */}
+                {((activeTab === 'rooms' && selectedAreaId) || (activeTab === 'settings' && selectedSettingsSection)) && (
                   <button
                     type="button"
-                    onClick={handleManualRefresh}
-                    disabled={isManualRefreshing}
-                    className={`p-2 rounded-xl border transition-all cursor-pointer active:scale-90 flex items-center justify-center ${
-                      isManualRefreshing
-                        ? 'bg-sky-500/20 border-sky-500/40 text-sky-400'
-                        : darkMode
-                        ? 'bg-slate-900/80 border-white/10 text-slate-300'
-                        : 'bg-white border-slate-200 text-slate-700 shadow-xs'
-                    }`}
-                    title="Refresh Dashboard"
+                    onClick={() => {
+                      if (activeTab === 'rooms') setSelectedAreaId(null);
+                      if (activeTab === 'settings') setSelectedSettingsSection(null);
+                    }}
+                    className="p-1.5 -ml-1 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 dark:hover:bg-white/10 transition-all cursor-pointer active:scale-90 mr-0.5"
+                    title={activeTab === 'rooms' ? 'Back to Rooms' : 'Back to Settings'}
                   >
-                    <ArrowsClockwise size={16} weight="bold" className={isManualRefreshing ? 'animate-spin text-sky-400' : ''} />
+                    <ArrowLeft size={24} weight="bold" />
                   </button>
+                )}
 
-                  <NotificationBell
-                    darkMode={darkMode}
-                    onClick={() => setIsNotificationDrawerOpen(true)}
-                  />
-                </div>
+                <h1 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5 sm:gap-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {activeTab !== 'overview' && (
+                    currentSelectedArea ? (
+                      <DynamicPhosphorIcon
+                        name={currentSelectedArea.icon || 'HouseLine'}
+                        size={30}
+                        weight="duotone"
+                        style={{ color: currentSelectedArea.color || undefined }}
+                        className={`shrink-0 ${currentSelectedArea.color ? '' : currentTheme.color}`}
+                      />
+                    ) : currentSettingsMeta ? (
+                      React.createElement(currentSettingsMeta.icon, {
+                        size: 30,
+                        weight: 'duotone',
+                        className: `${currentSettingsMeta.color} shrink-0`
+                      })
+                    ) : (
+                      <PageIcon size={30} weight="duotone" className={`${currentTheme.color} shrink-0`} />
+                    )
+                  )}
+                  <span>{pageTitle}</span>
+                  {activeTab === 'overview' && (
+                    <span className="inline-block animate-wave cursor-default select-none text-2xl sm:text-3xl" title="Welcome!">👋</span>
+                  )}
+                </h1>
               </div>
 
-              {/* Dynamic Weather / Area Telemetry Sentence (100% Full Width) */}
-              <div className="pt-0.5 w-full">
-                {activeTab === 'overview' ? (
-                  <WeatherHeaderSentence
-                    darkMode={darkMode}
-                    onOpenWeatherModal={() => setIsWeatherDrawerOpen(true)}
-                  />
-                ) : activeTab === 'rooms' ? (
-                  <RoomsHeaderSentence
-                    darkMode={darkMode}
-                  />
-                ) : activeTab === 'media' ? (
-                  <MediaHeaderSentence
-                    darkMode={darkMode}
-                  />
-                ) : (
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed">
-                    {currentSettingsMeta ? currentSettingsMeta.subtitle : currentTheme.subtitle}
-                  </p>
+              {/* Global Header Action Controls (Sync, Manual Refresh, Notifications) */}
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {/* Subtle Boot & Background Sync Indicator */}
+                {isConfigLoading && (
+                  <div 
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/30 text-sky-600 dark:text-sky-400 text-xs font-semibold backdrop-blur-sm animate-pulse"
+                    title="Synchronizing configuration across devices..."
+                  >
+                    <ArrowsClockwise size={14} className="animate-spin text-sky-500 dark:text-sky-400" />
+                    <span className="hidden sm:inline">Syncing…</span>
+                  </div>
                 )}
+
+                {/* Manual Refresh Button */}
+                <button
+                  type="button"
+                  onClick={handleManualRefresh}
+                  disabled={isManualRefreshing}
+                  className={`p-2 rounded-xl border transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center ${
+                    isManualRefreshing
+                      ? 'bg-sky-500/20 border-sky-500/40 text-sky-400'
+                      : darkMode
+                      ? 'bg-slate-900/80 hover:bg-slate-800 border-white/10 text-slate-300 hover:text-white shadow-xs'
+                      : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-900 shadow-xs'
+                  }`}
+                  title="Refresh Dashboard"
+                >
+                  <ArrowsClockwise
+                    size={18}
+                    weight="bold"
+                    className={`${isManualRefreshing ? 'animate-spin text-sky-400' : ''}`}
+                  />
+                </button>
+
+                {/* Notification Center Trigger */}
+                <NotificationBell
+                  darkMode={darkMode}
+                  onClick={() => setIsNotificationDrawerOpen(true)}
+                />
               </div>
             </div>
 
-            {/* Desktop-Only Header Right Actions */}
-            <div className="hidden sm:flex items-center gap-2 shrink-0 pt-0.5 sm:pt-1">
-              {/* Subtle Boot & Background Sync Indicator */}
-              {isConfigLoading && (
-                <div 
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/30 text-sky-600 dark:text-sky-400 text-xs font-semibold backdrop-blur-sm animate-pulse"
-                  title="Synchronizing configuration across devices..."
-                >
-                  <ArrowsClockwise size={14} className="animate-spin text-sky-500 dark:text-sky-400" />
-                  <span className="hidden sm:inline">Syncing…</span>
-                </div>
-              )}
-
-              {/* Manual Refresh Button */}
-              <button
-                type="button"
-                onClick={handleManualRefresh}
-                disabled={isManualRefreshing}
-                className={`p-2 rounded-xl border transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center ${
-                  isManualRefreshing
-                    ? 'bg-sky-500/20 border-sky-500/40 text-sky-400'
-                    : darkMode
-                    ? 'bg-slate-900/80 hover:bg-slate-800 border-white/10 text-slate-300 hover:text-white shadow-xs'
-                    : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-900 shadow-xs'
-                }`}
-                title="Refresh Dashboard"
-              >
-                <ArrowsClockwise
-                  size={18}
-                  weight="bold"
-                  className={`${isManualRefreshing ? 'animate-spin text-sky-400' : ''}`}
+            {/* Dynamic Weather / Area Telemetry Sentence (100% Full Width across Page) */}
+            <div className="w-full pt-0.5">
+              {activeTab === 'overview' ? (
+                <WeatherHeaderSentence
+                  darkMode={darkMode}
+                  onOpenWeatherModal={() => setIsWeatherDrawerOpen(true)}
                 />
-              </button>
-
-              <NotificationBell
-                darkMode={darkMode}
-                onClick={() => setIsNotificationDrawerOpen(true)}
-              />
+              ) : activeTab === 'rooms' ? (
+                <RoomsHeaderSentence
+                  darkMode={darkMode}
+                />
+              ) : activeTab === 'media' ? (
+                <MediaHeaderSentence
+                  darkMode={darkMode}
+                />
+              ) : (
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 max-w-full leading-relaxed">
+                  {currentSettingsMeta ? currentSettingsMeta.subtitle : currentTheme.subtitle}
+                </p>
+              )}
             </div>
           </header>
 

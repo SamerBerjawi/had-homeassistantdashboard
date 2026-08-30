@@ -58,14 +58,14 @@ export default function HealthView({ darkMode = true }: ViewProps) {
     <div className="w-full flex-1 flex flex-col">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {healthSensors.map((sensor) => (
-          <div key={sensor.entity_id} className={`p-5 rounded-3xl border backdrop-blur-md ${darkMode ? 'bg-slate-900/80 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+          <div key={sensor.entity_id} className={`p-5 rounded-3xl backdrop-blur-md transition-all overflow-hidden isolate shadow-xs ${darkMode ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white' : 'bg-white/60 hover:bg-white/80 text-slate-900'}`}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-400 flex items-center justify-center">
                 <Heartbeat size={20} weight="duotone" />
               </div>
               <div>
                 <h4 className="text-sm font-bold">{sensor.name}</h4>
-                <p className="text-xs text-slate-400">{sensor.state} {sensor.attributes?.unit_of_measurement || ''}</p>
+                <p className="text-xs text-slate-400 font-mono font-medium">{sensor.state} {sensor.attributes?.unit_of_measurement || ''}</p>
               </div>
             </div>
           </div>

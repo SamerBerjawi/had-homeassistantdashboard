@@ -259,8 +259,8 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
     <div className="w-full flex-1 flex flex-col space-y-5">
       
       {/* Search and Filters Bar */}
-      <div className={`p-4 rounded-2xl backdrop-blur-md border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 ${
-        darkMode ? 'bg-black/60 border-white/10' : 'bg-white/60 backdrop-blur-md border-slate-200/90 shadow-xs'
+      <div className={`p-3 sm:p-3.5 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 ${
+        darkMode ? 'bg-slate-900/90 text-white' : 'bg-slate-100/90 text-slate-900 shadow-xs'
       }`}>
         {/* Filter Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto touch-scroll-container pb-1 sm:pb-0">

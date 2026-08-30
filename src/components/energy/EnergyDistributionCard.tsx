@@ -65,24 +65,26 @@ export default function EnergyDistributionCard({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative overflow-hidden flex flex-col justify-between shadow-2xl ${
+      className={`w-full rounded-3xl p-5 sm:p-6 backdrop-blur-md transition-all duration-300 relative overflow-hidden isolate flex flex-col justify-between shadow-xs ${
         darkMode
-          ? 'bg-slate-900/80 border-white/10 text-white'
-          : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/80'
+          ? 'bg-slate-900/60 text-white'
+          : 'bg-white/60 text-slate-900'
       }`}
     >
-      {/* Ambient background glow */}
-      <div className="absolute top-0 right-1/4 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Ambient background glow with strict containment */}
+      <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+        <div className="absolute top-0 right-1/4 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      </div>
 
       {/* Card Header & Live/Period Toggle */}
       <div className="flex items-center justify-between gap-3 mb-4 z-10">
         <div className="flex items-center gap-2.5">
           <div
-            className={`p-2 rounded-2xl border ${
+            className={`p-2 rounded-2xl ${
               darkMode
-                ? 'bg-amber-500/15 text-amber-500 border-amber-500/30'
-                : 'bg-amber-50 text-amber-600 border-amber-200'
+                ? 'bg-amber-500/15 text-amber-500'
+                : 'bg-amber-50 text-amber-600'
             }`}
           >
             <Lightning size={18} weight="fill" />
@@ -99,8 +101,8 @@ export default function EnergyDistributionCard({
 
         {/* View Mode Toggle */}
         <div
-          className={`flex items-center p-1 rounded-xl border text-[11px] font-bold ${
-            darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'
+          className={`flex items-center p-1 rounded-xl text-[11px] font-bold ${
+            darkMode ? 'bg-white/5' : 'bg-slate-100'
           }`}
         >
           <button

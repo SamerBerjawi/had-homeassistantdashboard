@@ -124,7 +124,7 @@ export default function SecurityBadgesBar({
         return (
           <div
             key={user.entity_id}
-            className={`h-9 pl-1 pr-2.5 rounded-full text-xs font-bold border backdrop-blur-md flex items-center gap-1.5 shadow-xs select-none ${
+            className={`h-8.5 pl-1 pr-2.5 rounded-full text-xs font-bold border backdrop-blur-md flex items-center gap-1.5 shadow-xs select-none whitespace-nowrap shrink-0 ${
               isHome
                 ? darkMode
                   ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
@@ -144,7 +144,7 @@ export default function SecurityBadgesBar({
               showPresenceDot={false}
               className="w-6 h-6 shrink-0"
             />
-            <span>{firstName}</span>
+            <span className="whitespace-nowrap">{firstName}</span>
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isHome ? 'bg-emerald-500' : 'bg-slate-400'}`} />
           </div>
         );
@@ -154,13 +154,13 @@ export default function SecurityBadgesBar({
       <button
         type="button"
         onClick={() => onSelectFilter(activeFilter === 'alarm' ? 'all' : 'alarm')}
-        className={`h-9 px-3.5 rounded-full border text-xs font-bold transition-all cursor-pointer backdrop-blur-md hover:scale-105 active:scale-95 flex items-center gap-2 shadow-xs ${
+        className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer backdrop-blur-md hover:scale-105 active:scale-95 flex items-center gap-2 shadow-xs whitespace-nowrap shrink-0 ${
           alarmBadge.bg
         } ${activeFilter === 'alarm' ? 'ring-2 ring-emerald-400/50' : ''}`}
         title={`Alarm Status: ${alarmBadge.label} (Click to toggle view)`}
       >
         <AlarmIcon size={16} weight="duotone" className="shrink-0" />
-        <span>{alarmBadge.label}</span>
+        <span className="whitespace-nowrap">{alarmBadge.label}</span>
         <span className={`w-2 h-2 rounded-full shrink-0 ${alarmBadge.dot}`} />
       </button>
 
@@ -168,7 +168,7 @@ export default function SecurityBadgesBar({
       <button
         type="button"
         onClick={() => onSelectFilter(activeFilter === 'locks' ? 'all' : 'locks')}
-        className={`h-9 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer backdrop-blur-md hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs ${
+        className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer backdrop-blur-md hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
           unlockedLocks.length > 0
             ? darkMode
               ? 'bg-amber-500/15 text-amber-300 border-amber-500/35'
@@ -184,7 +184,7 @@ export default function SecurityBadgesBar({
         ) : (
           <Lock size={16} weight="duotone" className="text-emerald-600 dark:text-emerald-400 shrink-0" />
         )}
-        <span>
+        <span className="whitespace-nowrap">
           {unlockedLocks.length > 0
             ? `${unlockedLocks.length} Unlocked`
             : `${totalLocks || 3} Locks Secure`}
@@ -195,30 +195,30 @@ export default function SecurityBadgesBar({
       <button
         type="button"
         onClick={() => onSelectFilter(activeFilter === 'openings' ? 'all' : 'openings')}
-        className={`h-9 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer backdrop-blur-md hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs ${
+        className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer backdrop-blur-md hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
           totalOpenings > 0
             ? darkMode
-              ? 'bg-rose-500/15 text-rose-300 border-rose-500/35'
-              : 'bg-rose-50/90 text-rose-950 border-rose-200/90 shadow-2xs'
+              ? 'bg-amber-500/15 text-amber-300 border-amber-500/35'
+              : 'bg-amber-50/90 text-amber-950 border-amber-200/90 shadow-2xs'
             : darkMode
               ? 'bg-white/5 text-slate-300 border-white/10'
               : 'bg-slate-900/[0.04] text-slate-700 border-slate-900/[0.08]'
-        } ${activeFilter === 'openings' ? 'ring-2 ring-rose-400/50' : ''}`}
+        } ${activeFilter === 'openings' ? 'ring-2 ring-amber-400/50' : ''}`}
         title={totalOpenings > 0 ? `${openDoors.length} doors, ${openWindows.length} windows open` : 'All perimeter openings closed'}
       >
         {totalOpenings > 0 ? (
-          <DoorOpen size={16} weight="duotone" className="text-rose-500 dark:text-rose-400 shrink-0" />
+          <DoorOpen size={16} weight="duotone" className="text-amber-500 dark:text-amber-400 shrink-0" />
         ) : (
           <Door size={16} weight="duotone" className="text-slate-500 dark:text-slate-400 shrink-0" />
         )}
-        <span>{totalOpenings > 0 ? `${totalOpenings} Openings Open` : 'Perimeter Closed'}</span>
+        <span className="whitespace-nowrap">{totalOpenings > 0 ? `${totalOpenings} Openings Open` : 'Perimeter Closed'}</span>
       </button>
 
       {/* 5. MOTION & OCCUPANCY BADGE */}
       <button
         type="button"
         onClick={() => onSelectFilter(activeFilter === 'motion' ? 'all' : 'motion')}
-        className={`h-9 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer backdrop-blur-md hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs ${
+        className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer backdrop-blur-md hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
           activeMotion.length > 0
             ? darkMode
               ? 'bg-amber-500/15 text-amber-300 border-amber-500/35'
@@ -232,20 +232,20 @@ export default function SecurityBadgesBar({
         <PersonSimpleWalk
           size={16}
           weight="duotone"
-          className={activeMotion.length > 0 ? 'text-amber-600 dark:text-amber-400 shrink-0 animate-bounce' : 'text-slate-500 dark:text-slate-400 shrink-0'}
+          className={activeMotion.length > 0 ? 'text-amber-600 dark:text-amber-400 shrink-0' : 'text-slate-500 dark:text-slate-400 shrink-0'}
         />
-        <span>{activeMotion.length > 0 ? `${activeMotion.length} Motion Active` : 'Motion Clear'}</span>
+        <span className="whitespace-nowrap">{activeMotion.length > 0 ? `${activeMotion.length} Motion Active` : 'Motion Clear'}</span>
       </button>
 
       {/* 6. HAZARD & ENVIRONMENTAL SAFETY BADGE */}
       <button
         type="button"
         onClick={() => onSelectFilter(activeFilter === 'hazards' ? 'all' : 'hazards')}
-        className={`h-9 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer backdrop-blur-md hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs ${
+        className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer backdrop-blur-md hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
           totalHazards > 0
             ? darkMode
-              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
-              : 'bg-rose-50/95 text-rose-950 border-rose-200/90 shadow-2xs animate-pulse'
+              ? 'bg-rose-500/15 text-rose-300 border-rose-500/35'
+              : 'bg-rose-50/95 text-rose-950 border-rose-200/90 shadow-2xs'
             : darkMode
               ? 'bg-white/5 text-slate-300 border-white/10'
               : 'bg-slate-900/[0.04] text-slate-700 border-slate-900/[0.08]'
@@ -257,21 +257,21 @@ export default function SecurityBadgesBar({
         ) : (
           <CheckCircle size={16} weight="duotone" className="text-emerald-600 dark:text-emerald-400 shrink-0" />
         )}
-        <span>{totalHazards > 0 ? `${totalHazards} Hazards Detected` : 'Environment Safe'}</span>
+        <span className="whitespace-nowrap">{totalHazards > 0 ? `${totalHazards} Hazards Detected` : 'Environment Safe'}</span>
       </button>
 
       {/* 7. CAMERAS QUICK JUMP BADGE */}
       <button
         type="button"
         onClick={() => onSelectFilter(activeFilter === 'cameras' ? 'all' : 'cameras')}
-        className={`h-9 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer backdrop-blur-md hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs ${
+        className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer backdrop-blur-md hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
           darkMode
             ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/35'
             : 'bg-cyan-50/90 text-cyan-950 border-cyan-200/90 shadow-2xs'
         } ${activeFilter === 'cameras' ? 'ring-2 ring-cyan-400/50' : ''}`}
       >
         <VideoCamera size={16} weight="duotone" className="text-cyan-600 dark:text-cyan-400 shrink-0" />
-        <span>{cameraEntities.length} {cameraEntities.length === 1 ? 'Live Feed' : 'Live Feeds'}</span>
+        <span className="whitespace-nowrap">{cameraEntities.length} {cameraEntities.length === 1 ? 'Live Feed' : 'Live Feeds'}</span>
       </button>
     </div>
   );

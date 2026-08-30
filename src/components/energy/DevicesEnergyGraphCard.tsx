@@ -85,23 +85,25 @@ export default function DevicesEnergyGraphCard({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative flex flex-col justify-between overflow-hidden shadow-2xl ${
+      className={`w-full rounded-3xl p-5 sm:p-6 backdrop-blur-md transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate shadow-xs ${
         darkMode
-          ? 'bg-slate-900/80 border-white/10 text-white'
-          : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/80'
+          ? 'bg-slate-900/60 text-white'
+          : 'bg-white/60 text-slate-900'
       }`}
     >
-      {/* Ambient Glow */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Ambient Glow with strict containment */}
+      <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      </div>
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5 z-10">
         <div className="flex items-center gap-2.5">
           <div
-            className={`p-2 rounded-2xl border ${
+            className={`p-2 rounded-2xl ${
               darkMode
-                ? 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30'
-                : 'bg-indigo-50 text-indigo-600 border-indigo-200'
+                ? 'bg-indigo-500/15 text-indigo-400'
+                : 'bg-indigo-50 text-indigo-600'
             }`}
           >
             <Devices size={18} weight="fill" />

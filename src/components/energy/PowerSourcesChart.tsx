@@ -278,35 +278,37 @@ export default function PowerSourcesChart({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative flex flex-col justify-between overflow-hidden shadow-2xl ${
+      className={`w-full rounded-3xl p-5 sm:p-6 backdrop-blur-md transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate shadow-xs ${
         darkMode
-          ? 'bg-gradient-to-b from-slate-900/95 via-slate-900/85 to-slate-950/95 border-white/10 text-white shadow-black/40'
-          : 'bg-gradient-to-b from-white/95 via-white/90 to-slate-50/95 border-slate-200 text-slate-900 shadow-slate-200/80'
+          ? 'bg-slate-900/60 text-white'
+          : 'bg-white/60 text-slate-900'
       }`}
     >
-      {/* Dynamic Multi-Color Ambient Background Glows */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2" />
-      <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none translate-y-1/3" />
+      {/* Dynamic Multi-Color Ambient Background Glows with strict containment */}
+      <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2" />
+        <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none translate-y-1/3" />
+      </div>
 
       {/* Header with Title and Live Instantaneous Power Badges */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4 z-10">
         <div className="flex items-center gap-2.5">
           <div
-            className={`p-2 rounded-2xl border ${
+            className={`p-2 rounded-2xl ${
               darkMode
-                ? 'bg-purple-500/15 text-purple-400 border-purple-500/30'
-                : 'bg-purple-50 text-purple-600 border-purple-200'
+                ? 'bg-purple-500/15 text-purple-400'
+                : 'bg-purple-50 text-purple-600'
             }`}
           >
             <Lightning size={18} weight="fill" />
           </div>
           <div>
             <h3 className={`text-sm font-extrabold tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-              Power Sources
+              Power Sources & Instantaneous Flow (kW)
             </h3>
             <p className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              Home Assistant native power flows (Stacked Area: Import/Discharge + vs Export/Charge -)
+              Continuous dynamic stacked power distribution curve
             </p>
           </div>
         </div>

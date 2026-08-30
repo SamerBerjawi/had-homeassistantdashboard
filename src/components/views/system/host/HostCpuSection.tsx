@@ -34,11 +34,11 @@ export function HostCpuSection({
   const [loadViewMode, setLoadViewMode] = useState<'unified' | 'split'>('unified');
 
   const cardStyle =
-    'rounded-2xl border backdrop-blur-md transition-all shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] ' +
+    'rounded-3xl backdrop-blur-md transition-all overflow-hidden isolate shadow-xs ' +
     (darkMode
-      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10'
-      : 'bg-white/70 border-slate-200/80 text-slate-900') +
-    ' p-3.5 sm:p-4';
+      ? 'bg-slate-900/60 text-white'
+      : 'bg-white/60 text-slate-900') +
+    ' p-4 sm:p-5';
 
   // Threshold colors matching NAS page conventions
   const cpuUsageColor =

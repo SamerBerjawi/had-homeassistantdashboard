@@ -1,27 +1,21 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState } from 'react';
 import { 
   Users, 
-  User,
-  House, 
-  Car, 
   MapPin, 
-  Clock, 
   BatteryCharging, 
   BatteryHigh, 
-  BatteryLow, 
   BatteryWarning, 
   DeviceMobile, 
-  Compass, 
   NavigationArrow,
-  ShieldCheck,
-  Globe,
-  Radio,
-  Lightning,
-  Sparkle
+  Globe
 } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
 import DetailsRightDrawer from '../DetailsRightDrawer';
-import { getHAImageUrl } from '../../../lib/utils';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import PersonAvatar from '../../ui/PersonAvatar';
 
@@ -40,8 +34,7 @@ export default function UsersPresenceModal({
   selectedUser,
   darkMode = true
 }: UsersPresenceModalProps) {
-  const serverUrl = useAutoLayoutStore(s => s.serverUrl);
-  const resolvedZones = useAutoLayoutStore(s => s.resolvedZones);
+  const resolvedZones = useAutoLayoutStore((s) => s.resolvedZones);
   const [activeUserId, setActiveUserId] = useState<string>(
     selectedUser?.entity_id || users[0]?.entity_id || ''
   );
@@ -54,14 +47,14 @@ export default function UsersPresenceModal({
     }
   }, [selectedUser, users]);
 
-  const activePerson = users.find(u => u.entity_id === activeUserId) || users[0];
-  const homeUsers = users.filter(u => u.state === 'home');
+  const activePerson = users.find((u) => u.entity_id === activeUserId) || users[0];
+  const homeUsers = users.filter((u) => u.state === 'home');
 
   // Active Person Details
   const isHome = activePerson?.state === 'home';
 
   // Link Active HA Zone
-  const matchedZone = resolvedZones.find(z => 
+  const matchedZone = resolvedZones.find((z) => 
     z.name.toLowerCase() === activePerson?.state?.toLowerCase() ||
     (isHome && z.entity_id === 'zone.home')
   );
@@ -82,7 +75,7 @@ export default function UsersPresenceModal({
     const source = person.attributes?.source || person.attributes?.device_tracker;
     if (typeof source === 'string') {
       const clean = source.replace('device_tracker.', '').replace(/_/g, ' ');
-      return clean.replace(/\b\w/g, l => l.toUpperCase());
+      return clean.replace(/\b\w/g, (l) => l.toUpperCase());
     }
     return `${person.name.split(' ')[0]}'s Phone`;
   };
@@ -95,7 +88,7 @@ export default function UsersPresenceModal({
   const isCharging = activePerson?.attributes?.battery_charging || batteryState.toLowerCase().includes('charg');
   const location = matchedZone ? `In ${matchedZone.name} Zone` : activePerson?.attributes?.location || (isHome ? 'At Home' : activePerson?.state === 'not_home' ? 'Away from Home' : activePerson?.state || 'Unknown');
 
-  // OpenStreetMap Coordinates (use person coords or fallback to zone coords)
+  // OpenStreetMap Coordinates
   const lat = typeof activePerson?.attributes?.latitude === 'number' 
     ? activePerson.attributes.latitude 
     : (matchedZone?.latitude || 37.7749);
@@ -114,9 +107,9 @@ export default function UsersPresenceModal({
       icon={<Users size={22} weight="duotone" className="text-indigo-500 dark:text-indigo-400" />}
       darkMode={darkMode}
     >
-      <div className="space-y-6">
+      <div className="space-y-5 pb-24 sm:pb-6">
         
-        {/* User Selector Pills */}
+        {/* User Selector Pills (Borderless) */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 touch-scroll-container">
           {users.map((user) => {
             const isSel = user.entity_id === activeUserId;
@@ -127,10 +120,10 @@ export default function UsersPresenceModal({
                 key={user.entity_id}
                 type="button"
                 onClick={() => setActiveUserId(user.entity_id)}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-2xl border transition-all cursor-pointer shrink-0 ${
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-2xl transition-all cursor-pointer shrink-0 ${
                   isSel
-                    ? 'bg-indigo-500/15 text-indigo-700 dark:bg-indigo-500/25 dark:text-white border-indigo-500/50 shadow-xs ring-1 ring-indigo-500/40'
-                    : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
+                    ? 'bg-indigo-500/20 text-indigo-700 dark:text-white shadow-xs font-bold'
+                    : 'bg-slate-100 dark:bg-white/[0.04] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-300'
                 }`}
               >
                 <PersonAvatar
@@ -148,15 +141,15 @@ export default function UsersPresenceModal({
         </div>
 
         {/* ------------------------------------------------------------- */}
-        {/* LUXURY SECURITY ID / PRESENCE BADGE CARD                      */}
+        {/* LUXURY SECURITY ID / PRESENCE BADGE CARD (BORDERLESS)         */}
         {/* ------------------------------------------------------------- */}
         {activePerson && (
-          <div className={`p-6 rounded-3xl border shadow-xl relative overflow-hidden space-y-5 transition-colors ${
+          <div className={`p-6 rounded-3xl shadow-xl relative overflow-hidden space-y-5 transition-colors ${
             darkMode
-              ? 'bg-linear-to-b from-indigo-950/40 via-slate-900/90 to-slate-950 border-white/15 text-white'
-              : 'bg-linear-to-b from-indigo-50/80 via-white to-slate-50 border-slate-200 text-slate-900 shadow-slate-200/60'
+              ? 'bg-linear-to-b from-indigo-950/40 via-slate-900/90 to-slate-950 text-white shadow-slate-950/50'
+              : 'bg-linear-to-b from-indigo-50/80 via-white to-slate-50 text-slate-900 shadow-slate-200/60'
           }`}>
-            {/* Top Lanyard / Badge Accent */}
+            {/* Top Accent */}
             <div className="absolute top-0 inset-x-0 h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-emerald-400" />
             
             {/* User Header with Avatar & Online Ring */}
@@ -172,10 +165,10 @@ export default function UsersPresenceModal({
                   className="w-20 h-20 shadow-xl"
                 />
                 <span
-                  className={`absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-md ${
+                  className={`absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md ${
                     isHome
-                      ? 'bg-emerald-500 text-white dark:text-slate-950 border-emerald-400'
-                      : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-600'
+                      ? 'bg-emerald-500 text-white dark:text-slate-950'
+                      : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
                   }`}
                 >
                   {isHome ? 'Home' : 'Away'}
@@ -187,7 +180,7 @@ export default function UsersPresenceModal({
                   <h3 className="text-xl font-black text-slate-900 dark:text-white truncate">{activePerson.name}</h3>
                 </div>
                 <p className="text-xs text-indigo-600 dark:text-indigo-300 font-semibold truncate mt-0.5">
-                  Home Assistant Household Member
+                  Household Member
                 </p>
                 <div className="flex items-center gap-1.5 mt-2 text-xs text-slate-600 dark:text-slate-300 font-medium truncate">
                   <MapPin size={15} weight="duotone" className="text-indigo-500 dark:text-indigo-400 shrink-0" />
@@ -197,7 +190,7 @@ export default function UsersPresenceModal({
             </div>
 
             {/* Device Info & Battery State Derived from User's Device */}
-            <div className="p-4 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-3">
+            <div className="p-4 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04] space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200 min-w-0">
                   <DeviceMobile size={18} weight="duotone" className="text-indigo-500 dark:text-indigo-400 shrink-0" />
@@ -206,7 +199,7 @@ export default function UsersPresenceModal({
 
                 {battery !== undefined && (
                   <div className="flex items-center gap-2 font-black text-xs shrink-0">
-                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-white/10 border border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300">
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300">
                       {batteryState}
                     </span>
                     <span className={`flex items-center gap-1 ${
@@ -244,7 +237,7 @@ export default function UsersPresenceModal({
 
             {/* Information Grid */}
             <div className="grid grid-cols-2 gap-2.5 text-xs">
-              <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+              <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04]">
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                   Presence State
                 </span>
@@ -253,7 +246,7 @@ export default function UsersPresenceModal({
                 </span>
               </div>
 
-              <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+              <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04]">
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                   Device Power State
                 </span>
@@ -262,7 +255,7 @@ export default function UsersPresenceModal({
                 </span>
               </div>
 
-              <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 col-span-2">
+              <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04] col-span-2">
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                   HA Entity ID
                 </span>
@@ -273,7 +266,7 @@ export default function UsersPresenceModal({
             </div>
 
             {/* ------------------------------------------------------------- */}
-            {/* OPENSTREETMAP INTERACTIVE LOCATION POINTER (DARK / LIGHT)     */}
+            {/* OPENSTREETMAP INTERACTIVE LOCATION POINTER (BORDERLESS)       */}
             {/* ------------------------------------------------------------- */}
             <div className="space-y-2 pt-2">
               <div className="flex items-center justify-between px-1">
@@ -292,8 +285,8 @@ export default function UsersPresenceModal({
                 </a>
               </div>
 
-              {/* Embedded OSM Map with strict Theme Invert in Dark Mode */}
-              <div className={`relative w-full h-44 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/15 shadow-inner ${
+              {/* Embedded OSM Map */}
+              <div className={`relative w-full h-44 rounded-2xl overflow-hidden shadow-inner ${
                 darkMode ? 'bg-[#0B0F19]' : 'bg-slate-100'
               }`}>
                 <iframe
@@ -304,18 +297,18 @@ export default function UsersPresenceModal({
                   loading="lazy"
                 />
 
-                {/* Radar Location Center Pin Marker */}
+                {/* Center Pin Marker */}
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                   <div className="relative flex items-center justify-center">
                     <span className="absolute w-8 h-8 rounded-full bg-emerald-500/40 animate-ping" />
-                    <div className="w-5 h-5 rounded-full bg-emerald-500 border-2 border-white shadow-xl flex items-center justify-center text-slate-950">
+                    <div className="w-5 h-5 rounded-full bg-emerald-500 shadow-xl flex items-center justify-center text-slate-950">
                       <MapPin size={12} weight="bold" />
                     </div>
                   </div>
                 </div>
 
                 {/* GPS Coordinates Badge Overlay */}
-                <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-xl bg-slate-900/80 text-white dark:bg-black/80 backdrop-blur-md border border-white/15 text-[10px] font-mono shadow-md">
+                <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-xl bg-slate-900/80 text-white dark:bg-black/80 backdrop-blur-md text-[10px] font-mono shadow-md">
                   {lat.toFixed(4)}° N, {lon.toFixed(4)}° W
                 </div>
               </div>

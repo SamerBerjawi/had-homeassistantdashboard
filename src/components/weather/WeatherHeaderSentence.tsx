@@ -3,20 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * WeatherHeaderSentence:
- * Renders a friendly, fun, natural-language weather summary sentence with dynamic inline icons.
- *
- * Example:
- * "The temperature today is 🌡️ 22°, it is currently ☀️ Sunny. Temperatures are expected to rise to 25° in the next 3 hours."
+ * Renders a natural-language weather summary sentence with uniquely stylized badges:
+ * - Dynamic Temperature Pill (Thermometer icon + temperature value)
+ * - Condition Pill with animated weather icon
+ * - Daily High / Low Forecast Pills
+ * - Imminent Precipitation / Rain Alert Pill
+ * - Air / Humidity / Wind Telemetry
+ * - All action verbs and connective text placed outside the badge pills
+ * - Fills 100% full width of container and opens full weather drawer on click.
  */
 
 import React, { useMemo } from 'react';
 import { 
-  ThermometerSimple, 
+  Thermometer, 
   TrendUp, 
   TrendDown, 
   CloudRain, 
   Sparkle,
-  ArrowRight
+  ArrowRight,
+  Sun,
+  Drop,
+  Wind,
+  Warning
 } from '@phosphor-icons/react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { ResolvedEntity } from '../../types';
@@ -35,10 +43,14 @@ function computeWeatherData(activeEntity?: ResolvedEntity) {
       temperature: 22,
       tempUnit: '°C',
       conditionText: 'Partly Cloudy',
-      conditionInfo: getWeatherConditionInfo('partlycloudy', false, 16),
+      conditionInfo: getWeatherConditionInfo('partlycloudy', false, 15),
+      humidity: 55,
+      windSpeed: 12,
+      windUnit: 'km/h',
+      rainChance: undefined as number | undefined,
       trend: {
         prefix: 'Conditions will',
-        icon: <Sparkle size={15} weight="duotone" className="text-amber-400" />,
+        icon: <Sparkle size={14} weight="duotone" className="text-amber-400" />,
         keyword: 'remain pleasant',
         keywordClass: 'text-amber-500 dark:text-amber-300 font-bold',
         suffix: 'throughout the day.'
@@ -51,18 +63,21 @@ function computeWeatherData(activeEntity?: ResolvedEntity) {
   const state = activeEntity.state || 'partlycloudy';
   const attr = activeEntity.attributes || {};
   const isNight = state.toLowerCase().includes('night');
-  const conditionInfo = getWeatherConditionInfo(state, isNight, 16);
+  const conditionInfo = getWeatherConditionInfo(state, isNight, 15);
 
   const temp = typeof attr.temperature === 'number' ? Math.round(attr.temperature) : 22;
-  const rawUnit = attr.temperature_unit || '°';
+  const rawUnit = attr.temperature_unit || '°C';
   const tempUnit = rawUnit.startsWith('°') ? rawUnit : `°${rawUnit}`;
+  const humidity = typeof attr.humidity === 'number' ? Math.round(attr.humidity) : undefined;
+  const windSpeed = typeof attr.wind_speed === 'number' ? Math.round(attr.wind_speed) : undefined;
+  const windUnit = attr.wind_speed_unit || 'km/h';
 
   const hourly = getHourlyForecast(activeEntity);
   const daily = getDailyForecast(activeEntity);
 
   const todayDaily = daily[0];
-  const highTemp = todayDaily?.temperature ?? temp + 3;
-  const lowTemp = todayDaily?.templow ?? temp - 5;
+  const highTemp = todayDaily?.temperature !== undefined ? Math.round(todayDaily.temperature) : temp + 3;
+  const lowTemp = todayDaily?.templow !== undefined ? Math.round(todayDaily.templow) : temp - 5;
 
   // Analyze upcoming 6 hours for weather events
   const upcomingHours = hourly.slice(0, 6);
@@ -73,67 +88,69 @@ function computeWeatherData(activeEntity?: ResolvedEntity) {
          (h.precipitation_probability !== undefined && h.precipitation_probability >= 40)
   );
 
+  const rainChance = upcomingHours[0]?.precipitation_probability ?? attr.precipitation_probability;
+
   let trend = {
-    prefix: 'Temperatures will',
-    icon: <Sparkle size={15} weight="duotone" className="text-emerald-400" /> as React.ReactNode,
+    prefix: 'conditions will',
+    icon: <Sparkle size={14} weight="duotone" className="text-emerald-400" /> as React.ReactNode,
     keyword: 'remain steady',
     keywordClass: 'text-emerald-600 dark:text-emerald-400 font-bold',
-    suffix: 'with comfortable conditions.'
+    suffix: 'with comfortable weather'
   };
 
   if (rainHourIndex !== -1) {
     const hoursAway = rainHourIndex + 1;
     trend = {
-      prefix: '',
-      icon: <CloudRain size={15} weight="duotone" className="text-sky-400" />,
-      keyword: 'Rain',
-      keywordClass: 'text-sky-600 dark:text-sky-400 font-bold',
-      suffix: hoursAway <= 1 ? 'is expected in the next hour.' : `is expected in the next ${hoursAway} hours.`
+      prefix: 'rain is',
+      icon: <CloudRain size={14} weight="duotone" className="text-sky-400" />,
+      keyword: 'expected',
+      keywordClass: 'text-sky-600 dark:text-sky-300 font-bold',
+      suffix: hoursAway <= 1 ? 'in the next hour' : `in the next ${hoursAway} hours`
     };
   } else {
     // Analyze temperature trajectory in next 3-4 hours
     const futureHour = upcomingHours[2] || upcomingHours[1];
-    const futureTemp = futureHour?.temperature;
+    const futureTemp = futureHour?.temperature !== undefined ? Math.round(futureHour.temperature) : undefined;
 
     if (futureTemp !== undefined && futureTemp - temp >= 2) {
       trend = {
-        prefix: 'Temperatures are expected to',
-        icon: <TrendUp size={15} weight="bold" className="text-amber-500 dark:text-amber-400" />,
+        prefix: 'temperatures are expected to',
+        icon: <TrendUp size={14} weight="bold" className="text-amber-500 dark:text-amber-400" />,
         keyword: 'rise',
         keywordClass: 'text-amber-600 dark:text-amber-300 font-bold',
-        suffix: `to ${futureTemp}${tempUnit} in the next 3 hours.`
+        suffix: `to ${futureTemp}${tempUnit} in the next 3 hours`
       };
     } else if (futureTemp !== undefined && temp - futureTemp >= 2) {
       trend = {
-        prefix: 'Temperatures are expected to',
-        icon: <TrendDown size={15} weight="bold" className="text-sky-500 dark:text-sky-400" />,
+        prefix: 'temperatures are expected to',
+        icon: <TrendDown size={14} weight="bold" className="text-sky-500 dark:text-sky-400" />,
         keyword: 'drop',
         keywordClass: 'text-sky-600 dark:text-sky-300 font-bold',
-        suffix: `to ${futureTemp}${tempUnit} in the next 3 hours.`
+        suffix: `to ${futureTemp}${tempUnit} in the next 3 hours`
       };
     } else if (highTemp > temp && !isNight) {
       trend = {
-        prefix: 'Temperatures are expected to',
-        icon: <TrendUp size={15} weight="bold" className="text-amber-500 dark:text-amber-400" />,
-        keyword: 'rise',
+        prefix: 'temperatures will',
+        icon: <TrendUp size={14} weight="bold" className="text-amber-500 dark:text-amber-400" />,
+        keyword: 'peak',
         keywordClass: 'text-amber-600 dark:text-amber-300 font-bold',
-        suffix: `to reach a high of ${highTemp}${tempUnit} today.`
+        suffix: `at ${highTemp}${tempUnit} today`
       };
     } else if (isNight) {
       trend = {
-        prefix: 'Temperatures are expected to',
-        icon: <TrendDown size={15} weight="bold" className="text-indigo-400" />,
-        keyword: 'drop',
+        prefix: 'temperatures will',
+        icon: <TrendDown size={14} weight="bold" className="text-indigo-400" />,
+        keyword: 'cool',
         keywordClass: 'text-indigo-600 dark:text-indigo-300 font-bold',
-        suffix: `to ${lowTemp}${tempUnit} overnight.`
+        suffix: `down to ${lowTemp}${tempUnit} overnight`
       };
     } else {
       trend = {
-        prefix: 'Temperatures will',
-        icon: <Sparkle size={15} weight="duotone" className="text-emerald-400" />,
-        keyword: 'remain steady',
+        prefix: 'conditions will',
+        icon: <Sparkle size={14} weight="duotone" className="text-emerald-400" />,
+        keyword: 'remain pleasant',
         keywordClass: 'text-emerald-600 dark:text-emerald-400 font-bold',
-        suffix: 'with comfortable conditions.'
+        suffix: 'throughout the day'
       };
     }
   }
@@ -143,6 +160,10 @@ function computeWeatherData(activeEntity?: ResolvedEntity) {
     tempUnit,
     conditionText: conditionInfo.name,
     conditionInfo,
+    humidity,
+    windSpeed,
+    windUnit,
+    rainChance,
     trend,
     highTemp,
     lowTemp
@@ -154,15 +175,15 @@ export default function WeatherHeaderSentence({
   darkMode = true,
   className = ''
 }: WeatherHeaderSentenceProps) {
-  const domainGroups = useAutoLayoutStore(s => s.domainGroups);
-  const selectedWeatherEntityId = useAutoLayoutStore(s => s.selectedWeatherEntityId);
+  const domainGroups = useAutoLayoutStore((s) => s.domainGroups);
+  const selectedWeatherEntityId = useAutoLayoutStore((s) => s.selectedWeatherEntityId);
 
   const weatherEntities: ResolvedEntity[] = domainGroups['weather'] || [];
   const activeEntity: ResolvedEntity | undefined = 
-    weatherEntities.find(w => w.entity_id === selectedWeatherEntityId) || 
+    weatherEntities.find((w) => w.entity_id === selectedWeatherEntityId) || 
     weatherEntities[0];
 
-  // Lock initial load weather trend so it only calculates on page load
+  // Lock initial load weather trend
   const [lockedData, setLockedData] = React.useState<ReturnType<typeof computeWeatherData> | null>(() => {
     return activeEntity ? computeWeatherData(activeEntity) : null;
   });
@@ -178,57 +199,111 @@ export default function WeatherHeaderSentence({
   return (
     <div 
       onClick={onOpenWeatherModal}
-      className={`inline-flex flex-wrap items-center gap-1.5 text-xs sm:text-sm font-medium leading-relaxed transition-all rounded-2xl group ${
-        onOpenWeatherModal ? 'cursor-pointer hover:opacity-95 active:scale-[0.99]' : ''
+      className={`w-full flex flex-wrap items-center gap-x-2 gap-y-2 text-xs sm:text-sm font-medium leading-relaxed transition-all rounded-2xl group ${
+        onOpenWeatherModal ? 'cursor-pointer hover:opacity-95 active:scale-[0.995]' : ''
       } ${
         darkMode ? 'text-slate-300' : 'text-slate-600'
       } ${className}`}
-      title="Click to view complete hourly & 7-day weather forecast"
+      title="Click to view detailed hourly & 7-day weather forecast"
     >
       {/* 1. Introductory prefix */}
-      <span>The temperature today is</span>
+      <span>The temperature is</span>
 
       {/* 2. Temperature Badge with Thermometer icon */}
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg font-bold border transition-colors shadow-xs ${
-        darkMode 
-          ? 'bg-amber-500/15 border-amber-500/30 text-amber-300 group-hover:bg-amber-500/25' 
-          : 'bg-amber-50 border-amber-200 text-amber-800 group-hover:bg-amber-100'
-      }`}>
-        <ThermometerSimple size={14} weight="bold" className="text-amber-500" />
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-xs transition-all ${
+          darkMode 
+            ? 'bg-linear-to-r from-rose-500/20 to-orange-500/15 border-rose-500/35 text-rose-300 shadow-rose-500/5 group-hover:border-rose-500/50' 
+            : 'bg-rose-50/90 border-rose-200 text-rose-800 group-hover:bg-rose-100'
+        }`}
+      >
+        <Thermometer size={14} weight="fill" className="text-rose-400" />
         <span className="font-mono">{weatherData.temperature}{weatherData.tempUnit}</span>
       </span>
 
       <span>, it is currently</span>
 
-      {/* 3. Condition Badge with animated condition icon */}
-      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg font-bold border transition-colors shadow-xs ${
-        darkMode 
-          ? 'bg-sky-500/15 border-sky-500/30 text-sky-300 group-hover:bg-sky-500/25' 
-          : 'bg-sky-50 border-sky-200 text-sky-800 group-hover:bg-sky-100'
-      }`}>
+      {/* 3. Condition Badge with dynamic icon */}
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-xs transition-all ${
+          darkMode 
+            ? 'bg-linear-to-r from-sky-500/20 to-cyan-500/15 border-sky-500/35 text-sky-300 shadow-sky-500/5 group-hover:border-sky-500/50' 
+            : 'bg-sky-50/90 border-sky-200 text-sky-800 group-hover:bg-sky-100'
+        }`}
+      >
         <span className="shrink-0 group-hover:scale-110 transition-transform">
           {weatherData.conditionInfo.icon}
         </span>
         <span>{weatherData.conditionText}</span>
       </span>
 
-      <span>.</span>
+      {/* 4. High & Low Forecast Badges */}
+      <span>with a high of</span>
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border shadow-xs transition-all ${
+          darkMode 
+            ? 'bg-amber-500/15 border-amber-500/30 text-amber-300' 
+            : 'bg-amber-50 border-amber-200 text-amber-800'
+        }`}
+      >
+        <TrendUp size={13} weight="bold" className="text-amber-400" />
+        <span>{weatherData.highTemp}{weatherData.tempUnit}</span>
+      </span>
 
-      {/* 4. Forecast Trend Statement with Icon before the word (rise/drop/rain/steady) */}
+      <span>and low of</span>
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border shadow-xs transition-all ${
+          darkMode 
+            ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300' 
+            : 'bg-indigo-50 border-indigo-200 text-indigo-800'
+        }`}
+      >
+        <TrendDown size={13} weight="bold" className="text-indigo-400" />
+        <span>{weatherData.lowTemp}{weatherData.tempUnit}</span>
+      </span>
+
+      {/* 5. Humidity or Wind Badge (if available) */}
+      {weatherData.humidity !== undefined && (
+        <>
+          <span>, humidity is at</span>
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border shadow-xs transition-all ${
+              darkMode 
+                ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300' 
+                : 'bg-cyan-50 border-cyan-200 text-cyan-800'
+            }`}
+          >
+            <Drop size={13} weight="fill" className="text-cyan-400" />
+            <span>{weatherData.humidity}%</span>
+          </span>
+        </>
+      )}
+
+      {/* 6. Trend / Rain Trajectory Statement */}
+      <span>, and</span>
       <span className="inline-flex flex-wrap items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
         {weatherData.trend.prefix && <span>{weatherData.trend.prefix}</span>}
-        <span className="inline-flex items-center gap-1">
+        <span
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border ${
+            weatherData.trend.keyword.toLowerCase().includes('rain') || weatherData.trend.prefix.toLowerCase().includes('rain')
+              ? 'bg-sky-500/20 border-sky-500/40 text-sky-300 animate-pulse'
+              : darkMode
+              ? 'bg-white/5 border-white/10 text-slate-300'
+              : 'bg-slate-100 border-slate-200 text-slate-700'
+          }`}
+        >
           <span className="shrink-0">{weatherData.trend.icon}</span>
           <span className={weatherData.trend.keywordClass}>{weatherData.trend.keyword}</span>
         </span>
         {weatherData.trend.suffix && <span>{weatherData.trend.suffix}</span>}
       </span>
+      <span>.</span>
 
       {/* Subtle chevron hint on hover */}
       {onOpenWeatherModal && (
-        <span className="hidden sm:inline-flex items-center gap-0.5 text-[11px] font-semibold text-sky-500/80 group-hover:text-sky-400 group-hover:translate-x-0.5 transition-all ml-1">
-          <span>More</span>
-          <ArrowRight size={12} weight="bold" />
+        <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-sky-400 group-hover:text-sky-300 group-hover:translate-x-0.5 transition-all ml-1">
+          <span>Forecast</span>
+          <ArrowRight size={13} weight="bold" />
         </span>
       )}
     </div>

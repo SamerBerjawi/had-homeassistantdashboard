@@ -100,27 +100,27 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
 
           if (isCleaning) {
             stateLabel = 'Actively Cleaning';
-            stateColor = 'bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/40 animate-pulse';
+            stateColor = 'bg-teal-500/20 text-teal-700 dark:text-teal-300';
             stateIcon = Broom;
           } else if (isReturning) {
             stateLabel = 'Returning to Dock';
-            stateColor = 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 border-cyan-500/30';
+            stateColor = 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-400';
             stateIcon = ArrowArcLeft;
           } else if (isPaused) {
             stateLabel = 'Cleaning Paused';
-            stateColor = 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30';
+            stateColor = 'bg-amber-500/15 text-amber-700 dark:text-amber-400';
             stateIcon = Pause;
           } else if (isError) {
             stateLabel = 'Attention Needed (Error)';
-            stateColor = 'bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-500/40';
+            stateColor = 'bg-rose-500/15 text-rose-700 dark:text-rose-400';
             stateIcon = Warning;
           } else if (isDocked) {
             stateLabel = battery !== undefined && battery < 100 ? 'Docked & Charging' : 'Docked (Standby)';
-            stateColor = 'bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10';
+            stateColor = 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300';
             stateIcon = CheckCircle;
           } else if (isIdle) {
             stateLabel = 'Idle on Standby';
-            stateColor = 'bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10';
+            stateColor = 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300';
             stateIcon = CheckCircle;
           }
 
@@ -129,10 +129,10 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
           return (
             <div
               key={vac.entity_id}
-              className={`p-5 sm:p-6 rounded-3xl border flex flex-col justify-between transition-all duration-200 shadow-xs ${
+              className={`p-5 sm:p-6 rounded-3xl flex flex-col justify-between backdrop-blur-md transition-all duration-200 overflow-hidden isolate shadow-xs ${
                 darkMode
-                  ? 'bg-slate-900/70 border-white/10 text-white hover:bg-slate-900/90'
-                  : 'bg-white border-slate-200 text-slate-900 hover:shadow-md'
+                  ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
+                  : 'bg-white/60 hover:bg-white/80 text-slate-900'
               }`}
             >
               <div className="space-y-4">
@@ -140,15 +140,15 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3.5">
                     <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-xs ${
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xs ${
                         isCleaning
-                          ? 'bg-teal-500/20 text-teal-400 border-teal-500/40'
+                          ? 'bg-teal-500 text-slate-950'
                           : darkMode
-                          ? 'bg-white/5 border-white/10 text-slate-300'
-                          : 'bg-slate-50 border-slate-200 text-slate-700'
+                          ? 'bg-white/10 text-slate-300'
+                          : 'bg-white text-slate-700'
                       }`}
                     >
-                      <Broom size={24} weight="duotone" className={isCleaning ? 'animate-bounce text-teal-400' : ''} />
+                      <Broom size={24} weight="duotone" className={isCleaning ? 'text-slate-950' : ''} />
                     </div>
                     <div>
                       <h4 className="text-base font-bold text-slate-900 dark:text-white truncate">
@@ -160,7 +160,7 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
                     </div>
                   </div>
 
-                  <span className={`px-2.5 py-1 rounded-xl text-xs font-bold border flex items-center gap-1.5 shrink-0 ${stateColor}`}>
+                  <span className={`px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 ${stateColor}`}>
                     <StateIconComponent size={13} weight="bold" />
                     <span>{stateLabel}</span>
                   </span>
@@ -169,7 +169,7 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
                 {/* Telemetry Row: Battery & Fan Speed */}
                 <div className="grid grid-cols-2 gap-2.5 pt-1">
                   {/* Battery Metric */}
-                  <div className="p-3 rounded-2xl bg-slate-100/70 dark:bg-white/3 border border-slate-200/80 dark:border-white/5 flex items-center gap-2.5">
+                  <div className="p-3 rounded-2xl bg-white/70 dark:bg-white/[0.04] flex items-center gap-2.5">
                     <div className="text-emerald-500 dark:text-emerald-400">
                       {battery !== undefined && battery >= 80 ? (
                         <BatteryFull size={20} weight="duotone" />
@@ -188,7 +188,7 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
                   </div>
 
                   {/* Fan Speed / Clean Mode */}
-                  <div className="p-3 rounded-2xl bg-slate-100/70 dark:bg-white/3 border border-slate-200/80 dark:border-white/5 flex items-center gap-2.5">
+                  <div className="p-3 rounded-2xl bg-white/70 dark:bg-white/[0.04] flex items-center gap-2.5">
                     <div className="text-cyan-500 dark:text-cyan-400">
                       <Fan size={20} weight="duotone" className={isCleaning ? 'animate-spin' : ''} />
                     </div>
@@ -203,13 +203,13 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-5 mt-4 border-t border-slate-100 dark:border-white/5 flex items-center gap-2">
+              <div className="pt-5 mt-4 flex items-center gap-2">
                 {isCleaning ? (
                   <button
                     type="button"
                     disabled={isOperating}
                     onClick={() => handleVacuumAction(vac.entity_id, 'pause')}
-                    className="flex-1 py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer active:scale-95"
+                    className="flex-1 py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
                   >
                     <Pause size={15} weight="bold" />
                     <span>Pause</span>
@@ -219,7 +219,7 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
                     type="button"
                     disabled={isOperating}
                     onClick={() => handleVacuumAction(vac.entity_id, 'start')}
-                    className="flex-1 py-2.5 px-3 rounded-xl bg-teal-500 hover:bg-teal-400 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-teal-500/20 transition-all cursor-pointer active:scale-95"
+                    className="flex-1 py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
                   >
                     <Play size={15} weight="bold" />
                     <span>Start Cleaning</span>
@@ -232,7 +232,7 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
                     type="button"
                     disabled={isOperating}
                     onClick={() => handleVacuumAction(vac.entity_id, 'return_to_base')}
-                    className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-200 dark:border-white/10 transition-all cursor-pointer active:scale-95"
+                    className="py-2.5 px-3 rounded-xl bg-white/80 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
                     title="Return to Dock"
                   >
                     <ArrowArcLeft size={15} weight="bold" />
@@ -245,7 +245,7 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
                   type="button"
                   disabled={isOperating}
                   onClick={() => handleVacuumAction(vac.entity_id, 'locate')}
-                  className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-200 dark:border-white/10 transition-all cursor-pointer active:scale-95"
+                  className="py-2.5 px-3 rounded-xl bg-white/80 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
                   title="Locate Robotic Cleaner"
                 >
                   <MapPin size={15} weight="bold" />

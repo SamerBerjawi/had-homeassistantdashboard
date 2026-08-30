@@ -21,15 +21,15 @@ export function HostOverviewSection({
   darkMode = true
 }: HostOverviewSectionProps) {
   const cardStyle =
-    'rounded-2xl border backdrop-blur-md transition-all shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] ' +
+    'rounded-3xl backdrop-blur-md transition-all overflow-hidden isolate shadow-xs ' +
     (darkMode
-      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10'
-      : 'bg-white/70 border-slate-200/80 text-slate-900');
+      ? 'bg-slate-900/60 text-white'
+      : 'bg-white/60 text-slate-900');
 
   const subCardStyle =
-    'flex items-center gap-3 p-2.5 rounded-xl transition-all ' +
+    'flex items-center gap-3 p-2.5 rounded-2xl transition-all ' +
     (darkMode
-      ? 'bg-white/[0.03]'
+      ? 'bg-white/[0.04]'
       : 'bg-slate-900/[0.03]');
 
   return (

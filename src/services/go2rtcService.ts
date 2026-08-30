@@ -239,18 +239,22 @@ export function detectGo2RtcRtspStreams(
     const hasBackchannel = producerUrl.toLowerCase().includes('backchannel');
     const friendlyName = formatStreamFriendlyName(streamName);
 
-    // If an existing real HA camera entity matches camera.<stream_name>, enrich its attributes
+    // If an existing real HA camera entity matches camera.<stream_name>, enrich its attributes and include in go2rtc cameras list
     const matchingExisting = existingEntityMap.get(potentialEntityId) || existingEntityMap.get(lowerStream);
     if (matchingExisting) {
-      matchingExisting.attributes = {
-        ...matchingExisting.attributes,
-        stream_source: 'go2rtc',
-        go2rtc_stream: streamName,
-        is_rtsp_stream: isRtsp,
-        has_two_way_audio: hasBackchannel || matchingExisting.attributes?.has_two_way_audio,
-        stream_type: 'webrtc',
-        frontend_stream_types: ['web_rtc']
+      const enriched: ResolvedEntity = {
+        ...matchingExisting,
+        attributes: {
+          ...matchingExisting.attributes,
+          stream_source: 'go2rtc',
+          go2rtc_stream: streamName,
+          is_rtsp_stream: isRtsp,
+          has_two_way_audio: hasBackchannel || matchingExisting.attributes?.has_two_way_audio,
+          stream_type: 'webrtc',
+          frontend_stream_types: ['web_rtc']
+        }
       };
+      detectedEntities.push(enriched);
       continue;
     }
 
