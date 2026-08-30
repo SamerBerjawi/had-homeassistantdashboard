@@ -141,8 +141,8 @@ export default function PowerSourcesLineChartCard({
   return (
     <div
       className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative flex flex-col justify-between overflow-hidden shadow-2xl ${darkMode
-          ? 'bg-slate-900/80 border-white/10 text-white'
-          : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/80'
+        ? 'bg-slate-900/80 border-white/10 text-white'
+        : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/80'
         }`}
     >
       {/* Ambient background glow */}
@@ -153,8 +153,8 @@ export default function PowerSourcesLineChartCard({
         <div className="flex items-center gap-2.5">
           <div
             className={`p-2 rounded-2xl border ${darkMode
-                ? 'bg-purple-500/15 text-purple-400 border-purple-500/30'
-                : 'bg-purple-50 text-purple-600 border-purple-200'
+              ? 'bg-purple-500/15 text-purple-400 border-purple-500/30'
+              : 'bg-purple-50 text-purple-600 border-purple-200'
               }`}
           >
             <Lightning size={18} weight="fill" />
@@ -175,8 +175,8 @@ export default function PowerSourcesLineChartCard({
             {hasSolar && (
               <div
                 className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${darkMode
-                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                    : 'bg-amber-50 border-amber-200 text-amber-700'
+                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                  : 'bg-amber-50 border-amber-200 text-amber-700'
                   }`}
               >
                 <Sun size={14} weight="fill" />
@@ -186,8 +186,8 @@ export default function PowerSourcesLineChartCard({
 
             <div
               className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${darkMode
-                  ? 'bg-sky-500/15 border-sky-500/30 text-sky-400'
-                  : 'bg-sky-50 border-sky-200 text-sky-700'
+                ? 'bg-sky-500/15 border-sky-500/30 text-sky-400'
+                : 'bg-sky-50 border-sky-200 text-sky-700'
                 }`}
             >
               <Plug size={14} weight="fill" />
@@ -197,8 +197,8 @@ export default function PowerSourcesLineChartCard({
             {hasBattery && (
               <div
                 className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${darkMode
-                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                    : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                  : 'bg-emerald-50 border-emerald-200 text-emerald-700'
                   }`}
               >
                 <BatteryCharging size={14} weight="fill" />
@@ -208,8 +208,8 @@ export default function PowerSourcesLineChartCard({
 
             <div
               className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${darkMode
-                  ? 'bg-purple-500/15 border-purple-500/30 text-purple-400'
-                  : 'bg-purple-50 border-purple-200 text-purple-700'
+                ? 'bg-purple-500/15 border-purple-500/30 text-purple-400'
+                : 'bg-purple-50 border-purple-200 text-purple-700'
                 }`}
             >
               <House size={14} weight="fill" />
@@ -226,12 +226,12 @@ export default function PowerSourcesLineChartCard({
           type="button"
           onClick={() => setShowHome(!showHome)}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${showHome
-              ? darkMode
-                ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
-                : 'bg-purple-50 border-purple-300 text-purple-700 shadow-xs'
-              : darkMode
-                ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
-                : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
+            ? darkMode
+              ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
+              : 'bg-purple-50 border-purple-300 text-purple-700 shadow-xs'
+            : darkMode
+              ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
+              : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
             }`}
         >
           <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-xs" />
@@ -245,12 +245,12 @@ export default function PowerSourcesLineChartCard({
             type="button"
             onClick={() => setShowSolar(!showSolar)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${showSolar
-                ? darkMode
-                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                  : 'bg-amber-50 border-amber-300 text-amber-700 shadow-xs'
-                : darkMode
-                  ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
-                  : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
+              ? darkMode
+                ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                : 'bg-amber-50 border-amber-300 text-amber-700 shadow-xs'
+              : darkMode
+                ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
+                : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
               }`}
           >
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-xs" />
@@ -264,12 +264,12 @@ export default function PowerSourcesLineChartCard({
           type="button"
           onClick={() => setShowGrid(!showGrid)}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${showGrid
-              ? darkMode
-                ? 'bg-sky-500/20 border-sky-500/40 text-sky-300'
-                : 'bg-sky-50 border-sky-300 text-sky-700 shadow-xs'
-              : darkMode
-                ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
-                : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
+            ? darkMode
+              ? 'bg-sky-500/20 border-sky-500/40 text-sky-300'
+              : 'bg-sky-50 border-sky-300 text-sky-700 shadow-xs'
+            : darkMode
+              ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
+              : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
             }`}
         >
           <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-xs" />
@@ -283,12 +283,12 @@ export default function PowerSourcesLineChartCard({
             type="button"
             onClick={() => setShowBattery(!showBattery)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${showBattery
-                ? darkMode
-                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                  : 'bg-emerald-50 border-emerald-300 text-emerald-700 shadow-xs'
-                : darkMode
-                  ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
-                  : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
+              ? darkMode
+                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                : 'bg-emerald-50 border-emerald-300 text-emerald-700 shadow-xs'
+              : darkMode
+                ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
+                : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
               }`}
           >
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs" />

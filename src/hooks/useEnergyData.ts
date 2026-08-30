@@ -218,15 +218,15 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
           ),
           isDailyPeriod
             ? fetchHAEnergyStatistics(
-                undefined,
-                parsed.allStatisticIds,
-                period,
-                targetDate,
-                customRange?.start,
-                customRange?.end,
-                false,
-                '5minute'
-              ).catch(() => ({}))
+              undefined,
+              parsed.allStatisticIds,
+              period,
+              targetDate,
+              customRange?.start,
+              customRange?.end,
+              false,
+              '5minute'
+            ).catch(() => ({}))
             : Promise.resolve(null),
           fetchHAStatisticsMetadata(undefined, parsed.allStatisticIds),
           parsed.solarSources.length > 0
