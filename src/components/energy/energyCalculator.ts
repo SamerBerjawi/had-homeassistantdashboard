@@ -237,6 +237,7 @@ export function calculateEnergyState(
 
   if (solarPower === null) {
     const solarCandidates = [
+      'sensor.mppt_total_input_power',
       'sensor.solaredge_solar_power',
       'sensor.solar_power',
       'sensor.pv_power',
@@ -339,6 +340,15 @@ export function calculateEnergyState(
     boundEntities.batteryPower = `${entityOverrides.batteryDischargingPowerEntity} - ${entityOverrides.batteryChargingPowerEntity}`;
   }
 
+  if (batteryPower === null && states['sensor.battery_charge_discharge_power_inverted']) {
+    const parsed = parsePowerToKW(states['sensor.battery_charge_discharge_power_inverted']);
+    if (parsed !== null) {
+      // Inverted sensor: negative = discharge (>0), positive = charge (<0)
+      batteryPower = -parsed;
+      boundEntities.batteryPower = 'sensor.battery_charge_discharge_power_inverted';
+    }
+  }
+
   if (batteryPower === null) {
     const batteryPowerCandidates = [
       'sensor.tesla_powerwall_flow',
@@ -403,6 +413,15 @@ export function calculateEnergyState(
     const exp = parsePowerToKW(states[entityOverrides.gridExportPowerEntity]) || 0;
     gridPower = imp - exp;
     boundEntities.gridPower = `${entityOverrides.gridImportPowerEntity} - ${entityOverrides.gridExportPowerEntity}`;
+  }
+
+  if (gridPower === null && states['sensor.meter_active_power_inverted']) {
+    const parsed = parsePowerToKW(states['sensor.meter_active_power_inverted']);
+    if (parsed !== null) {
+      // Inverted sensor: negative = import (>0), positive = export (<0)
+      gridPower = -parsed;
+      boundEntities.gridPower = 'sensor.meter_active_power_inverted';
+    }
   }
 
   if (gridPower === null) {

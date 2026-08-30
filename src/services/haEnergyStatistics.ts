@@ -425,14 +425,14 @@ export async function fetchHAEnergyStatistics(
     (!connection && haWebSocketService && !haWebSocketService.isDemo() && haWebSocketService.getStatus() === 'connected');
 
   if (isLive) {
-    // Only query 'change' and 'sum' - NEVER query heavy 'state' for energy statistics (prevents database overload)
+    // Query change, sum, mean, and state to support cumulative energy (kWh) and real-time power rate statistics (W/kW)
     const payload = {
       type: 'recorder/statistics_during_period',
       start_time: timeRange.start,
       end_time: timeRange.end,
       statistic_ids: cleanIds,
       period: periodType,
-      types: ['change', 'sum']
+      types: ['change', 'sum', 'mean', 'state', 'max', 'min']
     };
 
     const fetchPromise = (async (): Promise<HAStatisticsResponse> => {
@@ -498,6 +498,8 @@ function generateSyntheticStatistics(
     sums[id] = 500.0;
   }
 
+  const hourFraction = periodType === '5minute' ? 5 / 60 : 1;
+
   for (let i = 0; i < bucketsCount; i++) {
     const bucketStartMs = startMs + i * stepMs;
     const bucketEndMs = Math.min(endMs, bucketStartMs + stepMs);
@@ -510,7 +512,7 @@ function generateSyntheticStatistics(
     for (const id of statIds) {
       let delta = 0;
 
-      if (id.includes('solar') || id.includes('pv') || id.includes('production')) {
+      if (id.includes('solar') || id.includes('pv') || id.includes('production') || id.includes('mppt')) {
         if (periodType === 'month') {
           const m = date.getMonth();
           delta = 250 + Math.sin((m / 12) * Math.PI) * 450;
@@ -519,7 +521,8 @@ function generateSyntheticStatistics(
         } else {
           if (exactHour >= 6 && exactHour <= 19) {
             const bell = Math.sin(((exactHour - 6) / 13) * Math.PI);
-            delta = Math.max(0, bell * 2.91);
+            const peakPowerKW = 3.5;
+            delta = Math.max(0, bell * peakPowerKW) * hourFraction;
           } else {
             delta = 0;
           }
@@ -530,9 +533,10 @@ function generateSyntheticStatistics(
         } else if (periodType === 'day') {
           delta = 4.2 + Math.sin(day * 0.3) * 2;
         } else {
-          if (exactHour >= 10 && exactHour <= 16) {
+          if (exactHour >= 11 && exactHour <= 15.5) {
             const bell = Math.sin(((exactHour - 6) / 13) * Math.PI);
-            delta = Math.max(0, bell * 1.8);
+            const exportPowerKW = Math.max(0, bell * 1.2 - 0.4);
+            delta = exportPowerKW * hourFraction;
           } else {
             delta = 0;
           }
@@ -543,14 +547,17 @@ function generateSyntheticStatistics(
         } else if (periodType === 'day') {
           delta = 6.5 + Math.cos(day * 0.5) * 1.5;
         } else {
-          delta = 0.08;
+          let importPowerKW = 0.08;
           if (exactHour < 7 || exactHour > 18) {
-            delta = 0.45 + (exactHour >= 19 && exactHour <= 22 ? 0.75 : 0.15);
+            importPowerKW = 0.35 + (exactHour >= 19 && exactHour <= 22 ? 0.45 : 0.1);
           }
+          delta = importPowerKW * hourFraction;
         }
       } else if (id.includes('battery') && (id.includes('charge') || id.includes('in') || id.includes('to'))) {
-        if (exactHour >= 9 && exactHour <= 15 && (periodType === 'hour' || periodType === '5minute')) {
-          delta = 0.95;
+        if (exactHour >= 8.5 && exactHour <= 15.5 && (periodType === 'hour' || periodType === '5minute')) {
+          // Battery charging reaches 2.0 kW as in HA during peak solar absorption
+          const chargePowerKW = exactHour >= 10 && exactHour <= 14 ? 2.0 : 1.4;
+          delta = chargePowerKW * hourFraction;
         } else if (periodType === 'day') {
           delta = 4.5;
         } else if (periodType === 'month') {
@@ -559,25 +566,26 @@ function generateSyntheticStatistics(
           delta = 0;
         }
       } else if (id.includes('battery') && (id.includes('discharge') || id.includes('out') || id.includes('from'))) {
-        if (exactHour >= 18 && exactHour <= 23 && (periodType === 'hour' || periodType === '5minute')) {
-          delta = 0.75;
+        if (exactHour >= 17.5 && exactHour <= 23 && (periodType === 'hour' || periodType === '5minute')) {
+          const dischargePowerKW = exactHour >= 19 && exactHour <= 22 ? 1.2 : 0.6;
+          delta = dischargePowerKW * hourFraction;
         } else if (periodType === 'day') {
           delta = 3.8;
         } else if (periodType === 'month') {
           delta = 105;
         } else {
-          delta = 0.02;
+          delta = 0.01 * hourFraction;
         }
       } else if (id.includes('heat_pump') || id.includes('hvac')) {
-        delta = (exactHour >= 6 && exactHour <= 9 ? 0.75 : 0.35);
+        delta = (exactHour >= 6 && exactHour <= 9 ? 0.75 : 0.35) * hourFraction;
       } else if (id.includes('ev') || id.includes('wallbox') || id.includes('charger')) {
-        delta = (exactHour >= 1 && exactHour <= 4 ? 1.8 : 0);
+        delta = (exactHour >= 1 && exactHour <= 4 ? 1.8 : 0) * hourFraction;
       } else if (id.includes('gas')) {
-        delta = periodType === 'hour' || periodType === '5minute' ? 0.05 : (periodType === 'day' ? 0.8 : 22);
+        delta = (periodType === 'hour' || periodType === '5minute' ? 0.05 * hourFraction : (periodType === 'day' ? 0.8 : 22));
       } else if (id.includes('water')) {
-        delta = periodType === 'hour' || periodType === '5minute' ? 12 : (periodType === 'day' ? 140 : 4200);
+        delta = (periodType === 'hour' || periodType === '5minute' ? 12 * hourFraction : (periodType === 'day' ? 140 : 4200));
       } else {
-        delta = (0.08 + Math.abs(Math.sin(i * 0.2)) * 0.05);
+        delta = (0.08 + Math.abs(Math.sin(i * 0.2)) * 0.05) * hourFraction;
       }
 
       delta = Number(delta.toFixed(4));

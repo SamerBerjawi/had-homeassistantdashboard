@@ -5,6 +5,7 @@
 
 export { default as EnergyPeriodSelector } from './EnergyPeriodSelector';
 export { default as EnergyDistributionCard } from './EnergyDistributionCard';
+export { default as PowerSourcesChart } from './PowerSourcesChart';
 export { default as PowerSourcesLineChartCard } from './PowerSourcesLineChartCard';
 export { default as EnergyUsageGraphCard } from './EnergyUsageGraphCard';
 export { default as SolarProductionGraphCard } from './SolarProductionGraphCard';

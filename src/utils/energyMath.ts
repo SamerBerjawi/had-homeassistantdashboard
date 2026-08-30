@@ -48,13 +48,42 @@ export function computeInstantaneousPower(
   let gasRate: number | null = null;
   let waterRate: number | null = null;
 
-  // 1. Scan from configured sources in prefs if provided
+  // 1. Direct Active Helper Sensor Check (Highest Priority)
+  // Solar Power: sensor.mppt_total_input_power (Always >= 0 kW)
+  if (states['sensor.mppt_total_input_power']) {
+    const v = parsePowerValueToKW(states['sensor.mppt_total_input_power']);
+    if (v !== null) solarPowerKW = Math.max(0, v);
+  }
+
+  // Grid Power Helper: sensor.meter_active_power_inverted
+  // Grid Import (>0) = max(0, -state)
+  // Grid Export (<0) = max(0, state) * -1
+  if (states['sensor.meter_active_power_inverted']) {
+    const v = parsePowerValueToKW(states['sensor.meter_active_power_inverted']);
+    if (v !== null) {
+      gridImportPowerKW = Math.max(0, -v);
+      gridExportPowerKW = Math.max(0, v);
+    }
+  }
+
+  // Battery Power Helper: sensor.battery_charge_discharge_power_inverted
+  // Battery Discharge (>0) = max(0, -state)
+  // Battery Charge (<0) = max(0, state) * -1
+  if (states['sensor.battery_charge_discharge_power_inverted']) {
+    const v = parsePowerValueToKW(states['sensor.battery_charge_discharge_power_inverted']);
+    if (v !== null) {
+      batteryDischargePowerKW = Math.max(0, -v);
+      batteryChargePowerKW = Math.max(0, v);
+    }
+  }
+
+  // 2. Scan from configured sources in prefs if not already resolved
   if (prefs?.energy_sources && Array.isArray(prefs.energy_sources)) {
     for (const src of prefs.energy_sources) {
-      if (src.type === 'solar' && src.stat_rate && states[src.stat_rate]) {
+      if (solarPowerKW === 0 && src.type === 'solar' && src.stat_rate && states[src.stat_rate]) {
         const v = parsePowerValueToKW(states[src.stat_rate]);
         if (v !== null && v >= 0) solarPowerKW += v;
-      } else if (src.type === 'grid') {
+      } else if (gridImportPowerKW === 0 && gridExportPowerKW === 0 && src.type === 'grid') {
         if (src.stat_rate && states[src.stat_rate]) {
           const v = parsePowerValueToKW(states[src.stat_rate]);
           if (v !== null) {
@@ -67,7 +96,7 @@ export function computeInstantaneousPower(
           const v = parseFloat(states[src.stat_soc].state);
           if (!isNaN(v)) batterySoC = Math.round(v);
         }
-        if (src.stat_rate && states[src.stat_rate]) {
+        if (batteryDischargePowerKW === 0 && batteryChargePowerKW === 0 && src.stat_rate && states[src.stat_rate]) {
           const v = parsePowerValueToKW(states[src.stat_rate]);
           if (v !== null) {
             if (v >= 0) batteryDischargePowerKW += v;
@@ -78,13 +107,13 @@ export function computeInstantaneousPower(
     }
   }
 
-  // 2. Fallback heuristic scanner across active states if not found via rate sensors
+  // 3. Fallback heuristic scanner across active states if not found via rate sensors
   if (solarPowerKW === 0 && states) {
     for (const key of Object.keys(states)) {
       const ent = states[key];
       const name = ((ent?.attributes?.friendly_name || key) as string).toLowerCase();
       if (
-        (name.includes('solar') || name.includes('pv') || name.includes('photovoltaic') || key.includes('solar_power') || key.includes('pv_power')) &&
+        (name.includes('solar') || name.includes('pv') || name.includes('photovoltaic') || key.includes('solar_power') || key.includes('pv_power') || key.includes('mppt')) &&
         (ent?.attributes?.device_class === 'power' || ['w', 'kw'].includes((ent?.attributes?.unit_of_measurement || '').toLowerCase()))
       ) {
         const v = parsePowerValueToKW(ent);
@@ -134,8 +163,12 @@ export function computeInstantaneousPower(
   const gridPowerKW = gridImportPowerKW - gridExportPowerKW;
   const batteryPowerKW = batteryDischargePowerKW - batteryChargePowerKW;
 
-  // Home consumption = Solar + Grid Import + Battery Discharge - Grid Export - Battery Charge
-  const homeConsumptionKW = Math.max(0, solarPowerKW + gridImportPowerKW + batteryDischargePowerKW - gridExportPowerKW - batteryChargePowerKW);
+  // Instantaneous Home Consumption (Dashed Line):
+  // Consumption = max(0, Solar + Grid Import + Battery Discharge - |Grid Export| - |Battery Charge|)
+  const homeConsumptionKW = Math.max(
+    0,
+    solarPowerKW + gridImportPowerKW + batteryDischargePowerKW - gridExportPowerKW - batteryChargePowerKW
+  );
 
   return {
     solarPowerKW: Number(solarPowerKW.toFixed(2)),

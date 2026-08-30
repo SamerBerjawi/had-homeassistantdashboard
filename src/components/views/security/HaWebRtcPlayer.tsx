@@ -24,7 +24,7 @@ import {
 } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
-import { getHAHttpBaseUrl } from '../../../services/go2rtcService';
+import { getHAHttpBaseUrl } from '../../../services/haImageService';
 import CameraNoSignalPlaceholder from '../../ui/CameraNoSignalPlaceholder';
 import { haWebSocketService } from '../../../services/haWebSocket';
 import { negotiateGo2RtcWebRtcSession } from '../../../services/go2rtcService';
