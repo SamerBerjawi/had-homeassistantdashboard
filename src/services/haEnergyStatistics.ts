@@ -298,15 +298,10 @@ export async function fetchHAStatisticsMetadata(
     return cachedMap;
   }
 
-  const isLiveClient = haWebSocketService && !haWebSocketService.isDemo();
-  if (isLiveClient) {
-    await waitForConnection(2500);
-  }
-
   const isLive = (connection && (connection.socket?.readyState === WebSocket.OPEN || connection.connected)) ||
-    (!connection && isLiveClient && haWebSocketService.getStatus() === 'connected');
+    (!connection && haWebSocketService && !haWebSocketService.isDemo() && haWebSocketService.getStatus() === 'connected');
 
-  if (isLive) {
+  if (isLive && missingIds.length > 0) {
     try {
       const payload = {
         type: 'recorder/get_statistics_metadata',
@@ -364,13 +359,8 @@ export async function fetchHAEnergySolarForecasts(
     return solarForecastCache.data;
   }
 
-  const isLiveClient = haWebSocketService && !haWebSocketService.isDemo();
-  if (isLiveClient) {
-    await waitForConnection(2500);
-  }
-
   const isLive = (connection && (connection.socket?.readyState === WebSocket.OPEN || connection.connected)) ||
-    (!connection && isLiveClient && haWebSocketService.getStatus() === 'connected');
+    (!connection && haWebSocketService && !haWebSocketService.isDemo() && haWebSocketService.getStatus() === 'connected');
 
   if (isLive) {
     try {
@@ -429,13 +419,8 @@ export async function fetchHAEnergyStatistics(
     return inFlightStatistics.get(cacheKey)!;
   }
 
-  const isLiveClient = haWebSocketService && !haWebSocketService.isDemo();
-  if (isLiveClient) {
-    await waitForConnection(2500);
-  }
-
   const isLive = (connection && (connection.socket?.readyState === WebSocket.OPEN || connection.connected)) ||
-    (!connection && isLiveClient && haWebSocketService.getStatus() === 'connected');
+    (!connection && haWebSocketService && !haWebSocketService.isDemo() && haWebSocketService.getStatus() === 'connected');
 
   if (isLive) {
     // Only query 'change' and 'sum' - NEVER query heavy 'state' for energy statistics (prevents database overload)

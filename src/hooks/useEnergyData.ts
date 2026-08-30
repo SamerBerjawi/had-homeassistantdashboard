@@ -89,53 +89,45 @@ export interface UseEnergyDataResult {
   hasDevices: boolean;
 }
 
+const EMPTY_MODEL = transformEnergyStatistics(
+  EMPTY_ENERGY_PREFERENCES,
+  {},
+  {},
+  null,
+  { currencySymbol: '€', periodType: 'hour', daysInPeriod: 1, states: {} }
+);
+
 export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyDataResult {
   const {
     autoRefreshIntervalMs = 60000,
     initialPeriod = 'day'
   } = options;
 
-  const states = useAutoLayoutStore(useShallow(s => s.states));
-  const isLiveMode = useAutoLayoutStore(s => s.isLiveMode);
-  const connectionStatus = useAutoLayoutStore(s => s.connectionStatus);
+  const states = useAutoLayoutStore(useShallow((s) => s.states));
+  const isLiveMode = useAutoLayoutStore((s) => s.isLiveMode);
+  const connectionStatus = useAutoLayoutStore((s) => s.connectionStatus);
 
   const [period, setPeriodState] = useState<EnergyHistoryPeriod>(initialPeriod);
   const [targetDate, setTargetDate] = useState<Date>(() => new Date());
   const [customRange, setCustomRangeState] = useState<{ start: Date; end: Date } | null>(null);
 
+  const [loadState, setLoadState] = useState<EnergyLoadState>('loading');
+  const [error, setError] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<EnergyPreferences | null>(null);
   const [resolvedIds, setResolvedIds] = useState<ExtractedEnergyStatisticIds | null>(null);
-  const [statsData, setStatsData] = useState<HAStatisticsResponse>({});
-  const [metadata, setMetadata] = useState<Record<string, StatisticsMetaData>>({});
-  const [solarForecasts, setSolarForecasts] = useState<SolarForecastResponse | null>(null);
-
-  const [loadState, setLoadState] = useState<EnergyLoadState>('loading');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isFetchingStats, setIsFetchingStats] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const [model, setModel] = useState<TransformedEnergyModel>(EMPTY_MODEL);
   const [haCurrency, setHaCurrency] = useState<string>('€');
+  const [reloadNonce, setReloadNonce] = useState(0);
 
-  const isMountedRef = useRef(true);
-  const resolvedIdsRef = useRef<ExtractedEnergyStatisticIds | null>(null);
-  const preferencesRef = useRef<EnergyPreferences | null>(null);
-  const fetchLockRef = useRef(false);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  // Set Period with target date reset to today when switching standard periods
+  // Period change resets target date to today
   const setPeriod = useCallback((newPeriod: EnergyHistoryPeriod) => {
     setPeriodState(newPeriod);
     setTargetDate(new Date());
   }, []);
 
-  // Shift Reference Date (< and > navigation)
+  // Step backward / forward
   const shiftPeriod = useCallback((direction: -1 | 1) => {
-    setTargetDate(prev => shiftReferenceDate(period, prev, direction));
+    setTargetDate((prev) => shiftReferenceDate(period, prev, direction));
   }, [period]);
 
   const isAtFutureLimit = useMemo(() => {
@@ -147,193 +139,142 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     setPeriodState('custom');
   }, []);
 
-  // Fetch Home Assistant currency from get_config if connected
-  useEffect(() => {
-    if (isLiveMode && connectionStatus === 'connected' && haWebSocketService && !haWebSocketService.isDemo()) {
-      haWebSocketService.sendRequest<any>('get_config').then(cfg => {
-        if (cfg?.currency && isMountedRef.current) {
-          setHaCurrency(cfg.currency);
-        }
-      }).catch(() => {});
-    }
-  }, [isLiveMode, connectionStatus]);
-
-  // Ingest Energy Preferences
-  const loadPreferences = useCallback(async (): Promise<{
-    prefs: EnergyPreferences;
-    parsed: ExtractedEnergyStatisticIds;
-    isConfigured: boolean;
-  } | null> => {
-    try {
-      const prefs = await fetchHAEnergyPreferences();
-      const isConfigured = isEnergyConfigured(prefs);
-      const parsed = extractEnergyStatisticIds(prefs);
-
-      resolvedIdsRef.current = parsed;
-      preferencesRef.current = prefs;
-
-      if (isMountedRef.current) {
-        setPreferences(prefs);
-        setResolvedIds(parsed);
-        if (!isConfigured && isLiveMode) {
-          setLoadState('unconfigured');
-        }
-      }
-      return { prefs, parsed, isConfigured };
-    } catch (err: any) {
-      if (isMountedRef.current) {
-        setError(err.message || 'Failed to load Home Assistant energy preferences');
-        setLoadState('error');
-      }
-      return null;
-    }
-  }, [isLiveMode]);
-
-  // Fetch Statistics for specific period and date window
-  const loadStatisticsData = useCallback(async (
-    targetPeriod: EnergyHistoryPeriod,
-    refDate: Date,
-    explicitIds?: ExtractedEnergyStatisticIds,
-    bypassCache = false
-  ) => {
-    const activeResolved = explicitIds || resolvedIdsRef.current;
-    if (!activeResolved || activeResolved.allStatisticIds.length === 0) {
-      if (isMountedRef.current) {
-        setIsLoading(false);
-        setIsFetchingStats(false);
-      }
-      return;
-    }
-
-    if (fetchLockRef.current) return;
-    fetchLockRef.current = true;
-
-    if (isMountedRef.current) {
-      setIsFetchingStats(true);
-    }
-
-    try {
-      // 1. Fetch statistics for target period (cached & deduplicated)
-      const stats = await fetchHAEnergyStatistics(
-        undefined,
-        activeResolved.allStatisticIds,
-        targetPeriod,
-        refDate,
-        customRange?.start,
-        customRange?.end,
-        bypassCache
-      );
-
-      // 2. Fetch metadata (cached in memory after first request)
-      const meta = await fetchHAStatisticsMetadata(undefined, activeResolved.allStatisticIds);
-
-      // 3. Fetch solar forecast if solar configured (cached for 15m)
-      let forecast: SolarForecastResponse | null = null;
-      if (activeResolved.solarSources.length > 0) {
-        forecast = await fetchHAEnergySolarForecasts(undefined);
-      }
-
-      if (isMountedRef.current) {
-        setStatsData(stats);
-        if (meta && Object.keys(meta).length > 0) {
-          setMetadata(meta);
-        }
-        if (forecast) {
-          setSolarForecasts(forecast);
-        }
-        setError(null);
-        setLoadState('ready');
-      }
-    } catch (err: any) {
-      console.warn(`[useEnergyData] Failed fetching statistics for ${targetPeriod}:`, err);
-      if (isMountedRef.current) {
-        setError(err.message || `Failed to fetch statistics for ${targetPeriod}`);
-        setLoadState('error');
-      }
-    } finally {
-      fetchLockRef.current = false;
-      if (isMountedRef.current) {
-        setIsFetchingStats(false);
-        setIsLoading(false);
-      }
-    }
-  }, [customRange]);
-
-  // Master initial load and reload trigger
-  const executeFullFetch = useCallback(async (bypassCache = false) => {
-    setIsLoading(true);
-    const prefResult = await loadPreferences();
-    if (prefResult) {
-      if (prefResult.isConfigured || !isLiveMode) {
-        await loadStatisticsData(period, targetDate, prefResult.parsed, bypassCache);
-      } else {
-        setIsLoading(false);
-        setIsFetchingStats(false);
-      }
-    }
-  }, [isLiveMode, loadPreferences, loadStatisticsData, period, targetDate]);
-
-  // Initial mount load
-  useEffect(() => {
-    executeFullFetch(false);
-  }, [isLiveMode, connectionStatus]); // only on mount or connection change
-
-  // Window or Period change load
-  useEffect(() => {
-    if (resolvedIdsRef.current && (isEnergyConfigured(preferencesRef.current) || !isLiveMode)) {
-      loadStatisticsData(period, targetDate, resolvedIdsRef.current, false);
-    }
-  }, [period, targetDate, customRange, loadStatisticsData, isLiveMode]);
-
-  // Background Auto-Refresh (only refreshes if looking at current period and tab is active)
-  useEffect(() => {
-    if (!autoRefreshIntervalMs || autoRefreshIntervalMs <= 0) return;
-    const interval = setInterval(() => {
-      if (
-        document.visibilityState === 'visible' &&
-        resolvedIdsRef.current &&
-        isPeriodAtLimit(period, targetDate) &&
-        (isEnergyConfigured(preferencesRef.current) || !isLiveMode)
-      ) {
-        loadStatisticsData(period, targetDate, resolvedIdsRef.current, true);
-      }
-    }, autoRefreshIntervalMs);
-    return () => clearInterval(interval);
-  }, [autoRefreshIntervalMs, period, targetDate, loadStatisticsData, isLiveMode]);
-
-  const handleRefresh = useCallback(async () => {
-    await executeFullFetch(true);
-  }, [executeFullFetch]);
-
-  // Time Range & Display Label
+  // Time range calculation
   const timeRange = useMemo(() => {
     return computePeriodTimeRange(period, targetDate, customRange?.start, customRange?.end);
   }, [period, targetDate, customRange]);
 
-  // Days in Period for Standing Charges
   const daysInPeriod = useMemo(() => {
     const s = new Date(timeRange.start).getTime();
     const e = new Date(timeRange.end).getTime();
     return Math.max(1, Math.round((e - s) / (24 * 3600 * 1000)));
   }, [timeRange]);
 
-  // Transform Active Energy Domain Model
-  const model: TransformedEnergyModel = useMemo(() => {
-    return transformEnergyStatistics(
-      preferences || EMPTY_ENERGY_PREFERENCES,
-      statsData,
-      metadata,
-      solarForecasts,
-      {
-        currencySymbol: haCurrency,
-        periodType: timeRange.periodType,
-        daysInPeriod,
-        states
-      }
-    );
-  }, [preferences, statsData, metadata, solarForecasts, haCurrency, timeRange.periodType, daysInPeriod, states]);
+  // Fetch Home Assistant currency from get_config
+  useEffect(() => {
+    if (isLiveMode && connectionStatus === 'connected' && haWebSocketService && !haWebSocketService.isDemo()) {
+      haWebSocketService
+        .sendRequest<any>('get_config')
+        .then((cfg) => {
+          if (cfg?.currency) setHaCurrency(cfg.currency);
+        })
+        .catch(() => {});
+    }
+  }, [isLiveMode, connectionStatus]);
 
-  // Instantaneous power telemetry from active entities
+  // -------------------------------------------------------------
+  // Clean, Single-Pass Data Loading (Mirrors HAPulse fast architecture)
+  // -------------------------------------------------------------
+  useEffect(() => {
+    // If live mode but socket not connected yet, wait in loading state
+    if (isLiveMode && connectionStatus !== 'connected') {
+      setLoadState('loading');
+      return;
+    }
+
+    let cancelled = false;
+    setLoadState('loading');
+    setError(null);
+
+    (async () => {
+      try {
+        // 1. Fetch Preferences (energy/get_prefs)
+        const loadedPrefs = await fetchHAEnergyPreferences();
+        if (cancelled) return;
+
+        // 2. Immediate unconfigured check
+        if (isLiveMode && !isEnergyConfigured(loadedPrefs)) {
+          setPreferences(loadedPrefs);
+          setResolvedIds(null);
+          setModel(EMPTY_MODEL);
+          setLoadState('unconfigured');
+          return;
+        }
+
+        const parsed = extractEnergyStatisticIds(loadedPrefs);
+        setPreferences(loadedPrefs);
+        setResolvedIds(parsed);
+
+        if (parsed.allStatisticIds.length === 0) {
+          setModel(EMPTY_MODEL);
+          setLoadState(isLiveMode ? 'unconfigured' : 'ready');
+          return;
+        }
+
+        // 3. Parallel fetch of Statistics, Metadata, and Solar Forecast
+        const [stats, meta, forecast] = await Promise.all([
+          fetchHAEnergyStatistics(
+            undefined,
+            parsed.allStatisticIds,
+            period,
+            targetDate,
+            customRange?.start,
+            customRange?.end
+          ),
+          fetchHAStatisticsMetadata(undefined, parsed.allStatisticIds),
+          parsed.solarSources.length > 0
+            ? fetchHAEnergySolarForecasts(undefined)
+            : Promise.resolve(null)
+        ]);
+
+        if (cancelled) return;
+
+        // 4. Synchronous Snapshot Transformation
+        const currentStates = useAutoLayoutStore.getState().states || {};
+        const computed = transformEnergyStatistics(
+          loadedPrefs,
+          stats,
+          meta,
+          forecast,
+          {
+            currencySymbol: haCurrency,
+            periodType: timeRange.periodType,
+            daysInPeriod,
+            states: currentStates
+          }
+        );
+
+        setModel(computed);
+        setLoadState('ready');
+      } catch (err: any) {
+        if (cancelled) return;
+        console.warn('[useEnergyData] Failed to load energy dashboard:', err);
+        setError(err.message || 'Failed to load energy statistics');
+        setLoadState('error');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isLiveMode,
+    connectionStatus,
+    period,
+    targetDate,
+    customRange,
+    haCurrency,
+    daysInPeriod,
+    timeRange.periodType,
+    reloadNonce
+  ]);
+
+  // Background Auto-Refresh (only when looking at current period and tab is active)
+  useEffect(() => {
+    if (!autoRefreshIntervalMs || autoRefreshIntervalMs <= 0) return;
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible' && isPeriodAtLimit(period, targetDate)) {
+        setReloadNonce((n) => n + 1);
+      }
+    }, autoRefreshIntervalMs);
+    return () => clearInterval(interval);
+  }, [autoRefreshIntervalMs, period, targetDate]);
+
+  const handleRefresh = useCallback(async () => {
+    setReloadNonce((n) => n + 1);
+  }, []);
+
+  // Decoupled Real-Time Instantaneous Power Telemetry (Zero recorder queries)
   const realtime: InstantaneousPowerTelemetry = useMemo(() => {
     return computeInstantaneousPower(states, preferences);
   }, [states, preferences]);
@@ -350,8 +291,8 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     setCustomRange,
 
     loadState,
-    isLoading,
-    isFetchingStats,
+    isLoading: loadState === 'loading',
+    isFetchingStats: loadState === 'loading',
     error,
     refresh: handleRefresh,
     isLive: isLiveMode && connectionStatus === 'connected',

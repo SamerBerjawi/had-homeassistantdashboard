@@ -441,8 +441,7 @@ export async function fetchHAEnergyPreferences(connection?: any): Promise<Energy
 
   // Live WebSocket Service
   if (haWebSocketService && !haWebSocketService.isDemo()) {
-    const isConnected = await waitForConnection(2500);
-    if (isConnected) {
+    if (haWebSocketService.getStatus() === 'connected') {
       try {
         const res = await haWebSocketService.sendRequest<EnergyPreferences>('energy/get_prefs');
         if (res && typeof res === 'object') {
