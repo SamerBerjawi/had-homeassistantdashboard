@@ -82,23 +82,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           haWebSocketService.setDemoMode(false);
           haWebSocketService.connect(tokens.server_url, tokens.access_token);
 
-          // Fetch user profile once connected
-          let user: AuthUser = { id: 'oauth_user', name: 'Home Assistant Admin', isOwner: true };
-          try {
-            user = await fetchHAUserProfile();
-          } catch {}
-
+          // Authenticate immediately to close modal and reveal overview instantly
           setAuthState({
             isAuthenticated: true,
             isDemo: false,
             authMethod: 'oauth',
             haUrl: tokens.server_url,
-            user,
+            user: { id: 'oauth_user', name: 'Home Assistant User', isOwner: true },
             tokens
           });
           setIsAuthModalOpen(false);
           setIsLoading(false);
           setIsInitializing(false);
+
+          // Fetch full user profile in background once connection completes
+          fetchHAUserProfile()
+            .then((user) => {
+              if (isMounted) {
+                setAuthState((prev) => ({ ...prev, user }));
+              }
+            })
+            .catch(() => {});
+
           return;
         }
       } catch (err: any) {
@@ -144,6 +149,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsAuthModalOpen(false);
           setIsLoading(false);
           setIsInitializing(false);
+
+          fetchHAUserProfile()
+            .then((user) => {
+              if (isMounted) {
+                setAuthState((prev) => ({ ...prev, user }));
+              }
+            })
+            .catch(() => {});
+
           return;
         } else if (stored.auth_type === 'llat' && stored.access_token) {
           haWebSocketService.setDemoMode(false);

@@ -146,7 +146,8 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
   private localFallback = new LocalStorageDriver();
 
   public async loadConfig(): Promise<UserDashboardConfig> {
-    let remoteConfig: any = null;
+    let haConfig: any = null;
+    let nasConfig: any = null;
 
     // 1. Try Home Assistant WebSocket user data storage
     if (!haWebSocketService.isDemo()) {
@@ -161,7 +162,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
             key: HA_USER_DATA_KEY
           });
           if (res && res.value !== undefined && res.value !== null) {
-            remoteConfig = typeof res.value === 'string' ? JSON.parse(res.value) : res.value;
+            haConfig = typeof res.value === 'string' ? JSON.parse(res.value) : res.value;
           }
         } catch (wsErr) {
           console.warn('[RemoteStorageDriver] HA WebSocket frontend/get_user_data notice:', wsErr);
@@ -169,8 +170,8 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
       }
     }
 
-    // 2. Try NAS REST backend (/api/config) if HA WebSocket didn't return config
-    if (!remoteConfig && typeof fetch !== 'undefined') {
+    // 2. Try NAS REST backend (/api/config)
+    if (typeof fetch !== 'undefined') {
       try {
         const response = await fetch('/api/config', {
           method: 'GET',
@@ -180,7 +181,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
         if (response.ok) {
           const data = await response.json();
           if (data && data.success && data.config) {
-            remoteConfig = data.config;
+            nasConfig = data.config;
           }
         }
       } catch {
@@ -188,9 +189,17 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
       }
     }
 
+    // Choose the freshest config between HA WebSocket and NAS REST
+    let bestRemote = haConfig;
+    if (nasConfig && typeof nasConfig === 'object') {
+      if (!bestRemote || (nasConfig.updatedAt && (!bestRemote.updatedAt || nasConfig.updatedAt >= bestRemote.updatedAt))) {
+        bestRemote = nasConfig;
+      }
+    }
+
     // 3. If remote found, merge and cache in local storage as reliable backup
-    if (remoteConfig && typeof remoteConfig === 'object') {
-      const merged = mergeConfig(DEFAULT_USER_CONFIG, remoteConfig);
+    if (bestRemote && typeof bestRemote === 'object') {
+      const merged = mergeConfig(DEFAULT_USER_CONFIG, bestRemote);
       try {
         localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(merged));
       } catch {}

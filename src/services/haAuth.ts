@@ -67,6 +67,8 @@ export function getCanonicalClientId(): string {
 /**
  * Get current Redirect URI for OAuth
  */
+let inFlightOAuthPromise: Promise<{ success: boolean; tokens?: HAAuthTokens; error?: string }> | null = null;
+
 export function getHARedirectUri(): string {
   return getCanonicalClientId();
 }
@@ -84,6 +86,13 @@ export function startHAOAuthFlow(serverUrl: string): void {
   sessionStorage.setItem(STORAGE_KEY_PENDING_STATE, state);
   sessionStorage.setItem(STORAGE_KEY_PENDING_CLIENT_ID, clientId);
 
+  try {
+    localStorage.setItem(STORAGE_KEY_PENDING_URL, httpUrl);
+    localStorage.setItem(STORAGE_KEY_PENDING_STATE, state);
+    localStorage.setItem(STORAGE_KEY_PENDING_CLIENT_ID, clientId);
+    localStorage.setItem('had_last_ha_url', httpUrl);
+  } catch {}
+
   const authUrl = `${httpUrl}/auth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}&response_type=code`;
 
   window.location.href = authUrl;
@@ -95,75 +104,107 @@ export function startHAOAuthFlow(serverUrl: string): void {
 export async function handleHAOAuthCallback(): Promise<{ success: boolean; tokens?: HAAuthTokens; error?: string }> {
   if (typeof window === 'undefined') return { success: false };
 
+  // Return existing in-flight promise if already processing
+  if (inFlightOAuthPromise) {
+    return inFlightOAuthPromise;
+  }
+
   const searchParams = new URLSearchParams(window.location.search);
   const code = searchParams.get('code');
   const state = searchParams.get('state');
 
   if (!code) {
+    const existing = getStoredHAAuth();
+    if (existing) {
+      return { success: true, tokens: existing };
+    }
     return { success: false };
   }
 
-  const savedUrl = sessionStorage.getItem(STORAGE_KEY_PENDING_URL) || localStorage.getItem('had_last_ha_url') || 'http://homeassistant.local:8123';
-  const savedState = sessionStorage.getItem(STORAGE_KEY_PENDING_STATE);
-  const savedClientId = sessionStorage.getItem(STORAGE_KEY_PENDING_CLIENT_ID) || getCanonicalClientId();
+  inFlightOAuthPromise = (async () => {
+    try {
+      const savedUrl =
+        sessionStorage.getItem(STORAGE_KEY_PENDING_URL) ||
+        localStorage.getItem(STORAGE_KEY_PENDING_URL) ||
+        localStorage.getItem('had_last_ha_url') ||
+        'http://homeassistant.local:8123';
+      const savedState =
+        sessionStorage.getItem(STORAGE_KEY_PENDING_STATE) ||
+        localStorage.getItem(STORAGE_KEY_PENDING_STATE);
+      const savedClientId =
+        sessionStorage.getItem(STORAGE_KEY_PENDING_CLIENT_ID) ||
+        localStorage.getItem(STORAGE_KEY_PENDING_CLIENT_ID) ||
+        getCanonicalClientId();
 
-  // Clean URL parameters immediately
-  const cleanUrl = window.location.origin + window.location.pathname;
-  window.history.replaceState({}, document.title, cleanUrl);
+      // Validate state if saved
+      if (savedState && state && state !== savedState) {
+        console.warn('[HA Auth] OAuth state mismatch:', { state, savedState });
+      }
 
-  // Validate state if saved
-  if (savedState && state && state !== savedState) {
-    console.warn('[HA Auth] OAuth state mismatch:', { state, savedState });
-  }
+      sessionStorage.removeItem(STORAGE_KEY_PENDING_URL);
+      sessionStorage.removeItem(STORAGE_KEY_PENDING_STATE);
+      sessionStorage.removeItem(STORAGE_KEY_PENDING_CLIENT_ID);
+      try {
+        localStorage.removeItem(STORAGE_KEY_PENDING_URL);
+        localStorage.removeItem(STORAGE_KEY_PENDING_STATE);
+        localStorage.removeItem(STORAGE_KEY_PENDING_CLIENT_ID);
+      } catch {}
 
-  sessionStorage.removeItem(STORAGE_KEY_PENDING_URL);
-  sessionStorage.removeItem(STORAGE_KEY_PENDING_STATE);
-  sessionStorage.removeItem(STORAGE_KEY_PENDING_CLIENT_ID);
+      const { httpUrl, wsUrl } = normalizeHAUrl(savedUrl);
+      const clientId = savedClientId;
 
-  const { httpUrl, wsUrl } = normalizeHAUrl(savedUrl);
-  const clientId = savedClientId;
+      const bodyParams = new URLSearchParams();
+      bodyParams.append('grant_type', 'authorization_code');
+      bodyParams.append('code', code);
+      bodyParams.append('client_id', clientId);
+      bodyParams.append('redirect_uri', clientId);
 
-  try {
-    const bodyParams = new URLSearchParams();
-    bodyParams.append('grant_type', 'authorization_code');
-    bodyParams.append('code', code);
-    bodyParams.append('client_id', clientId);
-    bodyParams.append('redirect_uri', clientId);
+      const tokenEndpoint = `${httpUrl}/auth/token`;
+      const response = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+        },
+        body: bodyParams.toString()
+      });
 
-    const tokenEndpoint = `${httpUrl}/auth/token`;
-    const response = await fetch(tokenEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-      },
-      body: bodyParams.toString()
-    });
+      if (!response.ok) {
+        const errorText = await response.text();
+        return { success: false, error: `Home Assistant Auth error (${response.status}): ${errorText}` };
+      }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return { success: false, error: `Home Assistant Auth error (${response.status}): ${errorText}` };
+      const data = await response.json();
+      const expiresInSec = data.expires_in || 1800;
+      const expiresAt = Date.now() + expiresInSec * 1000;
+
+      const tokens: HAAuthTokens = {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_in: expiresInSec,
+        token_type: data.token_type || 'Bearer',
+        expires_at: expiresAt,
+        server_url: wsUrl,
+        auth_type: 'oauth',
+        client_id: clientId
+      };
+
+      saveStoredHAAuth(tokens);
+
+      // Clean URL parameters only after token is successfully saved
+      try {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      } catch {}
+
+      return { success: true, tokens };
+    } catch (err: any) {
+      return { success: false, error: `Failed to exchange token: ${err.message}` };
+    } finally {
+      inFlightOAuthPromise = null;
     }
+  })();
 
-    const data = await response.json();
-    const expiresInSec = data.expires_in || 1800;
-    const expiresAt = Date.now() + expiresInSec * 1000;
-
-    const tokens: HAAuthTokens = {
-      access_token: data.access_token,
-      refresh_token: data.refresh_token,
-      expires_in: expiresInSec,
-      token_type: data.token_type || 'Bearer',
-      expires_at: expiresAt,
-      server_url: wsUrl,
-      auth_type: 'oauth',
-      client_id: clientId
-    };
-
-    saveStoredHAAuth(tokens);
-    return { success: true, tokens };
-  } catch (err: any) {
-    return { success: false, error: `Failed to exchange token: ${err.message}` };
-  }
+  return inFlightOAuthPromise;
 }
 
 /**

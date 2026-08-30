@@ -329,6 +329,27 @@ export default function SettingsView({
     return saved !== null ? saved === 'true' : true;
   });
 
+  // Keep local settings form controls synchronized when remote config updates
+  useEffect(() => {
+    if (config?.profile) {
+      setProfileData(prev => ({
+        ...prev,
+        displayName: config.profile?.name || prev.displayName,
+        email: config.profile?.email || prev.email,
+        role: (config.profile?.role as any) || prev.role,
+        avatarInitials: config.profile?.avatar || prev.avatarInitials
+      }));
+    }
+    if (config?.preferences) {
+      if (config.preferences.tempUnit) setTempUnit(config.preferences.tempUnit);
+      if (config.preferences.clockFormat) setClockFormat(config.preferences.clockFormat);
+      if (config.preferences.energyTariff !== undefined) setEnergyTariff(config.preferences.energyTariff);
+      if (config.preferences.currencySymbol) setCurrencySymbol(config.preferences.currencySymbol);
+      if (config.preferences.glassBlurLevel) setGlassBlurLevel(config.preferences.glassBlurLevel as any);
+      if (config.preferences.specularHighlight !== undefined) setSpecularHighlight(config.preferences.specularHighlight);
+    }
+  }, [config]);
+
   const handleSavePreferences = () => {
     localStorage.setItem('homz_temp_unit', tempUnit);
     localStorage.setItem('homz_clock_format', clockFormat);
@@ -516,6 +537,13 @@ export default function SettingsView({
     newAreas[mainIdx1] = newAreas[mainIdx2];
     newAreas[mainIdx2] = temp;
     reorderAreas(newAreas);
+    updateConfig(prev => ({
+      ...prev,
+      rooms: {
+        ...(prev.rooms || { hiddenAreas: [], favoriteAreas: [], areaSortOrder: [] }),
+        areaSortOrder: newAreas.map(a => a.area_id)
+      }
+    }));
     addToast?.({
       type: 'info',
       title: 'Area Order Updated',
@@ -526,10 +554,23 @@ export default function SettingsView({
   const handleSaveFloorEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingFloor) return;
-    updateFloor(editingFloor.floor_id, {
+    const floorId = editingFloor.floor_id;
+    const updates = {
       icon: editingFloor.icon || 'Stairs',
       color: editingFloor.color || '#0ea5e9'
-    });
+    };
+    updateFloor(floorId, updates);
+    updateConfig(prev => ({
+      ...prev,
+      floors: {
+        ...(prev.floors || {}),
+        [floorId]: {
+          ...(prev.floors?.[floorId] || {}),
+          ...updates,
+          name: editingFloor.name
+        }
+      }
+    }));
     addToast?.({
       type: 'success',
       title: 'Floor Customization Saved',
@@ -541,10 +582,23 @@ export default function SettingsView({
   const handleSaveAreaEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingArea) return;
-    updateArea(editingArea.area_id, {
+    const areaId = editingArea.area_id;
+    const updates = {
       icon: editingArea.icon || 'Armchair',
       color: editingArea.color || '#6366f1'
-    });
+    };
+    updateArea(areaId, updates);
+    updateConfig(prev => ({
+      ...prev,
+      areas: {
+        ...(prev.areas || {}),
+        [areaId]: {
+          ...(prev.areas?.[areaId] || {}),
+          ...updates,
+          name: editingArea.name
+        }
+      }
+    }));
     addToast?.({
       type: 'success',
       title: 'Area Customization Saved',

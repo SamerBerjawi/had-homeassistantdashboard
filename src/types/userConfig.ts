@@ -52,6 +52,15 @@ export interface UserDashboardConfig {
     role?: string;
     avatar?: string;
   };
+  areas?: Record<string, { icon?: string; color?: string; name?: string; picture?: string; order?: number }>;
+  floors?: Record<string, { icon?: string; color?: string; name?: string; order?: number; level?: number }>;
+  entities?: Record<string, { customName?: string; hidden?: boolean }>;
+  canvas?: {
+    profiles?: Record<string, any>;
+    activeProfileId?: string;
+    pinCode?: string;
+    weatherBackdrop?: string;
+  };
 }
 
 export interface IConfigStorageDriver {
@@ -83,7 +92,7 @@ export interface ConfigContextType {
 
 export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
   version: 1,
-  updatedAt: new Date().toISOString(),
+  updatedAt: '1970-01-01T00:00:00.000Z',
   theme: {
     accentColor: '#38bdf8', // sky-400
     glassOpacity: 0.75,

@@ -20,6 +20,7 @@ import {
   LocalStorageDriver 
 } from '../services/configStorageService';
 import { useAuth } from './AuthContext';
+import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
 
@@ -47,19 +48,20 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setDriverType(dtype);
     setDriverName(dname);
 
+    const applyToSubsystems = (nextConfig: UserDashboardConfig) => {
+      try {
+        useAutoLayoutStore.getState().applyConfigCustomizations(nextConfig);
+      } catch {}
+    };
+
     const loadData = async (silent = false) => {
       if (!silent) setIsLoading(true);
       try {
         const loaded = await driver.loadConfig();
-        if (isMounted) {
-          setConfig((prev) => {
-            // Only update if newer or first load
-            if (!prev || !prev.updatedAt || loaded.updatedAt >= prev.updatedAt) {
-              return loaded;
-            }
-            return prev;
-          });
+        if (isMounted && loaded) {
+          setConfig(loaded);
           setLastSaved(loaded.updatedAt);
+          applyToSubsystems(loaded);
         }
       } catch (err) {
         console.error('[ConfigProvider] Error loading user configuration:', err);
@@ -98,6 +100,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (event.data?.type === 'config_saved' && event.data.config && isMounted) {
           setConfig(event.data.config);
           setLastSaved(event.data.config.updatedAt);
+          applyToSubsystems(event.data.config);
         }
       };
     }
@@ -106,6 +109,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (e?.detail && isMounted) {
         setConfig(e.detail);
         setLastSaved(e.detail.updatedAt);
+        applyToSubsystems(e.detail);
       }
     };
     window.addEventListener('had_config_updated' as any, handleLocalUpdated);

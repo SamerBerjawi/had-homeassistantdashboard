@@ -110,6 +110,7 @@ export interface AutoLayoutStoreState {
   addArea: (area: Partial<HAArea>) => void;
   deleteFloor: (floorId: string) => void;
   deleteArea: (areaId: string) => void;
+  applyConfigCustomizations: (config: any) => void;
 
   // Notification & Alert Management
   nativeNotifications: HANativePersistentNotification[];
@@ -445,6 +446,13 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           isLoading: false,
           error: null
         });
+        // Check if cached config has custom area/floor/entity overrides
+        try {
+          const cached = typeof window !== 'undefined' ? localStorage.getItem('had_user_dashboard_config_v1') : null;
+          if (cached) {
+            get().applyConfigCustomizations(JSON.parse(cached));
+          }
+        } catch {}
         get().recomputeGraph();
       },
       onNativeNotificationsLoaded: (notifications, repairs) => {
@@ -1018,6 +1026,62 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         areas: remainingAreas,
         rawAreas: remainingAreas,
         entityRegistry: updatedRegistry
+      };
+    });
+    get().recomputeGraph();
+  },
+
+  applyConfigCustomizations: (config: any) => {
+    if (!config || typeof config !== 'object') return;
+    set(prev => {
+      let changed = false;
+      let newAreas = [...prev.areas];
+      let newFloors = [...prev.floors];
+      let newResolved = { ...prev.resolvedEntities };
+
+      if (config.areas && typeof config.areas === 'object') {
+        newAreas = newAreas.map(a => {
+          const custom = config.areas[a.area_id];
+          if (custom) {
+            changed = true;
+            return { ...a, ...custom };
+          }
+          return a;
+        });
+      }
+
+      if (config.floors && typeof config.floors === 'object') {
+        newFloors = newFloors.map(f => {
+          const custom = config.floors[f.floor_id];
+          if (custom) {
+            changed = true;
+            return { ...f, ...custom };
+          }
+          return f;
+        });
+      }
+
+      if (config.entities && typeof config.entities === 'object') {
+        for (const [id, custom] of Object.entries(config.entities as Record<string, any>)) {
+          if (newResolved[id] && custom) {
+            changed = true;
+            newResolved[id] = {
+              ...newResolved[id],
+              name: custom.customName || newResolved[id].name,
+              hidden: custom.hidden !== undefined ? custom.hidden : newResolved[id].hidden
+            };
+          }
+        }
+      }
+
+      if (!changed) return prev;
+
+      return {
+        areas: newAreas,
+        rawAreas: newAreas,
+        floors: newFloors,
+        rawFloors: newFloors,
+        resolvedEntities: newResolved
       };
     });
     get().recomputeGraph();
