@@ -151,7 +151,7 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="w-full">
         <PowerSourcesLineChartCard
-          buckets={buckets}
+          buckets={model.powerBuckets || model.buckets}
           realtime={realtime}
           hasSolar={hasSolar}
           hasGrid={hasGrid}

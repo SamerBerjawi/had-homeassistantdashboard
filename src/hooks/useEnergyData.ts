@@ -78,6 +78,7 @@ export interface UseEnergyDataResult {
   totals: TransformedEnergyTotals;
   financials: TransformedFinancials;
   buckets: TransformedEnergyBucket[];
+  powerBuckets: TransformedEnergyBucket[];
   devices: TransformedDevice[];
   untrackedKwh: number;
   untrackedPercentage: number;
@@ -201,16 +202,32 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
           return;
         }
 
-        // 3. Parallel fetch of Statistics, Metadata, and Solar Forecast
-        const [stats, meta, forecast] = await Promise.all([
+        // 3. Parallel fetch of Statistics (both period-based and 5-minute for high-res power), Metadata, and Solar Forecast
+        const isDailyPeriod = timeRange.periodType === 'hour' || period === 'day' || period === 'today' || period === 'yesterday';
+
+        const [stats, stats5min, meta, forecast] = await Promise.all([
           fetchHAEnergyStatistics(
             undefined,
             parsed.allStatisticIds,
             period,
             targetDate,
             customRange?.start,
-            customRange?.end
+            customRange?.end,
+            false,
+            timeRange.periodType
           ),
+          isDailyPeriod
+            ? fetchHAEnergyStatistics(
+                undefined,
+                parsed.allStatisticIds,
+                period,
+                targetDate,
+                customRange?.start,
+                customRange?.end,
+                false,
+                '5minute'
+              ).catch(() => ({}))
+            : Promise.resolve(null),
           fetchHAStatisticsMetadata(undefined, parsed.allStatisticIds),
           parsed.solarSources.length > 0
             ? fetchHAEnergySolarForecasts(undefined)
@@ -233,6 +250,27 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
             states: currentStates
           }
         );
+
+        // Transform 5-minute statistics for PowerSourcesLineChartCard if available
+        let powerBuckets = computed.buckets;
+        if (stats5min && Object.keys(stats5min).length > 0) {
+          const computed5min = transformEnergyStatistics(
+            loadedPrefs,
+            stats5min,
+            meta,
+            forecast,
+            {
+              currencySymbol: haCurrency,
+              periodType: '5minute',
+              daysInPeriod,
+              states: currentStates
+            }
+          );
+          if (computed5min.buckets.length > 0) {
+            powerBuckets = computed5min.buckets;
+          }
+        }
+        computed.powerBuckets = powerBuckets;
 
         setModel(computed);
         setLoadState('ready');
@@ -306,6 +344,7 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     totals: model.totals,
     financials: model.financials,
     buckets: model.buckets,
+    powerBuckets: model.powerBuckets || model.buckets,
     devices: model.devices,
     untrackedKwh: model.untrackedKwh,
     untrackedPercentage: model.untrackedPercentage,

@@ -396,7 +396,8 @@ export async function fetchHAEnergyStatistics(
   referenceDate: Date = new Date(),
   customStart?: Date,
   customEnd?: Date,
-  bypassCache = false
+  bypassCache = false,
+  explicitPeriodType?: '5minute' | 'hour' | 'day' | 'month'
 ): Promise<HAStatisticsResponse> {
   const cleanIds = Array.from(new Set(statisticIds.filter(Boolean))).sort();
   if (cleanIds.length === 0) {
@@ -404,7 +405,8 @@ export async function fetchHAEnergyStatistics(
   }
 
   const timeRange = computePeriodTimeRange(period, referenceDate, customStart, customEnd);
-  const cacheKey = `${timeRange.periodType}_${timeRange.start}_${timeRange.end}_${cleanIds.join(',')}`;
+  const periodType = explicitPeriodType || timeRange.periodType;
+  const cacheKey = `${periodType}_${timeRange.start}_${timeRange.end}_${cleanIds.join(',')}`;
 
   // 1. Check in-memory cache
   if (!bypassCache) {
@@ -429,7 +431,7 @@ export async function fetchHAEnergyStatistics(
       start_time: timeRange.start,
       end_time: timeRange.end,
       statistic_ids: cleanIds,
-      period: timeRange.periodType,
+      period: periodType,
       types: ['change', 'sum']
     };
 
@@ -463,7 +465,7 @@ export async function fetchHAEnergyStatistics(
   }
 
   // Synthetic preview generator used exclusively in offline demo mode
-  return generateSyntheticStatistics(cleanIds, timeRange.start, timeRange.end, timeRange.periodType);
+  return generateSyntheticStatistics(cleanIds, timeRange.start, timeRange.end, periodType);
 }
 
 // -------------------------------------------------------------
@@ -501,6 +503,8 @@ function generateSyntheticStatistics(
     const bucketEndMs = Math.min(endMs, bucketStartMs + stepMs);
     const date = new Date(bucketStartMs);
     const hour = date.getHours();
+    const minute = date.getMinutes();
+    const exactHour = hour + minute / 60;
     const day = date.getDate();
 
     for (const id of statIds) {
@@ -513,9 +517,9 @@ function generateSyntheticStatistics(
         } else if (periodType === 'day') {
           delta = 14.5 + Math.sin(day * 0.4) * 6;
         } else {
-          if (hour >= 6 && hour <= 19) {
-            const bell = Math.sin(((hour - 6) / 13) * Math.PI);
-            delta = Math.max(0, bell * (3.8 + Math.sin(i * 0.4) * 0.6));
+          if (exactHour >= 6 && exactHour <= 19) {
+            const bell = Math.sin(((exactHour - 6) / 13) * Math.PI);
+            delta = Math.max(0, bell * 2.91);
           } else {
             delta = 0;
           }
@@ -526,8 +530,8 @@ function generateSyntheticStatistics(
         } else if (periodType === 'day') {
           delta = 4.2 + Math.sin(day * 0.3) * 2;
         } else {
-          if (hour >= 10 && hour <= 16) {
-            const bell = Math.sin(((hour - 6) / 13) * Math.PI);
+          if (exactHour >= 10 && exactHour <= 16) {
+            const bell = Math.sin(((exactHour - 6) / 13) * Math.PI);
             delta = Math.max(0, bell * 1.8);
           } else {
             delta = 0;
@@ -539,14 +543,13 @@ function generateSyntheticStatistics(
         } else if (periodType === 'day') {
           delta = 6.5 + Math.cos(day * 0.5) * 1.5;
         } else {
-          if (hour < 7 || hour > 18) {
-            delta = 0.45 + (hour >= 19 && hour <= 22 ? 0.75 : 0.15);
-          } else {
-            delta = 0.08;
+          delta = 0.08;
+          if (exactHour < 7 || exactHour > 18) {
+            delta = 0.45 + (exactHour >= 19 && exactHour <= 22 ? 0.75 : 0.15);
           }
         }
       } else if (id.includes('battery') && (id.includes('charge') || id.includes('in') || id.includes('to'))) {
-        if (hour >= 9 && hour <= 15 && periodType === 'hour') {
+        if (exactHour >= 9 && exactHour <= 15 && (periodType === 'hour' || periodType === '5minute')) {
           delta = 0.95;
         } else if (periodType === 'day') {
           delta = 4.5;
@@ -556,7 +559,7 @@ function generateSyntheticStatistics(
           delta = 0;
         }
       } else if (id.includes('battery') && (id.includes('discharge') || id.includes('out') || id.includes('from'))) {
-        if (hour >= 18 && hour <= 23 && periodType === 'hour') {
+        if (exactHour >= 18 && exactHour <= 23 && (periodType === 'hour' || periodType === '5minute')) {
           delta = 0.75;
         } else if (periodType === 'day') {
           delta = 3.8;
@@ -566,25 +569,25 @@ function generateSyntheticStatistics(
           delta = 0.02;
         }
       } else if (id.includes('heat_pump') || id.includes('hvac')) {
-        delta = periodType === 'hour' ? (0.35 + (hour >= 6 && hour <= 9 ? 0.4 : 0)) : (periodType === 'day' ? 3.2 : 90);
+        delta = (exactHour >= 6 && exactHour <= 9 ? 0.75 : 0.35);
       } else if (id.includes('ev') || id.includes('wallbox') || id.includes('charger')) {
-        delta = periodType === 'hour' ? (hour >= 1 && hour <= 4 ? 1.8 : 0) : (periodType === 'day' ? 4.5 : 130);
+        delta = (exactHour >= 1 && exactHour <= 4 ? 1.8 : 0);
       } else if (id.includes('gas')) {
-        delta = periodType === 'hour' ? 0.05 : (periodType === 'day' ? 0.8 : 22);
+        delta = periodType === 'hour' || periodType === '5minute' ? 0.05 : (periodType === 'day' ? 0.8 : 22);
       } else if (id.includes('water')) {
-        delta = periodType === 'hour' ? 12 : (periodType === 'day' ? 140 : 4200);
+        delta = periodType === 'hour' || periodType === '5minute' ? 12 : (periodType === 'day' ? 140 : 4200);
       } else {
-        delta = periodType === 'hour' ? (0.08 + Math.abs(Math.sin(i)) * 0.05) : (periodType === 'day' ? 1.1 : 32);
+        delta = (0.08 + Math.abs(Math.sin(i * 0.2)) * 0.05);
       }
 
-      delta = Number(delta.toFixed(3));
+      delta = Number(delta.toFixed(4));
       sums[id] += delta;
 
       result[id].push({
         start: bucketStartMs,
         end: bucketEndMs,
         change: delta,
-        sum: Number(sums[id].toFixed(3)),
+        sum: Number(sums[id].toFixed(4)),
         state: delta
       });
     }

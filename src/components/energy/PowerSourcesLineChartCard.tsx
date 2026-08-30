@@ -13,10 +13,11 @@ import {
   Eye,
   EyeSlash
 } from '@phosphor-icons/react';
+import { curveNatural } from '@visx/curve';
 import { TransformedEnergyBucket } from '../../services/energyDataTransformer';
 import { InstantaneousPowerTelemetry } from '../../utils/energyMath';
-import { LineChart } from '../charts/line-chart';
-import { Line } from '../charts/line';
+import { AreaChart } from '../charts/area-chart';
+import { Area } from '../charts/area';
 import { Grid } from '../charts/grid';
 import { XAxis } from '../charts/x-axis';
 import { YAxis } from '../charts/y-axis';
@@ -46,23 +47,87 @@ export default function PowerSourcesLineChartCard({
   const [showHome, setShowHome] = useState(true);
 
   // Transform buckets into Net lines matching Home Assistant's Power Chart:
+  // Transform buckets into Net lines matching Home Assistant's Power Chart:
   // - Net Grid: Import (+) / Export (-)
   // - Net Battery: Discharge (+) / Charge (-)
   // - Solar: Production (+)
   // - Home: Consumption (+)
   const chartData = useMemo(() => {
-    return buckets.map((b) => {
-      const netGrid = Number(((b.gridImport || 0) - (b.gridExport || 0)).toFixed(2));
-      const netBattery = Number(((b.batteryDischarge || 0) - (b.batteryCharge || 0)).toFixed(2));
+    if (buckets.length === 0) return [];
 
-      return {
-        date: new Date(b.startMs),
-        solar: Number((b.solar || 0).toFixed(2)),
-        netGrid,
-        netBattery,
-        homeConsumption: Number((b.homeConsumption || 0).toFixed(2)),
-      };
+    const now = Date.now();
+    const isToday = buckets.some((b) => {
+      const d = new Date(b.startMs);
+      const today = new Date();
+      return d.toDateString() === today.toDateString();
     });
+
+    // When viewing today, only show data points up to the current 5-minute bucket so the chart does not artificially drop to 0 in the future
+    const activeBuckets = isToday
+      ? buckets.filter((b) => b.startMs <= now + 5 * 60 * 1000)
+      : buckets;
+
+    if (activeBuckets.length === 0) return [];
+
+    const n = activeBuckets.length;
+    const firstDurationMs = activeBuckets[0].endMs - activeBuckets[0].startMs;
+    const is5Min = firstDurationMs < 600000; // < 10 minutes = 5-min buckets
+
+    // Convert bucket energy measurements (kWh) to true continuous Power (kW)
+    // For 5-minute buckets, we calculate the continuous power rate using a 15-minute centered rolling window
+    // (window energy sum in kWh / 0.25 hours = sum * 4 kW), which accurately absorbs coarse pulse intervals
+    // and produces exact matching power readings (e.g. 2.91 kW peak).
+    const computePowerSeries = (accessor: (b: TransformedEnergyBucket) => number) => {
+      if (!is5Min) {
+        return activeBuckets.map((b) => Number(accessor(b).toFixed(2)));
+      }
+
+      const result: number[] = new Array(n);
+      for (let i = 0; i < n; i++) {
+        let windowSum = 0;
+        let windowHours = 0;
+
+        // Centered 3-point window [i-1, i, i+1]
+        for (let offset = -1; offset <= 1; offset++) {
+          const idx = i + offset;
+          if (idx >= 0 && idx < n) {
+            const b = activeBuckets[idx];
+            const durHours = (b.endMs - b.startMs) / 3600000;
+            windowSum += accessor(b);
+            windowHours += durHours > 0 ? durHours : 5 / 60;
+          }
+        }
+
+        const kw = windowHours > 0 ? windowSum / windowHours : 0;
+        result[i] = Number(kw.toFixed(2));
+      }
+
+      return result;
+    };
+
+    const solars = computePowerSeries((b) => b.solar || 0);
+    const homes = computePowerSeries((b) => b.homeConsumption || 0);
+    const grids = computePowerSeries((b) => (b.gridImport || 0) - (b.gridExport || 0));
+    const batteries = computePowerSeries((b) => (b.batteryDischarge || 0) - (b.batteryCharge || 0));
+
+    return activeBuckets.map((b, i) => ({
+      date: new Date(b.startMs),
+      solar: solars[i],
+      homeConsumption: homes[i],
+      netGrid: grids[i],
+      netBattery: batteries[i],
+    }));
+  }, [buckets]);
+
+  // Compute fixed 24h xDomain across the day for continuous scale alignment
+  const xDomain = useMemo<[Date, Date] | undefined>(() => {
+    if (buckets.length === 0) return undefined;
+    const firstTime = buckets[0].startMs;
+    const dStart = new Date(firstTime);
+    dStart.setHours(0, 0, 0, 0);
+    const dEnd = new Date(firstTime);
+    dEnd.setHours(23, 59, 59, 999);
+    return [dStart, dEnd];
   }, [buckets]);
 
   // Real-time net values
@@ -99,7 +164,7 @@ export default function PowerSourcesLineChartCard({
               Power Sources
             </h3>
             <p className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              Combined net flows matching Home Assistant (Import/Discharge + vs Export/Charge -)
+              5-minute resolution power flows matching Home Assistant (Import/Discharge + vs Export/Charge -)
             </p>
           </div>
         </div>
@@ -233,16 +298,17 @@ export default function PowerSourcesLineChartCard({
         )}
       </div>
 
-      {/* Main Line Chart Area */}
+      {/* Main Area Chart Area */}
       <div className="w-full h-64 sm:h-72 relative z-10">
         {chartData.length === 0 ? (
           <div className="w-full h-full flex items-center justify-center text-xs text-slate-500 font-medium">
             No telemetry recorded for this period
           </div>
         ) : (
-          <LineChart
+          <AreaChart
             data={chartData}
             xDataKey="date"
+            xDomain={xDomain}
             className="w-full h-full"
             margin={{ top: 25, right: 20, bottom: 42, left: 50 }}
           >
@@ -254,41 +320,61 @@ export default function PowerSourcesLineChartCard({
             <YAxis label="kW" numTicks={5} formatValue={(v) => `${v.toFixed(1)}`} />
             <XAxis
               label="Time"
-              numTicks={Math.min(10, chartData.length)}
+              numTicks={8}
               formatValue={(d) => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false })}
             />
 
             {showHome && (
-              <Line
+              <Area
                 dataKey="homeConsumption"
                 stroke="#a855f7"
+                fill="#a855f7"
+                fillOpacity={darkMode ? 0.28 : 0.18}
+                gradientToOpacity={0.0}
                 strokeWidth={2.5}
+                curve={curveNatural}
+                baselineValue={0}
               />
             )}
             {hasSolar && showSolar && (
-              <Line
+              <Area
                 dataKey="solar"
                 stroke="#f59e0b"
+                fill="#f59e0b"
+                fillOpacity={darkMode ? 0.28 : 0.18}
+                gradientToOpacity={0.0}
                 strokeWidth={2.2}
+                curve={curveNatural}
+                baselineValue={0}
               />
             )}
             {showGrid && (
-              <Line
+              <Area
                 dataKey="netGrid"
                 stroke="#38bdf8"
+                fill="#38bdf8"
+                fillOpacity={darkMode ? 0.24 : 0.15}
+                gradientToOpacity={0.0}
                 strokeWidth={2.2}
+                curve={curveNatural}
+                baselineValue={0}
               />
             )}
             {hasBattery && showBattery && (
-              <Line
+              <Area
                 dataKey="netBattery"
                 stroke="#10b981"
+                fill="#10b981"
+                fillOpacity={darkMode ? 0.24 : 0.15}
+                gradientToOpacity={0.0}
                 strokeWidth={2.2}
+                curve={curveNatural}
+                baselineValue={0}
               />
             )}
 
             <ChartTooltip />
-          </LineChart>
+          </AreaChart>
         )}
       </div>
     </div>
