@@ -86,53 +86,94 @@ export default function SolarProductionGraphCard({
         </div>
       )}
 
-      {/* Bar Chart Area */}
-      <div className="relative w-full h-56 sm:h-64 pt-4 pb-6 flex items-end">
+      {/* Bar Chart Area with Y-Axis and X-Axis */}
+      <div className="relative w-full h-56 sm:h-64 pt-1 pb-2 flex flex-col justify-between">
         {buckets.length === 0 ? (
           <div className="w-full h-full flex items-center justify-center text-xs text-slate-500 font-medium">
             No solar production recorded for this period
           </div>
         ) : (
-          <div className="w-full h-full flex items-end justify-between gap-1 sm:gap-1.5">
-            {buckets.map((bucket, idx) => {
-              const solar = bucket.solar || 0;
-              const forecast = bucket.solarForecast || 0;
-              const barHeightPct = Math.min(100, Math.max(solar > 0 ? 3 : 0, (solar / maxSolar) * 100));
-              const forecastHeightPct = Math.min(100, Math.max(forecast > 0 ? 3 : 0, (forecast / maxSolar) * 100));
-
-              return (
-                <div
-                  key={bucket.startMs || idx}
-                  className="flex-1 h-full flex flex-col justify-end items-center group relative cursor-pointer"
-                  onMouseEnter={() => setHoveredBucket(bucket)}
-                  onMouseLeave={() => setHoveredBucket(null)}
-                >
-                  {/* Forecast Line Marker */}
-                  {hasForecast && forecast > 0 && (
-                    <div
-                      className="absolute w-full max-w-[32px] border-t-2 border-dashed border-amber-400 z-10"
-                      style={{ bottom: `${forecastHeightPct}%` }}
-                    />
-                  )}
-
-                  {/* Solar Production Bar */}
-                  <div
-                    className="w-full max-w-[28px] rounded-t-lg bg-gradient-to-t from-amber-600 to-amber-400 transition-all duration-300 group-hover:brightness-125 shadow-xs"
-                    style={{ height: `${barHeightPct}%` }}
-                  />
-
-                  {/* X-Axis Tick Label */}
-                  {(buckets.length <= 12 || idx % Math.ceil(buckets.length / 10) === 0) && (
-                    <span
-                      className={`absolute -bottom-5 text-[9px] font-mono font-bold whitespace-nowrap ${darkMode ? 'text-slate-400' : 'text-slate-600'
-                        }`}
-                    >
-                      {bucket.label}
-                    </span>
-                  )}
+          <div className="w-full h-full flex flex-col justify-between">
+            <div className="w-full flex-1 flex gap-2 relative">
+              {/* Left Y-Axis Scale */}
+              <div className="w-10 sm:w-12 flex-shrink-0 flex flex-col justify-between select-none relative pointer-events-none pb-5">
+                {/* Y-Axis Label / Unit */}
+                <div className={`text-[10px] font-bold uppercase tracking-wider text-right pr-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  kWh
                 </div>
-              );
-            })}
+
+                {/* Y-Axis Ticks */}
+                <div className="flex-1 relative flex flex-col justify-between">
+                  <span className={`text-[9px] sm:text-[10px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {maxSolar >= 10 ? maxSolar.toFixed(0) : maxSolar.toFixed(1)}
+                  </span>
+                  <span className={`text-[9px] sm:text-[10px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    {(maxSolar * 0.5) >= 10 ? (maxSolar * 0.5).toFixed(0) : (maxSolar * 0.5).toFixed(1)}
+                  </span>
+                  <span className={`text-[9px] sm:text-[10px] font-mono font-bold text-right pr-1 leading-none ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    0.0
+                  </span>
+                </div>
+              </div>
+
+              {/* Main Chart Area with Bars and Grid Lines */}
+              <div className="flex-1 h-full flex flex-col justify-end relative pb-5">
+                {/* Horizontal Grid lines */}
+                <div className="absolute inset-0 pointer-events-none flex flex-col justify-between pb-5">
+                  <div className={`w-full border-t border-dashed ${darkMode ? 'border-white/5' : 'border-slate-200'}`} />
+                  <div className={`w-full border-t border-dashed ${darkMode ? 'border-white/5' : 'border-slate-200'}`} />
+                  <div className={`w-full h-px ${darkMode ? 'bg-white/20' : 'bg-slate-300'} z-10`} />
+                </div>
+
+                {/* Bars */}
+                <div className="w-full h-full flex items-end justify-between gap-1 sm:gap-1.5 relative z-10">
+                  {buckets.map((bucket, idx) => {
+                    const solar = bucket.solar || 0;
+                    const forecast = bucket.solarForecast || 0;
+                    const barHeightPct = Math.min(100, Math.max(solar > 0 ? 3 : 0, (solar / maxSolar) * 100));
+                    const forecastHeightPct = Math.min(100, Math.max(forecast > 0 ? 3 : 0, (forecast / maxSolar) * 100));
+
+                    return (
+                      <div
+                        key={bucket.startMs || idx}
+                        className="flex-1 h-full flex flex-col justify-end items-center group relative cursor-pointer"
+                        onMouseEnter={() => setHoveredBucket(bucket)}
+                        onMouseLeave={() => setHoveredBucket(null)}
+                      >
+                        {/* Forecast Line Marker */}
+                        {hasForecast && forecast > 0 && (
+                          <div
+                            className="absolute w-full max-w-[32px] border-t-2 border-dashed border-amber-400 z-10"
+                            style={{ bottom: `${forecastHeightPct}%` }}
+                          />
+                        )}
+
+                        {/* Solar Production Bar */}
+                        <div
+                          className="w-full max-w-[28px] rounded-t-lg bg-gradient-to-t from-amber-600 to-amber-400 transition-all duration-300 group-hover:brightness-125 shadow-xs"
+                          style={{ height: `${barHeightPct}%` }}
+                        />
+
+                        {/* X-Axis Tick Label */}
+                        {(buckets.length <= 12 || idx % Math.ceil(buckets.length / 10) === 0) && (
+                          <span
+                            className={`absolute -bottom-5 text-[9px] font-mono font-bold whitespace-nowrap ${darkMode ? 'text-slate-400' : 'text-slate-600'
+                              }`}
+                          >
+                            {bucket.label}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* X-Axis Label */}
+            <div className={`w-full text-center text-[10px] font-bold uppercase tracking-wider select-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              Time
+            </div>
           </div>
         )}
       </div>

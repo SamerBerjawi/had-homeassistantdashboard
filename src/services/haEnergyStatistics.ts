@@ -80,7 +80,7 @@ export function computePeriodTimeRange(
 
   if (period === 'yesterday') {
     const start = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - 1, 0, 0, 0, 0);
-    const end   = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - 1, 23, 59, 59, 999);
+    const end = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - 1, 23, 59, 59, 999);
     const label = start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     return {
       start: start.toISOString(),

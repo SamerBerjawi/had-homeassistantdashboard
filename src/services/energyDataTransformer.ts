@@ -694,3 +694,131 @@ export function transformEnergyStatistics(
     hasDevices
   };
 }
+
+// ---------------------------------------------------------------------------
+// 5-Minute Power Statistics Transformer (Matches Home Assistant Power Graph)
+// ---------------------------------------------------------------------------
+
+export function transformPowerStatistics(
+  prefs: EnergyPreferences,
+  stats: HAStatisticsResponse,
+  metadata: Record<string, StatisticsMetaData> = {}
+): TransformedEnergyBucket[] {
+  const extracted = extractEnergyStatisticIds(prefs);
+  const timestampsSet = new Set<number>();
+  const statBucketMap = new Map<string, Map<number, number>>();
+
+  for (const id of extracted.allStatisticIds) {
+    const entries = stats[id];
+    const bucketMap = new Map<number, number>();
+    statBucketMap.set(id, bucketMap);
+
+    if (Array.isArray(entries)) {
+      for (const entry of entries) {
+        const raw = entry.start;
+        const start = typeof raw === 'number'
+          ? (raw > 1e11 ? raw : raw * 1000)
+          : new Date(raw).getTime();
+        if (!isNaN(start)) {
+          const normalizedMs = Math.round(start / (5 * 60 * 1000)) * (5 * 60 * 1000);
+          timestampsSet.add(normalizedMs);
+          const chg = typeof entry.change === 'number' ? Math.max(0, entry.change) : 0;
+          bucketMap.set(normalizedMs, chg);
+        }
+      }
+    }
+  }
+
+  const sortedTimestamps = Array.from(timestampsSet).sort((a, b) => a - b);
+  if (sortedTimestamps.length === 0) return [];
+
+  const getChangeAtTime = (statId: string, timeMs: number): number => {
+    const map = statBucketMap.get(statId);
+    if (!map) return 0;
+    return map.get(timeMs) || 0;
+  };
+
+  const buckets: TransformedEnergyBucket[] = [];
+
+  for (const timeMs of sortedTimestamps) {
+    const d = new Date(timeMs);
+    const label = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+
+    // 5-minute interval kWh change converted to average power in kW (* 12)
+    const POWER_MULT = 12;
+
+    let solarKW = 0;
+    for (const src of extracted.solarSources) {
+      const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
+      solarKW += getChangeAtTime(src.statId, timeMs) * mult * POWER_MULT;
+    }
+
+    let gridImportKW = 0;
+    for (const src of extracted.gridImport) {
+      const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
+      gridImportKW += getChangeAtTime(src.statId, timeMs) * mult * POWER_MULT;
+    }
+
+    let gridExportKW = 0;
+    for (const src of extracted.gridExport) {
+      const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
+      gridExportKW += getChangeAtTime(src.statId, timeMs) * mult * POWER_MULT;
+    }
+
+    let batteryChargeKW = 0;
+    for (const src of extracted.batteryCharging) {
+      const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
+      batteryChargeKW += getChangeAtTime(src.statId, timeMs) * mult * POWER_MULT;
+    }
+
+    let batteryDischargeKW = 0;
+    for (const src of extracted.batteryDischarging) {
+      const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
+      batteryDischargeKW += getChangeAtTime(src.statId, timeMs) * mult * POWER_MULT;
+    }
+
+    // Instantaneous Power Flows matching Home Assistant exactly:
+    // Consumption = Solar + Net Grid (Import - Export) + Net Battery (Discharge - Charge)
+    const netGridKW = gridImportKW - gridExportKW;
+    const netBatteryKW = batteryDischargeKW - batteryChargeKW;
+    let homeConsumptionKW = Math.max(0, solarKW + netGridKW + netBatteryKW);
+
+    if (extracted.solarSources.length === 0 && extracted.batteryCharging.length === 0) {
+      homeConsumptionKW = gridImportKW;
+    }
+
+    const solarToGrid = Math.min(solarKW, gridExportKW);
+    const solarToBattery = Math.min(Math.max(0, solarKW - solarToGrid), batteryChargeKW);
+    const solarToHome = Math.max(0, solarKW - solarToGrid - solarToBattery);
+    const gridToBattery = Math.max(0, batteryChargeKW - solarToBattery);
+    const gridToHome = Math.max(0, gridImportKW - gridToBattery);
+    const batteryToGrid = Math.max(0, gridExportKW - solarToGrid);
+    const batteryToHome = Math.max(0, batteryDischargeKW - batteryToGrid);
+
+    buckets.push({
+      startMs: timeMs,
+      endMs: timeMs + 5 * 60 * 1000,
+      label,
+      isoDate: d.toISOString(),
+      solar: Number(solarKW.toFixed(2)),
+      gridImport: Number(gridImportKW.toFixed(2)),
+      gridExport: Number(gridExportKW.toFixed(2)),
+      batteryCharge: Number(batteryChargeKW.toFixed(2)),
+      batteryDischarge: Number(batteryDischargeKW.toFixed(2)),
+      solarToHome: Number(solarToHome.toFixed(2)),
+      solarToGrid: Number(solarToGrid.toFixed(2)),
+      solarToBattery: Number(solarToBattery.toFixed(2)),
+      gridToHome: Number(gridToHome.toFixed(2)),
+      gridToBattery: Number(gridToBattery.toFixed(2)),
+      batteryToHome: Number(batteryToHome.toFixed(2)),
+      batteryToGrid: Number(batteryToGrid.toFixed(2)),
+      homeConsumption: Number(homeConsumptionKW.toFixed(2)),
+      gasUsage: 0,
+      waterUsage: 0,
+      deviceValues: {},
+      solarForecast: null
+    });
+  }
+
+  return buckets;
+}

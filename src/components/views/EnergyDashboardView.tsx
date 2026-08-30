@@ -64,9 +64,8 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
     return (
       <div className="w-full flex-1 flex flex-col items-center justify-center py-16 px-4">
         <div
-          className={`p-6 rounded-3xl border max-w-md w-full text-center space-y-4 ${
-            darkMode ? 'bg-rose-500/10 border-rose-500/30 text-white' : 'bg-rose-50 border-rose-200 text-slate-900'
-          }`}
+          className={`p-6 rounded-3xl border max-w-md w-full text-center space-y-4 ${darkMode ? 'bg-rose-500/10 border-rose-500/30 text-white' : 'bg-rose-50 border-rose-200 text-slate-900'
+            }`}
         >
           <WarningCircle size={36} className="text-rose-500 mx-auto" />
           <h3 className="text-base font-extrabold">Failed to Load Energy Statistics</h3>

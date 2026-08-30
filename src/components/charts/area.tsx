@@ -42,6 +42,8 @@ export interface AreaProps {
   stroke?: string;
   /** Stroke width. Default: 2 */
   strokeWidth?: number;
+  /** Value on the Y axis to close the area towards (e.g. 0). Defaults to 0 */
+  baselineValue?: number;
   /** Curve function. Default: curveMonotoneX */
   curve?: CurveFactory;
   /** Whether to animate the area. Default: true */
@@ -140,6 +142,7 @@ export function Area({
   fillOpacity = 0.4,
   stroke,
   strokeWidth = 2,
+  baselineValue = 0,
   curve = curveMonotoneX,
   animate = true,
   showLine = true,
@@ -253,6 +256,7 @@ export function Area({
           fill={areaFill}
           x={(d) => xScale(xAccessor(d)) ?? 0}
           y={getY}
+          y0={() => yScale(baselineValue) ?? yScale.range()[0]}
           yScale={yScale}
         />
       ) : null}

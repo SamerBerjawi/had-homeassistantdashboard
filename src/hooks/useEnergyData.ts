@@ -158,7 +158,7 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
         .then((cfg) => {
           if (cfg?.currency) setHaCurrency(cfg.currency);
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [isLiveMode, connectionStatus]);
 
