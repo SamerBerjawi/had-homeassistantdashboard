@@ -862,6 +862,11 @@ export default function SettingsView({
       error: res.error
     });
     if (res.success) {
+      const clean = go2RtcUrlInput.trim();
+      if (typeof window !== 'undefined' && clean) {
+        localStorage.setItem('homz_go2rtc_url', clean);
+        window.dispatchEvent(new CustomEvent('go2rtc_updated'));
+      }
       addToast?.({
         type: 'success',
         title: 'go2rtc Online',

@@ -271,7 +271,7 @@ export default function SecurityBadgesBar({
         } ${activeFilter === 'cameras' ? 'ring-2 ring-cyan-400/50' : ''}`}
       >
         <VideoCamera size={16} weight="duotone" className="text-cyan-600 dark:text-cyan-400 shrink-0" />
-        <span>{cameraEntities.length || 4} Live Feeds</span>
+        <span>{cameraEntities.length} {cameraEntities.length === 1 ? 'Live Feed' : 'Live Feeds'}</span>
       </button>
     </div>
   );

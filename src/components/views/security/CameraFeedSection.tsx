@@ -18,6 +18,7 @@ import HaWebRtcPlayer from './HaWebRtcPlayer';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { getCameraMotionStatus, captureAndDownloadSnapshot } from '../../../services/cameraIntegrationService';
 import CameraNoSignalPlaceholder from '../../ui/CameraNoSignalPlaceholder';
+import { isSurveillanceCamera } from '../../../lib/entityClassifiers';
 
 interface CameraFeedSectionProps {
   darkMode?: boolean;
@@ -36,7 +37,9 @@ export default function CameraFeedSection({
   const [areaFilter, setAreaFilter] = useState<string>('all');
   const [snapshottingId, setSnapshottingId] = useState<string | null>(null);
 
-  const activeCameras = cameraEntities;
+  const activeCameras = React.useMemo(() => {
+    return cameraEntities.filter(isSurveillanceCamera);
+  }, [cameraEntities]);
 
   // Dynamically derive filters matching the actual loaded camera feeds
   const filterTabs = React.useMemo(() => {

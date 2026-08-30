@@ -219,11 +219,12 @@ export function detectGo2RtcRtspStreams(
 
   const { httpUrl } = getGo2RtcBaseUrls(serverUrl);
   // Collect existing HA camera entity IDs in lower case
-  const existingEntityIds = new Set(
-    existingCameras
-      .filter(c => !c.entity_id.startsWith('go2rtc.'))
-      .map(c => c.entity_id.toLowerCase())
-  );
+  const existingEntityMap = new Map<string, ResolvedEntity>();
+  existingCameras
+    .filter(c => !c.entity_id.startsWith('go2rtc.'))
+    .forEach(c => {
+      existingEntityMap.set(c.entity_id.toLowerCase(), c);
+    });
 
   const detectedEntities: ResolvedEntity[] = [];
 
@@ -233,15 +234,25 @@ export function detectGo2RtcRtspStreams(
     const lowerStream = streamName.toLowerCase();
     const potentialEntityId = `camera.${lowerStream}`;
 
-    // Skip only if an existing real HA camera entity matches camera.<stream_name>
-    if (existingEntityIds.has(potentialEntityId) || existingEntityIds.has(lowerStream)) {
-      continue;
-    }
-
     const producerUrl = getPrimaryProducerUrl(streamInfo);
     const isRtsp = hasRtspProducer(streamInfo) || producerUrl.toLowerCase().includes('rtsp');
     const hasBackchannel = producerUrl.toLowerCase().includes('backchannel');
     const friendlyName = formatStreamFriendlyName(streamName);
+
+    // If an existing real HA camera entity matches camera.<stream_name>, enrich its attributes
+    const matchingExisting = existingEntityMap.get(potentialEntityId) || existingEntityMap.get(lowerStream);
+    if (matchingExisting) {
+      matchingExisting.attributes = {
+        ...matchingExisting.attributes,
+        stream_source: 'go2rtc',
+        go2rtc_stream: streamName,
+        is_rtsp_stream: isRtsp,
+        has_two_way_audio: hasBackchannel || matchingExisting.attributes?.has_two_way_audio,
+        stream_type: 'webrtc',
+        frontend_stream_types: ['web_rtc']
+      };
+      continue;
+    }
 
     // Build synthetic ResolvedEntity for the detected stream
     const syntheticCamera: ResolvedEntity = {

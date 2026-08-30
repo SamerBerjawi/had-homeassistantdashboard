@@ -150,8 +150,6 @@ export function classifyBinarySensors(binarySensors: ResolvedEntity[]): Classifi
       windowSensors.push(sensor);
     } else if (isMotionSensor(sensor)) {
       motionSensors.push(sensor);
-    } else if (isLeakSensor(sensor)) {
-      leakSensors.push(sensor);
     } else if (isSmokeSensor(sensor)) {
       smokeSensors.push(sensor);
     } else if (isOtherContactSensor(sensor)) {
@@ -167,4 +165,37 @@ export function classifyBinarySensors(binarySensors: ResolvedEntity[]): Classifi
     smokeSensors,
     otherContactSensors
   };
+}
+
+/**
+ * Determines if a camera entity is a real security/surveillance camera,
+ * filtering out robot vacuum map renderers, cleaning trajectories, and generic static maps.
+ */
+export function isSurveillanceCamera(cam: { attributes?: Record<string, any>; entity_id: string; name?: string }): boolean {
+  const id = (cam.entity_id || '').toLowerCase();
+  const name = ((cam.name || cam.attributes?.friendly_name || '') as string).toLowerCase();
+  const dc = ((cam.attributes?.device_class || '') as string).toLowerCase();
+  const model = ((cam.attributes?.model_name || '') as string).toLowerCase();
+
+  // Filter out vacuum floor maps and cleaning trajectory cameras
+  if (
+    dc === 'map' ||
+    dc === 'vacuum_map' ||
+    id.endsWith('_map') ||
+    id.includes('_cleaning_map') ||
+    id.includes('valetudo') ||
+    id.includes('roborock_map') ||
+    id.includes('dreame_map') ||
+    (id.includes('vacuum') && (id.includes('map') || id.includes('camera'))) ||
+    (name.includes('vacuum') && name.includes('map')) ||
+    name.endsWith(' map') ||
+    name.includes('cleaning map') ||
+    name.includes('floor map') ||
+    model.includes('vacuum') ||
+    model.includes('robot')
+  ) {
+    return false;
+  }
+
+  return true;
 }

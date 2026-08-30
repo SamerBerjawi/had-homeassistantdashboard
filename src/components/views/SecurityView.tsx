@@ -18,7 +18,7 @@ import {
   Columns
 } from '@phosphor-icons/react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
-import { classifyBinarySensors } from '../../lib/entityClassifiers';
+import { classifyBinarySensors, isSurveillanceCamera } from '../../lib/entityClassifiers';
 import { ResolvedEntity } from '../../types';
 import { haWebSocketService } from '../../services/haWebSocket';
 import { fetchGo2RtcStreams, detectGo2RtcRtspStreams } from '../../services/go2rtcService';
@@ -60,7 +60,11 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
   const [webRtcCapabilities, setWebRtcCapabilities] = useState<Record<string, boolean>>({});
   const [go2RtcCameras, setGo2RtcCameras] = useState<ResolvedEntity[]>([]);
 
-  const rawCameras: ResolvedEntity[] = useMemo(() => domainGroups['camera'] || [], [domainGroups]);
+  // Filter raw cameras to only real surveillance cameras (excluding vacuum floor maps)
+  const rawCameras: ResolvedEntity[] = useMemo(() => {
+    const all = domainGroups['camera'] || [];
+    return all.filter(isSurveillanceCamera);
+  }, [domainGroups]);
 
   // Query go2rtc directly for any configured RTSP streams that lack an explicit HA camera entity
   useEffect(() => {
@@ -159,52 +163,8 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
     const locks: ResolvedEntity[] = domainGroups['lock'] || [];
     const users: ResolvedEntity[] = [...(domainGroups['person'] || []), ...(domainGroups['device_tracker'] || [])];
 
-    // Filter cameras for WebRTC (go2rtc) capability with safety allowlist override
-    const eligibleCameras = allCameras.filter((cam) => {
-      // Streams sourced directly from go2rtc or RTSP streams are always eligible
-      if (
-        cam.attributes?.stream_source === 'go2rtc' ||
-        cam.entity_id.startsWith('go2rtc.') ||
-        cam.attributes?.is_rtsp_stream
-      ) {
-        return true;
-      }
-
-      // Manual allow-list override from localStorage
-      if (typeof window !== 'undefined') {
-        try {
-          const saved = localStorage.getItem('homz_webrtc_camera_allowlist');
-          if (saved) {
-            const list: string[] = JSON.parse(saved);
-            if (list.includes(cam.entity_id)) return true;
-          }
-        } catch {
-          // ignore
-        }
-      }
-
-      // Check queried capability response
-      if (webRtcCapabilities[cam.entity_id] !== undefined) {
-        return webRtcCapabilities[cam.entity_id];
-      }
-
-      // In demo mode, all cameras are eligible
-      if (haWebSocketService.isDemo()) {
-        return true;
-      }
-
-      // Fallback attributes & platform check
-      if (
-        cam.attributes?.frontend_stream_types?.includes('web_rtc') ||
-        cam.attributes?.stream_type === 'webrtc' ||
-        (cam as any).platform === 'go2rtc'
-      ) {
-        return true;
-      }
-
-      // Pending capability check: keep visible until capability result arrives
-      return true;
-    });
+    // Include all detected and configured cameras (HA cameras + go2rtc streams)
+    const cameraList = allCameras;
 
     const {
       doorSensors: doors,
@@ -221,7 +181,7 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
       alarmEntities: alarms,
       activeAlarm: activeAlarmEntity,
       lockEntities: locks,
-      cameraEntities: eligibleCameras,
+      cameraEntities: cameraList,
       userEntities: users,
       doorSensors: doors,
       windowSensors: windows,
@@ -231,7 +191,7 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
       openDoors: doors.filter((d) => d.state === 'on'),
       openWindows: windows.filter((w) => w.state === 'on')
     };
-  }, [domainGroups, selectedAlarmEntityId, rawCameras, webRtcCapabilities]);
+  }, [domainGroups, selectedAlarmEntityId, allCameras, webRtcCapabilities]);
 
   const totalSecurityEntities = 
     alarmEntities.length + 
