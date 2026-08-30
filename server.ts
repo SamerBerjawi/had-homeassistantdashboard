@@ -300,91 +300,214 @@ async function startServer() {
     next();
   });
 
-  // Ensure persistent NAS storage folders exist
-  const dataDir = process.env.DATA_DIR || path.join(process.cwd(), 'data');
-  const assetsDir = path.join(dataDir, 'assets');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+  // Environment Config for NAS Persistent Storage
+  const configDir = process.env.DASHBOARD_CONFIG_DIR || 
+    (process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'config') : path.join(process.cwd(), 'data', 'config'));
+  const assetsDir = process.env.DASHBOARD_ASSETS_DIR || 
+    (process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'assets') : path.join(process.cwd(), 'data', 'assets'));
+  const configFilePath = path.join(configDir, 'dashboard-config.json');
+
+  // Check and initialize persistent NAS storage folders with one-time warnings on failure
+  let isConfigStorageWritable = true;
+  let isAssetsStorageWritable = true;
+
+  try {
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+    fs.accessSync(configDir, fs.constants.W_OK);
+  } catch (err: any) {
+    isConfigStorageWritable = false;
+    console.warn(`[NAS Storage Warning] DASHBOARD_CONFIG_DIR "${configDir}" is not writable or reachable: ${err.message}. Config endpoints will return service unavailable errors.`);
   }
-  if (!fs.existsSync(assetsDir)) {
-    fs.mkdirSync(assetsDir, { recursive: true });
+
+  try {
+    if (!fs.existsSync(assetsDir)) {
+      fs.mkdirSync(assetsDir, { recursive: true });
+    }
+    fs.accessSync(assetsDir, fs.constants.W_OK);
+  } catch (err: any) {
+    isAssetsStorageWritable = false;
+    console.warn(`[NAS Storage Warning] DASHBOARD_ASSETS_DIR "${assetsDir}" is not writable or reachable: ${err.message}. Asset upload endpoints will return service unavailable errors.`);
   }
 
   // Payload Limit Middleware (allows asset sync and large configs)
   app.use(express.json({ limit: '15mb' }));
 
   // Static Assets Directory for NAS uploaded vehicle PNGs / brand logos
-  app.use('/data/assets', express.static(assetsDir));
+  app.use('/api/assets', express.static(assetsDir, { maxAge: '30d' }));
+  app.use('/data/assets', express.static(assetsDir, { maxAge: '30d' }));
 
   // Health check endpoint
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', serverTime: new Date().toISOString() });
   });
 
-  // NAS REST Configuration Persistence API
-  const configFilePath = path.join(dataDir, 'config.json');
+  // In-process write lock queue to serialize concurrent config file writes
+  let configWriteQueue: Promise<any> = Promise.resolve();
+  function withConfigWriteLock<T>(fn: () => Promise<T>): Promise<T> {
+    const next = configWriteQueue.then(fn, fn);
+    configWriteQueue = next.then(() => {}, () => {});
+    return next;
+  }
 
-  app.get('/api/config', (req, res) => {
+  // Config validation helper
+  function isValidDashboardConfig(body: any): boolean {
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return false;
+    }
+    const keys = Object.keys(body);
+    if (keys.length === 0) {
+      return false;
+    }
+    if (body.version !== undefined && typeof body.version !== 'number') {
+      return false;
+    }
+    if (body.updatedAt !== undefined && typeof body.updatedAt !== 'string') {
+      return false;
+    }
+    if (body.theme !== undefined && (typeof body.theme !== 'object' || Array.isArray(body.theme) || body.theme === null)) {
+      return false;
+    }
+    if (body.mobility !== undefined && (typeof body.mobility !== 'object' || Array.isArray(body.mobility) || body.mobility === null)) {
+      return false;
+    }
+    return true;
+  }
+
+  // NAS REST Configuration Persistence API
+  app.get('/api/config', async (req, res) => {
+    if (!isConfigStorageWritable) {
+      return res.status(503).json({
+        success: false,
+        error: 'Dashboard configuration storage directory is not writable or reachable'
+      });
+    }
+
     try {
+      // Check primary file dashboard-config.json
       if (fs.existsSync(configFilePath)) {
-        const raw = fs.readFileSync(configFilePath, 'utf-8');
+        const raw = await fs.promises.readFile(configFilePath, 'utf-8');
         const parsed = JSON.parse(raw);
         return res.json({ success: true, config: parsed });
       }
-      return res.json({ success: true, config: null });
+
+      // Legacy fallback check for ./data/config.json if migrating
+      const legacyPath = path.join(path.dirname(configDir), 'config.json');
+      if (fs.existsSync(legacyPath)) {
+        const raw = await fs.promises.readFile(legacyPath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        return res.json({ success: true, config: parsed });
+      }
+
+      // First run: file not found
+      return res.status(404).json({
+        success: false,
+        message: 'Config not found'
+      });
     } catch (err: any) {
-      console.error('[NAS Config] Error reading config:', err);
+      console.error('[NAS Config] Error reading persistent config:', err);
       return res.status(500).json({ success: false, error: 'Failed to read persistent config' });
     }
   });
 
-  app.post('/api/config', (req, res) => {
+  app.post('/api/config', async (req, res) => {
+    if (!isConfigStorageWritable) {
+      return res.status(503).json({
+        success: false,
+        error: 'Dashboard configuration storage directory is not writable or reachable'
+      });
+    }
+
+    const incomingConfig = req.body;
+    if (!isValidDashboardConfig(incomingConfig)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid config payload: expected JSON object with dashboard configuration'
+      });
+    }
+
     try {
-      const incomingConfig = req.body;
-      if (!incomingConfig || typeof incomingConfig !== 'object') {
-        return res.status(400).json({ success: false, error: 'Invalid config payload' });
-      }
-      fs.writeFileSync(configFilePath, JSON.stringify(incomingConfig, null, 2), 'utf-8');
+      await withConfigWriteLock(async () => {
+        if (!fs.existsSync(configDir)) {
+          await fs.promises.mkdir(configDir, { recursive: true });
+        }
+
+        const tempFile = path.join(
+          configDir,
+          `.dashboard-config.json.tmp.${process.pid}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+        );
+        const payloadString = JSON.stringify(incomingConfig, null, 2);
+
+        await fs.promises.writeFile(tempFile, payloadString, 'utf-8');
+        await fs.promises.rename(tempFile, configFilePath);
+      });
+
       return res.json({ success: true, config: incomingConfig });
     } catch (err: any) {
-      console.error('[NAS Config] Error saving config:', err);
+      console.error('[NAS Config] Error saving persistent config:', err);
       return res.status(500).json({ success: false, error: 'Failed to save persistent config' });
     }
   });
 
   // NAS Custom Asset Upload API (vehicle PNGs / brand logos)
-  app.post('/api/assets', (req, res) => {
+  const MAX_ASSET_SIZE_BYTES = 5 * 1024 * 1024; // 5MB limit
+
+  app.post('/api/assets', async (req, res) => {
+    if (!isAssetsStorageWritable) {
+      return res.status(503).json({
+        success: false,
+        error: 'Assets storage directory is not writable or reachable'
+      });
+    }
+
     try {
-      const { dataUrl, key, filename } = req.body;
+      const { dataUrl, key } = req.body;
       if (!dataUrl || typeof dataUrl !== 'string') {
         return res.status(400).json({ success: false, error: 'Missing or invalid dataUrl' });
       }
 
-      // Parse base64 dataUrl (e.g. data:image/png;base64,...)
-      const match = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      // Parse base64 DataURL (e.g. data:image/png;base64,...)
+      const match = dataUrl.match(/^data:([A-Za-z0-9-+\/]+);base64,(.+)$/);
       if (!match) {
         return res.status(400).json({ success: false, error: 'Invalid base64 DataURL format' });
       }
 
-      const mimeType = match[1];
+      const mimeType = match[1].toLowerCase();
       const base64Data = match[2];
       const buffer = Buffer.from(base64Data, 'base64');
 
+      // Cap upload size
+      if (buffer.length > MAX_ASSET_SIZE_BYTES) {
+        return res.status(413).json({
+          success: false,
+          error: `Asset size exceeds maximum limit of 5MB (${(buffer.length / (1024 * 1024)).toFixed(2)} MB)`
+        });
+      }
+
       let ext = 'png';
       if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = 'jpg';
-      if (mimeType.includes('svg')) ext = 'svg';
-      if (mimeType.includes('webp')) ext = 'webp';
+      else if (mimeType.includes('svg')) ext = 'svg';
+      else if (mimeType.includes('webp')) ext = 'webp';
+      else if (mimeType.includes('gif')) ext = 'gif';
+      else if (mimeType.includes('avif')) ext = 'avif';
 
-      const safeKey = (key || 'asset').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const safeName = filename 
-        ? filename.replace(/[^a-zA-Z0-9._-]/g, '_')
-        : `${safeKey}_${Date.now()}.${ext}`;
-      
-      const targetPath = path.join(assetsDir, safeName);
-      fs.writeFileSync(targetPath, buffer);
+      // Sanitize key and generate safe unique filename to avoid path traversal
+      const safeKey = (key || 'asset').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
+      const uniqueFilename = `${safeKey}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
 
-      const publicUrl = `/data/assets/${safeName}`;
-      return res.json({ success: true, url: publicUrl, filename: safeName });
+      if (!fs.existsSync(assetsDir)) {
+        await fs.promises.mkdir(assetsDir, { recursive: true });
+      }
+
+      const targetPath = path.join(assetsDir, uniqueFilename);
+      const tempFile = path.join(assetsDir, `.tmp-${uniqueFilename}`);
+
+      await fs.promises.writeFile(tempFile, buffer);
+      await fs.promises.rename(tempFile, targetPath);
+
+      const publicUrl = `/api/assets/${uniqueFilename}`;
+      return res.json({ success: true, url: publicUrl, filename: uniqueFilename });
     } catch (err: any) {
       console.error('[NAS Assets] Error saving asset:', err);
       return res.status(500).json({ success: false, error: 'Failed to save asset to persistent volume' });

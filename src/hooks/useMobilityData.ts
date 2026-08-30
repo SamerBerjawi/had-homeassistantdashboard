@@ -767,47 +767,79 @@ export function useMobilityData() {
   }, [bikeMetrics.controls?.refreshButtonId]);
 
   // -------------------------------------------------------------
+  // -------------------------------------------------------------
   // Custom Asset Persistence
   // -------------------------------------------------------------
-  const saveCustomAsset = useCallback((
+  const uploadAssetToNas = async (dataUrl: string, key: string): Promise<string> => {
+    if (!dataUrl || !dataUrl.startsWith('data:')) return dataUrl;
+    try {
+      const response = await fetch('/api/assets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl, key }),
+        signal: AbortSignal.timeout(8000)
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.success && data.url) {
+          return data.url;
+        }
+      }
+    } catch (err) {
+      console.warn('[useMobilityData] Asset upload to /api/assets failed, falling back to base64:', err);
+    }
+    return dataUrl;
+  };
+
+  const saveCustomAsset = useCallback(async (
     type: 'car_image' | 'car_logo' | 'bike_image' | 'bike_logo',
     base64Data: string
   ) => {
     try {
+      // Immediate local state update for instant UI feedback
       if (type === 'car_image') {
         localStorage.setItem(STORAGE_KEYS.CAR_IMAGE, base64Data);
         setCustomAssets((prev) => ({ ...prev, carImage: base64Data }));
-        updateConfig((prev) => ({
-          mobility: {
-            ...prev.mobility,
-            car: { ...prev.mobility.car, vehicleImageUrl: base64Data }
-          }
-        }));
       } else if (type === 'car_logo') {
         localStorage.setItem(STORAGE_KEYS.CAR_LOGO, base64Data);
         setCustomAssets((prev) => ({ ...prev, carLogo: base64Data }));
-        updateConfig((prev) => ({
-          mobility: {
-            ...prev.mobility,
-            car: { ...prev.mobility.car, brandLogoUrl: base64Data }
-          }
-        }));
       } else if (type === 'bike_image') {
         localStorage.setItem(STORAGE_KEYS.BIKE_IMAGE, base64Data);
         setCustomAssets((prev) => ({ ...prev, bikeImage: base64Data }));
-        updateConfig((prev) => ({
-          mobility: {
-            ...prev.mobility,
-            bike: { ...prev.mobility.bike, bikeImageUrl: base64Data }
-          }
-        }));
       } else if (type === 'bike_logo') {
         localStorage.setItem(STORAGE_KEYS.BIKE_LOGO, base64Data);
         setCustomAssets((prev) => ({ ...prev, bikeLogo: base64Data }));
+      }
+
+      // Persist to NAS asset storage
+      const finalUrl = await uploadAssetToNas(base64Data, type);
+
+      if (type === 'car_image') {
         updateConfig((prev) => ({
           mobility: {
             ...prev.mobility,
-            bike: { ...prev.mobility.bike, brandLogoUrl: base64Data }
+            car: { ...prev.mobility.car, vehicleImageUrl: finalUrl }
+          }
+        }));
+      } else if (type === 'car_logo') {
+        updateConfig((prev) => ({
+          mobility: {
+            ...prev.mobility,
+            car: { ...prev.mobility.car, brandLogoUrl: finalUrl }
+          }
+        }));
+      } else if (type === 'bike_image') {
+        updateConfig((prev) => ({
+          mobility: {
+            ...prev.mobility,
+            bike: { ...prev.mobility.bike, bikeImageUrl: finalUrl }
+          }
+        }));
+      } else if (type === 'bike_logo') {
+        updateConfig((prev) => ({
+          mobility: {
+            ...prev.mobility,
+            bike: { ...prev.mobility.bike, brandLogoUrl: finalUrl }
           }
         }));
       }

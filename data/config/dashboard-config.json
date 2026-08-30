@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "updatedAt": "2026-08-30T10:08:30.571Z",
+  "theme": {
+    "accentColor": "#38bdf8",
+    "glassOpacity": 0.8,
+    "backgroundBlur": 20
+  },
+  "mobility": {
+    "car": {
+      "customName": "Porsche Variant 10",
+      "targetSocDefault": 85
+    },
+    "bike": {
+      "customName": "VanMoof S3 Special"
+    }
+  },
+  "preferences": {
+    "tempUnit": "C",
+    "clockFormat": "24h",
+    "energyTariff": 0.32
+  }
+}
