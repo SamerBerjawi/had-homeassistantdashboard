@@ -1,10 +1,19 @@
 {
-  "serverVersion": 11,
+  "serverVersion": 14,
   "config": {
     "version": 1,
-    "updatedAt": "2026-08-30T10:19:17.367Z",
+    "updatedAt": "2026-08-30T10:21:59.573Z",
     "theme": {
-      "accentColor": "#3b82f6"
+      "accentColor": "#10b981",
+      "glassOpacity": 0.85
+    },
+    "mobility": {
+      "car": {
+        "customName": "Audi e-tron GT (Merged Edition)"
+      }
+    },
+    "preferences": {
+      "tempUnit": "F"
     }
   }
 }
