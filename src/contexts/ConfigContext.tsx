@@ -126,7 +126,16 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     let eventSource: EventSource | null = null;
     if (typeof window !== 'undefined' && 'EventSource' in window && authState.isAuthenticated && !authState.isDemo) {
       try {
-        eventSource = new EventSource('/api/config/stream');
+        const auth = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('had_ha_auth_tokens') || '{}') : {};
+        const params = new URLSearchParams();
+        if (auth?.access_token) {
+          params.set('token', auth.access_token);
+        }
+        if (auth?.server_url) {
+          params.set('haUrl', auth.server_url);
+        }
+        const streamUrl = `/api/config/stream${params.toString() ? `?${params.toString()}` : ''}`;
+        eventSource = new EventSource(streamUrl);
 
         eventSource.addEventListener('config_updated', (event: MessageEvent) => {
           if (isMounted) {
@@ -155,6 +164,8 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [authState, isInitializing, isProduction]);
 
+  const pendingDeltaRef = useRef<Partial<UserDashboardConfig>>({});
+
   // Update Config (Debounced Remote Persistence)
   const updateConfig = useCallback(async (
     partialOrUpdater:
@@ -174,14 +185,20 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setConfig(merged);
     setIsSaving(true);
 
+    // Accumulate granular delta for debounced save
+    pendingDeltaRef.current = mergeConfig(pendingDeltaRef.current as any, nextPartial);
+
     if (pendingSaveTimeoutRef.current) {
       clearTimeout(pendingSaveTimeoutRef.current);
     }
 
     return new Promise((resolve) => {
       pendingSaveTimeoutRef.current = setTimeout(async () => {
+        const deltaToSave = { ...pendingDeltaRef.current };
+        pendingDeltaRef.current = {};
         try {
-          const saved = await activeDriverRef.current.saveConfig(merged);
+          // Pass the true delta to saveConfig so conflict resolution merges field-by-field
+          const saved = await activeDriverRef.current.saveConfig(deltaToSave);
           setLastSaved(saved.updatedAt);
           setIsSaving(false);
           resolve(saved);

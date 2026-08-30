@@ -14,10 +14,31 @@ import {
 } from '../types/userConfig';
 import { AuthState } from '../types/auth';
 import { haWebSocketService } from './haWebSocket';
+import { getStoredHAAuth } from './haAuth';
 
 const STORAGE_KEY_CONFIG = 'had_dashboard_config';
 const STORAGE_KEY_SERVER_VERSION = 'had_last_server_version';
 const HA_USER_DATA_KEY = 'had_dashboard_config';
+
+/**
+ * Build Authorization headers for NAS REST requests
+ */
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  };
+  if (typeof window !== 'undefined') {
+    const auth = getStoredHAAuth();
+    if (auth?.access_token) {
+      headers['Authorization'] = `Bearer ${auth.access_token}`;
+    }
+    if (auth?.server_url) {
+      headers['X-HA-URL'] = auth.server_url;
+    }
+  }
+  return headers;
+}
 
 /**
  * Deep merge utility for configuration objects
@@ -172,7 +193,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
         try {
           const response = await fetch('/api/config', {
             method: 'GET',
-            headers: { Accept: 'application/json' },
+            headers: getAuthHeaders(),
             signal: AbortSignal.timeout(2500)
           });
           if (response.ok) {
@@ -268,7 +289,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
       try {
         const response = await fetch('/api/config', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             config: updated,
             expectedVersion: this.lastKnownServerVersion ?? undefined
@@ -304,7 +325,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
           try {
             const retryRes = await fetch('/api/config', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: getAuthHeaders(),
               body: JSON.stringify({
                 config: reMerged,
                 expectedVersion: serverVersion
@@ -387,7 +408,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
       try {
         const response = await fetch('/api/assets', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             dataUrl,
             key,

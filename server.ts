@@ -375,6 +375,78 @@ async function startServer() {
     return true;
   }
 
+  // -------------------------------------------------------------
+  // Home Assistant Token Authentication & Security Gatekeeper
+  // -------------------------------------------------------------
+  const tokenValidationCache = new Map<string, { valid: boolean; expiresAt: number }>();
+
+  async function verifyHAToken(token: string, clientHaUrl?: string): Promise<boolean> {
+    if (!token) return false;
+
+    // Fast-path: allow test tokens in non-production test harnesses
+    if (process.env.NODE_ENV !== 'production' && (token.startsWith('test_') || token.startsWith('mock_'))) {
+      return true;
+    }
+
+    const cached = tokenValidationCache.get(token);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.valid;
+    }
+
+    const targetHaUrl = (clientHaUrl || process.env.HOMEASSISTANT_URL || process.env.HA_URL || 'http://homeassistant.local:8123')
+      .replace(/\/+$/, '')
+      .replace(/\/api\/websocket\/?$/, '');
+
+    try {
+      const response = await fetch(`${targetHaUrl}/api/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        signal: AbortSignal.timeout(4000)
+      });
+
+      const isValid = response.ok;
+      tokenValidationCache.set(token, {
+        valid: isValid,
+        expiresAt: Date.now() + (isValid ? 10 * 60 * 1000 : 30 * 1000)
+      });
+      return isValid;
+    } catch (err: any) {
+      console.warn('[Auth Middleware] Could not reach Home Assistant for token validation:', err.message);
+      return false;
+    }
+  }
+
+  async function requireHAAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
+    let token = '';
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.slice(7).trim();
+    } else if (req.query.token && typeof req.query.token === 'string') {
+      token = req.query.token.trim();
+    }
+
+    const haUrl = (req.headers['x-ha-url'] as string) || (req.query.haUrl as string);
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized: Missing Home Assistant authentication token'
+      });
+    }
+
+    const isValid = await verifyHAToken(token, haUrl);
+    if (!isValid) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized: Invalid or expired Home Assistant authentication token'
+      });
+    }
+
+    next();
+  }
+
   // Set to track connected SSE clients for real-time push configuration updates
   const sseClients = new Set<express.Response>();
 
@@ -401,7 +473,7 @@ async function startServer() {
   }, 25000);
 
   // Real-time Push Stream (Server-Sent Events) for multi-device synchronization
-  app.get('/api/config/stream', (req, res) => {
+  app.get('/api/config/stream', requireHAAuth, (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
@@ -419,7 +491,7 @@ async function startServer() {
   });
 
   // NAS REST Configuration Persistence API
-  app.get('/api/config', async (req, res) => {
+  app.get('/api/config', requireHAAuth, async (req, res) => {
     if (!isConfigStorageWritable) {
       return res.status(503).json({
         success: false,
@@ -469,7 +541,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/config', async (req, res) => {
+  app.post('/api/config', requireHAAuth, async (req, res) => {
     if (!isConfigStorageWritable) {
       return res.status(503).json({
         success: false,
@@ -586,7 +658,7 @@ async function startServer() {
   // NAS Custom Asset Upload API (vehicle PNGs / brand logos)
   const MAX_ASSET_SIZE_BYTES = 5 * 1024 * 1024; // 5MB limit
 
-  app.post('/api/assets', async (req, res) => {
+  app.post('/api/assets', requireHAAuth, async (req, res) => {
     if (!isAssetsStorageWritable) {
       return res.status(503).json({
         success: false,
