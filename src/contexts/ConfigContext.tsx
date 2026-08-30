@@ -47,27 +47,84 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setDriverType(dtype);
     setDriverName(dname);
 
-    const loadData = async () => {
-      setIsLoading(true);
+    const loadData = async (silent = false) => {
+      if (!silent) setIsLoading(true);
       try {
         const loaded = await driver.loadConfig();
         if (isMounted) {
-          setConfig(loaded);
+          setConfig((prev) => {
+            // Only update if newer or first load
+            if (!prev || !prev.updatedAt || loaded.updatedAt >= prev.updatedAt) {
+              return loaded;
+            }
+            return prev;
+          });
           setLastSaved(loaded.updatedAt);
         }
       } catch (err) {
         console.error('[ConfigProvider] Error loading user configuration:', err);
       } finally {
-        if (isMounted) {
+        if (isMounted && !silent) {
           setIsLoading(false);
         }
       }
     };
 
+    // Initial load
     loadData();
+
+    // 1. Re-sync when WebSocket connection status transitions to 'connected'
+    const handleConnectionStatus = (e: any) => {
+      if (e?.detail?.status === 'connected') {
+        loadData(true);
+      }
+    };
+    window.addEventListener('ha_connection_status' as any, handleConnectionStatus);
+
+    // 2. Re-sync on window focus / visibility change (e.g. tablet screen on / tab switched)
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible' && authState.isAuthenticated && !authState.isDemo) {
+        loadData(true);
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    // 3. Listen to local/cross-tab broadcast updates
+    let bc: BroadcastChannel | null = null;
+    if ('BroadcastChannel' in window) {
+      bc = new BroadcastChannel('had_config_channel');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'config_saved' && event.data.config && isMounted) {
+          setConfig(event.data.config);
+          setLastSaved(event.data.config.updatedAt);
+        }
+      };
+    }
+
+    const handleLocalUpdated = (e: any) => {
+      if (e?.detail && isMounted) {
+        setConfig(e.detail);
+        setLastSaved(e.detail.updatedAt);
+      }
+    };
+    window.addEventListener('had_config_updated' as any, handleLocalUpdated);
+
+    // 4. Background Sync Heartbeat for Cross-Device Telemetry Sync (every 20 seconds)
+    const syncInterval = setInterval(() => {
+      if (authState.isAuthenticated && !authState.isDemo && document.visibilityState === 'visible') {
+        loadData(true);
+      }
+    }, 20000);
 
     return () => {
       isMounted = false;
+      window.removeEventListener('ha_connection_status' as any, handleConnectionStatus);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('had_config_updated' as any, handleLocalUpdated);
+      if (bc) bc.close();
+      clearInterval(syncInterval);
     };
   }, [authState, isInitializing, isProduction]);
 

@@ -37,6 +37,21 @@ export interface UserDashboardConfig {
     defaultPeriod: 'today' | 'yesterday' | '7d' | 'month' | 'year';
     carbonIntensityFactor?: number;
   };
+  preferences?: {
+    tempUnit?: 'C' | 'F';
+    clockFormat?: '24h' | '12h';
+    energyTariff?: number;
+    currencySymbol?: string;
+    glassBlurLevel?: 'subtle' | 'balanced' | 'deep' | 'ultra';
+    specularHighlight?: boolean;
+    go2rtcUrl?: string;
+  };
+  profile?: {
+    name?: string;
+    email?: string;
+    role?: string;
+    avatar?: string;
+  };
 }
 
 export interface IConfigStorageDriver {
@@ -99,5 +114,20 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
   energy: {
     defaultPeriod: 'today',
     carbonIntensityFactor: 0.385
+  },
+  preferences: {
+    tempUnit: 'C',
+    clockFormat: '24h',
+    energyTariff: 0.28,
+    currencySymbol: '€',
+    glassBlurLevel: 'deep',
+    specularHighlight: true,
+    go2rtcUrl: ''
+  },
+  profile: {
+    name: 'Samer Berjawi',
+    email: 'admin@homz.ai',
+    role: 'Home Owner (Admin)',
+    avatar: ''
   }
 };

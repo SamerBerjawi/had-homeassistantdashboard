@@ -91,6 +91,55 @@ class HAWebSocketClient {
     }
   }
 
+  private emitStatus(status: HAConnectionStatus, errorMsg?: string) {
+    this.status = status;
+    this.callbacks?.onStatusChange(status, errorMsg);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ha_connection_status', { detail: { status, errorMsg } }));
+    }
+  }
+
+  public waitForConnection(timeoutMs = 6000): Promise<boolean> {
+    if (this.isDemoMode || this.status === 'connected') {
+      return Promise.resolve(true);
+    }
+    if (this.status === 'auth_failed') {
+      return Promise.resolve(false);
+    }
+
+    return new Promise((resolve) => {
+      let resolved = false;
+      const timer = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          window.removeEventListener('ha_connection_status' as any, handler);
+          resolve(this.status === 'connected');
+        }
+      }, timeoutMs);
+
+      const handler = (e: any) => {
+        const s = e.detail?.status;
+        if (s === 'connected') {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timer);
+            window.removeEventListener('ha_connection_status' as any, handler);
+            resolve(true);
+          }
+        } else if (s === 'auth_failed') {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timer);
+            window.removeEventListener('ha_connection_status' as any, handler);
+            resolve(false);
+          }
+        }
+      };
+
+      window.addEventListener('ha_connection_status' as any, handler);
+    });
+  }
+
   public getStatus(): HAConnectionStatus {
     return this.status;
   }
@@ -110,8 +159,7 @@ class HAWebSocketClient {
   }
 
   public loadDemoRegistries() {
-    this.status = 'connected';
-    this.callbacks?.onStatusChange('connected');
+    this.emitStatus('connected');
     this.callbacks?.onLogMessage('info', 'Loaded Home Assistant Registries from Auto-Layout Graph Ingestion Engine (Demo/Simulated Mode)');
     this.callbacks?.onRegistriesLoaded({
       areas: [...MOCK_AREAS],
@@ -210,9 +258,8 @@ class HAWebSocketClient {
     } else {
       // Auto-reconnect: avoid looping on confirmed rejected credentials
       if (this.rejectedToken && token === this.rejectedToken) {
-        this.status = 'auth_failed';
         this.isExplicitDisconnect = true;
-        this.callbacks?.onStatusChange('auth_failed', 'Session expired. Please sign in again.');
+        this.emitStatus('auth_failed', 'Session expired. Please sign in again.');
         this.callbacks?.onLogMessage('error', 'Skipping auto-reconnect: credentials were confirmed invalid. Please re-authenticate.');
         return;
       }
@@ -232,8 +279,7 @@ class HAWebSocketClient {
       this.socket = null;
     }
 
-    this.status = 'connecting';
-    this.callbacks?.onStatusChange('connecting');
+    this.emitStatus('connecting');
     this.callbacks?.onLogMessage('info', `Connecting to WebSocket: ${normalizedUrl}`);
 
     try {
@@ -253,8 +299,7 @@ class HAWebSocketClient {
       };
 
       this.socket.onerror = (err) => {
-        this.status = 'error';
-        this.callbacks?.onStatusChange('error', 'WebSocket connection error');
+        this.emitStatus('error', 'WebSocket connection error');
         this.callbacks?.onLogMessage('error', 'WebSocket connection error occurred', err);
       };
 
@@ -269,8 +314,7 @@ class HAWebSocketClient {
           return;
         }
         if (this.status !== 'disconnected') {
-          this.status = 'disconnected';
-          this.callbacks?.onStatusChange('disconnected');
+          this.emitStatus('disconnected');
           this.callbacks?.onLogMessage('warning', 'WebSocket connection closed');
           if (!this.isExplicitDisconnect && !this.rejectedToken) {
             this.scheduleReconnect();
@@ -278,8 +322,7 @@ class HAWebSocketClient {
         }
       };
     } catch (err: any) {
-      this.status = 'error';
-      this.callbacks?.onStatusChange('error', err.message);
+      this.emitStatus('error', err.message);
       this.callbacks?.onLogMessage('error', `Failed to initialize WebSocket: ${err.message}`);
       if (!this.isExplicitDisconnect && !this.rejectedToken) {
         this.scheduleReconnect();
@@ -308,8 +351,7 @@ class HAWebSocketClient {
     }
     this.pendingRequests.clear();
     this.subscriptions.clear();
-    this.status = 'disconnected';
-    this.callbacks?.onStatusChange('disconnected');
+    this.emitStatus('disconnected');
   }
 
   private handleIncomingMessage(msg: any) {
@@ -323,10 +365,9 @@ class HAWebSocketClient {
     }
 
     if (msg.type === 'auth_ok') {
-      this.status = 'connected';
       this.reconnectAttempts = 0;
       this.rejectedToken = null;
-      this.callbacks?.onStatusChange('connected');
+      this.emitStatus('connected');
       this.callbacks?.onLogMessage('info', `Authentication successful! Home Assistant version: ${msg.ha_version || '2026.x'}`);
       this.fetchAllRegistries();
       return;
@@ -396,7 +437,6 @@ class HAWebSocketClient {
   }
 
   private failAuth(errorMsg?: string) {
-    this.status = 'auth_failed';
     this.rejectedToken = this.currentToken;
     this.isExplicitDisconnect = true;
     if (this.socket) {
@@ -407,7 +447,7 @@ class HAWebSocketClient {
       this.socket.close();
       this.socket = null;
     }
-    this.callbacks?.onStatusChange('auth_failed', errorMsg || 'Session expired. Please sign in again.');
+    this.emitStatus('auth_failed', errorMsg || 'Session expired. Please sign in again.');
     this.callbacks?.onLogMessage('error', `Authentication failed: ${errorMsg || 'Invalid Access Token'}`);
   }
 

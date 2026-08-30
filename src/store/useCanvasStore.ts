@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { CardConfig, DashboardLayoutItem, DashboardProfile, WeatherBackdropType } from '../types/canvas';
+import { haWebSocketService } from '../services/haWebSocket';
 
 const STORAGE_KEY = 'tunet_dashboard_profiles_v3';
 const ACTIVE_PROFILE_KEY = 'tunet_active_profile_id_v3';
@@ -124,6 +125,23 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => {
       localStorage.setItem(ACTIVE_PROFILE_KEY, activeId);
     } catch (e) {
       console.warn('Storage quota or access error:', e);
+    }
+
+    if (!haWebSocketService.isDemo() && haWebSocketService.getStatus() === 'connected') {
+      try {
+        haWebSocketService.sendRequest('frontend/set_user_data', {
+          key: 'had_canvas_profiles',
+          value: { profiles, activeProfileId: activeId, updatedAt: new Date().toISOString() }
+        }).catch(() => {});
+      } catch {}
+    }
+
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        const bc = new BroadcastChannel('had_canvas_channel');
+        bc.postMessage({ type: 'profiles_updated', profiles, activeProfileId: activeId });
+        bc.close();
+      } catch {}
     }
   };
 
@@ -472,3 +490,53 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => {
     }
   };
 });
+
+// Auto-sync canvas profiles with Home Assistant user data storage
+if (typeof window !== 'undefined') {
+  const syncRemoteCanvas = async () => {
+    if (!haWebSocketService.isDemo() && haWebSocketService.getStatus() === 'connected') {
+      try {
+        const res = await haWebSocketService.sendRequest<any>('frontend/get_user_data', {
+          key: 'had_canvas_profiles'
+        });
+        if (res && res.value && res.value.profiles) {
+          const remoteProfiles = typeof res.value.profiles === 'string' ? JSON.parse(res.value.profiles) : res.value.profiles;
+          if (typeof remoteProfiles === 'object' && Object.keys(remoteProfiles).length > 0) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteProfiles));
+            if (res.value.activeProfileId) {
+              localStorage.setItem(ACTIVE_PROFILE_KEY, res.value.activeProfileId);
+            }
+            useCanvasStore.setState({
+              profiles: remoteProfiles,
+              activeProfileId: res.value.activeProfileId || Object.keys(remoteProfiles)[0]
+            });
+          }
+        }
+      } catch {}
+    }
+  };
+
+  window.addEventListener('ha_connection_status' as any, (e: any) => {
+    if (e?.detail?.status === 'connected') {
+      syncRemoteCanvas();
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    syncRemoteCanvas();
+  });
+
+  if ('BroadcastChannel' in window) {
+    try {
+      const bc = new BroadcastChannel('had_canvas_channel');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'profiles_updated' && event.data.profiles) {
+          useCanvasStore.setState({
+            profiles: event.data.profiles,
+            activeProfileId: event.data.activeProfileId || Object.keys(event.data.profiles)[0]
+          });
+        }
+      };
+    } catch {}
+  }
+}

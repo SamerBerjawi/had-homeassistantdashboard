@@ -35,8 +35,8 @@ RUN npm ci --omit=dev && npm cache clean --force
 # Copy built distribution artifacts from builder stage
 COPY --from=builder /app/dist ./dist
 
-# Set file ownership to non-root node user
-RUN chown -R node:node /app
+# Ensure persistent data volume folder exists and set file ownership to non-root node user
+RUN mkdir -p /app/data && chown -R node:node /app
 
 # Switch to non-root user for security
 USER node

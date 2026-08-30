@@ -149,16 +149,23 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
     let remoteConfig: any = null;
 
     // 1. Try Home Assistant WebSocket user data storage
-    if (!haWebSocketService.isDemo() && haWebSocketService.getStatus() === 'connected') {
-      try {
-        const res = await haWebSocketService.sendRequest<any>('frontend/get_user_data', {
-          key: HA_USER_DATA_KEY
-        });
-        if (res && res.value) {
-          remoteConfig = typeof res.value === 'string' ? JSON.parse(res.value) : res.value;
+    if (!haWebSocketService.isDemo()) {
+      if (haWebSocketService.getStatus() !== 'connected') {
+        // Wait up to 4s for socket authentication if currently connecting
+        await haWebSocketService.waitForConnection(4000);
+      }
+
+      if (haWebSocketService.getStatus() === 'connected') {
+        try {
+          const res = await haWebSocketService.sendRequest<any>('frontend/get_user_data', {
+            key: HA_USER_DATA_KEY
+          });
+          if (res && res.value !== undefined && res.value !== null) {
+            remoteConfig = typeof res.value === 'string' ? JSON.parse(res.value) : res.value;
+          }
+        } catch (wsErr) {
+          console.warn('[RemoteStorageDriver] HA WebSocket frontend/get_user_data notice:', wsErr);
         }
-      } catch {
-        // WebSocket storage not populated yet or method not supported, fallback to NAS REST
       }
     }
 
@@ -182,7 +189,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
     }
 
     // 3. If remote found, merge and cache in local storage as reliable backup
-    if (remoteConfig) {
+    if (remoteConfig && typeof remoteConfig === 'object') {
       const merged = mergeConfig(DEFAULT_USER_CONFIG, remoteConfig);
       try {
         localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(merged));
@@ -202,14 +209,20 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
     });
 
     // 1. Persist to Home Assistant WebSocket user storage
-    if (!haWebSocketService.isDemo() && haWebSocketService.getStatus() === 'connected') {
-      try {
-        await haWebSocketService.sendRequest('frontend/set_user_data', {
-          key: HA_USER_DATA_KEY,
-          value: updated
-        });
-      } catch (wsErr) {
-        console.warn('[RemoteStorageDriver] Could not save config via HA WebSocket user_data:', wsErr);
+    if (!haWebSocketService.isDemo()) {
+      if (haWebSocketService.getStatus() !== 'connected') {
+        await haWebSocketService.waitForConnection(3000);
+      }
+
+      if (haWebSocketService.getStatus() === 'connected') {
+        try {
+          await haWebSocketService.sendRequest('frontend/set_user_data', {
+            key: HA_USER_DATA_KEY,
+            value: updated
+          });
+        } catch (wsErr) {
+          console.warn('[RemoteStorageDriver] Could not save config via HA WebSocket user_data:', wsErr);
+        }
       }
     }
 
@@ -231,6 +244,18 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
     try {
       localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(updated));
     } catch {}
+
+    // 4. Dispatch cross-tab sync message
+    if (typeof window !== 'undefined') {
+      try {
+        if ('BroadcastChannel' in window) {
+          const bc = new BroadcastChannel('had_config_channel');
+          bc.postMessage({ type: 'config_saved', config: updated });
+          bc.close();
+        }
+        window.dispatchEvent(new CustomEvent('had_config_updated', { detail: updated }));
+      } catch {}
+    }
 
     return updated;
   }

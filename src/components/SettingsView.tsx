@@ -219,6 +219,8 @@ export default function SettingsView({
 
   const { authState, openAuthModal, logout } = useAuth();
   const { 
+    config,
+    updateConfig,
     driverType, 
     driverName, 
     isSyncingRemote, 
@@ -253,12 +255,21 @@ export default function SettingsView({
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('homz_user_profile_v1', JSON.stringify(profileData));
+    updateConfig((prev) => ({
+      ...prev,
+      profile: {
+        name: profileData.displayName,
+        email: profileData.email,
+        role: profileData.role,
+        avatar: profileData.avatarInitials
+      }
+    }));
     setProfileSavedNotice(true);
     addLog('info', `Updated user profile for ${profileData.displayName}`);
     addToast?.({
       type: 'success',
       title: 'Profile Updated',
-      message: 'User profile settings successfully saved.'
+      message: 'User profile settings successfully saved and synced.'
     });
     setTimeout(() => setProfileSavedNotice(false), 2500);
   };
@@ -296,22 +307,24 @@ export default function SettingsView({
   // 2. THEME & CUSTOMIZATION STATE
   // ==========================================
   const [tempUnit, setTempUnit] = useState<'C' | 'F'>(() => {
-    return (localStorage.getItem('homz_temp_unit') as 'C' | 'F') || 'C';
+    return (config?.preferences?.tempUnit as 'C' | 'F') || (localStorage.getItem('homz_temp_unit') as 'C' | 'F') || 'C';
   });
   const [clockFormat, setClockFormat] = useState<'24h' | '12h'>(() => {
-    return (localStorage.getItem('homz_clock_format') as '24h' | '12h') || '24h';
+    return (config?.preferences?.clockFormat as '24h' | '12h') || (localStorage.getItem('homz_clock_format') as '24h' | '12h') || '24h';
   });
   const [energyTariff, setEnergyTariff] = useState<number>(() => {
+    if (config?.preferences?.energyTariff !== undefined) return config.preferences.energyTariff;
     const saved = localStorage.getItem('homz_energy_tariff');
     return saved ? parseFloat(saved) : 0.18;
   });
   const [currencySymbol, setCurrencySymbol] = useState<string>(() => {
-    return localStorage.getItem('homz_currency_symbol') || '€';
+    return config?.preferences?.currencySymbol || localStorage.getItem('homz_currency_symbol') || '€';
   });
   const [glassBlurLevel, setGlassBlurLevel] = useState<'standard' | 'deep' | 'subtle'>(() => {
-    return (localStorage.getItem('homz_glass_blur') as any) || 'deep';
+    return (config?.preferences?.glassBlurLevel as any) || (localStorage.getItem('homz_glass_blur') as any) || 'deep';
   });
   const [specularHighlight, setSpecularHighlight] = useState<boolean>(() => {
+    if (config?.preferences?.specularHighlight !== undefined) return config.preferences.specularHighlight;
     const saved = localStorage.getItem('homz_specular_highlight');
     return saved !== null ? saved === 'true' : true;
   });
@@ -324,10 +337,22 @@ export default function SettingsView({
     localStorage.setItem('homz_glass_blur', glassBlurLevel);
     localStorage.setItem('homz_specular_highlight', specularHighlight.toString());
 
+    updateConfig((prev) => ({
+      ...prev,
+      preferences: {
+        tempUnit,
+        clockFormat,
+        energyTariff,
+        currencySymbol,
+        glassBlurLevel: glassBlurLevel as any,
+        specularHighlight
+      }
+    }));
+
     addToast?.({
       type: 'success',
       title: 'Customization Saved',
-      message: 'System appearance & unit preferences persisted.'
+      message: 'System appearance & unit preferences synced across all devices.'
     });
   };
 

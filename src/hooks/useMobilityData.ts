@@ -5,6 +5,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
+import { useUserConfig } from './useUserConfig';
 import { haWebSocketService } from '../services/haWebSocket';
 import { CarEvMetrics, BikeMetrics } from '../types/mobility';
 import { HAZone } from '../types';
@@ -151,8 +152,9 @@ const STORAGE_KEYS = {
 
 export function useMobilityData() {
   const { states, resolvedZones, isLiveMode } = useAutoLayoutStore();
+  const { config, updateConfig } = useUserConfig();
 
-  // Custom asset state from localStorage
+  // Custom asset state with fallback to config and localStorage
   const [customAssets, setCustomAssets] = useState<{
     carImage?: string;
     carLogo?: string;
@@ -170,6 +172,11 @@ export function useMobilityData() {
       return {};
     }
   });
+
+  const effectiveCarImage = config.mobility?.car?.vehicleImageUrl || customAssets.carImage;
+  const effectiveCarLogo = config.mobility?.car?.brandLogoUrl || customAssets.carLogo;
+  const effectiveBikeImage = config.mobility?.bike?.bikeImageUrl || customAssets.bikeImage;
+  const effectiveBikeLogo = config.mobility?.bike?.brandLogoUrl || customAssets.bikeLogo;
 
   // Local state for optimistic UI feedback
   const [optimisticCar, setOptimisticCar] = useState<Partial<CarEvMetrics>>({});
@@ -444,8 +451,8 @@ export function useMobilityData() {
     }
 
     const base: CarEvMetrics = {
-      customBrandLogo: customAssets.carLogo,
-      customVehicleImage: customAssets.carImage,
+      customBrandLogo: effectiveCarLogo,
+      customVehicleImage: effectiveCarImage,
 
       soc,
       battery12V: battery12VEntity?.state || '14.2V',
@@ -525,7 +532,7 @@ export function useMobilityData() {
     };
 
     return { ...base, ...optimisticCar };
-  }, [states, resolvedZones, customAssets.carLogo, customAssets.carImage, optimisticCar]);
+  }, [states, resolvedZones, effectiveCarLogo, effectiveCarImage, optimisticCar]);
 
   // -------------------------------------------------------------
   // Resolving Smart E-Bike Metrics (Cowboy / Dark Avenger E-Bike)
@@ -578,8 +585,8 @@ export function useMobilityData() {
     ) : true;
 
     const base: BikeMetrics = {
-      customBrandLogo: customAssets.bikeLogo,
-      customBikeImage: customAssets.bikeImage,
+      customBrandLogo: effectiveBikeLogo,
+      customBikeImage: effectiveBikeImage,
 
       batteryPercent: parseNum(battEntity?.state, 78),
       internalPcbBattery: parseNum(pcbEntity?.state, 98),
@@ -619,7 +626,7 @@ export function useMobilityData() {
     };
 
     return { ...base, ...optimisticBike };
-  }, [states, resolvedZones, customAssets.bikeLogo, customAssets.bikeImage, optimisticBike]);
+  }, [states, resolvedZones, effectiveBikeLogo, effectiveBikeImage, optimisticBike]);
 
   // -------------------------------------------------------------
   // Action Handlers
@@ -770,20 +777,44 @@ export function useMobilityData() {
       if (type === 'car_image') {
         localStorage.setItem(STORAGE_KEYS.CAR_IMAGE, base64Data);
         setCustomAssets((prev) => ({ ...prev, carImage: base64Data }));
+        updateConfig((prev) => ({
+          mobility: {
+            ...prev.mobility,
+            car: { ...prev.mobility.car, vehicleImageUrl: base64Data }
+          }
+        }));
       } else if (type === 'car_logo') {
         localStorage.setItem(STORAGE_KEYS.CAR_LOGO, base64Data);
         setCustomAssets((prev) => ({ ...prev, carLogo: base64Data }));
+        updateConfig((prev) => ({
+          mobility: {
+            ...prev.mobility,
+            car: { ...prev.mobility.car, brandLogoUrl: base64Data }
+          }
+        }));
       } else if (type === 'bike_image') {
         localStorage.setItem(STORAGE_KEYS.BIKE_IMAGE, base64Data);
         setCustomAssets((prev) => ({ ...prev, bikeImage: base64Data }));
+        updateConfig((prev) => ({
+          mobility: {
+            ...prev.mobility,
+            bike: { ...prev.mobility.bike, bikeImageUrl: base64Data }
+          }
+        }));
       } else if (type === 'bike_logo') {
         localStorage.setItem(STORAGE_KEYS.BIKE_LOGO, base64Data);
         setCustomAssets((prev) => ({ ...prev, bikeLogo: base64Data }));
+        updateConfig((prev) => ({
+          mobility: {
+            ...prev.mobility,
+            bike: { ...prev.mobility.bike, brandLogoUrl: base64Data }
+          }
+        }));
       }
     } catch (e) {
-      console.error('Failed to save asset to localStorage', e);
+      console.error('Failed to save asset', e);
     }
-  }, []);
+  }, [updateConfig]);
 
   const resetCustomAssets = useCallback((targetType: 'car' | 'bike' | 'all' = 'all') => {
     try {
@@ -791,16 +822,28 @@ export function useMobilityData() {
         localStorage.removeItem(STORAGE_KEYS.CAR_IMAGE);
         localStorage.removeItem(STORAGE_KEYS.CAR_LOGO);
         setCustomAssets((prev) => ({ ...prev, carImage: undefined, carLogo: undefined }));
+        updateConfig((prev) => ({
+          mobility: {
+            ...prev.mobility,
+            car: { ...prev.mobility.car, vehicleImageUrl: undefined, brandLogoUrl: undefined }
+          }
+        }));
       }
       if (targetType === 'bike' || targetType === 'all') {
         localStorage.removeItem(STORAGE_KEYS.BIKE_IMAGE);
         localStorage.removeItem(STORAGE_KEYS.BIKE_LOGO);
         setCustomAssets((prev) => ({ ...prev, bikeImage: undefined, bikeLogo: undefined }));
+        updateConfig((prev) => ({
+          mobility: {
+            ...prev.mobility,
+            bike: { ...prev.mobility.bike, bikeImageUrl: undefined, brandLogoUrl: undefined }
+          }
+        }));
       }
     } catch (e) {
-      console.error('Failed to clear asset localStorage', e);
+      console.error('Failed to clear asset', e);
     }
-  }, []);
+  }, [updateConfig]);
 
   return {
     carMetrics,

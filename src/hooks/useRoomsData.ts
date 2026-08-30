@@ -10,6 +10,7 @@
 import { useMemo, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
+import { useUserConfig } from './useUserConfig';
 import { ResolvedEntity, HAArea, HAFloor } from '../types';
 import {
   AreaData,
@@ -27,6 +28,7 @@ import {
 } from '../lib/entityClassifiers';
 
 export function useRoomsData() {
+  const { config } = useUserConfig();
   const {
     resolvedEntities,
     areas: storeAreas,
@@ -98,7 +100,7 @@ export function useRoomsData() {
 
   // 3. Build AreaData structure for all areas with real telemetry & custom styling
   const areasDataList: AreaData[] = useMemo(() => {
-    return activeAreas.map((area) => {
+    const rawList: AreaData[] = activeAreas.map((area) => {
       const areaEntities = entitiesByArea[area.area_id] || [];
       const floor = area.floor_id ? floorMap[area.floor_id] : undefined;
 
@@ -310,7 +312,22 @@ export function useRoomsData() {
         climateState
       };
     });
-  }, [activeAreas, entitiesByArea, floorMap]);
+
+    // Apply remote config hidden areas and custom sort order if present
+    const hiddenSet = new Set(config.rooms?.hiddenAreas || []);
+    let filtered = rawList.filter((a) => !hiddenSet.has(a.areaId));
+
+    if (config.rooms?.areaSortOrder && config.rooms.areaSortOrder.length > 0) {
+      const orderMap = new Map(config.rooms.areaSortOrder.map((id, index) => [id, index]));
+      filtered = [...filtered].sort((a, b) => {
+        const orderA = orderMap.has(a.areaId) ? (orderMap.get(a.areaId) as number) : 999;
+        const orderB = orderMap.has(b.areaId) ? (orderMap.get(b.areaId) as number) : 999;
+        return orderA - orderB;
+      });
+    }
+
+    return filtered;
+  }, [activeAreas, entitiesByArea, floorMap, config.rooms]);
 
   // 4. Organize Areas Hierarchically by Floor (Descending Level Order) with custom floor styling
   const floorDataList: FloorData[] = useMemo(() => {

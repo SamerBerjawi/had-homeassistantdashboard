@@ -11,6 +11,9 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    # Persistent storage volume for dashboard config JSON and uploaded vehicle assets
+    volumes:
+      - ./data:/app/data
     # Optional: Load environment variables from a .env file placed in the same folder
     env_file:
       - path: .env

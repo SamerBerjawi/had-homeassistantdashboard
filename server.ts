@@ -301,7 +301,7 @@ async function startServer() {
   });
 
   // Ensure persistent NAS storage folders exist
-  const dataDir = path.join(process.cwd(), 'data');
+  const dataDir = process.env.DATA_DIR || path.join(process.cwd(), 'data');
   const assetsDir = path.join(dataDir, 'assets');
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
