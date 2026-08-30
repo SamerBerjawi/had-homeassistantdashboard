@@ -1,10 +1,10 @@
 {
-  "serverVersion": 9,
+  "serverVersion": 11,
   "config": {
     "version": 1,
-    "updatedAt": "2026-08-30T10:16:34.959Z",
-    "preferences": {
-      "tempUnit": "C"
+    "updatedAt": "2026-08-30T10:19:17.367Z",
+    "theme": {
+      "accentColor": "#3b82f6"
     }
   }
 }

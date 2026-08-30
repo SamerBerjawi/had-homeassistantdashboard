@@ -375,6 +375,49 @@ async function startServer() {
     return true;
   }
 
+  // Set to track connected SSE clients for real-time push configuration updates
+  const sseClients = new Set<express.Response>();
+
+  function broadcastConfigUpdate(serverVersion: number) {
+    const payload = `event: config_updated\ndata: ${JSON.stringify({ serverVersion })}\n\n`;
+    for (const client of sseClients) {
+      try {
+        client.write(payload);
+      } catch {
+        sseClients.delete(client);
+      }
+    }
+  }
+
+  // Periodic heartbeat to prevent intermediate proxy/NAT connection dropouts (every 25s)
+  setInterval(() => {
+    for (const client of sseClients) {
+      try {
+        client.write(': heartbeat\n\n');
+      } catch {
+        sseClients.delete(client);
+      }
+    }
+  }, 25000);
+
+  // Real-time Push Stream (Server-Sent Events) for multi-device synchronization
+  app.get('/api/config/stream', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders?.();
+
+    // Initial handshake comment
+    res.write(': connected\n\n');
+
+    sseClients.add(res);
+
+    req.on('close', () => {
+      sseClients.delete(res);
+    });
+  });
+
   // NAS REST Configuration Persistence API
   app.get('/api/config', async (req, res) => {
     if (!isConfigStorageWritable) {
@@ -527,6 +570,11 @@ async function startServer() {
           }
         };
       });
+
+      // Broadcast real-time SSE event to all connected devices if write succeeded
+      if (result.statusCode === 200 && result.payload?.serverVersion) {
+        broadcastConfigUpdate(result.payload.serverVersion);
+      }
 
       return res.status(result.statusCode).json(result.payload);
     } catch (err: any) {

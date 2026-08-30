@@ -166,51 +166,69 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
     let nasConfig: any = null;
     let nasServerVersion: number | undefined = undefined;
 
-    // 1. Try Home Assistant WebSocket user data storage
-    if (!haWebSocketService.isDemo()) {
-      if (haWebSocketService.getStatus() !== 'connected') {
-        // Wait up to 4s for socket authentication if currently connecting
-        await haWebSocketService.waitForConnection(4000);
-      }
-
-      if (haWebSocketService.getStatus() === 'connected') {
+    // Concurrently query NAS REST backend and Home Assistant WebSocket storage
+    const nasFetchPromise = (async () => {
+      if (typeof fetch !== 'undefined') {
         try {
-          const res = await haWebSocketService.sendRequest<any>('frontend/get_user_data', {
-            key: HA_USER_DATA_KEY
+          const response = await fetch('/api/config', {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            signal: AbortSignal.timeout(2500)
           });
-          if (res && res.value !== undefined && res.value !== null) {
-            haConfig = typeof res.value === 'string' ? JSON.parse(res.value) : res.value;
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.success && data.config) {
+              return {
+                config: data.config,
+                serverVersion: data.serverVersion !== undefined ? Number(data.serverVersion) : undefined
+              };
+            }
           }
-        } catch (wsErr) {
-          console.warn('[RemoteStorageDriver] HA WebSocket frontend/get_user_data notice:', wsErr);
+        } catch {
+          // NAS REST offline or not reachable
         }
+      }
+      return null;
+    })();
+
+    const haFetchPromise = (async () => {
+      if (!haWebSocketService.isDemo()) {
+        if (haWebSocketService.getStatus() !== 'connected') {
+          // Wait briefly (up to 1.5s) for socket authentication if currently connecting
+          await haWebSocketService.waitForConnection(1500);
+        }
+
+        if (haWebSocketService.getStatus() === 'connected') {
+          try {
+            const res = await haWebSocketService.sendRequest<any>('frontend/get_user_data', {
+              key: HA_USER_DATA_KEY
+            });
+            if (res && res.value !== undefined && res.value !== null) {
+              return typeof res.value === 'string' ? JSON.parse(res.value) : res.value;
+            }
+          } catch (wsErr) {
+            console.warn('[RemoteStorageDriver] HA WebSocket frontend/get_user_data notice:', wsErr);
+          }
+        }
+      }
+      return null;
+    })();
+
+    const [nasResult, haResult] = await Promise.all([nasFetchPromise, haFetchPromise]);
+
+    if (nasResult) {
+      nasConfig = nasResult.config;
+      nasServerVersion = nasResult.serverVersion;
+      if (nasServerVersion !== undefined) {
+        this.lastKnownServerVersion = nasServerVersion;
+        try {
+          localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(nasServerVersion));
+        } catch {}
       }
     }
 
-    // 2. Try NAS REST backend (/api/config)
-    if (typeof fetch !== 'undefined') {
-      try {
-        const response = await fetch('/api/config', {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          signal: AbortSignal.timeout(3000)
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.success && data.config) {
-            nasConfig = data.config;
-            if (data.serverVersion !== undefined) {
-              nasServerVersion = Number(data.serverVersion);
-              this.lastKnownServerVersion = nasServerVersion;
-              try {
-                localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(nasServerVersion));
-              } catch {}
-            }
-          }
-        }
-      } catch {
-        // NAS REST offline or not reachable
-      }
+    if (haResult) {
+      haConfig = haResult;
     }
 
     // Authoritative Versioning: Prefer NAS config if it carries a serverVersion

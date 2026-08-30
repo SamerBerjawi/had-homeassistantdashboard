@@ -114,12 +114,34 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     window.addEventListener('had_config_updated' as any, handleLocalUpdated);
 
-    // 4. Background Sync Heartbeat for Cross-Device Telemetry Sync (every 20 seconds)
+    // 4. Background Polling Fallback Safety Net (every 20 seconds)
+    // NOTE: Keep this fallback active as a resilience safety net in case the SSE push stream drops or is blocked by a proxy.
     const syncInterval = setInterval(() => {
       if (authState.isAuthenticated && !authState.isDemo && document.visibilityState === 'visible') {
         loadData(true);
       }
     }, 20000);
+
+    // 5. Real-Time Push Stream (SSE) for instant cross-device synchronization (~1s)
+    let eventSource: EventSource | null = null;
+    if (typeof window !== 'undefined' && 'EventSource' in window && authState.isAuthenticated && !authState.isDemo) {
+      try {
+        eventSource = new EventSource('/api/config/stream');
+
+        eventSource.addEventListener('config_updated', (event: MessageEvent) => {
+          if (isMounted) {
+            loadData(true);
+          }
+        });
+
+        eventSource.onerror = (err) => {
+          // EventSource automatically retries connection natively; log for observability
+          console.warn('[ConfigProvider] Config push stream encountered an issue (native auto-reconnect active):', err);
+        };
+      } catch (err) {
+        console.warn('[ConfigProvider] Could not initialize EventSource stream:', err);
+      }
+    }
 
     return () => {
       isMounted = false;
@@ -128,6 +150,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       document.removeEventListener('visibilitychange', handleFocus);
       window.removeEventListener('had_config_updated' as any, handleLocalUpdated);
       if (bc) bc.close();
+      if (eventSource) eventSource.close();
       clearInterval(syncInterval);
     };
   }, [authState, isInitializing, isProduction]);

@@ -14,7 +14,8 @@ import { InstallPrompt } from './components/pwa/InstallPrompt';
 import { UpdateToast } from './components/pwa/UpdateToast';
 import AuthModal from './components/auth/AuthModal';
 import DemoBanner from './components/auth/DemoBanner';
-import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power } from '@phosphor-icons/react';
+import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power, ArrowsClockwise } from '@phosphor-icons/react';
+import { useUserConfig } from './contexts/ConfigContext';
 
 import { PAGE_THEMES } from './config/pageThemes';
 import DynamicPhosphorIcon from './components/ui/DynamicPhosphorIcon';
@@ -89,6 +90,7 @@ export default function App() {
 
   // Tab State with URL Path Synchronization
   const [activeTab, setActiveTabState] = useState<string>(getTabFromUrl);
+  const { isLoading: isConfigLoading } = useUserConfig();
 
   const setActiveTab = (tab: string) => {
     const validTab = VALID_TABS.includes(tab as TabKey) ? tab : 'overview';
@@ -391,6 +393,17 @@ export default function App() {
                     <Power size={15} weight="bold" />
                     <span>All Off</span>
                   </button>
+                </div>
+              )}
+
+              {/* Subtle Boot & Background Sync Indicator */}
+              {isConfigLoading && (
+                <div 
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/30 text-sky-600 dark:text-sky-400 text-xs font-semibold backdrop-blur-sm animate-pulse"
+                  title="Synchronizing configuration across devices..."
+                >
+                  <ArrowsClockwise size={14} className="animate-spin text-sky-500 dark:text-sky-400" />
+                  <span className="hidden sm:inline">Syncing…</span>
                 </div>
               )}
 
