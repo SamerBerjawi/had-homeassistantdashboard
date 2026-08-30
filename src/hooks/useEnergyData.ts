@@ -91,7 +91,7 @@ export interface UseEnergyDataResult {
 
 export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyDataResult {
   const {
-    autoRefreshIntervalMs = 30000,
+    autoRefreshIntervalMs = 60000,
     initialPeriod = 'day'
   } = options;
 
@@ -117,7 +117,8 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
 
   const isMountedRef = useRef(true);
   const resolvedIdsRef = useRef<ExtractedEnergyStatisticIds | null>(null);
-  const initializedRef = useRef(false);
+  const preferencesRef = useRef<EnergyPreferences | null>(null);
+  const fetchLockRef = useRef(false);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -157,13 +158,19 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     }
   }, [isLiveMode, connectionStatus]);
 
-  // 1. Ingest Energy Preferences (energy/get_prefs)
-  const loadPreferences = useCallback(async () => {
+  // Ingest Energy Preferences
+  const loadPreferences = useCallback(async (): Promise<{
+    prefs: EnergyPreferences;
+    parsed: ExtractedEnergyStatisticIds;
+    isConfigured: boolean;
+  } | null> => {
     try {
       const prefs = await fetchHAEnergyPreferences();
       const isConfigured = isEnergyConfigured(prefs);
       const parsed = extractEnergyStatisticIds(prefs);
+
       resolvedIdsRef.current = parsed;
+      preferencesRef.current = prefs;
 
       if (isMountedRef.current) {
         setPreferences(prefs);
@@ -182,14 +189,14 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     }
   }, [isLiveMode]);
 
-  // 2. Fetch Recorder Statistics, Metadata, and Solar Forecast
-  const loadStatistics = useCallback(async (
+  // Fetch Statistics for specific period and date window
+  const loadStatisticsData = useCallback(async (
     targetPeriod: EnergyHistoryPeriod,
     refDate: Date,
-    customParsed?: ExtractedEnergyStatisticIds | null,
-    silent = false
+    explicitIds?: ExtractedEnergyStatisticIds,
+    bypassCache = false
   ) => {
-    const activeResolved = customParsed || resolvedIdsRef.current || resolvedIds;
+    const activeResolved = explicitIds || resolvedIdsRef.current;
     if (!activeResolved || activeResolved.allStatisticIds.length === 0) {
       if (isMountedRef.current) {
         setIsLoading(false);
@@ -198,26 +205,33 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
       return;
     }
 
-    if (!silent && isMountedRef.current) {
+    if (fetchLockRef.current) return;
+    fetchLockRef.current = true;
+
+    if (isMountedRef.current) {
       setIsFetchingStats(true);
     }
 
     try {
-      // Parallel fetch for statistics, metadata, and solar forecast
-      const [stats, meta, forecast] = await Promise.all([
-        fetchHAEnergyStatistics(
-          undefined,
-          activeResolved.allStatisticIds,
-          targetPeriod,
-          refDate,
-          customRange?.start,
-          customRange?.end
-        ),
-        fetchHAStatisticsMetadata(undefined, activeResolved.allStatisticIds),
-        activeResolved.solarSources.length > 0
-          ? fetchHAEnergySolarForecasts(undefined)
-          : Promise.resolve(null)
-      ]);
+      // 1. Fetch statistics for target period (cached & deduplicated)
+      const stats = await fetchHAEnergyStatistics(
+        undefined,
+        activeResolved.allStatisticIds,
+        targetPeriod,
+        refDate,
+        customRange?.start,
+        customRange?.end,
+        bypassCache
+      );
+
+      // 2. Fetch metadata (cached in memory after first request)
+      const meta = await fetchHAStatisticsMetadata(undefined, activeResolved.allStatisticIds);
+
+      // 3. Fetch solar forecast if solar configured (cached for 15m)
+      let forecast: SolarForecastResponse | null = null;
+      if (activeResolved.solarSources.length > 0) {
+        forecast = await fetchHAEnergySolarForecasts(undefined);
+      }
 
       if (isMountedRef.current) {
         setStatsData(stats);
@@ -232,91 +246,78 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
       }
     } catch (err: any) {
       console.warn(`[useEnergyData] Failed fetching statistics for ${targetPeriod}:`, err);
-      if (isMountedRef.current && !silent) {
+      if (isMountedRef.current) {
         setError(err.message || `Failed to fetch statistics for ${targetPeriod}`);
         setLoadState('error');
       }
     } finally {
+      fetchLockRef.current = false;
       if (isMountedRef.current) {
         setIsFetchingStats(false);
         setIsLoading(false);
       }
     }
-  }, [resolvedIds, customRange]);
+  }, [customRange]);
 
-  // Initial Load on mount or connection change
-  useEffect(() => {
-    let isCurrent = true;
-    const init = async () => {
-      setIsLoading(true);
-      const res = await loadPreferences();
-      if (isCurrent && res) {
-        if (res.isConfigured || !isLiveMode) {
-          await loadStatistics(period, targetDate, res.parsed, false);
-        } else {
-          setIsLoading(false);
-        }
-        initializedRef.current = true;
+  // Master initial load and reload trigger
+  const executeFullFetch = useCallback(async (bypassCache = false) => {
+    setIsLoading(true);
+    const prefResult = await loadPreferences();
+    if (prefResult) {
+      if (prefResult.isConfigured || !isLiveMode) {
+        await loadStatisticsData(period, targetDate, prefResult.parsed, bypassCache);
+      } else {
+        setIsLoading(false);
+        setIsFetchingStats(false);
       }
-    };
-
-    init();
-    return () => {
-      isCurrent = false;
-    };
-  }, [isLiveMode, loadPreferences, loadStatistics, period, targetDate]);
-
-  // Re-sync on connection status transitions
-  useEffect(() => {
-    if (connectionStatus === 'connected' && initializedRef.current) {
-      loadPreferences().then(res => {
-        if (res && (res.isConfigured || !isLiveMode)) {
-          loadStatistics(period, targetDate, res.parsed, true);
-        }
-      });
     }
-  }, [connectionStatus, loadPreferences, loadStatistics, period, targetDate, isLiveMode]);
+  }, [isLiveMode, loadPreferences, loadStatisticsData, period, targetDate]);
 
-  // Period / Date Shift Fetch
+  // Initial mount load
   useEffect(() => {
-    if (resolvedIds && initializedRef.current) {
-      loadStatistics(period, targetDate, resolvedIds, false);
-    }
-  }, [period, targetDate, customRange, loadStatistics, resolvedIds]);
+    executeFullFetch(false);
+  }, [isLiveMode, connectionStatus]); // only on mount or connection change
 
-  // Background Auto-Refresh
+  // Window or Period change load
+  useEffect(() => {
+    if (resolvedIdsRef.current && (isEnergyConfigured(preferencesRef.current) || !isLiveMode)) {
+      loadStatisticsData(period, targetDate, resolvedIdsRef.current, false);
+    }
+  }, [period, targetDate, customRange, loadStatisticsData, isLiveMode]);
+
+  // Background Auto-Refresh (only refreshes if looking at current period and tab is active)
   useEffect(() => {
     if (!autoRefreshIntervalMs || autoRefreshIntervalMs <= 0) return;
     const interval = setInterval(() => {
-      if (resolvedIds && isPeriodAtLimit(period, targetDate)) {
-        loadStatistics(period, targetDate, resolvedIds, true);
+      if (
+        document.visibilityState === 'visible' &&
+        resolvedIdsRef.current &&
+        isPeriodAtLimit(period, targetDate) &&
+        (isEnergyConfigured(preferencesRef.current) || !isLiveMode)
+      ) {
+        loadStatisticsData(period, targetDate, resolvedIdsRef.current, true);
       }
     }, autoRefreshIntervalMs);
     return () => clearInterval(interval);
-  }, [autoRefreshIntervalMs, resolvedIds, period, targetDate, loadStatistics]);
+  }, [autoRefreshIntervalMs, period, targetDate, loadStatisticsData, isLiveMode]);
 
   const handleRefresh = useCallback(async () => {
-    setIsLoading(true);
-    const res = await loadPreferences();
-    if (res && (res.isConfigured || !isLiveMode)) {
-      await loadStatistics(period, targetDate, res.parsed, false);
-    }
-    setIsLoading(false);
-  }, [loadPreferences, loadStatistics, period, targetDate, isLiveMode]);
+    await executeFullFetch(true);
+  }, [executeFullFetch]);
 
   // Time Range & Display Label
   const timeRange = useMemo(() => {
     return computePeriodTimeRange(period, targetDate, customRange?.start, customRange?.end);
   }, [period, targetDate, customRange]);
 
-  // Compute Days in Period for Standing Charges
+  // Days in Period for Standing Charges
   const daysInPeriod = useMemo(() => {
     const s = new Date(timeRange.start).getTime();
     const e = new Date(timeRange.end).getTime();
     return Math.max(1, Math.round((e - s) / (24 * 3600 * 1000)));
   }, [timeRange]);
 
-  // Compute Active Transformed Energy Model
+  // Transform Active Energy Domain Model
   const model: TransformedEnergyModel = useMemo(() => {
     return transformEnergyStatistics(
       preferences || EMPTY_ENERGY_PREFERENCES,
@@ -332,7 +333,7 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     );
   }, [preferences, statsData, metadata, solarForecasts, haCurrency, timeRange.periodType, daysInPeriod, states]);
 
-  // Real-time instantaneous telemetry from active states
+  // Instantaneous power telemetry from active entities
   const realtime: InstantaneousPowerTelemetry = useMemo(() => {
     return computeInstantaneousPower(states, preferences);
   }, [states, preferences]);

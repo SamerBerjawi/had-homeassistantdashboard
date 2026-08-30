@@ -23,7 +23,7 @@ const HA_USER_DATA_KEY = 'had_dashboard_config';
 /**
  * Build Authorization headers for NAS REST requests
  */
-function getAuthHeaders(): Record<string, string> {
+export function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept': 'application/json'

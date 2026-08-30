@@ -7,6 +7,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { useUserConfig } from './useUserConfig';
 import { haWebSocketService } from '../services/haWebSocket';
+import { getAuthHeaders } from '../services/configStorageService';
 import { CarEvMetrics, BikeMetrics } from '../types/mobility';
 import { HAZone } from '../types';
 
@@ -775,15 +776,17 @@ export function useMobilityData() {
     try {
       const response = await fetch('/api/assets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ dataUrl, key }),
-        signal: AbortSignal.timeout(8000)
+        signal: AbortSignal.timeout(12000)
       });
       if (response.ok) {
         const data = await response.json();
         if (data && data.success && data.url) {
           return data.url;
         }
+      } else {
+        console.warn('[useMobilityData] /api/assets responded with status:', response.status);
       }
     } catch (err) {
       console.warn('[useMobilityData] Asset upload to /api/assets failed, falling back to base64:', err);
@@ -796,47 +799,48 @@ export function useMobilityData() {
     base64Data: string
   ) => {
     try {
-      // Immediate local state update for instant UI feedback
-      if (type === 'car_image') {
-        localStorage.setItem(STORAGE_KEYS.CAR_IMAGE, base64Data);
-        setCustomAssets((prev) => ({ ...prev, carImage: base64Data }));
-      } else if (type === 'car_logo') {
-        localStorage.setItem(STORAGE_KEYS.CAR_LOGO, base64Data);
-        setCustomAssets((prev) => ({ ...prev, carLogo: base64Data }));
-      } else if (type === 'bike_image') {
-        localStorage.setItem(STORAGE_KEYS.BIKE_IMAGE, base64Data);
-        setCustomAssets((prev) => ({ ...prev, bikeImage: base64Data }));
-      } else if (type === 'bike_logo') {
-        localStorage.setItem(STORAGE_KEYS.BIKE_LOGO, base64Data);
-        setCustomAssets((prev) => ({ ...prev, bikeLogo: base64Data }));
-      }
-
-      // Persist to NAS asset storage
+      // 1. Upload to NAS persistent volume storage to get public URL
       const finalUrl = await uploadAssetToNas(base64Data, type);
 
+      // 2. Update local state and storage
       if (type === 'car_image') {
-        updateConfig((prev) => ({
+        localStorage.setItem(STORAGE_KEYS.CAR_IMAGE, finalUrl);
+        setCustomAssets((prev) => ({ ...prev, carImage: finalUrl }));
+      } else if (type === 'car_logo') {
+        localStorage.setItem(STORAGE_KEYS.CAR_LOGO, finalUrl);
+        setCustomAssets((prev) => ({ ...prev, carLogo: finalUrl }));
+      } else if (type === 'bike_image') {
+        localStorage.setItem(STORAGE_KEYS.BIKE_IMAGE, finalUrl);
+        setCustomAssets((prev) => ({ ...prev, bikeImage: finalUrl }));
+      } else if (type === 'bike_logo') {
+        localStorage.setItem(STORAGE_KEYS.BIKE_LOGO, finalUrl);
+        setCustomAssets((prev) => ({ ...prev, bikeLogo: finalUrl }));
+      }
+
+      // 3. Persist into global shared configuration (synced to all connected devices via SSE / REST)
+      if (type === 'car_image') {
+        await updateConfig((prev) => ({
           mobility: {
             ...prev.mobility,
             car: { ...prev.mobility.car, vehicleImageUrl: finalUrl }
           }
         }));
       } else if (type === 'car_logo') {
-        updateConfig((prev) => ({
+        await updateConfig((prev) => ({
           mobility: {
             ...prev.mobility,
             car: { ...prev.mobility.car, brandLogoUrl: finalUrl }
           }
         }));
       } else if (type === 'bike_image') {
-        updateConfig((prev) => ({
+        await updateConfig((prev) => ({
           mobility: {
             ...prev.mobility,
             bike: { ...prev.mobility.bike, bikeImageUrl: finalUrl }
           }
         }));
       } else if (type === 'bike_logo') {
-        updateConfig((prev) => ({
+        await updateConfig((prev) => ({
           mobility: {
             ...prev.mobility,
             bike: { ...prev.mobility.bike, brandLogoUrl: finalUrl }

@@ -55,6 +55,18 @@ export interface PeriodTimeRange {
 }
 
 // -------------------------------------------------------------
+// In-Memory Caches & Deduplication
+// -------------------------------------------------------------
+
+const metadataCache = new Map<string, StatisticsMetaData>();
+const statisticsCache = new Map<string, { data: HAStatisticsResponse; expiresAt: number }>();
+const inFlightStatistics = new Map<string, Promise<HAStatisticsResponse>>();
+let solarForecastCache: { data: Record<string, SolarForecastData> | null; expiresAt: number } | null = null;
+
+const STATS_CACHE_TTL_MS = 60 * 1000; // 1 minute cache for current period
+const HISTORICAL_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache for past periods
+
+// -------------------------------------------------------------
 // Period Time Range & Date Arithmetic
 // -------------------------------------------------------------
 
@@ -265,7 +277,7 @@ async function waitForConnection(timeoutMs = 2500): Promise<boolean> {
 }
 
 // -------------------------------------------------------------
-// WebSocket API: recorder/get_statistics_metadata
+// WebSocket API: recorder/get_statistics_metadata (Cached)
 // -------------------------------------------------------------
 
 export async function fetchHAStatisticsMetadata(
@@ -274,6 +286,17 @@ export async function fetchHAStatisticsMetadata(
 ): Promise<Record<string, StatisticsMetaData>> {
   const cleanIds = Array.from(new Set(statisticIds.filter(Boolean)));
   if (cleanIds.length === 0) return {};
+
+  // Check which IDs are missing from in-memory cache
+  const missingIds = cleanIds.filter(id => !metadataCache.has(id));
+  if (missingIds.length === 0) {
+    const cachedMap: Record<string, StatisticsMetaData> = {};
+    for (const id of cleanIds) {
+      const item = metadataCache.get(id);
+      if (item) cachedMap[id] = item;
+    }
+    return cachedMap;
+  }
 
   const isLiveClient = haWebSocketService && !haWebSocketService.isDemo();
   if (isLiveClient) {
@@ -287,7 +310,7 @@ export async function fetchHAStatisticsMetadata(
     try {
       const payload = {
         type: 'recorder/get_statistics_metadata',
-        statistic_ids: cleanIds
+        statistic_ids: missingIds
       };
 
       let result: StatisticsMetaData[] | Record<string, StatisticsMetaData> | null = null;
@@ -299,40 +322,48 @@ export async function fetchHAStatisticsMetadata(
         result = await haWebSocketService.sendRequest<any>('recorder/get_statistics_metadata', payload);
       }
 
-      const map: Record<string, StatisticsMetaData> = {};
       if (Array.isArray(result)) {
         for (const meta of result) {
-          if (meta.statistic_id) map[meta.statistic_id] = meta;
+          if (meta.statistic_id) metadataCache.set(meta.statistic_id, meta);
         }
       } else if (result && typeof result === 'object') {
-        Object.assign(map, result);
+        for (const [id, meta] of Object.entries(result)) {
+          if (meta) metadataCache.set(id, meta as StatisticsMetaData);
+        }
       }
-      return map;
     } catch (err) {
       console.warn('[haEnergyStatistics] recorder/get_statistics_metadata error:', err);
     }
   }
 
-  // Fallback defaults for demo
-  const fallbackMap: Record<string, StatisticsMetaData> = {};
+  const outputMap: Record<string, StatisticsMetaData> = {};
   for (const id of cleanIds) {
-    fallbackMap[id] = {
-      statistic_id: id,
-      source: 'recorder',
-      unit_of_measurement: id.includes('gas') ? 'm³' : id.includes('water') ? 'L' : 'kWh',
-      has_sum: true
-    };
+    const item = metadataCache.get(id);
+    if (item) {
+      outputMap[id] = item;
+    } else {
+      outputMap[id] = {
+        statistic_id: id,
+        source: 'recorder',
+        unit_of_measurement: id.includes('gas') ? 'm³' : id.includes('water') ? 'L' : 'kWh',
+        has_sum: true
+      };
+    }
   }
-  return fallbackMap;
+  return outputMap;
 }
 
 // -------------------------------------------------------------
-// WebSocket API: energy/solar_forecast
+// WebSocket API: energy/solar_forecast (Cached)
 // -------------------------------------------------------------
 
 export async function fetchHAEnergySolarForecasts(
   connection?: any
 ): Promise<Record<string, SolarForecastData> | null> {
+  if (solarForecastCache && solarForecastCache.expiresAt > Date.now()) {
+    return solarForecastCache.data;
+  }
+
   const isLiveClient = haWebSocketService && !haWebSocketService.isDemo();
   if (isLiveClient) {
     await waitForConnection(2500);
@@ -352,10 +383,11 @@ export async function fetchHAEnergySolarForecasts(
       }
 
       if (result && typeof result === 'object') {
-        return result as Record<string, SolarForecastData>;
+        const data = result as Record<string, SolarForecastData>;
+        solarForecastCache = { data, expiresAt: Date.now() + 15 * 60 * 1000 }; // 15 mins cache
+        return data;
       }
     } catch (err) {
-      // Forecast integration might not be installed
       console.debug('[haEnergyStatistics] energy/solar_forecast unavailable:', err);
     }
   }
@@ -364,7 +396,7 @@ export async function fetchHAEnergySolarForecasts(
 }
 
 // -------------------------------------------------------------
-// WebSocket API: recorder/statistics_during_period
+// WebSocket API: recorder/statistics_during_period (Optimized & Deduplicated)
 // -------------------------------------------------------------
 
 export async function fetchHAEnergyStatistics(
@@ -373,14 +405,29 @@ export async function fetchHAEnergyStatistics(
   period: EnergyHistoryPeriod = 'today',
   referenceDate: Date = new Date(),
   customStart?: Date,
-  customEnd?: Date
+  customEnd?: Date,
+  bypassCache = false
 ): Promise<HAStatisticsResponse> {
-  const cleanIds = Array.from(new Set(statisticIds.filter(Boolean)));
+  const cleanIds = Array.from(new Set(statisticIds.filter(Boolean))).sort();
   if (cleanIds.length === 0) {
     return {};
   }
 
   const timeRange = computePeriodTimeRange(period, referenceDate, customStart, customEnd);
+  const cacheKey = `${timeRange.periodType}_${timeRange.start}_${timeRange.end}_${cleanIds.join(',')}`;
+
+  // 1. Check in-memory cache
+  if (!bypassCache) {
+    const cached = statisticsCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
+  }
+
+  // 2. Check if identical request is already in-flight (deduplication)
+  if (inFlightStatistics.has(cacheKey)) {
+    return inFlightStatistics.get(cacheKey)!;
+  }
 
   const isLiveClient = haWebSocketService && !haWebSocketService.isDemo();
   if (isLiveClient) {
@@ -391,33 +438,43 @@ export async function fetchHAEnergyStatistics(
     (!connection && isLiveClient && haWebSocketService.getStatus() === 'connected');
 
   if (isLive) {
+    // Only query 'change' and 'sum' - NEVER query heavy 'state' for energy statistics (prevents database overload)
     const payload = {
       type: 'recorder/statistics_during_period',
       start_time: timeRange.start,
       end_time: timeRange.end,
       statistic_ids: cleanIds,
       period: timeRange.periodType,
-      types: ['change', 'sum', 'state']
+      types: ['change', 'sum']
     };
 
-    try {
-      let result: HAStatisticsResponse | null = null;
-      if (connection && typeof connection.sendMessagePromise === 'function') {
-        result = await connection.sendMessagePromise(payload);
-      } else if (connection && typeof connection.sendRequest === 'function') {
-        result = await connection.sendRequest('recorder/statistics_during_period', payload);
-      } else {
-        result = await haWebSocketService.sendRequest<HAStatisticsResponse>('recorder/statistics_during_period', payload);
-      }
+    const fetchPromise = (async (): Promise<HAStatisticsResponse> => {
+      try {
+        let result: HAStatisticsResponse | null = null;
+        if (connection && typeof connection.sendMessagePromise === 'function') {
+          result = await connection.sendMessagePromise(payload);
+        } else if (connection && typeof connection.sendRequest === 'function') {
+          result = await connection.sendRequest('recorder/statistics_during_period', payload);
+        } else {
+          result = await haWebSocketService.sendRequest<HAStatisticsResponse>('recorder/statistics_during_period', payload);
+        }
 
-      if (result && typeof result === 'object') {
-        return result;
+        if (result && typeof result === 'object') {
+          const isHistorical = new Date(timeRange.end).getTime() < (Date.now() - 3600 * 1000);
+          const ttl = isHistorical ? HISTORICAL_CACHE_TTL_MS : STATS_CACHE_TTL_MS;
+          statisticsCache.set(cacheKey, { data: result, expiresAt: Date.now() + ttl });
+          return result;
+        }
+      } catch (err) {
+        console.warn('[haEnergyStatistics] recorder/statistics_during_period error:', err);
+      } finally {
+        inFlightStatistics.delete(cacheKey);
       }
-    } catch (err) {
-      console.warn('[haEnergyStatistics] recorder/statistics_during_period error:', err);
-    }
+      return {};
+    })();
 
-    return {};
+    inFlightStatistics.set(cacheKey, fetchPromise);
+    return fetchPromise;
   }
 
   // Synthetic preview generator used exclusively in offline demo mode
@@ -466,13 +523,11 @@ function generateSyntheticStatistics(
 
       if (id.includes('solar') || id.includes('pv') || id.includes('production')) {
         if (periodType === 'month') {
-          // Monthly seasonality (bell curve over months)
           const m = date.getMonth();
           delta = 250 + Math.sin((m / 12) * Math.PI) * 450;
         } else if (periodType === 'day') {
           delta = 14.5 + Math.sin(day * 0.4) * 6;
         } else {
-          // Hourly curve
           if (hour >= 6 && hour <= 19) {
             const bell = Math.sin(((hour - 6) / 13) * Math.PI);
             delta = Math.max(0, bell * (3.8 + Math.sin(i * 0.4) * 0.6));

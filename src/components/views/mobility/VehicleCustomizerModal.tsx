@@ -43,6 +43,16 @@ export function VehicleCustomizerModal({
   const bikeImgInputRef = useRef<HTMLInputElement>(null);
   const bikeLogoInputRef = useRef<HTMLInputElement>(null);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTarget);
+      setCarImageDraft(currentCarImage);
+      setCarLogoDraft(currentCarLogo);
+      setBikeImageDraft(currentBikeImage);
+      setBikeLogoDraft(currentBikeLogo);
+    }
+  }, [isOpen, initialTarget, currentCarImage, currentCarLogo, currentBikeImage, currentBikeLogo]);
+
   if (!isOpen) return null;
 
   const handleFileUpload = (
