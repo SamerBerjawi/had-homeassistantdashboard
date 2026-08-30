@@ -55,6 +55,9 @@ export interface EnvironmentalEnergy {
   coalSavedKg: number;
   treesPlantedEquivalent: number;
   gasOffsetM3: number;
+  isCo2Estimated: boolean;
+  carbonIntensitySource: string;
+  carbonIntensityKgPerKWh: number;
 }
 
 export interface DeviceConsumer {
@@ -109,11 +112,63 @@ export interface EnergyDataState {
  * Standard environmental conversion factors (EU/US average)
  */
 export const ENV_FACTORS = {
-  CO2_PER_KWH_KG: 0.475,   // 0.475 kg CO2 per kWh solar
-  COAL_PER_KWH_KG: 0.400,  // 0.400 kg standard coal saved per kWh solar
-  CO2_PER_TREE_YR_KG: 20.0, // 1 mature tree absorbs ~20 kg CO2 / year
-  GAS_PER_KWH_M3: 0.105    // 0.105 m3 natural gas equivalent
+  CO2_PER_KWH_KG: 0.475,   // 0.475 kg CO2 per kWh solar (Global average estimate)
+  COAL_PER_KWH_KG: 0.400,  // 0.400 kg standard coal saved per kWh solar (Rough approximation)
+  CO2_PER_TREE_YR_KG: 20.0, // 1 mature tree absorbs ~20 kg CO2 / year (Rough approximation)
+  GAS_PER_KWH_M3: 0.105    // 0.105 m3 natural gas equivalent (Standard grid displacement factor)
 };
+
+/**
+ * Helper to discover an active carbon intensity sensor in Home Assistant
+ * (e.g. from CO2 Signal or Electricity Maps integrations)
+ */
+export function findCarbonIntensitySensor(
+  states: Record<string, any>
+): { entityId: string; intensityKgPerKWh: number } | null {
+  if (!states) return null;
+
+  const wellKnown = [
+    'sensor.co2_signal_grid_carbon_intensity',
+    'sensor.electricity_maps_grid_carbon_intensity',
+    'sensor.grid_carbon_intensity',
+    'sensor.carbon_intensity',
+    'sensor.co2_intensity'
+  ];
+
+  for (const id of wellKnown) {
+    const ent = states[id];
+    if (ent && ent.state !== 'unavailable' && ent.state !== 'unknown') {
+      const val = parseFloat(ent.state);
+      if (!isNaN(val) && val > 0) {
+        const uom = (ent.attributes?.unit_of_measurement || '').toLowerCase().trim();
+        // If g/kWh or gCO2eq/kWh, convert to kg/kWh
+        const intensityKg = (uom.includes('g') && !uom.includes('kg')) ? val / 1000 : val;
+        return { entityId: id, intensityKgPerKWh: intensityKg };
+      }
+    }
+  }
+
+  for (const [id, ent] of Object.entries(states)) {
+    if (!ent || ent.state === 'unavailable' || ent.state === 'unknown') continue;
+    const uom = (ent.attributes?.unit_of_measurement || '').toLowerCase().trim();
+    const dc = (ent.attributes?.device_class || '').toLowerCase().trim();
+    const fn = (ent.attributes?.friendly_name || '').toLowerCase();
+    const lowerId = id.toLowerCase();
+
+    const isIntensityUnit = uom.includes('/kwh') || uom.includes('co2eq') || uom.includes('co2/kwh') || uom.includes('co2e/kwh');
+    const isCarbon = dc === 'carbon_dioxide' || dc === 'carbon_intensity' || fn.includes('carbon intensity') || fn.includes('co2 intensity') || lowerId.includes('carbon_intensity') || lowerId.includes('co2_intensity');
+
+    if (isIntensityUnit && isCarbon) {
+      const val = parseFloat(ent.state);
+      if (!isNaN(val) && val > 0) {
+        const intensityKg = (uom.includes('g') && !uom.includes('kg')) ? val / 1000 : val;
+        return { entityId: id, intensityKgPerKWh: intensityKg };
+      }
+    }
+  }
+
+  return null;
+}
 
 /**
  * Helper to parse power values (W or kW) to kW number
@@ -654,7 +709,15 @@ export function calculateEnergyState(
   const netCost = Number((importCost - exportEarnings).toFixed(2));
 
   // 7. Environmental Impact
-  const co2AvoidedKg = Number((solarProductionKWh * ENV_FACTORS.CO2_PER_KWH_KG).toFixed(2));
+  const liveCarbon = findCarbonIntensitySensor(states);
+  const co2FactorKg = liveCarbon ? liveCarbon.intensityKgPerKWh : ENV_FACTORS.CO2_PER_KWH_KG;
+  const isCo2Estimated = !liveCarbon;
+  const carbonIntensitySource = liveCarbon
+    ? (states[liveCarbon.entityId]?.attributes?.friendly_name || liveCarbon.entityId)
+    : 'Global average estimate (~0.475 kg/kWh)';
+  const carbonIntensityKgPerKWh = co2FactorKg;
+
+  const co2AvoidedKg = Number((solarProductionKWh * co2FactorKg).toFixed(2));
   const coalSavedKg = Number((solarProductionKWh * ENV_FACTORS.COAL_PER_KWH_KG).toFixed(2));
   const treesPlantedEquivalent = Number((co2AvoidedKg / (ENV_FACTORS.CO2_PER_TREE_YR_KG / 365)).toFixed(0));
   const gasOffsetM3 = Number((solarProductionKWh * ENV_FACTORS.GAS_PER_KWH_M3).toFixed(2));
@@ -790,22 +853,6 @@ export function calculateEnergyState(
     c.percentage = Number(((c.energyKWh / totalSubKWh) * 100).toFixed(1));
   });
 
-  // 9. Generate Timeseries matching exact energy profile & current telemetry
-  const timeseries = generatePowerSourcesTimeseries(
-    solarPower, 
-    gridPower, 
-    batteryPower, 
-    homeConsumption,
-    solarProductionKWh,
-    totalConsumptionKWh,
-    solarFedToGridKWh,
-    gridImportKWh,
-    batteryChargedKWh,
-    batteryDischargedKWh
-  );
-  const weeklyTimeseries = generate7DayTimeseries(solarProductionKWh, totalConsumptionKWh, solarFedToGridKWh, gridImportKWh);
-  const monthlyTimeseries = generate30DayTimeseries(solarProductionKWh, totalConsumptionKWh, solarFedToGridKWh, gridImportKWh);
-
   return {
     realtime: {
       solarPower: Number(solarPower.toFixed(2)),
@@ -839,234 +886,15 @@ export function calculateEnergyState(
       co2AvoidedKg,
       coalSavedKg,
       treesPlantedEquivalent,
-      gasOffsetM3
+      gasOffsetM3,
+      isCo2Estimated,
+      carbonIntensitySource,
+      carbonIntensityKgPerKWh
     },
     deviceConsumers,
-    timeseries,
-    weeklyTimeseries,
-    monthlyTimeseries,
+    timeseries: [],
+    weeklyTimeseries: [],
+    monthlyTimeseries: [],
     boundEntities
   };
-}
-
-function generatePowerSourcesTimeseries(
-  currentSolar: number, 
-  currentGrid: number, 
-  currentBattery: number, 
-  currentHome: number,
-  solarProductionKWh: number,
-  totalConsumptionKWh: number,
-  solarFedToGridKWh: number,
-  gridImportKWh: number,
-  batteryChargedKWh: number,
-  batteryDischargedKWh: number
-): TimeseriesEnergyPoint[] {
-  const points: TimeseriesEnergyPoint[] = [];
-  
-  // Peak scaling factor for solar based on daily yield (e.g. 16.44 kWh -> ~3.4 kW peak)
-  const solarScale = solarProductionKWh / 16.44;
-  const homeScale = totalConsumptionKWh / 4.61;
-
-  for (let i = 0; i <= 96; i++) {
-    const hour = i / 4;
-    const h = Math.floor(hour);
-    const m = (hour % 1) * 60;
-    const hourFormatted = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-
-    let label = '';
-    if (i === 0) label = '12:00 AM';
-    else if (i === 16) label = '4:00 AM';
-    else if (i === 32) label = '8:00 AM';
-    else if (i === 48) label = '12:00 PM';
-    else if (i === 64) label = '4:00 PM';
-    else if (i === 80) label = '8:00 PM';
-    else if (i === 96) label = '11:59 PM';
-
-    let solar = 0;
-    let gridImport = 0;
-    let gridExport = 0;
-    let batteryDischarge = 0;
-    let batteryCharge = 0;
-    let consumption = 0.20 * homeScale;
-
-    // Solar daylight curve from 06:15 to 19:45
-    if (hour >= 6.25 && hour <= 19.75) {
-      const peakHour = 13.0;
-      const sigma = 3.2;
-      const diff = (hour - peakHour) / sigma;
-      solar = Math.max(0, 3.45 * solarScale * Math.exp(-0.5 * diff * diff));
-      
-      // Slight passing cloud variation around midday
-      if (hour >= 11.25 && hour <= 11.75) solar *= 0.85;
-      if (hour >= 14.5 && hour <= 15.0) solar *= 0.88;
-    }
-
-    // Household load profile (morning peak, midday baseload + lunch, evening dinner peak)
-    if (hour < 6.5) {
-      consumption = (0.22 + Math.sin(hour * 1.5) * 0.04) * homeScale;
-      // Night import / battery discharge
-      if (batteryDischargedKWh > 0.5) {
-        batteryDischarge = consumption * 0.8;
-        gridImport = consumption * 0.2;
-      } else {
-        gridImport = consumption * 0.9;
-      }
-    } else if (hour >= 6.5 && hour < 9.0) {
-      // Breakfast / getting ready peak
-      if (hour >= 7.5 && hour <= 8.25) {
-        consumption = 1.45 * homeScale;
-      } else {
-        consumption = 0.55 * homeScale;
-      }
-      if (solar >= consumption) {
-        // Solar covers load
-      } else {
-        const deficit = consumption - solar;
-        gridImport = Math.min(deficit, 0.4 * homeScale);
-        batteryDischarge = deficit - gridImport;
-      }
-    } else if (hour >= 9.0 && hour <= 17.5) {
-      // Daytime appliance spikes (EV / Heat Pump / Dishwasher)
-      consumption = 0.35 * homeScale;
-      if (hour >= 10.0 && hour <= 10.5) consumption = 1.2 * homeScale;
-      if (hour >= 12.5 && hour <= 13.25) consumption = 0.95 * homeScale;
-      if (hour >= 15.0 && hour <= 15.75) consumption = 0.85 * homeScale;
-
-      const surplus = Math.max(0, solar - consumption);
-      if (hour < 14.0 && batteryChargedKWh > 0.5) {
-        batteryCharge = Math.min(surplus * 0.4, 1.5);
-        gridExport = surplus - batteryCharge;
-      } else {
-        gridExport = surplus;
-      }
-    } else if (hour > 17.5 && hour <= 22.0) {
-      // Evening load
-      if (hour >= 18.5 && hour <= 20.5) {
-        consumption = (0.75 + Math.sin(hour * 2) * 0.15) * homeScale;
-      } else {
-        consumption = 0.45 * homeScale;
-      }
-      
-      if (solar >= consumption) {
-        gridExport = solar - consumption;
-      } else {
-        const deficit = consumption - solar;
-        if (batteryDischargedKWh > 0.5) {
-          batteryDischarge = deficit * 0.7;
-          gridImport = deficit * 0.3;
-        } else {
-          gridImport = Math.min(deficit, 0.2);
-          batteryDischarge = Math.max(0, deficit - gridImport);
-        }
-      }
-    } else {
-      consumption = 0.24 * homeScale;
-      gridImport = consumption * 0.3;
-      batteryDischarge = consumption * 0.7;
-    }
-
-    // Near current hour (~19:30), smoothly blend toward live sensor readings
-    const hourDelta = Math.abs(hour - 19.5);
-    if (hourDelta < 0.75) {
-      const blend = 1.0 - (hourDelta / 0.75);
-      solar = solar * (1 - blend) + currentSolar * blend;
-      consumption = consumption * (1 - blend) + currentHome * blend;
-      if (currentGrid < 0) {
-        gridExport = gridExport * (1 - blend) + Math.abs(currentGrid) * blend;
-        gridImport = 0;
-      } else {
-        gridImport = gridImport * (1 - blend) + currentGrid * blend;
-        gridExport = 0;
-      }
-      if (currentBattery > 0) {
-        batteryDischarge = batteryDischarge * (1 - blend) + currentBattery * blend;
-        batteryCharge = 0;
-      } else {
-        batteryCharge = batteryCharge * (1 - blend) + Math.abs(currentBattery) * blend;
-        batteryDischarge = 0;
-      }
-    }
-
-    // Zero clamps
-    solar = Math.max(0, solar);
-    consumption = Math.max(0.1, consumption);
-    gridImport = Math.max(0, gridImport);
-    gridExport = Math.max(0, gridExport);
-    batteryDischarge = Math.max(0, batteryDischarge);
-    batteryCharge = Math.max(0, batteryCharge);
-
-    points.push({
-      timestamp: hourFormatted,
-      label,
-      hour,
-      solar: Number(solar.toFixed(2)),
-      gridImport: Number(gridImport.toFixed(2)),
-      gridExport: -Number(gridExport.toFixed(2)),
-      batteryDischarge: Number(batteryDischarge.toFixed(2)),
-      batteryCharge: -Number(batteryCharge.toFixed(2)),
-      consumption: Number(consumption.toFixed(2))
-    });
-  }
-
-  return points;
-}
-
-function generate7DayTimeseries(
-  solarKWh: number,
-  consumptionKWh: number,
-  gridExportKWh: number,
-  gridImportKWh: number
-): TimeseriesEnergyPoint[] {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  return days.map((day, idx) => {
-    const isToday = idx === 6; // Sunday / Today
-    const factor = isToday ? 1.0 : (0.88 + Math.sin(idx * 1.5) * 0.18);
-    const solar = Number((solarKWh * factor).toFixed(2));
-    const consumption = Number((consumptionKWh * (0.92 + Math.cos(idx * 1.1) * 0.12)).toFixed(2));
-    const gridExport = Number((gridExportKWh * factor).toFixed(2));
-    const gridImport = Number((gridImportKWh * (1.1 - factor * 0.1)).toFixed(2));
-    const batteryCharge = Number((Math.max(0, (solar - consumption) * 0.35)).toFixed(2));
-    const batteryDischarge = Number((Math.max(0, (consumption - 0.5) * 0.4)).toFixed(2));
-
-    return {
-      timestamp: day,
-      label: day,
-      hour: idx,
-      solar,
-      gridImport,
-      gridExport: -gridExport,
-      batteryDischarge,
-      batteryCharge: -batteryCharge,
-      consumption
-    };
-  });
-}
-
-function generate30DayTimeseries(
-  solarKWh: number,
-  consumptionKWh: number,
-  gridExportKWh: number,
-  gridImportKWh: number
-): TimeseriesEnergyPoint[] {
-  const points: TimeseriesEnergyPoint[] = [];
-  for (let d = 1; d <= 30; d++) {
-    const factor = 0.85 + Math.sin(d / 4.2) * 0.22;
-    const solar = Number((solarKWh * factor).toFixed(2));
-    const consumption = Number((consumptionKWh * (0.90 + Math.cos(d / 5.5) * 0.15)).toFixed(2));
-    const gridExport = Number((gridExportKWh * factor).toFixed(2));
-    const gridImport = Number((gridImportKWh * (1.05 - factor * 0.08)).toFixed(2));
-
-    points.push({
-      timestamp: `Day ${d}`,
-      label: d % 5 === 0 ? `Day ${d}` : '',
-      hour: d,
-      solar,
-      gridImport,
-      gridExport: -gridExport,
-      batteryDischarge: Number((consumption * 0.3).toFixed(2)),
-      batteryCharge: -Number((solar * 0.2).toFixed(2)),
-      consumption
-    });
-  }
-  return points;
 }

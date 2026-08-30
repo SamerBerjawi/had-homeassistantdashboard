@@ -464,10 +464,8 @@ class HAWebSocketClient {
 
   private startStatePolling() {
     this.stopStatePolling();
-    this.pollTimer = setInterval(() => {
-      this.refreshStates();
-    }, 20000);
-
+    // Do not poll on interval - Home Assistant sends real-time state_changed pushes.
+    // Only refresh when the tab becomes visible.
     if (typeof document !== 'undefined') {
       this.visibilityHandler = () => {
         if (document.visibilityState === 'visible') {

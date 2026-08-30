@@ -72,6 +72,8 @@ export interface HAArea {
   color?: string | null;
   order?: number;
   labels?: string[];
+  temperature_entity_id?: string | null;
+  humidity_entity_id?: string | null;
 }
 
 export interface HADevice {

@@ -114,13 +114,13 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     window.addEventListener('had_config_updated' as any, handleLocalUpdated);
 
-    // 4. Background Polling Fallback Safety Net (every 20 seconds)
-    // NOTE: Keep this fallback active as a resilience safety net in case the SSE push stream drops or is blocked by a proxy.
-    const syncInterval = setInterval(() => {
-      if (authState.isAuthenticated && !authState.isDemo && document.visibilityState === 'visible') {
+    // 4. Global / Manual Refresh Event Listener
+    const handleGlobalRefresh = () => {
+      if (authState.isAuthenticated && !authState.isDemo && isMounted) {
         loadData(true);
       }
-    }, 20000);
+    };
+    window.addEventListener('had_manual_refresh', handleGlobalRefresh);
 
     // 5. Real-Time Push Stream (SSE) for instant cross-device synchronization (~1s)
     let eventSource: EventSource | null = null;
@@ -158,9 +158,9 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
       window.removeEventListener('had_config_updated' as any, handleLocalUpdated);
+      window.removeEventListener('had_manual_refresh', handleGlobalRefresh);
       if (bc) bc.close();
       if (eventSource) eventSource.close();
-      clearInterval(syncInterval);
     };
   }, [authState, isInitializing, isProduction]);
 

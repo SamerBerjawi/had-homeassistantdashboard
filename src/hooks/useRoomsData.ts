@@ -36,6 +36,7 @@ export function useRoomsData() {
     rawAreas,
     rawFloors,
     rawDevices,
+    states,
     callHAService,
     updateEntityState
   } = useAutoLayoutStore(
@@ -46,6 +47,7 @@ export function useRoomsData() {
       rawAreas: s.rawAreas,
       rawFloors: s.rawFloors,
       rawDevices: s.rawDevices,
+      states: s.states,
       callHAService: s.callHAService,
       updateEntityState: s.updateEntityState
     }))
@@ -146,7 +148,41 @@ export function useRoomsData() {
         }
       }
 
-      // Aggregate Sensors from real room entities - find the sensor with highest value
+      // 1. Primary Sensor Resolution: Check explicit temperature_entity_id / humidity_entity_id configured in HA Area Registry
+      let primaryTemp: number | undefined;
+      if (area.temperature_entity_id) {
+        const targetEntity = states?.[area.temperature_entity_id] || resolvedEntities?.[area.temperature_entity_id];
+        if (targetEntity) {
+          const val = parseFloat(targetEntity.state);
+          const curTemp = targetEntity.attributes?.current_temperature;
+          const numVal = !isNaN(val) ? val : (typeof curTemp === 'number' && !isNaN(curTemp) ? curTemp : null);
+          if (numVal !== null) {
+            const uom = (targetEntity.attributes?.unit_of_measurement || '').toLowerCase();
+            let tempInCelsius = numVal;
+            if (uom.includes('f') && !uom.includes('c')) {
+              tempInCelsius = (numVal - 32) * (5 / 9);
+            }
+            if (tempInCelsius >= -20 && tempInCelsius <= 60) {
+              primaryTemp = tempInCelsius;
+            }
+          }
+        }
+      }
+
+      let primaryHum: number | undefined;
+      if (area.humidity_entity_id) {
+        const targetEntity = states?.[area.humidity_entity_id] || resolvedEntities?.[area.humidity_entity_id];
+        if (targetEntity) {
+          const val = parseFloat(targetEntity.state);
+          const curHum = targetEntity.attributes?.current_humidity;
+          const numVal = !isNaN(val) ? val : (typeof curHum === 'number' && !isNaN(curHum) ? curHum : null);
+          if (numVal !== null && numVal >= 0 && numVal <= 100) {
+            primaryHum = numVal;
+          }
+        }
+      }
+
+      // 2. Fallback Heuristic: Scan room sensors if no primary sensor is configured or available
       let maxTemp: number | undefined;
       let maxHum: number | undefined;
       let illuminanceVal: number | undefined;
@@ -186,27 +222,31 @@ export function useRoomsData() {
           id.includes('signal');
 
         if (!isHardwareDiagnostic && !isNaN(val)) {
-          // Temperature: device_class === 'temperature' OR valid temp unit with temperature-related ID
-          const isTempUnit = uom === '°c' || uom === '°f' || uom === 'c' || uom === 'f' || uom.includes('°c') || uom.includes('°f');
-          const isTempSensor = dc === 'temperature' || (isTempUnit && (id.includes('temp') || id.includes('weather') || id.includes('climate')));
+          // Temperature fallback (only if no primary temp sensor configured)
+          if (primaryTemp === undefined) {
+            const isTempUnit = uom === '°c' || uom === '°f' || uom === 'c' || uom === 'f' || uom.includes('°c') || uom.includes('°f');
+            const isTempSensor = dc === 'temperature' || (isTempUnit && (id.includes('temp') || id.includes('weather') || id.includes('climate')));
 
-          if (isTempSensor) {
-            let tempInCelsius = val;
-            if (uom.includes('f') && !uom.includes('c')) {
-              tempInCelsius = (val - 32) * (5 / 9);
-            }
-            // Sanity check for room environmental temp range
-            if (tempInCelsius >= -20 && tempInCelsius <= 60) {
-              maxTemp = maxTemp === undefined ? tempInCelsius : Math.max(maxTemp, tempInCelsius);
+            if (isTempSensor) {
+              let tempInCelsius = val;
+              if (uom.includes('f') && !uom.includes('c')) {
+                tempInCelsius = (val - 32) * (5 / 9);
+              }
+              // Sanity check for room environmental temp range
+              if (tempInCelsius >= -20 && tempInCelsius <= 60) {
+                maxTemp = maxTemp === undefined ? tempInCelsius : Math.max(maxTemp, tempInCelsius);
+              }
             }
           }
 
-          // Humidity: MUST have device_class === 'humidity' OR ('%' unit with humidity/hygrometer ID)
-          const isHumiditySensor = dc === 'humidity' || (uom === '%' && (id.includes('humidity') || id.includes('hygrometer')));
-          if (isHumiditySensor) {
-            // Sanity check for humidity percentage
-            if (val >= 0 && val <= 100) {
-              maxHum = maxHum === undefined ? val : Math.max(maxHum, val);
+          // Humidity fallback (only if no primary humidity sensor configured)
+          if (primaryHum === undefined) {
+            const isHumiditySensor = dc === 'humidity' || (uom === '%' && (id.includes('humidity') || id.includes('hygrometer')));
+            if (isHumiditySensor) {
+              // Sanity check for humidity percentage
+              if (val >= 0 && val <= 100) {
+                maxHum = maxHum === undefined ? val : Math.max(maxHum, val);
+              }
             }
           }
 
@@ -223,16 +263,20 @@ export function useRoomsData() {
         }
       }
 
-      // If climate entities exist, compare with climate current_temperature and current_humidity
+      // If climate entities exist and no primary sensor configured, compare with climate current_temperature and current_humidity
       if (entityGroup.climates.length > 0) {
         for (const c of entityGroup.climates) {
-          const curTemp = c.attributes?.current_temperature;
-          if (typeof curTemp === 'number' && !isNaN(curTemp) && curTemp >= -20 && curTemp <= 60) {
-            maxTemp = maxTemp === undefined ? curTemp : Math.max(maxTemp, curTemp);
+          if (primaryTemp === undefined) {
+            const curTemp = c.attributes?.current_temperature;
+            if (typeof curTemp === 'number' && !isNaN(curTemp) && curTemp >= -20 && curTemp <= 60) {
+              maxTemp = maxTemp === undefined ? curTemp : Math.max(maxTemp, curTemp);
+            }
           }
-          const curHum = c.attributes?.current_humidity;
-          if (typeof curHum === 'number' && !isNaN(curHum) && curHum >= 0 && curHum <= 100) {
-            maxHum = maxHum === undefined ? curHum : Math.max(maxHum, curHum);
+          if (primaryHum === undefined) {
+            const curHum = c.attributes?.current_humidity;
+            if (typeof curHum === 'number' && !isNaN(curHum) && curHum >= 0 && curHum <= 100) {
+              maxHum = maxHum === undefined ? curHum : Math.max(maxHum, curHum);
+            }
           }
         }
       }
@@ -259,9 +303,12 @@ export function useRoomsData() {
         }
       }
 
+      const finalTemp = primaryTemp !== undefined ? primaryTemp : maxTemp;
+      const finalHum = primaryHum !== undefined ? primaryHum : maxHum;
+
       const sensorSummary: AreaSensorSummary = {
-        temperature: maxTemp !== undefined ? parseFloat(maxTemp.toFixed(1)) : undefined,
-        humidity: maxHum !== undefined ? Math.round(maxHum) : undefined,
+        temperature: finalTemp !== undefined ? parseFloat(finalTemp.toFixed(1)) : undefined,
+        humidity: finalHum !== undefined ? Math.round(finalHum) : undefined,
         illuminance: illuminanceVal,
         co2Level: co2Val,
         motionDetected,

@@ -100,7 +100,7 @@ const EMPTY_MODEL = transformEnergyStatistics(
 
 export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyDataResult {
   const {
-    autoRefreshIntervalMs = 60000,
+    autoRefreshIntervalMs = 0,
     initialPeriod = 'day'
   } = options;
 
@@ -297,7 +297,7 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     reloadNonce
   ]);
 
-  // Background Auto-Refresh (only when looking at current period and tab is active)
+  // Background Auto-Refresh (only when explicit autoRefreshIntervalMs is provided)
   useEffect(() => {
     if (!autoRefreshIntervalMs || autoRefreshIntervalMs <= 0) return;
     const interval = setInterval(() => {
@@ -307,6 +307,17 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     }, autoRefreshIntervalMs);
     return () => clearInterval(interval);
   }, [autoRefreshIntervalMs, period, targetDate]);
+
+  // Global / Manual Refresh Event Listener
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      setReloadNonce((n) => n + 1);
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('had_manual_refresh', handleGlobalRefresh);
+      return () => window.removeEventListener('had_manual_refresh', handleGlobalRefresh);
+    }
+  }, []);
 
   const handleRefresh = useCallback(async () => {
     setReloadNonce((n) => n + 1);

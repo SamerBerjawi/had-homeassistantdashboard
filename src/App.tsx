@@ -20,6 +20,7 @@ import { useUserConfig } from './contexts/ConfigContext';
 import { PAGE_THEMES } from './config/pageThemes';
 import DynamicPhosphorIcon from './components/ui/DynamicPhosphorIcon';
 import { useRoomsData } from './hooks/useRoomsData';
+import { haWebSocketService } from './services/haWebSocket';
 
 // Eagerly-loaded views (always visible)
 import OverviewView from './components/views/OverviewView';
@@ -241,6 +242,28 @@ export default function App() {
     ? currentSelectedArea.name
     : currentTheme.title;
 
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+  const handleManualRefresh = async () => {
+    if (isManualRefreshing) return;
+    setIsManualRefreshing(true);
+    try {
+      if (haWebSocketService && !haWebSocketService.isDemo()) {
+        await haWebSocketService.refreshStates();
+      }
+      window.dispatchEvent(new CustomEvent('had_manual_refresh'));
+      addToast({
+        title: 'Dashboard Refreshed',
+        message: 'All entities, sensors, and telemetry have been updated.',
+        type: 'info'
+      });
+    } catch (err: any) {
+      console.warn('[App] Manual refresh error:', err);
+    } finally {
+      setTimeout(() => setIsManualRefreshing(false), 600);
+    }
+  };
+
   return (
     <div className={`flex h-screen h-[100dvh] w-screen overflow-hidden font-sans select-none pwa-safe-container ${
       darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
@@ -411,6 +434,27 @@ export default function App() {
                   <span className="hidden sm:inline">Syncing…</span>
                 </div>
               )}
+
+              {/* Manual Refresh Button */}
+              <button
+                type="button"
+                onClick={handleManualRefresh}
+                disabled={isManualRefreshing}
+                className={`p-2 rounded-xl border transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center ${
+                  isManualRefreshing
+                    ? 'bg-sky-500/20 border-sky-500/40 text-sky-400'
+                    : darkMode
+                    ? 'bg-slate-900/80 hover:bg-slate-800 border-white/10 text-slate-300 hover:text-white shadow-xs'
+                    : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-900 shadow-xs'
+                }`}
+                title="Refresh Dashboard"
+              >
+                <ArrowsClockwise
+                  size={18}
+                  weight="bold"
+                  className={`${isManualRefreshing ? 'animate-spin text-sky-400' : ''}`}
+                />
+              </button>
 
               <NotificationBell
                 darkMode={darkMode}

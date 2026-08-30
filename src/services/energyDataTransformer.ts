@@ -216,62 +216,52 @@ export function transformEnergyStatistics(
     }
   }
 
-  // Generate canonical slots for the period (strictly deduplicated and aligned)
-  let sortedTimestamps: number[] = [];
-  if (periodType === '5minute') {
-    const firstTs = rawTimestamps.length > 0 ? Math.min(...rawTimestamps) : Date.now();
-    const baseDate = new Date(firstTs);
-    baseDate.setHours(0, 0, 0, 0);
-    const baseMs = baseDate.getTime();
-    for (let m = 0; m < 24 * 12; m++) {
-      sortedTimestamps.push(baseMs + m * 5 * 60 * 1000);
+  // Generate canonical slots using real reported timestamps from Home Assistant
+  // (deduplicating near-simultaneous timestamps across multiple sensors using a small tolerance window)
+  const clusterToleranceMs =
+    periodType === '5minute' ? 90 * 1000 :
+    periodType === 'hour' ? 15 * 60 * 1000 :
+    periodType === 'day' ? 6 * 3600 * 1000 :
+    7 * 24 * 3600 * 1000;
+
+  const sortedRaw = Array.from(new Set(rawTimestamps)).sort((a, b) => a - b);
+  const sortedTimestamps: number[] = [];
+
+  for (const ts of sortedRaw) {
+    if (sortedTimestamps.length === 0) {
+      sortedTimestamps.push(ts);
+    } else {
+      const last = sortedTimestamps[sortedTimestamps.length - 1];
+      if (ts - last > clusterToleranceMs) {
+        sortedTimestamps.push(ts);
+      }
     }
-  } else if (periodType === 'hour') {
-    const firstTs = rawTimestamps.length > 0 ? Math.min(...rawTimestamps) : Date.now();
-    const baseDate = new Date(firstTs);
-    baseDate.setMinutes(0, 0, 0, 0);
-    const baseMs = baseDate.getTime();
-    for (let h = 0; h < 24; h++) {
-      sortedTimestamps.push(baseMs + h * 3600 * 1000);
-    }
-  } else {
-    sortedTimestamps = Array.from(new Set(rawTimestamps)).sort((a, b) => a - b);
   }
 
   // Helper to test if two timestamps belong to the same period slot
   const isSameSlot = (tMs: number, slotMs: number): boolean => {
-    const d1 = new Date(tMs);
-    const d2 = new Date(slotMs);
-    if (periodType === 'month') {
-      return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth();
+    const diff = Math.abs(tMs - slotMs);
+    if (periodType === '5minute') {
+      return diff <= clusterToleranceMs;
+    }
+    if (periodType === 'hour') {
+      return diff <= clusterToleranceMs;
     }
     if (periodType === 'day') {
+      const d1 = new Date(tMs);
+      const d2 = new Date(slotMs);
       return (
         d1.getFullYear() === d2.getFullYear() &&
         d1.getMonth() === d2.getMonth() &&
         d1.getDate() === d2.getDate()
       );
     }
-    if (periodType === '5minute') {
-      const diff = Math.abs(tMs - slotMs);
-      if (diff < 2.5 * 60 * 1000) return true;
-      return (
-        d1.getFullYear() === d2.getFullYear() &&
-        d1.getMonth() === d2.getMonth() &&
-        d1.getDate() === d2.getDate() &&
-        d1.getHours() === d2.getHours() &&
-        Math.floor(d1.getMinutes() / 5) === Math.floor(d2.getMinutes() / 5)
-      );
+    if (periodType === 'month') {
+      const d1 = new Date(tMs);
+      const d2 = new Date(slotMs);
+      return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth();
     }
-    // hour
-    const diff = Math.abs(tMs - slotMs);
-    if (diff < 30 * 60 * 1000) return true;
-    return (
-      d1.getFullYear() === d2.getFullYear() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getDate() === d2.getDate() &&
-      d1.getHours() === d2.getHours()
-    );
+    return diff <= clusterToleranceMs;
   };
 
   // Helper to lookup stat change at a given bucket timestamp
@@ -727,14 +717,10 @@ export function transformPowerStatistics(
   metadata: Record<string, StatisticsMetaData> = {}
 ): TransformedEnergyBucket[] {
   const extracted = extractEnergyStatisticIds(prefs);
-  const timestampsSet = new Set<number>();
-  const statBucketMap = new Map<string, Map<number, number>>();
+  const rawTimestamps: number[] = [];
 
   for (const id of extracted.allStatisticIds) {
     const entries = stats[id];
-    const bucketMap = new Map<number, number>();
-    statBucketMap.set(id, bucketMap);
-
     if (Array.isArray(entries)) {
       for (const entry of entries) {
         const raw = entry.start;
@@ -742,22 +728,42 @@ export function transformPowerStatistics(
           ? (raw > 1e11 ? raw : raw * 1000)
           : new Date(raw).getTime();
         if (!isNaN(start)) {
-          const normalizedMs = Math.round(start / (5 * 60 * 1000)) * (5 * 60 * 1000);
-          timestampsSet.add(normalizedMs);
-          const chg = typeof entry.change === 'number' ? Math.max(0, entry.change) : 0;
-          bucketMap.set(normalizedMs, chg);
+          rawTimestamps.push(start);
         }
       }
     }
   }
 
-  const sortedTimestamps = Array.from(timestampsSet).sort((a, b) => a - b);
+  const sortedRaw = Array.from(new Set(rawTimestamps)).sort((a, b) => a - b);
+  const sortedTimestamps: number[] = [];
+  const CLUSTER_TOLERANCE_MS = 90 * 1000;
+
+  for (const ts of sortedRaw) {
+    if (sortedTimestamps.length === 0) {
+      sortedTimestamps.push(ts);
+    } else {
+      const last = sortedTimestamps[sortedTimestamps.length - 1];
+      if (ts - last > CLUSTER_TOLERANCE_MS) {
+        sortedTimestamps.push(ts);
+      }
+    }
+  }
+
   if (sortedTimestamps.length === 0) return [];
 
   const getChangeAtTime = (statId: string, timeMs: number): number => {
-    const map = statBucketMap.get(statId);
-    if (!map) return 0;
-    return map.get(timeMs) || 0;
+    const entries = stats[statId];
+    if (!entries || entries.length === 0) return 0;
+    const entry = entries.find(e => {
+      const raw = e.start;
+      const t = typeof raw === 'number'
+        ? (raw > 1e11 ? raw : raw * 1000)
+        : new Date(raw).getTime();
+      return Math.abs(t - timeMs) <= CLUSTER_TOLERANCE_MS;
+    });
+    if (!entry) return 0;
+    if (typeof entry.change === 'number') return Math.max(0, entry.change);
+    return 0;
   };
 
   const buckets: TransformedEnergyBucket[] = [];

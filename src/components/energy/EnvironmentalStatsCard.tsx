@@ -9,9 +9,8 @@ import {
   Tree, 
   Factory, 
   Fire, 
-  Sparkle, 
-  GlobeHemisphereWest, 
-  CaretRight 
+  GlobeHemisphereWest,
+  Info
 } from '@phosphor-icons/react';
 import { EnvironmentalEnergy } from './energyCalculator';
 
@@ -28,7 +27,10 @@ export default function EnvironmentalStatsCard({
     co2AvoidedKg,
     coalSavedKg,
     treesPlantedEquivalent,
-    gasOffsetM3
+    gasOffsetM3,
+    isCo2Estimated,
+    carbonIntensitySource,
+    carbonIntensityKgPerKWh
   } = environmental;
 
   return (
@@ -48,12 +50,16 @@ export default function EnvironmentalStatsCard({
               <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white">
                 Environmental Carbon Offsets
               </h3>
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                Eco Net-Zero
+              <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
+                isCo2Estimated
+                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                  : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+              }`}>
+                {isCo2Estimated ? 'Estimated Offsets' : 'Live Regional Metrics'}
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Carbon emissions eliminated and standard fossil fuel savings from rooftop solar
+              Carbon emissions avoided and fossil fuel savings from rooftop solar generation
             </p>
           </div>
         </div>
@@ -67,9 +73,16 @@ export default function EnvironmentalStatsCard({
           darkMode ? 'bg-emerald-500/10 border-emerald-500/25 text-white' : 'bg-emerald-50/80 border-emerald-200 text-slate-900 shadow-xs'
         }`}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              CO₂ Avoided
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                CO₂ Avoided
+              </span>
+              {isCo2Estimated && (
+                <span className="text-[10px] font-medium text-slate-400 font-mono">
+                  (est.)
+                </span>
+              )}
+            </div>
             <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-500 flex items-center justify-center">
               <GlobeHemisphereWest size={18} weight="duotone" />
             </div>
@@ -77,10 +90,12 @@ export default function EnvironmentalStatsCard({
 
           <div className="my-2">
             <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400 tracking-tight">
-              {co2AvoidedKg.toFixed(2)} <span className="text-xs font-bold font-sans text-slate-500 dark:text-slate-400">kg</span>
+              {isCo2Estimated ? '~' : ''}{co2AvoidedKg.toFixed(2)} <span className="text-xs font-bold font-sans text-slate-500 dark:text-slate-400">kg</span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              Equivalent to 78 km driven in a standard gasoline vehicle
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 leading-snug">
+              {isCo2Estimated
+                ? '~0.475 kg/kWh global average — configure a grid carbon-intensity sensor in Home Assistant for an accurate regional figure'
+                : `Measured via ${carbonIntensitySource} (${carbonIntensityKgPerKWh ? carbonIntensityKgPerKWh.toFixed(3) : '0.475'} kg CO₂/kWh)`}
             </p>
           </div>
 
@@ -104,9 +119,14 @@ export default function EnvironmentalStatsCard({
           darkMode ? 'bg-amber-500/10 border-amber-500/25 text-white' : 'bg-amber-50/80 border-amber-200 text-slate-900 shadow-xs'
         }`}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              Coal Saved
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                Coal Saved
+              </span>
+              <span className="text-[10px] font-medium text-slate-400 font-mono">
+                (est.)
+              </span>
+            </div>
             <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-500 flex items-center justify-center">
               <Factory size={18} weight="duotone" />
             </div>
@@ -114,10 +134,10 @@ export default function EnvironmentalStatsCard({
 
           <div className="my-2">
             <div className="text-2xl sm:text-3xl font-black font-mono text-amber-600 dark:text-amber-400 tracking-tight">
-              {coalSavedKg.toFixed(2)} <span className="text-xs font-bold font-sans text-slate-500 dark:text-slate-400">kg</span>
+              ~{coalSavedKg.toFixed(2)} <span className="text-xs font-bold font-sans text-slate-500 dark:text-slate-400">kg</span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              Fossil coal combustion prevented from the electrical grid
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 leading-snug">
+              Rough estimate (~0.400 kg standard coal saved per kWh solar generation)
             </p>
           </div>
 
@@ -141,9 +161,14 @@ export default function EnvironmentalStatsCard({
           darkMode ? 'bg-teal-500/10 border-teal-500/25 text-white' : 'bg-teal-50/80 border-teal-200 text-slate-900 shadow-xs'
         }`}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
-              Trees Equivalent
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                Trees Equivalent
+              </span>
+              <span className="text-[10px] font-medium text-slate-400 font-mono">
+                (est.)
+              </span>
+            </div>
             <div className="w-8 h-8 rounded-xl bg-teal-500/20 border border-teal-500/40 text-teal-500 flex items-center justify-center">
               <Tree size={18} weight="duotone" />
             </div>
@@ -151,10 +176,10 @@ export default function EnvironmentalStatsCard({
 
           <div className="my-2">
             <div className="text-2xl sm:text-3xl font-black font-mono text-teal-600 dark:text-teal-400 tracking-tight">
-              {(treesPlantedEquivalent as number).toFixed(2)} <span className="text-xs font-bold font-sans text-slate-500 dark:text-slate-400">Trees/yr</span>
+              ~{(treesPlantedEquivalent as number).toFixed(0)} <span className="text-xs font-bold font-sans text-slate-500 dark:text-slate-400">Trees/yr</span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              Annual biological carbon absorption equivalent
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 leading-snug">
+              Rough approximation (1 mature tree absorbs ~20 kg CO₂ annually)
             </p>
           </div>
 
@@ -181,10 +206,11 @@ export default function EnvironmentalStatsCard({
       }`}>
         <div className="flex items-center gap-2">
           <Fire size={15} weight="duotone" className="text-amber-500" />
-          <span>Natural Gas Displaced: <strong className="text-slate-900 dark:text-white font-mono font-bold">{gasOffsetM3.toFixed(2)} m³</strong></span>
+          <span>Natural Gas Displaced (est.): <strong className="text-slate-900 dark:text-white font-mono font-bold">~{gasOffsetM3.toFixed(2)} m³</strong></span>
         </div>
-        <div className="flex items-center gap-1 text-[11px] text-slate-400">
-          <span>Standardized conversion per ENTSO-E grid mix</span>
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+          <Info size={14} />
+          <span>Environmental equivalents are rough estimates. Grid carbon intensity varies by regional mix and time.</span>
         </div>
       </div>
     </div>
