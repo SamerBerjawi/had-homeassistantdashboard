@@ -16,6 +16,7 @@ import { AuthState } from '../types/auth';
 import { haWebSocketService } from './haWebSocket';
 
 const STORAGE_KEY_CONFIG = 'had_dashboard_config';
+const STORAGE_KEY_SERVER_VERSION = 'had_last_server_version';
 const HA_USER_DATA_KEY = 'had_dashboard_config';
 
 /**
@@ -48,13 +49,13 @@ export function mergeConfig(
     },
     rooms: {
       hiddenAreas: Array.isArray(partial.rooms?.hiddenAreas)
-        ? partial.rooms.hiddenAreas
+        ? [...partial.rooms.hiddenAreas]
         : base.rooms.hiddenAreas,
       favoriteAreas: Array.isArray(partial.rooms?.favoriteAreas)
-        ? partial.rooms.favoriteAreas
+        ? [...partial.rooms.favoriteAreas]
         : base.rooms.favoriteAreas,
       areaSortOrder: Array.isArray(partial.rooms?.areaSortOrder)
-        ? partial.rooms.areaSortOrder
+        ? [...partial.rooms.areaSortOrder]
         : base.rooms.areaSortOrder
     },
     network: {
@@ -64,6 +65,30 @@ export function mergeConfig(
     energy: {
       ...base.energy,
       ...(partial.energy || {})
+    },
+    preferences: {
+      ...(base.preferences || {}),
+      ...(partial.preferences || {})
+    },
+    profile: {
+      ...(base.profile || {}),
+      ...(partial.profile || {})
+    },
+    areas: {
+      ...(base.areas || {}),
+      ...(partial.areas || {})
+    },
+    floors: {
+      ...(base.floors || {}),
+      ...(partial.floors || {})
+    },
+    entities: {
+      ...(base.entities || {}),
+      ...(partial.entities || {})
+    },
+    canvas: {
+      ...(base.canvas || {}),
+      ...(partial.canvas || {})
     }
   };
 }
@@ -82,59 +107,38 @@ export function readFileAsDataUrl(file: File): Promise<string> {
 
 /**
  * 1. Local Storage Driver
- * Used for Demo Mode and Isolated Development Sandbox
+ * Used for Zero-Setup Demo Mode and Local Sandbox Isolation
  */
 export class LocalStorageDriver implements IConfigStorageDriver {
   public async loadConfig(): Promise<UserDashboardConfig> {
-    if (typeof window === 'undefined') {
-      return { ...DEFAULT_USER_CONFIG };
-    }
-
+    if (typeof window === 'undefined') return DEFAULT_USER_CONFIG;
     try {
       const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        return mergeConfig(DEFAULT_USER_CONFIG, parsed);
-      }
-    } catch (err) {
-      console.warn('[LocalStorageDriver] Failed to parse stored config; resetting to defaults:', err);
+      if (!raw) return DEFAULT_USER_CONFIG;
+      const parsed = JSON.parse(raw);
+      return mergeConfig(DEFAULT_USER_CONFIG, parsed);
+    } catch {
+      return DEFAULT_USER_CONFIG;
     }
-
-    // Save default if not present
-    this.saveConfig(DEFAULT_USER_CONFIG).catch(() => {});
-    return { ...DEFAULT_USER_CONFIG };
   }
 
   public async saveConfig(partial: Partial<UserDashboardConfig>): Promise<UserDashboardConfig> {
-    if (typeof window === 'undefined') {
-      return mergeConfig(DEFAULT_USER_CONFIG, partial);
-    }
-
     const current = await this.loadConfig();
     const updated = mergeConfig(current, {
       ...partial,
       updatedAt: new Date().toISOString()
     });
-
-    try {
-      localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(updated));
-    } catch (err) {
-      console.error('[LocalStorageDriver] Failed to save config to localStorage:', err);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('had_config_updated', { detail: updated }));
+      } catch {}
     }
-
     return updated;
   }
 
-  public async uploadAsset(file: File, key: string): Promise<string> {
-    const dataUrl = await readFileAsDataUrl(file);
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(`had_asset_${key}`, dataUrl);
-      } catch (e) {
-        console.warn('[LocalStorageDriver] Could not cache asset in localStorage:', e);
-      }
-    }
-    return dataUrl;
+  public async uploadAsset(file: File): Promise<string> {
+    return readFileAsDataUrl(file);
   }
 }
 
@@ -144,10 +148,23 @@ export class LocalStorageDriver implements IConfigStorageDriver {
  */
 export class RemoteStorageDriver implements IConfigStorageDriver {
   private localFallback = new LocalStorageDriver();
+  private lastKnownServerVersion: number | null = null;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedVer = localStorage.getItem(STORAGE_KEY_SERVER_VERSION);
+        if (savedVer) {
+          this.lastKnownServerVersion = Number(savedVer);
+        }
+      } catch {}
+    }
+  }
 
   public async loadConfig(): Promise<UserDashboardConfig> {
     let haConfig: any = null;
     let nasConfig: any = null;
+    let nasServerVersion: number | undefined = undefined;
 
     // 1. Try Home Assistant WebSocket user data storage
     if (!haWebSocketService.isDemo()) {
@@ -182,6 +199,13 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
           const data = await response.json();
           if (data && data.success && data.config) {
             nasConfig = data.config;
+            if (data.serverVersion !== undefined) {
+              nasServerVersion = Number(data.serverVersion);
+              this.lastKnownServerVersion = nasServerVersion;
+              try {
+                localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(nasServerVersion));
+              } catch {}
+            }
           }
         }
       } catch {
@@ -189,10 +213,14 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
       }
     }
 
-    // Choose the freshest config between HA WebSocket and NAS REST
+    // Authoritative Versioning: Prefer NAS config if it carries a serverVersion
     let bestRemote = haConfig;
     if (nasConfig && typeof nasConfig === 'object') {
-      if (!bestRemote || (nasConfig.updatedAt && (!bestRemote.updatedAt || nasConfig.updatedAt >= bestRemote.updatedAt))) {
+      if (nasServerVersion !== undefined) {
+        // NAS has authoritative server-assigned version
+        bestRemote = nasConfig;
+      } else if (!bestRemote || (nasConfig.updatedAt && (!bestRemote.updatedAt || nasConfig.updatedAt >= bestRemote.updatedAt))) {
+        // Fallback to timestamp comparison if neither has serverVersion
         bestRemote = nasConfig;
       }
     }
@@ -212,12 +240,90 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
 
   public async saveConfig(partial: Partial<UserDashboardConfig>): Promise<UserDashboardConfig> {
     const current = await this.loadConfig();
-    const updated = mergeConfig(current, {
+    let updated = mergeConfig(current, {
       ...partial,
       updatedAt: new Date().toISOString()
     });
 
-    // 1. Persist to Home Assistant WebSocket user storage
+    // 1. Persist to NAS REST backend (/api/config) with optimistic concurrency version check
+    if (typeof fetch !== 'undefined') {
+      try {
+        const response = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            config: updated,
+            expectedVersion: this.lastKnownServerVersion ?? undefined
+          }),
+          signal: AbortSignal.timeout(4000)
+        });
+
+        if (response.status === 200) {
+          const resData = await response.json();
+          if (resData && resData.serverVersion !== undefined) {
+            this.lastKnownServerVersion = Number(resData.serverVersion);
+            try {
+              localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(this.lastKnownServerVersion));
+            } catch {}
+          }
+        } else if (response.status === 409) {
+          // Conflict detected! Another device saved in between
+          const errData = await response.json();
+          const serverVersion = Number(errData.serverVersion) || 1;
+          const serverConfig = errData.config || current;
+
+          console.warn(
+            `[RemoteStorageDriver] Conflict detected (expected v${this.lastKnownServerVersion}, server is v${serverVersion}). Merging changes and retrying once...`
+          );
+
+          // Re-apply client's pending partial changes on top of fresh server config
+          const reMerged = mergeConfig(serverConfig, {
+            ...partial,
+            updatedAt: new Date().toISOString()
+          });
+
+          // Retry once with the latest known server version
+          try {
+            const retryRes = await fetch('/api/config', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                config: reMerged,
+                expectedVersion: serverVersion
+              }),
+              signal: AbortSignal.timeout(4000)
+            });
+
+            if (retryRes.status === 200) {
+              const retryData = await retryRes.json();
+              if (retryData && retryData.serverVersion !== undefined) {
+                this.lastKnownServerVersion = Number(retryData.serverVersion);
+                try {
+                  localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(this.lastKnownServerVersion));
+                } catch {}
+              }
+              updated = reMerged;
+            } else {
+              console.warn(
+                '[RemoteStorageDriver] Retry save also encountered a conflict. Accepting server configuration to prevent infinite loop.'
+              );
+              this.lastKnownServerVersion = serverVersion;
+              try {
+                localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(serverVersion));
+              } catch {}
+              updated = serverConfig;
+            }
+          } catch (retryErr) {
+            console.warn('[RemoteStorageDriver] Retry request failed:', retryErr);
+            updated = reMerged;
+          }
+        }
+      } catch (restErr) {
+        console.warn('[RemoteStorageDriver] Could not save config to /api/config:', restErr);
+      }
+    }
+
+    // 2. Persist to Home Assistant WebSocket user storage
     if (!haWebSocketService.isDemo()) {
       if (haWebSocketService.getStatus() !== 'connected') {
         await haWebSocketService.waitForConnection(3000);
@@ -232,20 +338,6 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
         } catch (wsErr) {
           console.warn('[RemoteStorageDriver] Could not save config via HA WebSocket user_data:', wsErr);
         }
-      }
-    }
-
-    // 2. Persist to NAS REST backend (/api/config)
-    if (typeof fetch !== 'undefined') {
-      try {
-        await fetch('/api/config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updated),
-          signal: AbortSignal.timeout(4000)
-        });
-      } catch (restErr) {
-        console.warn('[RemoteStorageDriver] Could not save config to /api/config:', restErr);
       }
     }
 

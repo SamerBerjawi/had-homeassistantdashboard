@@ -389,7 +389,18 @@ async function startServer() {
       if (fs.existsSync(configFilePath)) {
         const raw = await fs.promises.readFile(configFilePath, 'utf-8');
         const parsed = JSON.parse(raw);
-        return res.json({ success: true, config: parsed });
+        if (parsed && typeof parsed === 'object' && parsed.serverVersion !== undefined) {
+          return res.json({
+            success: true,
+            config: parsed.config,
+            serverVersion: Number(parsed.serverVersion)
+          });
+        }
+        return res.json({
+          success: true,
+          config: parsed,
+          serverVersion: parsed?.version || 1
+        });
       }
 
       // Legacy fallback check for ./data/config.json if migrating
@@ -397,7 +408,11 @@ async function startServer() {
       if (fs.existsSync(legacyPath)) {
         const raw = await fs.promises.readFile(legacyPath, 'utf-8');
         const parsed = JSON.parse(raw);
-        return res.json({ success: true, config: parsed });
+        return res.json({
+          success: true,
+          config: parsed,
+          serverVersion: 1
+        });
       }
 
       // First run: file not found
@@ -419,16 +434,76 @@ async function startServer() {
       });
     }
 
-    const incomingConfig = req.body;
-    if (!isValidDashboardConfig(incomingConfig)) {
+    const body = req.body;
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid config payload: expected JSON object with dashboard configuration'
       });
     }
 
+    // Extract target config object and client's last-known version
+    const targetConfig = (body.config && typeof body.config === 'object') ? { ...body.config } : { ...body };
+    delete (targetConfig as any).expectedVersion;
+    delete (targetConfig as any).serverVersion;
+
+    const clientExpectedVersion = body.expectedVersion !== undefined 
+      ? Number(body.expectedVersion) 
+      : (body.serverVersion !== undefined ? Number(body.serverVersion) : undefined);
+
+    if (!isValidDashboardConfig(targetConfig)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid config payload: expected JSON object with dashboard configuration structure'
+      });
+    }
+
     try {
-      await withConfigWriteLock(async () => {
+      const result = await withConfigWriteLock(async () => {
+        let currentServerVersion = 0;
+        let currentConfig: any = null;
+
+        if (fs.existsSync(configFilePath)) {
+          try {
+            const raw = await fs.promises.readFile(configFilePath, 'utf-8');
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') {
+              if (parsed.serverVersion !== undefined) {
+                currentServerVersion = Number(parsed.serverVersion) || 1;
+                currentConfig = parsed.config;
+              } else {
+                currentServerVersion = 1;
+                currentConfig = parsed;
+              }
+            }
+          } catch (err) {
+            console.warn('[NAS Config] Could not parse existing config for version comparison:', err);
+          }
+        }
+
+        // Real conflict check: client's version is older than server's current version
+        if (currentConfig && clientExpectedVersion !== undefined && !isNaN(clientExpectedVersion)) {
+          if (clientExpectedVersion < currentServerVersion) {
+            return {
+              conflict: true,
+              statusCode: 409,
+              payload: {
+                success: false,
+                error: 'Conflict: Server configuration has been modified by another client',
+                conflict: true,
+                serverVersion: currentServerVersion,
+                config: currentConfig
+              }
+            };
+          }
+        }
+
+        const nextServerVersion = currentServerVersion + 1;
+        const diskPayload = {
+          serverVersion: nextServerVersion,
+          config: targetConfig
+        };
+
         if (!fs.existsSync(configDir)) {
           await fs.promises.mkdir(configDir, { recursive: true });
         }
@@ -437,13 +512,23 @@ async function startServer() {
           configDir,
           `.dashboard-config.json.tmp.${process.pid}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
         );
-        const payloadString = JSON.stringify(incomingConfig, null, 2);
+        const payloadString = JSON.stringify(diskPayload, null, 2);
 
         await fs.promises.writeFile(tempFile, payloadString, 'utf-8');
         await fs.promises.rename(tempFile, configFilePath);
+
+        return {
+          conflict: false,
+          statusCode: 200,
+          payload: {
+            success: true,
+            config: targetConfig,
+            serverVersion: nextServerVersion
+          }
+        };
       });
 
-      return res.json({ success: true, config: incomingConfig });
+      return res.status(result.statusCode).json(result.payload);
     } catch (err: any) {
       console.error('[NAS Config] Error saving persistent config:', err);
       return res.status(500).json({ success: false, error: 'Failed to save persistent config' });
