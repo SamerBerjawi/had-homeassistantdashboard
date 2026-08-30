@@ -24,6 +24,8 @@ import {
 } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { getHAHttpBaseUrl } from '../../../services/go2rtcService';
+import CameraNoSignalPlaceholder from '../../ui/CameraNoSignalPlaceholder';
 import { haWebSocketService } from '../../../services/haWebSocket';
 import { negotiateGo2RtcWebRtcSession } from '../../../services/go2rtcService';
 
@@ -74,9 +76,7 @@ export default function HaWebRtcPlayer({
     !!camera.attributes?.is_rtsp_stream ||
     !entityId.startsWith('camera.');
   const cameraName = camera.name || camera.attributes?.friendly_name || entityId;
-  const snapshotFallbackUrl =
-    camera.attributes?.entity_picture ||
-    'https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&fit=crop&q=80&w=1200';
+  const snapshotFallbackUrl = camera.attributes?.entity_picture || null;
 
   /**
    * Stop active tracks and release peer connection
@@ -449,12 +449,18 @@ export default function HaWebRtcPlayer({
       {/* Demo Mode / Fallback Snapshot Preview */}
       {(status === 'demo' || status === 'error') && (
         <div className="absolute inset-0 w-full h-full">
-          <img
-            src={snapshotFallbackUrl}
-            alt={cameraName}
-            className="w-full h-full object-cover opacity-75 filter brightness-90"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          {snapshotFallbackUrl ? (
+            <>
+              <img
+                src={snapshotFallbackUrl}
+                alt={cameraName}
+                className="w-full h-full object-cover opacity-75 filter brightness-90"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+            </>
+          ) : (
+            <CameraNoSignalPlaceholder title={cameraName} subtitle={status === 'error' ? statusMessage : 'No preview available'} />
+          )}
         </div>
       )}
 

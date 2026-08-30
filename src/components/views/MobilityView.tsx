@@ -11,16 +11,23 @@ import { CarEvTab } from './mobility/CarEvTab';
 import { BikeTab } from './mobility/BikeTab';
 import { VehicleCustomizerModal } from './mobility/VehicleCustomizerModal';
 import { MobilityAssetType } from '../../types/mobility';
+import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import ViewLoadingState from '../ui/ViewLoadingState';
 
 interface MobilityViewProps {
   darkMode?: boolean;
 }
 
 export default function MobilityView({ darkMode = true }: MobilityViewProps) {
+  const isLoading = useAutoLayoutStore((s) => s.isLoading);
   const [activeSubTab, setActiveSubTab] = useState<MobilityAssetType>('car');
   const [customizerOpen, setCustomizerOpen] = useState(false);
 
   const { carMetrics, bikeMetrics, isLiveMode, actions } = useMobilityData();
+
+  if (isLoading) {
+    return <ViewLoadingState title="Loading Mobility & Fleet..." subtitle="Connecting to electric vehicle and smart bike telemetry" darkMode={darkMode} />;
+  }
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1 flex flex-col">

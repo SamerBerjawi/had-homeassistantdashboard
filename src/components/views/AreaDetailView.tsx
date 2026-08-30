@@ -45,6 +45,7 @@ import { AreaData } from '../../types/rooms';
 import { ResolvedEntity } from '../../types';
 import AreaMediaCard from '../rooms/AreaMediaCard';
 import MediaOverviewDrawer from '../overview/modals/MediaOverviewDrawer';
+import ViewEmptyState from '../ui/ViewEmptyState';
 
 interface AreaDetailViewProps {
   area: AreaData;
@@ -216,19 +217,22 @@ export default function AreaDetailView({
     );
   };
 
-  const handleFanSpeed = (fan: ResolvedEntity, pct: number) => {
-    const nextState = pct > 0 ? 'on' : 'off';
-    updateEntityState(fan.entity_id, nextState, {
+  const handleFanPercentage = (fan: ResolvedEntity, percentage: number) => {
+    updateEntityState(fan.entity_id, percentage > 0 ? 'on' : 'off', {
       ...fan.attributes,
-      percentage: pct
+      percentage
     });
 
     callHAService(
       'fan',
       'set_percentage',
-      { percentage: pct },
+      { percentage },
       { entity_id: fan.entity_id }
     );
+  };
+
+  const handleFanSpeed = (fan: ResolvedEntity, percentage: number) => {
+    handleFanPercentage(fan, percentage);
   };
 
   const handleFanOscillate = (fan: ResolvedEntity) => {
@@ -283,6 +287,25 @@ export default function AreaDetailView({
   };
 
   const totalClimateFanCount = entities.climates.length + entities.fans.length;
+  const totalEntitiesCount = Object.values(entities).reduce(
+    (acc, list) => acc + (Array.isArray(list) ? list.length : 0),
+    0
+  );
+
+  if (totalEntitiesCount === 0) {
+    return (
+      <div className="w-full flex-1 flex flex-col items-center justify-center">
+        <ViewEmptyState
+          icon={HouseLine}
+          title={`No Devices in ${area.name}`}
+          badgeText="Empty Room"
+          description={`No smart devices, lights, sensors, or switches are currently assigned to ${area.name}. Assign entities to this area in Home Assistant.`}
+          configPath={`Settings → Areas & Zones → Areas → ${area.name}`}
+          darkMode={darkMode}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-12">

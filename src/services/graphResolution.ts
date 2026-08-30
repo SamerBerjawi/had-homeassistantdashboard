@@ -38,17 +38,6 @@ export interface GraphResolutionResult {
   metrics: AutoLayoutMetrics;
 }
 
-const DEFAULT_ROOM_IMAGES: Record<string, string> = {
-  living_room: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?q=80&w=1000&auto=format&fit=crop',
-  bedroom: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?q=80&w=1000&auto=format&fit=crop',
-  kitchen: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=1000&auto=format&fit=crop',
-  office: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=1000&auto=format&fit=crop',
-  hallway: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=1000&auto=format&fit=crop',
-  patio: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1000&auto=format&fit=crop',
-  garage: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?q=80&w=1000&auto=format&fit=crop',
-  unassigned: 'https://images.unsplash.com/photo-1558002038-1055907df827?q=80&w=1000&auto=format&fit=crop'
-};
-
 const AREA_ICON_MAP: Record<string, string> = {
   living_room: 'Tv',
   bedroom: 'Bed',
@@ -372,7 +361,7 @@ export function resolveHAGraph(
     const lowBatteryCount = areaEntities.filter(e => e.batteryPct !== undefined && e.batteryPct <= 20).length;
 
     const icon = area.icon || AREA_ICON_MAP[area.area_id] || 'Home';
-    const bannerImage = area.picture || DEFAULT_ROOM_IMAGES[area.area_id] || DEFAULT_ROOM_IMAGES.unassigned;
+    const bannerImage = area.picture || null;
 
     return {
       area_id: area.area_id,

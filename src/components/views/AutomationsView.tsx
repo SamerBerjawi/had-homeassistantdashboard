@@ -28,6 +28,8 @@ import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { useShallow } from 'zustand/react/shallow';
 import { ResolvedEntity } from '../../types';
 import CustomDropdown from '../ui/CustomDropdown';
+import ViewEmptyState from '../ui/ViewEmptyState';
+import ViewLoadingState from '../ui/ViewLoadingState';
 
 interface ViewProps {
   darkMode?: boolean;
@@ -100,28 +102,21 @@ function formatLastTriggered(isoString?: string | null): { text: string; isRecen
 }
 
 export default function AutomationsView({ darkMode = true }: ViewProps) {
-  const {
-    domainGroups,
-    rawAreas,
-    updateEntityState,
-    callHAService
-  } = useAutoLayoutStore(useShallow(s => ({
-    domainGroups: s.domainGroups,
-    rawAreas: s.rawAreas,
-    updateEntityState: s.updateEntityState,
-    callHAService: s.callHAService
-  })));
+  const isLoading = useAutoLayoutStore((s) => s.isLoading);
+  const domainGroups = useAutoLayoutStore(useShallow(s => s.domainGroups));
+  const rawAreas = useAutoLayoutStore(useShallow(s => s.rawAreas));
+  const callHAService = useAutoLayoutStore(s => s.callHAService);
+  const updateEntityState = useAutoLayoutStore(s => s.updateEntityState);
 
   // State Management
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [selectedAreaFilter, setSelectedAreaFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [triggeredFeedback, setTriggeredFeedback] = useState<Record<string, boolean>>({});
-
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
-    column: 'last_triggered',
-    direction: 'descending'
+    column: 'name',
+    direction: 'ascending'
   });
+  const [triggeredFeedback, setTriggeredFeedback] = useState<Record<string, boolean>>({});
 
   // Areas map
   const areasMap = useMemo(() => {
@@ -139,104 +134,100 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
 
   // Unique areas
   const availableAreas = useMemo(() => {
-    const set = new Set<string>();
+    const areaSet = new Set<string>();
     allEntities.forEach(e => {
-      if (e.area_id) set.add(e.area_id);
+      if (e.area_id) areaSet.add(e.area_id);
     });
-    return Array.from(set);
+    return Array.from(areaSet);
   }, [allEntities]);
 
   // Trigger automation / scene
   const handleTrigger = async (e: React.MouseEvent, entity: ResolvedEntity) => {
     e.stopPropagation();
-    setTriggeredFeedback(prev => ({ ...prev, [entity.entity_id]: true }));
+    const isScene = entity.domain === 'scene';
+    const domain = isScene ? 'scene' : 'automation';
+    const service = isScene ? 'turn_on' : 'trigger';
 
-    if (entity.domain === 'scene') {
-      await callHAService('scene', 'turn_on', {}, { entity_id: entity.entity_id });
-    } else {
-      await callHAService('automation', 'trigger', {}, { entity_id: entity.entity_id });
-    }
+    setTriggeredFeedback(prev => ({ ...prev, [entity.entity_id]: true }));
+    await callHAService(domain, service, { entity_id: entity.entity_id });
 
     setTimeout(() => {
       setTriggeredFeedback(prev => ({ ...prev, [entity.entity_id]: false }));
-    }, 1800);
+    }, 1500);
   };
 
   // Toggle automation ON / OFF
   const handleToggleAutomation = async (e: React.MouseEvent, entity: ResolvedEntity) => {
     e.stopPropagation();
     const isCurrentlyOn = entity.state === 'on';
-    const nextState = isCurrentlyOn ? 'off' : 'on';
-    const service = isCurrentlyOn ? 'turn_off' : 'turn_on';
+    const targetService = isCurrentlyOn ? 'turn_off' : 'turn_on';
 
-    updateEntityState(entity.entity_id, nextState);
-    await callHAService('automation', service, {}, { entity_id: entity.entity_id });
+    updateEntityState(entity.entity_id, isCurrentlyOn ? 'off' : 'on');
+    await callHAService('automation', targetService, { entity_id: entity.entity_id });
   };
 
   // Batch toggle
-  const handleBatchToggle = async (enable: boolean) => {
-    const targetEntities = automationEntities.filter(a => enable ? a.state !== 'on' : a.state === 'on');
-    const service = enable ? 'turn_on' : 'turn_off';
-    const nextState = enable ? 'on' : 'off';
-
-    targetEntities.forEach(a => {
-      updateEntityState(a.entity_id, nextState);
-      callHAService('automation', service, {}, { entity_id: a.entity_id });
+  const handleBatchToggle = async (turnOn: boolean) => {
+    const targetService = turnOn ? 'turn_on' : 'turn_off';
+    const automationsToUpdate = allEntities.filter(e => e.domain === 'automation');
+    
+    automationsToUpdate.forEach(a => {
+      updateEntityState(a.entity_id, turnOn ? 'on' : 'off');
     });
+
+    for (const a of automationsToUpdate) {
+      callHAService('automation', targetService, { entity_id: a.entity_id });
+    }
   };
 
   // Filtered & Sorted Table Items
   const sortedItems = useMemo(() => {
-    const filtered = allEntities.filter(entity => {
-      if (activeTab === 'automations' && entity.domain !== 'automation') return false;
-      if (activeTab === 'scenes' && entity.domain !== 'scene') return false;
-      if (activeTab === 'active' && (entity.domain !== 'automation' || entity.state !== 'on')) return false;
-      if (activeTab === 'disabled' && (entity.domain !== 'automation' || entity.state === 'on')) return false;
+    let filtered = allEntities;
 
-      if (selectedAreaFilter !== 'all' && entity.area_id !== selectedAreaFilter) return false;
+    if (activeTab === 'automations') {
+      filtered = filtered.filter(e => e.domain === 'automation');
+    } else if (activeTab === 'scenes') {
+      filtered = filtered.filter(e => e.domain === 'scene');
+    } else if (activeTab === 'active') {
+      filtered = filtered.filter(e => e.domain === 'automation' && e.state === 'on');
+    } else if (activeTab === 'disabled') {
+      filtered = filtered.filter(e => e.domain === 'automation' && e.state === 'off');
+    }
 
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const name = (entity.name || '').toLowerCase();
-        const id = entity.entity_id.toLowerCase();
-        const areaName = (areasMap[entity.area_id || ''] || '').toLowerCase();
-        const labelsStr = (entity.labels || []).join(' ').toLowerCase();
-        const desc = (entity.attributes?.description || '').toLowerCase();
-        if (!name.includes(q) && !id.includes(q) && !areaName.includes(q) && !labelsStr.includes(q) && !desc.includes(q)) {
-          return false;
-        }
-      }
+    if (selectedAreaFilter !== 'all') {
+      filtered = filtered.filter(e => e.area_id === selectedAreaFilter);
+    }
 
-      return true;
-    });
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(e => {
+        const name = (e.name || e.entity_id).toLowerCase();
+        const area = (e.area_id ? areasMap[e.area_id] || e.area_id : '').toLowerCase();
+        const labels = (e.labels || []).map(l => l.toLowerCase()).join(' ');
+        return name.includes(q) || area.includes(q) || labels.includes(q) || e.entity_id.toLowerCase().includes(q);
+      });
+    }
 
-    return filtered.sort((a, b) => {
-      const col = sortDescriptor.column;
+    return [...filtered].sort((a, b) => {
+      const col = sortDescriptor.column as string;
       const isAsc = sortDescriptor.direction === 'ascending';
 
       if (col === 'name') {
-        const nameA = (a.name || a.entity_id).toLowerCase();
-        const nameB = (b.name || b.entity_id).toLowerCase();
-        return isAsc ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+        const valA = (a.name || a.entity_id).toLowerCase();
+        const valB = (b.name || b.entity_id).toLowerCase();
+        return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
       }
-
       if (col === 'status') {
-        const valA = a.domain === 'scene' ? 2 : a.state === 'on' ? 1 : 0;
-        const valB = b.domain === 'scene' ? 2 : b.state === 'on' ? 1 : 0;
-        return isAsc ? valA - valB : valB - valA;
+        const valA = a.domain === 'scene' ? 'scene' : a.state;
+        const valB = b.domain === 'scene' ? 'scene' : b.state;
+        return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
       }
-
       if (col === 'area') {
-        const areaA = (areasMap[a.area_id || ''] || 'Global').toLowerCase();
-        const areaB = (areasMap[b.area_id || ''] || 'Global').toLowerCase();
-        return isAsc ? areaA.localeCompare(areaB) : areaB.localeCompare(areaA);
+        const valA = (a.area_id ? areasMap[a.area_id] || a.area_id : 'Global').toLowerCase();
+        const valB = (b.area_id ? areasMap[b.area_id] || b.area_id : 'Global').toLowerCase();
+        return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
       }
-
-      if (col === 'type') {
-        return isAsc ? a.domain.localeCompare(b.domain) : b.domain.localeCompare(a.domain);
-      }
-
-      // Default: last_triggered
+      // last_triggered
       const timeA = new Date(a.attributes?.last_triggered || (a.domain === 'scene' ? a.state : 0)).getTime() || 0;
       const timeB = new Date(b.attributes?.last_triggered || (b.domain === 'scene' ? b.state : 0)).getTime() || 0;
       return isAsc ? timeA - timeB : timeB - timeA;
@@ -244,6 +235,25 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
   }, [allEntities, activeTab, selectedAreaFilter, searchQuery, sortDescriptor, areasMap]);
 
   const activeCount = automationEntities.filter(a => a.state === 'on').length;
+
+  if (isLoading) {
+    return <ViewLoadingState title="Loading Automations & Scenes..." subtitle="Fetching automation triggers, scene presets, and schedules" darkMode={darkMode} />;
+  }
+
+  if (allEntities.length === 0) {
+    return (
+      <div className="w-full flex-1 flex flex-col items-center justify-center">
+        <ViewEmptyState
+          icon={GitFork}
+          title="No Automations or Scenes Configured"
+          badgeText="Smart Routines"
+          description="Create smart automations, routines, and scene presets in Home Assistant to automate lighting, climate, security, and cleaning schedules."
+          configPath="Settings → Automations & Scenes"
+          darkMode={darkMode}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex-1 flex flex-col space-y-5">

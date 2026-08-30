@@ -246,7 +246,7 @@ export function CarEvTab({
                   className="max-h-52 max-w-full object-contain mx-auto drop-shadow-[0_20px_25px_rgba(0,0,0,0.5)]"
                 />
               ) : (
-                <div className="relative w-[280px] sm:w-[380px] h-[140px] sm:h-[175px] mx-auto flex items-center justify-center">
+                <div className="relative w-[280px] sm:w-[380px] max-w-full h-[140px] sm:h-[175px] mx-auto flex items-center justify-center">
                   <svg viewBox="0 0 400 180" className="w-full h-full drop-shadow-[0_15px_30px_rgba(0,0,0,0.5)]">
                     <defs>
                       <linearGradient id="sec1BodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -412,7 +412,7 @@ export function CarEvTab({
 
           {/* Bklit Gauge for Battery SOC */}
           <div className="py-2 flex flex-col items-center justify-center">
-            <div className="w-[190px] sm:w-[220px] h-[140px] sm:h-[160px] mx-auto flex items-center justify-center relative">
+            <div className="w-[190px] sm:w-[220px] max-w-full h-[140px] sm:h-[160px] mx-auto flex items-center justify-center relative">
               <Gauge
                 value={metrics.soc}
                 centerValue={metrics.soc}

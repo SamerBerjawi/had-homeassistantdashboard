@@ -147,19 +147,29 @@ export default function MediaPlayerCard({
           <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-white/20 shadow-md shrink-0 flex items-center justify-center bg-slate-800">
             {albumArt ? (
               <img src={albumArt} alt={title} className="w-full h-full object-cover" />
+            ) : visual.appInfo ? (
+              <div 
+                className="w-full h-full flex flex-col items-center justify-center p-1"
+                style={{ 
+                  backgroundColor: visual.appInfo.badgeBg,
+                  borderColor: visual.appInfo.badgeBorder
+                }}
+              >
+                <AppIcon size={22} weight="duotone" style={{ color: visual.appInfo.accentColor }} />
+              </div>
             ) : (
               <div 
                 className="w-full h-full flex items-center justify-center"
                 style={{ backgroundColor: palette.badgeBg }}
               >
-                <AppIcon size={20} weight="duotone" style={{ color: palette.light }} />
+                <MusicNotes size={20} weight="duotone" style={{ color: palette.light }} />
               </div>
             )}
             {isPlaying && (
-              <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
                 <span 
                   className="w-2 h-2 rounded-full animate-ping" 
-                  style={{ backgroundColor: palette.light }}
+                  style={{ backgroundColor: visual.appInfo ? visual.appInfo.accentColor : palette.light }}
                 />
               </div>
             )}
@@ -168,7 +178,7 @@ export default function MediaPlayerCard({
             <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{title}</h4>
             <p 
               className="text-[11px] font-medium truncate transition-colors duration-300"
-              style={{ color: palette.light }}
+              style={{ color: visual.appInfo ? visual.appInfo.badgeText : palette.light }}
             >
               {artist}
             </p>

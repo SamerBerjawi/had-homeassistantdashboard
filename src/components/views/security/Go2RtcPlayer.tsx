@@ -23,6 +23,7 @@ import {
 import { ResolvedEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { getHAHttpBaseUrl } from '../../../services/haImageService';
+import CameraNoSignalPlaceholder from '../../ui/CameraNoSignalPlaceholder';
 
 interface Go2RtcPlayerProps {
   camera: ResolvedEntity;
@@ -73,7 +74,7 @@ export default function Go2RtcPlayer({
   const entityId = camera.entity_id;
   const cameraName = camera.name || camera.attributes?.friendly_name || entityId;
   const streamSrc = entityId.replace('camera.', '');
-  const snapshotFallbackUrl = camera.attributes?.entity_picture || 'https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&fit=crop&q=80&w=1200';
+  const snapshotFallbackUrl = camera.attributes?.entity_picture || null;
 
   /**
    * Cleans any user-provided go2rtc URL (whether base URL or copied stream link)
@@ -362,7 +363,7 @@ export default function Go2RtcPlayer({
           muted={isAudioMuted}
           className="w-full h-full object-cover"
         />
-      ) : (
+      ) : snapshotFallbackUrl ? (
         /* 2. Snapshot / High-Res Fallback Feed */
         <div className="relative w-full h-full">
           <img
@@ -373,6 +374,8 @@ export default function Go2RtcPlayer({
           {/* Subtle live scanline indicator */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/5 to-transparent pointer-events-none animate-pulse" />
         </div>
+      ) : (
+        <CameraNoSignalPlaceholder title={cameraName} subtitle="No preview available" />
       )}
 
       {/* Top Stream HUD */}

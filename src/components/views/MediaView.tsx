@@ -33,12 +33,16 @@ import NowPlayingHighlightCard from '../media/NowPlayingHighlightCard';
 import MediaHierarchyPlayerCard from '../media/MediaHierarchyPlayerCard';
 import MediaDetailModal from '../canvas/modals/MediaDetailModal';
 import { resolvedEntityToHAEntity } from '../../services/graphResolution';
+import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import ViewEmptyState from '../ui/ViewEmptyState';
+import ViewLoadingState from '../ui/ViewLoadingState';
 
 interface MediaViewProps {
   darkMode?: boolean;
 }
 
 export default function MediaView({ darkMode = true }: MediaViewProps) {
+  const isLoading = useAutoLayoutStore((s) => s.isLoading);
   const {
     areasDataList,
     floorDataList,
@@ -102,6 +106,25 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
   const handleOpenDetail = (media: ResolvedEntity) => {
     setSelectedMediaForModal(resolvedEntityToHAEntity(media));
   };
+
+  if (isLoading) {
+    return <ViewLoadingState title="Loading Media & Audio..." subtitle="Discovering smart speakers, TVs, and streaming players" darkMode={darkMode} />;
+  }
+
+  if (totalAllPlayers === 0) {
+    return (
+      <div className="w-full flex-1 flex flex-col items-center justify-center">
+        <ViewEmptyState
+          icon={SpeakerHigh}
+          title="No Media Players Configured"
+          badgeText="Audio & Entertainment"
+          description="Connect smart speakers, Apple TVs, Google Cast devices, Sonos, or media receivers in Home Assistant to view artwork, control playback, and manage multi-room audio."
+          configPath="Settings → Devices & Services → Add Integration"
+          darkMode={darkMode}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex-1 flex flex-col gap-8 animate-fadeIn pb-16">

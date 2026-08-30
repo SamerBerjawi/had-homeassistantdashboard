@@ -1,21 +1,28 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState } from 'react';
-import { Camera, Microphone, MicrophoneSlash, DownloadSimple, Shield, SpeakerHigh, Broadcast, ArrowsOut } from '@phosphor-icons/react';
+import { Camera, Microphone, MicrophoneSlash, DownloadSimple, Broadcast } from '@phosphor-icons/react';
 import CardModalContainer from './CardModalContainer';
+import CameraNoSignalPlaceholder from '../../ui/CameraNoSignalPlaceholder';
 
 interface CameraDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   cameraName?: string;
+  snapshotUrl?: string | null;
 }
 
 export default function CameraDetailModal({
   isOpen,
   onClose,
-  cameraName = 'Front Entrance Camera'
+  cameraName = 'Surveillance Camera',
+  snapshotUrl = null
 }: CameraDetailModalProps) {
   const [isMicActive, setIsMicActive] = useState(false);
   const [isSnapshotting, setIsSnapshotting] = useState(false);
-  const snapshotUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=1200';
 
   const handleCaptureSnapshot = () => {
     setIsSnapshotting(true);
@@ -34,11 +41,15 @@ export default function CameraDetailModal({
       <div className="space-y-5">
         {/* Fullscreen Camera Stream Frame */}
         <div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-black border border-white/15 shadow-2xl">
-          <img
-            src={snapshotUrl}
-            alt={cameraName}
-            className="w-full h-full object-cover"
-          />
+          {snapshotUrl ? (
+            <img
+              src={snapshotUrl}
+              alt={cameraName}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <CameraNoSignalPlaceholder title={cameraName} subtitle="Live stream unavailable" />
+          )}
 
           {/* Flash animation on snapshot */}
           {isSnapshotting && (

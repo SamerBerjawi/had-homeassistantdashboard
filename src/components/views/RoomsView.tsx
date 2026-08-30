@@ -18,12 +18,15 @@ import AreaTile from '../rooms/AreaTile';
 import AreaDetailView from './AreaDetailView';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import ViewEmptyState from '../ui/ViewEmptyState';
+import ViewLoadingState from '../ui/ViewLoadingState';
 
 interface RoomsViewProps {
   darkMode?: boolean;
 }
 
 export default function RoomsView({ darkMode = true }: RoomsViewProps) {
+  const isLoading = useAutoLayoutStore((s) => s.isLoading);
   const {
     areasDataList,
     floorDataList,
@@ -61,6 +64,25 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
         callHAService={callHAService}
         updateEntityState={updateEntityState}
       />
+    );
+  }
+
+  if (isLoading) {
+    return <ViewLoadingState title="Loading Living Areas..." subtitle="Fetching areas, floors, and room entities from Home Assistant" darkMode={darkMode} />;
+  }
+
+  if (floorDataList.length === 0) {
+    return (
+      <div className="w-full flex-1 flex flex-col items-center justify-center">
+        <ViewEmptyState
+          icon={HouseLine}
+          title="No Areas Configured"
+          badgeText="Rooms & Living Spaces"
+          description="Organize your smart home devices by creating areas and floors in Home Assistant. Assigned devices will automatically populate your room view."
+          configPath="Settings → Areas & Zones → Areas"
+          darkMode={darkMode}
+        />
+      </div>
     );
   }
 

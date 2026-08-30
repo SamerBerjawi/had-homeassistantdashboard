@@ -28,12 +28,15 @@ import AlarmPanelSection from './security/AlarmPanelSection';
 import FloorAreaSensorsSection from './security/FloorAreaSensorsSection';
 import CameraFeedSection from './security/CameraFeedSection';
 import AlarmKeypadModal from '../overview/modals/AlarmKeypadModal';
+import ViewEmptyState from '../ui/ViewEmptyState';
+import ViewLoadingState from '../ui/ViewLoadingState';
 
 interface SecurityViewProps {
   darkMode?: boolean;
 }
 
 export default function SecurityView({ darkMode = true }: SecurityViewProps) {
+  const isLoading = useAutoLayoutStore((s) => s.isLoading);
   const { 
     domainGroups, 
     selectedAlarmEntityId, 
@@ -229,6 +232,35 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
       openWindows: windows.filter((w) => w.state === 'on')
     };
   }, [domainGroups, selectedAlarmEntityId, rawCameras, webRtcCapabilities]);
+
+  const totalSecurityEntities = 
+    alarmEntities.length + 
+    lockEntities.length + 
+    cameraEntities.length + 
+    doorSensors.length + 
+    windowSensors.length + 
+    motionSensors.length + 
+    leakSensors.length + 
+    smokeSensors.length;
+
+  if (isLoading) {
+    return <ViewLoadingState title="Loading Security & Protection..." subtitle="Connecting to alarm panels, cameras, perimeter locks, and sensors" darkMode={darkMode} />;
+  }
+
+  if (totalSecurityEntities === 0) {
+    return (
+      <div className="w-full flex-1 flex flex-col items-center justify-center">
+        <ViewEmptyState
+          icon={ShieldCheck}
+          title="No Security Devices Configured"
+          badgeText="Security & Protection"
+          description="Connect alarm panels, smart door locks, security cameras, contact sensors, motion detectors, and leak alarms in Home Assistant."
+          configPath="Settings → Devices & Services → Add Integration"
+          darkMode={darkMode}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex-1 flex flex-col space-y-6 pb-12">

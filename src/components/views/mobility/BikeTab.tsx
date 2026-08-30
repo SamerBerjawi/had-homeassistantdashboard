@@ -217,7 +217,7 @@ export function BikeTab({
               />
             ) : (
               /* Ultra-sleek Default Stealth E-Bike Vector Illustration */
-              <div className="relative w-[280px] sm:w-[360px] h-[150px] sm:h-[180px] mx-auto flex items-center justify-center">
+              <div className="relative w-[280px] sm:w-[360px] max-w-full h-[150px] sm:h-[180px] mx-auto flex items-center justify-center">
                 <svg viewBox="0 0 380 180" className="w-full h-full drop-shadow-[0_15px_30px_rgba(0,0,0,0.5)]">
                   <defs>
                     <linearGradient id="bikeFrameGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -351,7 +351,7 @@ export function BikeTab({
 
           {/* Central Radial Bklit Gauge */}
           <div className="my-auto py-3 flex flex-col items-center justify-center">
-            <div className="w-[180px] sm:w-[210px] h-[140px] sm:h-[160px] mx-auto flex items-center justify-center relative">
+            <div className="w-[180px] sm:w-[210px] max-w-full h-[140px] sm:h-[160px] mx-auto flex items-center justify-center relative">
               <Gauge
                 value={metrics.batteryPercent}
                 centerValue={metrics.batteryPercent}
