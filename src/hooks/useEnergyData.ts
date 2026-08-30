@@ -12,44 +12,54 @@ import {
   ExtractedEnergyStatisticIds,
   fetchHAEnergyPreferences,
   extractEnergyStatisticIds,
-  isEnergyConfigured
+  isEnergyConfigured,
+  EMPTY_ENERGY_PREFERENCES
 } from '../services/haEnergyPreferences';
 import {
   EnergyHistoryPeriod,
   HAStatisticsResponse,
-  fetchHAEnergyStatistics
+  StatisticsMetaData,
+  SolarForecastResponse,
+  fetchHAEnergyStatistics,
+  fetchHAStatisticsMetadata,
+  fetchHAEnergySolarForecasts,
+  computePeriodTimeRange,
+  shiftReferenceDate,
+  isPeriodAtLimit
 } from '../services/haEnergyStatistics';
 import {
-  computeEnergyModel,
-  computeRealtimePower,
-  ComputedEnergyModel,
-  HourlyEnergyBucket,
-  TrackedDeviceMetric,
-  EnergyTotals,
-  FinancialMetrics,
-  EnvironmentalMetrics
-} from '../utils/energyMath';
+  transformEnergyStatistics,
+  TransformedEnergyModel,
+  TransformedEnergyTotals,
+  TransformedFinancials,
+  TransformedEnergyBucket,
+  TransformedDevice
+} from '../services/energyDataTransformer';
 import {
-  RealtimeEnergy,
-  DailyTotalsEnergy,
-  FinancialsEnergy,
-  EnvironmentalEnergy,
-  DeviceConsumer,
-  TimeseriesEnergyPoint
-} from '../components/energy/energyCalculator';
+  computeInstantaneousPower,
+  InstantaneousPowerTelemetry
+} from '../utils/energyMath';
 
 export interface UseEnergyDataOptions {
-  importTariff?: number;
-  exportTariff?: number;
-  currencySymbol?: string;
   autoRefreshIntervalMs?: number;
+  initialPeriod?: EnergyHistoryPeriod;
 }
 
-export type EnergyLoadState = 'loading' | 'not-configured' | 'ready' | 'error';
+export type EnergyLoadState = 'loading' | 'unconfigured' | 'ready' | 'error';
 
 export interface UseEnergyDataResult {
+  // Period and Date navigation
   period: EnergyHistoryPeriod;
   setPeriod: (period: EnergyHistoryPeriod) => void;
+  targetDate: Date;
+  setTargetDate: (date: Date) => void;
+  shiftPeriod: (direction: -1 | 1) => void;
+  isAtFutureLimit: boolean;
+  dateLabel: string;
+  customRange: { start: Date; end: Date } | null;
+  setCustomRange: (start: Date, end: Date) => void;
+
+  // Status & Telemetry
   loadState: EnergyLoadState;
   isLoading: boolean;
   isFetchingStats: boolean;
@@ -60,68 +70,50 @@ export interface UseEnergyDataResult {
   resolvedEntityIds: ExtractedEnergyStatisticIds | null;
   currency: string;
 
-  // Real-time instantaneous telemetry
-  realtime: RealtimeEnergy;
+  // Transformed Domain Model
+  model: TransformedEnergyModel;
+  realtime: InstantaneousPowerTelemetry;
 
-  // Domain Computed Models
-  totals: EnergyTotals;
-  financials: FinancialMetrics;
-  environmental: EnvironmentalMetrics;
-  devices: TrackedDeviceMetric[];
-  otherConsumption: { kwh: number; percentage: number };
-  hourlyTimeseries: HourlyEnergyBucket[];
-
-  // Component-compatible mappings for existing UI widgets
-  dailyTotals: DailyTotalsEnergy;
-  financialTotals: FinancialsEnergy;
-  environmentalTotals: EnvironmentalEnergy;
-  deviceConsumers: DeviceConsumer[];
-  timeseriesPoints: TimeseriesEnergyPoint[];
-  timeseriesToday: TimeseriesEnergyPoint[];
-  timeseriesYesterday: TimeseriesEnergyPoint[];
-  timeseries7d: TimeseriesEnergyPoint[];
-  timeseriesMonth: TimeseriesEnergyPoint[];
-  timeseriesYear: TimeseriesEnergyPoint[];
-}
-
-
-function convertBucketToChartPoint(b: HourlyEnergyBucket, idx: number): TimeseriesEnergyPoint {
-  const d = new Date(b.isoTime || Date.now());
-  const hour = isNaN(d.getHours()) ? idx % 24 : d.getHours();
-  return {
-    timestamp: b.isoTime || new Date().toISOString(),
-    label: b.timestamp,
-    hour,
-    solar: Math.max(0, b.solar),
-    gridImport: Math.max(0, b.gridImport),
-    gridExport: Math.min(0, b.gridExport),
-    batteryDischarge: Math.max(0, b.batteryDischarge),
-    batteryCharge: Math.min(0, b.batteryCharge),
-    consumption: Math.max(0, b.consumption)
-  };
+  // Direct access shortcuts
+  totals: TransformedEnergyTotals;
+  financials: TransformedFinancials;
+  buckets: TransformedEnergyBucket[];
+  devices: TransformedDevice[];
+  untrackedKwh: number;
+  untrackedPercentage: number;
+  hasSolar: boolean;
+  hasGrid: boolean;
+  hasBattery: boolean;
+  hasGas: boolean;
+  hasWater: boolean;
+  hasDevices: boolean;
 }
 
 export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyDataResult {
   const {
-    importTariff = 0.28,
-    exportTariff = 0.09,
-    currencySymbol: customCurrency = '€',
-    autoRefreshIntervalMs = 60000
+    autoRefreshIntervalMs = 30000,
+    initialPeriod = 'day'
   } = options;
 
   const states = useAutoLayoutStore(useShallow(s => s.states));
   const isLiveMode = useAutoLayoutStore(s => s.isLiveMode);
   const connectionStatus = useAutoLayoutStore(s => s.connectionStatus);
 
-  const [period, setPeriod] = useState<EnergyHistoryPeriod>('today');
+  const [period, setPeriodState] = useState<EnergyHistoryPeriod>(initialPeriod);
+  const [targetDate, setTargetDate] = useState<Date>(() => new Date());
+  const [customRange, setCustomRangeState] = useState<{ start: Date; end: Date } | null>(null);
+
   const [preferences, setPreferences] = useState<EnergyPreferences | null>(null);
   const [resolvedIds, setResolvedIds] = useState<ExtractedEnergyStatisticIds | null>(null);
-  const [statsCache, setStatsCache] = useState<Record<string, HAStatisticsResponse>>({});
+  const [statsData, setStatsData] = useState<HAStatisticsResponse>({});
+  const [metadata, setMetadata] = useState<Record<string, StatisticsMetaData>>({});
+  const [solarForecasts, setSolarForecasts] = useState<SolarForecastResponse | null>(null);
+
   const [loadState, setLoadState] = useState<EnergyLoadState>('loading');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isFetchingStats, setIsFetchingStats] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [haCurrency, setHaCurrency] = useState<string>(customCurrency);
+  const [haCurrency, setHaCurrency] = useState<string>('€');
 
   const isMountedRef = useRef(true);
   const resolvedIdsRef = useRef<ExtractedEnergyStatisticIds | null>(null);
@@ -134,7 +126,27 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     };
   }, []);
 
-  // Fetch HA currency from get_config if live
+  // Set Period with target date reset to today when switching standard periods
+  const setPeriod = useCallback((newPeriod: EnergyHistoryPeriod) => {
+    setPeriodState(newPeriod);
+    setTargetDate(new Date());
+  }, []);
+
+  // Shift Reference Date (< and > navigation)
+  const shiftPeriod = useCallback((direction: -1 | 1) => {
+    setTargetDate(prev => shiftReferenceDate(period, prev, direction));
+  }, [period]);
+
+  const isAtFutureLimit = useMemo(() => {
+    return isPeriodAtLimit(period, targetDate);
+  }, [period, targetDate]);
+
+  const setCustomRange = useCallback((start: Date, end: Date) => {
+    setCustomRangeState({ start, end });
+    setPeriodState('custom');
+  }, []);
+
+  // Fetch Home Assistant currency from get_config if connected
   useEffect(() => {
     if (isLiveMode && connectionStatus === 'connected' && haWebSocketService && !haWebSocketService.isDemo()) {
       haWebSocketService.sendRequest<any>('get_config').then(cfg => {
@@ -145,7 +157,7 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     }
   }, [isLiveMode, connectionStatus]);
 
-  // 1. Ingest Energy Preferences purely from Home Assistant (energy/get_prefs)
+  // 1. Ingest Energy Preferences (energy/get_prefs)
   const loadPreferences = useCallback(async () => {
     try {
       const prefs = await fetchHAEnergyPreferences();
@@ -157,7 +169,7 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
         setPreferences(prefs);
         setResolvedIds(parsed);
         if (!isConfigured && isLiveMode) {
-          setLoadState('not-configured');
+          setLoadState('unconfigured');
         }
       }
       return { prefs, parsed, isConfigured };
@@ -170,9 +182,10 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     }
   }, [isLiveMode]);
 
-  // 2. Fetch Recorder Statistics (recorder/statistics_during_period)
-  const loadStatisticsForPeriod = useCallback(async (
+  // 2. Fetch Recorder Statistics, Metadata, and Solar Forecast
+  const loadStatistics = useCallback(async (
     targetPeriod: EnergyHistoryPeriod,
+    refDate: Date,
     customParsed?: ExtractedEnergyStatisticIds | null,
     silent = false
   ) => {
@@ -180,6 +193,7 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     if (!activeResolved || activeResolved.allStatisticIds.length === 0) {
       if (isMountedRef.current) {
         setIsLoading(false);
+        setIsFetchingStats(false);
       }
       return;
     }
@@ -189,12 +203,30 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     }
 
     try {
-      const stats = await fetchHAEnergyStatistics(undefined, activeResolved.allStatisticIds, targetPeriod);
+      // Parallel fetch for statistics, metadata, and solar forecast
+      const [stats, meta, forecast] = await Promise.all([
+        fetchHAEnergyStatistics(
+          undefined,
+          activeResolved.allStatisticIds,
+          targetPeriod,
+          refDate,
+          customRange?.start,
+          customRange?.end
+        ),
+        fetchHAStatisticsMetadata(undefined, activeResolved.allStatisticIds),
+        activeResolved.solarSources.length > 0
+          ? fetchHAEnergySolarForecasts(undefined)
+          : Promise.resolve(null)
+      ]);
+
       if (isMountedRef.current) {
-        setStatsCache(prev => ({
-          ...prev,
-          [targetPeriod]: stats
-        }));
+        setStatsData(stats);
+        if (meta && Object.keys(meta).length > 0) {
+          setMetadata(meta);
+        }
+        if (forecast) {
+          setSolarForecasts(forecast);
+        }
         setError(null);
         setLoadState('ready');
       }
@@ -210,21 +242,20 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
         setIsLoading(false);
       }
     }
-  }, [resolvedIds]);
+  }, [resolvedIds, customRange]);
 
-  // Initialize on mount or live switch
+  // Initial Load on mount or connection change
   useEffect(() => {
     let isCurrent = true;
     const init = async () => {
       setIsLoading(true);
       const res = await loadPreferences();
       if (isCurrent && res) {
-        await loadStatisticsForPeriod('today', res.parsed, false);
-        // Pre-cache all periods silently so switching periods is instant
-        loadStatisticsForPeriod('yesterday', res.parsed, true).catch(() => {});
-        loadStatisticsForPeriod('7d', res.parsed, true).catch(() => {});
-        loadStatisticsForPeriod('month', res.parsed, true).catch(() => {});
-        loadStatisticsForPeriod('year', res.parsed, true).catch(() => {});
+        if (res.isConfigured || !isLiveMode) {
+          await loadStatistics(period, targetDate, res.parsed, false);
+        } else {
+          setIsLoading(false);
+        }
         initializedRef.current = true;
       }
     };
@@ -233,212 +264,90 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     return () => {
       isCurrent = false;
     };
-  }, [isLiveMode, loadPreferences, loadStatisticsForPeriod]);
+  }, [isLiveMode, loadPreferences, loadStatistics, period, targetDate]);
 
   // Re-sync on connection status transitions
   useEffect(() => {
     if (connectionStatus === 'connected' && initializedRef.current) {
       loadPreferences().then(res => {
-        if (res) {
-          loadStatisticsForPeriod(period, res.parsed, true);
+        if (res && (res.isConfigured || !isLiveMode)) {
+          loadStatistics(period, targetDate, res.parsed, true);
         }
       });
     }
-  }, [connectionStatus, loadPreferences, loadStatisticsForPeriod, period]);
+  }, [connectionStatus, loadPreferences, loadStatistics, period, targetDate, isLiveMode]);
 
-  // Period Switch Fetch
+  // Period / Date Shift Fetch
   useEffect(() => {
-    if (resolvedIds && !statsCache[period]) {
-      loadStatisticsForPeriod(period, resolvedIds, false);
+    if (resolvedIds && initializedRef.current) {
+      loadStatistics(period, targetDate, resolvedIds, false);
     }
-  }, [period, resolvedIds, loadStatisticsForPeriod, statsCache]);
+  }, [period, targetDate, customRange, loadStatistics, resolvedIds]);
 
-  // Background Auto-refresh
+  // Background Auto-Refresh
   useEffect(() => {
     if (!autoRefreshIntervalMs || autoRefreshIntervalMs <= 0) return;
     const interval = setInterval(() => {
-      if (resolvedIds) {
-        loadStatisticsForPeriod(period, resolvedIds, true);
+      if (resolvedIds && isPeriodAtLimit(period, targetDate)) {
+        loadStatistics(period, targetDate, resolvedIds, true);
       }
     }, autoRefreshIntervalMs);
     return () => clearInterval(interval);
-  }, [autoRefreshIntervalMs, resolvedIds, period, loadStatisticsForPeriod]);
+  }, [autoRefreshIntervalMs, resolvedIds, period, targetDate, loadStatistics]);
 
   const handleRefresh = useCallback(async () => {
     setIsLoading(true);
     const res = await loadPreferences();
-    if (res) {
-      await loadStatisticsForPeriod(period, res.parsed, false);
+    if (res && (res.isConfigured || !isLiveMode)) {
+      await loadStatistics(period, targetDate, res.parsed, false);
     }
     setIsLoading(false);
-  }, [loadPreferences, loadStatisticsForPeriod, period]);
+  }, [loadPreferences, loadStatistics, period, targetDate, isLiveMode]);
 
-  const activeCurrency = haCurrency || customCurrency;
+  // Time Range & Display Label
+  const timeRange = useMemo(() => {
+    return computePeriodTimeRange(period, targetDate, customRange?.start, customRange?.end);
+  }, [period, targetDate, customRange]);
 
-  // 3. Compute Active Period Domain Model
-  const computedModel: ComputedEnergyModel = useMemo(() => {
-    if (!resolvedIds) {
-      return computeEnergyModel(
-        {
-          solarSources: [],
-          gridImport: [],
-          gridExport: [],
-          batteryCharging: [],
-          batteryDischarging: [],
-          gasSources: [],
-          waterSources: [],
-          deviceConsumption: [],
-          allStatisticIds: []
-        },
-        {},
-        { currencySymbol: activeCurrency, defaultImportTariff: importTariff, defaultExportTariff: exportTariff }
-      );
-    }
+  // Compute Days in Period for Standing Charges
+  const daysInPeriod = useMemo(() => {
+    const s = new Date(timeRange.start).getTime();
+    const e = new Date(timeRange.end).getTime();
+    return Math.max(1, Math.round((e - s) / (24 * 3600 * 1000)));
+  }, [timeRange]);
 
-    const currentStats = statsCache[period] || {};
-    return computeEnergyModel(resolvedIds, currentStats, {
-      currencySymbol: activeCurrency,
-      defaultImportTariff: importTariff,
-      defaultExportTariff: exportTariff
-    });
-  }, [resolvedIds, statsCache, period, activeCurrency, importTariff, exportTariff]);
+  // Compute Active Transformed Energy Model
+  const model: TransformedEnergyModel = useMemo(() => {
+    return transformEnergyStatistics(
+      preferences || EMPTY_ENERGY_PREFERENCES,
+      statsData,
+      metadata,
+      solarForecasts,
+      {
+        currencySymbol: haCurrency,
+        periodType: timeRange.periodType,
+        daysInPeriod,
+        states
+      }
+    );
+  }, [preferences, statsData, metadata, solarForecasts, haCurrency, timeRange.periodType, daysInPeriod, states]);
 
-  // Precomputed chart points
-  const timeseriesToday = useMemo(() => {
-    if (!resolvedIds) return [];
-    const stats = statsCache['today'] || {};
-    const res = computeEnergyModel(resolvedIds, stats, { currencySymbol: activeCurrency, defaultImportTariff: importTariff, defaultExportTariff: exportTariff });
-    return res.hourlyTimeseries.map(convertBucketToChartPoint);
-  }, [resolvedIds, statsCache, activeCurrency, importTariff, exportTariff]);
-
-  const timeseriesYesterday = useMemo(() => {
-    if (!resolvedIds) return [];
-    const stats = statsCache['yesterday'] || {};
-    const res = computeEnergyModel(resolvedIds, stats, { currencySymbol: activeCurrency, defaultImportTariff: importTariff, defaultExportTariff: exportTariff });
-    return res.hourlyTimeseries.map(convertBucketToChartPoint);
-  }, [resolvedIds, statsCache, activeCurrency, importTariff, exportTariff]);
-
-  const timeseries7d = useMemo(() => {
-    if (!resolvedIds) return [];
-    const stats = statsCache['7d'] || {};
-    const res = computeEnergyModel(resolvedIds, stats, { currencySymbol: activeCurrency, defaultImportTariff: importTariff, defaultExportTariff: exportTariff });
-    return res.hourlyTimeseries.map(convertBucketToChartPoint);
-  }, [resolvedIds, statsCache, activeCurrency, importTariff, exportTariff]);
-
-  const timeseriesMonth = useMemo(() => {
-    if (!resolvedIds) return [];
-    const stats = statsCache['month'] || {};
-    const res = computeEnergyModel(resolvedIds, stats, { currencySymbol: activeCurrency, defaultImportTariff: importTariff, defaultExportTariff: exportTariff });
-    return res.hourlyTimeseries.map(convertBucketToChartPoint);
-  }, [resolvedIds, statsCache, activeCurrency, importTariff, exportTariff]);
-
-  const timeseriesYear = useMemo(() => {
-    if (!resolvedIds) return [];
-    const stats = statsCache['year'] || {};
-    const res = computeEnergyModel(resolvedIds, stats, { currencySymbol: activeCurrency, defaultImportTariff: importTariff, defaultExportTariff: exportTariff });
-    return res.hourlyTimeseries.map(convertBucketToChartPoint);
-  }, [resolvedIds, statsCache, activeCurrency, importTariff, exportTariff]);
-
-  const timeseriesPoints = useMemo(() => {
-    return computedModel.hourlyTimeseries.map(convertBucketToChartPoint);
-  }, [computedModel]);
-
-  // 4. Real-Time Power Telemetry from Home Assistant States (Normalized Polarity)
-  const realtime: RealtimeEnergy = useMemo(() => {
-    return computeRealtimePower(states);
-  }, [states]);
-
-  // Backward compatibility adapter models for existing components
-  const dailyTotals: DailyTotalsEnergy = useMemo(() => ({
-    solarProductionKWh: computedModel.totals.solarGeneratedKWh,
-    solarConsumedKWh: computedModel.totals.solarDirectConsumedKWh,
-    solarFedToGridKWh: computedModel.totals.solarFedToGridKWh,
-    gridImportKWh: computedModel.totals.gridImportedKWh,
-    gridExportKWh: computedModel.totals.gridExportedKWh,
-    totalConsumptionKWh: computedModel.totals.totalHomeConsumptionKWh,
-    batteryChargedKWh: computedModel.totals.batteryChargedKWh,
-    batteryDischargedKWh: computedModel.totals.batteryDischargedKWh,
-    selfConsumptionRate: computedModel.totals.selfConsumptionPercentage,
-    autarkyRate: computedModel.totals.autarkyPercentage
-  }), [computedModel]);
-
-  const financialsEnergy: FinancialsEnergy = useMemo(() => ({
-    importCost: computedModel.financials.importCost,
-    exportEarnings: computedModel.financials.exportEarnings,
-    netCost: computedModel.financials.netCost,
-    currency: computedModel.financials.currency,
-    importTariffPerKWh: computedModel.financials.importTariffPerKWh,
-    exportTariffPerKWh: computedModel.financials.exportTariffPerKWh
-  }), [computedModel]);
-
-  const environmentalEnergy: EnvironmentalEnergy = useMemo(() => {
-    // ── Read directly from HA lifetime environmental sensors ──────────────────
-    // These are FusionSolar/Huawei-specific lifetime accumulator entities.
-    // We fall back to the stats-derived model values if they are unavailable.
-
-    const co2State   = states['sensor.energy_information_lifetime_co2_emission_reduction'];
-    const coalState  = states['sensor.energy_information_lifetime_standard_coal_saved'];
-    const treeState  = states['sensor.energy_information_lifetime_equivalent_tree_planted'];
-
-    const parseHA = (s: any, fallback: number): number => {
-      if (!s || s.state === 'unavailable' || s.state === 'unknown') return fallback;
-      const v = parseFloat(s.state);
-      return isNaN(v) ? fallback : v;
-    };
-
-    // CO2 entity — FusionSolar reports in tonnes; convert to kg for UI consistency ("kg" label)
-    // If the entity already reports in kg (unit_of_measurement = 'kg'), skip the ×1000 conversion.
-    const co2RawVal = parseHA(co2State, -1);
-    let co2AvoidedKg: number;
-    if (co2RawVal < 0) {
-      co2AvoidedKg = computedModel.environmental.co2AvoidedKg;
-    } else {
-      const co2Unit = (co2State?.attributes?.unit_of_measurement || '').toLowerCase();
-      const isTonnes = co2Unit === 't' || co2Unit === 'ton' || co2Unit === 'tonne' || co2Unit === 'tonnes' || co2Unit === '';
-      co2AvoidedKg = Number((isTonnes ? co2RawVal * 1000 : co2RawVal).toFixed(2));
-    }
-
-    // Standard coal saved — FusionSolar reports in tonnes; convert to kg
-    const coalRaw = parseHA(coalState, -1);
-    let coalSavedKg: number;
-    if (coalRaw < 0) {
-      coalSavedKg = computedModel.environmental.coalSavedKg;
-    } else {
-      const coalUnit = (coalState?.attributes?.unit_of_measurement || '').toLowerCase();
-      const isTonnes = coalUnit === 't' || coalUnit === 'ton' || coalUnit === 'tonne' || coalUnit === 'tonnes' || coalUnit === '';
-      coalSavedKg = Number((isTonnes ? coalRaw * 1000 : coalRaw).toFixed(2));
-    }
-
-    // Equivalent trees planted — entity is a count (may be decimal)
-    const treeRaw = parseHA(treeState, -1);
-    const treesPlantedEquivalent = treeRaw >= 0
-      ? Number(treeRaw.toFixed(2))
-      : computedModel.environmental.treesPlantedEquivalent;
-
-    // Gas offset has no dedicated HA entity — keep the derived formula
-    const gasOffsetM3 = Number((computedModel.totals.solarGeneratedKWh * 0.098).toFixed(2));
-
-    return { co2AvoidedKg, coalSavedKg, treesPlantedEquivalent, gasOffsetM3 };
-  }, [states, computedModel]);
-
-
-  const deviceConsumers: DeviceConsumer[] = useMemo(() => {
-    return computedModel.devices.map(d => ({
-      id: d.id,
-      name: d.name,
-      entityId: d.statId,
-      icon: d.icon,
-      color: d.color,
-      category: d.category,
-      currentPowerW: d.currentPowerW,
-      energyKWh: d.energyKWh,
-      percentage: d.percentage
-    }));
-  }, [computedModel]);
+  // Real-time instantaneous telemetry from active states
+  const realtime: InstantaneousPowerTelemetry = useMemo(() => {
+    return computeInstantaneousPower(states, preferences);
+  }, [states, preferences]);
 
   return {
     period,
     setPeriod,
+    targetDate,
+    setTargetDate,
+    shiftPeriod,
+    isAtFutureLimit,
+    dateLabel: timeRange.displayLabel,
+    customRange,
+    setCustomRange,
+
     loadState,
     isLoading,
     isFetchingStats,
@@ -447,23 +356,22 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
     isLive: isLiveMode && connectionStatus === 'connected',
     preferences,
     resolvedEntityIds: resolvedIds,
-    currency: activeCurrency,
+    currency: haCurrency,
+
+    model,
     realtime,
-    totals: computedModel.totals,
-    financials: computedModel.financials,
-    environmental: computedModel.environmental,
-    devices: computedModel.devices,
-    otherConsumption: computedModel.otherConsumption,
-    hourlyTimeseries: computedModel.hourlyTimeseries,
-    dailyTotals,
-    financialTotals: financialsEnergy,
-    environmentalTotals: environmentalEnergy,
-    deviceConsumers,
-    timeseriesPoints,
-    timeseriesToday,
-    timeseriesYesterday,
-    timeseries7d,
-    timeseriesMonth,
-    timeseriesYear
+
+    totals: model.totals,
+    financials: model.financials,
+    buckets: model.buckets,
+    devices: model.devices,
+    untrackedKwh: model.untrackedKwh,
+    untrackedPercentage: model.untrackedPercentage,
+    hasSolar: model.hasSolar,
+    hasGrid: model.hasGrid,
+    hasBattery: model.hasBattery,
+    hasGas: model.hasGas,
+    hasWater: model.hasWater,
+    hasDevices: model.hasDevices
   };
 }

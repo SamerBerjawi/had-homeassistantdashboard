@@ -5,7 +5,16 @@
 
 import { haWebSocketService } from './haWebSocket';
 
-export type EnergyHistoryPeriod = 'today' | 'yesterday' | '7d' | 'month' | 'year';
+export type EnergyHistoryPeriod =
+  | 'day'
+  | 'week'
+  | 'month'
+  | 'year'
+  | 'custom'
+  // Convenience aliases for backward compatibility
+  | 'today'
+  | 'yesterday'
+  | '7d';
 
 export interface HAStatisticEntry {
   start: number | string;
@@ -21,69 +30,224 @@ export interface HAStatisticEntry {
 
 export type HAStatisticsResponse = Record<string, HAStatisticEntry[]>;
 
+export interface StatisticsMetaData {
+  statistic_id: string;
+  source: string;
+  unit_of_measurement?: string | null;
+  unit_class?: string | null;
+  has_mean?: boolean;
+  has_sum?: boolean;
+  name?: string | null;
+  display_precision?: number | null;
+}
+
+export interface SolarForecastData {
+  wh_hours: Record<string, number>;
+}
+
+export type SolarForecastResponse = Record<string, SolarForecastData> | SolarForecastData;
+
 export interface PeriodTimeRange {
   start: string;
   end: string;
   periodType: '5minute' | 'hour' | 'day' | 'month';
+  displayLabel: string;
 }
 
 // -------------------------------------------------------------
-// Time Range Calculators for Periods
+// Period Time Range & Date Arithmetic
 // -------------------------------------------------------------
 
-export function computePeriodTimeRange(period: EnergyHistoryPeriod): PeriodTimeRange {
-  const now = new Date();
-  // Align end to current 5-minute boundary with 0 seconds
-  const alignedNow = new Date(Math.floor(now.getTime() / (5 * 60 * 1000)) * (5 * 60 * 1000));
-  alignedNow.setSeconds(0, 0);
+export function computePeriodTimeRange(
+  period: EnergyHistoryPeriod,
+  referenceDate: Date = new Date(),
+  customStart?: Date,
+  customEnd?: Date
+): PeriodTimeRange {
+  const ref = new Date(referenceDate);
 
   if (period === 'yesterday') {
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
-    const end   = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 0);
+    const start = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - 1, 0, 0, 0, 0);
+    const end   = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - 1, 23, 59, 59, 999);
+    const label = start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     return {
       start: start.toISOString(),
       end: end.toISOString(),
-      // Use hourly buckets — HA only keeps 5-min granularity for the current recording day
-      periodType: 'hour'
+      periodType: 'hour',
+      displayLabel: label
     };
   }
 
   if (period === '7d') {
-    const start = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    const end = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 23, 59, 59, 999);
+    const start = new Date(end.getTime() - 6 * 24 * 3600 * 1000);
     start.setHours(0, 0, 0, 0);
+    const label = `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
     return {
       start: start.toISOString(),
-      end: alignedNow.toISOString(),
-      periodType: 'hour'
+      end: end.toISOString(),
+      periodType: 'day',
+      displayLabel: label
+    };
+  }
+
+  if (period === 'day' || period === 'today') {
+    const start = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 0, 0, 0, 0);
+    const end = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 23, 59, 59, 999);
+    const isToday = new Date().toDateString() === ref.toDateString();
+    const label = isToday
+      ? `Today, ${ref.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+      : ref.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    return {
+      start: start.toISOString(),
+      end: end.toISOString(),
+      periodType: 'hour',
+      displayLabel: label
+    };
+  }
+
+  if (period === 'week') {
+    // Start on Monday
+    const day = ref.getDay();
+    const diffToMonday = (day === 0 ? -6 : 1) - day;
+    const start = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() + diffToMonday, 0, 0, 0, 0);
+    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6, 23, 59, 59, 999);
+    const label = `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    return {
+      start: start.toISOString(),
+      end: end.toISOString(),
+      periodType: 'day',
+      displayLabel: label
     };
   }
 
   if (period === 'month') {
-    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const start = new Date(ref.getFullYear(), ref.getMonth(), 1, 0, 0, 0, 0);
+    const end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999);
+    const label = ref.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
     return {
       start: start.toISOString(),
-      end: alignedNow.toISOString(),
-      periodType: 'day'
+      end: end.toISOString(),
+      periodType: 'day',
+      displayLabel: label
     };
   }
 
   if (period === 'year') {
-    const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+    const start = new Date(ref.getFullYear(), 0, 1, 0, 0, 0, 0);
+    const end = new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999);
+    const label = `${ref.getFullYear()}`;
     return {
       start: start.toISOString(),
-      end: alignedNow.toISOString(),
-      periodType: 'month'
+      end: end.toISOString(),
+      periodType: 'month',
+      displayLabel: label
     };
   }
 
-  // Default: 'today' (5-minute step resolution starting at midnight 00:00:00)
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  if (period === 'custom' && customStart && customEnd) {
+    const start = new Date(customStart);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(customEnd);
+    end.setHours(23, 59, 59, 999);
+    const durationDays = (end.getTime() - start.getTime()) / (24 * 3600 * 1000);
+
+    let periodType: 'hour' | 'day' | 'month' = 'day';
+    if (durationDays <= 3) {
+      periodType = 'hour';
+    } else if (durationDays > 35) {
+      periodType = 'month';
+    }
+
+    const label = `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    return {
+      start: start.toISOString(),
+      end: end.toISOString(),
+      periodType,
+      displayLabel: label
+    };
+  }
+
+  // Fallback to day
+  const start = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 0, 0, 0, 0);
+  const end = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 23, 59, 59, 999);
   return {
     start: start.toISOString(),
-    end: alignedNow.toISOString(),
-    periodType: '5minute'
+    end: end.toISOString(),
+    periodType: 'hour',
+    displayLabel: ref.toLocaleDateString()
   };
 }
+
+export function shiftReferenceDate(
+  period: EnergyHistoryPeriod,
+  currentDate: Date,
+  direction: -1 | 1
+): Date {
+  const next = new Date(currentDate);
+
+  if (period === 'day' || period === 'today' || period === 'yesterday') {
+    next.setDate(next.getDate() + direction);
+    return next;
+  }
+
+  if (period === 'week' || period === '7d') {
+    next.setDate(next.getDate() + direction * 7);
+    return next;
+  }
+
+  if (period === 'month') {
+    next.setMonth(next.getMonth() + direction);
+    return next;
+  }
+
+  if (period === 'year') {
+    next.setFullYear(next.getFullYear() + direction);
+    return next;
+  }
+
+  return next;
+}
+
+export function isPeriodAtLimit(
+  period: EnergyHistoryPeriod,
+  currentDate: Date
+): boolean {
+  const now = new Date();
+
+  if (period === 'day' || period === 'today') {
+    return currentDate.toDateString() === now.toDateString() || currentDate > now;
+  }
+
+  if (period === 'yesterday') {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return currentDate >= yesterday;
+  }
+
+  if (period === 'week' || period === '7d') {
+    const currentWeekRange = computePeriodTimeRange('week', now);
+    const activeRange = computePeriodTimeRange('week', currentDate);
+    return new Date(activeRange.end).getTime() >= new Date(currentWeekRange.end).getTime();
+  }
+
+  if (period === 'month') {
+    return (
+      currentDate.getFullYear() === now.getFullYear() &&
+      currentDate.getMonth() >= now.getMonth()
+    );
+  }
+
+  if (period === 'year') {
+    return currentDate.getFullYear() >= now.getFullYear();
+  }
+
+  return false;
+}
+
+// -------------------------------------------------------------
+// Connection & Request Helpers
+// -------------------------------------------------------------
 
 async function waitForConnection(timeoutMs = 2500): Promise<boolean> {
   if (!haWebSocketService || haWebSocketService.isDemo()) return false;
@@ -101,25 +265,122 @@ async function waitForConnection(timeoutMs = 2500): Promise<boolean> {
 }
 
 // -------------------------------------------------------------
-// WebSocket API Ingestion: recorder/statistics_during_period
+// WebSocket API: recorder/get_statistics_metadata
+// -------------------------------------------------------------
+
+export async function fetchHAStatisticsMetadata(
+  connection?: any,
+  statisticIds: string[] = []
+): Promise<Record<string, StatisticsMetaData>> {
+  const cleanIds = Array.from(new Set(statisticIds.filter(Boolean)));
+  if (cleanIds.length === 0) return {};
+
+  const isLiveClient = haWebSocketService && !haWebSocketService.isDemo();
+  if (isLiveClient) {
+    await waitForConnection(2500);
+  }
+
+  const isLive = (connection && (connection.socket?.readyState === WebSocket.OPEN || connection.connected)) ||
+    (!connection && isLiveClient && haWebSocketService.getStatus() === 'connected');
+
+  if (isLive) {
+    try {
+      const payload = {
+        type: 'recorder/get_statistics_metadata',
+        statistic_ids: cleanIds
+      };
+
+      let result: StatisticsMetaData[] | Record<string, StatisticsMetaData> | null = null;
+      if (connection && typeof connection.sendMessagePromise === 'function') {
+        result = await connection.sendMessagePromise(payload);
+      } else if (connection && typeof connection.sendRequest === 'function') {
+        result = await connection.sendRequest('recorder/get_statistics_metadata', payload);
+      } else {
+        result = await haWebSocketService.sendRequest<any>('recorder/get_statistics_metadata', payload);
+      }
+
+      const map: Record<string, StatisticsMetaData> = {};
+      if (Array.isArray(result)) {
+        for (const meta of result) {
+          if (meta.statistic_id) map[meta.statistic_id] = meta;
+        }
+      } else if (result && typeof result === 'object') {
+        Object.assign(map, result);
+      }
+      return map;
+    } catch (err) {
+      console.warn('[haEnergyStatistics] recorder/get_statistics_metadata error:', err);
+    }
+  }
+
+  // Fallback defaults for demo
+  const fallbackMap: Record<string, StatisticsMetaData> = {};
+  for (const id of cleanIds) {
+    fallbackMap[id] = {
+      statistic_id: id,
+      source: 'recorder',
+      unit_of_measurement: id.includes('gas') ? 'm³' : id.includes('water') ? 'L' : 'kWh',
+      has_sum: true
+    };
+  }
+  return fallbackMap;
+}
+
+// -------------------------------------------------------------
+// WebSocket API: energy/solar_forecast
+// -------------------------------------------------------------
+
+export async function fetchHAEnergySolarForecasts(
+  connection?: any
+): Promise<Record<string, SolarForecastData> | null> {
+  const isLiveClient = haWebSocketService && !haWebSocketService.isDemo();
+  if (isLiveClient) {
+    await waitForConnection(2500);
+  }
+
+  const isLive = (connection && (connection.socket?.readyState === WebSocket.OPEN || connection.connected)) ||
+    (!connection && isLiveClient && haWebSocketService.getStatus() === 'connected');
+
+  if (isLive) {
+    try {
+      const payload = { type: 'energy/solar_forecast' };
+      let result: any = null;
+      if (connection && typeof connection.sendMessagePromise === 'function') {
+        result = await connection.sendMessagePromise(payload);
+      } else {
+        result = await haWebSocketService.sendRequest<any>('energy/solar_forecast');
+      }
+
+      if (result && typeof result === 'object') {
+        return result as Record<string, SolarForecastData>;
+      }
+    } catch (err) {
+      // Forecast integration might not be installed
+      console.debug('[haEnergyStatistics] energy/solar_forecast unavailable:', err);
+    }
+  }
+
+  return null;
+}
+
+// -------------------------------------------------------------
+// WebSocket API: recorder/statistics_during_period
 // -------------------------------------------------------------
 
 export async function fetchHAEnergyStatistics(
   connection: any | undefined,
   statisticIds: string[],
   period: EnergyHistoryPeriod = 'today',
-  customStart?: string,
-  customEnd?: string,
-  states?: Record<string, any>
+  referenceDate: Date = new Date(),
+  customStart?: Date,
+  customEnd?: Date
 ): Promise<HAStatisticsResponse> {
   const cleanIds = Array.from(new Set(statisticIds.filter(Boolean)));
   if (cleanIds.length === 0) {
     return {};
   }
 
-  const { start: defaultStart, end: defaultEnd, periodType } = computePeriodTimeRange(period);
-  const startTime = customStart || defaultStart;
-  const endTime = customEnd || defaultEnd;
+  const timeRange = computePeriodTimeRange(period, referenceDate, customStart, customEnd);
 
   const isLiveClient = haWebSocketService && !haWebSocketService.isDemo();
   if (isLiveClient) {
@@ -132,10 +393,10 @@ export async function fetchHAEnergyStatistics(
   if (isLive) {
     const payload = {
       type: 'recorder/statistics_during_period',
-      start_time: startTime,
-      end_time: endTime,
+      start_time: timeRange.start,
+      end_time: timeRange.end,
       statistic_ids: cleanIds,
-      period: periodType,
+      period: timeRange.periodType,
       types: ['change', 'sum', 'state']
     };
 
@@ -149,72 +410,22 @@ export async function fetchHAEnergyStatistics(
         result = await haWebSocketService.sendRequest<HAStatisticsResponse>('recorder/statistics_during_period', payload);
       }
 
-      if (result && typeof result === 'object' && Object.keys(result).length > 0) {
+      if (result && typeof result === 'object') {
         return result;
       }
     } catch (err) {
       console.warn('[haEnergyStatistics] recorder/statistics_during_period error:', err);
     }
 
-    // If live recorder query returned no entries, derive from state values
-    if (states && Object.keys(states).length > 0) {
-      return deriveStatisticsFromLiveStates(cleanIds, states, startTime, endTime, periodType);
-    }
     return {};
   }
 
-  // Simulation fallback ONLY in offline demo mode
-  return generateSyntheticStatistics(cleanIds, startTime, endTime, periodType);
+  // Synthetic preview generator used exclusively in offline demo mode
+  return generateSyntheticStatistics(cleanIds, timeRange.start, timeRange.end, timeRange.periodType);
 }
 
 // -------------------------------------------------------------
-// Derive Statistics from Live Sensor States (Zero-flicker Live fallback)
-// -------------------------------------------------------------
-
-function deriveStatisticsFromLiveStates(
-  statIds: string[],
-  states: Record<string, any>,
-  startTime: string,
-  endTime: string,
-  periodType: '5minute' | 'hour' | 'day' | 'month'
-): HAStatisticsResponse {
-  const startMs = new Date(startTime).getTime();
-  const endMs = new Date(endTime).getTime();
-  let stepMs = 3600 * 1000;
-  if (periodType === '5minute') stepMs = 5 * 60 * 1000;
-  if (periodType === 'day') stepMs = 24 * 3600 * 1000;
-  if (periodType === 'month') stepMs = 30 * 24 * 3600 * 1000;
-
-  const bucketsCount = Math.max(1, Math.min(744, Math.ceil((endMs - startMs) / stepMs)));
-  const result: HAStatisticsResponse = {};
-
-  for (const id of statIds) {
-    result[id] = [];
-    const stateObj = states[id];
-    const totalVal = stateObj ? parseFloat(stateObj.state) : 0;
-    const validTotal = isNaN(totalVal) ? 0 : totalVal;
-    const avgChange = validTotal > 0 ? (validTotal / Math.max(1, bucketsCount)) : 0;
-
-    let runningSum = 0;
-    for (let i = 0; i < bucketsCount; i++) {
-      const bucketStart = startMs + i * stepMs;
-      const bucketEnd = Math.min(endMs, bucketStart + stepMs);
-      runningSum += avgChange;
-      result[id].push({
-        start: bucketStart,
-        end: bucketEnd,
-        change: Number(avgChange.toFixed(3)),
-        sum: Number(runningSum.toFixed(3)),
-        state: Number(avgChange.toFixed(3))
-      });
-    }
-  }
-
-  return result;
-}
-
-// -------------------------------------------------------------
-// Synthetic Statistics Generator (Demo & Offline)
+// Synthetic Statistics Generator (Demo Mode only)
 // -------------------------------------------------------------
 
 function generateSyntheticStatistics(
@@ -238,9 +449,9 @@ function generateSyntheticStatistics(
     result[id] = [];
   }
 
-  let sums: Record<string, number> = {};
+  const sums: Record<string, number> = {};
   for (const id of statIds) {
-    sums[id] = 1200.0;
+    sums[id] = 500.0;
   }
 
   for (let i = 0; i < bucketsCount; i++) {
@@ -248,65 +459,93 @@ function generateSyntheticStatistics(
     const bucketEndMs = Math.min(endMs, bucketStartMs + stepMs);
     const date = new Date(bucketStartMs);
     const hour = date.getHours();
+    const day = date.getDate();
 
     for (const id of statIds) {
-      let deltaKWh = 0;
+      let delta = 0;
 
       if (id.includes('solar') || id.includes('pv') || id.includes('production')) {
-        if (hour >= 6 && hour <= 19) {
-          const bell = Math.sin(((hour - 6) / 13) * Math.PI);
-          deltaKWh = Math.max(0, bell * (3.4 + Math.sin(i * 0.4) * 0.5));
+        if (periodType === 'month') {
+          // Monthly seasonality (bell curve over months)
+          const m = date.getMonth();
+          delta = 250 + Math.sin((m / 12) * Math.PI) * 450;
+        } else if (periodType === 'day') {
+          delta = 14.5 + Math.sin(day * 0.4) * 6;
         } else {
-          deltaKWh = 0;
+          // Hourly curve
+          if (hour >= 6 && hour <= 19) {
+            const bell = Math.sin(((hour - 6) / 13) * Math.PI);
+            delta = Math.max(0, bell * (3.8 + Math.sin(i * 0.4) * 0.6));
+          } else {
+            delta = 0;
+          }
         }
       } else if (id.includes('export') || id.includes('flow_to')) {
-        if (hour >= 10 && hour <= 16) {
-          const bell = Math.sin(((hour - 6) / 13) * Math.PI);
-          deltaKWh = Math.max(0, bell * 1.7);
+        if (periodType === 'month') {
+          delta = 100 + Math.sin((date.getMonth() / 12) * Math.PI) * 200;
+        } else if (periodType === 'day') {
+          delta = 4.2 + Math.sin(day * 0.3) * 2;
         } else {
-          deltaKWh = 0;
+          if (hour >= 10 && hour <= 16) {
+            const bell = Math.sin(((hour - 6) / 13) * Math.PI);
+            delta = Math.max(0, bell * 1.8);
+          } else {
+            delta = 0;
+          }
         }
       } else if (id.includes('import') || id.includes('flow_from')) {
-        if (hour < 7 || hour > 18) {
-          deltaKWh = 0.55 + (hour >= 19 && hour <= 22 ? 0.85 : 0.15);
+        if (periodType === 'month') {
+          delta = 180 + Math.cos((date.getMonth() / 12) * Math.PI) * 80;
+        } else if (periodType === 'day') {
+          delta = 6.5 + Math.cos(day * 0.5) * 1.5;
         } else {
-          deltaKWh = 0.05;
+          if (hour < 7 || hour > 18) {
+            delta = 0.45 + (hour >= 19 && hour <= 22 ? 0.75 : 0.15);
+          } else {
+            delta = 0.08;
+          }
         }
       } else if (id.includes('battery') && (id.includes('charge') || id.includes('in') || id.includes('to'))) {
-        if (hour >= 10 && hour <= 15) {
-          deltaKWh = 0.85;
+        if (hour >= 9 && hour <= 15 && periodType === 'hour') {
+          delta = 0.95;
+        } else if (periodType === 'day') {
+          delta = 4.5;
+        } else if (periodType === 'month') {
+          delta = 120;
         } else {
-          deltaKWh = 0;
+          delta = 0;
         }
       } else if (id.includes('battery') && (id.includes('discharge') || id.includes('out') || id.includes('from'))) {
-        if (hour >= 18 && hour <= 23) {
-          deltaKWh = 0.70;
+        if (hour >= 18 && hour <= 23 && periodType === 'hour') {
+          delta = 0.75;
+        } else if (periodType === 'day') {
+          delta = 3.8;
+        } else if (periodType === 'month') {
+          delta = 105;
         } else {
-          deltaKWh = 0.02;
-        }
-      } else if (id.includes('tesla') || id.includes('wall_connector') || id.includes('ev')) {
-        if (hour >= 1 && hour <= 3) {
-          deltaKWh = 1.35;
-        } else {
-          deltaKWh = 0;
+          delta = 0.02;
         }
       } else if (id.includes('heat_pump') || id.includes('hvac')) {
-        deltaKWh = 0.38 + (hour >= 6 && hour <= 9 ? 0.35 : 0);
-      } else if (id.includes('kitchen')) {
-        deltaKWh = (hour === 7 || hour === 8 || hour === 12 || hour === 19 || hour === 20) ? 0.52 : 0.06;
+        delta = periodType === 'hour' ? (0.35 + (hour >= 6 && hour <= 9 ? 0.4 : 0)) : (periodType === 'day' ? 3.2 : 90);
+      } else if (id.includes('ev') || id.includes('wallbox') || id.includes('charger')) {
+        delta = periodType === 'hour' ? (hour >= 1 && hour <= 4 ? 1.8 : 0) : (periodType === 'day' ? 4.5 : 130);
+      } else if (id.includes('gas')) {
+        delta = periodType === 'hour' ? 0.05 : (periodType === 'day' ? 0.8 : 22);
+      } else if (id.includes('water')) {
+        delta = periodType === 'hour' ? 12 : (periodType === 'day' ? 140 : 4200);
       } else {
-        deltaKWh = 0.10 + Math.abs(Math.sin(i + 1) * 0.06);
+        delta = periodType === 'hour' ? (0.08 + Math.abs(Math.sin(i)) * 0.05) : (periodType === 'day' ? 1.1 : 32);
       }
 
-      deltaKWh = Math.round(deltaKWh * 1000) / 1000;
-      sums[id] += deltaKWh;
+      delta = Number(delta.toFixed(3));
+      sums[id] += delta;
 
       result[id].push({
         start: bucketStartMs,
         end: bucketEndMs,
-        change: deltaKWh,
-        sum: sums[id],
-        state: deltaKWh
+        change: delta,
+        sum: Number(sums[id].toFixed(3)),
+        state: delta
       });
     }
   }
