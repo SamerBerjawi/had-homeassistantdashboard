@@ -32,6 +32,7 @@ import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import AudioWaveformScrubber from '../../media/AudioWaveformScrubber';
 import { useMediaPosition } from '../../../hooks/useMediaPosition';
 import { useAlbumArtColor } from '../../../hooks/useAlbumArtColor';
+import { useHAImage } from '../../../services/haImageService';
 import { Stairs, HouseLine } from '@phosphor-icons/react';
 
 interface MediaOverviewDrawerProps {
@@ -101,7 +102,7 @@ export default function MediaOverviewDrawer({
       };
 
   const rawArt = currentMedia?.attributes?.media_image || currentMedia?.attributes?.entity_picture;
-  const albumArt = getHAImageUrl(rawArt, serverUrl);
+  const { imageUrl: albumArt } = useHAImage(rawArt, serverUrl);
   const title = currentMedia?.attributes?.media_title || (isPlaying ? 'Active Playback' : 'Idle / Stopped');
   const artist = currentMedia?.attributes?.media_artist || (currentMedia ? currentMedia.name : 'Unknown Artist');
   const album = currentMedia?.attributes?.media_album_name;
@@ -111,7 +112,7 @@ export default function MediaOverviewDrawer({
   const soundMode = currentMedia?.attributes?.sound_mode;
 
   // Extract dynamic accent palette from album art
-  const palette = useAlbumArtColor(albumArt, {
+  const palette = useAlbumArtColor(albumArt || null, {
     title,
     artist,
     darkMode

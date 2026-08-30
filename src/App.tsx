@@ -41,6 +41,7 @@ const SettingsView = lazy(() => import('./components/SettingsView'));
 import WeatherHeaderSentence from './components/weather/WeatherHeaderSentence';
 import WeatherOverviewDrawer from './components/weather/WeatherOverviewDrawer';
 import RoomsHeaderSentence from './components/rooms/RoomsHeaderSentence';
+import MediaHeaderSentence from './components/media/MediaHeaderSentence';
 
 const VALID_TABS = [
   'overview',
@@ -322,6 +323,10 @@ export default function App() {
                   />
                 ) : activeTab === 'rooms' ? (
                   <RoomsHeaderSentence
+                    darkMode={darkMode}
+                  />
+                ) : activeTab === 'media' ? (
+                  <MediaHeaderSentence
                     darkMode={darkMode}
                   />
                 ) : (

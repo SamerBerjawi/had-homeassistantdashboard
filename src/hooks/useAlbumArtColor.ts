@@ -248,43 +248,22 @@ function extractColorsFromImageData(imageData: ImageData): { h: number; s: numbe
   return null;
 }
 
+import { loadHAImageBlob } from '../services/haImageService';
+
 /**
- * Loads an image from URL via direct fetch, proxy, or Image element to safely extract ImageData
+ * Loads an image from URL via loadHAImageBlob / Image element to safely extract ImageData
  */
 async function extractPaletteFromUrl(url: string): Promise<{ h: number; s: number; l: number } | null> {
-  // Step 1: Obtain a safe Blob URL to bypass CORS and canvas tainting
   let safeObjectUrl = '';
-  let needRevoke = false;
 
   try {
     if (url.startsWith('blob:') || url.startsWith('data:')) {
       safeObjectUrl = url;
     } else {
-      // Try direct fetch first
-      const activeToken = typeof window !== 'undefined' ? localStorage.getItem('ha_token') : null;
-      const headers: Record<string, string> = {};
-      if (activeToken && url.includes('/api/')) {
-        headers['Authorization'] = `Bearer ${activeToken}`;
-      }
-
-      let res: Response | null = null;
-      try {
-        res = await fetch(url, { headers, mode: 'cors' });
-      } catch {
-        // Direct fetch failed (CORS or network), use server image proxy
-        const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`;
-        res = await fetch(proxyUrl, { headers });
-      }
-
-      if (res && res.ok) {
-        const blob = await res.blob();
-        safeObjectUrl = URL.createObjectURL(blob);
-        needRevoke = true;
-      }
+      safeObjectUrl = await loadHAImageBlob(url);
     }
   } catch {
-    // If fetch failed completely, attempt standard image element with fallback
-    safeObjectUrl = url.startsWith('http') ? `/api/image-proxy?url=${encodeURIComponent(url)}` : url;
+    safeObjectUrl = url;
   }
 
   if (!safeObjectUrl) return null;
@@ -301,7 +280,6 @@ async function extractPaletteFromUrl(url: string): Promise<{ h: number; s: numbe
         canvas.height = size;
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) {
-          if (needRevoke) URL.revokeObjectURL(safeObjectUrl);
           resolve(null);
           return;
         }
@@ -309,16 +287,13 @@ async function extractPaletteFromUrl(url: string): Promise<{ h: number; s: numbe
         ctx.drawImage(img, 0, 0, size, size);
         const imageData = ctx.getImageData(0, 0, size, size);
         const result = extractColorsFromImageData(imageData);
-        if (needRevoke) URL.revokeObjectURL(safeObjectUrl);
         resolve(result);
       } catch (err) {
-        if (needRevoke) URL.revokeObjectURL(safeObjectUrl);
         resolve(null);
       }
     };
 
     img.onerror = () => {
-      if (needRevoke) URL.revokeObjectURL(safeObjectUrl);
       resolve(null);
     };
 

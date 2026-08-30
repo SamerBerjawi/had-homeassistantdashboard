@@ -28,8 +28,8 @@ import { ResolvedEntity } from '../../types';
 import { useMediaPosition } from '../../hooks/useMediaPosition';
 import { useAlbumArtColor } from '../../hooks/useAlbumArtColor';
 import AudioWaveformScrubber from '../media/AudioWaveformScrubber';
-import { getHAImageUrl } from '../../lib/utils';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import { useHAImage } from '../../services/haImageService';
 
 interface AreaMediaCardProps {
   media: ResolvedEntity;
@@ -66,10 +66,10 @@ export default function AreaMediaCard({
   const album = media.attributes?.media_album_name || media.attributes?.source;
 
   const rawPicture = media.attributes?.entity_picture || media.attributes?.media_image;
-  const albumArtUrl = rawPicture ? getHAImageUrl(rawPicture, serverUrl) : null;
+  const { imageUrl: albumArtUrl } = useHAImage(rawPicture, serverUrl);
 
   // Extract dynamic accent palette from album art
-  const palette = useAlbumArtColor(albumArtUrl, {
+  const palette = useAlbumArtColor(albumArtUrl || null, {
     title,
     artist,
     darkMode

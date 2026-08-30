@@ -20,12 +20,13 @@ import { HAEntity } from '../../../types';
 import CardModalContainer from './CardModalContainer';
 import { detectMediaPlayerType, MediaPlayerService } from '../../../services/mediaPlayerClassification';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
-import { getHAImageUrl } from '../../../lib/utils';
 import AppleRemoteControl from '../../media/AppleRemoteControl';
 import CustomDropdown from '../../ui/CustomDropdown';
 import AudioWaveformScrubber from '../../media/AudioWaveformScrubber';
 import { useMediaPosition } from '../../../hooks/useMediaPosition';
 import { useAlbumArtColor } from '../../../hooks/useAlbumArtColor';
+import { useHAImage } from '../../../services/haImageService';
+import { resolveMediaVisual } from '../../../lib/mediaVisuals';
 
 interface MediaDetailModalProps {
   isOpen: boolean;
@@ -44,12 +45,13 @@ export default function MediaDetailModal({
   const resolvedEntities = useAutoLayoutStore(s => s.resolvedEntities);
   const callHAService = useAutoLayoutStore(s => s.callHAService);
 
+  const visual = resolveMediaVisual(entity);
   const classification = detectMediaPlayerType(entity, devices, Object.values(resolvedEntities));
   const isPlaying = entity.state === 'playing';
   const friendlyName = entity.attributes?.friendly_name || entity.entity_id;
-  const title = entity.attributes?.media_title || (isPlaying ? 'Active Media Playback' : 'Idle / Off');
-  const artist = entity.attributes?.media_artist || friendlyName;
-  const album = entity.attributes?.media_album_name;
+  const title = visual.title;
+  const artist = visual.subtitle;
+  const album = visual.album || entity.attributes?.media_album_name;
   const source = entity.attributes?.source || entity.attributes?.app_name;
   const sourceList: string[] = entity.attributes?.source_list || [];
   const soundModeList: string[] = entity.attributes?.sound_mode_list || [];
@@ -64,9 +66,9 @@ export default function MediaDetailModal({
   const isMuted = Boolean(entity.attributes?.is_volume_muted);
 
   const rawArt = entity.attributes?.media_image || entity.attributes?.entity_picture;
-  const albumArt = getHAImageUrl(rawArt, serverUrl) || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400&auto=format&fit=crop';
+  const { imageUrl: albumArt } = useHAImage(rawArt, serverUrl);
 
-  const palette = useAlbumArtColor(albumArt, {
+  const palette = useAlbumArtColor(albumArt || null, {
     title,
     artist,
     darkMode: true
@@ -222,9 +224,23 @@ export default function MediaDetailModal({
                 </button>
               </div>
 
-              {/* Actual Unblurred Album Artwork */}
-              <div className="relative w-44 h-44 rounded-2xl overflow-hidden shadow-2xl border border-white/20 z-10 group">
-                <img src={albumArt} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              {/* Actual Unblurred Album Artwork / App Visual */}
+              <div className="relative w-44 h-44 rounded-2xl overflow-hidden shadow-2xl border border-white/20 z-10 group flex items-center justify-center bg-slate-900">
+                {albumArt ? (
+                  <img src={albumArt} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                ) : (
+                  <div 
+                    className="w-full h-full flex flex-col items-center justify-center gap-2"
+                    style={{ backgroundColor: palette.badgeBg }}
+                  >
+                    {visual.appInfo ? (
+                      React.createElement(visual.appInfo.icon, { size: 48, weight: 'duotone', style: { color: palette.light } })
+                    ) : (
+                      <MusicNotes size={48} weight="duotone" style={{ color: palette.light }} />
+                    )}
+                    <span className="text-xs font-bold text-slate-300">{visual.subtitle}</span>
+                  </div>
+                )}
               </div>
 
               {/* Track Metadata */}

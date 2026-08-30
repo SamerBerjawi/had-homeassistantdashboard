@@ -1,7 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
+import { useState, useEffect } from 'react';
+import { getActiveHAToken } from './haAuth';
 
 // In-memory cache for resolved Blob URLs to prevent duplicate network requests
 const blobUrlCache = new Map<string, string>();
@@ -66,7 +64,7 @@ export async function loadHAImageBlob(
     return url;
   }
 
-  // External images (e.g. Unsplash) don't need HA Auth headers
+  // External images (e.g. external CDN) don't need HA Auth headers
   if (url.startsWith('http://') || url.startsWith('https://')) {
     const base = getHAHttpBaseUrl(serverUrl);
     const isHAHost = base && url.startsWith(base);
@@ -78,8 +76,10 @@ export async function loadHAImageBlob(
   const targetUrl = resolveHAImageUrl(url, serverUrl);
   if (!targetUrl) return '';
 
+  const activeToken = token || getActiveHAToken();
+
   // Check cache
-  const cacheKey = `${targetUrl}_${token || ''}`;
+  const cacheKey = `${targetUrl}_${activeToken || ''}`;
   if (blobUrlCache.has(cacheKey)) {
     return blobUrlCache.get(cacheKey)!;
   }
@@ -92,8 +92,6 @@ export async function loadHAImageBlob(
   const fetchPromise = (async () => {
     try {
       const headers: Record<string, string> = {};
-      const activeToken = token || (typeof window !== 'undefined' ? localStorage.getItem('ha_token') : null);
-      
       if (activeToken) {
         headers['Authorization'] = `Bearer ${activeToken}`;
       }
@@ -123,3 +121,53 @@ export async function loadHAImageBlob(
   pendingPromises.set(cacheKey, fetchPromise);
   return fetchPromise;
 }
+
+/**
+ * React hook to reactively resolve authenticated Home Assistant image blob URLs.
+ * Synchronously uses cache when available, otherwise loads asynchronously.
+ */
+export function useHAImage(
+  rawUrl?: string | null,
+  serverUrl?: string | null
+): { imageUrl: string; isLoading: boolean } {
+  const [imageUrl, setImageUrl] = useState<string>(() => {
+    if (!rawUrl) return '';
+    if (rawUrl.startsWith('blob:') || rawUrl.startsWith('data:')) return rawUrl;
+    const targetUrl = resolveHAImageUrl(rawUrl, serverUrl);
+    const activeToken = getActiveHAToken();
+    const cacheKey = `${targetUrl}_${activeToken || ''}`;
+    return blobUrlCache.get(cacheKey) || '';
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(() => !imageUrl && Boolean(rawUrl));
+
+  useEffect(() => {
+    if (!rawUrl) {
+      setImageUrl('');
+      setIsLoading(false);
+      return;
+    }
+
+    if (rawUrl.startsWith('blob:') || rawUrl.startsWith('data:')) {
+      setImageUrl(rawUrl);
+      setIsLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoading(true);
+
+    loadHAImageBlob(rawUrl, serverUrl).then((resolved) => {
+      if (isMounted) {
+        setImageUrl(resolved || rawUrl);
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [rawUrl, serverUrl]);
+
+  return { imageUrl, isLoading };
+}
+

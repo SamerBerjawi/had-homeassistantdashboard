@@ -148,6 +148,14 @@ class HAWebSocketClient {
     return this.isDemoMode;
   }
 
+  public getCurrentToken(): string {
+    return this.currentToken;
+  }
+
+  public getCurrentUrl(): string {
+    return this.currentUrl;
+  }
+
   /**
    * Update active token after a background OAuth refresh without dropping existing socket
    */

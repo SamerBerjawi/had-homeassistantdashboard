@@ -289,3 +289,26 @@ export function clearStoredHAAuth(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(STORAGE_KEY_AUTH);
 }
+
+/**
+ * Single source of truth to retrieve the currently valid HA access token
+ * regardless of OAuth2 or LLAT session.
+ */
+export function getActiveHAToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  const stored = getStoredHAAuth();
+  if (stored?.access_token) {
+    return stored.access_token;
+  }
+  const legacyToken = localStorage.getItem('ha_token');
+  if (legacyToken && legacyToken.trim()) {
+    return legacyToken.trim();
+  }
+  try {
+    const { haWebSocketService } = require('./haWebSocket');
+    const wsToken = haWebSocketService?.getCurrentToken?.();
+    if (wsToken) return wsToken;
+  } catch {}
+  return null;
+}
+

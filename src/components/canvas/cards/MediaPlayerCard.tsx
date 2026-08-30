@@ -9,8 +9,9 @@ import { CardConfig } from '../../../types/canvas';
 import { HAEntity } from '../../../types';
 import { detectMediaPlayerType, MediaPlayerService } from '../../../services/mediaPlayerClassification';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
-import { getHAImageUrl } from '../../../lib/utils';
 import { useAlbumArtColor } from '../../../hooks/useAlbumArtColor';
+import { useHAImage } from '../../../services/haImageService';
+import { resolveMediaVisual } from '../../../lib/mediaVisuals';
 
 interface MediaPlayerCardProps {
   config: CardConfig;
@@ -28,18 +29,19 @@ export default function MediaPlayerCard({
   const devices = useAutoLayoutStore(s => s.devices);
   const resolvedEntities = useAutoLayoutStore(s => s.resolvedEntities);
 
+  const visual = resolveMediaVisual(entity);
   const classification = detectMediaPlayerType(entity, devices, Object.values(resolvedEntities));
   const isPlaying = entity.state === 'playing';
-  const title = entity.attributes?.media_title || (isPlaying ? 'Active Media' : 'Idle / Off');
-  const artist = entity.attributes?.media_artist || entity.attributes?.friendly_name || 'Media Player';
+  const title = visual.title;
+  const artist = visual.subtitle;
   const volumePct = typeof entity.attributes?.volume_level === 'number'
     ? Math.round(entity.attributes.volume_level * 100)
     : 45;
 
   const rawArt = entity.attributes?.media_image || entity.attributes?.entity_picture;
-  const albumArt = getHAImageUrl(rawArt, serverUrl) || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=300&auto=format&fit=crop';
+  const { imageUrl: albumArt } = useHAImage(rawArt, serverUrl);
 
-  const palette = useAlbumArtColor(albumArt, {
+  const palette = useAlbumArtColor(albumArt || null, {
     title,
     artist,
     darkMode: true
@@ -88,6 +90,22 @@ export default function MediaPlayerCard({
         </div>
       );
     }
+    if (visual.appInfo) {
+      const AppIcon = visual.appInfo.icon;
+      return (
+        <div 
+          className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-colors duration-300"
+          style={{
+            backgroundColor: visual.appInfo.badgeBg,
+            borderColor: visual.appInfo.badgeBorder,
+            color: visual.appInfo.badgeText
+          }}
+        >
+          <AppIcon size={12} weight="duotone" />
+          <span>{visual.appInfo.name}</span>
+        </div>
+      );
+    }
     return (
       <div 
         className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-colors duration-300"
@@ -103,24 +121,42 @@ export default function MediaPlayerCard({
     );
   };
 
+  const AppIcon = visual.appInfo?.icon || MusicNotes;
+
   return (
     <div 
       onClick={onOpenModal}
       className="relative w-full h-full flex flex-col justify-between overflow-hidden cursor-pointer"
     >
       {/* Ambient Artwork Glow */}
-      <div 
-        className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-cover bg-center blur-xl opacity-30 pointer-events-none"
-        style={{ backgroundImage: `url(${albumArt})` }}
-      />
+      {albumArt ? (
+        <div 
+          className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-cover bg-center blur-xl opacity-30 pointer-events-none"
+          style={{ backgroundImage: `url(${albumArt})` }}
+        />
+      ) : (
+        <div 
+          className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full blur-xl opacity-20 pointer-events-none"
+          style={{ backgroundColor: palette.primary }}
+        />
+      )}
 
       {/* Top row: Track Title & Badge */}
       <div className="flex items-center justify-between relative z-10">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-white/20 shadow-md shrink-0">
-            <img src={albumArt} alt={title} className="w-full h-full object-cover" />
+          <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-white/20 shadow-md shrink-0 flex items-center justify-center bg-slate-800">
+            {albumArt ? (
+              <img src={albumArt} alt={title} className="w-full h-full object-cover" />
+            ) : (
+              <div 
+                className="w-full h-full flex items-center justify-center"
+                style={{ backgroundColor: palette.badgeBg }}
+              >
+                <AppIcon size={20} weight="duotone" style={{ color: palette.light }} />
+              </div>
+            )}
             {isPlaying && (
-              <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
                 <span 
                   className="w-2 h-2 rounded-full animate-ping" 
                   style={{ backgroundColor: palette.light }}
