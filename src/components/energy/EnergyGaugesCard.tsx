@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { ShieldCheck, Sparkle } from '@phosphor-icons/react';
+import { ShieldCheck } from '@phosphor-icons/react';
 
 interface EnergyGaugesCardProps {
   selfSufficiencyPercentage: number;
@@ -36,20 +36,28 @@ export default function EnergyGaugesCard({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative flex flex-col justify-between ${
+      className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative flex flex-col justify-between shadow-2xl ${
         darkMode
-          ? 'bg-slate-900/80 border-white/10 text-white shadow-2xl'
-          : 'bg-white/90 border-slate-200/80 text-slate-900 shadow-xl'
+          ? 'bg-slate-900/80 border-white/10 text-white'
+          : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/80'
       }`}
     >
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-4">
-        <div className="p-2 rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+        <div
+          className={`p-2 rounded-2xl border ${
+            darkMode
+              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+              : 'bg-emerald-50 text-emerald-600 border-emerald-200'
+          }`}
+        >
           <ShieldCheck size={18} weight="fill" />
         </div>
         <div>
-          <h3 className="text-sm font-extrabold tracking-tight">Energy Autarky & Efficiency</h3>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+          <h3 className={`text-sm font-extrabold tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            Energy Autarky & Efficiency
+          </h3>
+          <p className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
             Self-sufficiency and on-site solar consumption rates
           </p>
         </div>
@@ -87,15 +95,17 @@ export default function EnergyGaugesCard({
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-xs font-black font-mono leading-none text-white">
+              <span className={`text-xs font-black font-mono leading-none ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                 {autarky.toFixed(0)}%
               </span>
             </div>
           </div>
 
           <div className="flex flex-col">
-            <span className="text-xs font-extrabold text-emerald-400">Self-Sufficiency</span>
-            <span className="text-[11px] text-slate-400 font-medium mt-0.5">
+            <span className={`text-xs font-extrabold ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
+              Self-Sufficiency
+            </span>
+            <span className={`text-[11px] font-medium mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               Home energy provided without the grid
             </span>
           </div>
@@ -131,15 +141,17 @@ export default function EnergyGaugesCard({
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-xs font-black font-mono leading-none text-white">
+              <span className={`text-xs font-black font-mono leading-none ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                 {hasSolar ? `${selfCons.toFixed(0)}%` : '—'}
               </span>
             </div>
           </div>
 
           <div className="flex flex-col">
-            <span className="text-xs font-extrabold text-amber-400">Self-Consumption</span>
-            <span className="text-[11px] text-slate-400 font-medium mt-0.5">
+            <span className={`text-xs font-extrabold ${darkMode ? 'text-amber-400' : 'text-amber-600'}`}>
+              Self-Consumption
+            </span>
+            <span className={`text-[11px] font-medium mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               {hasSolar
                 ? `${solarConsumedKWh.toFixed(1)} of ${solarYieldKWh.toFixed(1)} kWh used locally`
                 : 'Requires solar source configured'}

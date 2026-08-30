@@ -5,16 +5,19 @@
 
 import React from 'react';
 import { useEnergyData } from '../../hooks/useEnergyData';
-import EnergyPeriodSelector from '../energy/EnergyPeriodSelector';
-import EnergyDistributionCard from '../energy/EnergyDistributionCard';
-import EnergyUsageGraphCard from '../energy/EnergyUsageGraphCard';
-import SolarProductionGraphCard from '../energy/SolarProductionGraphCard';
-import GasUsageGraphCard from '../energy/GasUsageGraphCard';
-import WaterUsageGraphCard from '../energy/WaterUsageGraphCard';
-import DevicesEnergyGraphCard from '../energy/DevicesEnergyGraphCard';
-import EnergySourcesTableCard from '../energy/EnergySourcesTableCard';
-import EnergyGaugesCard from '../energy/EnergyGaugesCard';
-import EnergyUnconfiguredState from '../energy/EnergyUnconfiguredState';
+import {
+  EnergyPeriodSelector,
+  EnergyDistributionCard,
+  PowerSourcesLineChartCard,
+  EnergyUsageGraphCard,
+  SolarProductionGraphCard,
+  GasUsageGraphCard,
+  WaterUsageGraphCard,
+  DevicesEnergyGraphCard,
+  EnergySourcesTableCard,
+  EnergyGaugesCard,
+  EnergyUnconfiguredState
+} from '../energy';
 import { ArrowsClockwise, WarningCircle } from '@phosphor-icons/react';
 
 interface EnergyDashboardViewProps {
@@ -80,11 +83,23 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
     );
   }
 
-  const { totals, financials, buckets, devices, untrackedKwh, untrackedPercentage, hasSolar, hasGrid, hasBattery, hasGas, hasWater, hasDevices } = model;
+  const {
+    totals,
+    financials,
+    buckets,
+    devices,
+    untrackedKwh,
+    untrackedPercentage,
+    hasSolar,
+    hasGrid,
+    hasBattery,
+    hasGas,
+    hasWater,
+    hasDevices
+  } = model;
 
   return (
     <div className="w-full flex-1 flex flex-col space-y-5 sm:space-y-6 pb-12">
-      
       {/* ───────────────────────────────────────────────────────────── */}
       {/* TOP CONTROL TOOLBAR: Period Navigation & Live Status          */}
       {/* ───────────────────────────────────────────────────────────── */}
@@ -133,62 +148,53 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* ROW 2: ENERGY USAGE STACKED BAR GRAPH                         */}
+      {/* ROW 2: POWER SOURCES CONTINUOUS FLOWS (bklit/line-chart)      */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="w-full">
-        <EnergyUsageGraphCard
+        <PowerSourcesLineChartCard
           buckets={buckets}
-          totalConsumption={totals.homeConsumption}
+          realtime={realtime}
           hasSolar={hasSolar}
-          hasBattery={hasBattery}
           hasGrid={hasGrid}
+          hasBattery={hasBattery}
           darkMode={darkMode}
         />
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* ROW 3: SOLAR PRODUCTION GRAPH (Only if configured)            */}
+      {/* ROW 3: ENERGY USAGE & SOLAR PRODUCTION BAR CHARTS             */}
       {/* ───────────────────────────────────────────────────────────── */}
-      {hasSolar && (
+      <div className={`grid grid-cols-1 ${hasSolar ? 'lg:grid-cols-2' : 'grid-cols-1'} gap-5 sm:gap-6`}>
+        {/* Stacked Bar Consumption Graph */}
         <div className="w-full">
-          <SolarProductionGraphCard
+          <EnergyUsageGraphCard
             buckets={buckets}
-            totalSolar={totals.solar}
-            forecastTotal={totals.solarForecastTotal}
+            totalConsumption={totals.homeConsumption}
+            hasSolar={hasSolar}
+            hasBattery={hasBattery}
+            hasGrid={hasGrid}
             darkMode={darkMode}
           />
         </div>
-      )}
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* ROW 4: GAS & WATER USAGE (Only if configured)                 */}
-      {/* ───────────────────────────────────────────────────────────── */}
-      {(hasGas || hasWater) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-          {hasGas && (
-            <GasUsageGraphCard
+        {/* Solar Production & Forecast Graph (if configured) */}
+        {hasSolar && (
+          <div className="w-full">
+            <SolarProductionGraphCard
               buckets={buckets}
-              totalGas={totals.gasUsage}
-              gasUnit={totals.gasUnit}
+              totalSolar={totals.solar}
+              forecastTotal={totals.solarForecastTotal}
               darkMode={darkMode}
             />
-          )}
-          {hasWater && (
-            <WaterUsageGraphCard
-              buckets={buckets}
-              totalWater={totals.waterUsage}
-              waterUnit={totals.waterUnit}
-              darkMode={darkMode}
-            />
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* ROW 5: MONITORED DEVICES & COST / COMPENSATION TABLE          */}
+      {/* ROW 4: MONITORED DEVICES (bklit/ring-chart) & FINANCIAL TABLE */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
-        {/* Device Consumption Ranking (if devices configured) */}
+        {/* Device Consumption (Nested Concentric Rings with @bklit/ring-chart) */}
         {hasDevices && (
           <div className="lg:col-span-6 flex flex-col">
             <DevicesEnergyGraphCard
@@ -210,6 +216,29 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
         </div>
       </div>
 
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* ROW 5: GAS & WATER USAGE (Only if configured)                 */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {(hasGas || hasWater) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+          {hasGas && (
+            <GasUsageGraphCard
+              buckets={buckets}
+              totalGas={totals.gasUsage}
+              gasUnit={totals.gasUnit}
+              darkMode={darkMode}
+            />
+          )}
+          {hasWater && (
+            <WaterUsageGraphCard
+              buckets={buckets}
+              totalWater={totals.waterUsage}
+              waterUnit={totals.waterUnit}
+              darkMode={darkMode}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -27,21 +27,29 @@ export default function GasUsageGraphCard({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative flex flex-col justify-between ${
+      className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative flex flex-col justify-between shadow-2xl ${
         darkMode
-          ? 'bg-slate-900/80 border-white/10 text-white shadow-2xl'
-          : 'bg-white/90 border-slate-200/80 text-slate-900 shadow-xl'
+          ? 'bg-slate-900/80 border-white/10 text-white'
+          : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/80'
       }`}
     >
       {/* Header with Title and Total Badge */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-2xl bg-orange-500/15 text-orange-500 border border-orange-500/30">
+          <div
+            className={`p-2 rounded-2xl border ${
+              darkMode
+                ? 'bg-orange-500/15 text-orange-500 border-orange-500/30'
+                : 'bg-orange-50 text-orange-600 border-orange-200'
+            }`}
+          >
             <Fire size={18} weight="fill" />
           </div>
           <div>
-            <h3 className="text-sm font-extrabold tracking-tight">Gas Usage</h3>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+            <h3 className={`text-sm font-extrabold tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              Gas Usage
+            </h3>
+            <p className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               Gas consumption over time
             </p>
           </div>
@@ -49,8 +57,14 @@ export default function GasUsageGraphCard({
 
         {/* Total Badge */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total:</span>
-          <div className="px-3 py-1.5 rounded-2xl bg-orange-500/15 border border-orange-500/30 text-orange-400 font-mono font-black text-xs">
+          <span className={`text-xs font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Total:</span>
+          <div
+            className={`px-3 py-1.5 rounded-2xl border font-mono font-black text-xs ${
+              darkMode
+                ? 'bg-orange-500/15 border-orange-500/30 text-orange-400'
+                : 'bg-orange-50 border-orange-200 text-orange-700'
+            }`}
+          >
             {formatNumber(totalGas)} {gasUnit}
           </div>
         </div>
@@ -83,7 +97,11 @@ export default function GasUsageGraphCard({
 
                   {/* X-Axis Tick Label */}
                   {(buckets.length <= 12 || idx % Math.ceil(buckets.length / 10) === 0) && (
-                    <span className="absolute -bottom-5 text-[9px] font-mono font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                    <span
+                      className={`absolute -bottom-5 text-[9px] font-mono font-bold whitespace-nowrap ${
+                        darkMode ? 'text-slate-400' : 'text-slate-600'
+                      }`}
+                    >
                       {bucket.label}
                     </span>
                   )}
@@ -97,16 +115,20 @@ export default function GasUsageGraphCard({
       {/* Hover Tooltip */}
       {hoveredBucket && (
         <div
-          className={`absolute top-16 right-6 p-3 rounded-2xl border shadow-xl z-20 backdrop-blur-md pointer-events-none transition-all text-xs ${
+          className={`absolute top-16 right-6 p-3.5 rounded-2xl border shadow-2xl z-30 backdrop-blur-md pointer-events-none transition-all text-xs ${
             darkMode
               ? 'bg-slate-950/95 border-orange-500/40 text-white'
-              : 'bg-white/95 border-orange-300 text-slate-900'
+              : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-300'
           }`}
         >
-          <div className="font-bold font-mono text-orange-400 mb-1 border-b border-white/10 pb-1">
+          <div
+            className={`font-bold font-mono mb-1 border-b pb-1 ${
+              darkMode ? 'text-orange-400 border-white/10' : 'text-orange-600 border-slate-200'
+            }`}
+          >
             {hoveredBucket.label}
           </div>
-          <div className="font-mono text-[11px] text-orange-300">
+          <div className="font-mono text-[11px] font-bold text-orange-500">
             Usage: {(hoveredBucket.gasUsage || 0).toFixed(2)} {gasUnit}
           </div>
         </div>

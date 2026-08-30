@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { LightningSlash, GearSix, ArrowsClockwise } from '@phosphor-icons/react';
+import { LightningSlash, ArrowsClockwise } from '@phosphor-icons/react';
 
 interface EnergyUnconfiguredStateProps {
   onRefresh?: () => void;
@@ -20,7 +20,7 @@ export default function EnergyUnconfiguredState({
       className={`w-full rounded-3xl p-8 sm:p-12 border backdrop-blur-xl text-center flex flex-col items-center justify-center max-w-2xl mx-auto my-12 transition-all shadow-2xl ${
         darkMode
           ? 'bg-slate-900/80 border-white/10 text-white'
-          : 'bg-white/90 border-slate-200 text-slate-900'
+          : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/80'
       }`}
     >
       <div className="w-16 h-16 rounded-3xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center mb-5 shadow-lg shadow-amber-500/10 animate-pulse">
@@ -31,14 +31,14 @@ export default function EnergyUnconfiguredState({
         No Energy Sources Configured
       </h2>
 
-      <p className="text-sm text-slate-400 max-w-md leading-relaxed mb-6">
+      <p className={`text-sm max-w-md leading-relaxed mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
         This dashboard reads directly from Home Assistant's built-in energy configuration.
         To monitor your power, grid import/export, solar, battery, gas, or water usage, configure your sources in Home Assistant under:
       </p>
 
       <div
-        className={`px-4 py-2.5 rounded-2xl border font-mono text-xs font-bold text-amber-400 mb-8 select-all ${
-          darkMode ? 'bg-black/40 border-white/10' : 'bg-slate-100 border-slate-200'
+        className={`px-4 py-2.5 rounded-2xl border font-mono text-xs font-bold mb-8 select-all ${
+          darkMode ? 'bg-black/40 border-white/10 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-700'
         }`}
       >
         Settings → Dashboards → Energy

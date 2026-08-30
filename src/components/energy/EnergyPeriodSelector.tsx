@@ -8,8 +8,7 @@ import {
   CaretLeft,
   CaretRight,
   ArrowsClockwise,
-  CalendarBlank,
-  Pulse
+  CalendarBlank
 } from '@phosphor-icons/react';
 import { EnergyHistoryPeriod } from '../../services/haEnergyStatistics';
 
@@ -50,8 +49,12 @@ export default function EnergyPeriodSelector({
         <span
           className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full border transition-all ${
             isLive
-              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-              : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+              ? darkMode
+                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              : darkMode
+              ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+              : 'bg-amber-50 text-amber-700 border-amber-200'
           }`}
         >
           <span
@@ -61,34 +64,37 @@ export default function EnergyPeriodSelector({
           />
           <span>{isLive ? 'HA Energy Stream' : 'HA Offline Simulation'}</span>
         </span>
-        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
+        <span className={`text-xs font-medium hidden sm:inline ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
           Official Energy Dashboard
         </span>
       </div>
 
       {/* Right: Date Navigation, Period Tabs & Refresh */}
       <div className="flex flex-wrap items-center gap-2">
-        
         {/* Date Window Navigation: < Date Label > */}
         <div
           className={`flex items-center gap-1 px-2 py-1 rounded-2xl border backdrop-blur-md transition-all ${
             darkMode
               ? 'bg-white/5 border-white/10 text-white'
-              : 'bg-slate-900/[0.04] border-slate-900/[0.08] text-slate-900'
+              : 'bg-slate-100 border-slate-200 text-slate-900'
           }`}
         >
           <button
             type="button"
             onClick={() => shiftPeriod(-1)}
             title="Previous period"
-            className="p-1 rounded-xl hover:bg-white/10 active:scale-95 transition-all cursor-pointer text-slate-400 hover:text-white"
+            className={`p-1 rounded-xl active:scale-95 transition-all cursor-pointer ${
+              darkMode
+                ? 'text-slate-400 hover:text-white hover:bg-white/10'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+            }`}
           >
             <CaretLeft size={16} weight="bold" />
           </button>
 
           <div className="flex items-center gap-1.5 px-2 text-xs font-bold font-mono tracking-tight select-none">
             <CalendarBlank size={14} className="text-amber-500" />
-            <span>{dateLabel}</span>
+            <span className={darkMode ? 'text-white' : 'text-slate-900'}>{dateLabel}</span>
           </div>
 
           <button
@@ -98,8 +104,10 @@ export default function EnergyPeriodSelector({
             title={isAtFutureLimit ? 'Current period (cannot go to future)' : 'Next period'}
             className={`p-1 rounded-xl transition-all cursor-pointer ${
               isAtFutureLimit
-                ? 'opacity-30 cursor-not-allowed text-slate-500'
-                : 'hover:bg-white/10 active:scale-95 text-slate-400 hover:text-white'
+                ? 'opacity-30 cursor-not-allowed text-slate-400'
+                : darkMode
+                ? 'text-slate-400 hover:text-white hover:bg-white/10 active:scale-95'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200 active:scale-95'
             }`}
           >
             <CaretRight size={16} weight="bold" />
@@ -111,7 +119,7 @@ export default function EnergyPeriodSelector({
           className={`flex items-center p-1 rounded-2xl border backdrop-blur-md transition-all ${
             darkMode
               ? 'bg-white/5 border-white/10'
-              : 'bg-slate-900/[0.04] border-slate-900/[0.08]'
+              : 'bg-slate-100 border-slate-200'
           }`}
         >
           {periodOptions.map((opt) => (
@@ -123,8 +131,8 @@ export default function EnergyPeriodSelector({
                 period === opt.id || (opt.id === 'day' && (period === 'today' || period === 'yesterday'))
                   ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
                   : darkMode
-                  ? 'text-slate-400 hover:text-white'
-                  : 'text-slate-700 hover:text-slate-900'
+                  ? 'text-slate-400 hover:text-white hover:bg-white/5'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
               {opt.label}
@@ -141,7 +149,7 @@ export default function EnergyPeriodSelector({
           className={`p-2 rounded-2xl border text-xs font-bold transition-all shadow-xs cursor-pointer ${
             darkMode
               ? 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-200 hover:text-white'
-              : 'bg-white/80 hover:bg-white border-slate-200/80 text-slate-800 hover:text-slate-900 backdrop-blur-sm'
+              : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700 hover:text-slate-900'
           }`}
         >
           <ArrowsClockwise

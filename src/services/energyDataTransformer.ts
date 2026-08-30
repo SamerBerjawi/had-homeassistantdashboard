@@ -187,7 +187,10 @@ export function transformEnergyStatistics(
     const entries = stats[id];
     if (Array.isArray(entries)) {
       for (const entry of entries) {
-        const start = typeof entry.start === 'number' ? entry.start : new Date(entry.start).getTime();
+        const raw = entry.start;
+        const start = typeof raw === 'number'
+          ? (raw > 1e11 ? raw : raw * 1000)
+          : new Date(raw).getTime();
         if (!isNaN(start)) {
           timestampsSet.add(start);
         }
@@ -212,15 +215,53 @@ export function transformEnergyStatistics(
     }
   }
 
+  // Generate 24 continuous hourly slots for day period if not already populated
+  if (periodType === 'hour') {
+    const firstTs = timestampsSet.size > 0 ? Math.min(...Array.from(timestampsSet)) : Date.now();
+    const baseDate = new Date(firstTs);
+    baseDate.setMinutes(0, 0, 0);
+    for (let h = 0; h < 24; h++) {
+      const slot = new Date(baseDate);
+      slot.setHours(h, 0, 0, 0);
+      timestampsSet.add(slot.getTime());
+    }
+  }
+
   const sortedTimestamps = Array.from(timestampsSet).sort((a, b) => a - b);
+
+  // Helper to test if two timestamps belong to the same period slot
+  const isSameSlot = (tMs: number, slotMs: number): boolean => {
+    const d1 = new Date(tMs);
+    const d2 = new Date(slotMs);
+    if (periodType === 'month') {
+      return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth();
+    }
+    if (periodType === 'day') {
+      return (
+        d1.getFullYear() === d2.getFullYear() &&
+        d1.getMonth() === d2.getMonth() &&
+        d1.getDate() === d2.getDate()
+      );
+    }
+    // hour: compare local year, month, date, and hour
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate() &&
+      d1.getHours() === d2.getHours()
+    );
+  };
 
   // Helper to lookup stat change at a given bucket timestamp
   const getChangeAtTime = (statId: string, timeMs: number): number => {
     const entries = stats[statId];
     if (!entries || entries.length === 0) return 0;
     const entry = entries.find(e => {
-      const t = typeof e.start === 'number' ? e.start : new Date(e.start).getTime();
-      return Math.abs(t - timeMs) < 60000; // within 1 minute match
+      const raw = e.start;
+      const t = typeof raw === 'number'
+        ? (raw > 1e11 ? raw : raw * 1000)
+        : new Date(raw).getTime();
+      return isSameSlot(t, timeMs);
     });
     if (!entry) return 0;
     if (typeof entry.change === 'number') return Math.max(0, entry.change);
@@ -249,7 +290,7 @@ export function transformEnergyStatistics(
     if (periodType === 'day') {
       return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' });
     }
-    // hour / 5minute
+    // hour
     return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
