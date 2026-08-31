@@ -166,6 +166,8 @@ export interface ResolvedEntity {
   batteryPct?: number;
   icon?: string;
   labels?: string[];
+  last_changed?: string;
+  last_updated?: string;
 }
 
 export interface ResolvedAreaSummary {

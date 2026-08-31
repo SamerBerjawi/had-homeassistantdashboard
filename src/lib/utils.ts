@@ -47,3 +47,25 @@ export function formatEntityDisplayName(name: string, areaName?: string): string
   // Capitalize first character
   return clean.charAt(0).toUpperCase() + clean.slice(1);
 }
+
+/**
+ * Formats an ISO string or timestamp to a compact relative time representation (e.g. "5m ago", "2h ago")
+ */
+export function formatRelativeTime(dateStrOrTs?: string | number | null): string {
+  if (!dateStrOrTs) return 'Just now';
+  try {
+    const timeMs = typeof dateStrOrTs === 'number' ? dateStrOrTs : new Date(dateStrOrTs).getTime();
+    if (isNaN(timeMs) || timeMs <= 0) return 'Just now';
+    const diffMs = Date.now() - timeMs;
+    const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+    if (diffSec < 60) return `${diffSec}s ago`;
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDays = Math.floor(diffHr / 24);
+    return `${diffDays}d ago`;
+  } catch {
+    return 'Just now';
+  }
+}

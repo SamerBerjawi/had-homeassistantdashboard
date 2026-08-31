@@ -253,7 +253,9 @@ export function resolveHAGraph(
       powerWatts,
       batteryPct,
       icon: regEntry?.icon || liveState.attributes.icon,
-      labels: regEntry?.labels || liveState.attributes.labels || matchedDevice?.labels || []
+      labels: regEntry?.labels || liveState.attributes.labels || matchedDevice?.labels || [],
+      last_changed: (liveState as any).last_changed,
+      last_updated: (liveState as any).last_updated
     };
 
     resolvedEntities[entityId] = resolved;

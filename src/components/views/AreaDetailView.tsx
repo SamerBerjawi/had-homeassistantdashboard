@@ -61,13 +61,14 @@ import {
 } from '@phosphor-icons/react';
 import { AreaData } from '../../types/rooms';
 import { ResolvedEntity } from '../../types';
-import { formatEntityDisplayName } from '../../lib/utils';
+import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
 import { getClimateModeTheme } from '../../utils/climateTheme';
 import { useEntityPopup } from '../../contexts/EntityPopupContext';
 import AreaMediaCard from '../rooms/AreaMediaCard';
 import MediaOverviewDrawer from '../overview/modals/MediaOverviewDrawer';
 import ViewEmptyState from '../ui/ViewEmptyState';
 import MiniSensorSparkline from '../sensors/MiniSensorSparkline';
+import { detectLightCapabilities } from '../../services/lightClassification';
 
 interface AreaDetailViewProps {
   area: AreaData;
@@ -350,21 +351,35 @@ export default function AreaDetailView({
 
   // Light individual toggle & brightness
   const handleToggleLight = (light: ResolvedEntity) => {
+    const caps = detectLightCapabilities(light);
     const isCurrentlyOn = light.state === 'on';
     const nextState = isCurrentlyOn ? 'off' : 'on';
-    const currentBrightness = light.attributes?.brightness || 200;
+    const currentBrightness = caps.brightness255 || 200;
 
-    updateEntityState(light.entity_id, nextState, {
-      ...light.attributes,
-      brightness: nextState === 'on' ? currentBrightness : 0
-    });
+    if (caps.supportsBrightness) {
+      updateEntityState(light.entity_id, nextState, {
+        ...light.attributes,
+        brightness: nextState === 'on' ? currentBrightness : 0
+      });
 
-    callHAService(
-      'light',
-      isCurrentlyOn ? 'turn_off' : 'turn_on',
-      nextState === 'on' ? { brightness: currentBrightness } : {},
-      { entity_id: light.entity_id }
-    );
+      callHAService(
+        'light',
+        isCurrentlyOn ? 'turn_off' : 'turn_on',
+        nextState === 'on' ? { brightness: currentBrightness } : {},
+        { entity_id: light.entity_id }
+      );
+    } else {
+      updateEntityState(light.entity_id, nextState, {
+        ...light.attributes
+      });
+
+      callHAService(
+        'light',
+        isCurrentlyOn ? 'turn_off' : 'turn_on',
+        {},
+        { entity_id: light.entity_id }
+      );
+    }
   };
 
   const handleBrightnessChange = (light: ResolvedEntity, nextPct: number) => {
@@ -554,12 +569,15 @@ export default function AreaDetailView({
               </button>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
               {entities.lights.map((light) => {
-                const isOn = light.state === 'on';
-                const brightness = light.attributes?.brightness !== undefined ? Math.round((light.attributes.brightness / 255) * 100) : (isOn ? 100 : 0);
+                const caps = detectLightCapabilities(light);
+                const isOn = caps.isOn;
+                const brightness = caps.brightnessPct;
                 const powerWatts = light.attributes?.power || light.powerWatts;
                 const battery = getEntityBattery(light);
+                const hasPower = typeof powerWatts === 'number' && powerWatts > 0 && isOn;
+                const lastChangedStr = formatRelativeTime(light.last_changed || light.last_updated);
 
                 return (
                   <div
@@ -570,9 +588,9 @@ export default function AreaDetailView({
                       openEntityDetails(light.entity_id);
                     }}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-4 rounded-3xl border ${
+                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border ${
                       isOn ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
-                    } backdrop-blur-sm transition-all duration-300 flex flex-col justify-between gap-3 overflow-hidden isolate ${
+                    } backdrop-blur-sm transition-all duration-300 flex flex-col justify-between gap-2.5 sm:gap-3 overflow-hidden isolate ${
                       isOn
                         ? 'bg-amber-500/20 text-slate-900 dark:text-white'
                         : darkMode
@@ -594,6 +612,9 @@ export default function AreaDetailView({
                           <Lightbulb
                             size={24}
                             weight={isOn ? 'fill' : 'duotone'}
+                            style={{
+                              color: isOn && caps.supportsColor ? caps.displayColor : undefined
+                            }}
                             className={`shrink-0 transition-all duration-300 ${
                               isOn
                                 ? 'text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.85)] scale-105'
@@ -606,9 +627,18 @@ export default function AreaDetailView({
                             {formatEntityDisplayName(light.name, area.name)}
                           </h5>
                           <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
-                            <span>{isOn ? `${brightness}%` : 'Off'}</span>
-                            {powerWatts !== undefined && isOn && (
-                              <span className="text-amber-400 font-medium">• {powerWatts}W</span>
+                            <span className="font-semibold text-slate-900 dark:text-white">
+                              {isOn ? (caps.supportsBrightness ? `${brightness}%` : 'On') : 'Off'}
+                            </span>
+                            {lastChangedStr && (
+                              <span className="text-slate-500 dark:text-slate-400">
+                                • {lastChangedStr}
+                              </span>
+                            )}
+                            {hasPower && (
+                              <span className="text-amber-500 dark:text-amber-400 font-medium">
+                                • {powerWatts}W
+                              </span>
                             )}
                             {battery !== undefined && (
                               <span className="flex items-center gap-0.5 text-slate-400">
@@ -622,35 +652,38 @@ export default function AreaDetailView({
                       <button
                         type="button"
                         onClick={() => handleToggleLight(light)}
-                        className={`p-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 ${
+                        className={`p-1.5 sm:p-2 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 shrink-0 ${
                           isOn
                             ? 'bg-amber-500 text-slate-950 shadow-xs'
                             : darkMode
                             ? 'bg-white/10 hover:bg-white/15 text-slate-400'
                             : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-600'
                         }`}
+                        title={isOn ? 'Turn Off' : 'Turn On'}
                       >
                         <Power size={15} weight="bold" />
                       </button>
                     </div>
 
-                    {/* Brightness Slider */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <Sun size={11} weight="bold" /> Brightness
-                        </span>
-                        <span>{isOn ? `${brightness}%` : '0%'}</span>
+                    {/* Brightness Slider (Only shown if light supports brightness) */}
+                    {caps.supportsBrightness && (
+                      <div className="space-y-1 pt-0.5">
+                        <div className="flex justify-between text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                          <span className="flex items-center gap-1">
+                            <Sun size={11} weight="bold" /> Brightness
+                          </span>
+                          <span className="font-mono">{isOn ? `${brightness}%` : '0%'}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={isOn ? brightness : 0}
+                          onChange={(e) => handleBrightnessChange(light, Number(e.target.value))}
+                          className="w-full h-1.5 bg-slate-700/40 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                        />
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={isOn ? brightness : 0}
-                        onChange={(e) => handleBrightnessChange(light, Number(e.target.value))}
-                        className="w-full h-1.5 bg-slate-700/40 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-400"
-                      />
-                    </div>
+                    )}
                   </div>
                 );
               })}

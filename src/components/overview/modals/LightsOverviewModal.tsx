@@ -4,12 +4,25 @@
  */
 
 import React, { useMemo } from 'react';
-import { Lightbulb, Power, Sun, Lightning, Stairs, HouseLine } from '@phosphor-icons/react';
+import {
+  Lightbulb,
+  Power,
+  Sun,
+  Lightning,
+  Stairs,
+  HouseLine,
+  SlidersHorizontal
+} from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
 import DetailsRightDrawer from '../DetailsRightDrawer';
 import { groupEntitiesByFloorAndArea } from '../../../lib/grouping';
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { useEntityPopup } from '../../../contexts/EntityPopupContext';
+import { formatRelativeTime } from '../../../lib/utils';
+import {
+  detectLightCapabilities
+} from '../../../services/lightClassification';
 
 interface LightsOverviewModalProps {
   isOpen: boolean;
@@ -28,6 +41,8 @@ export default function LightsOverviewModal({
 }: LightsOverviewModalProps) {
   const customFloors = useAutoLayoutStore((s) => s.floors);
   const customAreas = useAutoLayoutStore((s) => s.areas);
+  const callHAService = useAutoLayoutStore((s) => s.callHAService);
+  const { openEntityDetails } = useEntityPopup();
 
   const { onLights, totalWatts, grouped } = useMemo(() => {
     if (!isOpen) {
@@ -43,35 +58,79 @@ export default function LightsOverviewModal({
     return { onLights: onL, totalWatts: watts, grouped: grp };
   }, [isOpen, lights, customFloors, customAreas]);
 
-  const handleToggleLight = (light: ResolvedEntity) => {
+  const handleToggleLight = async (light: ResolvedEntity) => {
+    const caps = detectLightCapabilities(light);
     const isCurrentlyOn = light.state === 'on';
     const nextState = isCurrentlyOn ? 'off' : 'on';
-    onUpdateEntity(light.entity_id, nextState, {
-      brightness: nextState === 'on' ? (light.attributes?.brightness || 80) : 0
-    });
+    const haBrightness255 = nextState === 'on' ? (caps.brightness255 || 204) : 0;
+
+    if (caps.supportsBrightness) {
+      onUpdateEntity(light.entity_id, nextState, {
+        ...light.attributes,
+        brightness: haBrightness255
+      });
+      await callHAService(
+        'light',
+        nextState === 'on' ? 'turn_on' : 'turn_off',
+        nextState === 'on' ? { brightness: haBrightness255 } : {},
+        { entity_id: light.entity_id }
+      );
+    } else {
+      onUpdateEntity(light.entity_id, nextState, {
+        ...light.attributes
+      });
+      await callHAService(
+        'light',
+        nextState === 'on' ? 'turn_on' : 'turn_off',
+        {},
+        { entity_id: light.entity_id }
+      );
+    }
   };
 
-  const handleBrightnessChange = (light: ResolvedEntity, val: number) => {
-    const nextState = val > 0 ? 'on' : 'off';
+  const handleBrightnessChange = async (light: ResolvedEntity, valPct: number) => {
+    const haBrightness255 = Math.round((valPct / 100) * 255);
+    const nextState = valPct > 0 ? 'on' : 'off';
+
     onUpdateEntity(light.entity_id, nextState, {
-      brightness: val
+      ...light.attributes,
+      brightness: haBrightness255
     });
+
+    if (valPct > 0) {
+      await callHAService(
+        'light',
+        'turn_on',
+        { brightness: haBrightness255 },
+        { entity_id: light.entity_id }
+      );
+    } else {
+      await callHAService('light', 'turn_off', {}, { entity_id: light.entity_id });
+    }
   };
 
-  const handleTurnAllOff = () => {
-    lights.forEach((light) => {
+  const handleTurnAllOff = async () => {
+    for (const light of lights) {
       if (light.state !== 'off') {
         onUpdateEntity(light.entity_id, 'off');
+        await callHAService('light', 'turn_off', {}, { entity_id: light.entity_id });
       }
-    });
+    }
   };
 
-  const handleTurnAllOn = () => {
-    lights.forEach((light) => {
+  const handleTurnAllOn = async () => {
+    for (const light of lights) {
       if (light.state !== 'on') {
-        onUpdateEntity(light.entity_id, 'on', { brightness: 80 });
+        const caps = detectLightCapabilities(light);
+        if (caps.supportsBrightness) {
+          onUpdateEntity(light.entity_id, 'on', { brightness: 204 });
+          await callHAService('light', 'turn_on', { brightness: 204 }, { entity_id: light.entity_id });
+        } else {
+          onUpdateEntity(light.entity_id, 'on');
+          await callHAService('light', 'turn_on', {}, { entity_id: light.entity_id });
+        }
       }
-    });
+    }
   };
 
   return (
@@ -128,54 +187,85 @@ export default function LightsOverviewModal({
 
             <div className="grid grid-cols-1 gap-2">
               {onLights.map((light) => {
-                const brightness = typeof light.attributes?.brightness === 'number' ? light.attributes.brightness : 100;
+                const caps = detectLightCapabilities(light);
+                const powerWatts = light.attributes?.power || light.powerWatts;
+                const hasPower = typeof powerWatts === 'number' && powerWatts > 0;
+                const lastChangedStr = formatRelativeTime(light.last_changed || light.last_updated);
+
                 return (
                   <div
                     key={`active_${light.entity_id}`}
                     className="p-3 rounded-2xl bg-white/95 dark:bg-slate-900/80 shadow-xs flex flex-col gap-2.5"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="flex items-center gap-3 min-w-0 cursor-pointer group"
+                        onClick={() => openEntityDetails(light.entity_id)}
+                        title="Click to open detailed controls"
+                      >
                         <button
                           type="button"
-                          onClick={() => handleToggleLight(light)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleLight(light);
+                          }}
                           className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shadow-xs cursor-pointer active:scale-95 shrink-0"
                           title="Turn off"
+                          style={{
+                            backgroundColor: caps.supportsColor ? caps.displayColor : undefined
+                          }}
                         >
                           <Lightbulb size={18} weight="fill" />
                         </button>
                         <div className="min-w-0">
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{light.name}</h4>
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-amber-500 transition-colors">
+                            {light.name}
+                          </h4>
                           <p className="text-[11px] text-amber-600 dark:text-amber-300 font-semibold truncate">
-                            {light.area?.name || light.device?.name || `${Math.round(brightness)}% Brightness`}
+                            {light.area?.name || (caps.supportsBrightness ? `${caps.brightnessPct}% Brightness` : 'Illuminating')}
+                            {lastChangedStr && ` • ${lastChangedStr}`}
+                            {hasPower && ` • ${powerWatts}W`}
                           </p>
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleToggleLight(light)}
-                        className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold uppercase hover:bg-rose-500/20 hover:text-rose-400 transition-colors cursor-pointer"
-                      >
-                        Turn Off
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => openEntityDetails(light.entity_id)}
+                          className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                          title="Open Settings"
+                        >
+                          <SlidersHorizontal size={14} weight="bold" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleLight(light)}
+                          className="w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 bg-amber-500 text-slate-950 shadow-xs"
+                          title="Turn Off"
+                        >
+                          <Power size={14} weight="bold" />
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Brightness Slider */}
-                    <div className="flex items-center gap-2.5 pt-1">
-                      <Sun size={13} weight="duotone" className="text-amber-500 shrink-0" />
-                      <input
-                        type="range"
-                        min={1}
-                        max={100}
-                        value={brightness}
-                        onChange={(e) => handleBrightnessChange(light, parseInt(e.target.value, 10))}
-                        className="w-full h-1.5 rounded-lg appearance-none bg-slate-200 dark:bg-white/20 accent-amber-500 cursor-pointer"
-                      />
-                      <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 w-7 text-right">
-                        {Math.round(brightness)}%
-                      </span>
-                    </div>
+                    {/* Brightness Slider (Only if light supports brightness) */}
+                    {caps.supportsBrightness && (
+                      <div className="flex items-center gap-2.5 pt-1">
+                        <Sun size={13} weight="duotone" className="text-amber-500 shrink-0" />
+                        <input
+                          type="range"
+                          min={1}
+                          max={100}
+                          value={caps.brightnessPct}
+                          onChange={(e) => handleBrightnessChange(light, parseInt(e.target.value, 10))}
+                          className="w-full h-1.5 rounded-lg appearance-none bg-slate-200 dark:bg-white/20 accent-amber-500 cursor-pointer"
+                        />
+                        <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 w-7 text-right">
+                          {caps.brightnessPct}%
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -258,8 +348,9 @@ export default function LightsOverviewModal({
                     {/* Lights in Area */}
                     <div className="space-y-2">
                       {areaGroup.entities.map((light) => {
-                        const isOn = light.state === 'on';
-                        const brightness = typeof light.attributes?.brightness === 'number' ? light.attributes.brightness : (isOn ? 100 : 0);
+                        const caps = detectLightCapabilities(light);
+                        const isOn = caps.isOn;
+                        const lastChangedStr = formatRelativeTime(light.last_changed || light.last_updated);
 
                         return (
                           <div
@@ -271,53 +362,81 @@ export default function LightsOverviewModal({
                             }`}
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-3 min-w-0">
+                              <div
+                                className="flex items-center gap-3 min-w-0 cursor-pointer group"
+                                onClick={() => openEntityDetails(light.entity_id)}
+                                title="Click to view details"
+                              >
                                 <button
                                   type="button"
-                                  onClick={() => handleToggleLight(light)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleLight(light);
+                                  }}
                                   className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-90 shrink-0 ${
                                     isOn
                                       ? 'bg-amber-500 text-slate-950 shadow-xs'
                                       : 'bg-white/80 dark:bg-white/10 text-slate-400'
                                   }`}
+                                  style={{
+                                    backgroundColor: isOn && caps.supportsColor ? caps.displayColor : undefined
+                                  }}
                                 >
                                   <Lightbulb size={18} weight={isOn ? 'fill' : 'duotone'} />
                                 </button>
                                 <div className="min-w-0">
-                                  <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{light.name}</h4>
+                                  <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-amber-500 transition-colors">
+                                    {light.name}
+                                  </h4>
                                   <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                                    {isOn ? `${Math.round(brightness)}% Brightness` : 'Off'}
+                                    {isOn
+                                      ? caps.supportsBrightness
+                                        ? `${caps.brightnessPct}% Brightness`
+                                        : 'Illuminating'
+                                      : 'Off'}
+                                    {lastChangedStr && ` • ${lastChangedStr}`}
                                   </p>
                                 </div>
                               </div>
 
-                              <button
-                                type="button"
-                                onClick={() => handleToggleLight(light)}
-                                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
-                                  isOn
-                                    ? 'bg-amber-500 text-slate-950 shadow-xs'
-                                    : 'bg-white/80 dark:bg-white/10 text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                                }`}
-                              >
-                                <Power size={14} weight="bold" />
-                              </button>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => openEntityDetails(light.entity_id)}
+                                  className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/80 dark:bg-white/10 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer active:scale-95"
+                                  title="Open details popup"
+                                >
+                                  <SlidersHorizontal size={14} weight="bold" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleLight(light)}
+                                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                                    isOn
+                                      ? 'bg-amber-500 text-slate-950 shadow-xs'
+                                      : 'bg-white/80 dark:bg-white/10 text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                                  }`}
+                                  title={isOn ? 'Turn Off' : 'Turn On'}
+                                >
+                                  <Power size={14} weight="bold" />
+                                </button>
+                              </div>
                             </div>
 
-                            {/* Brightness Slider */}
-                            {isOn && (
+                            {/* Brightness Slider (Only if supported and currently on) */}
+                            {caps.supportsBrightness && isOn && (
                               <div className="flex items-center gap-2.5 pt-1">
                                 <Sun size={13} weight="duotone" className="text-amber-500 shrink-0" />
                                 <input
                                   type="range"
                                   min={1}
                                   max={100}
-                                  value={brightness}
+                                  value={caps.brightnessPct}
                                   onChange={(e) => handleBrightnessChange(light, parseInt(e.target.value, 10))}
                                   className="w-full h-1.5 rounded-lg appearance-none bg-slate-200 dark:bg-white/20 accent-amber-500 cursor-pointer"
                                 />
                                 <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 w-7 text-right">
-                                  {Math.round(brightness)}%
+                                  {caps.brightnessPct}%
                                 </span>
                               </div>
                             )}
