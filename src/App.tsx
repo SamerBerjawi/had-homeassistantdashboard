@@ -357,7 +357,7 @@ export default function App() {
   };
 
   return (
-    <div className={`flex h-screen h-[100dvh] w-screen overflow-hidden font-sans select-none pwa-safe-container ${
+    <div className={`flex h-screen h-[100dvh] w-screen overflow-hidden font-sans select-none ${
       darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
     }`}>
       {/* Ambient background decoration with distinct page accent glows */}
@@ -391,7 +391,7 @@ export default function App() {
         {/* Persistent Demo Mode Status Banner */}
         <DemoBanner />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container p-4 pb-28 sm:p-6 sm:pb-8 lg:p-8 lg:pb-8 flex flex-col">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:p-6 sm:pb-8 lg:p-8 lg:pb-8 flex flex-col">
           {/* Header Bar - Title & Actions Top Row, 100% Full-Width Sentence Below */}
           <header className="mb-6 flex flex-col gap-3 pb-1 w-full">
             {/* Top Row: Title on Left, Global Action Controls on Right */}

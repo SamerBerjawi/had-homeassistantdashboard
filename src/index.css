@@ -50,6 +50,7 @@ html, body, #root {
   overscroll-behavior: none;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
+  background-color: #020617;
 }
 
 /* Eliminate 300ms tap delay on mobile browsers */

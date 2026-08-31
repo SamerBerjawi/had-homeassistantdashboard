@@ -253,7 +253,7 @@ export default function WeatherHeaderSentence({
   return (
     <div 
       onClick={onOpenWeatherModal}
-      className={`w-full flex flex-wrap items-center gap-x-2 gap-y-2 text-xs sm:text-sm font-medium leading-relaxed transition-all rounded-2xl group ${
+      className={`w-full text-xs sm:text-sm font-medium leading-7 sm:leading-8 transition-all rounded-2xl group ${
         onOpenWeatherModal ? 'cursor-pointer hover:opacity-95 active:scale-[0.995]' : ''
       } ${
         darkMode ? 'text-slate-300' : 'text-slate-600'
@@ -261,11 +261,11 @@ export default function WeatherHeaderSentence({
       title="Click to view detailed hourly & 7-day weather forecast"
     >
       {/* 1. Introductory prefix */}
-      <span>It is currently</span>
+      <span>It is currently</span>{' '}
 
       {/* 2. Temperature Badge with Thermometer icon */}
       <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-xs transition-all ${
+        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl text-xs font-bold border shadow-xs transition-all align-middle mx-0.5 ${
           darkMode 
             ? 'bg-linear-to-r from-rose-500/20 to-orange-500/15 border-rose-500/35 text-rose-300 shadow-rose-500/5 group-hover:border-rose-500/50' 
             : 'bg-rose-50/90 border-rose-200 text-rose-800 group-hover:bg-rose-100'
@@ -273,13 +273,13 @@ export default function WeatherHeaderSentence({
       >
         <Thermometer size={14} weight="fill" className="text-rose-400" />
         <span className="font-mono">{weatherData.temperature}{weatherData.tempUnit}</span>
-      </span>
+      </span>{' '}
 
-      <span>and</span>
+      <span>and</span>{' '}
 
       {/* 3. Condition Badge with dynamic icon */}
       <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-xs transition-all ${
+        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl text-xs font-bold border shadow-xs transition-all align-middle mx-0.5 ${
           darkMode 
             ? 'bg-linear-to-r from-sky-500/20 to-cyan-500/15 border-sky-500/35 text-sky-300 shadow-sky-500/5 group-hover:border-sky-500/50' 
             : 'bg-sky-50/90 border-sky-200 text-sky-800 group-hover:bg-sky-100'
@@ -289,12 +289,12 @@ export default function WeatherHeaderSentence({
           {weatherData.conditionInfo.icon}
         </span>
         <span>{weatherData.conditionText}</span>
-      </span>
+      </span>{' '}
 
       {/* 4. High & Low Forecast Badges */}
-      <span>with a high of</span>
+      <span>with a high of</span>{' '}
       <span
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border shadow-xs transition-all ${
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border shadow-xs transition-all align-middle mx-0.5 ${
           darkMode 
             ? 'bg-amber-500/15 border-amber-500/30 text-amber-300' 
             : 'bg-amber-50 border-amber-200 text-amber-800'
@@ -302,11 +302,11 @@ export default function WeatherHeaderSentence({
       >
         <TrendUp size={13} weight="bold" className="text-amber-400" />
         <span>{weatherData.highTemp}{weatherData.tempUnit}</span>
-      </span>
+      </span>{' '}
 
-      <span>and a low of</span>
+      <span>and a low of</span>{' '}
       <span
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border shadow-xs transition-all ${
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border shadow-xs transition-all align-middle mx-0.5 ${
           darkMode 
             ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300' 
             : 'bg-indigo-50 border-indigo-200 text-indigo-800'
@@ -319,9 +319,9 @@ export default function WeatherHeaderSentence({
       {/* 5. Humidity Badge (if available) */}
       {weatherData.humidity !== undefined && (
         <>
-          <span>, humidity at</span>
+          <span>, humidity at</span>{' '}
           <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border shadow-xs transition-all ${
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border shadow-xs transition-all align-middle mx-0.5 ${
               darkMode 
                 ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300' 
                 : 'bg-cyan-50 border-cyan-200 text-cyan-800'
@@ -334,28 +334,25 @@ export default function WeatherHeaderSentence({
       )}
 
       {/* 6. Trend / Rain Trajectory Statement */}
-      <span>, and</span>
-      <span className="inline-flex flex-wrap items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
-        {weatherData.trend.prefix && <span>{weatherData.trend.prefix}</span>}
-        <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border ${
-            weatherData.trend.keyword.toLowerCase().includes('rain') || weatherData.trend.prefix.toLowerCase().includes('rain')
-              ? 'bg-sky-500/20 border-sky-500/40 text-sky-300 animate-pulse'
-              : darkMode
-              ? 'bg-white/5 border-white/10 text-slate-300'
-              : 'bg-slate-100 border-slate-200 text-slate-700'
-          }`}
-        >
-          <span className="shrink-0">{weatherData.trend.icon}</span>
-          <span className={weatherData.trend.keywordClass}>{weatherData.trend.keyword}</span>
-        </span>
-        {weatherData.trend.suffix && <span>{weatherData.trend.suffix}</span>}
+      <span>, and </span>
+      {weatherData.trend.prefix && <span>{weatherData.trend.prefix} </span>}
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border align-middle mx-0.5 ${
+          weatherData.trend.keyword.toLowerCase().includes('rain') || weatherData.trend.prefix.toLowerCase().includes('rain')
+            ? 'bg-sky-500/20 border-sky-500/40 text-sky-300 animate-pulse'
+            : darkMode
+            ? 'bg-white/5 border-white/10 text-slate-300'
+            : 'bg-slate-100 border-slate-200 text-slate-700'
+        }`}
+      >
+        <span className="shrink-0">{weatherData.trend.icon}</span>
+        <span className={weatherData.trend.keywordClass}>{weatherData.trend.keyword}</span>
       </span>
-      <span>.</span>
+      {weatherData.trend.suffix ? <span> {weatherData.trend.suffix}.</span> : <span>.</span>}
 
       {/* Subtle chevron hint on hover */}
       {onOpenWeatherModal && (
-        <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-sky-400 group-hover:text-sky-300 group-hover:translate-x-0.5 transition-all ml-1">
+        <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-sky-400 group-hover:text-sky-300 group-hover:translate-x-0.5 transition-all ml-1.5 align-middle">
           <span>Forecast</span>
           <ArrowRight size={13} weight="bold" />
         </span>
