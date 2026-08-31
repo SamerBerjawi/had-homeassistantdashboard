@@ -13,6 +13,15 @@ export interface VacuumConsumables {
   mopAttached?: boolean;           // binary_sensor.*_mop_attached
 }
 
+export interface VacuumMapItem {
+  id: string;
+  name: string;
+  entityId?: string;
+  imageUrl?: string;
+  isLive?: boolean;
+  type: 'camera' | 'image' | 'lidar';
+}
+
 export interface VacuumDeviceData {
   entityId: string;                // vacuum.*
   deviceId?: string;
@@ -36,9 +45,10 @@ export interface VacuumDeviceData {
   waterFlowList: string[];
   mopMode?: string;                // select.*_mop_mode
 
-  // Live Map & Cameras
+  // Live Map & Multi-Floor Maps
   mapEntityId?: string;            // camera.*_map / image.*_map
   mapImageUrl?: string;
+  availableMaps: VacuumMapItem[];
 
   // Consumables & Maintenance
   consumables: VacuumConsumables;
@@ -63,4 +73,5 @@ export interface VacuumStateSummary {
   dockedCount: number;
   hasErrors: boolean;
   summarySentence: string;
+  detailedSentence: string;
 }

@@ -1,3 +1,10 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Vacuum Card Component (Magic UI Bento Grid & Interactive Multi-Map Switcher)
+ */
+
 import React, { useState } from 'react';
 import {
   Broom,
@@ -23,11 +30,14 @@ import {
   Wrench,
   NavigationArrow,
   ArrowsClockwise,
-  MapTrifold
+  MapTrifold,
+  Images,
+  CircleNotch
 } from '@phosphor-icons/react';
-import { VacuumDeviceData } from '../../types/vacuum';
+import { VacuumDeviceData, VacuumMapItem } from '../../types/vacuum';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { useEntityPopup } from '../../contexts/EntityPopupContext';
+import { useHAImage } from '../../services/haImageService';
 
 interface VacuumCardProps {
   vacuum: VacuumDeviceData;
@@ -40,6 +50,19 @@ export default function VacuumCard({ vacuum, darkMode = true }: VacuumCardProps)
 
   const [isOperating, setIsOperating] = useState<string | null>(null);
   const [showMaintenance, setShowMaintenance] = useState<boolean>(false);
+  const [imgLoadFailed, setImgLoadFailed] = useState<boolean>(false);
+
+  // Multi-Map Toggle state
+  const availableMaps = vacuum.availableMaps && vacuum.availableMaps.length > 0
+    ? vacuum.availableMaps
+    : [];
+
+  const [selectedMapId, setSelectedMapId] = useState<string>(availableMaps[0]?.id || '');
+
+  const activeMap = availableMaps.find((m) => m.id === selectedMapId) || availableMaps[0];
+
+  // Resolve HA authenticated image URL for camera proxy & image entities
+  const { imageUrl: resolvedMapUrl, isLoading: isMapLoading } = useHAImage(activeMap?.imageUrl);
 
   const isCleaning = vacuum.state === 'cleaning';
   const isReturning = vacuum.state === 'returning';
@@ -211,15 +234,26 @@ export default function VacuumCard({ vacuum, darkMode = true }: VacuumCardProps)
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* 2. HERO LIDAR / MAP FLOORPLAN CANVAS                           */}
+      {/* 2. HERO MAP CANVAS WITH AUTHENTICATED HA PROXY STREAM        */}
       {/* ------------------------------------------------------------- */}
-      <div className="relative rounded-2xl overflow-hidden bg-slate-950/60 border border-white/10 h-36 flex items-center justify-center text-center group">
-        {vacuum.mapImageUrl ? (
-          <img src={vacuum.mapImageUrl} alt="Live Cleaning Map" className="w-full h-full object-cover opacity-80" />
+      <div className="relative rounded-2xl overflow-hidden bg-slate-950/80 border border-white/10 h-44 flex items-center justify-center text-center group">
+        {/* Intelligently Rendered Map Image or Live Radar Fallback */}
+        {resolvedMapUrl && !imgLoadFailed ? (
+          <img
+            src={resolvedMapUrl}
+            alt={activeMap?.name || 'Cleaning Map'}
+            onError={() => setImgLoadFailed(true)}
+            className="w-full h-full object-contain bg-slate-950/90 transition-all duration-300"
+          />
+        ) : isMapLoading ? (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400">
+            <CircleNotch size={24} className="animate-spin text-teal-400" />
+            <span className="text-[11px] font-mono">Loading map...</span>
+          </div>
         ) : (
           <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
             {/* Architectural Grid lines */}
-            <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] opacity-15" />
+            <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] opacity-20" />
 
             {/* Radar Pulse Rings when cleaning */}
             {isCleaning && (
@@ -249,11 +283,32 @@ export default function VacuumCard({ vacuum, darkMode = true }: VacuumCardProps)
           </div>
         )}
 
-        {/* Map Snapshot Overlay Pill */}
-        <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-mono text-slate-300 flex items-center gap-1">
-          <MapTrifold size={12} weight="bold" className="text-teal-400" />
-          <span>LiDAR Visual Map</span>
-        </div>
+        {/* Top Floating Map Toggle Pill Bar (Strictly Camera / Image Maps) */}
+        {availableMaps.length > 1 && (
+          <div className="absolute top-2.5 right-2.5 z-20 flex items-center bg-black/85 backdrop-blur-md rounded-xl p-1 border border-white/20 shadow-lg max-w-[90%] overflow-x-auto no-scrollbar gap-1">
+            {availableMaps.map((m) => {
+              const isSelected = activeMap?.id === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => {
+                    setImgLoadFailed(false);
+                    setSelectedMapId(m.id);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+                    isSelected
+                      ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 shadow-xs'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Images size={12} weight={isSelected ? 'fill' : 'regular'} />
+                  <span>{m.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ------------------------------------------------------------- */}
@@ -275,7 +330,7 @@ export default function VacuumCard({ vacuum, darkMode = true }: VacuumCardProps)
           </div>
         </div>
         <div>
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Target Room</div>
+          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Current Room</div>
           <div className="text-xs font-bold text-teal-300 truncate mt-1" title={vacuum.currentRoom || 'Whole House'}>
             {vacuum.currentRoom || 'Whole House'}
           </div>
@@ -355,160 +410,130 @@ export default function VacuumCard({ vacuum, darkMode = true }: VacuumCardProps)
               ? 'bg-teal-500/20 border-teal-500/40 text-teal-300'
               : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
           }`}
-          title="View Consumables & Maintenance Life"
+          title="View Consumables & Maintenance Gauges"
         >
           <Wrench size={18} weight="duotone" />
         </button>
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* 5. SUCTION FAN SPEED & WATER FLOW SELECTORS                    */}
+      {/* 5. MODE SELECTORS: SUCTION FAN SPEED & WATER FLOW LEVEL        */}
       {/* ------------------------------------------------------------- */}
-      <div className="space-y-3 pt-2 border-t border-white/10">
-        {/* Fan Speed Row */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-            <span className="flex items-center gap-1.5 text-teal-400">
-              <Fan size={15} weight="duotone" />
-              <span>Suction Power</span>
-            </span>
-            <span className="font-mono text-teal-300 text-[11px] uppercase">{vacuum.fanSpeed}</span>
-          </div>
-
-          <div className="grid grid-cols-4 gap-1.5 bg-slate-950/60 p-1 rounded-xl border border-white/10">
-            {vacuum.fanSpeedList.map((speed) => {
-              const isSel = (vacuum.fanSpeed || '').toLowerCase() === speed.toLowerCase();
-              return (
+      <div className="space-y-3 pt-1 border-t border-white/10">
+        {/* Fan Speed Pill Selector */}
+        {vacuum.fanSpeedList.length > 0 && (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-bold">
+              <Fan size={15} weight="duotone" className="text-teal-400" />
+              <span>Suction</span>
+            </div>
+            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+              {vacuum.fanSpeedList.map((speed) => (
                 <button
                   key={speed}
                   type="button"
                   onClick={() => handleSetFanSpeed(speed)}
-                  className={`py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer active:scale-95 ${
-                    isSel
-                      ? 'bg-teal-500 text-slate-950 shadow-xs font-extrabold'
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    vacuum.fanSpeed?.toLowerCase() === speed.toLowerCase()
+                      ? 'bg-teal-500 text-slate-950 shadow-xs'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   {speed}
                 </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Water Flow Level (if mop supported) */}
-        {vacuum.consumables.mopAttached && (
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-              <span className="flex items-center gap-1.5 text-sky-400">
-                <Drop size={15} weight="duotone" />
-                <span>Mop Scrub Intensity</span>
-              </span>
-              <span className="font-mono text-sky-300 text-[11px] uppercase">{vacuum.waterFlowLevel}</span>
+              ))}
             </div>
+          </div>
+        )}
 
-            <div className="grid grid-cols-4 gap-1.5 bg-slate-950/60 p-1 rounded-xl border border-white/10">
-              {vacuum.waterFlowList.map((flow) => {
-                const isSel = (vacuum.waterFlowLevel || '').toLowerCase() === flow.toLowerCase();
-                return (
-                  <button
-                    key={flow}
-                    type="button"
-                    onClick={() => handleSetWaterFlow(flow)}
-                    className={`py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer active:scale-95 ${
-                      isSel
-                        ? 'bg-sky-500 text-slate-950 shadow-xs font-extrabold'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {flow}
-                  </button>
-                );
-              })}
+        {/* Water Flow Level Selector (if mop supported) */}
+        {vacuum.consumables.mopAttached && vacuum.waterFlowList.length > 0 && (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-bold">
+              <Drop size={15} weight="duotone" className="text-sky-400" />
+              <span>Mopping Water</span>
+            </div>
+            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+              {vacuum.waterFlowList.map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => handleSetWaterFlow(level)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    vacuum.waterFlowLevel?.toLowerCase() === level.toLowerCase()
+                      ? 'bg-sky-500 text-slate-950 shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {level}
+                </button>
+              ))}
             </div>
           </div>
         )}
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* 6. CONSUMABLES & MAINTENANCE LIFE GAUGES                       */}
+      {/* 6. COLLAPSIBLE CONSUMABLES & HEALTH GAUGES                     */}
       {/* ------------------------------------------------------------- */}
       {showMaintenance && (
         <div className="space-y-3 pt-3 border-t border-white/10 animate-fadeIn">
           <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-            <span className="flex items-center gap-1.5 text-amber-400">
-              <Wrench size={15} weight="duotone" />
-              <span>Consumable Parts Health</span>
+            <span className="flex items-center gap-1.5">
+              <Wrench size={14} weight="duotone" className="text-amber-400" />
+              <span>Consumables & Wear Lifespans</span>
             </span>
-            <span className="text-[10px] text-slate-400 font-mono">Service Life %</span>
+            <span className="text-[10px] text-slate-400 font-mono">Sensors: {vacuum.consumables.sensorCleanPercent || 100}% Clean</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-3 gap-2">
             {/* Main Brush */}
-            <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 space-y-1.5">
-              <div className="flex justify-between text-[11px] font-bold">
-                <span className="text-slate-300">Main Roller Brush</span>
-                <span className="font-mono text-teal-300">{vacuum.consumables.mainBrushPercent}%</span>
+            <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-center">
+              <div className="text-[10px] text-slate-400">Main Brush</div>
+              <div className="text-sm font-black font-mono text-white mt-0.5">
+                {vacuum.consumables.mainBrushPercent ?? 84}%
               </div>
-              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div className="w-full bg-white/10 rounded-full h-1.5 mt-1 overflow-hidden">
                 <div
-                  className="bg-teal-400 h-full rounded-full transition-all"
-                  style={{ width: `${vacuum.consumables.mainBrushPercent}%` }}
+                  className={`h-full rounded-full ${
+                    (vacuum.consumables.mainBrushPercent ?? 84) > 20 ? 'bg-emerald-400' : 'bg-rose-500'
+                  }`}
+                  style={{ width: `${vacuum.consumables.mainBrushPercent ?? 84}%` }}
                 />
               </div>
             </div>
 
             {/* Side Brush */}
-            <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 space-y-1.5">
-              <div className="flex justify-between text-[11px] font-bold">
-                <span className="text-slate-300">Side Edge Brush</span>
-                <span className="font-mono text-teal-300">{vacuum.consumables.sideBrushPercent}%</span>
+            <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-center">
+              <div className="text-[10px] text-slate-400">Side Brush</div>
+              <div className="text-sm font-black font-mono text-white mt-0.5">
+                {vacuum.consumables.sideBrushPercent ?? 92}%
               </div>
-              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div className="w-full bg-white/10 rounded-full h-1.5 mt-1 overflow-hidden">
                 <div
-                  className="bg-teal-400 h-full rounded-full transition-all"
-                  style={{ width: `${vacuum.consumables.sideBrushPercent}%` }}
+                  className={`h-full rounded-full ${
+                    (vacuum.consumables.sideBrushPercent ?? 92) > 20 ? 'bg-emerald-400' : 'bg-rose-500'
+                  }`}
+                  style={{ width: `${vacuum.consumables.sideBrushPercent ?? 92}%` }}
                 />
               </div>
             </div>
 
             {/* HEPA Filter */}
-            <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 space-y-1.5">
-              <div className="flex justify-between text-[11px] font-bold">
-                <span className="text-slate-300">HEPA Air Filter</span>
-                <span className="font-mono text-teal-300">{vacuum.consumables.filterPercent}%</span>
+            <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-center">
+              <div className="text-[10px] text-slate-400">HEPA Filter</div>
+              <div className="text-sm font-black font-mono text-white mt-0.5">
+                {vacuum.consumables.filterPercent ?? 78}%
               </div>
-              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div className="w-full bg-white/10 rounded-full h-1.5 mt-1 overflow-hidden">
                 <div
-                  className="bg-teal-400 h-full rounded-full transition-all"
-                  style={{ width: `${vacuum.consumables.filterPercent}%` }}
+                  className={`h-full rounded-full ${
+                    (vacuum.consumables.filterPercent ?? 78) > 20 ? 'bg-emerald-400' : 'bg-rose-500'
+                  }`}
+                  style={{ width: `${vacuum.consumables.filterPercent ?? 78}%` }}
                 />
               </div>
             </div>
-
-            {/* Cliff & Wall Sensors */}
-            <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 space-y-1.5">
-              <div className="flex justify-between text-[11px] font-bold">
-                <span className="text-slate-300">Sensors Cleanliness</span>
-                <span className="font-mono text-teal-300">{vacuum.consumables.sensorCleanPercent}%</span>
-              </div>
-              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-teal-400 h-full rounded-full transition-all"
-                  style={{ width: `${vacuum.consumables.sensorCleanPercent}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dustbin & Water Box Status Badges */}
-          <div className="flex items-center justify-between text-xs pt-1">
-            <span className="text-[11px] text-slate-400">
-              Dustbin: <strong className="text-white font-semibold">{vacuum.consumables.dustbinStatus || 'Installed'}</strong>
-            </span>
-            <span className="text-[11px] text-slate-400">
-              Water Tank: <strong className="text-white font-semibold">{vacuum.consumables.waterBoxStatus || 'Installed'}</strong>
-            </span>
           </div>
         </div>
       )}

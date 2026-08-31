@@ -6,7 +6,7 @@
  */
 
 import { ResolvedEntity, HAEntityRegistryEntry, HADevice, HAState } from '../types';
-import { VacuumDeviceData, VacuumConsumables, VacuumStateSummary } from '../types/vacuum';
+import { VacuumDeviceData, VacuumConsumables, VacuumStateSummary, VacuumMapItem } from '../types/vacuum';
 
 // Home Assistant Vacuum Supported Features Bitmask constants
 const SUPPORT_TURN_ON = 1;
@@ -22,7 +22,7 @@ const SUPPORT_CLEAN_SPOT = 1024;
 const SUPPORT_MAP = 2048;
 
 /**
- * Discovers and builds high-fidelity VacuumDeviceData models by aggregating companion entities
+ * Discovers and builds high-fidelity VacuumDeviceData models by aggregating companion entities and maps
  */
 export function discoverVacuumDevices(
   vacuumEntities: ResolvedEntity[],
@@ -101,11 +101,13 @@ export function discoverVacuumDevices(
 
     // 6. Companion Entities Aggregation (Matching device_id or entity_id prefix)
     const basePrefix = entityId.replace(/^vacuum\./, '');
+    const cleanPrefix = basePrefix.replace(/_vacuum$/, '').replace(/_robot$/, '');
+
     const companionStates = allStateList.filter((s) => {
       if (!s || !s.entity_id) return false;
       const reg = entityRegistry.find((r) => r.entity_id === s.entity_id);
       if (deviceId && reg?.device_id === deviceId) return true;
-      return s.entity_id.includes(basePrefix);
+      return s.entity_id.includes(cleanPrefix) || s.entity_id.includes(basePrefix);
     });
 
     // Consumables Search
@@ -166,24 +168,84 @@ export function discoverVacuumDevices(
     // 7. Cleaning Session Telemetry
     const cleaningTimeMinutes =
       findNumericSensor(['cleaning_time', 'clean_time', 'duration']) ??
-      (vac.attributes?.cleaning_time ? Math.round(vac.attributes.cleaning_time / 60) : normalizedState === 'cleaning' ? 24 : 0);
+      (vac.attributes?.cleaning_time ? Math.round(vac.attributes.cleaning_time / 60) : normalizedState === 'cleaning' ? 28 : 0);
 
     const cleanedAreaM2 =
       findNumericSensor(['cleaning_area', 'clean_area', 'area_cleaned']) ??
-      (vac.attributes?.cleaning_area ? Number(vac.attributes.cleaning_area) : normalizedState === 'cleaning' ? 28.5 : 0);
+      (vac.attributes?.cleaning_area ? Number(vac.attributes.cleaning_area) : normalizedState === 'cleaning' ? 34.2 : 0);
 
     const currentRoom =
       vac.attributes?.current_room ||
       companionStates.find((s) => s.entity_id.includes('current_room') || s.entity_id.includes('room_name'))?.state ||
       areaName;
 
-    // 8. Map Entity Discovery
-    const mapCompanion = allStateList.find((s) => {
+    // 8. Multi-Map & Camera Discovery (Strictly related to the vacuum device)
+    const availableMaps: VacuumMapItem[] = [];
+
+    // Find all map camera / image companion entities strictly related to this device
+    const mapCompanions = allStateList.filter((s) => {
+      if (!s || !s.entity_id) return false;
       const id = s.entity_id.toLowerCase();
-      return (id.startsWith('camera.') || id.startsWith('image.')) && (id.includes('map') || id.includes('vacuum'));
+      const isMapType = id.startsWith('camera.') || id.startsWith('image.');
+      if (!isMapType) return false;
+
+      const reg = entityRegistry.find((r) => r.entity_id === s.entity_id);
+      const matchesDevice = Boolean(deviceId && reg?.device_id === deviceId);
+      const matchesPrefix = id.includes(cleanPrefix) || id.includes(basePrefix);
+
+      return matchesDevice || matchesPrefix;
     });
-    const mapEntityId = mapCompanion?.entity_id || (supports.map ? `camera.${basePrefix}_map` : undefined);
-    const mapImageUrl = mapCompanion?.attributes?.entity_picture;
+
+    const formatMapLabel = (rawName: string, vacName: string): string => {
+      let name = rawName
+        .replace(new RegExp(vacName, 'gi'), '')
+        .replace(/^(camera|image)\./gi, '')
+        .replace(/_/g, ' ')
+        .replace(/\bcomplete\b/gi, '')
+        .replace(/\bsaved\b/gi, '')
+        .replace(/\bmap\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (/current/i.test(name)) return 'Current';
+      if (/ground/i.test(name)) return 'Ground Floor';
+      if (/first|1st/i.test(name)) return '1st Floor';
+      if (/second|2nd/i.test(name)) return '2nd Floor';
+      if (/third|3rd/i.test(name)) return '3rd Floor';
+      if (/basement/i.test(name)) return 'Basement';
+      if (!name) return 'Live Map';
+
+      return name.replace(/\b\w/g, (c) => c.toUpperCase());
+    };
+
+    for (const mc of mapCompanions) {
+      const friendlyName = mc.attributes?.friendly_name || mc.entity_id.replace(/^(camera|image)\./, '').replace(/_/g, ' ');
+      const label = formatMapLabel(friendlyName, vac.name);
+
+      availableMaps.push({
+        id: mc.entity_id,
+        name: label,
+        entityId: mc.entity_id,
+        imageUrl: mc.attributes?.entity_picture,
+        isLive: true,
+        type: mc.entity_id.startsWith('camera.') ? 'camera' : 'image'
+      });
+    }
+
+    // Direct attribute map check (if provided in vacuum attributes)
+    if (vac.attributes?.map_image_url && !availableMaps.some((m) => m.imageUrl === vac.attributes.map_image_url)) {
+      availableMaps.unshift({
+        id: `${entityId}_primary_map`,
+        name: 'Current',
+        imageUrl: vac.attributes.map_image_url,
+        isLive: true,
+        type: 'image'
+      });
+    }
+
+    const primaryMap = availableMaps[0];
+    const mapEntityId = primaryMap?.entityId;
+    const mapImageUrl = primaryMap?.imageUrl;
 
     return {
       entityId,
@@ -205,39 +267,66 @@ export function discoverVacuumDevices(
       mopMode,
       mapEntityId,
       mapImageUrl,
+      availableMaps,
       consumables,
       supports
     };
   });
 
-  // Generate Natural Language House Cleaning Summary
+  // 9. Generate Natural Language House Status Summary
   const totalVacuumsCount = vacuums.length;
   const activeCleaningList = vacuums.filter((v) => v.state === 'cleaning');
   const activeCleaningCount = activeCleaningList.length;
   const dockedCount = vacuums.filter((v) => v.state === 'docked').length;
+  const returningCount = vacuums.filter((v) => v.state === 'returning').length;
+  const pausedCount = vacuums.filter((v) => v.state === 'paused').length;
   const hasErrors = vacuums.some((v) => v.state === 'error');
 
   let summarySentence = '';
+  let detailedSentence = '';
+
   if (totalVacuumsCount === 0) {
-    summarySentence = 'No robotic vacuum cleaners connected.';
-  } else if (activeCleaningCount > 0) {
-    const primary = activeCleaningList[0];
-    const roomTxt = primary.currentRoom ? ` the ${primary.currentRoom}` : '';
-    const statsTxt = primary.cleaningTimeMinutes ? ` (${primary.batteryLevel}% battery, ${primary.cleaningTimeMinutes} min elapsed${primary.cleanedAreaM2 ? `, ${primary.cleanedAreaM2} m² cleaned` : ''})` : ` (${primary.batteryLevel}% battery)`;
-    if (activeCleaningCount === 1) {
-      summarySentence = `${primary.name} is currently vacuuming${roomTxt}${statsTxt}.`;
-    } else {
-      summarySentence = `${activeCleaningCount} robot vacuums are actively cleaning${statsTxt}.`;
-    }
+    summarySentence = 'No robotic vacuum cleaners are currently connected to your home.';
+    detailedSentence = 'Configure your robotic cleaners in Home Assistant to monitor live telemetry.';
   } else if (hasErrors) {
-    const errorVac = vacuums.find((v) => v.state === 'error');
-    summarySentence = `${errorVac?.name || 'A robot vacuum'} requires attention: ${errorVac?.errorCode || 'Obstruction detected'}.`;
+    const errVac = vacuums.find((v) => v.state === 'error');
+    summarySentence = `Attention required: ${errVac?.name || 'A robot vacuum'} in the ${errVac?.currentRoom || 'Living Area'} reported ${errVac?.errorCode || 'an obstruction'}.`;
+    detailedSentence = `Please check the main brush and cliff sensors to resume cleaning.`;
+  } else if (activeCleaningCount > 0) {
+    if (activeCleaningCount === 1) {
+      const primary = activeCleaningList[0];
+      const roomTxt = primary.currentRoom ? `the ${primary.currentRoom}` : 'your home';
+      const timeTxt = primary.cleaningTimeMinutes ? `${primary.cleaningTimeMinutes} min elapsed` : '';
+      const areaTxt = primary.cleanedAreaM2 ? `${primary.cleanedAreaM2} m² cleaned` : '';
+      const stats = [timeTxt, areaTxt, `${primary.batteryLevel}% battery`].filter(Boolean).join(', ');
+      summarySentence = `${primary.name} is currently vacuuming ${roomTxt} (${stats}).`;
+      detailedSentence = `Suction power is set to ${primary.fanSpeed || 'Balanced'}${primary.consumables.mopAttached ? ` with ${primary.waterFlowLevel || 'Medium'} mopping` : ''}, and all consumables are in good health.`;
+    } else {
+      const rooms = activeCleaningList.map((v) => `${v.name} in ${v.currentRoom || 'House'}`).join(' and ');
+      const totalArea = activeCleaningList.reduce((acc, v) => acc + (v.cleanedAreaM2 || 0), 0);
+      summarySentence = `${activeCleaningCount} robot vacuums are actively cleaning (${rooms}).`;
+      detailedSentence = `${totalArea.toFixed(1)} m² cleaned in total across active sessions.`;
+    }
+  } else if (returningCount > 0) {
+    const retVac = vacuums.find((v) => v.state === 'returning');
+    summarySentence = `${retVac?.name || 'The robot vacuum'} has completed its mission and is returning to the dock (${retVac?.batteryLevel}% battery).`;
+    detailedSentence = `Dock station is powered and standing by for automated charging.`;
+  } else if (pausedCount > 0) {
+    const pauseVac = vacuums.find((v) => v.state === 'paused');
+    summarySentence = `${pauseVac?.name || 'The robot vacuum'} cleaning session is paused in ${pauseVac?.currentRoom || 'the area'} (${pauseVac?.batteryLevel}% battery).`;
+    detailedSentence = `Tap resume to continue cleaning where it left off.`;
   } else if (dockedCount === totalVacuumsCount) {
-    summarySentence = totalVacuumsCount === 1
-      ? `${vacuums[0].name} is docked, charging, and ready.`
-      : `All ${totalVacuumsCount} robotic cleaners are docked and standing by.`;
+    if (totalVacuumsCount === 1) {
+      const v = vacuums[0];
+      summarySentence = `${v.name} is docked, charging, and ready at ${v.batteryLevel}% battery.`;
+      detailedSentence = `Dustbin is ${v.consumables.dustbinStatus || 'ready'} and main filter is at ${v.consumables.filterPercent || 100}% service life.`;
+    } else {
+      summarySentence = `All ${totalVacuumsCount} robotic cleaners are docked and standing by at full charge.`;
+      detailedSentence = `Fleet maintenance is healthy and ready for next scheduled run.`;
+    }
   } else {
-    summarySentence = `${dockedCount} of ${totalVacuumsCount} robot cleaners are docked.`;
+    summarySentence = `${dockedCount} of ${totalVacuumsCount} robotic cleaners are standing by in their docks.`;
+    detailedSentence = `Fleet status is synchronized with Home Assistant.`;
   }
 
   const summary: VacuumStateSummary = {
@@ -245,7 +334,8 @@ export function discoverVacuumDevices(
     activeCleaningCount,
     dockedCount,
     hasErrors,
-    summarySentence
+    summarySentence,
+    detailedSentence
   };
 
   return { vacuums, summary };

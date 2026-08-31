@@ -77,6 +77,7 @@ import WeatherHeaderSentence from './components/weather/WeatherHeaderSentence';
 import WeatherOverviewDrawer from './components/weather/WeatherOverviewDrawer';
 import RoomsHeaderSentence from './components/rooms/RoomsHeaderSentence';
 import MediaHeaderSentence from './components/media/MediaHeaderSentence';
+import VacuumsHeaderSentence from './components/vacuums/VacuumsHeaderSentence';
 
 const VALID_TABS = [
   'overview',
@@ -490,6 +491,10 @@ export default function App() {
                 />
               ) : activeTab === 'media' ? (
                 <MediaHeaderSentence
+                  darkMode={darkMode}
+                />
+              ) : activeTab === 'vacuums' ? (
+                <VacuumsHeaderSentence
                   darkMode={darkMode}
                 />
               ) : (
