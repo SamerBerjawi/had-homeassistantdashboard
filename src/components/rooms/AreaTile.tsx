@@ -30,6 +30,8 @@ import {
 import { AreaData } from '../../types/rooms';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import { getClimateModeTheme } from '../../utils/climateTheme';
+import { useEntityPopup } from '../../contexts/EntityPopupContext';
+import { useLongPress } from '../../hooks/useLongPress';
 
 interface AreaTileProps {
   area: AreaData;
@@ -52,6 +54,8 @@ export default function AreaTile({
   onToggleMedia,
   onToggleLocks
 }: AreaTileProps) {
+  const { openEntityDetails } = useEntityPopup();
+
   const {
     sensors,
     entities,
@@ -83,9 +87,42 @@ export default function AreaTile({
     ? 'border-emerald-400/40'
     : 'border-slate-200/80 dark:border-white/10';
 
+  // Find representative entity IDs for quick popups
+  const primaryLightId = entities?.lights?.[0]?.entity_id;
+  const primarySwitchId = entities?.switches?.[0]?.entity_id;
+  const primaryFanId = entities?.fans?.[0]?.entity_id;
+  const primaryMediaId = entities?.mediaPlayers?.[0]?.entity_id;
+  const primaryLockId = entities?.locks?.[0]?.entity_id;
+  const primaryClimateId = entities?.climates?.[0]?.entity_id;
+  const primaryTempId =
+    entities?.climates?.[0]?.entity_id ||
+    entities?.sensors?.find?.((s) => s.entity_id.includes('temp') || s.attributes?.device_class === 'temperature')?.entity_id ||
+    entities?.sensors?.[0]?.entity_id;
+  const primaryMotionId =
+    entities?.binarySensors?.find?.((s) => s.entity_id.includes('motion') || s.attributes?.device_class === 'motion')?.entity_id ||
+    entities?.binarySensors?.[0]?.entity_id;
+  const primaryDoorId =
+    entities?.binarySensors?.find?.((s) => s.entity_id.includes('door') || s.attributes?.device_class === 'door')?.entity_id;
+  const primaryWindowId =
+    entities?.binarySensors?.find?.((s) => s.entity_id.includes('window') || s.attributes?.device_class === 'window')?.entity_id;
+  const primaryHazardId =
+    entities?.binarySensors?.find?.((s) => s.entity_id.includes('smoke') || s.entity_id.includes('leak') || s.attributes?.device_class === 'smoke' || s.attributes?.device_class === 'moisture')?.entity_id;
+
+  // Long press / right-click tile handler
+  const tileLongPressHandlers = useLongPress({
+    threshold: 500,
+    onLongPress: () => {
+      const targetId = primaryClimateId || primaryLightId || primaryTempId || primarySwitchId;
+      if (targetId) openEntityDetails(targetId);
+    },
+    onClick: () => {
+      onSelectArea(area.areaId);
+    }
+  });
+
   return (
     <div
-      onClick={() => onSelectArea(area.areaId)}
+      {...tileLongPressHandlers}
       style={{
         clipPath: 'inset(0 round 1.5rem)',
         borderColor: customAccentColor ? `${customAccentColor}4D` : undefined,
@@ -113,7 +150,7 @@ export default function AreaTile({
         </div>
       )}
 
-      {/* Top Ambient Highlight Glow with strict containment - Subtle motion/light glow */}
+      {/* Top Ambient Highlight Glow with strict containment */}
       <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
         {isLightActive && (
           <div
@@ -130,75 +167,87 @@ export default function AreaTile({
         {/* Card Header: Clean unboxed icon + Room Name + Active Status Indicator */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <DynamicPhosphorIcon
-              name={area.icon || 'HouseLine'}
-              fallback={HouseLine}
-              size={22}
-              weight="duotone"
-              style={{ color: customAccentColor || undefined }}
-              className={`shrink-0 transition-transform group-hover:scale-110 ${
-                customAccentColor
-                  ? ''
-                  : isHazardActive
-                  ? 'text-rose-400'
-                  : isLightActive
-                  ? 'text-amber-400'
-                  : isMotionActive
-                  ? 'text-emerald-400'
-                  : darkMode
-                  ? 'text-slate-300'
-                  : 'text-slate-700'
-              }`}
-            />
-
-            <div className="min-w-0 flex-1">
-              <h4
-                className={`text-sm sm:text-base font-bold tracking-tight truncate ${
-                  darkMode ? 'text-white' : 'text-slate-900'
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const targetId = primaryClimateId || primaryLightId || primaryTempId;
+                if (targetId) openEntityDetails(targetId);
+                else onSelectArea(area.areaId);
+              }}
+              className="shrink-0 transition-transform group-hover:scale-110 cursor-pointer"
+              title="Open Entity Details"
+            >
+              <DynamicPhosphorIcon
+                name={area.icon || 'HouseLine'}
+                fallback={HouseLine}
+                size={22}
+                weight="duotone"
+                style={{ color: customAccentColor || undefined }}
+                className={`${
+                  customAccentColor
+                    ? ''
+                    : isHazardActive
+                    ? 'text-rose-400'
+                    : isLightActive
+                    ? 'text-amber-400'
+                    : isMotionActive
+                    ? 'text-emerald-400'
+                    : 'text-slate-400'
                 }`}
-              >
+              />
+            </button>
+            <div className="min-w-0">
+              <h3 className={`text-base font-bold truncate leading-snug ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                 {area.name}
-              </h4>
-              {area.floorName && (
-                <p className="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 truncate">
-                  {area.floorName}
-                </p>
-              )}
+              </h3>
+              {/* Floor name subtitle */}
+              <p className="text-[11px] text-slate-400 dark:text-slate-400 truncate leading-none mt-0.5">
+                {area.floorName || (area.floorId ? `Floor ${area.floorId}` : '')}
+              </p>
             </div>
           </div>
 
-          {/* Right Status Indicator Dot/Glow */}
-          <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
-            {isLightActive && (
-              <span className="relative flex h-2.5 w-2.5">
-                <span
-                  style={{ backgroundColor: customAccentColor || undefined }}
-                  className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"
-                />
-                <span
-                  style={{ backgroundColor: customAccentColor || undefined }}
-                  className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"
-                />
-              </span>
-            )}
-            {!isLightActive && isMotionActive && (
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-              </span>
-            )}
-          </div>
+          {/* Active entities counter pill (Lights / Devices Active) */}
+          {(isLightActive || isMotionActive || isMediaActive || isHazardActive) && (
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border shrink-0 ${
+                isHazardActive
+                  ? 'bg-rose-500/25 border-rose-500/40 text-rose-300 animate-pulse'
+                  : isLightActive
+                  ? 'bg-amber-500/20 border-amber-500/35 text-amber-300'
+                  : isMotionActive
+                  ? 'bg-emerald-500/20 border-emerald-500/35 text-emerald-300'
+                  : 'bg-cyan-500/20 border-cyan-500/35 text-cyan-300'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+              {isHazardActive
+                ? 'ALERT'
+                : isLightActive
+                ? `${activeLightsCount} ON`
+                : isMotionActive
+                ? 'Active'
+                : 'Playing'}
+            </span>
+          )}
         </div>
 
-        {/* Contextual Sensor Pills Strip */}
-        <div className="flex flex-wrap items-center gap-1.5 min-h-[26px]">
-          {/* Temperature & Humidity Pill (only rendered if room has real readings) */}
+        {/* Environmental & Contextual Sensor Badges (Pills) */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Always Visible: Temperature & Humidity Pill */}
           {(sensors.temperature !== undefined || sensors.humidity !== undefined) && (
-            <div
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[11px] font-semibold border ${
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (primaryTempId) openEntityDetails(primaryTempId);
+              }}
+              title="Click to view temperature & humidity history"
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border backdrop-blur-md cursor-pointer transition-all hover:scale-105 active:scale-95 ${
                 darkMode
-                  ? 'bg-white/5 border-white/10 text-slate-300'
-                  : 'bg-slate-100/90 border-slate-200/90 text-slate-700'
+                  ? 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                  : 'bg-slate-100/90 border-slate-200/90 text-slate-700 hover:bg-slate-200'
               }`}
             >
               {sensors.temperature !== undefined && (
@@ -216,69 +265,112 @@ export default function AreaTile({
                   <span>{sensors.humidity}%</span>
                 </span>
               )}
-            </div>
+            </button>
           )}
 
           {/* Conditionally Visible: Motion Pill */}
           {sensors.motionDetected && (
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 animate-fadeIn">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (primaryMotionId) openEntityDetails(primaryMotionId);
+              }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 animate-fadeIn cursor-pointer hover:scale-105"
+            >
               <PersonSimpleWalk size={12} weight="bold" className="animate-pulse" />
               <span>Motion</span>
-            </div>
+            </button>
           )}
 
-          {/* Conditionally Visible: Open Windows Pill (number only) */}
+          {/* Conditionally Visible: Open Windows Pill */}
           {sensors.windowsOpenCount > 0 && (
-            <div
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (primaryWindowId) openEntityDetails(primaryWindowId);
+              }}
               title={`${sensors.windowsOpenCount} ${sensors.windowsOpenCount === 1 ? 'window' : 'windows'} open`}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/15 border border-amber-500/30 text-amber-400 animate-fadeIn"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/15 border border-amber-500/30 text-amber-400 animate-fadeIn cursor-pointer hover:scale-105"
             >
               <AppWindow size={13} weight="bold" />
               <span>{sensors.windowsOpenCount}</span>
-            </div>
+            </button>
           )}
 
-          {/* Conditionally Visible: Open Doors Pill (number only) */}
+          {/* Conditionally Visible: Open Doors Pill */}
           {sensors.doorsOpenCount > 0 && (
-            <div
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (primaryDoorId) openEntityDetails(primaryDoorId);
+              }}
               title={`${sensors.doorsOpenCount} ${sensors.doorsOpenCount === 1 ? 'door' : 'doors'} open`}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/15 border border-amber-500/30 text-amber-400 animate-fadeIn"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/15 border border-amber-500/30 text-amber-400 animate-fadeIn cursor-pointer hover:scale-105"
             >
               <Door size={13} weight="bold" />
               <span>{sensors.doorsOpenCount}</span>
-            </div>
+            </button>
           )}
 
           {/* Conditionally Visible: Door Lock Status Pill */}
           {totalLocksCount > 0 && isLockUnlocked && (
-            <div
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (primaryLockId) openEntityDetails(primaryLockId);
+              }}
               title={`${unlockedLocksCount} locks unlocked`}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/20 border border-amber-500/35 text-amber-300 animate-pulse"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/20 border border-amber-500/35 text-amber-300 animate-pulse cursor-pointer hover:scale-105"
             >
               <LockOpen size={13} weight="bold" />
               <span>{unlockedLocksCount > 1 ? `${unlockedLocksCount} Unlocked` : 'Unlocked'}</span>
-            </div>
+            </button>
           )}
 
           {/* Conditionally Visible: Water Leak Alert */}
           {sensors.waterLeakDetected && (
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-rose-500/25 border border-rose-500/40 text-rose-400 animate-pulse">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (primaryHazardId) openEntityDetails(primaryHazardId);
+              }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-rose-500/25 border border-rose-500/40 text-rose-400 animate-pulse cursor-pointer hover:scale-105"
+            >
               <Warning size={12} weight="fill" />
               <span>Leak Detected</span>
-            </div>
+            </button>
           )}
 
-          {/* Conditionally Visible: Smoke / CO Alert */}
+          {/* Conditionally Visible: Smoke Alert */}
           {sensors.smokeDetected && (
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-rose-500/30 border border-rose-500/60 text-rose-300 animate-pulse">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (primaryHazardId) openEntityDetails(primaryHazardId);
+              }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-rose-500/30 border border-rose-500/60 text-rose-300 animate-pulse cursor-pointer hover:scale-105"
+            >
               <Flame size={12} weight="fill" />
               <span>Smoke Alert</span>
-            </div>
+            </button>
           )}
 
           {/* Conditionally Visible: Media Playing Pill */}
           {isMediaActive && (
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 animate-fadeIn">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (primaryMediaId) openEntityDetails(primaryMediaId);
+              }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 animate-fadeIn cursor-pointer hover:scale-105"
+            >
               <SpeakerHigh size={12} weight="bold" />
               <span>Playing</span>
               <span className="flex items-end gap-[2px] h-2.5 ml-0.5">
@@ -286,7 +378,7 @@ export default function AreaTile({
                 <span className="w-0.5 bg-cyan-400 h-2.5 animate-pulse [animation-delay:150ms]" />
                 <span className="w-0.5 bg-cyan-400 h-2 animate-pulse [animation-delay:300ms]" />
               </span>
-            </div>
+            </button>
           )}
         </div>
       </div>
@@ -302,7 +394,12 @@ export default function AreaTile({
                 e.stopPropagation();
                 onToggleLights(area.areaId);
               }}
-              title={`${activeLightsCount}/${totalLightsCount} lights on. Click to toggle.`}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (primaryLightId) openEntityDetails(primaryLightId);
+              }}
+              title={`${activeLightsCount}/${totalLightsCount} lights on. Click to toggle, right-click/long-press for details.`}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
                 isLightActive
                   ? 'bg-amber-500/25 hover:bg-amber-500/35 border-amber-500/40 text-amber-300 shadow-sm shadow-amber-500/20'
@@ -324,7 +421,12 @@ export default function AreaTile({
                 e.stopPropagation();
                 onToggleSwitches(area.areaId);
               }}
-              title={`${activeSwitchesCount}/${entities.switches.length} switches active. Click to toggle.`}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (primarySwitchId) openEntityDetails(primarySwitchId);
+              }}
+              title={`${activeSwitchesCount}/${entities.switches.length} switches active. Click to toggle, right-click/long-press for details.`}
               className={`p-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
                 activeSwitchesCount > 0
                   ? 'bg-indigo-500/25 hover:bg-indigo-500/35 border-indigo-500/40 text-indigo-300 shadow-sm shadow-indigo-500/20'
@@ -345,7 +447,12 @@ export default function AreaTile({
                 e.stopPropagation();
                 onToggleFans(area.areaId);
               }}
-              title={`${activeFansCount}/${entities.fans.length} fans active. Click to toggle.`}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (primaryFanId) openEntityDetails(primaryFanId);
+              }}
+              title={`${activeFansCount}/${entities.fans.length} fans active. Click to toggle, right-click for details.`}
               className={`flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
                 activeFansCount > 0
                   ? 'bg-teal-500/25 hover:bg-teal-500/35 border-teal-500/40 text-teal-300 shadow-sm shadow-teal-500/20'
@@ -371,7 +478,12 @@ export default function AreaTile({
                 e.stopPropagation();
                 onToggleLocks(area.areaId);
               }}
-              title={isLockUnlocked ? `${unlockedLocksCount} unlocked. Click to lock.` : 'All locked. Click to unlock.'}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (primaryLockId) openEntityDetails(primaryLockId);
+              }}
+              title={isLockUnlocked ? `${unlockedLocksCount} unlocked. Click to lock, right-click for details.` : 'All locked. Click to unlock.'}
               className={`p-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
                 isLockUnlocked
                   ? 'bg-amber-500/25 hover:bg-amber-500/35 border-amber-500/40 text-amber-300 shadow-sm shadow-amber-500/20'
@@ -394,7 +506,12 @@ export default function AreaTile({
                 e.stopPropagation();
                 onToggleMedia(area.areaId);
               }}
-              title={isMediaActive ? 'Pause Music' : 'Play Music'}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (primaryMediaId) openEntityDetails(primaryMediaId);
+              }}
+              title={isMediaActive ? 'Pause Music (Right-click for controls)' : 'Play Music (Right-click for controls)'}
               className={`p-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
                 isMediaActive
                   ? 'bg-cyan-500/25 hover:bg-cyan-500/35 border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20'
@@ -417,8 +534,14 @@ export default function AreaTile({
           const theme = getClimateModeTheme(climateState.hvacMode);
           const ClimateBadgeIcon = theme.icon;
           return (
-            <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shrink-0 ${
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (primaryClimateId) openEntityDetails(primaryClimateId);
+              }}
+              title="Click to view thermostat controls"
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shrink-0 transition-all hover:scale-105 cursor-pointer active:scale-95 ${
                 darkMode
                   ? `${theme.badgeBgDark} ${theme.badgeBorderDark} ${theme.badgeTextDark}`
                   : `${theme.badgeBgLight} ${theme.badgeBorderLight} ${theme.badgeTextLight}`
@@ -426,7 +549,7 @@ export default function AreaTile({
             >
               <ClimateBadgeIcon size={13} weight={theme.isOff ? 'duotone' : 'fill'} />
               <span>{climateState.targetTemp}°C</span>
-            </div>
+            </button>
           );
         })()}
       </div>

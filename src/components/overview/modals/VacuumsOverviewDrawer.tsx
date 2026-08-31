@@ -48,15 +48,17 @@ export default function VacuumsOverviewDrawer({
 
   const [operatingId, setOperatingId] = useState<string | null>(null);
 
+  const safeVacuums = Array.isArray(vacuums) ? vacuums : [];
+
   const grouped = React.useMemo(() => {
-    if (!isOpen) {
+    if (!isOpen || safeVacuums.length === 0) {
       return { hasFloors: false, hasAreas: false, groups: [], totalEntities: 0 };
     }
-    return groupEntitiesByFloorAndArea(vacuums, customFloors, customAreas);
-  }, [isOpen, vacuums, customFloors, customAreas]);
+    return groupEntitiesByFloorAndArea(safeVacuums, customFloors, customAreas);
+  }, [isOpen, safeVacuums, customFloors, customAreas]);
 
-  const activeCleaning = vacuums.filter(
-    (v) => (v.state || '').toLowerCase() === 'cleaning' || (v.state || '').toLowerCase() === 'on'
+  const activeCleaning = safeVacuums.filter(
+    (v) => (v?.state || '').toLowerCase() === 'cleaning' || (v?.state || '').toLowerCase() === 'on'
   );
 
   const handleAction = async (
@@ -140,7 +142,7 @@ export default function VacuumsOverviewDrawer({
       isOpen={isOpen}
       onClose={onClose}
       title="Vacuum Cleaners & Mops"
-      subtitle={`${activeCleaning.length} of ${vacuums.length} robotic cleaners active`}
+      subtitle={`${activeCleaning.length} of ${safeVacuums.length} robotic cleaners active`}
       icon={<Broom size={22} weight="duotone" className="text-teal-500" />}
       darkMode={darkMode}
     >
@@ -158,7 +160,7 @@ export default function VacuumsOverviewDrawer({
                   : 'All Vacuums Docked & Standby'}
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                {vacuums.length} autonomous robot cleaner{vacuums.length === 1 ? '' : 's'} connected
+                {safeVacuums.length} autonomous robot cleaner{safeVacuums.length === 1 ? '' : 's'} connected
               </div>
             </div>
           </div>

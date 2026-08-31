@@ -6,8 +6,15 @@
 export interface HAEntity {
   entity_id: string;
   state: string;
+  last_changed?: string;
+  last_updated?: string;
+  context?: {
+    id: string;
+    parent_id?: string | null;
+    user_id?: string | null;
+  };
   attributes: {
-    friendly_name: string;
+    friendly_name?: string;
     icon?: string;
     brightness?: number; // 0-100
     temperature?: number; // current ambient temp

@@ -13,6 +13,7 @@ import NotificationDrawer from './components/notifications/NotificationDrawer';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
 import { UpdateToast } from './components/pwa/UpdateToast';
 import AuthModal from './components/auth/AuthModal';
+import EntityDetailModal from './components/modals/EntityDetailModal';
 import DemoBanner from './components/auth/DemoBanner';
 import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power, ArrowsClockwise, SlidersHorizontal, Palette, User, WifiHigh, DownloadSimple, GearSix } from '@phosphor-icons/react';
 import { useUserConfig } from './contexts/ConfigContext';
@@ -595,6 +596,9 @@ export default function App() {
 
       {/* Security Auth Gatekeeper Modal */}
       <AuthModal darkMode={darkMode} />
+
+      {/* Global Entity Detail Modal & Bottom Sheet Drawer */}
+      <EntityDetailModal />
     </div>
   );
 }

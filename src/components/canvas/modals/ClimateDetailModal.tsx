@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Minus, Drop, Power, Flame, Snowflake, Sparkle, Fan } from '@phosphor-icons/react';
 import { HAEntity } from '../../../types';
 import CardModalContainer from './CardModalContainer';
@@ -7,7 +7,7 @@ import { getClimateModeTheme } from '../../../utils/climateTheme';
 interface ClimateDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  entity: HAEntity;
+  entity?: HAEntity | null;
   onUpdateEntity: (entityId: string, newState: string, attributes?: Record<string, any>) => void;
 }
 
@@ -27,18 +27,50 @@ export default function ClimateDetailModal({
   entity,
   onUpdateEntity
 }: ClimateDetailModalProps) {
-  const currentTargetTemp = entity.attributes?.target_temp ?? entity.attributes?.temperature ?? 21.0;
-  const currentAmbientTemp = entity.attributes?.current_temperature ?? entity.attributes?.temperature ?? 21.5;
-  const currentHumidity = entity.attributes?.humidity ?? 48;
+  if (!isOpen || !entity) return null;
+
+  return (
+    <ClimateDetailModalContent
+      isOpen={isOpen}
+      onClose={onClose}
+      entity={entity}
+      onUpdateEntity={onUpdateEntity}
+    />
+  );
+}
+
+function ClimateDetailModalContent({
+  isOpen,
+  onClose,
+  entity,
+  onUpdateEntity
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  entity: HAEntity;
+  onUpdateEntity: (entityId: string, newState: string, attributes?: Record<string, any>) => void;
+}) {
+  const currentTargetTemp = Number(entity.attributes?.target_temp ?? entity.attributes?.temperature ?? 21.0);
+  const currentAmbientTemp = Number(entity.attributes?.current_temperature ?? entity.attributes?.temperature ?? 21.5);
+  const currentHumidity = Number(entity.attributes?.humidity ?? 48);
   const currentMode = entity.attributes?.mode || entity.state || 'cool';
   const currentFan = entity.attributes?.fan_mode || 'Auto';
 
-  const [targetTemp, setTargetTemp] = useState<number>(currentTargetTemp);
+  const [targetTemp, setTargetTemp] = useState<number>(isNaN(currentTargetTemp) ? 21 : currentTargetTemp);
   const [activeMode, setActiveMode] = useState<string>(currentMode);
   const [fanSpeed, setFanSpeed] = useState<string>(currentFan);
 
+  useEffect(() => {
+    if (entity) {
+      const t = Number(entity.attributes?.target_temp ?? entity.attributes?.temperature ?? 21.0);
+      setTargetTemp(isNaN(t) ? 21 : t);
+      setActiveMode(entity.attributes?.mode || entity.state || 'cool');
+      setFanSpeed(entity.attributes?.fan_mode || 'Auto');
+    }
+  }, [entity?.entity_id, entity?.state, entity?.attributes]);
+
   const theme = getClimateModeTheme(activeMode, activeMode === 'off' ? 'off' : 'on');
-  const HeaderIcon = theme.icon;
+  const HeaderIcon = theme.icon || Flame;
 
   const handleAdjustTemp = (delta: number) => {
     const next = Math.round((targetTemp + delta) * 2) / 2;
@@ -79,6 +111,7 @@ export default function ClimateDetailModal({
           <div className="flex items-center gap-6 z-10">
             {/* Minus Button */}
             <button
+              type="button"
               onClick={() => handleAdjustTemp(-0.5)}
               className="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border border-white/10"
               title="Decrease Temp"
@@ -89,7 +122,7 @@ export default function ClimateDetailModal({
             {/* Big Temperature Gauge */}
             <div className="flex flex-col items-center justify-center text-center">
               <span className={`text-5xl font-black tracking-tight leading-none font-mono ${theme.isOff ? 'text-slate-400' : 'text-white'}`}>
-                {targetTemp.toFixed(1)}°
+                {Number(targetTemp || 21).toFixed(1)}°
               </span>
               <span className={`text-xs font-bold uppercase tracking-widest mt-1 ${theme.textClass}`}>
                 {theme.isOff ? 'System Standby' : `${theme.name} Target Setpoint`}
@@ -98,71 +131,76 @@ export default function ClimateDetailModal({
 
             {/* Plus Button */}
             <button
+              type="button"
               onClick={() => handleAdjustTemp(0.5)}
-              className={`w-12 h-12 rounded-2xl text-white ${theme.stepperBtnBg} ${theme.stepperBtnHover} ${theme.stepperBtnShadow} flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-md`}
+              className={`w-12 h-12 rounded-2xl text-white ${theme.stepperBtnBg} ${theme.stepperBtnHover} ${theme.stepperBtnShadow} flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-lg`}
               title="Increase Temp"
             >
               <Plus size={20} weight="bold" />
             </button>
           </div>
 
-          {/* Sub Stats Row */}
-          <div className="flex items-center gap-6 mt-6 pt-4 border-t border-white/10 text-xs text-slate-300">
-            <div className="flex items-center gap-1.5">
-              <HeaderIcon size={15} weight="duotone" className={theme.iconClass} />
-              <span>Ambient: <strong className="text-white font-mono">{currentAmbientTemp.toFixed(1)}°C</strong></span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Drop size={15} weight="duotone" className="text-cyan-400" />
-              <span>Humidity: <strong className="text-white font-mono">{currentHumidity}%</strong></span>
-            </div>
+          {/* Ambient telemetry indicators */}
+          <div className="flex items-center gap-4 mt-6 pt-4 border-t border-white/10 text-xs text-slate-300">
+            <span className="flex items-center gap-1 font-mono">
+              Current: <strong className="text-white">{Number(currentAmbientTemp || 21.5).toFixed(1)}°C</strong>
+            </span>
+            <span className="text-white/20">•</span>
+            <span className="flex items-center gap-1">
+              <Drop size={14} weight="fill" className="text-cyan-400" />
+              <span>{currentHumidity}% Humidity</span>
+            </span>
           </div>
         </div>
 
-        {/* HVAC Operation Mode Selector */}
-        <div className="space-y-2.5">
-          <label className="text-xs font-bold text-slate-300 block">Operation Mode</label>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+        {/* HVAC Operation Mode Buttons */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">HVAC Operation Mode</label>
+          <div className="grid grid-cols-5 gap-2">
             {MODES.map((mode) => {
-              const IconComponent = mode.icon;
-              const isActive = activeMode.toLowerCase().includes(mode.id);
+              const Icon = mode.icon;
+              const isSelected = activeMode === mode.id;
+              const modeTheme = getClimateModeTheme(mode.id, mode.id === 'off' ? 'off' : 'on');
               return (
                 <button
                   key={mode.id}
+                  type="button"
                   onClick={() => handleSelectMode(mode.id)}
-                  className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                    isActive
-                      ? `${mode.activeClass} shadow-lg scale-105 font-extrabold`
-                      : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                  className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all cursor-pointer active:scale-95 ${
+                    isSelected
+                      ? `${modeTheme.badgeBgDark} ${modeTheme.badgeBorderDark} ${modeTheme.badgeTextDark} border shadow-lg scale-105 font-bold`
+                      : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400'
                   }`}
                 >
-                  <IconComponent size={20} weight={isActive ? 'fill' : 'duotone'} />
-                  <span className="text-[11px] font-semibold">{mode.label}</span>
+                  <Icon size={20} weight={isSelected ? 'fill' : 'duotone'} />
+                  <span className="text-xs font-semibold">{mode.label}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Fan Speed Selection */}
-        <div className="space-y-2.5">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
-            <Fan size={15} weight="duotone" className={theme.iconClass} /> Fan Speed
-          </div>
+        {/* Fan Speed Presets */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Blower & Fan Speed</label>
           <div className="grid grid-cols-4 gap-2">
-            {FAN_SPEEDS.map((speed) => (
-              <button
-                key={speed}
-                onClick={() => handleSelectFan(speed)}
-                className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  fanSpeed === speed
-                    ? `${theme.stepperBtnBg} text-white shadow-md font-extrabold`
-                    : 'bg-white/5 hover:bg-white/15 text-slate-300 border border-white/10'
-                }`}
-              >
-                {speed}
-              </button>
-            ))}
+            {FAN_SPEEDS.map((speed) => {
+              const isSelected = fanSpeed.toLowerCase() === speed.toLowerCase();
+              return (
+                <button
+                  key={speed}
+                  type="button"
+                  onClick={() => handleSelectFan(speed)}
+                  className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer active:scale-95 ${
+                    isSelected
+                      ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300 shadow-sm'
+                      : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400'
+                  }`}
+                >
+                  {speed}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

@@ -59,6 +59,7 @@ export default function MediaOverviewDrawer({
   const callHAService = useAutoLayoutStore(s => s.callHAService);
 
   // Selected player ID - initialize once on open and do not override when user picks an idle/off player
+  const safeMediaPlayers = Array.isArray(mediaPlayers) ? mediaPlayers : [];
   const [selectedId, setSelectedId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'playback' | 'remote'>('playback');
 
@@ -66,9 +67,9 @@ export default function MediaOverviewDrawer({
     if (isOpen) {
       if (activeEntity?.entity_id && !selectedId) {
         setSelectedId(activeEntity.entity_id);
-      } else if (!selectedId && mediaPlayers.length > 0) {
-        const firstPlaying = mediaPlayers.find(m => m.state === 'playing');
-        setSelectedId(firstPlaying?.entity_id || mediaPlayers[0].entity_id);
+      } else if (!selectedId && safeMediaPlayers.length > 0) {
+        const firstPlaying = safeMediaPlayers.find(m => m.state === 'playing');
+        setSelectedId(firstPlaying?.entity_id || safeMediaPlayers[0].entity_id);
       }
     }
   }, [isOpen, activeEntity]);
@@ -76,9 +77,9 @@ export default function MediaOverviewDrawer({
   // Always resolve latest state from store's resolvedEntities or mediaPlayers array
   const currentMedia: ResolvedEntity | undefined = 
     resolvedEntities[selectedId] ||
-    mediaPlayers.find(m => m.entity_id === selectedId) ||
+    safeMediaPlayers.find(m => m.entity_id === selectedId) ||
     activeEntity ||
-    mediaPlayers[0];
+    safeMediaPlayers[0];
 
   const isPlaying = currentMedia?.state === 'playing';
 
@@ -247,7 +248,7 @@ export default function MediaOverviewDrawer({
       isOpen={isOpen}
       onClose={onClose}
       title="Audio & Media Players"
-      subtitle={`${mediaPlayers.filter(m => m.state === 'playing').length} of ${mediaPlayers.length} devices active`}
+      subtitle={`${safeMediaPlayers.filter(m => m?.state === 'playing').length} of ${safeMediaPlayers.length} devices active`}
       icon={<MusicNotes size={22} weight="duotone" className="text-purple-500" />}
       darkMode={darkMode}
     >

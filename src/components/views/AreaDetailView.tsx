@@ -63,9 +63,11 @@ import { AreaData } from '../../types/rooms';
 import { ResolvedEntity } from '../../types';
 import { formatEntityDisplayName } from '../../lib/utils';
 import { getClimateModeTheme } from '../../utils/climateTheme';
+import { useEntityPopup } from '../../contexts/EntityPopupContext';
 import AreaMediaCard from '../rooms/AreaMediaCard';
 import MediaOverviewDrawer from '../overview/modals/MediaOverviewDrawer';
 import ViewEmptyState from '../ui/ViewEmptyState';
+import MiniSensorSparkline from '../sensors/MiniSensorSparkline';
 
 interface AreaDetailViewProps {
   area: AreaData;
@@ -109,6 +111,7 @@ export default function AreaDetailView({
     totalLocksCount
   } = area;
 
+  const { openEntityDetails } = useEntityPopup();
   const [activeMediaDrawerEntity, setActiveMediaDrawerEntity] = useState<ResolvedEntity | null>(null);
 
   // =========================================================================
@@ -561,6 +564,11 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={light.entity_id}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openEntityDetails(light.entity_id);
+                    }}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
                     className={`col-span-1 p-4 rounded-3xl border ${
                       isOn ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
@@ -574,15 +582,25 @@ export default function AreaDetailView({
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <Lightbulb
-                          size={24}
-                          weight={isOn ? 'fill' : 'duotone'}
-                          className={`shrink-0 transition-all duration-300 ${
-                            isOn
-                              ? 'text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.85)] scale-105'
-                              : 'text-slate-400'
-                          }`}
-                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEntityDetails(light.entity_id);
+                          }}
+                          className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
+                          title="Open detailed controls"
+                        >
+                          <Lightbulb
+                            size={24}
+                            weight={isOn ? 'fill' : 'duotone'}
+                            className={`shrink-0 transition-all duration-300 ${
+                              isOn
+                                ? 'text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.85)] scale-105'
+                                : 'text-slate-400'
+                            }`}
+                          />
+                        </button>
                         <div className="min-w-0">
                           <h5 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                             {formatEntityDisplayName(light.name, area.name)}
@@ -673,8 +691,9 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={cs.entity_id}
+                    onClick={() => openEntityDetails(cs.entity_id)}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-4 rounded-3xl border ${
+                    className={`col-span-1 p-4 rounded-3xl border cursor-pointer hover:scale-[1.02] ${
                       isOpen ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
                     } backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
                       isOpen
@@ -764,6 +783,11 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={climate.entity_id}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openEntityDetails(climate.entity_id);
+                    }}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
                     className={`col-span-1 p-4.5 rounded-3xl border ${
                       darkMode ? theme.borderDark : theme.borderLight
@@ -773,11 +797,21 @@ export default function AreaDetailView({
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <ModeIcon
-                          size={24}
-                          weight={theme.isOff ? 'duotone' : 'fill'}
-                          className={`${theme.iconClass} ${theme.iconDropShadow} shrink-0`}
-                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEntityDetails(climate.entity_id);
+                          }}
+                          className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
+                          title="Open thermostat controls"
+                        >
+                          <ModeIcon
+                            size={24}
+                            weight={theme.isOff ? 'duotone' : 'fill'}
+                            className={`${theme.iconClass} ${theme.iconDropShadow} shrink-0`}
+                          />
+                        </button>
 
                         <div className="min-w-0">
                           <h4 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -880,6 +914,11 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={fan.entity_id}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openEntityDetails(fan.entity_id);
+                    }}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
                     className={`col-span-1 p-4 rounded-3xl border ${
                       isOn ? 'border-teal-400/40' : 'border-slate-200/80 dark:border-white/10'
@@ -893,15 +932,25 @@ export default function AreaDetailView({
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <Fan
-                          size={24}
-                          weight="duotone"
-                          className={`shrink-0 transition-transform ${
-                            isOn
-                              ? 'text-teal-400 animate-spin [animation-duration:1.5s] drop-shadow-[0_0_8px_rgba(45,212,191,0.7)]'
-                              : 'text-slate-400'
-                          }`}
-                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEntityDetails(fan.entity_id);
+                          }}
+                          className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
+                          title="Open fan controls"
+                        >
+                          <Fan
+                            size={24}
+                            weight="duotone"
+                            className={`shrink-0 transition-transform ${
+                              isOn
+                                ? 'text-teal-400 animate-spin [animation-duration:1.5s] drop-shadow-[0_0_8px_rgba(45,212,191,0.7)]'
+                                : 'text-slate-400'
+                            }`}
+                          />
+                        </button>
                         <div className="min-w-0">
                           <h5 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                             {formatEntityDisplayName(fan.name, area.name)}
@@ -1034,6 +1083,11 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={lock.entity_id}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openEntityDetails(lock.entity_id);
+                    }}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
                     className={`col-span-1 p-4 rounded-3xl border ${
                       !isLocked ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
@@ -1046,11 +1100,21 @@ export default function AreaDetailView({
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      {isLocked ? (
-                        <Lock size={24} weight="fill" className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)] shrink-0" />
-                      ) : (
-                        <LockOpen size={24} weight="bold" className="text-amber-400 animate-pulse drop-shadow-[0_0_10px_rgba(251,191,36,0.8)] shrink-0" />
-                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEntityDetails(lock.entity_id);
+                        }}
+                        className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
+                        title="Open lock details"
+                      >
+                        {isLocked ? (
+                          <Lock size={24} weight="fill" className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)] shrink-0" />
+                        ) : (
+                          <LockOpen size={24} weight="bold" className="text-amber-400 animate-pulse drop-shadow-[0_0_10px_rgba(251,191,36,0.8)] shrink-0" />
+                        )}
+                      </button>
                       <div className="min-w-0">
                         <h5 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                           {formatEntityDisplayName(lock.name, area.name)}
@@ -1137,6 +1201,11 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={sw.entity_id}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openEntityDetails(sw.entity_id);
+                    }}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
                     className={`col-span-1 p-4 rounded-3xl border ${
                       isOn ? 'border-indigo-400/40' : 'border-slate-200/80 dark:border-white/10'
@@ -1149,15 +1218,25 @@ export default function AreaDetailView({
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <Plug
-                        size={24}
-                        weight={isOn ? 'fill' : 'duotone'}
-                        className={`shrink-0 transition-transform ${
-                          isOn
-                            ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.75)]'
-                            : 'text-slate-400'
-                        }`}
-                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEntityDetails(sw.entity_id);
+                        }}
+                        className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
+                        title="Open switch details"
+                      >
+                        <Plug
+                          size={24}
+                          weight={isOn ? 'fill' : 'duotone'}
+                          className={`shrink-0 transition-transform ${
+                            isOn
+                              ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.75)]'
+                              : 'text-slate-400'
+                          }`}
+                        />
+                      </button>
                       <div className="min-w-0">
                         <h5 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                           {formatEntityDisplayName(sw.name, area.name)}
@@ -1218,8 +1297,9 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={ms.entity_id}
+                    onClick={() => openEntityDetails(ms.entity_id)}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 rounded-3xl border ${
+                    className={`col-span-1 p-3.5 rounded-3xl border cursor-pointer hover:scale-[1.02] ${
                       isActive ? 'border-emerald-400/40' : 'border-slate-200/80 dark:border-white/10'
                     } backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate ${
                       isActive
@@ -1293,8 +1373,9 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={bs.entity_id}
+                    onClick={() => openEntityDetails(bs.entity_id)}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 rounded-3xl border ${
+                    className={`col-span-1 p-3.5 rounded-3xl border cursor-pointer hover:scale-[1.02] ${
                       isCritical
                         ? 'border-rose-400/40'
                         : isLow
@@ -1379,39 +1460,64 @@ export default function AreaDetailView({
                 const isLux = dc === 'illuminance' || uom === 'lx' || uom === 'lux';
                 const battery = getEntityBattery(sensor);
 
+                const hasSparkline = isTemp || isHum;
+                const sparkColor = isTemp ? '#fb7185' : '#38bdf8';
+
                 return (
                   <div
                     key={sensor.entity_id}
+                    onClick={() => openEntityDetails(sensor.entity_id)}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate ${
+                    className={`col-span-1 p-3.5 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm flex flex-col justify-between gap-2.5 transition-all overflow-hidden isolate cursor-pointer hover:scale-[1.02] ${
                       darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {isTemp ? (
-                        <Thermometer size={22} weight="duotone" className="text-rose-400 shrink-0" />
-                      ) : isHum ? (
-                        <Drop size={22} weight="duotone" className="text-sky-400 shrink-0" />
-                      ) : isLux ? (
-                        <Sun size={22} weight="duotone" className="text-amber-400 shrink-0" />
-                      ) : (
-                        <Wind size={22} weight="duotone" className="text-teal-400 shrink-0" />
-                      )}
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate">
-                          {formatEntityDisplayName(sensor.name, area.name)}
-                        </div>
-                        <div className="text-sm font-black truncate mt-0.5">
-                          {sensor.state} {uom}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {isTemp ? (
+                          <Thermometer size={22} weight="duotone" className="text-rose-400 shrink-0" />
+                        ) : isHum ? (
+                          <Drop size={22} weight="duotone" className="text-sky-400 shrink-0" />
+                        ) : isLux ? (
+                          <Sun size={22} weight="duotone" className="text-amber-400 shrink-0" />
+                        ) : (
+                          <Wind size={22} weight="duotone" className="text-teal-400 shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate">
+                            {formatEntityDisplayName(sensor.name, area.name)}
+                          </div>
+                          <div className="text-sm font-black truncate mt-0.5 font-mono">
+                            {sensor.state} {uom}
+                          </div>
                         </div>
                       </div>
+
+                      {battery !== undefined && (
+                        <span className="flex items-center gap-0.5 text-[11px] font-bold text-slate-400 shrink-0">
+                          <BatteryMedium size={12} weight="bold" />
+                          <span>{battery}%</span>
+                        </span>
+                      )}
                     </div>
 
-                    {battery !== undefined && (
-                      <span className="flex items-center gap-0.5 text-[11px] font-bold text-slate-400 shrink-0">
-                        <BatteryMedium size={12} weight="bold" />
-                        <span>{battery}%</span>
-                      </span>
+                    {/* Embedded 24h History Trend Sparkline directly on tile */}
+                    {hasSparkline && (
+                      <div className="w-full pt-1.5 border-t border-slate-200/40 dark:border-white/5 space-y-1">
+                        <div className="flex items-center justify-between text-[9px] font-mono text-slate-500">
+                          <span>24h trend</span>
+                          <span className={isTemp ? 'text-rose-400' : 'text-sky-400'}>
+                            {isTemp ? 'Temperature' : 'Humidity'}
+                          </span>
+                        </div>
+                        <MiniSensorSparkline
+                          entityId={sensor.entity_id}
+                          currentValue={sensor.state}
+                          color={sparkColor}
+                          height={32}
+                          strokeWidth={2}
+                        />
+                      </div>
                     )}
                   </div>
                 );
@@ -1440,8 +1546,9 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={sensor.entity_id}
+                    onClick={() => openEntityDetails(sensor.entity_id)}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate ${
+                    className={`col-span-1 p-3.5 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate cursor-pointer hover:scale-[1.02] ${
                       darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
@@ -1487,8 +1594,9 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={hs.entity_id}
+                    onClick={() => openEntityDetails(hs.entity_id)}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 rounded-3xl border ${
+                    className={`col-span-1 p-3.5 rounded-3xl border cursor-pointer hover:scale-[1.02] ${
                       isProblem ? 'border-rose-400/50' : 'border-slate-200/80 dark:border-white/10'
                     } backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate ${
                       isProblem
@@ -1577,13 +1685,28 @@ export default function AreaDetailView({
               {entities.covers.map((cover) => (
                 <div
                   key={cover.entity_id}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openEntityDetails(cover.entity_id);
+                  }}
                   style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
                   className={`col-span-1 p-4 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
                     darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <AppWindow size={24} weight="duotone" className="text-purple-400 shrink-0" />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEntityDetails(cover.entity_id);
+                      }}
+                      className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
+                      title="Open cover position slider"
+                    >
+                      <AppWindow size={24} weight="duotone" className="text-purple-400 shrink-0" />
+                    </button>
                     <div className="min-w-0">
                       <h5 className="text-sm font-bold truncate">{formatEntityDisplayName(cover.name, area.name)}</h5>
                       <p className="text-xs text-slate-600 dark:text-slate-400 capitalize">{cover.state || 'closed'}</p>
@@ -1638,6 +1761,11 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={vac.entity_id}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openEntityDetails(vac.entity_id);
+                    }}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
                     className={`col-span-1 p-4 rounded-3xl border ${
                       isCleaning ? 'border-teal-400/40' : 'border-slate-200/80 dark:border-white/10'
@@ -1650,18 +1778,24 @@ export default function AreaDetailView({
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all shrink-0 ${
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEntityDetails(vac.entity_id);
+                        }}
+                        className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all shrink-0 cursor-pointer hover:scale-110 ${
                           isCleaning
                             ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/20'
                             : 'bg-white/80 dark:bg-white/10 text-slate-500 dark:text-slate-400'
                         }`}
+                        title="Open vacuum controls"
                       >
                         <Broom
                           size={20}
                           weight={isCleaning ? 'fill' : 'duotone'}
                         />
-                      </div>
+                      </button>
                       <div className="min-w-0">
                         <h5 className="text-sm font-bold truncate">{formatEntityDisplayName(vac.name, area.name)}</h5>
                         <p className="text-xs text-slate-500 capitalize flex items-center gap-1.5 mt-0.5">
@@ -1725,8 +1859,9 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={sensor.entity_id}
+                    onClick={() => openEntityDetails(sensor.entity_id)}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate ${
+                    className={`col-span-1 p-3.5 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate cursor-pointer hover:scale-[1.02] ${
                       darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >

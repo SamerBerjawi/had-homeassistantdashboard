@@ -743,17 +743,19 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
     get().recomputeGraph();
   },
 
-  updateEntityState: (entityId: string, newState: string, newAttributes?: Record<string, any>) => {
+  updateEntityState: (entityId: string, newState?: string | null, newAttributes?: Record<string, any>) => {
     set(prev => {
       const existing = prev.states[entityId] || {
         entity_id: entityId,
-        state: newState,
+        state: newState || 'off',
         attributes: {}
       };
 
+      const finalState = (newState !== undefined && newState !== null) ? newState : (existing.state || 'off');
+
       const updatedState: HAState = {
         ...existing,
-        state: newState,
+        state: finalState,
         attributes: {
           ...existing.attributes,
           ...(newAttributes || {})
