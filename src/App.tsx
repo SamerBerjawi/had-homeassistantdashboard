@@ -179,6 +179,9 @@ export default function App() {
   const { isLoading: isConfigLoading } = useUserConfig();
 
   const setActiveTab = (tab: string) => {
+    if (tab === 'rooms') {
+      useAutoLayoutStore.getState().setSelectedAreaId(null);
+    }
     const validTab = VALID_TABS.includes(tab as TabKey) ? tab : 'overview';
     setActiveTabState(validTab);
     const targetPath = `/${validTab}`;

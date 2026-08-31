@@ -208,27 +208,13 @@ export default function AreaTile({
             </div>
           </div>
 
-          {/* Active entities counter pill (Lights / Devices Active) */}
-          {(isLightActive || isMotionActive || isMediaActive || isHazardActive) && (
+          {/* Active Hazard Alert Pill */}
+          {isHazardActive && (
             <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border shrink-0 ${
-                isHazardActive
-                  ? 'bg-rose-500/25 border-rose-500/40 text-rose-300 animate-pulse'
-                  : isLightActive
-                  ? 'bg-amber-500/20 border-amber-500/35 text-amber-300'
-                  : isMotionActive
-                  ? 'bg-emerald-500/20 border-emerald-500/35 text-emerald-300'
-                  : 'bg-cyan-500/20 border-cyan-500/35 text-cyan-300'
-              }`}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border shrink-0 bg-rose-500/25 border-rose-500/40 text-rose-300 animate-pulse"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-              {isHazardActive
-                ? 'ALERT'
-                : isLightActive
-                ? `${activeLightsCount} ON`
-                : isMotionActive
-                ? 'Active'
-                : 'Playing'}
+              ALERT
             </span>
           )}
         </div>
@@ -383,176 +369,183 @@ export default function AreaTile({
         </div>
       </div>
 
-      {/* Quick Action Button Strip (Bottom of Card) */}
-      <div className="relative z-10 mt-3.5 pt-3 border-t border-white/10 dark:border-white/10 border-slate-200/80 flex items-center justify-between gap-1.5 flex-wrap">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {/* Lights Button with Counter */}
-          {totalLightsCount > 0 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleLights(area.areaId);
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (primaryLightId) openEntityDetails(primaryLightId);
-              }}
-              title={`${activeLightsCount}/${totalLightsCount} lights on. Click to toggle, right-click/long-press for details.`}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
-                isLightActive
-                  ? 'bg-amber-500/25 hover:bg-amber-500/35 border-amber-500/40 text-amber-300 shadow-sm shadow-amber-500/20'
-                  : darkMode
-                  ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-slate-200'
-                  : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
-              }`}
-            >
-              <Lightbulb size={15} weight={isLightActive ? 'fill' : 'duotone'} />
-              <span>{activeLightsCount > 0 ? activeLightsCount : totalLightsCount}</span>
-            </button>
-          )}
+      {/* Quick Action Button Strip (Bottom of Card - only rendered when area has toggleable controls) */}
+      {(totalLightsCount > 0 ||
+        (entities?.switches?.length || 0) > 0 ||
+        (entities?.fans?.length || 0) > 0 ||
+        ((totalLocksCount || 0) > 0 && Boolean(onToggleLocks)) ||
+        (entities?.mediaPlayers?.length || 0) > 0 ||
+        (climateState && climateState.targetTemp !== undefined)) && (
+        <div className="relative z-10 mt-3.5 pt-3 border-t border-white/10 dark:border-white/10 border-slate-200/80 flex items-center justify-between gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Lights Button with Counter */}
+            {totalLightsCount > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleLights(area.areaId);
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (primaryLightId) openEntityDetails(primaryLightId);
+                }}
+                title={`${activeLightsCount}/${totalLightsCount} lights on. Click to toggle, right-click/long-press for details.`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
+                  isLightActive
+                    ? 'bg-amber-500/25 hover:bg-amber-500/35 border-amber-500/40 text-amber-300 shadow-sm shadow-amber-500/20'
+                    : darkMode
+                    ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-slate-200'
+                    : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
+                }`}
+              >
+                <Lightbulb size={15} weight={isLightActive ? 'fill' : 'duotone'} />
+                <span>{activeLightsCount > 0 ? activeLightsCount : totalLightsCount}</span>
+              </button>
+            )}
 
-          {/* Switches / Outlets Button */}
-          {entities.switches.length > 0 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleSwitches(area.areaId);
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (primarySwitchId) openEntityDetails(primarySwitchId);
-              }}
-              title={`${activeSwitchesCount}/${entities.switches.length} switches active. Click to toggle, right-click/long-press for details.`}
-              className={`p-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
-                activeSwitchesCount > 0
-                  ? 'bg-indigo-500/25 hover:bg-indigo-500/35 border-indigo-500/40 text-indigo-300 shadow-sm shadow-indigo-500/20'
-                  : darkMode
-                  ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-slate-200'
-                  : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
-              }`}
-            >
-              <Plug size={15} weight={activeSwitchesCount > 0 ? 'fill' : 'duotone'} />
-            </button>
-          )}
+            {/* Switches / Outlets Button */}
+            {(entities?.switches?.length || 0) > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleSwitches(area.areaId);
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (primarySwitchId) openEntityDetails(primarySwitchId);
+                }}
+                title={`${activeSwitchesCount}/${entities.switches.length} switches active. Click to toggle, right-click/long-press for details.`}
+                className={`p-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
+                  activeSwitchesCount > 0
+                    ? 'bg-indigo-500/25 hover:bg-indigo-500/35 border-indigo-500/40 text-indigo-300 shadow-sm shadow-indigo-500/20'
+                    : darkMode
+                    ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-slate-200'
+                    : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
+                }`}
+              >
+                <Plug size={15} weight={activeSwitchesCount > 0 ? 'fill' : 'duotone'} />
+              </button>
+            )}
 
-          {/* Fans Button */}
-          {entities.fans.length > 0 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleFans(area.areaId);
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (primaryFanId) openEntityDetails(primaryFanId);
-              }}
-              title={`${activeFansCount}/${entities.fans.length} fans active. Click to toggle, right-click for details.`}
-              className={`flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
-                activeFansCount > 0
-                  ? 'bg-teal-500/25 hover:bg-teal-500/35 border-teal-500/40 text-teal-300 shadow-sm shadow-teal-500/20'
-                  : darkMode
-                  ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-slate-200'
-                  : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
-              }`}
-            >
-              <Fan
-                size={15}
-                weight={activeFansCount > 0 ? 'fill' : 'duotone'}
-                className={activeFansCount > 0 ? 'animate-spin [animation-duration:3s]' : ''}
-              />
-              <span>{activeFansCount > 0 ? activeFansCount : entities.fans.length}</span>
-            </button>
-          )}
+            {/* Fans Button */}
+            {(entities?.fans?.length || 0) > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleFans(area.areaId);
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (primaryFanId) openEntityDetails(primaryFanId);
+                }}
+                title={`${activeFansCount}/${entities.fans.length} fans active. Click to toggle, right-click for details.`}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
+                  activeFansCount > 0
+                    ? 'bg-teal-500/25 hover:bg-teal-500/35 border-teal-500/40 text-teal-300 shadow-sm shadow-teal-500/20'
+                    : darkMode
+                    ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-slate-200'
+                    : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
+                }`}
+              >
+                <Fan
+                  size={15}
+                  weight={activeFansCount > 0 ? 'fill' : 'duotone'}
+                  className={activeFansCount > 0 ? 'animate-spin [animation-duration:3s]' : ''}
+                />
+                <span>{activeFansCount > 0 ? activeFansCount : entities.fans.length}</span>
+              </button>
+            )}
 
-          {/* Door Locks Button */}
-          {totalLocksCount > 0 && onToggleLocks && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleLocks(area.areaId);
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (primaryLockId) openEntityDetails(primaryLockId);
-              }}
-              title={isLockUnlocked ? `${unlockedLocksCount} unlocked. Click to lock, right-click for details.` : 'All locked. Click to unlock.'}
-              className={`p-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
-                isLockUnlocked
-                  ? 'bg-amber-500/25 hover:bg-amber-500/35 border-amber-500/40 text-amber-300 shadow-sm shadow-amber-500/20'
-                  : 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/35 text-emerald-300'
-              }`}
-            >
-              {isLockUnlocked ? (
-                <LockOpen size={15} weight="bold" />
-              ) : (
-                <Lock size={15} weight="fill" />
-              )}
-            </button>
-          )}
+            {/* Door Locks Button */}
+            {(totalLocksCount || 0) > 0 && onToggleLocks && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleLocks(area.areaId);
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (primaryLockId) openEntityDetails(primaryLockId);
+                }}
+                title={isLockUnlocked ? `${unlockedLocksCount} unlocked. Click to lock, right-click for details.` : 'All locked. Click to unlock.'}
+                className={`p-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
+                  isLockUnlocked
+                    ? 'bg-amber-500/25 hover:bg-amber-500/35 border-amber-500/40 text-amber-300 shadow-sm shadow-amber-500/20'
+                    : 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/35 text-emerald-300'
+                }`}
+              >
+                {isLockUnlocked ? (
+                  <LockOpen size={15} weight="bold" />
+                ) : (
+                  <Lock size={15} weight="fill" />
+                )}
+              </button>
+            )}
 
-          {/* Media Player Play/Pause Quick Toggle */}
-          {entities.mediaPlayers.length > 0 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleMedia(area.areaId);
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (primaryMediaId) openEntityDetails(primaryMediaId);
-              }}
-              title={isMediaActive ? 'Pause Music (Right-click for controls)' : 'Play Music (Right-click for controls)'}
-              className={`p-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
-                isMediaActive
-                  ? 'bg-cyan-500/25 hover:bg-cyan-500/35 border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20'
-                  : darkMode
-                  ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-slate-200'
-                  : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
-              }`}
-            >
-              {isMediaActive ? (
-                <Pause size={15} weight="fill" />
-              ) : (
-                <Play size={15} weight="fill" />
-              )}
-            </button>
-          )}
+            {/* Media Player Play/Pause Quick Toggle */}
+            {(entities?.mediaPlayers?.length || 0) > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleMedia(area.areaId);
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (primaryMediaId) openEntityDetails(primaryMediaId);
+                }}
+                title={isMediaActive ? 'Pause Music (Right-click for controls)' : 'Play Music (Right-click for controls)'}
+                className={`p-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
+                  isMediaActive
+                    ? 'bg-cyan-500/25 hover:bg-cyan-500/35 border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20'
+                    : darkMode
+                    ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-slate-200'
+                    : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
+                }`}
+              >
+                {isMediaActive ? (
+                  <Pause size={15} weight="fill" />
+                ) : (
+                  <Play size={15} weight="fill" />
+                )}
+              </button>
+            )}
+          </div>
+
+          {/* Climate Target Badge */}
+          {climateState && climateState.targetTemp !== undefined && (() => {
+            const theme = getClimateModeTheme(climateState.hvacMode);
+            const ClimateBadgeIcon = theme.icon;
+            return (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (primaryClimateId) openEntityDetails(primaryClimateId);
+                }}
+                title="Click to view thermostat controls"
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shrink-0 transition-all hover:scale-105 cursor-pointer active:scale-95 ${
+                  darkMode
+                    ? `${theme.badgeBgDark} ${theme.badgeBorderDark} ${theme.badgeTextDark}`
+                    : `${theme.badgeBgLight} ${theme.badgeBorderLight} ${theme.badgeTextLight}`
+                }`}
+              >
+                <ClimateBadgeIcon size={13} weight={theme.isOff ? 'duotone' : 'fill'} />
+                <span>{climateState.targetTemp}°C</span>
+              </button>
+            );
+          })()}
         </div>
-
-        {/* Climate Target Badge */}
-        {climateState && climateState.targetTemp !== undefined && (() => {
-          const theme = getClimateModeTheme(climateState.hvacMode);
-          const ClimateBadgeIcon = theme.icon;
-          return (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (primaryClimateId) openEntityDetails(primaryClimateId);
-              }}
-              title="Click to view thermostat controls"
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shrink-0 transition-all hover:scale-105 cursor-pointer active:scale-95 ${
-                darkMode
-                  ? `${theme.badgeBgDark} ${theme.badgeBorderDark} ${theme.badgeTextDark}`
-                  : `${theme.badgeBgLight} ${theme.badgeBorderLight} ${theme.badgeTextLight}`
-              }`}
-            >
-              <ClimateBadgeIcon size={13} weight={theme.isOff ? 'duotone' : 'fill'} />
-              <span>{climateState.targetTemp}°C</span>
-            </button>
-          );
-        })()}
-      </div>
+      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@ export type SensorKind =
   | 'power'
   | 'energy'
   | 'voltage'
+  | 'current'
   | 'battery'
   | 'door'
   | 'window'
@@ -72,12 +73,28 @@ export function detectSensorCapabilities(
   const fn = friendlyName.toLowerCase();
   const unit = String(attrs.unit_of_measurement || '');
 
-  // Determine Sensor Kind
+  // Determine Sensor Kind with strict priority
   let kind: SensorKind = 'generic_numeric';
 
-  if (rawClass === 'temperature' || unit.includes('°C') || unit.includes('°F') || eid.includes('temperature') || fn.includes('temp')) {
+  const isBattery =
+    rawClass === 'battery' ||
+    eid.includes('battery') ||
+    fn.includes('battery') ||
+    (unit === '%' && (eid.includes('batt') || fn.includes('batt')));
+
+  if (isBattery) {
+    kind = 'battery';
+  } else if (
+    rawClass === 'temperature' ||
+    unit.includes('°C') ||
+    unit.includes('°F') ||
+    (rawClass === '' && (eid.endsWith('_temperature') || eid.endsWith('_temp') || eid.includes('temperature_sensor')))
+  ) {
     kind = 'temperature';
-  } else if (rawClass === 'humidity' || unit === '%' && (eid.includes('humidity') || fn.includes('humidity'))) {
+  } else if (
+    rawClass === 'humidity' ||
+    (unit === '%' && (eid.includes('humidity') || fn.includes('humidity') || eid.includes('hygro')))
+  ) {
     kind = 'humidity';
   } else if (rawClass === 'illuminance' || unit.toLowerCase().includes('lx') || unit.toLowerCase().includes('lux')) {
     kind = 'illuminance';
@@ -87,12 +104,12 @@ export function detectSensorCapabilities(
     kind = 'air_quality';
   } else if (rawClass === 'power' || unit.toLowerCase() === 'w' || unit.toLowerCase() === 'kw') {
     kind = 'power';
-  } else if (rawClass === 'energy' || unit.toLowerCase() === 'kwh') {
+  } else if (rawClass === 'energy' || unit.toLowerCase() === 'kwh' || unit.toLowerCase() === 'wh') {
     kind = 'energy';
-  } else if (rawClass === 'voltage' || unit.toLowerCase() === 'v') {
+  } else if (rawClass === 'voltage' || unit.toLowerCase() === 'v' || eid.includes('voltage') || fn.includes('voltage')) {
     kind = 'voltage';
-  } else if (rawClass === 'battery' || (unit === '%' && (eid.includes('battery') || fn.includes('battery')))) {
-    kind = 'battery';
+  } else if (rawClass === 'current' || unit.toLowerCase() === 'a' || unit.toLowerCase() === 'ma' || eid.includes('current') || fn.includes('current')) {
+    kind = 'current';
   } else if (rawClass === 'door' || eid.includes('door') || fn.includes('door')) {
     kind = 'door';
   } else if (rawClass === 'window' || eid.includes('window') || fn.includes('window')) {
@@ -124,7 +141,7 @@ export function detectSensorCapabilities(
 
   const isNumeric = !isBinary && isNum;
 
-  // Alert condition evaluation
+  // Alert condition evaluation (binary entities)
   let isActiveAlert = false;
   let alertLabel = 'Normal';
 
@@ -150,14 +167,22 @@ export function detectSensorCapabilities(
     }
   }
 
-  // Format value
-  const formattedValue = isNumeric
-    ? `${Math.round(numValue * 10) / 10}${unit ? ` ${unit}` : ''}`
-    : alertLabel;
+  // Format value: for numeric sensors always include the formatted number + unit
+  let formattedValue = '';
+  if (isNumeric) {
+    const rounded = Math.abs(numValue) < 10 && numValue % 1 !== 0
+      ? Math.round(numValue * 100) / 100
+      : Math.round(numValue * 10) / 10;
+    formattedValue = `${rounded}${unit ? ` ${unit}` : ''}`;
+  } else if (!isBinary && stateStr && stateStr !== 'unknown' && stateStr !== 'unavailable') {
+    formattedValue = `${stateStr}${unit ? ` ${unit}` : ''}`;
+  } else {
+    formattedValue = alertLabel;
+  }
 
   // Battery
   const rawBattery = attrs.battery_level ?? attrs.battery ?? ('batteryPct' in entity ? (entity as any).batteryPct : undefined);
-  const batteryPct = typeof rawBattery === 'number' ? Math.round(rawBattery) : undefined;
+  const batteryPct = typeof rawBattery === 'number' ? Math.round(rawBattery) : (kind === 'battery' && isNum ? Math.round(numValue) : undefined);
 
   const lastChanged = (entity as any).last_changed || (entity as any).last_updated || attrs.last_changed;
 

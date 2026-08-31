@@ -3,19 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Dedicated Area Detail Drill-Down View
- * Categorizes entity sub-types into dedicated, clearly labeled sections:
- * - Lighting with section header toggle controls (All Off / All On)
- * - Climate & Air Quality with temperature sliders & mode selectors
- * - Media Players with click-to-open drawer
- * - Door Locks & Smart Access with section header (Lock All / Unlock All)
- * - Switches & Outlets with section header (All Off / All On)
- * - Window Covers & Blinds with section header (Open All / Close All)
- * - Contact & Entry Sensors (Doors & Windows with accurate battery indicators)
- * - Motion & Presence Sensors (with active radar pulse and battery telemetry)
- * - Battery & Device Health (Dedicated section showing accurate battery % and meters)
- * - Environmental & Air Quality Telemetry (Temp, Humidity, CO2, Lux - without battery confusion)
- * - Power & Energy Telemetry (Watts, kWh)
- * - Safety & Hazard Sensors (Smoke, Water Leaks)
+ * Categorized device sections with category titles, bulk master actions,
+ * granular sensor sub-grouping (Entry, Motion, Environmental, Safety, Energy, Battery),
+ * automatic companion battery sensor pairing & deduplication, and Phosphor battery icons.
  */
 
 import React, { useState, useMemo } from 'react';
@@ -27,59 +17,44 @@ import {
   SpeakerHigh,
   Fan,
   AppWindow,
-  SlidersHorizontal,
-  Sparkle,
   Power,
-  Flame,
-  Snowflake,
-  Wind,
-  Sun,
-  Eye,
   Door,
-  Warning,
   PersonSimpleWalk,
-  Plus,
-  Minus,
   Lock,
   LockOpen,
-  BatteryCharging,
-  BatteryFull,
   BatteryMedium,
-  BatteryLow,
-  BatteryWarning,
-  ArrowsClockwise,
   HouseLine,
-  Gauge,
   Lightning,
-  Clock,
-  ShieldWarning,
-  CheckCircle,
-  Pause,
-  Play,
-  Stop,
   Broom,
-  ArrowArcLeft,
   VideoCamera,
-  Camera
+  SquaresFour,
+  Warning,
+  Gear
 } from '@phosphor-icons/react';
 import { AreaData } from '../../types/rooms';
 import { ResolvedEntity } from '../../types';
 import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
-import { getClimateModeTheme } from '../../utils/climateTheme';
 import { useEntityPopup } from '../../contexts/EntityPopupContext';
-import AreaMediaCard from '../rooms/AreaMediaCard';
 import MediaOverviewDrawer from '../overview/modals/MediaOverviewDrawer';
 import ViewEmptyState from '../ui/ViewEmptyState';
-import MiniSensorSparkline from '../sensors/MiniSensorSparkline';
+import VirtualGrid from '../layout/VirtualGrid';
+import GridTile from '../layout/GridTile';
+import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
+import { TelemetryLine } from '../common/TelemetryBadge';
+
+// Domain Tiles
+import SwitchTile from '../tiles/SwitchTile';
+import LightTile from '../tiles/LightTile';
+import ClimateTile from '../tiles/ClimateTile';
+import MediaPlayerTile from '../tiles/MediaPlayerTile';
+import SensorTile from '../tiles/SensorTile';
+import CompactTile from '../tiles/CompactTile';
+import WideTile from '../tiles/WideTile';
+
 import { detectLightCapabilities } from '../../services/lightClassification';
-import { detectSwitchCapabilities } from '../../services/switchClassification';
-import { detectClimateCapabilities } from '../../services/climateClassification';
-import { detectCoverCapabilities } from '../../services/coverClassification';
 import { detectLockCapabilities } from '../../services/lockClassification';
-import { detectFanCapabilities } from '../../services/fanClassification';
 import { detectVacuumCapabilities } from '../../services/vacuumClassification';
 import { detectSensorCapabilities } from '../../services/sensorClassification';
-import { detectCameraCapabilities } from '../../services/cameraClassification';
 
 interface AreaDetailViewProps {
   area: AreaData;
@@ -102,197 +77,346 @@ interface AreaDetailViewProps {
   ) => void;
 }
 
+type DomainTab = 'all' | 'lights' | 'climate' | 'switches' | 'media' | 'sensors';
+
 export default function AreaDetailView({
   area,
   darkMode = true,
-  onBack,
   onToggleLights,
   onToggleLocks,
   onToggleEntityLock,
-  onTurnOffAll,
   callHAService,
   updateEntityState
 }: AreaDetailViewProps) {
   const {
-    sensors,
     entities,
     activeLightsCount,
     totalLightsCount,
     activeSwitchesCount,
-    unlockedLocksCount,
-    totalLocksCount
+    unlockedLocksCount
   } = area;
 
   const { openEntityDetails } = useEntityPopup();
   const [activeMediaDrawerEntity, setActiveMediaDrawerEntity] = useState<ResolvedEntity | null>(null);
+  const [activeDomainTab, setActiveDomainTab] = useState<DomainTab>('all');
 
   // =========================================================================
-  // SUB-TYPE ENTITY CLASSIFICATION
+  // SMART BATTERY SENSOR DEDUPLICATION & PAIRING
   // =========================================================================
-  const allSensors = useMemo(() => {
-    return [...(entities.sensors || []), ...(entities.binarySensors || [])];
-  }, [entities.sensors, entities.binarySensors]);
+  const {
+    enrichedLights,
+    enrichedSwitches,
+    enrichedClimates,
+    enrichedFans,
+    enrichedLocks,
+    enrichedCovers,
+    enrichedVacuums,
+    contactSensors,
+    motionSensors,
+    hazardSensors,
+    energySensors,
+    environmentalSensors,
+    unclaimedBatterySensors,
+    generalSensors
+  } = useMemo(() => {
+    const rawSensors = [...(entities.sensors || []), ...(entities.binarySensors || [])];
 
-  // Helper to extract true battery percentage from direct attributes or paired device sensors
-  const getEntityBattery = useMemo(() => {
-    return (ent: ResolvedEntity): number | undefined => {
-      // 1. Direct attribute on the entity
-      const direct = ent.attributes?.battery_level ?? ent.attributes?.battery ?? ent.attributes?.battery_percentage;
-      if (typeof direct === 'number' && !isNaN(direct) && direct >= 0 && direct <= 100) {
-        return Math.round(direct);
-      }
-      if (typeof direct === 'string') {
-        const p = parseFloat(direct);
-        if (!isNaN(p) && p >= 0 && p <= 100) return Math.round(p);
-      }
-
-      // 2. Direct state if the entity itself is a battery sensor
-      const dc = (ent.attributes?.device_class || '').toLowerCase();
-      const id = ent.entity_id.toLowerCase();
-      if (dc === 'battery' || id.includes('battery')) {
-        const sVal = parseFloat(ent.state);
-        if (!isNaN(sVal) && sVal >= 0 && sVal <= 100) return Math.round(sVal);
-      }
-
-      // 3. Paired battery sensor in the same room / device
-      const baseId = ent.entity_id.split('.')[1] || '';
-      const root = baseId.replace(/_(contact|motion|sensor|lock|light|switch|occupancy|opening|temp|humidity|temperature)$/i, '');
-      if (root && root.length > 2) {
-        const paired = allSensors.find((s) => {
-          const sId = s.entity_id.toLowerCase();
-          const isBatt = s.attributes?.device_class === 'battery' || sId.includes('battery');
-          return isBatt && sId.includes(root.toLowerCase());
-        });
-        if (paired) {
-          const val = parseFloat(paired.state);
-          if (!isNaN(val) && val >= 0 && val <= 100) return Math.round(val);
-        }
-      }
-
-      return undefined;
-    };
-  }, [allSensors]);
-
-  // 1. Contact & Entry Sensors (Doors, Windows, Garage Doors, Gates)
-  const contactSensors = useMemo(() => {
-    return allSensors.filter((ent) => {
-      const dc = (ent.attributes?.device_class || '').toLowerCase();
-      const id = ent.entity_id.toLowerCase();
-      if (dc === 'battery' || id.includes('battery')) return false;
-      return dc === 'door' || dc === 'window' || dc === 'garage_door' || dc === 'opening' || id.includes('contact') || id.includes('door') || id.includes('window');
-    });
-  }, [allSensors]);
-
-  // 2. Motion & Presence Sensors
-  const motionSensors = useMemo(() => {
-    return allSensors.filter((ent) => {
-      const dc = (ent.attributes?.device_class || '').toLowerCase();
-      const id = ent.entity_id.toLowerCase();
-      if (dc === 'battery' || id.includes('battery')) return false;
-      const isContact = dc === 'door' || dc === 'window' || dc === 'garage_door' || dc === 'opening' || id.includes('contact');
-      if (isContact) return false;
-      return dc === 'motion' || dc === 'occupancy' || dc === 'presence' || id.includes('motion') || id.includes('occupancy') || id.includes('presence');
-    });
-  }, [allSensors]);
-
-  // 3. Safety & Hazard Sensors (Smoke, Water Moisture, Gas, Problem)
-  const hazardSensors = useMemo(() => {
-    return allSensors.filter((ent) => {
-      const dc = (ent.attributes?.device_class || '').toLowerCase();
-      const id = ent.entity_id.toLowerCase();
-      if (dc === 'battery' || id.includes('battery')) return false;
-      return dc === 'moisture' || dc === 'smoke' || dc === 'gas' || dc === 'carbon_monoxide' || dc === 'safety' || dc === 'problem' || id.includes('leak') || id.includes('smoke');
-    });
-  }, [allSensors]);
-
-  // 4. Dedicated Battery Level & Device Health Sensors
-  const batterySensors = useMemo(() => {
-    return allSensors.filter((ent) => {
+    // 1. Identify all candidate battery entities in this area
+    const rawBatterySensors = rawSensors.filter((ent) => {
       const dc = (ent.attributes?.device_class || '').toLowerCase();
       const id = ent.entity_id.toLowerCase();
       return dc === 'battery' || id.includes('battery');
     });
-  }, [allSensors]);
 
-  // 5. Power & Energy Sensors
-  const energySensors = useMemo(() => {
-    return allSensors.filter((ent) => {
+    const claimedBatteryIds = new Set<string>();
+
+    // Helper: Match and pair companion battery sensor to parent device
+    const matchAndAttachBattery = (ent: ResolvedEntity): ResolvedEntity => {
+      const existingBat =
+        ent.attributes?.battery_level ??
+        ent.attributes?.battery ??
+        ent.attributes?.battery_percentage;
+
+      if (typeof existingBat === 'number') {
+        return ent;
+      }
+
+      const hostId = ent.entity_id.toLowerCase();
+      const hostObjId = hostId.split('.')[1] || '';
+      const hostName = (ent.name || '').toLowerCase().trim();
+      const hostDeviceId = ent.attributes?.device_id;
+
+      for (const bs of rawBatterySensors) {
+        if (claimedBatteryIds.has(bs.entity_id)) continue;
+
+        const bsId = bs.entity_id.toLowerCase();
+        const bsObjId = bsId.split('.')[1] || '';
+        const bsName = (bs.name || '').toLowerCase().trim();
+        const bsDeviceId = bs.attributes?.device_id;
+
+        let isMatch = false;
+
+        // A. Match by device_id
+        if (hostDeviceId && bsDeviceId && hostDeviceId === bsDeviceId) {
+          isMatch = true;
+        } else {
+          // B. Match by object_id similarity
+          const strippedBsObjId = bsObjId.replace(/(_battery_level|_battery_state|_battery|_batt)$/i, '');
+          const strippedHostObjId = hostObjId.replace(
+            /(_contact|_sensor|_door|_window|_motion|_lock|_climate|_switch|_fan|_light|_blind|_cover)$/i,
+            ''
+          );
+
+          if (
+            strippedBsObjId &&
+            (hostObjId === strippedBsObjId ||
+              strippedHostObjId === strippedBsObjId ||
+              hostObjId.startsWith(strippedBsObjId) ||
+              strippedBsObjId.startsWith(strippedHostObjId))
+          ) {
+            isMatch = true;
+          } else {
+            // C. Match by friendly name prefix/suffix
+            const strippedBsName = bsName
+              .replace(/\s*(battery\s*level|battery\s*state|battery)\s*$/i, '')
+              .trim();
+            const strippedHostName = hostName
+              .replace(/\s*(contact|sensor|door|window|motion|lock|blind|cover|fan|light)\s*$/i, '')
+              .trim();
+
+            if (
+              strippedBsName &&
+              (hostName === strippedBsName ||
+                strippedHostName === strippedBsName ||
+                hostName.startsWith(strippedBsName) ||
+                strippedBsName.startsWith(strippedHostName))
+            ) {
+              isMatch = true;
+            }
+          }
+        }
+
+        if (isMatch) {
+          const val = parseFloat(bs.state);
+          if (!isNaN(val) && val >= 0 && val <= 100) {
+            claimedBatteryIds.add(bs.entity_id);
+            return {
+              ...ent,
+              attributes: {
+                ...ent.attributes,
+                battery_level: Math.round(val)
+              }
+            };
+          }
+        }
+      }
+
+      return ent;
+    };
+
+    // Enrich host domain entities
+    const enrichedLights = (entities.lights || []).map(matchAndAttachBattery);
+    const enrichedSwitches = (entities.switches || []).map(matchAndAttachBattery);
+    const enrichedClimates = (entities.climates || []).map(matchAndAttachBattery);
+    const enrichedFans = (entities.fans || []).map(matchAndAttachBattery);
+    const enrichedLocks = (entities.locks || []).map(matchAndAttachBattery);
+    const enrichedCovers = (entities.covers || []).map(matchAndAttachBattery);
+    const enrichedVacuums = (entities.vacuums || []).map(matchAndAttachBattery);
+
+    // Filter non-battery sensors
+    const nonBatterySensors = rawSensors.filter((ent) => {
       const dc = (ent.attributes?.device_class || '').toLowerCase();
-      const uom = (ent.attributes?.unit_of_measurement || '').toLowerCase();
       const id = ent.entity_id.toLowerCase();
-      if (dc === 'battery' || id.includes('battery')) return false;
-      return dc === 'power' || dc === 'energy' || dc === 'current' || dc === 'voltage' || uom === 'w' || uom === 'kw' || uom === 'kwh' || uom === 'v' || uom === 'a' || id.includes('power') || id.includes('energy');
+      return dc !== 'battery' && !id.includes('battery');
     });
-  }, [allSensors]);
 
-  // 6. Environmental & Climate Sensors (Temp, Humidity, Lux, CO2, Air Quality)
-  const environmentalSensors = useMemo(() => {
-    return allSensors.filter((ent) => {
-      const dc = (ent.attributes?.device_class || '').toLowerCase();
-      const uom = (ent.attributes?.unit_of_measurement || '').toLowerCase();
-      const id = ent.entity_id.toLowerCase();
-      
-      // Exclude battery, contact, motion, and hazard sensors
-      if (dc === 'battery' || id.includes('battery')) return false;
-      const isContact = dc === 'door' || dc === 'window' || dc === 'garage_door' || dc === 'opening' || id.includes('contact');
-      if (isContact) return false;
-      const isMotion = dc === 'motion' || dc === 'occupancy' || dc === 'presence' || id.includes('motion');
-      if (isMotion) return false;
-      const isHazard = dc === 'moisture' || dc === 'smoke' || dc === 'gas' || dc === 'carbon_monoxide' || id.includes('leak') || id.includes('smoke');
-      if (isHazard) return false;
+    // 1. Contact & Entry Sensors
+    const contactSensors = nonBatterySensors
+      .filter((ent) => {
+        const dc = (ent.attributes?.device_class || '').toLowerCase();
+        const id = ent.entity_id.toLowerCase();
+        return (
+          dc === 'door' ||
+          dc === 'window' ||
+          dc === 'garage_door' ||
+          dc === 'opening' ||
+          id.includes('contact') ||
+          id.includes('door') ||
+          id.includes('window')
+        );
+      })
+      .map(matchAndAttachBattery);
 
-      return (
-        dc === 'temperature' ||
-        dc === 'humidity' ||
-        dc === 'illuminance' ||
-        dc === 'carbon_dioxide' ||
-        dc === 'aqi' ||
-        dc === 'pm25' ||
-        dc === 'pressure' ||
-        uom.includes('°c') ||
-        uom.includes('°f') ||
-        (uom === '%' && (id.includes('humidity') || id.includes('hygro'))) ||
-        uom === 'lx' ||
-        uom === 'lux' ||
-        uom === 'ppm' ||
-        id.includes('temp') ||
-        id.includes('humidity') ||
-        id.includes('lux') ||
-        id.includes('co2')
-      );
-    });
-  }, [allSensors]);
+    // 2. Motion & Presence Sensors
+    const motionSensors = nonBatterySensors
+      .filter((ent) => {
+        const dc = (ent.attributes?.device_class || '').toLowerCase();
+        const id = ent.entity_id.toLowerCase();
+        const isContact =
+          dc === 'door' ||
+          dc === 'window' ||
+          dc === 'garage_door' ||
+          dc === 'opening' ||
+          id.includes('contact');
+        if (isContact) return false;
+        return (
+          dc === 'motion' ||
+          dc === 'occupancy' ||
+          dc === 'presence' ||
+          id.includes('motion') ||
+          id.includes('occupancy') ||
+          id.includes('presence')
+        );
+      })
+      .map(matchAndAttachBattery);
 
-  // 7. Remaining General Diagnostics
-  const classifiedIds = useMemo(() => {
-    const set = new Set<string>();
+    // 3. Safety & Hazard Sensors
+    const hazardSensors = nonBatterySensors
+      .filter((ent) => {
+        const dc = (ent.attributes?.device_class || '').toLowerCase();
+        const id = ent.entity_id.toLowerCase();
+        return (
+          dc === 'moisture' ||
+          dc === 'smoke' ||
+          dc === 'gas' ||
+          dc === 'carbon_monoxide' ||
+          dc === 'safety' ||
+          dc === 'problem' ||
+          id.includes('leak') ||
+          id.includes('smoke')
+        );
+      })
+      .map(matchAndAttachBattery);
+
+    // 4. Power & Energy Sensors
+    const energySensors = nonBatterySensors
+      .filter((ent) => {
+        const dc = (ent.attributes?.device_class || '').toLowerCase();
+        const uom = (ent.attributes?.unit_of_measurement || '').toLowerCase();
+        const id = ent.entity_id.toLowerCase();
+        return (
+          dc === 'power' ||
+          dc === 'energy' ||
+          dc === 'current' ||
+          dc === 'voltage' ||
+          uom === 'w' ||
+          uom === 'kw' ||
+          uom === 'kwh' ||
+          uom === 'v' ||
+          uom === 'a' ||
+          id.includes('power') ||
+          id.includes('energy')
+        );
+      })
+      .map(matchAndAttachBattery);
+
+    // 5. Environmental Sensors
+    const environmentalSensors = nonBatterySensors
+      .filter((ent) => {
+        const dc = (ent.attributes?.device_class || '').toLowerCase();
+        const uom = (ent.attributes?.unit_of_measurement || '').toLowerCase();
+        const id = ent.entity_id.toLowerCase();
+        const name = (ent.name || '').toLowerCase();
+
+        const isBattery =
+          dc === 'battery' ||
+          id.includes('battery') ||
+          name.includes('battery') ||
+          (uom === '%' && (id.includes('batt') || name.includes('batt')));
+        if (isBattery) return false;
+
+        const isContact =
+          dc === 'door' ||
+          dc === 'window' ||
+          dc === 'garage_door' ||
+          dc === 'opening' ||
+          id.includes('contact');
+        if (isContact) return false;
+        const isMotion =
+          dc === 'motion' ||
+          dc === 'occupancy' ||
+          dc === 'presence' ||
+          id.includes('motion');
+        if (isMotion) return false;
+        const isHazard =
+          dc === 'moisture' ||
+          dc === 'smoke' ||
+          dc === 'gas' ||
+          dc === 'carbon_monoxide' ||
+          id.includes('leak') ||
+          id.includes('smoke');
+        if (isHazard) return false;
+
+        return (
+          dc === 'temperature' ||
+          dc === 'humidity' ||
+          dc === 'illuminance' ||
+          dc === 'carbon_dioxide' ||
+          dc === 'aqi' ||
+          dc === 'pm25' ||
+          dc === 'pressure' ||
+          uom.includes('°c') ||
+          uom.includes('°f') ||
+          (uom === '%' && (id.includes('humidity') || id.includes('hygro'))) ||
+          uom === 'lx' ||
+          uom === 'lux' ||
+          uom === 'ppm' ||
+          id.endsWith('_temperature') ||
+          id.endsWith('_temp') ||
+          id.includes('temperature_sensor') ||
+          id.includes('humidity') ||
+          id.includes('lux') ||
+          id.includes('co2')
+        );
+      })
+      .map(matchAndAttachBattery);
+
+    // 6. Unclaimed standalone battery sensors (not paired to any host device)
+    const unclaimedBatterySensors = rawBatterySensors.filter(
+      (bs) => !claimedBatteryIds.has(bs.entity_id)
+    );
+
+    // 7. General Diagnostics
+    const classified = new Set<string>();
     [
       ...contactSensors,
       ...motionSensors,
       ...hazardSensors,
-      ...batterySensors,
       ...energySensors,
-      ...environmentalSensors
-    ].forEach((e) => set.add(e.entity_id));
-    return set;
-  }, [contactSensors, motionSensors, hazardSensors, batterySensors, energySensors, environmentalSensors]);
+      ...environmentalSensors,
+      ...rawBatterySensors
+    ].forEach((e) => classified.add(e.entity_id));
 
-  const generalSensors = useMemo(() => {
-    return allSensors.filter((ent) => !classifiedIds.has(ent.entity_id));
-  }, [allSensors, classifiedIds]);
+    const generalSensors = rawSensors
+      .filter((ent) => !classified.has(ent.entity_id))
+      .map(matchAndAttachBattery);
+
+    return {
+      enrichedLights,
+      enrichedSwitches,
+      enrichedClimates,
+      enrichedFans,
+      enrichedLocks,
+      enrichedCovers,
+      enrichedVacuums,
+      contactSensors,
+      motionSensors,
+      hazardSensors,
+      energySensors,
+      environmentalSensors,
+      unclaimedBatterySensors,
+      generalSensors
+    };
+  }, [entities]);
 
   // =========================================================================
   // CONTROL ACTION HANDLERS
   // =========================================================================
-
-  // Climate target temp modifier
   const handleTempAdjust = (climate: ResolvedEntity, delta: number) => {
     const curTarget = climate.attributes?.temperature ?? climate.attributes?.target_temp ?? 21;
     const minTemp = climate.attributes?.min_temp ?? 10;
     const maxTemp = climate.attributes?.max_temp ?? 35;
-
-    let nextTarget = parseFloat((curTarget + delta).toFixed(1));
-    nextTarget = Math.max(minTemp, Math.min(maxTemp, nextTarget));
+    const nextTarget = Math.max(minTemp, Math.min(maxTemp, parseFloat((curTarget + delta).toFixed(1))));
 
     updateEntityState(climate.entity_id, climate.state, {
       ...climate.attributes,
@@ -300,12 +424,7 @@ export default function AreaDetailView({
       target_temp: nextTarget
     });
 
-    callHAService(
-      'climate',
-      'set_temperature',
-      { temperature: nextTarget },
-      { entity_id: climate.entity_id }
-    );
+    callHAService('climate', 'set_temperature', { temperature: nextTarget }, { entity_id: climate.entity_id });
   };
 
   const handleTempSlider = (climate: ResolvedEntity, nextTemp: number) => {
@@ -314,26 +433,14 @@ export default function AreaDetailView({
       temperature: nextTemp,
       target_temp: nextTemp
     });
-
-    callHAService(
-      'climate',
-      'set_temperature',
-      { temperature: nextTemp },
-      { entity_id: climate.entity_id }
-    );
+    callHAService('climate', 'set_temperature', { temperature: nextTemp }, { entity_id: climate.entity_id });
   };
 
   const handleHvacModeChange = (climate: ResolvedEntity, mode: string) => {
     updateEntityState(climate.entity_id, mode);
-    callHAService(
-      'climate',
-      'set_hvac_mode',
-      { hvac_mode: mode },
-      { entity_id: climate.entity_id }
-    );
+    callHAService('climate', 'set_hvac_mode', { hvac_mode: mode }, { entity_id: climate.entity_id });
   };
 
-  // Lock individual toggle
   const handleToggleLock = (lockEntity: ResolvedEntity) => {
     if (onToggleEntityLock) {
       onToggleEntityLock(lockEntity.entity_id);
@@ -347,50 +454,11 @@ export default function AreaDetailView({
     }
   };
 
-  // Master Lock / Unlock All in Room
-  const handleBulkToggleLocks = () => {
-    if (onToggleLocks) {
-      onToggleLocks(area.areaId);
-    } else {
-      const targetState = unlockedLocksCount > 0 ? 'lock' : 'unlock';
-      entities.locks.forEach((l) => {
-        updateEntityState(l.entity_id, targetState === 'lock' ? 'locked' : 'unlocked');
-        callHAService('lock', targetState, {}, { entity_id: l.entity_id });
-      });
-    }
-  };
-
-  // Light individual toggle & brightness
   const handleToggleLight = (light: ResolvedEntity) => {
-    const caps = detectLightCapabilities(light);
     const isCurrentlyOn = light.state === 'on';
     const nextState = isCurrentlyOn ? 'off' : 'on';
-    const currentBrightness = caps.brightness255 || 200;
-
-    if (caps.supportsBrightness) {
-      updateEntityState(light.entity_id, nextState, {
-        ...light.attributes,
-        brightness: nextState === 'on' ? currentBrightness : 0
-      });
-
-      callHAService(
-        'light',
-        isCurrentlyOn ? 'turn_off' : 'turn_on',
-        nextState === 'on' ? { brightness: currentBrightness } : {},
-        { entity_id: light.entity_id }
-      );
-    } else {
-      updateEntityState(light.entity_id, nextState, {
-        ...light.attributes
-      });
-
-      callHAService(
-        'light',
-        isCurrentlyOn ? 'turn_off' : 'turn_on',
-        {},
-        { entity_id: light.entity_id }
-      );
-    }
+    updateEntityState(light.entity_id, nextState);
+    callHAService('light', isCurrentlyOn ? 'turn_off' : 'turn_on', {}, { entity_id: light.entity_id });
   };
 
   const handleBrightnessChange = (light: ResolvedEntity, nextPct: number) => {
@@ -403,18 +471,12 @@ export default function AreaDetailView({
     });
 
     if (nextPct > 0) {
-      callHAService(
-        'light',
-        'turn_on',
-        { brightness: brightness255 },
-        { entity_id: light.entity_id }
-      );
+      callHAService('light', 'turn_on', { brightness: brightness255 }, { entity_id: light.entity_id });
     } else {
       callHAService('light', 'turn_off', {}, { entity_id: light.entity_id });
     }
   };
 
-  // Switch individual toggle
   const handleToggleSwitch = (sw: ResolvedEntity) => {
     const isCurrentlyOn = sw.state === 'on';
     const nextState = isCurrentlyOn ? 'off' : 'on';
@@ -428,97 +490,70 @@ export default function AreaDetailView({
     );
   };
 
-  // Bulk Switches Toggle in Room
-  const handleBulkToggleSwitches = (turnOn: boolean) => {
-    entities.switches.forEach((sw) => {
-      updateEntityState(sw.entity_id, turnOn ? 'on' : 'off');
-      callHAService(
-        sw.domain === 'outlet' ? 'switch' : sw.domain,
-        turnOn ? 'turn_on' : 'turn_off',
-        {},
-        { entity_id: sw.entity_id }
-      );
-    });
-  };
-
-  // Fan toggle & speed
   const handleToggleFan = (fan: ResolvedEntity) => {
     const isCurrentlyOn = fan.state === 'on';
     const nextState = isCurrentlyOn ? 'off' : 'on';
 
     updateEntityState(fan.entity_id, nextState);
-    callHAService(
-      'fan',
-      isCurrentlyOn ? 'turn_off' : 'turn_on',
-      {},
-      { entity_id: fan.entity_id }
-    );
+    callHAService('fan', isCurrentlyOn ? 'turn_off' : 'turn_on', {}, { entity_id: fan.entity_id });
   };
 
-  // Vacuum toggle & control
-  const handleVacuumToggle = async (vac: ResolvedEntity) => {
-    const isCleaning = (vac.state || '').toLowerCase() === 'cleaning' || (vac.state || '').toLowerCase() === 'on';
-    if (isCleaning) {
-      updateEntityState(vac.entity_id, 'returning');
-      await callHAService('vacuum', 'return_to_base', {}, { entity_id: vac.entity_id });
-    } else {
-      updateEntityState(vac.entity_id, 'cleaning');
-      await callHAService('vacuum', 'start', {}, { entity_id: vac.entity_id });
-    }
+  const handleToggleMediaPlay = (media: ResolvedEntity) => {
+    const isPlaying = media.state === 'playing';
+    const nextState = isPlaying ? 'paused' : 'playing';
+    updateEntityState(media.entity_id, nextState);
+    callHAService('media_player', isPlaying ? 'media_pause' : 'media_play', {}, { entity_id: media.entity_id });
   };
 
-  const handleFanSpeed = (fan: ResolvedEntity, percentage: number) => {
-    const nextState = percentage > 0 ? 'on' : 'off';
-    updateEntityState(fan.entity_id, nextState, {
-      ...fan.attributes,
-      percentage
-    });
-
-    if (percentage > 0) {
-      callHAService(
-        'fan',
-        'set_percentage',
-        { percentage },
-        { entity_id: fan.entity_id }
-      );
-    } else {
-      callHAService('fan', 'turn_off', {}, { entity_id: fan.entity_id });
-    }
-  };
-
-  // Window cover command
   const handleCoverCommand = (cover: ResolvedEntity, service: 'open_cover' | 'close_cover' | 'stop_cover') => {
     const nextState = service === 'open_cover' ? 'open' : service === 'close_cover' ? 'closed' : cover.state;
     updateEntityState(cover.entity_id, nextState);
     callHAService('cover', service, {}, { entity_id: cover.entity_id });
   };
 
-  // Bulk Covers in Room
-  const handleBulkCovers = (service: 'open_cover' | 'close_cover') => {
-    entities.covers.forEach((c) => {
-      updateEntityState(c.entity_id, service === 'open_cover' ? 'open' : 'closed');
-      callHAService('cover', service, {}, { entity_id: c.entity_id });
-    });
+  // Bulk Category Actions
+  const handleToggleAllSwitches = () => {
+    const shouldTurnOn = activeSwitchesCount === 0;
+    const service = shouldTurnOn ? 'turn_on' : 'turn_off';
+    const eids = enrichedSwitches.map((s) => s.entity_id);
+    for (const eid of eids) updateEntityState(eid, shouldTurnOn ? 'on' : 'off');
+    callHAService('switch', service, {}, { entity_id: eids });
   };
 
-  // Bulk Pause Media in Room
-  const handleBulkPauseMedia = () => {
-    entities.mediaPlayers.forEach((m) => {
-      updateEntityState(m.entity_id, 'paused');
-      callHAService('media_player', 'media_pause', {}, { entity_id: m.entity_id });
-    });
+  const handleToggleAllFans = () => {
+    const anyOn = enrichedFans.some((f) => f.state === 'on');
+    const service = anyOn ? 'turn_off' : 'turn_on';
+    const eids = enrichedFans.map((f) => f.entity_id);
+    for (const eid of eids) updateEntityState(eid, anyOn ? 'off' : 'on');
+    callHAService('fan', service, {}, { entity_id: eids });
   };
 
-  // Check if room is empty
+  const handlePauseAllMedia = () => {
+    const eids = entities.mediaPlayers.map((m) => m.entity_id);
+    for (const eid of eids) updateEntityState(eid, 'paused');
+    callHAService('media_player', 'media_pause', {}, { entity_id: eids });
+  };
+
+  // Count items per domain for tabs
+  const lightsCount = enrichedLights.length;
+  const climateCount = enrichedClimates.length + enrichedFans.length;
+  const switchesCount = enrichedSwitches.length + enrichedLocks.length + enrichedCovers.length;
+  const mediaCount = entities.mediaPlayers.length + (enrichedVacuums?.length || 0) + (entities.cameras?.length || 0);
+  const sensorsCount =
+    motionSensors.length +
+    hazardSensors.length +
+    environmentalSensors.length +
+    energySensors.length +
+    unclaimedBatterySensors.length +
+    contactSensors.length +
+    generalSensors.length;
+
   const totalEntityCount =
-    entities.lights.length +
-    entities.switches.length +
-    entities.climates.length +
-    entities.mediaPlayers.length +
-    entities.fans.length +
-    entities.covers.length +
-    entities.locks.length +
-    allSensors.length;
+    lightsCount +
+    switchesCount +
+    climateCount +
+    mediaCount +
+    sensorsCount;
 
   if (totalEntityCount === 0) {
     return (
@@ -535,1559 +570,906 @@ export default function AreaDetailView({
     );
   }
 
-  const activeMediaCount = entities.mediaPlayers.filter((m) => m.state === 'playing').length;
-  const totalClimateFanCount = entities.climates.length + entities.fans.length;
+  const domainTabs: SectionTabItem[] = [
+    {
+      id: 'all',
+      label: 'All Devices',
+      icon: SquaresFour,
+      badge: totalEntityCount
+    },
+    ...(lightsCount > 0
+      ? [
+          {
+            id: 'lights',
+            label: 'Lights',
+            icon: Lightbulb,
+            badge: activeLightsCount > 0 ? `${activeLightsCount} on` : lightsCount,
+            badgeColor: activeLightsCount > 0 ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold' : undefined
+          }
+        ]
+      : []),
+    ...(climateCount > 0
+      ? [
+          {
+            id: 'climate',
+            label: 'Climate & Air',
+            icon: Thermometer,
+            badge: climateCount
+          }
+        ]
+      : []),
+    ...(switchesCount > 0
+      ? [
+          {
+            id: 'switches',
+            label: 'Switches & Access',
+            icon: Plug,
+            badge: switchesCount
+          }
+        ]
+      : []),
+    ...(mediaCount > 0
+      ? [
+          {
+            id: 'media',
+            label: 'Media & Players',
+            icon: SpeakerHigh,
+            badge: mediaCount
+          }
+        ]
+      : []),
+    ...(sensorsCount > 0
+      ? [
+          {
+            id: 'sensors',
+            label: 'Sensors & Security',
+            icon: Drop,
+            badge: sensorsCount
+          }
+        ]
+      : [])
+  ];
 
   return (
     <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-24 md:pb-8">
-      {/* Master Category Grid Layout:
-          - Desktop (lg/xl): 4 Columns
-          - Tablet (md): 3 Columns
-          - Mobile: 2 Columns
-      */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-5 items-start">
-        
-        {/* ========================================================================= */}
-        {/* 1. LIGHTING SECTION (With Section Header Toggle Button) */}
-        {/* ========================================================================= */}
-        {entities.lights.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Lightbulb size={22} weight="duotone" className="text-amber-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Lighting ({entities.lights.length})
-                </h3>
-                <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-                  • {activeLightsCount} on
-                </span>
-              </div>
+      {/* Top Floating Filter Bar (No grey box) */}
+      <div className="sticky top-0 z-30 -mx-4 px-4 py-1 sm:static sm:mx-0 sm:px-0 sm:py-0 backdrop-blur-md">
+        <AdaptiveSectionTabs
+          tabs={domainTabs}
+          activeTab={activeDomainTab}
+          onChange={(tab) => setActiveDomainTab(tab as DomainTab)}
+          darkMode={darkMode}
+        />
+      </div>
 
-              {/* Master Lighting Toggle Button Next to Section Title */}
-              <button
-                type="button"
-                onClick={() => onToggleLights(area.areaId, activeLightsCount === 0)}
-                className={`px-2.5 py-1 rounded-xl text-xs font-semibold backdrop-blur-md transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 ${
-                  activeLightsCount > 0
-                    ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 hover:bg-amber-500/30'
-                    : darkMode
-                    ? 'bg-white/10 hover:bg-white/15 text-slate-300'
-                    : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-700'
-                }`}
-              >
-                <Power size={13} weight="bold" />
-                <span>{activeLightsCount > 0 ? 'All Off' : 'All On'}</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {entities.lights.map((light) => {
-                const caps = detectLightCapabilities(light);
-                const isOn = caps.isOn;
-                const brightness = caps.brightnessPct;
-                const powerWatts = light.attributes?.power || light.powerWatts;
-                const battery = getEntityBattery(light);
-                const hasPower = typeof powerWatts === 'number' && powerWatts > 0 && isOn;
-                const lastChangedStr = formatRelativeTime(light.last_changed || light.last_updated);
-
-                return (
-                  <div
-                    key={light.entity_id}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      openEntityDetails(light.entity_id);
-                    }}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border ${
-                      isOn ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
-                    } backdrop-blur-sm transition-all duration-300 flex flex-col justify-between gap-2.5 sm:gap-3 overflow-hidden isolate ${
-                      isOn
-                        ? 'bg-amber-500/20 text-slate-900 dark:text-white'
-                        : darkMode
-                        ? 'bg-black/20 hover:bg-black/30 text-white'
-                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEntityDetails(light.entity_id);
-                          }}
-                          className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
-                          title="Open detailed controls"
-                        >
-                          <Lightbulb
-                            size={24}
-                            weight={isOn ? 'fill' : 'duotone'}
-                            style={{
-                              color: isOn && caps.supportsColor ? caps.displayColor : undefined
-                            }}
-                            className={`shrink-0 transition-all duration-300 ${
-                              isOn
-                                ? 'text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.85)] scale-105'
-                                : 'text-slate-400'
-                            }`}
-                          />
-                        </button>
-                        <div className="min-w-0">
-                          <h5 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                            {formatEntityDisplayName(light.name, area.name)}
-                          </h5>
-                          <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
-                            <span className="font-semibold text-slate-900 dark:text-white">
-                              {isOn ? (caps.supportsBrightness ? `${brightness}%` : 'On') : 'Off'}
-                            </span>
-                            {lastChangedStr && (
-                              <span className="text-slate-500 dark:text-slate-400">
-                                • {lastChangedStr}
-                              </span>
-                            )}
-                            {hasPower && (
-                              <span className="text-amber-500 dark:text-amber-400 font-medium">
-                                • {powerWatts}W
-                              </span>
-                            )}
-                            {battery !== undefined && (
-                              <span className="flex items-center gap-0.5 text-slate-400">
-                                • <BatteryMedium size={12} weight="bold" /> {battery}%
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleToggleLight(light)}
-                        className={`p-1.5 sm:p-2 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 shrink-0 ${
-                          isOn
-                            ? 'bg-amber-500 text-slate-950 shadow-xs'
-                            : darkMode
-                            ? 'bg-white/10 hover:bg-white/15 text-slate-400'
-                            : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-600'
-                        }`}
-                        title={isOn ? 'Turn Off' : 'Turn On'}
-                      >
-                        <Power size={15} weight="bold" />
-                      </button>
-                    </div>
-
-                    {/* Brightness Slider (Only shown if light supports brightness) */}
-                    {caps.supportsBrightness && (
-                      <div className="space-y-1 pt-0.5">
-                        <div className="flex justify-between text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-                          <span className="flex items-center gap-1">
-                            <Sun size={11} weight="bold" /> Brightness
-                          </span>
-                          <span className="font-mono">{isOn ? `${brightness}%` : '0%'}</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={isOn ? brightness : 0}
-                          onChange={(e) => handleBrightnessChange(light, Number(e.target.value))}
-                          className="w-full h-1.5 bg-slate-700/40 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-400"
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* 2. CONTACT & ENTRY SENSORS (Doors, Windows, Gates with true battery) */}
-        {/* ========================================================================= */}
-        {contactSensors.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Door size={22} weight="duotone" className="text-amber-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Contact & Entry Sensors ({contactSensors.length})
-                </h3>
-              </div>
-              <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                sensors.doorsOpenCount > 0 || sensors.windowsOpenCount > 0
-                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
-                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-              }`}>
-                {sensors.doorsOpenCount + sensors.windowsOpenCount > 0
-                  ? `${sensors.doorsOpenCount + sensors.windowsOpenCount} Open`
-                  : 'All Closed'}
+      {/* 1. LIGHTING CATEGORY */}
+      {(activeDomainTab === 'all' || activeDomainTab === 'lights') && enrichedLights.length > 0 && (
+        <section className="flex flex-col gap-3.5">
+          {/* Category Title & Bulk Action Button */}
+          <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-2">
+              <Lightbulb size={20} weight="duotone" className="text-amber-500 dark:text-amber-400" />
+              <h3 className={`text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                Lighting & Ambience
+              </h3>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                ({activeLightsCount > 0 ? `${activeLightsCount}/${totalLightsCount} on` : `${totalLightsCount}`})
               </span>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {contactSensors.map((cs) => {
-                const isOpen = cs.state === 'on' || cs.state === 'open';
-                const dc = (cs.attributes?.device_class || '').toLowerCase();
-                const isWindow = dc === 'window' || cs.entity_id.includes('window');
-                const battery = getEntityBattery(cs);
-                const lastChangedStr = formatRelativeTime(cs.last_changed || cs.last_updated);
-
-                return (
-                  <div
-                    key={cs.entity_id}
-                    onClick={() => openEntityDetails(cs.entity_id)}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-4 rounded-3xl border cursor-pointer hover:scale-[1.02] ${
-                      isOpen ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
-                    } backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
-                      isOpen
-                        ? 'bg-amber-500/20 text-slate-900 dark:text-white'
-                        : darkMode
-                        ? 'bg-black/20 hover:bg-black/30 text-white'
-                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {isWindow ? (
-                        <AppWindow
-                          size={24}
-                          weight="bold"
-                          className={`shrink-0 ${
-                            isOpen
-                              ? 'text-amber-400 animate-pulse drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]'
-                              : 'text-slate-400'
-                          }`}
-                        />
-                      ) : (
-                        <Door
-                          size={24}
-                          weight="bold"
-                          className={`shrink-0 ${
-                            isOpen
-                              ? 'text-amber-400 animate-pulse drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]'
-                              : 'text-slate-400'
-                          }`}
-                        />
-                      )}
-                      <div className="min-w-0">
-                        <h5 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                          {formatEntityDisplayName(cs.name, area.name)}
-                        </h5>
-                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap mt-0.5">
-                          <span className={`font-semibold ${isOpen ? 'text-amber-500 dark:text-amber-400' : 'text-slate-900 dark:text-white'}`}>
-                            {isOpen ? 'Open' : 'Closed'}
-                          </span>
-                          {lastChangedStr && (
-                            <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
-                          )}
-                          {battery !== undefined && (
-                            <span className="flex items-center gap-0.5 text-slate-400">
-                              • <BatteryMedium size={12} weight="bold" /> {battery}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <span className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 ${
-                      isOpen
-                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
-                        : 'bg-slate-900/[0.06] dark:bg-white/10 text-slate-600 dark:text-slate-300'
-                    }`}>
-                      {isOpen ? 'Open' : 'Closed'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            <button
+              type="button"
+              onClick={() => onToggleLights(area.areaId, activeLightsCount === 0)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+                activeLightsCount > 0
+                  ? darkMode
+                    ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40'
+                    : 'bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-300 shadow-xs'
+                  : darkMode
+                  ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                  : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-xs'
+              }`}
+            >
+              <Power size={14} weight="bold" />
+              <span>{activeLightsCount > 0 ? 'All Off' : 'All On'}</span>
+            </button>
           </div>
-        )}
 
-        {/* ========================================================================= */}
-        {/* 3. CLIMATE & AIR QUALITY SECTION */}
-        {/* ========================================================================= */}
-        {totalClimateFanCount > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h3 className={`text-base sm:text-lg font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                <Thermometer size={22} weight="duotone" className="text-rose-400" />
-                <span>Climate & HVAC ({totalClimateFanCount})</span>
+          <VirtualGrid>
+            {enrichedLights.map((light) => {
+              const isUnavailable = light.state === 'unavailable' || light.state === 'unknown';
+              const caps = detectLightCapabilities(light);
+              const isDimmable = caps.supportsBrightness;
+
+              return (
+                <GridTile
+                  key={light.entity_id}
+                  id={light.entity_id}
+                  colSpan={2}
+                  rowSpan={isDimmable ? 2 : 1}
+                  tabletColSpan={2}
+                  desktopColSpan={isDimmable ? 3 : 2}
+                  isUnavailable={isUnavailable}
+                  onLongPress={() => openEntityDetails(light.entity_id)}
+                >
+                  <LightTile
+                    entity={light}
+                    areaName={area.name}
+                    darkMode={darkMode}
+                    onToggle={handleToggleLight}
+                    onBrightnessChange={handleBrightnessChange}
+                    onIconClick={() => openEntityDetails(light.entity_id)}
+                    onContextMenu={() => openEntityDetails(light.entity_id)}
+                  />
+                </GridTile>
+              );
+            })}
+          </VirtualGrid>
+        </section>
+      )}
+
+      {/* 2. CLIMATE & FANS CATEGORY */}
+      {(activeDomainTab === 'all' || activeDomainTab === 'climate') && (enrichedClimates.length > 0 || enrichedFans.length > 0) && (
+        <section className="flex flex-col gap-3.5">
+          <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-2">
+              <Thermometer size={20} weight="duotone" className="text-rose-500 dark:text-rose-400" />
+              <h3 className={`text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                Climate & Air Comfort
               </h3>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                ({enrichedClimates.length + enrichedFans.length})
+              </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {/* Thermostats / AC / Heating Entities */}
-              {entities.climates.map((climate) => {
-                const caps = detectClimateCapabilities(climate);
-                const currentTemp = caps.currentTemp;
-                const currentHumidity = caps.currentHumidity;
-                const targetTemp = caps.targetTemp ?? 21;
-                const minTemp = caps.minTemp;
-                const maxTemp = caps.maxTemp;
-                const hvacModes = caps.hvacModes;
-                const currentHvacMode = caps.hvacMode;
-                const theme = getClimateModeTheme(currentHvacMode, climate.state);
-                const ModeIcon = theme.icon;
-                const battery = getEntityBattery(climate);
-                const lastChangedStr = formatRelativeTime(caps.lastChanged);
+            {enrichedFans.length > 0 && (
+              <button
+                type="button"
+                onClick={handleToggleAllFans}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+                  darkMode
+                    ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                    : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-xs'
+                }`}
+              >
+                <Fan size={14} weight="bold" />
+                <span>Toggle Fans</span>
+              </button>
+            )}
+          </div>
 
-                return (
-                  <div
-                    key={climate.entity_id}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      openEntityDetails(climate.entity_id);
-                    }}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 sm:p-4.5 rounded-3xl border ${
-                      darkMode ? theme.borderDark : theme.borderLight
-                    } backdrop-blur-sm flex flex-col justify-between gap-3 sm:gap-3.5 transition-all overflow-hidden isolate ${
-                      darkMode ? theme.bgDark : theme.bgLight
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEntityDetails(climate.entity_id);
-                          }}
-                          className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
-                          title="Open thermostat controls"
-                        >
-                          <ModeIcon
-                            size={24}
-                            weight={theme.isOff ? 'duotone' : 'fill'}
-                            className={`${theme.iconClass} ${theme.iconDropShadow} shrink-0`}
-                          />
-                        </button>
+          <VirtualGrid>
+            {enrichedClimates.map((climate) => {
+              const isUnavailable = climate.state === 'unavailable' || climate.state === 'unknown';
+              return (
+                <GridTile
+                  key={climate.entity_id}
+                  id={climate.entity_id}
+                  colSpan={2}
+                  rowSpan={2}
+                  tabletColSpan={2}
+                  desktopColSpan={3}
+                  isUnavailable={isUnavailable}
+                  onLongPress={() => openEntityDetails(climate.entity_id)}
+                >
+                  <ClimateTile
+                    entity={climate}
+                    areaName={area.name}
+                    darkMode={darkMode}
+                    onTempAdjust={handleTempAdjust}
+                    onTempSlider={handleTempSlider}
+                    onModeChange={handleHvacModeChange}
+                    onIconClick={() => openEntityDetails(climate.entity_id)}
+                    onContextMenu={() => openEntityDetails(climate.entity_id)}
+                  />
+                </GridTile>
+              );
+            })}
 
-                        <div className="min-w-0">
-                          <h4 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                            {formatEntityDisplayName(climate.name, area.name)}
-                          </h4>
-                          <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
-                            {currentTemp !== undefined && (
-                              <span className={`font-semibold ${theme.textClass}`}>
-                                {currentTemp}°C
-                              </span>
-                            )}
-                            {currentHumidity !== undefined && (
-                              <span className="text-cyan-400">• {currentHumidity}%</span>
-                            )}
-                            <span>• {theme.name}</span>
-                            {lastChangedStr && (
-                              <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
-                            )}
-                            {battery !== undefined && (
-                              <span className="flex items-center gap-0.5 text-slate-400">
-                                • <BatteryMedium size={12} weight="bold" /> {battery}%
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+            {enrichedFans.map((fan) => {
+              const isUnavailable = fan.state === 'unavailable' || fan.state === 'unknown';
+              const isOn = fan.state === 'on';
+              const speed = fan.attributes?.percentage;
+              const rawPower = fan.attributes?.current_power_w ?? fan.attributes?.power;
+              const rawBattery = fan.attributes?.battery_level ?? fan.attributes?.battery;
+              const lastChanged = formatRelativeTime(fan.last_changed || fan.last_updated);
+              
+              const subtitle = (
+                <TelemetryLine
+                  items={[
+                    isOn ? (speed ? `${speed}%` : 'Fan Active') : 'Off',
+                    rawPower && isOn ? { text: `${Math.round(rawPower)}W`, isPower: true } : null,
+                    rawBattery !== undefined ? { isBattery: true, batteryLevel: Math.round(rawBattery) } : null,
+                    lastChanged || null
+                  ]}
+                />
+              );
 
-                      {/* Temp Stepper Controls */}
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleTempAdjust(climate, -0.5)}
-                          className="w-7 h-7 rounded-lg bg-slate-900/[0.06] dark:bg-white/10 hover:bg-slate-900/10 dark:hover:bg-white/15 flex items-center justify-center font-bold text-xs cursor-pointer active:scale-90"
-                          title="Decrease Temp"
-                        >
-                          -
-                        </button>
-                        <span className="text-xs font-mono font-bold px-1 min-w-[32px] text-center">
-                          {targetTemp}°
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleTempAdjust(climate, 0.5)}
-                          className={`w-7 h-7 rounded-lg text-white ${theme.stepperBtnBg} ${theme.stepperBtnHover} ${theme.stepperBtnShadow} flex items-center justify-center font-bold text-xs cursor-pointer active:scale-90`}
-                          title="Increase Temp"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Temperature Slider */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-                        <span>Target Temperature</span>
-                        <span className={`font-bold ${theme.textClass}`}>{targetTemp}°C</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={minTemp}
-                        max={maxTemp}
-                        step="0.5"
-                        value={targetTemp}
-                        onChange={(e) => handleTempSlider(climate, Number(e.target.value))}
-                        className={`w-full h-1.5 bg-slate-700/40 dark:bg-white/10 rounded-lg appearance-none cursor-pointer ${theme.sliderAccent}`}
-                      />
-                    </div>
-
-                    {/* HVAC Mode Selector */}
-                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                      {hvacModes.map((mode) => {
-                        const isSelected = currentHvacMode === mode;
-                        const modeTheme = getClimateModeTheme(mode, mode === 'off' ? 'off' : 'on');
-                        return (
-                          <button
-                            key={mode}
-                            type="button"
-                            onClick={() => handleHvacModeChange(climate, mode)}
-                            className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                              isSelected
-                                ? darkMode
-                                  ? `${modeTheme.badgeBgDark} ${modeTheme.badgeBorderDark} ${modeTheme.badgeTextDark} border shadow-xs scale-105 font-extrabold`
-                                  : `${modeTheme.badgeBgLight} ${modeTheme.badgeBorderLight} ${modeTheme.badgeTextLight} border shadow-xs scale-105 font-extrabold`
-                                : darkMode
-                                ? 'bg-white/5 hover:bg-white/10 text-slate-400 border border-white/5'
-                                : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200/50'
-                            }`}
-                          >
-                            <span className="capitalize">{mode === 'fan_only' ? 'Fan' : mode}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Fan Entities */}
-              {entities.fans.map((fan) => {
-                const caps = detectFanCapabilities(fan, Object.values(entities).flat());
-                const isOn = caps.isOn;
-                const speed = caps.percentage || (isOn ? 100 : 0);
-                const battery = getEntityBattery(fan);
-                const lastChanged = (fan as any).last_changed || (fan as any).last_updated || fan.attributes?.last_changed;
-                const lastChangedStr = formatRelativeTime(lastChanged);
-
-                return (
-                  <div
-                    key={fan.entity_id}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      openEntityDetails(fan.entity_id);
-                    }}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border ${
-                      isOn ? 'border-teal-400/40' : 'border-slate-200/80 dark:border-white/10'
-                    } backdrop-blur-sm transition-all flex flex-col justify-between gap-2.5 sm:gap-3 overflow-hidden isolate ${
-                      isOn
-                        ? 'bg-teal-500/20 text-slate-900 dark:text-white'
-                        : darkMode
-                        ? 'bg-black/20 hover:bg-black/30 text-white'
-                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEntityDetails(fan.entity_id);
-                          }}
-                          className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
-                          title="Open fan controls"
-                        >
-                          <Fan
-                            size={24}
-                            weight="duotone"
-                            className={`shrink-0 transition-transform ${
-                              isOn
-                                ? 'text-teal-400 animate-spin [animation-duration:1.5s] drop-shadow-[0_0_8px_rgba(45,212,191,0.7)]'
-                                : 'text-slate-400'
-                            }`}
-                          />
-                        </button>
-                        <div className="min-w-0">
-                          <h5 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                            {formatEntityDisplayName(fan.name, area.name)}
-                          </h5>
-                          <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
-                            <span className="font-semibold text-slate-900 dark:text-white">
-                              {isOn ? `${speed}% Speed` : 'Off'}
-                            </span>
-                            {caps.isOscillating && (
-                              <span className="text-teal-400 font-medium">• Oscillating</span>
-                            )}
-                            {lastChangedStr && (
-                              <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
-                            )}
-                            {battery !== undefined && (
-                              <span className="flex items-center gap-0.5 text-slate-400">
-                                • <BatteryMedium size={12} weight="bold" /> {battery}%
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
+              return (
+                <GridTile
+                  key={fan.entity_id}
+                  id={fan.entity_id}
+                  colSpan={2}
+                  rowSpan={1}
+                  tabletColSpan={2}
+                  desktopColSpan={2}
+                  isUnavailable={isUnavailable}
+                  onLongPress={() => openEntityDetails(fan.entity_id)}
+                >
+                  <CompactTile
+                    darkMode={darkMode}
+                    title={formatEntityDisplayName(fan.name, area.name)}
+                    subtitle={subtitle}
+                    isActive={isOn}
+                    accentColor="#14b8a6"
+                    activeBorderColor="border-teal-400/50"
+                    onIconClick={() => openEntityDetails(fan.entity_id)}
+                    icon={<Fan size={22} weight="duotone" className={isOn ? 'text-teal-400 animate-spin' : 'text-slate-400'} />}
+                    actionButton={
                       <button
                         type="button"
-                        onClick={() => handleToggleFan(fan)}
-                        className={`p-1.5 sm:p-2 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 shrink-0 ${
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFan(fan);
+                        }}
+                        className={`min-w-[44px] min-h-[44px] rounded-2xl flex items-center justify-center transition-all cursor-pointer active:scale-90 ${
                           isOn
-                            ? 'bg-teal-500 text-slate-950 shadow-xs'
+                            ? 'bg-teal-500 text-slate-950 font-bold'
                             : darkMode
-                            ? 'bg-white/10 hover:bg-white/15 text-slate-400'
-                            : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-600'
+                            ? 'bg-white/10 text-slate-300'
+                            : 'bg-slate-100 text-slate-700 border border-slate-200'
                         }`}
-                        title={isOn ? 'Turn Off' : 'Turn On'}
                       >
-                        <Power size={15} weight="bold" />
+                        <Power size={18} weight="bold" />
                       </button>
-                    </div>
+                    }
+                    onClick={() => handleToggleFan(fan)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      openEntityDetails(fan.entity_id);
+                    }}
+                  />
+                </GridTile>
+              );
+            })}
+          </VirtualGrid>
+        </section>
+      )}
 
-                    {caps.supportsSpeed && (
-                      <div className="space-y-1 pt-0.5">
-                        <div className="flex justify-between text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-                          <span>Speed</span>
-                          <span className="font-mono">{isOn ? `${speed}%` : '0%'}</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={isOn ? speed : 0}
-                          onChange={(e) => handleFanSpeed(fan, Number(e.target.value))}
-                          className="w-full h-1.5 bg-slate-700/40 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-teal-400"
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+      {/* 3. SWITCHES, LOCKS & COVERS CATEGORY */}
+      {(activeDomainTab === 'all' || activeDomainTab === 'switches') && (enrichedSwitches.length > 0 || enrichedLocks.length > 0 || enrichedCovers.length > 0) && (
+        <section className="flex flex-col gap-3.5">
+          <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-2">
+              <Plug size={20} weight="duotone" className="text-indigo-500 dark:text-indigo-400" />
+              <h3 className={`text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                Switches, Outlets & Access
+              </h3>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                ({enrichedSwitches.length + enrichedLocks.length + enrichedCovers.length})
+              </span>
             </div>
-          </div>
-        )}
 
-        {/* ========================================================================= */}
-        {/* 4. MEDIA PLAYERS (With Section Header Pause All) */}
-        {/* ========================================================================= */}
-        {entities.mediaPlayers.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <SpeakerHigh size={22} weight="duotone" className="text-cyan-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Media Players ({entities.mediaPlayers.length})
-                </h3>
-              </div>
-
-              {activeMediaCount > 0 && (
+            <div className="flex items-center gap-2">
+              {enrichedSwitches.length > 0 && (
                 <button
                   type="button"
-                  onClick={handleBulkPauseMedia}
-                  className="px-2.5 py-1 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/15 text-slate-300 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                  onClick={handleToggleAllSwitches}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+                    darkMode
+                      ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                      : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-xs'
+                  }`}
                 >
-                  <Pause size={13} weight="bold" />
-                  <span>Pause All</span>
+                  <Power size={14} weight="bold" />
+                  <span>{activeSwitchesCount > 0 ? 'All Off' : 'All On'}</span>
+                </button>
+              )}
+              {enrichedLocks.length > 0 && onToggleLocks && (
+                <button
+                  type="button"
+                  onClick={() => onToggleLocks(area.areaId)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+                    unlockedLocksCount > 0
+                      ? darkMode
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                        : 'bg-amber-100 text-amber-950 border-amber-300 shadow-xs'
+                      : darkMode
+                      ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                      : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-xs'
+                  }`}
+                >
+                  <Lock size={14} weight="bold" />
+                  <span>{unlockedLocksCount > 0 ? 'Lock All' : 'Unlock All'}</span>
                 </button>
               )}
             </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {entities.mediaPlayers.map((media) => (
-                <AreaMediaCard
-                  key={media.entity_id}
-                  media={media}
-                  areaName={area.name}
-                  darkMode={darkMode}
-                  onOpenDrawer={(m) => setActiveMediaDrawerEntity(m)}
-                  callHAService={callHAService}
-                  updateEntityState={updateEntityState}
-                />
-              ))}
-            </div>
           </div>
-        )}
 
-        {/* ========================================================================= */}
-        {/* 5. DOOR LOCKS & ACCESS (With Section Header Lock All / Unlock All) */}
-        {/* ========================================================================= */}
-        {entities.locks.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Lock size={22} weight="duotone" className="text-emerald-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Door Locks & Access ({entities.locks.length})
-                </h3>
-              </div>
+          <VirtualGrid>
+            {enrichedSwitches.map((sw) => {
+              const isUnavailable = sw.state === 'unavailable' || sw.state === 'unknown';
+              return (
+                <GridTile
+                  key={sw.entity_id}
+                  id={sw.entity_id}
+                  colSpan={2}
+                  rowSpan={1}
+                  tabletColSpan={2}
+                  desktopColSpan={2}
+                  isUnavailable={isUnavailable}
+                  onLongPress={() => openEntityDetails(sw.entity_id)}
+                >
+                  <SwitchTile
+                    entity={sw}
+                    areaName={area.name}
+                    darkMode={darkMode}
+                    onToggle={handleToggleSwitch}
+                    onIconClick={() => openEntityDetails(sw.entity_id)}
+                    onContextMenu={() => openEntityDetails(sw.entity_id)}
+                  />
+                </GridTile>
+              );
+            })}
 
-              {/* Master Lock/Unlock Button Next to Section Title */}
-              <button
-                type="button"
-                onClick={handleBulkToggleLocks}
-                className={`px-2.5 py-1 rounded-xl text-xs font-semibold backdrop-blur-md transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 ${
-                  unlockedLocksCount > 0
-                    ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
-                    : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                }`}
-              >
-                {unlockedLocksCount > 0 ? (
-                  <>
-                    <Lock size={13} weight="fill" />
-                    <span>Lock All</span>
-                  </>
-                ) : (
-                  <>
-                    <LockOpen size={13} weight="bold" />
-                    <span>Unlock All</span>
-                  </>
-                )}
-              </button>
-            </div>
+            {enrichedLocks.map((lock) => {
+              const isUnavailable = lock.state === 'unavailable' || lock.state === 'unknown';
+              const caps = detectLockCapabilities(lock);
+              const isLocked = caps.isLocked;
+              const rawBattery = lock.attributes?.battery_level ?? lock.attributes?.battery;
+              const lastChanged = formatRelativeTime(lock.last_changed || lock.last_updated);
+              
+              const subtitle = (
+                <TelemetryLine
+                  items={[
+                    isLocked ? 'Locked' : 'Unlocked',
+                    rawBattery !== undefined ? { isBattery: true, batteryLevel: Math.round(rawBattery) } : null,
+                    lastChanged || null
+                  ]}
+                />
+              );
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {entities.locks.map((lock) => {
-                const caps = detectLockCapabilities(lock);
-                const isLocked = caps.isLocked;
-                const battery = getEntityBattery(lock);
-                const lastChangedStr = formatRelativeTime(caps.lastChanged);
-
-                return (
-                  <div
-                    key={lock.entity_id}
+              return (
+                <GridTile
+                  key={lock.entity_id}
+                  id={lock.entity_id}
+                  colSpan={2}
+                  rowSpan={1}
+                  tabletColSpan={2}
+                  desktopColSpan={2}
+                  isUnavailable={isUnavailable}
+                  onLongPress={() => openEntityDetails(lock.entity_id)}
+                >
+                  <CompactTile
+                    darkMode={darkMode}
+                    title={formatEntityDisplayName(lock.name, area.name)}
+                    subtitle={subtitle}
+                    isActive={!isLocked}
+                    accentColor={isLocked ? '#10b981' : '#f59e0b'}
+                    activeBorderColor={isLocked ? 'border-emerald-500/40' : 'border-amber-400/50'}
+                    onIconClick={() => openEntityDetails(lock.entity_id)}
+                    icon={
+                      isLocked ? (
+                        <Lock size={22} weight="fill" className="text-emerald-500 dark:text-emerald-400" />
+                      ) : (
+                        <LockOpen size={22} weight="bold" className="text-amber-500 dark:text-amber-400 animate-pulse" />
+                      )
+                    }
+                    actionButton={
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleLock(lock);
+                        }}
+                        className={`min-w-[44px] min-h-[44px] px-3.5 rounded-2xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 ${
+                          isLocked
+                            ? darkMode
+                              ? 'bg-white/10 text-slate-300'
+                              : 'bg-slate-100 text-slate-700 border border-slate-200'
+                            : 'bg-amber-500 text-slate-950 font-black'
+                        }`}
+                      >
+                        {isLocked ? 'Unlock' : 'Lock'}
+                      </button>
+                    }
+                    onClick={() => handleToggleLock(lock)}
                     onContextMenu={(e) => {
                       e.preventDefault();
-                      e.stopPropagation();
                       openEntityDetails(lock.entity_id);
                     }}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border ${
-                      !isLocked ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
-                    } backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
-                      !isLocked
-                        ? 'bg-amber-500/20 text-slate-900 dark:text-white'
-                        : darkMode
-                        ? 'bg-black/20 hover:bg-black/30 text-white'
-                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEntityDetails(lock.entity_id);
-                        }}
-                        className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
-                        title="Open lock details"
-                      >
-                        {isLocked ? (
-                          <Lock size={24} weight="fill" className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)] shrink-0" />
-                        ) : (
-                          <LockOpen size={24} weight="bold" className="text-amber-400 animate-pulse drop-shadow-[0_0_10px_rgba(251,191,36,0.8)] shrink-0" />
-                        )}
-                      </button>
-                      <div className="min-w-0">
-                        <h5 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                          {formatEntityDisplayName(lock.name, area.name)}
-                        </h5>
-                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
-                          <span className={`font-semibold capitalize ${isLocked ? 'text-emerald-400' : 'text-amber-400'}`}>
-                            {lock.state || 'locked'}
-                          </span>
-                          {lastChangedStr && (
-                            <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
-                          )}
-                          {battery !== undefined && (
-                            <span className="flex items-center gap-0.5 text-slate-400">
-                              • <BatteryMedium size={12} weight="bold" /> {battery}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                  />
+                </GridTile>
+              );
+            })}
 
-                    <button
-                      type="button"
-                      onClick={() => handleToggleLock(lock)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 shrink-0 ${
-                        isLocked
-                          ? darkMode
-                            ? 'bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white'
-                            : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-700'
-                          : 'bg-emerald-500 text-slate-950 shadow-xs'
-                      }`}
-                    >
-                      {isLocked ? (
-                        <>
-                          <LockOpen size={13} weight="bold" />
-                          <span>Unlock</span>
-                        </>
-                      ) : (
-                        <>
-                          <Lock size={13} weight="fill" />
-                          <span>Lock</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+            {enrichedCovers.map((cover) => {
+              const isUnavailable = cover.state === 'unavailable' || cover.state === 'unknown';
+              const pos = cover.attributes?.current_position;
+              const rawBattery = cover.attributes?.battery_level ?? cover.attributes?.battery;
+              const lastChanged = formatRelativeTime(cover.last_changed || cover.last_updated);
+              
+              const subtitle = (
+                <TelemetryLine
+                  items={[
+                    pos !== undefined ? `${pos}% Open` : (cover.state || 'Closed'),
+                    rawBattery !== undefined ? { isBattery: true, batteryLevel: Math.round(rawBattery) } : null,
+                    lastChanged || null
+                  ]}
+                />
+              );
 
-        {/* ========================================================================= */}
-        {/* 6. SWITCHES & OUTLETS (With Section Header Toggle Controls) */}
-        {/* ========================================================================= */}
-        {entities.switches.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Plug size={22} weight="duotone" className="text-indigo-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Switches & Outlets ({entities.switches.length})
-                </h3>
-              </div>
-
-              {/* Master Switches Toggle */}
-              <button
-                type="button"
-                onClick={() => handleBulkToggleSwitches(activeSwitchesCount === 0)}
-                className={`px-2.5 py-1 rounded-xl text-xs font-semibold backdrop-blur-md transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 ${
-                  activeSwitchesCount > 0
-                    ? 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
-                    : darkMode
-                    ? 'bg-white/10 hover:bg-white/15 text-slate-300'
-                    : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-700'
-                }`}
-              >
-                <Power size={13} weight="bold" />
-                <span>{activeSwitchesCount > 0 ? 'All Off' : 'All On'}</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {entities.switches.map((sw) => {
-                const caps = detectSwitchCapabilities(sw);
-                const isOn = caps.isOn;
-                const battery = getEntityBattery(sw);
-                const hasPower = caps.hasPowerMonitoring && typeof caps.currentPowerWatts === 'number' && caps.currentPowerWatts > 0 && isOn;
-                const lastChangedStr = formatRelativeTime(sw.last_changed || sw.last_updated);
-
-                return (
-                  <div
-                    key={sw.entity_id}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      openEntityDetails(sw.entity_id);
-                    }}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border ${
-                      isOn ? 'border-indigo-400/40' : 'border-slate-200/80 dark:border-white/10'
-                    } backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
-                      isOn
-                        ? 'bg-indigo-500/20 text-slate-900 dark:text-white'
-                        : darkMode
-                        ? 'bg-black/20 hover:bg-black/30 text-white'
-                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEntityDetails(sw.entity_id);
-                        }}
-                        className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
-                        title="Open switch details"
-                      >
-                        <Plug
-                          size={24}
-                          weight={isOn ? 'fill' : 'duotone'}
-                          className={`shrink-0 transition-transform ${
-                            isOn
-                              ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.75)]'
-                              : 'text-slate-400'
-                          }`}
-                        />
-                      </button>
-                      <div className="min-w-0">
-                        <h5 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                          {formatEntityDisplayName(sw.name, area.name)}
-                        </h5>
-                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
-                          <span className="font-semibold text-slate-900 dark:text-white">
-                            {isOn ? 'Active' : 'Off'}
-                          </span>
-                          {lastChangedStr && (
-                            <span className="text-slate-500 dark:text-slate-400">
-                              • {lastChangedStr}
-                            </span>
-                          )}
-                          {hasPower && (
-                            <span className="text-indigo-400 font-medium">
-                              • {caps.currentPowerWatts}W
-                            </span>
-                          )}
-                          {battery !== undefined && (
-                            <span className="flex items-center gap-0.5 text-slate-400">
-                              • <BatteryMedium size={12} weight="bold" /> {battery}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleToggleSwitch(sw)}
-                      className={`p-1.5 sm:p-2 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 shrink-0 ${
-                        isOn
-                          ? 'bg-indigo-500 text-white shadow-xs'
-                          : darkMode
-                          ? 'bg-white/10 hover:bg-white/15 text-slate-400'
-                          : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-600'
-                      }`}
-                      title={isOn ? 'Turn Off' : 'Turn On'}
-                    >
-                      <Power size={15} weight="bold" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* 7. MOTION & PRESENCE SENSORS (Dedicated Section) */}
-        {/* ========================================================================= */}
-        {motionSensors.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <PersonSimpleWalk size={22} weight="duotone" className="text-emerald-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Motion & Presence ({motionSensors.length})
-                </h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {motionSensors.map((ms) => {
-                const caps = detectSensorCapabilities(ms);
-                const isActive = caps.isActiveAlert;
-                const battery = caps.batteryPct;
-                const lastChangedStr = formatRelativeTime(caps.lastChanged);
-
-                return (
-                  <div
-                    key={ms.entity_id}
-                    onClick={() => openEntityDetails(ms.entity_id)}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 rounded-3xl border cursor-pointer hover:scale-[1.02] ${
-                      isActive ? 'border-emerald-400/40' : 'border-slate-200/80 dark:border-white/10'
-                    } backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate ${
-                      isActive
-                        ? 'bg-emerald-500/20 text-slate-900 dark:text-white'
-                        : darkMode
-                        ? 'bg-black/20 hover:bg-black/30 text-white'
-                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <PersonSimpleWalk
-                        size={22}
-                        weight="bold"
-                        className={`shrink-0 ${
-                          isActive
-                            ? 'text-emerald-400 animate-pulse drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]'
-                            : 'text-slate-400'
-                        }`}
-                      />
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold truncate">
-                          {formatEntityDisplayName(ms.name, area.name)}
-                        </div>
-                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap mt-0.5">
-                          <span className={`font-semibold ${isActive ? 'text-emerald-400' : ''}`}>
-                            {caps.alertLabel}
-                          </span>
-                          {lastChangedStr && (
-                            <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
-                          )}
-                          {battery !== undefined && (
-                            <span className="flex items-center gap-0.5 text-slate-400">
-                              • <BatteryMedium size={12} weight="bold" /> {battery}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <span className={`px-2 py-0.5 rounded-lg text-[11px] font-bold shrink-0 ${
-                      isActive
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-slate-200/60 dark:bg-white/10 text-slate-600 dark:text-slate-400'
-                    }`}>
-                      {isActive ? 'Detected' : 'Clear'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* 8. BATTERY & DEVICE HEALTH (DEDICATED SECTION - Accurate % and Meters) */}
-        {/* ========================================================================= */}
-        {batterySensors.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <BatteryFull size={22} weight="duotone" className="text-emerald-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Battery & Device Health ({batterySensors.length})
-                </h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {batterySensors.map((bs) => {
-                const val = parseFloat(bs.state);
-                const batteryPct = !isNaN(val) ? Math.round(val) : getEntityBattery(bs) ?? 100;
-                const isCritical = batteryPct < 20;
-                const isLow = batteryPct >= 20 && batteryPct < 40;
-                const isFull = batteryPct >= 80;
-
-                return (
-                  <div
-                    key={bs.entity_id}
-                    onClick={() => openEntityDetails(bs.entity_id)}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 rounded-3xl border cursor-pointer hover:scale-[1.02] ${
-                      isCritical
-                        ? 'border-rose-400/40'
-                        : isLow
-                        ? 'border-amber-400/40'
-                        : 'border-slate-200/80 dark:border-white/10'
-                    } backdrop-blur-sm flex flex-col justify-between gap-2.5 transition-all overflow-hidden isolate ${
-                      isCritical
-                        ? 'bg-rose-500/20 text-slate-900 dark:text-white'
-                        : isLow
-                        ? 'bg-amber-500/20 text-slate-900 dark:text-white'
-                        : darkMode
-                        ? 'bg-black/20 hover:bg-black/30 text-white'
-                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {isFull ? (
-                          <BatteryFull size={20} weight="fill" className="text-emerald-400 shrink-0" />
-                        ) : isLow ? (
-                          <BatteryLow size={20} weight="duotone" className="text-amber-400 shrink-0" />
-                        ) : (
-                          <BatteryWarning size={20} weight="fill" className="text-rose-400 animate-pulse shrink-0" />
-                        )}
-                        <div className="min-w-0">
-                          <h5 className={`text-xs font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                            {formatEntityDisplayName(bs.name.replace(/ battery$/i, '').replace(/ battery level$/i, '') || bs.name, area.name)}
-                          </h5>
-                          <p className="text-[10px] text-slate-500 truncate">
-                            {isCritical ? 'Critical Low' : isLow ? 'Low Battery' : 'Healthy'}
-                          </p>
-                        </div>
-                      </div>
-
-                      <span className={`text-xs font-black font-mono shrink-0 ${
-                        isCritical ? 'text-rose-400' : isLow ? 'text-amber-400' : 'text-emerald-400'
-                      }`}>
-                        {batteryPct}%
-                      </span>
-                    </div>
-
-                    {/* Visual Battery Fill Meter */}
-                    <div className="w-full bg-slate-200 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          isCritical
-                            ? 'bg-rose-500'
-                            : isLow
-                            ? 'bg-amber-400'
-                            : 'bg-emerald-400'
-                        }`}
-                        style={{ width: `${Math.min(100, Math.max(5, batteryPct))}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* 9. ENVIRONMENTAL & AIR TELEMETRY (Temp, Humidity, Lux, CO2) */}
-        {/* ========================================================================= */}
-        {environmentalSensors.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Drop size={22} weight="duotone" className="text-sky-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Environmental & Air Telemetry ({environmentalSensors.length})
-                </h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {environmentalSensors.map((sensor) => {
-                const caps = detectSensorCapabilities(sensor);
-                const isTemp = caps.kind === 'temperature';
-                const isHum = caps.kind === 'humidity';
-                const isLux = caps.kind === 'illuminance';
-                const battery = caps.batteryPct;
-                const lastChangedStr = formatRelativeTime(caps.lastChanged);
-
-                const hasSparkline = isTemp || isHum;
-                const sparkColor = isTemp ? '#fb7185' : '#38bdf8';
-
-                return (
-                  <div
-                    key={sensor.entity_id}
-                    onClick={() => openEntityDetails(sensor.entity_id)}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm flex flex-col justify-between gap-2.5 transition-all overflow-hidden isolate cursor-pointer hover:scale-[1.02] ${
-                      darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {isTemp ? (
-                          <Thermometer size={22} weight="duotone" className="text-rose-400 shrink-0" />
-                        ) : isHum ? (
-                          <Drop size={22} weight="duotone" className="text-sky-400 shrink-0" />
-                        ) : isLux ? (
-                          <Sun size={22} weight="duotone" className="text-amber-400 shrink-0" />
-                        ) : (
-                          <Wind size={22} weight="duotone" className="text-teal-400 shrink-0" />
-                        )}
-                        <div className="min-w-0">
-                          <div className="text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate">
-                            {formatEntityDisplayName(sensor.name, area.name)}
-                          </div>
-                          <div className="text-sm font-black truncate mt-0.5 font-mono">
-                            {caps.formattedValue}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0 text-[11px] text-slate-400">
-                        {lastChangedStr && <span>{lastChangedStr}</span>}
-                        {battery !== undefined && (
-                          <span className="flex items-center gap-0.5 font-bold">
-                            • <BatteryMedium size={12} weight="bold" />
-                            <span>{battery}%</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Embedded 24h History Trend Sparkline directly on tile */}
-                    {hasSparkline && (
-                      <div className="w-full pt-1.5 border-t border-slate-200/40 dark:border-white/5 space-y-1">
-                        <div className="flex items-center justify-between text-[9px] font-mono text-slate-500">
-                          <span>24h trend</span>
-                          <span className={isTemp ? 'text-rose-400' : 'text-sky-400'}>
-                            {isTemp ? 'Temperature' : 'Humidity'}
-                          </span>
-                        </div>
-                        <MiniSensorSparkline
-                          entityId={sensor.entity_id}
-                          currentValue={sensor.state}
-                          color={sparkColor}
-                          height={32}
-                          strokeWidth={2}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* 10. POWER & ENERGY TELEMETRY (Watts, kWh) */}
-        {/* ========================================================================= */}
-        {energySensors.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Lightning size={22} weight="duotone" className="text-emerald-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Power & Energy Telemetry ({energySensors.length})
-                </h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {energySensors.map((sensor) => {
-                const uom = sensor.attributes?.unit_of_measurement || 'W';
-                return (
-                  <div
-                    key={sensor.entity_id}
-                    onClick={() => openEntityDetails(sensor.entity_id)}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate cursor-pointer hover:scale-[1.02] ${
-                      darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <Lightning size={22} weight="duotone" className="text-emerald-400 shrink-0" />
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate">
-                          {formatEntityDisplayName(sensor.name, area.name)}
-                        </div>
-                        <div className="text-sm font-black font-mono truncate mt-0.5">
-                          {sensor.state} {uom}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* 11. SAFETY & HAZARD SENSORS (Smoke, Moisture, Water Leaks) */}
-        {/* ========================================================================= */}
-        {hazardSensors.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <ShieldWarning size={22} weight="duotone" className="text-rose-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Safety & Hazard Alerts ({hazardSensors.length})
-                </h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {hazardSensors.map((hs) => {
-                const isProblem = hs.state === 'on' || hs.state === 'detected' || hs.state === 'problem';
-                const dc = (hs.attributes?.device_class || '').toLowerCase();
-                const isSmoke = dc === 'smoke' || dc === 'gas';
-                const battery = getEntityBattery(hs);
-
-                return (
-                  <div
-                    key={hs.entity_id}
-                    onClick={() => openEntityDetails(hs.entity_id)}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 rounded-3xl border cursor-pointer hover:scale-[1.02] ${
-                      isProblem ? 'border-rose-400/50' : 'border-slate-200/80 dark:border-white/10'
-                    } backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate ${
-                      isProblem
-                        ? 'bg-rose-500/20 text-slate-900 dark:text-white'
-                        : darkMode
-                        ? 'bg-black/20 hover:bg-black/30 text-white'
-                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {isSmoke ? (
-                        <Flame
-                          size={22}
-                          weight="fill"
-                          className={`shrink-0 ${isProblem ? 'text-rose-400 animate-pulse drop-shadow-[0_0_8px_rgba(244,63,94,0.8)]' : 'text-slate-400'}`}
-                        />
-                      ) : (
-                        <Warning
-                          size={22}
-                          weight="fill"
-                          className={`shrink-0 ${isProblem ? 'text-rose-400 animate-pulse drop-shadow-[0_0_8px_rgba(244,63,94,0.8)]' : 'text-slate-400'}`}
-                        />
-                      )}
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold truncate">
-                          {formatEntityDisplayName(hs.name, area.name)}
-                        </div>
-                        <div className="text-[11px] text-slate-500 flex items-center gap-1.5 capitalize truncate mt-0.5">
-                          <span>{isProblem ? 'Hazard Active' : 'Normal'}</span>
-                          {battery !== undefined && (
-                            <span className="flex items-center gap-0.5 text-slate-400">
-                              • <BatteryMedium size={12} weight="bold" /> {battery}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <span className={`px-2 py-0.5 rounded-lg text-[11px] font-bold shrink-0 ${
-                      isProblem
-                        ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 animate-pulse'
-                        : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-                    }`}>
-                      {isProblem ? 'Hazard' : 'Safe'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* 12. WINDOW COVERS & BLINDS (With Section Header Open All / Close All) */}
-        {/* ========================================================================= */}
-        {entities.covers.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <AppWindow size={22} weight="duotone" className="text-purple-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Window Covers & Blinds ({entities.covers.length})
-                </h3>
-              </div>
-
-              {/* Master Covers Controls */}
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleBulkCovers('open_cover')}
-                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/15 text-slate-300 transition-all cursor-pointer active:scale-95"
+              return (
+                <GridTile
+                  key={cover.entity_id}
+                  id={cover.entity_id}
+                  colSpan={2}
+                  rowSpan={1}
+                  tabletColSpan={2}
+                  desktopColSpan={2}
+                  isUnavailable={isUnavailable}
+                  onLongPress={() => openEntityDetails(cover.entity_id)}
                 >
-                  Open All
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleBulkCovers('close_cover')}
-                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/15 text-slate-300 transition-all cursor-pointer active:scale-95"
-                >
-                  Close All
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {entities.covers.map((cover) => {
-                const caps = detectCoverCapabilities(cover);
-                const position = caps.currentPosition;
-                const battery = getEntityBattery(cover);
-                const lastChangedStr = formatRelativeTime(caps.lastChanged);
-
-                return (
-                  <div
-                    key={cover.entity_id}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      openEntityDetails(cover.entity_id);
-                    }}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
-                      darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEntityDetails(cover.entity_id);
-                        }}
-                        className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
-                        title="Open cover controls"
-                      >
-                        <AppWindow size={24} weight="duotone" className="text-purple-400 shrink-0" />
-                      </button>
-                      <div className="min-w-0">
-                        <h5 className="text-sm font-bold truncate">{formatEntityDisplayName(cover.name, area.name)}</h5>
-                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
-                          <span className="font-semibold text-slate-900 dark:text-white capitalize">
-                            {caps.isOpening
-                              ? 'Opening...'
-                              : caps.isClosing
-                              ? 'Closing...'
-                              : position !== undefined
-                              ? position === 0
-                                ? 'Closed'
-                                : position === 100
-                                ? 'Open'
-                                : `${position}% Open`
-                              : cover.state || 'Closed'}
-                          </span>
-                          {lastChangedStr && (
-                            <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
-                          )}
-                          {battery !== undefined && (
-                            <span className="flex items-center gap-0.5 text-slate-400">
-                              • <BatteryMedium size={12} weight="bold" /> {battery}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleCoverCommand(cover, 'open_cover')}
-                        className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 cursor-pointer active:scale-95"
-                      >
-                        Open
-                      </button>
-                      {caps.supportsStop && (
+                  <CompactTile
+                    darkMode={darkMode}
+                    title={formatEntityDisplayName(cover.name, area.name)}
+                    subtitle={subtitle}
+                    onIconClick={() => openEntityDetails(cover.entity_id)}
+                    icon={<AppWindow size={22} weight="duotone" className="text-purple-500 dark:text-purple-400" />}
+                    actionButton={
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
-                          onClick={() => handleCoverCommand(cover, 'stop_cover')}
-                          className="p-1.5 rounded-xl text-xs font-bold bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 cursor-pointer active:scale-95"
-                          title="Stop"
+                          onClick={() => handleCoverCommand(cover, 'open_cover')}
+                          className={`min-w-[44px] min-h-[44px] px-2.5 rounded-xl text-xs font-bold cursor-pointer active:scale-95 ${
+                            darkMode ? 'bg-white/10 hover:bg-white/20 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
+                          }`}
                         >
-                          <Stop size={14} weight="fill" />
+                          Open
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleCoverCommand(cover, 'close_cover')}
-                        className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 cursor-pointer active:scale-95"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        {entities.vacuums && entities.vacuums.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Broom size={22} weight="duotone" className="text-teal-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Robotic Vacuums & Cleaners ({entities.vacuums.length})
-                </h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {entities.vacuums.map((vac) => {
-                const caps = detectVacuumCapabilities(vac);
-                const isCleaning = caps.isCleaning;
-                const battery = caps.batteryLevel;
-                const lastChangedStr = formatRelativeTime(caps.lastChanged);
-
-                return (
-                  <div
-                    key={vac.entity_id}
+                        <button
+                          type="button"
+                          onClick={() => handleCoverCommand(cover, 'close_cover')}
+                          className={`min-w-[44px] min-h-[44px] px-2.5 rounded-xl text-xs font-bold cursor-pointer active:scale-95 ${
+                            darkMode ? 'bg-white/10 hover:bg-white/20 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
+                          }`}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    }
                     onContextMenu={(e) => {
                       e.preventDefault();
-                      e.stopPropagation();
+                      openEntityDetails(cover.entity_id);
+                    }}
+                  />
+                </GridTile>
+              );
+            })}
+          </VirtualGrid>
+        </section>
+      )}
+
+      {/* 4. MEDIA & PLAYERS CATEGORY */}
+      {(activeDomainTab === 'all' || activeDomainTab === 'media') && (entities.mediaPlayers.length > 0 || (enrichedVacuums?.length || 0) > 0 || (entities.cameras?.length || 0) > 0) && (
+        <section className="flex flex-col gap-3.5">
+          <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-2">
+              <SpeakerHigh size={20} weight="duotone" className="text-cyan-500 dark:text-cyan-400" />
+              <h3 className={`text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                Media & Entertainment
+              </h3>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                ({entities.mediaPlayers.length + (enrichedVacuums?.length || 0) + (entities.cameras?.length || 0)})
+              </span>
+            </div>
+
+            {entities.mediaPlayers.length > 0 && (
+              <button
+                type="button"
+                onClick={handlePauseAllMedia}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 border ${
+                  darkMode
+                    ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                    : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-xs'
+                }`}
+              >
+                Pause All
+              </button>
+            )}
+          </div>
+
+          <VirtualGrid>
+            {entities.mediaPlayers.map((media) => {
+              const isPlaying = media.state === 'playing' || media.state === 'paused';
+              const isUnavailable = media.state === 'unavailable' || media.state === 'unknown';
+
+              return (
+                <GridTile
+                  key={media.entity_id}
+                  id={media.entity_id}
+                  colSpan={isPlaying ? 4 : 2}
+                  rowSpan={isPlaying ? 2 : 1}
+                  tabletColSpan={isPlaying ? 4 : 2}
+                  desktopColSpan={isPlaying ? 6 : 3}
+                  isUnavailable={isUnavailable}
+                  onLongPress={() => setActiveMediaDrawerEntity(media)}
+                >
+                  <MediaPlayerTile
+                    entity={media}
+                    areaName={area.name}
+                    darkMode={darkMode}
+                    onPlayPause={handleToggleMediaPlay}
+                    onOpenDrawer={(m) => setActiveMediaDrawerEntity(m)}
+                    onIconClick={() => setActiveMediaDrawerEntity(media)}
+                  />
+                </GridTile>
+              );
+            })}
+
+            {(enrichedVacuums || []).map((vac) => {
+              const caps = detectVacuumCapabilities(vac);
+              const isUnavailable = vac.state === 'unavailable' || vac.state === 'unknown';
+              const bat = vac.attributes?.battery_level;
+              const lastChanged = formatRelativeTime(vac.last_changed || vac.last_updated);
+              
+              const subtitle = (
+                <TelemetryLine
+                  items={[
+                    caps.isCleaning ? 'Cleaning' : 'Docked',
+                    bat !== undefined ? { isBattery: true, batteryLevel: Math.round(bat) } : null,
+                    lastChanged || null
+                  ]}
+                />
+              );
+
+              return (
+                <GridTile
+                  key={vac.entity_id}
+                  id={vac.entity_id}
+                  colSpan={2}
+                  rowSpan={1}
+                  tabletColSpan={2}
+                  desktopColSpan={2}
+                  isUnavailable={isUnavailable}
+                  onLongPress={() => openEntityDetails(vac.entity_id)}
+                >
+                  <CompactTile
+                    darkMode={darkMode}
+                    title={formatEntityDisplayName(vac.name, area.name)}
+                    subtitle={subtitle}
+                    isActive={caps.isCleaning}
+                    accentColor="#0d9488"
+                    activeBorderColor="border-teal-400/50"
+                    onIconClick={() => openEntityDetails(vac.entity_id)}
+                    icon={<Broom size={22} weight={caps.isCleaning ? 'fill' : 'duotone'} className={caps.isCleaning ? 'text-teal-400' : 'text-slate-400'} />}
+                    actionButton={
+                      <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${
+                        caps.isCleaning
+                          ? 'bg-teal-500/20 text-teal-700 dark:text-teal-300'
+                          : darkMode
+                          ? 'bg-white/10 text-slate-300'
+                          : 'bg-slate-100 text-slate-700 border border-slate-200'
+                      }`}>
+                        {caps.isCleaning ? 'Cleaning' : 'Docked'}
+                      </span>
+                    }
+                    onContextMenu={(e) => {
+                      e.preventDefault();
                       openEntityDetails(vac.entity_id);
                     }}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border ${
-                      isCleaning ? 'border-teal-400/40' : 'border-slate-200/80 dark:border-white/10'
-                    } backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
-                      isCleaning
-                        ? 'bg-teal-500/20 text-slate-900 dark:text-white'
-                        : darkMode
-                        ? 'bg-black/20 hover:bg-black/30 text-white'
-                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEntityDetails(vac.entity_id);
-                        }}
-                        className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all shrink-0 cursor-pointer hover:scale-110 ${
-                          isCleaning
-                            ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/20'
-                            : 'bg-white/80 dark:bg-white/10 text-slate-500 dark:text-slate-400'
-                        }`}
-                        title="Open vacuum controls"
-                      >
-                        <Broom
-                          size={20}
-                          weight={isCleaning ? 'fill' : 'duotone'}
-                        />
-                      </button>
-                      <div className="min-w-0">
-                        <h5 className="text-sm font-bold truncate">{formatEntityDisplayName(vac.name, area.name)}</h5>
-                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap mt-0.5">
-                          <span className={`font-semibold capitalize ${isCleaning ? 'text-teal-400 font-bold' : ''}`}>
-                            {caps.isCleaning
-                              ? 'Cleaning'
-                              : caps.isReturning
-                              ? 'Returning'
-                              : caps.isPaused
-                              ? 'Paused'
-                              : caps.isDocked
-                              ? 'Docked'
-                              : caps.state}
-                          </span>
-                          {lastChangedStr && (
-                            <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
-                          )}
-                          {battery !== undefined && (
-                            <span className="flex items-center gap-0.5 text-slate-400">
-                              • <BatteryMedium size={12} weight="bold" /> {battery}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                  />
+                </GridTile>
+              );
+            })}
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleVacuumToggle(vac)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 shrink-0 ${
-                          isCleaning
-                            ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/30'
-                            : 'bg-teal-600 hover:bg-teal-500 text-white shadow-xs'
-                        }`}
-                      >
-                        {isCleaning ? (
-                          <>
-                            <ArrowArcLeft size={13} weight="bold" />
-                            <span>Dock</span>
-                          </>
-                        ) : (
-                          <>
-                            <Play size={13} weight="fill" />
-                            <span>Clean</span>
-                          </>
-                        )}
-                      </button>
+            {(entities.cameras || []).map((cam) => {
+              const isUnavailable = cam.state === 'unavailable' || cam.state === 'unknown';
+              const lastChanged = formatRelativeTime(cam.last_changed || cam.last_updated);
+              const subtitle = (
+                <TelemetryLine
+                  items={[
+                    'Live Video Feed',
+                    lastChanged || null
+                  ]}
+                />
+              );
+
+              return (
+                <GridTile
+                  key={cam.entity_id}
+                  id={cam.entity_id}
+                  colSpan={4}
+                  rowSpan={2}
+                  tabletColSpan={4}
+                  desktopColSpan={6}
+                  isUnavailable={isUnavailable}
+                  onLongPress={() => openEntityDetails(cam.entity_id)}
+                >
+                  <WideTile
+                    darkMode={darkMode}
+                    title={formatEntityDisplayName(cam.name, area.name)}
+                    subtitle={subtitle}
+                    icon={<VideoCamera size={24} weight="duotone" className="text-blue-500 dark:text-blue-400" />}
+                    headerAction={<span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-500/20 text-blue-700 dark:text-blue-300">Live</span>}
+                    onIconClick={() => openEntityDetails(cam.entity_id)}
+                  >
+                    <div className="w-full h-24 rounded-2xl bg-black/10 dark:bg-black/40 border border-slate-200 dark:border-white/10 flex items-center justify-center text-xs font-mono text-slate-600 dark:text-slate-400">
+                      Tap icon to open live stream
                     </div>
-                  </div>
-                );
-              })}
+                  </WideTile>
+                </GridTile>
+              );
+            })}
+          </VirtualGrid>
+        </section>
+      )}
+
+      {/* 5. GRANULAR SENSORS BY TYPE */}
+      {(activeDomainTab === 'all' || activeDomainTab === 'sensors') && sensorsCount > 0 && (
+        <div className="flex flex-col gap-6">
+          {/* Main Category Header */}
+          <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-2">
+              <Drop size={20} weight="duotone" className="text-teal-500 dark:text-teal-400" />
+              <h3 className={`text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                Sensors & Telemetry
+              </h3>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                ({sensorsCount} Total)
+              </span>
             </div>
           </div>
-        )}
 
-        {/* ========================================================================= */}
-        {/* 13. SURVEILLANCE CAMERAS & VIDEO DOORBELLS */}
-        {/* ========================================================================= */}
-        {entities.cameras && entities.cameras.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <VideoCamera size={22} weight="duotone" className="text-blue-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Live Cameras & Surveillance ({entities.cameras.length})
-                </h3>
+          {/* 5A. Entry & Perimeter (Doors & Windows) */}
+          {contactSensors.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
+                <Door size={16} weight="duotone" className="text-amber-500" />
+                <span>Entry & Openings ({contactSensors.length})</span>
               </div>
+              <VirtualGrid>
+                {contactSensors.map((cs) => {
+                  const isUnavailable = cs.state === 'unavailable' || cs.state === 'unknown';
+                  return (
+                    <GridTile
+                      key={cs.entity_id}
+                      id={cs.entity_id}
+                      colSpan={2}
+                      rowSpan={1}
+                      tabletColSpan={2}
+                      desktopColSpan={2}
+                      isUnavailable={isUnavailable}
+                      onLongPress={() => openEntityDetails(cs.entity_id)}
+                    >
+                      <SensorTile
+                        entity={cs}
+                        areaName={area.name}
+                        darkMode={darkMode}
+                        onIconClick={() => openEntityDetails(cs.entity_id)}
+                        onContextMenu={() => openEntityDetails(cs.entity_id)}
+                      />
+                    </GridTile>
+                  );
+                })}
+              </VirtualGrid>
             </div>
+          )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {entities.cameras.map((cam) => {
-                const caps = detectCameraCapabilities(cam);
-                const lastChangedStr = formatRelativeTime(caps.lastChanged);
-
-                return (
-                  <div
-                    key={cam.entity_id}
-                    onClick={() => openEntityDetails(cam.entity_id)}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate cursor-pointer hover:scale-[1.02] ${
-                      darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
-                        <VideoCamera size={22} weight="duotone" />
-                      </div>
-                      <div className="min-w-0">
-                        <h5 className="text-sm font-bold truncate">{formatEntityDisplayName(cam.name, area.name)}</h5>
-                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap mt-0.5">
-                          <span className="font-semibold text-blue-400 capitalize">
-                            {caps.isOffline ? 'Offline' : 'Live Stream'}
-                          </span>
-                          {lastChangedStr && (
-                            <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
-                          )}
-                          <span className="text-slate-400 font-mono">• {caps.resolution}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 shrink-0">
-                      View
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* 14. GENERAL TELEMETRY & OTHER SENSORS */}
-        {/* ========================================================================= */}
-        {generalSensors.length > 0 && (
-          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Gauge size={22} weight="duotone" className="text-indigo-400 shrink-0" />
-                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  General Diagnostics ({generalSensors.length})
-                </h3>
+          {/* 5B. Motion & Presence */}
+          {motionSensors.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
+                <PersonSimpleWalk size={16} weight="duotone" className="text-emerald-500" />
+                <span>Motion & Occupancy ({motionSensors.length})</span>
               </div>
+              <VirtualGrid>
+                {motionSensors.map((ms) => {
+                  const isUnavailable = ms.state === 'unavailable' || ms.state === 'unknown';
+                  return (
+                    <GridTile
+                      key={ms.entity_id}
+                      id={ms.entity_id}
+                      colSpan={2}
+                      rowSpan={1}
+                      tabletColSpan={2}
+                      desktopColSpan={2}
+                      isUnavailable={isUnavailable}
+                      onLongPress={() => openEntityDetails(ms.entity_id)}
+                    >
+                      <SensorTile
+                        entity={ms}
+                        areaName={area.name}
+                        darkMode={darkMode}
+                        onIconClick={() => openEntityDetails(ms.entity_id)}
+                        onContextMenu={() => openEntityDetails(ms.entity_id)}
+                      />
+                    </GridTile>
+                  );
+                })}
+              </VirtualGrid>
             </div>
+          )}
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {generalSensors.map((sensor) => {
-                const uom = sensor.attributes?.unit_of_measurement || '';
-                return (
-                  <div
-                    key={sensor.entity_id}
-                    onClick={() => openEntityDetails(sensor.entity_id)}
-                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-3.5 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate cursor-pointer hover:scale-[1.02] ${
-                      darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <Eye size={20} weight="duotone" className="text-slate-400 shrink-0" />
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate">
-                          {formatEntityDisplayName(sensor.name, area.name)}
-                        </div>
-                        <div className="text-xs font-bold truncate mt-0.5">
-                          {sensor.state} {uom}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+          {/* 5C. Environmental & Climate */}
+          {environmentalSensors.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
+                <Thermometer size={16} weight="duotone" className="text-rose-500" />
+                <span>Environmental & Air Quality ({environmentalSensors.length})</span>
+              </div>
+              <VirtualGrid>
+                {environmentalSensors.map((sensor) => {
+                  const isUnavailable = sensor.state === 'unavailable' || sensor.state === 'unknown';
+                  const caps = detectSensorCapabilities(sensor);
+                  const isSpark = caps.kind === 'temperature' || caps.kind === 'humidity';
+
+                  return (
+                    <GridTile
+                      key={sensor.entity_id}
+                      id={sensor.entity_id}
+                      colSpan={2}
+                      rowSpan={isSpark ? 2 : 1}
+                      tabletColSpan={2}
+                      desktopColSpan={isSpark ? 3 : 2}
+                      isUnavailable={isUnavailable}
+                      onLongPress={() => openEntityDetails(sensor.entity_id)}
+                    >
+                      <SensorTile
+                        entity={sensor}
+                        areaName={area.name}
+                        darkMode={darkMode}
+                        onIconClick={() => openEntityDetails(sensor.entity_id)}
+                        onContextMenu={() => openEntityDetails(sensor.entity_id)}
+                      />
+                    </GridTile>
+                  );
+                })}
+              </VirtualGrid>
             </div>
-          </div>
-        )}
+          )}
 
-      </div>
+          {/* 5D. Safety & Hazard */}
+          {hazardSensors.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-rose-500 dark:text-rose-400">
+                <Warning size={16} weight="fill" />
+                <span>Safety & Hazards ({hazardSensors.length})</span>
+              </div>
+              <VirtualGrid>
+                {hazardSensors.map((hs) => {
+                  const isUnavailable = hs.state === 'unavailable' || hs.state === 'unknown';
+                  return (
+                    <GridTile
+                      key={hs.entity_id}
+                      id={hs.entity_id}
+                      colSpan={2}
+                      rowSpan={1}
+                      tabletColSpan={2}
+                      desktopColSpan={2}
+                      isUnavailable={isUnavailable}
+                      onLongPress={() => openEntityDetails(hs.entity_id)}
+                    >
+                      <SensorTile
+                        entity={hs}
+                        areaName={area.name}
+                        darkMode={darkMode}
+                        onIconClick={() => openEntityDetails(hs.entity_id)}
+                        onContextMenu={() => openEntityDetails(hs.entity_id)}
+                      />
+                    </GridTile>
+                  );
+                })}
+              </VirtualGrid>
+            </div>
+          )}
+
+          {/* 5E. Power & Energy */}
+          {energySensors.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
+                <Lightning size={16} weight="duotone" className="text-emerald-500" />
+                <span>Power & Energy ({energySensors.length})</span>
+              </div>
+              <VirtualGrid>
+                {energySensors.map((sensor) => {
+                  const isUnavailable = sensor.state === 'unavailable' || sensor.state === 'unknown';
+                  return (
+                    <GridTile
+                      key={sensor.entity_id}
+                      id={sensor.entity_id}
+                      colSpan={2}
+                      rowSpan={1}
+                      tabletColSpan={2}
+                      desktopColSpan={2}
+                      isUnavailable={isUnavailable}
+                      onLongPress={() => openEntityDetails(sensor.entity_id)}
+                    >
+                      <SensorTile
+                        entity={sensor}
+                        areaName={area.name}
+                        darkMode={darkMode}
+                        onIconClick={() => openEntityDetails(sensor.entity_id)}
+                        onContextMenu={() => openEntityDetails(sensor.entity_id)}
+                      />
+                    </GridTile>
+                  );
+                })}
+              </VirtualGrid>
+            </div>
+          )}
+
+          {/* 5F. Unclaimed Standalone Battery Sensors (only if any remain unclaimed) */}
+          {unclaimedBatterySensors.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
+                <BatteryMedium size={16} weight="duotone" className="text-amber-500" />
+                <span>Standalone Batteries ({unclaimedBatterySensors.length})</span>
+              </div>
+              <VirtualGrid>
+                {unclaimedBatterySensors.map((bs) => {
+                  const isUnavailable = bs.state === 'unavailable' || bs.state === 'unknown';
+                  return (
+                    <GridTile
+                      key={bs.entity_id}
+                      id={bs.entity_id}
+                      colSpan={2}
+                      rowSpan={1}
+                      tabletColSpan={2}
+                      desktopColSpan={2}
+                      isUnavailable={isUnavailable}
+                      onLongPress={() => openEntityDetails(bs.entity_id)}
+                    >
+                      <SensorTile
+                        entity={bs}
+                        areaName={area.name}
+                        darkMode={darkMode}
+                        onIconClick={() => openEntityDetails(bs.entity_id)}
+                        onContextMenu={() => openEntityDetails(bs.entity_id)}
+                      />
+                    </GridTile>
+                  );
+                })}
+              </VirtualGrid>
+            </div>
+          )}
+
+          {/* 5G. General Diagnostics */}
+          {generalSensors.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
+                <Gear size={16} weight="duotone" className="text-slate-500" />
+                <span>Diagnostics & Status ({generalSensors.length})</span>
+              </div>
+              <VirtualGrid>
+                {generalSensors.map((sensor) => {
+                  const isUnavailable = sensor.state === 'unavailable' || sensor.state === 'unknown';
+                  return (
+                    <GridTile
+                      key={sensor.entity_id}
+                      id={sensor.entity_id}
+                      colSpan={2}
+                      rowSpan={1}
+                      tabletColSpan={2}
+                      desktopColSpan={2}
+                      isUnavailable={isUnavailable}
+                      onLongPress={() => openEntityDetails(sensor.entity_id)}
+                    >
+                      <SensorTile
+                        entity={sensor}
+                        areaName={area.name}
+                        darkMode={darkMode}
+                        onIconClick={() => openEntityDetails(sensor.entity_id)}
+                        onContextMenu={() => openEntityDetails(sensor.entity_id)}
+                      />
+                    </GridTile>
+                  );
+                })}
+              </VirtualGrid>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Media Player Sidebar Drawer */}
       {activeMediaDrawerEntity && (

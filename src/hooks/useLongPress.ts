@@ -1,3 +1,12 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Custom hook for long-press & touchmove collision protection.
+ * Cancels long-press when user scrolls (> 10px move) and prevents
+ * interactive child elements (buttons, inputs) from triggering parent click.
+ */
+
 import { useCallback, useRef } from 'react';
 
 export interface UseLongPressOptions {
@@ -39,12 +48,12 @@ export function useLongPress({
 
   const start = useCallback(
     (e: React.TouchEvent | React.MouseEvent) => {
+      targetRef.current = e.target;
+      isLongPressRef.current = false;
+
       if (isInteractiveElement(e.target)) {
         return;
       }
-
-      isLongPressRef.current = false;
-      targetRef.current = e.target;
 
       if ('touches' in e && e.touches.length > 0) {
         startCoordsRef.current = {
@@ -104,7 +113,7 @@ export function useLongPress({
         timerRef.current = null;
       }
 
-      const wasInteractive = isInteractiveElement(targetRef.current);
+      const wasInteractive = isInteractiveElement(targetRef.current) || isInteractiveElement(e.target);
       startCoordsRef.current = null;
       targetRef.current = null;
 
