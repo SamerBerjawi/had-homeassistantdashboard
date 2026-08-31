@@ -62,6 +62,7 @@ import {
 import { AreaData } from '../../types/rooms';
 import { ResolvedEntity } from '../../types';
 import { formatEntityDisplayName } from '../../lib/utils';
+import { getClimateModeTheme } from '../../utils/climateTheme';
 import AreaMediaCard from '../rooms/AreaMediaCard';
 import MediaOverviewDrawer from '../overview/modals/MediaOverviewDrawer';
 import ViewEmptyState from '../ui/ViewEmptyState';
@@ -756,7 +757,8 @@ export default function AreaDetailView({
                 const maxTemp = climate.attributes?.max_temp ?? 35;
                 const hvacModes: string[] = climate.attributes?.hvac_modes || ['heat', 'cool', 'auto', 'fan_only', 'off'];
                 const currentHvacMode = climate.state || 'off';
-                const isOff = currentHvacMode === 'off';
+                const theme = getClimateModeTheme(currentHvacMode, climate.state);
+                const ModeIcon = theme.icon;
                 const battery = getEntityBattery(climate);
 
                 return (
@@ -764,26 +766,18 @@ export default function AreaDetailView({
                     key={climate.entity_id}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
                     className={`col-span-1 p-4.5 rounded-3xl border ${
-                      !isOff ? 'border-rose-400/40' : 'border-slate-200/80 dark:border-white/10'
+                      darkMode ? theme.borderDark : theme.borderLight
                     } backdrop-blur-sm flex flex-col justify-between gap-3.5 transition-all overflow-hidden isolate ${
-                      !isOff
-                        ? 'bg-rose-500/20 text-slate-900 dark:text-white'
-                        : darkMode
-                        ? 'bg-black/20 hover:bg-black/30 text-white'
-                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
+                      darkMode ? theme.bgDark : theme.bgLight
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        {currentHvacMode === 'heat' || currentHvacMode === 'heating' ? (
-                          <Flame size={24} weight="fill" className="text-rose-400 animate-pulse drop-shadow-[0_0_8px_rgba(244,63,94,0.7)] shrink-0" />
-                        ) : currentHvacMode === 'cool' || currentHvacMode === 'cooling' ? (
-                          <Snowflake size={24} weight="fill" className="text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.7)] shrink-0" />
-                        ) : currentHvacMode === 'fan_only' ? (
-                          <Fan size={24} weight="duotone" className="text-teal-400 animate-spin [animation-duration:2.5s] drop-shadow-[0_0_8px_rgba(45,212,191,0.6)] shrink-0" />
-                        ) : (
-                          <Thermometer size={24} weight="duotone" className="text-slate-400 shrink-0" />
-                        )}
+                        <ModeIcon
+                          size={24}
+                          weight={theme.isOff ? 'duotone' : 'fill'}
+                          className={`${theme.iconClass} ${theme.iconDropShadow} shrink-0`}
+                        />
 
                         <div className="min-w-0">
                           <h4 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -791,14 +785,14 @@ export default function AreaDetailView({
                           </h4>
                           <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
                             {currentTemp !== undefined && (
-                              <span className="font-semibold text-rose-400">
+                              <span className={`font-semibold ${theme.textClass}`}>
                                 {currentTemp}°C
                               </span>
                             )}
                             {currentHumidity !== undefined && (
                               <span className="text-cyan-400">• {currentHumidity}%</span>
                             )}
-                            <span>• {currentHvacMode}</span>
+                            <span>• {theme.name}</span>
                             {battery !== undefined && (
                               <span className="flex items-center gap-0.5 text-slate-400">
                                 • <BatteryMedium size={12} weight="bold" /> {battery}%
@@ -824,7 +818,7 @@ export default function AreaDetailView({
                         <button
                           type="button"
                           onClick={() => handleTempAdjust(climate, 0.5)}
-                          className="w-7 h-7 rounded-lg bg-slate-900/[0.06] dark:bg-white/10 hover:bg-slate-900/10 dark:hover:bg-white/15 flex items-center justify-center font-bold text-xs cursor-pointer active:scale-90"
+                          className={`w-7 h-7 rounded-lg text-white ${theme.stepperBtnBg} ${theme.stepperBtnHover} ${theme.stepperBtnShadow} flex items-center justify-center font-bold text-xs cursor-pointer active:scale-90`}
                           title="Increase Temp"
                         >
                           +
@@ -836,7 +830,7 @@ export default function AreaDetailView({
                     <div className="space-y-1">
                       <div className="flex justify-between text-[10px] font-semibold text-slate-600 dark:text-slate-400">
                         <span>Target Temperature</span>
-                        <span>{targetTemp}°C</span>
+                        <span className={`font-bold ${theme.textClass}`}>{targetTemp}°C</span>
                       </div>
                       <input
                         type="range"
@@ -845,27 +839,28 @@ export default function AreaDetailView({
                         step="0.5"
                         value={targetTemp}
                         onChange={(e) => handleTempSlider(climate, Number(e.target.value))}
-                        className="w-full h-1.5 bg-slate-700/40 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-rose-400"
+                        className={`w-full h-1.5 bg-slate-700/40 dark:bg-white/10 rounded-lg appearance-none cursor-pointer ${theme.sliderAccent}`}
                       />
                     </div>
 
                     {/* HVAC Mode Selector */}
-                    <div className="flex items-center gap-1 flex-wrap pt-1">
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
                       {hvacModes.map((mode) => {
                         const isSelected = currentHvacMode === mode;
+                        const modeTheme = getClimateModeTheme(mode, mode === 'off' ? 'off' : 'on');
                         return (
                           <button
                             key={mode}
                             type="button"
                             onClick={() => handleHvacModeChange(climate, mode)}
-                            className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
                               isSelected
                                 ? darkMode
-                                  ? 'bg-white/20 text-white shadow-xs'
-                                  : 'bg-slate-900 text-white shadow-xs'
+                                  ? `${modeTheme.badgeBgDark} ${modeTheme.badgeBorderDark} ${modeTheme.badgeTextDark} border shadow-xs scale-105 font-extrabold`
+                                  : `${modeTheme.badgeBgLight} ${modeTheme.badgeBorderLight} ${modeTheme.badgeTextLight} border shadow-xs scale-105 font-extrabold`
                                 : darkMode
-                                ? 'bg-white/5 hover:bg-white/10 text-slate-400'
-                                : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                                ? 'bg-white/5 hover:bg-white/10 text-slate-400 border border-white/5'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200/50'
                             }`}
                           >
                             <span className="capitalize">{mode === 'fan_only' ? 'Fan' : mode}</span>

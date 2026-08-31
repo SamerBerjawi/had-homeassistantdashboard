@@ -1,7 +1,8 @@
 import React from 'react';
-import { Thermometer, Plus, Minus, Wind, Drop } from '@phosphor-icons/react';
+import { Plus, Minus, Wind, Drop } from '@phosphor-icons/react';
 import { CardConfig } from '../../../types/canvas';
 import { HAEntity } from '../../../types';
+import { getClimateModeTheme } from '../../../utils/climateTheme';
 
 interface ClimateCardProps {
   config: CardConfig;
@@ -21,7 +22,11 @@ export default function ClimateCard({
   const currentTemp = entity.attributes?.current_temperature ?? entity.attributes?.temperature ?? 21.5;
   const humidity = entity.attributes?.humidity ?? 45;
   const mode = entity.attributes?.mode || entity.state || 'Comfort';
+  const fanMode = entity.attributes?.fan_mode || 'Auto';
   const title = config.title || entity.attributes?.friendly_name || 'Climate';
+
+  const theme = getClimateModeTheme(mode, entity.state);
+  const ModeIcon = theme.icon;
 
   const handleAdjustTemp = (delta: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -37,15 +42,15 @@ export default function ClimateCard({
       {/* Top row: Icon & Status Badge */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
-          <Thermometer
+          <ModeIcon
             size={24}
-            weight="duotone"
-            className="text-sky-400 shrink-0 drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]"
+            weight={theme.isOff ? 'duotone' : 'fill'}
+            className={`${theme.iconClass} ${theme.iconDropShadow} shrink-0`}
           />
           <div className="min-w-0">
             <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{title}</h4>
-            <p className="text-[11px] text-sky-600 dark:text-sky-300 font-medium truncate">
-              {isOff ? 'System Standby' : `${mode} Mode`}
+            <p className={`text-[11px] font-medium truncate ${theme.textClass}`}>
+              {isOff ? 'System Standby' : `${theme.name} Mode`}
             </p>
           </div>
         </div>
@@ -61,7 +66,7 @@ export default function ClimateCard({
       <div className="flex items-center justify-between my-1">
         <div>
           <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-mono">
+            <span className={`text-3xl font-black tracking-tight leading-none font-mono ${isOff ? 'text-slate-400' : 'text-slate-900 dark:text-white'}`}>
               {targetTemp.toFixed(1)}°
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">Target</span>
@@ -82,7 +87,7 @@ export default function ClimateCard({
           </button>
           <button
             onClick={(e) => handleAdjustTemp(0.5, e)}
-            className="w-7 h-7 rounded-xl bg-sky-500 hover:bg-sky-400 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm shadow-sky-500/30"
+            className={`w-7 h-7 rounded-xl text-white ${theme.stepperBtnBg} ${theme.stepperBtnHover} ${theme.stepperBtnShadow} flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95`}
             title="Increase Target"
           >
             <Plus size={14} weight="bold" />
@@ -93,9 +98,9 @@ export default function ClimateCard({
       {/* Bottom status bar */}
       <div className="flex items-center justify-between text-[10px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
         <span className="flex items-center gap-1 text-slate-750 dark:text-slate-300">
-          <Wind size={13} weight="duotone" className="text-sky-400" /> Auto Fan
+          <Wind size={13} weight="duotone" className="text-sky-400" /> {fanMode} Fan
         </span>
-        <span className="font-semibold text-emerald-500">Optimal Temp</span>
+        <span className={`font-semibold ${theme.textClass}`}>{theme.actionText}</span>
       </div>
     </div>
   );

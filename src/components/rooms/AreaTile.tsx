@@ -29,6 +29,7 @@ import {
 } from '@phosphor-icons/react';
 import { AreaData } from '../../types/rooms';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
+import { getClimateModeTheme } from '../../utils/climateTheme';
 
 interface AreaTileProps {
   area: AreaData;
@@ -412,30 +413,22 @@ export default function AreaTile({
         </div>
 
         {/* Climate Target Badge */}
-        {climateState && climateState.targetTemp !== undefined && (
-          <div
-            className={`flex items-center gap-1 px-2 py-1 rounded-xl text-xs font-bold border shrink-0 ${
-              climateState.hvacMode === 'heat' || climateState.hvacMode === 'heating'
-                ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
-                : climateState.hvacMode === 'cool' || climateState.hvacMode === 'cooling'
-                ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-400'
-                : climateState.hvacMode === 'fan_only'
-                ? 'bg-teal-500/15 border-teal-500/30 text-teal-400'
-                : darkMode
-                ? 'bg-white/5 border-white/10 text-slate-400'
-                : 'bg-slate-100 border-slate-200 text-slate-600'
-            }`}
-          >
-            {climateState.hvacMode === 'heat' || climateState.hvacMode === 'heating' ? (
-              <Flame size={13} weight="fill" />
-            ) : climateState.hvacMode === 'cool' || climateState.hvacMode === 'cooling' ? (
-              <Snowflake size={13} weight="fill" />
-            ) : (
-              <Wind size={13} weight="bold" />
-            )}
-            <span>{climateState.targetTemp}°C</span>
-          </div>
-        )}
+        {climateState && climateState.targetTemp !== undefined && (() => {
+          const theme = getClimateModeTheme(climateState.hvacMode);
+          const ClimateBadgeIcon = theme.icon;
+          return (
+            <div
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shrink-0 ${
+                darkMode
+                  ? `${theme.badgeBgDark} ${theme.badgeBorderDark} ${theme.badgeTextDark}`
+                  : `${theme.badgeBgLight} ${theme.badgeBorderLight} ${theme.badgeTextLight}`
+              }`}
+            >
+              <ClimateBadgeIcon size={13} weight={theme.isOff ? 'duotone' : 'fill'} />
+              <span>{climateState.targetTemp}°C</span>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

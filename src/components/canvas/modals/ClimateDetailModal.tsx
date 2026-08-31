@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Thermometer, Plus, Minus, Wind, Drop, Power, Flame, Snowflake, Sparkle, Fan } from '@phosphor-icons/react';
+import { Plus, Minus, Drop, Power, Flame, Snowflake, Sparkle, Fan } from '@phosphor-icons/react';
 import { HAEntity } from '../../../types';
 import CardModalContainer from './CardModalContainer';
+import { getClimateModeTheme } from '../../../utils/climateTheme';
 
 interface ClimateDetailModalProps {
   isOpen: boolean;
@@ -11,10 +12,11 @@ interface ClimateDetailModalProps {
 }
 
 const MODES = [
-  { id: 'cool', label: 'Cooling', icon: Snowflake, color: 'text-cyan-400 bg-cyan-500/20 border-cyan-500/30' },
-  { id: 'heat', label: 'Heating', icon: Flame, color: 'text-amber-400 bg-amber-500/20 border-amber-500/30' },
-  { id: 'eco', label: 'Eco Save', icon: Sparkle, color: 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30' },
-  { id: 'off', label: 'Off', icon: Power, color: 'text-slate-400 bg-white/5 border-white/10' }
+  { id: 'cool', label: 'Cooling', icon: Snowflake, activeClass: 'text-cyan-400 bg-cyan-500/20 border-cyan-500/40 shadow-cyan-500/20' },
+  { id: 'heat', label: 'Heating', icon: Flame, activeClass: 'text-orange-400 bg-orange-500/20 border-orange-500/40 shadow-orange-500/20' },
+  { id: 'auto', label: 'Auto', icon: Sparkle, activeClass: 'text-emerald-400 bg-emerald-500/20 border-emerald-500/40 shadow-emerald-500/20' },
+  { id: 'fan_only', label: 'Fan Only', icon: Fan, activeClass: 'text-teal-400 bg-teal-500/20 border-teal-500/40 shadow-teal-500/20' },
+  { id: 'off', label: 'Off', icon: Power, activeClass: 'text-slate-400 bg-white/10 border-white/20 shadow-black/20' }
 ];
 
 const FAN_SPEEDS = ['Auto', 'Quiet', 'Medium', 'Turbo'];
@@ -35,9 +37,12 @@ export default function ClimateDetailModal({
   const [activeMode, setActiveMode] = useState<string>(currentMode);
   const [fanSpeed, setFanSpeed] = useState<string>(currentFan);
 
+  const theme = getClimateModeTheme(activeMode, activeMode === 'off' ? 'off' : 'on');
+  const HeaderIcon = theme.icon;
+
   const handleAdjustTemp = (delta: number) => {
     const next = Math.round((targetTemp + delta) * 2) / 2;
-    if (next >= 16 && next <= 30) {
+    if (next >= 10 && next <= 35) {
       setTargetTemp(next);
       onUpdateEntity(entity.entity_id, activeMode === 'off' ? 'on' : entity.state, {
         target_temp: next,
@@ -48,7 +53,7 @@ export default function ClimateDetailModal({
 
   const handleSelectMode = (modeId: string) => {
     setActiveMode(modeId);
-    onUpdateEntity(entity.entity_id, modeId === 'off' ? 'off' : 'on', {
+    onUpdateEntity(entity.entity_id, modeId === 'off' ? 'off' : modeId, {
       mode: modeId
     });
   };
@@ -66,11 +71,11 @@ export default function ClimateDetailModal({
       onClose={onClose}
       title={entity.attributes?.friendly_name || 'Thermostat Zone'}
       subtitle={entity.entity_id}
-      icon={<Thermometer size={22} weight="duotone" className="text-sky-400" />}
+      icon={<HeaderIcon size={22} weight={theme.isOff ? 'duotone' : 'fill'} className={`${theme.iconClass} ${theme.iconDropShadow}`} />}
     >
       <div className="space-y-6">
         {/* Central Circular Temperature Display with Steppers */}
-        <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-black/30 border border-white/10 relative overflow-hidden">
+        <div className={`flex flex-col items-center justify-center p-6 rounded-3xl bg-black/30 border ${theme.borderDark} relative overflow-hidden transition-all backdrop-blur-md`}>
           <div className="flex items-center gap-6 z-10">
             {/* Minus Button */}
             <button
@@ -83,18 +88,18 @@ export default function ClimateDetailModal({
 
             {/* Big Temperature Gauge */}
             <div className="flex flex-col items-center justify-center text-center">
-              <span className="text-5xl font-black text-white font-mono tracking-tight leading-none">
+              <span className={`text-5xl font-black tracking-tight leading-none font-mono ${theme.isOff ? 'text-slate-400' : 'text-white'}`}>
                 {targetTemp.toFixed(1)}°
               </span>
-              <span className="text-xs font-bold text-sky-400 uppercase tracking-widest mt-1">
-                Target Setpoint
+              <span className={`text-xs font-bold uppercase tracking-widest mt-1 ${theme.textClass}`}>
+                {theme.isOff ? 'System Standby' : `${theme.name} Target Setpoint`}
               </span>
             </div>
 
             {/* Plus Button */}
             <button
               onClick={() => handleAdjustTemp(0.5)}
-              className="w-12 h-12 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-md shadow-sky-500/30"
+              className={`w-12 h-12 rounded-2xl text-white ${theme.stepperBtnBg} ${theme.stepperBtnHover} ${theme.stepperBtnShadow} flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-md`}
               title="Increase Temp"
             >
               <Plus size={20} weight="bold" />
@@ -104,7 +109,7 @@ export default function ClimateDetailModal({
           {/* Sub Stats Row */}
           <div className="flex items-center gap-6 mt-6 pt-4 border-t border-white/10 text-xs text-slate-300">
             <div className="flex items-center gap-1.5">
-              <Thermometer size={15} weight="duotone" className="text-slate-400" />
+              <HeaderIcon size={15} weight="duotone" className={theme.iconClass} />
               <span>Ambient: <strong className="text-white font-mono">{currentAmbientTemp.toFixed(1)}°C</strong></span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -117,7 +122,7 @@ export default function ClimateDetailModal({
         {/* HVAC Operation Mode Selector */}
         <div className="space-y-2.5">
           <label className="text-xs font-bold text-slate-300 block">Operation Mode</label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
             {MODES.map((mode) => {
               const IconComponent = mode.icon;
               const isActive = activeMode.toLowerCase().includes(mode.id);
@@ -125,14 +130,14 @@ export default function ClimateDetailModal({
                 <button
                   key={mode.id}
                   onClick={() => handleSelectMode(mode.id)}
-                  className={`p-3.5 rounded-2xl border flex flex-col items-center gap-2 transition-all cursor-pointer ${
+                  className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
                     isActive
-                      ? `${mode.color} shadow-lg scale-105 font-extrabold`
+                      ? `${mode.activeClass} shadow-lg scale-105 font-extrabold`
                       : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
                   }`}
                 >
-                  <IconComponent size={22} weight="duotone" />
-                  <span className="text-xs">{mode.label}</span>
+                  <IconComponent size={20} weight={isActive ? 'fill' : 'duotone'} />
+                  <span className="text-[11px] font-semibold">{mode.label}</span>
                 </button>
               );
             })}
@@ -142,7 +147,7 @@ export default function ClimateDetailModal({
         {/* Fan Speed Selection */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
-            <Fan size={15} weight="duotone" className="text-sky-400" /> Fan Speed
+            <Fan size={15} weight="duotone" className={theme.iconClass} /> Fan Speed
           </div>
           <div className="grid grid-cols-4 gap-2">
             {FAN_SPEEDS.map((speed) => (
@@ -151,7 +156,7 @@ export default function ClimateDetailModal({
                 onClick={() => handleSelectFan(speed)}
                 className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   fanSpeed === speed
-                    ? 'bg-sky-500 text-white shadow-md'
+                    ? `${theme.stepperBtnBg} text-white shadow-md font-extrabold`
                     : 'bg-white/5 hover:bg-white/15 text-slate-300 border border-white/10'
                 }`}
               >

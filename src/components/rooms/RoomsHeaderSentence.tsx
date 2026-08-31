@@ -36,6 +36,7 @@ import {
 import { useRoomsData } from '../../hooks/useRoomsData';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { isDoorSensor, isWindowSensor } from '../../lib/entityClassifiers';
+import { getClimateModeTheme } from '../../utils/climateTheme';
 
 interface RoomsHeaderSentenceProps {
   darkMode?: boolean;
@@ -203,32 +204,30 @@ export default function RoomsHeaderSentence({
         )}
 
         {/* 6. Active Climate / HVAC Badge */}
-        {activeClimates.length > 0 && (
-          <>
-            <span>climate is</span>
-            <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-xs transition-all ${
-                activeClimates[0].state === 'heat'
-                  ? darkMode
-                    ? 'bg-linear-to-r from-orange-500/20 to-rose-500/15 border-orange-500/40 text-orange-300 shadow-orange-500/5'
-                    : 'bg-orange-50/90 border-orange-300 text-orange-900'
-                  : darkMode
-                    ? 'bg-linear-to-r from-cyan-500/20 to-blue-500/15 border-cyan-500/40 text-cyan-300 shadow-cyan-500/5'
-                    : 'bg-cyan-50/90 border-cyan-300 text-cyan-900'
-              }`}
-            >
-              {activeClimates[0].state === 'heat' ? (
-                <Flame size={14} weight="fill" className="text-orange-400" />
-              ) : (
-                <Snowflake size={14} weight="fill" className="text-cyan-400" />
-              )}
-              <span className="capitalize">
-                {activeClimates[0].state} target {activeClimates[0].attributes?.temperature ?? 21}°C
+        {activeClimates.length > 0 && (() => {
+          const firstClimate = activeClimates[0];
+          const mode = firstClimate.attributes?.mode || firstClimate.state || 'heat';
+          const theme = getClimateModeTheme(mode, firstClimate.state);
+          const ClimateBadgeIcon = theme.icon;
+          return (
+            <>
+              <span>climate is</span>
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-xs transition-all ${
+                  darkMode
+                    ? `${theme.badgeBgDark} ${theme.badgeBorderDark} ${theme.badgeTextDark}`
+                    : `${theme.badgeBgLight} ${theme.badgeBorderLight} ${theme.badgeTextLight}`
+                }`}
+              >
+                <ClimateBadgeIcon size={14} weight={theme.isOff ? 'duotone' : 'fill'} className={theme.iconClass} />
+                <span className="capitalize">
+                  {theme.name} target {firstClimate.attributes?.temperature ?? firstClimate.attributes?.target_temp ?? 21}°C
+                </span>
               </span>
-            </span>
-            <span>,</span>
-          </>
-        )}
+              <span>,</span>
+            </>
+          );
+        })()}
 
         {/* 7. Active Fan Badge */}
         {activeFans.length > 0 && (
