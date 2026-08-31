@@ -1,4 +1,12 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Climate Control View Component
+ * Interactive Radial Dial & HVAC Mode Selector
+ */
+
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Thermometer,
   Plus,
@@ -19,17 +27,18 @@ interface ClimateControlViewProps {
   entity: HAEntity;
 }
 
-const HVAC_MODES = [
+const ALL_HVAC_MODES = [
   { id: 'heat', label: 'Heat', icon: Flame },
   { id: 'cool', label: 'Cool', icon: Snowflake },
+  { id: 'heat_cool', label: 'Heat/Cool', icon: Sparkle },
   { id: 'auto', label: 'Auto', icon: Sparkle },
   { id: 'fan_only', label: 'Fan Only', icon: Fan },
   { id: 'dry', label: 'Dry', icon: Drop },
   { id: 'off', label: 'Off', icon: Power }
 ];
 
-const PRESET_MODES = ['Comfort', 'Eco', 'Boost', 'Away', 'Sleep'];
-const FAN_MODES = ['Auto', 'Low', 'Medium', 'High', 'Turbo'];
+const DEFAULT_PRESET_MODES = ['Comfort', 'Eco', 'Boost', 'Away', 'Sleep'];
+const DEFAULT_FAN_MODES = ['Auto', 'Low', 'Medium', 'High', 'Turbo'];
 
 export default function ClimateControlView({ entity }: ClimateControlViewProps) {
   const { callHAService, updateEntityState } = useAutoLayoutStore();
@@ -59,6 +68,41 @@ export default function ClimateControlView({ entity }: ClimateControlViewProps) 
       setActivePreset(String(entity.attributes?.preset_mode || 'Comfort'));
     }
   }, [entity?.entity_id, entity?.state, entity?.attributes]);
+
+  // Dynamically extract supported HVAC modes from device attributes
+  const availableHvacModes = useMemo(() => {
+    const supported = entity?.attributes?.hvac_modes;
+    if (Array.isArray(supported) && supported.length > 0) {
+      return supported.map((m) => {
+        const found = ALL_HVAC_MODES.find((known) => known.id === m);
+        if (found) return found;
+        return {
+          id: m,
+          label: m.charAt(0).toUpperCase() + m.slice(1).replace(/_/g, ' '),
+          icon: Thermometer
+        };
+      });
+    }
+    return ALL_HVAC_MODES;
+  }, [entity?.attributes?.hvac_modes]);
+
+  // Dynamically extract supported preset modes
+  const availablePresetModes = useMemo(() => {
+    const supported = entity?.attributes?.preset_modes;
+    if (Array.isArray(supported) && supported.length > 0) {
+      return supported;
+    }
+    return DEFAULT_PRESET_MODES;
+  }, [entity?.attributes?.preset_modes]);
+
+  // Dynamically extract supported fan modes
+  const availableFanModes = useMemo(() => {
+    const supported = entity?.attributes?.fan_modes;
+    if (Array.isArray(supported) && supported.length > 0) {
+      return supported;
+    }
+    return DEFAULT_FAN_MODES;
+  }, [entity?.attributes?.fan_modes]);
 
   const minTemp = Number(entity?.attributes?.min_temp ?? 10);
   const maxTemp = Number(entity?.attributes?.max_temp ?? 35);
@@ -215,9 +259,9 @@ export default function ClimateControlView({ entity }: ClimateControlViewProps) 
       {/* HVAC Mode Selector */}
       <div className="space-y-2.5">
         <label className="text-xs font-bold text-slate-300 block">HVAC Operation Mode</label>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {HVAC_MODES.map((mode) => {
-            const Icon = mode.icon;
+        <div className={`grid gap-2 ${availableHvacModes.length <= 4 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3 sm:grid-cols-6'}`}>
+          {availableHvacModes.map((mode) => {
+            const Icon = mode.icon || Thermometer;
             const isSelected = activeHvacMode === mode.id;
             const modeTheme = getClimateModeTheme(mode.id, mode.id === 'off' ? 'off' : 'on');
             return (
@@ -240,52 +284,56 @@ export default function ClimateControlView({ entity }: ClimateControlViewProps) 
       </div>
 
       {/* Fan Speed Selector */}
-      <div className="space-y-2.5">
-        <label className="text-xs font-bold text-slate-300 block">Fan Speed</label>
-        <div className="grid grid-cols-5 gap-2">
-          {FAN_MODES.map((fMode) => {
-            const isSelected = activeFanMode.toLowerCase() === fMode.toLowerCase();
-            return (
-              <button
-                key={fMode}
-                type="button"
-                onClick={() => handleSelectFanMode(fMode)}
-                className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  isSelected
-                    ? 'bg-teal-500 text-slate-950 shadow-md font-extrabold scale-105'
-                    : 'bg-slate-800/30 hover:bg-slate-800/60 border border-white/10 text-slate-400'
-                }`}
-              >
-                {fMode}
-              </button>
-            );
-          })}
+      {availableFanModes.length > 0 && (
+        <div className="space-y-2.5">
+          <label className="text-xs font-bold text-slate-300 block">Fan Speed</label>
+          <div className="flex flex-wrap gap-2">
+            {availableFanModes.map((fMode) => {
+              const isSelected = activeFanMode.toLowerCase() === String(fMode).toLowerCase();
+              return (
+                <button
+                  key={fMode}
+                  type="button"
+                  onClick={() => handleSelectFanMode(String(fMode))}
+                  className={`flex-1 min-w-[60px] py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-teal-500 text-slate-950 shadow-md font-extrabold scale-105'
+                      : 'bg-slate-800/30 hover:bg-slate-800/60 border border-white/10 text-slate-400'
+                  }`}
+                >
+                  {fMode}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Preset Mode Selector */}
-      <div className="space-y-2.5">
-        <label className="text-xs font-bold text-slate-300 block">Preset Profile</label>
-        <div className="grid grid-cols-5 gap-2">
-          {PRESET_MODES.map((preset) => {
-            const isSelected = activePreset.toLowerCase() === preset.toLowerCase();
-            return (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => handleSelectPreset(preset)}
-                className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  isSelected
-                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold scale-105'
-                    : 'bg-slate-800/30 hover:bg-slate-800/60 border border-white/10 text-slate-400'
-                }`}
-              >
-                {preset}
-              </button>
-            );
-          })}
+      {/* Preset Modes */}
+      {availablePresetModes.length > 0 && (
+        <div className="space-y-2.5">
+          <label className="text-xs font-bold text-slate-300 block">Comfort Preset</label>
+          <div className="flex flex-wrap gap-2">
+            {availablePresetModes.map((preset) => {
+              const isSelected = activePreset.toLowerCase() === String(preset).toLowerCase();
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => handleSelectPreset(String(preset))}
+                  className={`flex-1 min-w-[70px] py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold scale-105'
+                      : 'bg-slate-800/30 hover:bg-slate-800/60 border border-white/10 text-slate-400'
+                  }`}
+                >
+                  {preset}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

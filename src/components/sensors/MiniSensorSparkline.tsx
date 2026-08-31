@@ -1,6 +1,14 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Mini Sensor Sparkline Component
+ * Accurate 24h live history trendline with smooth bezier curve
+ */
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
-import { haWebSocketService } from '../../services/haWebSocket';
+import { fetchLiveEntityHistory } from '../../services/haHistoryService';
 
 interface MiniSensorSparklineProps {
   entityId: string;
@@ -41,39 +49,53 @@ export default function MiniSensorSparkline({
       if (!entityId) return;
 
       try {
-        if (isLiveMode && typeof haWebSocketService?.sendRequest === 'function') {
+        if (isLiveMode) {
           const startTime = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-          const res = await haWebSocketService
-            .sendRequest<Record<string, Array<{ state: string; last_updated: string }>>>(
-              'history/history_during_period',
-              {
-                start_time: startTime,
-                entity_ids: [entityId],
-                minimal_response: true,
-                significant_changes_only: true
-              }
-            )
-            .catch(() => null);
+          const liveHistory = await fetchLiveEntityHistory(entityId, startTime);
 
-          if (!isCancelled && res && res[entityId] && res[entityId].length > 1) {
-            const vals = res[entityId]
+          if (!isCancelled && liveHistory.length > 0) {
+            const vals = liveHistory
               .map((p) => parseFloat(p.state))
               .filter((v) => !isNaN(v));
 
-            if (vals.length >= 2) {
-              // Sample down to max 24 points for clean SVG rendering
-              const step = Math.max(1, Math.floor(vals.length / 24));
-              const sampled = vals.filter((_, i) => i % step === 0);
-              setDataPoints(sampled);
+            if (vals.length >= 1) {
+              // Ensure the latest point aligns with live entity current reading
+              if (!isNaN(parsedCurrent)) {
+                vals.push(parsedCurrent);
+              }
+
+              if (vals.length === 1) {
+                setDataPoints([vals[0], vals[0]]);
+                return;
+              }
+
+              // Sample down to max 24 points for crisp, high-performance SVG rendering
+              const maxPoints = 24;
+              if (vals.length <= maxPoints) {
+                setDataPoints(vals);
+              } else {
+                const step = (vals.length - 1) / (maxPoints - 1);
+                const sampled: number[] = [];
+                for (let i = 0; i < maxPoints - 1; i++) {
+                  sampled.push(vals[Math.round(i * step)]);
+                }
+                // Always include the absolute latest live point
+                sampled.push(vals[vals.length - 1]);
+                setDataPoints(sampled);
+              }
               return;
             }
+          } else if (isLiveMode && !isNaN(parsedCurrent)) {
+            // Live sensor with constant state over the period
+            setDataPoints([parsedCurrent, parsedCurrent]);
+            return;
           }
         }
-      } catch {
-        // Fallback below
+      } catch (err) {
+        console.warn('[MiniSensorSparkline] History fetch error:', err);
       }
 
-      // Generate realistic natural variation curve based on current value
+      // Fallback for demo / preview non-live mode
       if (!isCancelled) {
         const synthetic: number[] = [];
         const count = 16;
@@ -89,14 +111,15 @@ export default function MiniSensorSparkline({
     return () => {
       isCancelled = true;
     };
-  }, [entityId, isLiveMode, baseVal]);
+  }, [entityId, isLiveMode, baseVal, parsedCurrent]);
 
   const svgPaths = useMemo(() => {
     if (dataPoints.length < 2) return null;
 
     const min = Math.min(...dataPoints);
     const max = Math.max(...dataPoints);
-    const range = max - min || 1;
+    const isFlat = max === min;
+    const range = isFlat ? 1 : max - min;
 
     const w = 120;
     const h = height;
@@ -104,7 +127,10 @@ export default function MiniSensorSparkline({
 
     const points: SparklinePoint[] = dataPoints.map((val, idx) => {
       const x = (idx / (dataPoints.length - 1)) * (w - padding * 2) + padding;
-      const y = h - padding - ((val - min) / range) * (h - padding * 2);
+      // If flat line, place in vertical center
+      const y = isFlat
+        ? h / 2
+        : h - padding - ((val - min) / range) * (h - padding * 2);
       return { x, y, val };
     });
 

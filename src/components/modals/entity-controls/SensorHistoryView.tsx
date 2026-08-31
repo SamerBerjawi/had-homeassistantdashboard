@@ -55,6 +55,8 @@ interface StateChangeEvent {
   isCurrent: boolean;
 }
 
+import { fetchLiveEntityHistory } from '../../../services/haHistoryService';
+
 export default function SensorHistoryView({ entity }: SensorHistoryViewProps) {
   const isLiveMode = useAutoLayoutStore((s) => s.isLiveMode);
 
@@ -97,7 +99,7 @@ export default function SensorHistoryView({ entity }: SensorHistoryViewProps) {
     return `${days}d ${hr % 24}h`;
   };
 
-  // Generate synthetic state change timeline for binary sensors
+  // Generate synthetic state change timeline for binary sensors (Demo mode only)
   const generateSyntheticStateEvents = (
     range: '6h' | '24h' | '7d',
     currentState: string
@@ -137,7 +139,6 @@ export default function SensorHistoryView({ entity }: SensorHistoryViewProps) {
       isCurrent: true
     });
 
-    // Past 4-6 transitions
     let lastEnd = currentStart;
     let toggle = !isCurrentlyActive;
     const intervals = range === '6h' ? [20, 8, 120, 15, 60] : [180, 25, 360, 45, 240, 15];
@@ -165,7 +166,7 @@ export default function SensorHistoryView({ entity }: SensorHistoryViewProps) {
     return events;
   };
 
-  // Generate synthetic smooth history curve for numeric sensors
+  // Generate synthetic smooth history curve for numeric sensors (Demo mode only)
   const generateSyntheticNumericHistory = (
     range: '6h' | '24h' | '7d',
     baseVal: number
@@ -211,40 +212,28 @@ export default function SensorHistoryView({ entity }: SensorHistoryViewProps) {
       ).toISOString();
 
       try {
-        if (isLiveMode && typeof haWebSocketService?.sendRequest === 'function') {
-          const res = await haWebSocketService
-            .sendRequest<Record<string, Array<{ state: string; last_updated: string; last_changed: string }>>>(
-              'history/history_during_period',
-              {
-                start_time: startTime,
-                entity_ids: [entity.entity_id],
-                minimal_response: true,
-                significant_changes_only: true
-              }
-            )
-            .catch(() => null);
+        if (isLiveMode) {
+          const liveHistory = await fetchLiveEntityHistory(entity.entity_id, startTime);
 
-          if (!isCancelled && res && res[entity.entity_id] && res[entity.entity_id].length > 0) {
-            const rawPoints = res[entity.entity_id];
-
+          if (!isCancelled && liveHistory.length > 0) {
             if (isBinaryOrStatusSensor) {
-              // Parse discrete state change events
+              // Parse discrete state change events from real HA timeline
               const parsedEvents: StateChangeEvent[] = [];
               let previousEnd = now.getTime();
 
-              for (let i = rawPoints.length - 1; i >= 0; i--) {
-                const pt = rawPoints[i];
-                const ptTime = new Date(pt.last_changed || pt.last_updated).getTime();
+              for (let i = liveHistory.length - 1; i >= 0; i--) {
+                const pt = liveHistory[i];
+                const ptTime = pt.timestamp;
                 const durationMs = Math.max(1000, previousEnd - ptTime);
 
                 parsedEvents.push({
                   id: `live-evt-${i}`,
-                  state: pt.state,
+                  state: pt.state.toLowerCase(),
                   startTime: ptTime,
                   endTime: previousEnd,
                   durationMs,
                   timeFormatted: new Date(ptTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                  isCurrent: i === rawPoints.length - 1
+                  isCurrent: i === liveHistory.length - 1
                 });
                 previousEnd = ptTime;
               }
@@ -255,29 +244,74 @@ export default function SensorHistoryView({ entity }: SensorHistoryViewProps) {
                 return;
               }
             } else {
-              // Numeric sensor parsing
-              const parsed: NumericPoint[] = rawPoints
+              // Parse real numeric telemetry points
+              const parsed: NumericPoint[] = liveHistory
                 .map((p) => {
                   const v = parseFloat(p.state);
-                  const d = new Date(p.last_updated || p.last_changed);
+                  if (isNaN(v)) return null;
+                  const d = new Date(p.timestamp);
+                  const timeStr =
+                    timeRange === '7d'
+                      ? `${d.toLocaleDateString(undefined, { weekday: 'short' })} ${d.getHours()}:00`
+                      : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
                   return {
-                    time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
-                    timestamp: d.getTime(),
-                    value: isNaN(v) ? 0 : v
+                    time: timeStr,
+                    timestamp: p.timestamp,
+                    value: v
                   };
                 })
-                .filter((p) => !isNaN(p.value));
+                .filter((p): p is NumericPoint => p !== null);
 
-              if (parsed.length > 0) {
+              // Append active live state value as the most recent point
+              if (!isNaN(numValue)) {
+                parsed.push({
+                  time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+                  timestamp: now.getTime(),
+                  value: numValue
+                });
+              }
+
+              if (parsed.length >= 1) {
+                if (parsed.length === 1) {
+                  // Stable continuous reading across period
+                  const startMs = new Date(startTime).getTime();
+                  const startD = new Date(startMs);
+                  const startTimeStr =
+                    timeRange === '7d'
+                      ? `${startD.toLocaleDateString(undefined, { weekday: 'short' })} ${startD.getHours()}:00`
+                      : `${String(startD.getHours()).padStart(2, '0')}:${String(startD.getMinutes()).padStart(2, '0')}`;
+                  parsed.unshift({
+                    time: startTimeStr,
+                    timestamp: startMs,
+                    value: parsed[0].value
+                  });
+                }
+
                 setNumericHistory(parsed);
                 setIsLoading(false);
                 return;
               }
             }
+          } else if (isLiveMode && !isNaN(numValue) && !isBinaryOrStatusSensor) {
+            // Live sensor with steady constant value over window
+            const startMs = new Date(startTime).getTime();
+            const startD = new Date(startMs);
+            const startTimeStr =
+              timeRange === '7d'
+                ? `${startD.toLocaleDateString(undefined, { weekday: 'short' })} ${startD.getHours()}:00`
+                : `${String(startD.getHours()).padStart(2, '0')}:${String(startD.getMinutes()).padStart(2, '0')}`;
+            const curTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            setNumericHistory([
+              { time: startTimeStr, timestamp: startMs, value: numValue },
+              { time: curTimeStr, timestamp: now.getTime(), value: numValue }
+            ]);
+            setIsLoading(false);
+            return;
           }
         }
-      } catch {
-        // Fallback
+      } catch (e) {
+        console.warn('[SensorHistoryView] History load error:', e);
       }
 
       if (!isCancelled) {
