@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Telemetry and Battery Icon Helpers
- * Provides clean Phosphor-based battery indicators and telemetry badges without raw emojis.
+ * Provides clean Phosphor-based battery indicators and telemetry badges without raw emojis,
+ * with strict nowrap truncation to prevent awkward multi-line dot wraps.
  */
 
 import React from 'react';
@@ -52,15 +53,15 @@ export const TelemetryLine: React.FC<TelemetryLineProps> = ({ items, className =
   if (validItems.length === 0) return null;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 flex-wrap ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis truncate max-w-full ${className}`}>
       {validItems.map((item, idx) => {
         const isLast = idx === validItems.length - 1;
 
         if (typeof item === 'string' || typeof item === 'number') {
           return (
             <React.Fragment key={idx}>
-              <span>{item}</span>
-              {!isLast && <span className="opacity-40 text-[9px]">•</span>}
+              <span className="shrink-0">{item}</span>
+              {!isLast && <span className="opacity-40 text-[9px] shrink-0">•</span>}
             </React.Fragment>
           );
         }
@@ -69,7 +70,7 @@ export const TelemetryLine: React.FC<TelemetryLineProps> = ({ items, className =
 
         return (
           <React.Fragment key={idx}>
-            <span className={`inline-flex items-center gap-1 ${item.color || ''}`}>
+            <span className={`inline-flex items-center gap-1 shrink-0 ${item.color || ''}`}>
               {item.isBattery && typeof item.batteryLevel === 'number' && (
                 <>
                   {getBatteryIcon(item.batteryLevel)}
@@ -95,7 +96,7 @@ export const TelemetryLine: React.FC<TelemetryLineProps> = ({ items, className =
                 </>
               )}
             </span>
-            {!isLast && <span className="opacity-40 text-[9px]">•</span>}
+            {!isLast && <span className="opacity-40 text-[9px] shrink-0">•</span>}
           </React.Fragment>
         );
       })}

@@ -687,8 +687,8 @@ export default function AreaDetailView({
                   id={light.entity_id}
                   colSpan={2}
                   rowSpan={isDimmable ? 2 : 1}
-                  tabletColSpan={2}
-                  desktopColSpan={isDimmable ? 3 : 2}
+                  tabletColSpan={3}
+                  desktopColSpan={3}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(light.entity_id)}
                 >
@@ -747,7 +747,7 @@ export default function AreaDetailView({
                   id={climate.entity_id}
                   colSpan={2}
                   rowSpan={2}
-                  tabletColSpan={2}
+                  tabletColSpan={3}
                   desktopColSpan={3}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(climate.entity_id)}
@@ -791,8 +791,8 @@ export default function AreaDetailView({
                   id={fan.entity_id}
                   colSpan={2}
                   rowSpan={1}
-                  tabletColSpan={2}
-                  desktopColSpan={2}
+                  tabletColSpan={3}
+                  desktopColSpan={3}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(fan.entity_id)}
                 >
@@ -895,8 +895,8 @@ export default function AreaDetailView({
                   id={sw.entity_id}
                   colSpan={2}
                   rowSpan={1}
-                  tabletColSpan={2}
-                  desktopColSpan={2}
+                  tabletColSpan={3}
+                  desktopColSpan={3}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(sw.entity_id)}
                 >
@@ -935,8 +935,8 @@ export default function AreaDetailView({
                   id={lock.entity_id}
                   colSpan={2}
                   rowSpan={1}
-                  tabletColSpan={2}
-                  desktopColSpan={2}
+                  tabletColSpan={3}
+                  desktopColSpan={3}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(lock.entity_id)}
                 >
@@ -1005,8 +1005,8 @@ export default function AreaDetailView({
                   id={cover.entity_id}
                   colSpan={2}
                   rowSpan={1}
-                  tabletColSpan={2}
-                  desktopColSpan={2}
+                  tabletColSpan={3}
+                  desktopColSpan={3}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(cover.entity_id)}
                 >
@@ -1090,7 +1090,7 @@ export default function AreaDetailView({
                   id={media.entity_id}
                   colSpan={isPlaying ? 4 : 2}
                   rowSpan={isPlaying ? 2 : 1}
-                  tabletColSpan={isPlaying ? 4 : 2}
+                  tabletColSpan={isPlaying ? 6 : 3}
                   desktopColSpan={isPlaying ? 6 : 3}
                   isUnavailable={isUnavailable}
                   onLongPress={() => setActiveMediaDrawerEntity(media)}
@@ -1129,8 +1129,8 @@ export default function AreaDetailView({
                   id={vac.entity_id}
                   colSpan={2}
                   rowSpan={1}
-                  tabletColSpan={2}
-                  desktopColSpan={2}
+                  tabletColSpan={3}
+                  desktopColSpan={3}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(vac.entity_id)}
                 >
@@ -1181,7 +1181,7 @@ export default function AreaDetailView({
                   id={cam.entity_id}
                   colSpan={4}
                   rowSpan={2}
-                  tabletColSpan={4}
+                  tabletColSpan={6}
                   desktopColSpan={6}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(cam.entity_id)}
@@ -1237,8 +1237,8 @@ export default function AreaDetailView({
                       id={cs.entity_id}
                       colSpan={2}
                       rowSpan={1}
-                      tabletColSpan={2}
-                      desktopColSpan={2}
+                      tabletColSpan={3}
+                      desktopColSpan={3}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(cs.entity_id)}
                     >
@@ -1272,8 +1272,8 @@ export default function AreaDetailView({
                       id={ms.entity_id}
                       colSpan={2}
                       rowSpan={1}
-                      tabletColSpan={2}
-                      desktopColSpan={2}
+                      tabletColSpan={3}
+                      desktopColSpan={3}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(ms.entity_id)}
                     >
@@ -1310,8 +1310,8 @@ export default function AreaDetailView({
                       id={sensor.entity_id}
                       colSpan={2}
                       rowSpan={isSpark ? 2 : 1}
-                      tabletColSpan={2}
-                      desktopColSpan={isSpark ? 3 : 2}
+                      tabletColSpan={3}
+                      desktopColSpan={3}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(sensor.entity_id)}
                     >
@@ -1345,8 +1345,8 @@ export default function AreaDetailView({
                       id={hs.entity_id}
                       colSpan={2}
                       rowSpan={1}
-                      tabletColSpan={2}
-                      desktopColSpan={2}
+                      tabletColSpan={3}
+                      desktopColSpan={3}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(hs.entity_id)}
                     >
@@ -1380,8 +1380,8 @@ export default function AreaDetailView({
                       id={sensor.entity_id}
                       colSpan={2}
                       rowSpan={1}
-                      tabletColSpan={2}
-                      desktopColSpan={2}
+                      tabletColSpan={3}
+                      desktopColSpan={3}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(sensor.entity_id)}
                     >
@@ -1415,8 +1415,8 @@ export default function AreaDetailView({
                       id={bs.entity_id}
                       colSpan={2}
                       rowSpan={1}
-                      tabletColSpan={2}
-                      desktopColSpan={2}
+                      tabletColSpan={3}
+                      desktopColSpan={3}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(bs.entity_id)}
                     >
@@ -1450,8 +1450,8 @@ export default function AreaDetailView({
                       id={sensor.entity_id}
                       colSpan={2}
                       rowSpan={1}
-                      tabletColSpan={2}
-                      desktopColSpan={2}
+                      tabletColSpan={3}
+                      desktopColSpan={3}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(sensor.entity_id)}
                     >

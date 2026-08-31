@@ -1,6 +1,10 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * Energy Autarky & Efficiency Gauges Card
+ * Clean circular progress rings showing self-sufficiency and solar consumption percentages,
+ * with robust responsive layout preventing gauge/text overlap.
  */
 
 import React from 'react';
@@ -10,9 +14,9 @@ interface EnergyGaugesCardProps {
   selfSufficiencyPercentage: number;
   selfConsumptionPercentage: number;
   hasSolar: boolean;
-  hasBattery: boolean;
-  solarYieldKWh: number;
-  solarConsumedKWh: number;
+  hasBattery?: boolean;
+  solarYieldKWh?: number;
+  solarConsumedKWh?: number;
   darkMode?: boolean;
 }
 
@@ -20,7 +24,6 @@ export default function EnergyGaugesCard({
   selfSufficiencyPercentage = 0,
   selfConsumptionPercentage = 0,
   hasSolar,
-  hasBattery,
   solarYieldKWh = 0,
   solarConsumedKWh = 0,
   darkMode = true
@@ -28,7 +31,7 @@ export default function EnergyGaugesCard({
   const autarky = Math.min(100, Math.max(0, selfSufficiencyPercentage));
   const selfCons = Math.min(100, Math.max(0, selfConsumptionPercentage));
 
-  const CIRCLE_RADIUS = 36;
+  const CIRCLE_RADIUS = 32;
   const CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
 
   const autarkyOffset = CIRCUMFERENCE - (autarky / 100) * CIRCUMFERENCE;
@@ -37,55 +40,54 @@ export default function EnergyGaugesCard({
   return (
     <div
       style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-      className={`w-full rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all duration-300 relative overflow-hidden isolate flex flex-col justify-between ${
-        darkMode
-          ? 'bg-black/20 text-white'
-          : 'bg-white/20 text-slate-900'
+      className={`w-full h-full rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all duration-300 relative overflow-hidden isolate flex flex-col justify-between ${
+        darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
       }`}
     >
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-4">
         <div
           className={`p-2 rounded-2xl ${
-            darkMode
-              ? 'bg-emerald-500/15 text-emerald-400'
-              : 'bg-emerald-50 text-emerald-600'
+            darkMode ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-50 text-emerald-600'
           }`}
         >
           <ShieldCheck size={18} weight="fill" />
         </div>
-        <div>
-          <h3 className={`text-sm font-extrabold tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-            Energy Autarky & Efficiency
-          </h3>
-          <p className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-            Self-sufficiency and on-site solar consumption rates
-          </p>
-        </div>
+        <h3 className={`text-sm font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+          Autarky & Self-Consumption
+        </h3>
       </div>
 
       {/* Dual Circular Gauge Display */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-auto py-2">
+      <div className="grid grid-cols-1 gap-3.5 my-auto py-1">
         {/* GAUGE 1: SELF-SUFFICIENCY (AUTARKY) */}
         <div
-          className={`p-4 rounded-2xl border flex items-center gap-4 transition-all ${
+          className={`p-3.5 sm:p-4 rounded-2xl border flex items-center justify-between gap-3 transition-all ${
             darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'
           }`}
         >
-          {/* Circular Progress Ring */}
-          <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 90 90">
+          <div className="flex flex-col min-w-0">
+            <span className={`text-xs font-black ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
+              Self-Sufficiency
+            </span>
+            <span className={`text-[11px] font-mono mt-0.5 truncate ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              Off-Grid Independence
+            </span>
+          </div>
+
+          <div className="relative w-14 h-14 shrink-0 flex items-center justify-center">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
               <circle
-                cx="45"
-                cy="45"
+                cx="40"
+                cy="40"
                 r={CIRCLE_RADIUS}
                 className={darkMode ? 'stroke-slate-800' : 'stroke-slate-200'}
                 strokeWidth="7"
                 fill="none"
               />
               <circle
-                cx="45"
-                cy="45"
+                cx="40"
+                cy="40"
                 r={CIRCLE_RADIUS}
                 className="stroke-emerald-500 transition-all duration-700 ease-out"
                 strokeWidth="7"
@@ -101,37 +103,36 @@ export default function EnergyGaugesCard({
               </span>
             </div>
           </div>
-
-          <div className="flex flex-col">
-            <span className={`text-xs font-extrabold ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
-              Self-Sufficiency
-            </span>
-            <span className={`text-[11px] font-medium mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              Home energy provided without the grid
-            </span>
-          </div>
         </div>
 
         {/* GAUGE 2: SOLAR SELF-CONSUMPTION */}
         <div
-          className={`p-4 rounded-2xl border flex items-center gap-4 transition-all ${
+          className={`p-3.5 sm:p-4 rounded-2xl border flex items-center justify-between gap-3 transition-all ${
             darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'
           }`}
         >
-          {/* Circular Progress Ring */}
-          <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 90 90">
+          <div className="flex flex-col min-w-0">
+            <span className={`text-xs font-black ${darkMode ? 'text-amber-400' : 'text-amber-600'}`}>
+              Self-Consumption
+            </span>
+            <span className={`text-[11px] font-mono mt-0.5 truncate ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              {hasSolar ? `${solarConsumedKWh.toFixed(1)} / ${solarYieldKWh.toFixed(1)} kWh` : 'No Solar'}
+            </span>
+          </div>
+
+          <div className="relative w-14 h-14 shrink-0 flex items-center justify-center">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
               <circle
-                cx="45"
-                cy="45"
+                cx="40"
+                cy="40"
                 r={CIRCLE_RADIUS}
                 className={darkMode ? 'stroke-slate-800' : 'stroke-slate-200'}
                 strokeWidth="7"
                 fill="none"
               />
               <circle
-                cx="45"
-                cy="45"
+                cx="40"
+                cy="40"
                 r={CIRCLE_RADIUS}
                 className="stroke-amber-500 transition-all duration-700 ease-out"
                 strokeWidth="7"
@@ -146,17 +147,6 @@ export default function EnergyGaugesCard({
                 {hasSolar ? `${selfCons.toFixed(0)}%` : '—'}
               </span>
             </div>
-          </div>
-
-          <div className="flex flex-col">
-            <span className={`text-xs font-extrabold ${darkMode ? 'text-amber-400' : 'text-amber-600'}`}>
-              Self-Consumption
-            </span>
-            <span className={`text-[11px] font-medium mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              {hasSolar
-                ? `${solarConsumedKWh.toFixed(1)} of ${solarYieldKWh.toFixed(1)} kWh used locally`
-                : 'Requires solar source configured'}
-            </span>
           </div>
         </div>
       </div>
