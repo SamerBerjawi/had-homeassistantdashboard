@@ -147,14 +147,12 @@ export default function FanControlView({ entity }: FanControlViewProps) {
           {isOn ? `${speed}% Speed` : 'Fan Off'}
         </h3>
         <p className="text-xs text-slate-400 font-medium mt-1">
-          {isOn ? (
-            <span>
-              Airflow Active{isOscillating ? ' • Oscillating' : ''}
-              {lastChangedStr ? ` • ${lastChangedStr}` : ''}
-            </span>
-          ) : (
-            <span>Tap fan to activate cooling</span>
-          )}
+          {isOn
+            ? isOscillating
+              ? 'Airflow Active • Oscillating'
+              : 'Airflow Active'
+            : 'Off'}
+          {lastChangedStr && ` • ${lastChangedStr}`}
         </p>
 
         {/* Quick Power Toggle */}

@@ -83,13 +83,8 @@ export default function SwitchControlView({ entity }: SwitchControlViewProps) {
           {isOn ? 'Power Active' : 'Switched Off'}
         </h3>
         <p className="text-xs text-slate-400 font-medium mt-1">
-          {isOn ? (
-            <span>
-              Supplying Power{lastChangedStr ? ` • ${lastChangedStr}` : ''}
-            </span>
-          ) : (
-            <span>Tap icon to activate outlet</span>
-          )}
+          {isOn ? 'Supplying Power' : 'Off'}
+          {lastChangedStr && ` • ${lastChangedStr}`}
         </p>
 
         {/* Live Power Consumption Chip (if actively drawing power) */}
@@ -159,16 +154,6 @@ export default function SwitchControlView({ entity }: SwitchControlViewProps) {
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Info Notice for Pure Relays */}
-      {!caps.hasPowerMonitoring && !caps.hasEnergyMonitoring && (
-        <div className="p-3.5 rounded-2xl bg-slate-800/30 border border-white/10 text-xs text-slate-400 flex items-start gap-2.5">
-          <Info size={16} weight="duotone" className="shrink-0 text-emerald-400 mt-0.5" />
-          <p>
-            This device is configured as a binary power relay. Use the button above to switch states.
-          </p>
         </div>
       )}
     </div>

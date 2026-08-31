@@ -11,6 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { formatRelativeTime } from '../../../lib/utils';
 import {
   detectLightCapabilities,
   kelvinToRgb,
@@ -64,6 +65,8 @@ export default function LightControlView({ entity }: LightControlViewProps) {
   const caps: LightCapabilities = useMemo(() => {
     return detectLightCapabilities(entity);
   }, [entity]);
+
+  const lastChangedStr = formatRelativeTime(entity.last_changed || (entity as any).last_updated);
 
   const isOn = caps.isOn;
   const [brightness, setBrightness] = useState<number>(caps.brightnessPct);
@@ -254,11 +257,12 @@ export default function LightControlView({ entity }: LightControlViewProps) {
         <p className="text-xs text-slate-400 font-medium mt-1">
           {isOn
             ? caps.type === 'color'
-              ? 'Color Active & Illuminating'
+              ? 'Color Active'
               : caps.type === 'white_temp'
-              ? `${colorTempKelvin}K White Light Active`
-              : 'Illuminating'
-            : 'Tap bulb to toggle power'}
+              ? `${colorTempKelvin}K White Light`
+              : 'Active'
+            : 'Off'}
+          {lastChangedStr && ` • ${lastChangedStr}`}
         </p>
       </div>
 

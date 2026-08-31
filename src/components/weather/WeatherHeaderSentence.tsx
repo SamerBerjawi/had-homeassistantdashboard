@@ -261,7 +261,7 @@ export default function WeatherHeaderSentence({
       title="Click to view detailed hourly & 7-day weather forecast"
     >
       {/* 1. Introductory prefix */}
-      <span>The temperature is</span>
+      <span>It is currently</span>
 
       {/* 2. Temperature Badge with Thermometer icon */}
       <span
@@ -275,7 +275,7 @@ export default function WeatherHeaderSentence({
         <span className="font-mono">{weatherData.temperature}{weatherData.tempUnit}</span>
       </span>
 
-      <span>, it is currently</span>
+      <span>and</span>
 
       {/* 3. Condition Badge with dynamic icon */}
       <span
@@ -304,7 +304,7 @@ export default function WeatherHeaderSentence({
         <span>{weatherData.highTemp}{weatherData.tempUnit}</span>
       </span>
 
-      <span>and low of</span>
+      <span>and a low of</span>
       <span
         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border shadow-xs transition-all ${
           darkMode 
@@ -316,10 +316,10 @@ export default function WeatherHeaderSentence({
         <span>{weatherData.lowTemp}{weatherData.tempUnit}</span>
       </span>
 
-      {/* 5. Humidity or Wind Badge (if available) */}
+      {/* 5. Humidity Badge (if available) */}
       {weatherData.humidity !== undefined && (
         <>
-          <span>, humidity is at</span>
+          <span>, humidity at</span>
           <span
             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-bold border shadow-xs transition-all ${
               darkMode 

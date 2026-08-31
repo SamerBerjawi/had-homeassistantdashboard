@@ -84,7 +84,7 @@ export default function MediaHeaderSentence({
           }`}
         >
           <CheckCircle size={13} weight="fill" className="text-emerald-400" />
-          <span>All media players are idle</span>
+          <span>all media players are idle</span>
         </span>
         <span>across all living areas.</span>
       </div>
@@ -150,6 +150,7 @@ export default function MediaHeaderSentence({
               </span>
             </React.Fragment>
           ))}
+          <span>.</span>
         </>
       ) : (
         <span>with synchronized playback in progress.</span>

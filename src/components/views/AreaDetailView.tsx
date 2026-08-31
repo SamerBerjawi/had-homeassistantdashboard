@@ -731,6 +731,7 @@ export default function AreaDetailView({
                 const dc = (cs.attributes?.device_class || '').toLowerCase();
                 const isWindow = dc === 'window' || cs.entity_id.includes('window');
                 const battery = getEntityBattery(cs);
+                const lastChangedStr = formatRelativeTime(cs.last_changed || cs.last_updated);
 
                 return (
                   <div
@@ -773,8 +774,13 @@ export default function AreaDetailView({
                         <h5 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                           {formatEntityDisplayName(cs.name, area.name)}
                         </h5>
-                        <div className="text-[11px] text-slate-500 flex items-center gap-1.5 truncate mt-0.5">
-                          <span>{isWindow ? 'Window' : 'Door'}</span>
+                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap mt-0.5">
+                          <span className={`font-semibold ${isOpen ? 'text-amber-500 dark:text-amber-400' : 'text-slate-900 dark:text-white'}`}>
+                            {isOpen ? 'Open' : 'Closed'}
+                          </span>
+                          {lastChangedStr && (
+                            <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
+                          )}
                           {battery !== undefined && (
                             <span className="flex items-center gap-0.5 text-slate-400">
                               • <BatteryMedium size={12} weight="bold" /> {battery}%

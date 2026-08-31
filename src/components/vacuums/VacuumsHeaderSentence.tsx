@@ -305,7 +305,7 @@ export default function VacuumsHeaderSentence({
           }`}
         >
           <BatteryFull size={14} weight="fill" />
-          <span>{retVac.batteryLevel}% Battery</span>
+          <span>{retVac.batteryLevel}% battery</span>
         </span>
         <span>.</span>
       </div>
@@ -332,7 +332,7 @@ export default function VacuumsHeaderSentence({
           <Pause size={14} weight="fill" className="text-amber-400" />
           <span>{pVac.name}</span>
         </span>
-        <span>cleaning session is paused in</span>
+        <span>is paused in</span>
         <span
           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold border shadow-xs ${
             darkMode
@@ -364,7 +364,7 @@ export default function VacuumsHeaderSentence({
         }`}
       >
         <CheckCircle size={14} weight="fill" className="text-emerald-400" />
-        <span>All {vacuums.length} robotic cleaner{vacuums.length === 1 ? '' : 's'} are docked</span>
+        <span>all {vacuums.length} robotic cleaner{vacuums.length === 1 ? '' : 's'} are docked</span>
       </span>
       <span>and charging at</span>
       <span
@@ -375,7 +375,7 @@ export default function VacuumsHeaderSentence({
         }`}
       >
         <BatteryCharging size={14} weight="fill" className="text-teal-400" />
-        <span>{vacuums[0]?.batteryLevel || 100}% Battery</span>
+        <span>{vacuums[0]?.batteryLevel || 100}% battery</span>
       </span>
       <span>with filters and dustbins ready for the next scheduled routine.</span>
     </div>

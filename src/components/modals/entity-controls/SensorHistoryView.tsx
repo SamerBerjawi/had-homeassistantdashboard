@@ -394,6 +394,53 @@ export default function SensorHistoryView({ entity }: SensorHistoryViewProps) {
     rawState === 'detected' ||
     rawState === 'unlocked';
 
+  const formatStateLabel = (st: string) => {
+    const s = (st || '').toLowerCase();
+    const eid = (entity?.entity_id || '').toLowerCase();
+    const isDoorOrWin =
+      deviceClass === 'door' ||
+      deviceClass === 'window' ||
+      deviceClass === 'garage_door' ||
+      deviceClass === 'opening' ||
+      eid.includes('door') ||
+      eid.includes('window');
+
+    if (isDoorOrWin) {
+      if (s === 'on' || s === 'open') return 'Open';
+      if (s === 'off' || s === 'closed') return 'Closed';
+    }
+    if (deviceClass === 'motion' || deviceClass === 'occupancy' || eid.includes('motion')) {
+      if (s === 'on' || s === 'detected') return 'Motion Detected';
+      if (s === 'off' || s === 'clear') return 'Clear';
+    }
+    if (deviceClass === 'smoke') {
+      if (s === 'on' || s === 'detected') return 'Smoke Alert';
+      if (s === 'off' || s === 'clear') return 'Clear';
+    }
+    if (deviceClass === 'moisture') {
+      if (s === 'on' || s === 'detected') return 'Leak Alert';
+      if (s === 'off' || s === 'dry') return 'Dry & Safe';
+    }
+    return st;
+  };
+
+  const heroStateDisplay = useMemo(() => {
+    const s = rawState;
+    const eid = (entity?.entity_id || '').toLowerCase();
+    const isDoorOrWin =
+      deviceClass === 'door' ||
+      deviceClass === 'window' ||
+      deviceClass === 'garage_door' ||
+      deviceClass === 'opening' ||
+      eid.includes('door') ||
+      eid.includes('window');
+
+    if (isDoorOrWin) {
+      return s === 'on' || s === 'open' ? 'OPEN' : 'CLOSED';
+    }
+    return String(entity?.state || 'Unknown').toUpperCase();
+  }, [deviceClass, entity?.entity_id, entity?.state, rawState]);
+
   return (
     <div className="space-y-6">
       {/* ------------------------------------------------------------- */}
@@ -423,7 +470,7 @@ export default function SensorHistoryView({ entity }: SensorHistoryViewProps) {
         </div>
 
         <h3 className="text-3xl font-black font-mono text-white tracking-tight uppercase">
-          {String(entity?.state || 'Unknown')} {unit}
+          {heroStateDisplay} {unit}
         </h3>
         <p className="text-xs text-slate-400 font-medium mt-1 capitalize">
           {entity?.attributes?.friendly_name || entity?.entity_id}
@@ -547,7 +594,7 @@ export default function SensorHistoryView({ entity }: SensorHistoryViewProps) {
                         </div>
                         <div className="min-w-0">
                           <div className="font-bold text-white uppercase tracking-wide truncate">
-                            {evt.state}
+                            {formatStateLabel(evt.state)}
                             {evt.isCurrent && (
                               <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                                 Current

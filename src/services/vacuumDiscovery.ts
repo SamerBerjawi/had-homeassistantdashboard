@@ -287,11 +287,11 @@ export function discoverVacuumDevices(
 
   if (totalVacuumsCount === 0) {
     summarySentence = 'No robotic vacuum cleaners are currently connected to your home.';
-    detailedSentence = 'Configure your robotic cleaners in Home Assistant to monitor live telemetry.';
+    detailedSentence = 'No robotic vacuums detected in Home Assistant.';
   } else if (hasErrors) {
     const errVac = vacuums.find((v) => v.state === 'error');
     summarySentence = `Attention required: ${errVac?.name || 'A robot vacuum'} in the ${errVac?.currentRoom || 'Living Area'} reported ${errVac?.errorCode || 'an obstruction'}.`;
-    detailedSentence = `Please check the main brush and cliff sensors to resume cleaning.`;
+    detailedSentence = `Check the main brush and cliff sensors to resume cleaning.`;
   } else if (activeCleaningCount > 0) {
     if (activeCleaningCount === 1) {
       const primary = activeCleaningList[0];
@@ -314,7 +314,7 @@ export function discoverVacuumDevices(
   } else if (pausedCount > 0) {
     const pauseVac = vacuums.find((v) => v.state === 'paused');
     summarySentence = `${pauseVac?.name || 'The robot vacuum'} cleaning session is paused in ${pauseVac?.currentRoom || 'the area'} (${pauseVac?.batteryLevel}% battery).`;
-    detailedSentence = `Tap resume to continue cleaning where it left off.`;
+    detailedSentence = `Cleaning session is paused and ready to resume.`;
   } else if (dockedCount === totalVacuumsCount) {
     if (totalVacuumsCount === 1) {
       const v = vacuums[0];
@@ -322,11 +322,11 @@ export function discoverVacuumDevices(
       detailedSentence = `Dustbin is ${v.consumables.dustbinStatus || 'ready'} and main filter is at ${v.consumables.filterPercent || 100}% service life.`;
     } else {
       summarySentence = `All ${totalVacuumsCount} robotic cleaners are docked and standing by at full charge.`;
-      detailedSentence = `Fleet maintenance is healthy and ready for next scheduled run.`;
+      detailedSentence = `All units are docked and ready for scheduled runs.`;
     }
   } else {
     summarySentence = `${dockedCount} of ${totalVacuumsCount} robotic cleaners are standing by in their docks.`;
-    detailedSentence = `Fleet status is synchronized with Home Assistant.`;
+    detailedSentence = `Cleaners are standing by in their docks.`;
   }
 
   const summary: VacuumStateSummary = {

@@ -95,12 +95,12 @@ export default function LockControlView({ entity }: LockControlViewProps) {
             : caps.isUnlocking
             ? 'Unlocking...'
             : isLocked
-            ? 'Locked & Secure'
+            ? 'Locked'
             : 'Unlocked'}
         </h3>
 
         <p className="text-xs text-slate-400 font-medium mt-1">
-          {isLocked ? 'Deadbolt Engaged' : 'Entry Accessible'}
+          {isLocked ? 'Deadbolt Engaged' : 'Unlocked'}
           {lastChangedStr && ` • ${lastChangedStr}`}
         </p>
 

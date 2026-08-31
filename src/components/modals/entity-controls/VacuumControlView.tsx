@@ -144,18 +144,18 @@ export default function VacuumControlView({ entity }: VacuumControlViewProps) {
           {caps.isError
             ? 'Error / Stuck'
             : caps.isCleaning
-            ? 'Active Cleaning'
+            ? 'Cleaning'
             : caps.isReturning
             ? 'Returning to Dock'
             : caps.isPaused
-            ? 'Cleaning Paused'
+            ? 'Paused'
             : caps.isDocked
-            ? 'Docked & Ready'
+            ? 'Docked'
             : caps.state}
         </h3>
 
         <p className="text-xs text-slate-400 font-medium mt-1">
-          {caps.isDocked && caps.isCharging ? 'Charging Battery' : 'Autonomous Robotic Care'}
+          {caps.isDocked && caps.isCharging ? 'Charging' : (caps.isDocked ? 'Docked' : (caps.isCleaning ? 'Cleaning Active' : 'Idle'))}
           {lastChangedStr && ` • ${lastChangedStr}`}
         </p>
 

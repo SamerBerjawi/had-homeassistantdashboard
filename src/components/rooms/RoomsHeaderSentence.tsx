@@ -103,7 +103,7 @@ export default function RoomsHeaderSentence({
         } ${className}`}
       >
         {/* 1. Floor Location Badge */}
-        <span>Located on</span>
+        <span>Located on the</span>
         <span
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-xs transition-all ${
             darkMode
@@ -178,7 +178,7 @@ export default function RoomsHeaderSentence({
               }`}
             >
               <CheckCircle size={13} weight="fill" className="text-slate-400" />
-              <span>turned off</span>
+              <span>off</span>
             </span>
             <span>,</span>
           </>
