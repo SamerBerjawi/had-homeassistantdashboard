@@ -124,10 +124,11 @@ export default function AreaMediaCard({
     return (
       <div
         onClick={() => onOpenDrawer(media)}
-        className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 overflow-hidden isolate shadow-xs ${
+        style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+        className={`col-span-1 p-4 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 overflow-hidden isolate ${
           darkMode
-            ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-            : 'bg-white/60 hover:bg-white/80 text-slate-900'
+            ? 'bg-black/20 hover:bg-black/30 text-white'
+            : 'bg-white/20 hover:bg-white/30 text-slate-900'
         }`}
       >
         <div className="flex items-center gap-2.5 min-w-0">
@@ -168,13 +169,16 @@ export default function AreaMediaCard({
   return (
     <div
       onClick={() => onOpenDrawer(media)}
-      style={{ clipPath: 'inset(0 round 1.5rem)' }}
-      className={`col-span-2 md:col-span-3 lg:col-span-2 group relative rounded-3xl p-4 sm:p-5 shadow-xs overflow-hidden isolate backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between gap-3 ${
+      style={{
+        clipPath: 'inset(0 round 1.5rem)',
+        boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)'
+      }}
+      className={`col-span-2 md:col-span-3 lg:col-span-2 group relative rounded-3xl p-4 sm:p-5 border border-purple-500/40 overflow-hidden isolate backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between gap-3 ${
         albumArtUrl
           ? 'bg-slate-950/60 text-white'
           : darkMode
-          ? 'bg-slate-900/60 text-white'
-          : 'bg-white/60 text-slate-900'
+          ? 'bg-black/20 text-white'
+          : 'bg-white/20 text-slate-900'
       }`}
     >
       {/* Dynamic Blurred Album Artwork Background */}

@@ -193,10 +193,11 @@ export default function CameraFeedSection({
               <div
                 key={camera.entity_id}
                 onClick={() => handleOpenStream(camera)}
-                className={`rounded-3xl backdrop-blur-md transition-all duration-300 group cursor-pointer overflow-hidden isolate shadow-xs ${
+                style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                className={`rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all duration-300 group cursor-pointer overflow-hidden isolate ${
                   darkMode
-                    ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                    : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    ? 'bg-black/20 hover:bg-black/30 text-white'
+                    : 'bg-white/20 hover:bg-white/30 text-slate-900'
                 }`}
               >
                 {/* Video Stream Frame with Native HA WebRTC (go2rtc-backed) engine */}

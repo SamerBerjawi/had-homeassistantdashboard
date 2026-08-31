@@ -21,10 +21,10 @@ export function HostOverviewSection({
   darkMode = true
 }: HostOverviewSectionProps) {
   const cardStyle =
-    'rounded-3xl backdrop-blur-md transition-all overflow-hidden isolate shadow-xs ' +
+    'rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ' +
     (darkMode
-      ? 'bg-slate-900/60 text-white'
-      : 'bg-white/60 text-slate-900');
+      ? 'bg-black/20 text-white'
+      : 'bg-white/20 text-slate-900');
 
   const subCardStyle =
     'flex items-center gap-3 p-2.5 rounded-2xl transition-all ' +

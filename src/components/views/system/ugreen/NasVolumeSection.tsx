@@ -51,10 +51,10 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
   const utilColor =
     volume.utilization >= 85 ? '#F43F5E' : volume.utilization >= 60 ? '#F59E0B' : '#06B6D4';
 
-  const cardStyle = `rounded-3xl p-4 sm:p-5 backdrop-blur-md transition-all overflow-hidden isolate shadow-xs ${
+  const cardStyle = `rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
     darkMode
-      ? 'bg-slate-900/60 text-white'
-      : 'bg-white/60 text-slate-900'
+      ? 'bg-black/20 text-white'
+      : 'bg-white/20 text-slate-900'
   }`;
 
   return (

@@ -288,7 +288,11 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
                     {floor.areas.map((area) => (
                       <div
                         key={area.areaId}
-                        className={`p-4 rounded-3xl border flex flex-col gap-3 transition-all ${
+                        style={{
+                          clipPath: 'inset(0 round 1.5rem)',
+                          boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)'
+                        }}
+                        className={`p-4 rounded-3xl border overflow-hidden isolate backdrop-blur-sm flex flex-col gap-3 transition-all ${
                           darkMode
                             ? 'bg-white/[0.03] border-white/10'
                             : 'bg-white/70 border-slate-200/90 shadow-xs'

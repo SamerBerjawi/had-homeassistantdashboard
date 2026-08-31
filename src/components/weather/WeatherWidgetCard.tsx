@@ -60,10 +60,11 @@ export default function WeatherWidgetCard({
   return (
     <div
       onClick={onOpenDrawer}
-      className={`group relative rounded-3xl p-5 overflow-hidden border shadow-xl transition-all duration-300 cursor-pointer hover:shadow-2xl hover:scale-[1.01] active:scale-[0.99] ${
+      style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+      className={`group relative rounded-3xl p-5 overflow-hidden border border-sky-500/30 dark:border-sky-400/30 backdrop-blur-sm transition-all duration-300 cursor-pointer ${
         darkMode
-          ? 'bg-slate-900/90 border-slate-700/60 hover:border-sky-500/50'
-          : 'bg-white/90 border-slate-200/90 hover:border-sky-400 shadow-slate-200/60'
+          ? 'bg-black/20 hover:bg-black/30 text-white'
+          : 'bg-white/20 hover:bg-white/30 text-slate-900'
       } ${className}`}
     >
       {/* Dynamic Animated Condition Backdrop */}

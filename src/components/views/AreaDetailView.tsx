@@ -560,14 +560,15 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={light.entity_id}
-                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all duration-300 flex flex-col justify-between gap-3 overflow-hidden isolate shadow-xs ${
-                      darkMode
-                        ? isOn
-                          ? 'bg-slate-900/80 text-white'
-                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                        : isOn
-                        ? 'bg-amber-50/80 text-slate-900'
-                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-4 rounded-3xl border ${
+                      isOn ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
+                    } backdrop-blur-sm transition-all duration-300 flex flex-col justify-between gap-3 overflow-hidden isolate ${
+                      isOn
+                        ? 'bg-amber-500/20 text-slate-900 dark:text-white'
+                        : darkMode
+                        ? 'bg-black/20 hover:bg-black/30 text-white'
+                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -671,14 +672,15 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={cs.entity_id}
-                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all flex items-center justify-between gap-3 overflow-hidden isolate shadow-xs ${
-                      darkMode
-                        ? isOpen
-                          ? 'bg-amber-500/15 text-amber-200'
-                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                        : isOpen
-                        ? 'bg-amber-50 text-amber-950'
-                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-4 rounded-3xl border ${
+                      isOpen ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
+                    } backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
+                      isOpen
+                        ? 'bg-amber-500/20 text-slate-900 dark:text-white'
+                        : darkMode
+                        ? 'bg-black/20 hover:bg-black/30 text-white'
+                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -760,14 +762,15 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={climate.entity_id}
-                    className={`col-span-1 p-4.5 rounded-3xl backdrop-blur-md flex flex-col justify-between gap-3.5 transition-all overflow-hidden isolate shadow-xs ${
-                      darkMode
-                        ? !isOff
-                          ? 'bg-rose-500/15 text-white'
-                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                        : !isOff
-                        ? 'bg-rose-50/90 text-slate-900'
-                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-4.5 rounded-3xl border ${
+                      !isOff ? 'border-rose-400/40' : 'border-slate-200/80 dark:border-white/10'
+                    } backdrop-blur-sm flex flex-col justify-between gap-3.5 transition-all overflow-hidden isolate ${
+                      !isOff
+                        ? 'bg-rose-500/20 text-slate-900 dark:text-white'
+                        : darkMode
+                        ? 'bg-black/20 hover:bg-black/30 text-white'
+                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -805,24 +808,26 @@ export default function AreaDetailView({
                         </div>
                       </div>
 
-                      {/* Stepper Controls */}
+                      {/* Temp Stepper Controls */}
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           type="button"
                           onClick={() => handleTempAdjust(climate, -0.5)}
-                          className="w-7 h-7 rounded-xl bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 flex items-center justify-center text-xs font-bold cursor-pointer active:scale-90 transition-all"
+                          className="w-7 h-7 rounded-lg bg-slate-900/[0.06] dark:bg-white/10 hover:bg-slate-900/10 dark:hover:bg-white/15 flex items-center justify-center font-bold text-xs cursor-pointer active:scale-90"
+                          title="Decrease Temp"
                         >
-                          <Minus size={12} weight="bold" />
+                          -
                         </button>
-                        <div className="px-2 py-0.5 rounded-xl bg-rose-500/15 text-rose-400 font-black text-sm min-w-[48px] text-center">
+                        <span className="text-xs font-mono font-bold px-1 min-w-[32px] text-center">
                           {targetTemp}°
-                        </div>
+                        </span>
                         <button
                           type="button"
                           onClick={() => handleTempAdjust(climate, 0.5)}
-                          className="w-7 h-7 rounded-xl bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 flex items-center justify-center text-xs font-bold cursor-pointer active:scale-90 transition-all"
+                          className="w-7 h-7 rounded-lg bg-slate-900/[0.06] dark:bg-white/10 hover:bg-slate-900/10 dark:hover:bg-white/15 flex items-center justify-center font-bold text-xs cursor-pointer active:scale-90"
+                          title="Increase Temp"
                         >
-                          <Plus size={12} weight="bold" />
+                          +
                         </button>
                       </div>
                     </div>
@@ -880,14 +885,15 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={fan.entity_id}
-                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all flex flex-col justify-between gap-3 overflow-hidden isolate shadow-xs ${
-                      darkMode
-                        ? isOn
-                          ? 'bg-teal-500/15 text-white'
-                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                        : isOn
-                        ? 'bg-teal-50 text-slate-900'
-                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-4 rounded-3xl border ${
+                      isOn ? 'border-teal-400/40' : 'border-slate-200/80 dark:border-white/10'
+                    } backdrop-blur-sm transition-all flex flex-col justify-between gap-3 overflow-hidden isolate ${
+                      isOn
+                        ? 'bg-teal-500/20 text-slate-900 dark:text-white'
+                        : darkMode
+                        ? 'bg-black/20 hover:bg-black/30 text-white'
+                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -1033,14 +1039,15 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={lock.entity_id}
-                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all flex items-center justify-between gap-3 overflow-hidden isolate shadow-xs ${
-                      darkMode
-                        ? !isLocked
-                          ? 'bg-amber-500/15 text-amber-200'
-                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                        : !isLocked
-                        ? 'bg-amber-50 text-amber-950'
-                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-4 rounded-3xl border ${
+                      !isLocked ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
+                    } backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
+                      !isLocked
+                        ? 'bg-amber-500/20 text-slate-900 dark:text-white'
+                        : darkMode
+                        ? 'bg-black/20 hover:bg-black/30 text-white'
+                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1135,14 +1142,15 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={sw.entity_id}
-                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all flex items-center justify-between gap-3 overflow-hidden isolate shadow-xs ${
-                      darkMode
-                        ? isOn
-                          ? 'bg-indigo-500/15 text-white'
-                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                        : isOn
-                        ? 'bg-indigo-50 text-slate-900'
-                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-4 rounded-3xl border ${
+                      isOn ? 'border-indigo-400/40' : 'border-slate-200/80 dark:border-white/10'
+                    } backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
+                      isOn
+                        ? 'bg-indigo-500/20 text-slate-900 dark:text-white'
+                        : darkMode
+                        ? 'bg-black/20 hover:bg-black/30 text-white'
+                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1215,14 +1223,15 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={ms.entity_id}
-                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-md flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate shadow-xs ${
-                      darkMode
-                        ? isActive
-                          ? 'bg-emerald-500/15 text-emerald-200'
-                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                        : isActive
-                        ? 'bg-emerald-50 text-emerald-950'
-                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-3.5 rounded-3xl border ${
+                      isActive ? 'border-emerald-400/40' : 'border-slate-200/80 dark:border-white/10'
+                    } backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate ${
+                      isActive
+                        ? 'bg-emerald-500/20 text-slate-900 dark:text-white'
+                        : darkMode
+                        ? 'bg-black/20 hover:bg-black/30 text-white'
+                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1284,32 +1293,32 @@ export default function AreaDetailView({
                 const batteryPct = !isNaN(val) ? Math.round(val) : getEntityBattery(bs) ?? 100;
                 const isCritical = batteryPct < 20;
                 const isLow = batteryPct >= 20 && batteryPct < 40;
-                const isGood = batteryPct >= 40 && batteryPct < 80;
                 const isFull = batteryPct >= 80;
 
                 return (
                   <div
                     key={bs.entity_id}
-                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-md flex flex-col justify-between gap-2.5 transition-all overflow-hidden isolate shadow-xs ${
-                      darkMode
-                        ? isCritical
-                          ? 'bg-rose-500/15 text-rose-200'
-                          : isLow
-                          ? 'bg-amber-500/15 text-amber-200'
-                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                        : isCritical
-                        ? 'bg-rose-50 text-rose-950'
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-3.5 rounded-3xl border ${
+                      isCritical
+                        ? 'border-rose-400/40'
                         : isLow
-                        ? 'bg-amber-50 text-amber-900'
-                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                        ? 'border-amber-400/40'
+                        : 'border-slate-200/80 dark:border-white/10'
+                    } backdrop-blur-sm flex flex-col justify-between gap-2.5 transition-all overflow-hidden isolate ${
+                      isCritical
+                        ? 'bg-rose-500/20 text-slate-900 dark:text-white'
+                        : isLow
+                        ? 'bg-amber-500/20 text-slate-900 dark:text-white'
+                        : darkMode
+                        ? 'bg-black/20 hover:bg-black/30 text-white'
+                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         {isFull ? (
                           <BatteryFull size={20} weight="fill" className="text-emerald-400 shrink-0" />
-                        ) : isGood ? (
-                          <BatteryMedium size={20} weight="duotone" className="text-emerald-400 shrink-0" />
                         ) : isLow ? (
                           <BatteryLow size={20} weight="duotone" className="text-amber-400 shrink-0" />
                         ) : (
@@ -1378,8 +1387,9 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={sensor.entity_id}
-                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-md flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate shadow-xs ${
-                      darkMode ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white' : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-3.5 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate ${
+                      darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1435,8 +1445,9 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={sensor.entity_id}
-                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-md flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate shadow-xs ${
-                      darkMode ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white' : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-3.5 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate ${
+                      darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1481,14 +1492,15 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={hs.entity_id}
-                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-md flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate shadow-xs ${
-                      darkMode
-                        ? isProblem
-                          ? 'bg-rose-500/20 text-rose-200'
-                          : 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                        : isProblem
-                        ? 'bg-rose-50 text-rose-950'
-                        : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-3.5 rounded-3xl border ${
+                      isProblem ? 'border-rose-400/50' : 'border-slate-200/80 dark:border-white/10'
+                    } backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate ${
+                      isProblem
+                        ? 'bg-rose-500/20 text-slate-900 dark:text-white'
+                        : darkMode
+                        ? 'bg-black/20 hover:bg-black/30 text-white'
+                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1570,8 +1582,9 @@ export default function AreaDetailView({
               {entities.covers.map((cover) => (
                 <div
                   key={cover.entity_id}
-                  className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all flex items-center justify-between gap-3 overflow-hidden isolate shadow-xs ${
-                    darkMode ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white' : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                  style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                  className={`col-span-1 p-4 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
+                    darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -1630,8 +1643,15 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={vac.entity_id}
-                    className={`col-span-1 p-4 rounded-2xl backdrop-blur-md transition-all flex items-center justify-between gap-3 overflow-hidden isolate shadow-xs ${
-                      darkMode ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white' : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-4 rounded-3xl border ${
+                      isCleaning ? 'border-teal-400/40' : 'border-slate-200/80 dark:border-white/10'
+                    } backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
+                      isCleaning
+                        ? 'bg-teal-500/20 text-slate-900 dark:text-white'
+                        : darkMode
+                        ? 'bg-black/20 hover:bg-black/30 text-white'
+                        : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -1710,8 +1730,9 @@ export default function AreaDetailView({
                 return (
                   <div
                     key={sensor.entity_id}
-                    className={`col-span-1 p-3.5 rounded-2xl backdrop-blur-md flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate shadow-xs ${
-                      darkMode ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white' : 'bg-white/60 hover:bg-white/80 text-slate-900'
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-3.5 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm flex items-center justify-between gap-2.5 transition-all overflow-hidden isolate ${
+                      darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">

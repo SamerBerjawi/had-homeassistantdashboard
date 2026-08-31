@@ -126,6 +126,20 @@ export default function App() {
     return false;
   });
 
+  const handleToggleDarkMode = (next?: boolean) => {
+    const nextDark = next !== undefined ? next : !darkMode;
+    const nextMode = nextDark ? 'dark' : 'light';
+    setThemeMode(nextMode);
+    setDarkMode(nextDark);
+    if (nextDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme_mode', nextMode);
+    localStorage.setItem('theme', nextDark ? 'dark' : 'light');
+  };
+
   useEffect(() => {
     const applyTheme = () => {
       let isDark = false;
@@ -146,7 +160,7 @@ export default function App() {
 
     applyTheme();
     localStorage.setItem('theme_mode', themeMode);
-    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+    localStorage.setItem('theme', themeMode === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : themeMode);
 
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
     const handleSystemChange = () => {
@@ -156,7 +170,7 @@ export default function App() {
     };
     mql.addEventListener('change', handleSystemChange);
     return () => mql.removeEventListener('change', handleSystemChange);
-  }, [themeMode, darkMode]);
+  }, [themeMode]);
 
   // Tab State with URL Path Synchronization
   const [activeTab, setActiveTabState] = useState<string>(getTabFromUrl);
@@ -362,7 +376,7 @@ export default function App() {
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         darkMode={darkMode}
-        toggleDarkMode={(next) => setDarkMode(next !== undefined ? next : !darkMode)}
+        toggleDarkMode={handleToggleDarkMode}
         onOpenNotifications={() => setIsNotificationDrawerOpen(true)}
       />
 
@@ -534,7 +548,7 @@ export default function App() {
                   darkMode={darkMode}
                   themeMode={themeMode}
                   setThemeMode={setThemeMode}
-                  toggleDarkMode={(next) => setThemeMode(next ? 'dark' : 'light')}
+                  toggleDarkMode={handleToggleDarkMode}
                   entities={entities}
                   setEntities={setEntities}
                   rooms={rooms}

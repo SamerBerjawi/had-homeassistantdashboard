@@ -127,8 +127,12 @@ export function getDailyForecast(entity?: HAEntity | ResolvedEntity | null): Dai
   const rawForecast = entity.attributes.forecast;
   if (Array.isArray(rawForecast) && rawForecast.length > 0) {
     return rawForecast.map((f: any, idx: number) => {
-      const high = typeof f.temperature === 'number' ? f.temperature : 22;
-      const low = typeof f.templow === 'number' ? f.templow : high - 6;
+      const high = typeof f.temperature === 'number' 
+        ? f.temperature 
+        : (typeof f.temperature_high === 'number' ? f.temperature_high : (typeof f.high_temperature === 'number' ? f.high_temperature : 22));
+      const low = typeof f.templow === 'number' 
+        ? f.templow 
+        : (typeof f.temperature_low === 'number' ? f.temperature_low : (typeof f.low_temperature === 'number' ? f.low_temperature : (typeof f.temp_low === 'number' ? f.temp_low : high - 6)));
 
       return {
         datetime: f.datetime || new Date(Date.now() + idx * 86400000).toISOString(),

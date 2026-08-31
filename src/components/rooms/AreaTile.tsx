@@ -73,16 +73,29 @@ export default function AreaTile({
   // Custom accent styling from Settings if configured
   const customAccentColor = area.color || undefined;
 
+  // Border color adaptation to tile state/color
+  const activeBorderClass = isHazardActive
+    ? 'border-rose-500/40'
+    : isLightActive
+    ? 'border-amber-400/40'
+    : isMotionActive
+    ? 'border-emerald-400/40'
+    : 'border-slate-200/80 dark:border-white/10';
+
   return (
     <div
       onClick={() => onSelectArea(area.areaId)}
-      style={{ clipPath: 'inset(0 round 1.5rem)' }}
-      className={`group relative flex flex-col justify-between rounded-3xl p-4 sm:p-4.5 backdrop-blur-md transition-all duration-300 cursor-pointer overflow-hidden isolate ${
+      style={{
+        clipPath: 'inset(0 round 1.5rem)',
+        borderColor: customAccentColor ? `${customAccentColor}4D` : undefined,
+        boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)'
+      }}
+      className={`group relative flex flex-col justify-between rounded-3xl p-4 sm:p-4.5 border ${activeBorderClass} backdrop-blur-sm transition-all duration-300 cursor-pointer overflow-hidden isolate ${
         isHazardActive
-          ? 'bg-rose-500/15 text-rose-200'
+          ? 'bg-rose-500/20 text-rose-200'
           : darkMode
-          ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-          : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+          ? 'bg-black/20 hover:bg-black/30 text-white'
+          : 'bg-white/20 hover:bg-white/30 text-slate-900'
       }`}
     >
       {/* Background ambient room picture with corner-bleed protection */}

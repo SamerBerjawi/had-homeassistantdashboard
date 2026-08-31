@@ -558,10 +558,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.1 WEATHER TILE */}
         <div
           onClick={() => setDrawerOpen('weather')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl border border-sky-500/30 dark:border-sky-400/30 backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
             darkMode
-              ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-              : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+              ? 'bg-black/20 hover:bg-black/30 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
         >
           <div className="flex items-center justify-between relative z-10">
@@ -596,10 +597,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.2 PERSONS / FAMILY PRESENCE */}
         <div
           onClick={() => openUsersDrawer()}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl border border-indigo-500/30 dark:border-indigo-400/30 backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
             darkMode
-              ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-              : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+              ? 'bg-black/20 hover:bg-black/30 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
         >
           <div className="flex items-center justify-between relative z-10">
@@ -640,12 +642,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.3 LIGHTS */}
         <div
           onClick={() => setDrawerOpen('lights')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl border ${
+            onLights.length > 0 ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
+          } backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
             onLights.length > 0
-              ? 'bg-amber-500/15'
+              ? 'bg-amber-500/20 text-slate-900 dark:text-white'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+              ? 'bg-black/20 hover:bg-black/30 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
         >
           <div className="flex items-center justify-between relative z-10">
@@ -690,12 +695,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.4 SWITCHES */}
         <div
           onClick={() => setDrawerOpen('switches')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl border ${
+            onSwitches.length > 0 ? 'border-emerald-400/40' : 'border-slate-200/80 dark:border-white/10'
+          } backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
             onSwitches.length > 0
-              ? 'bg-emerald-500/15'
+              ? 'bg-emerald-500/20 text-slate-900 dark:text-white'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+              ? 'bg-black/20 hover:bg-black/30 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
         >
           <div className="flex items-center justify-between relative z-10">
@@ -741,12 +749,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {vacuumEntities.length > 0 && (
           <div
             onClick={() => setDrawerOpen('vacuums')}
-            className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+            style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+            className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl border ${
+              isVacuumCleaning ? 'border-teal-400/40' : 'border-slate-200/80 dark:border-white/10'
+            } backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
               isVacuumCleaning
-                ? 'bg-teal-500/15'
+                ? 'bg-teal-500/20 text-slate-900 dark:text-white'
                 : darkMode
-                  ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                  : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+                ? 'bg-black/20 hover:bg-black/30 text-white'
+                : 'bg-white/20 hover:bg-white/30 text-slate-900'
             }`}
           >
             <div className="flex items-center justify-between relative z-10">
@@ -798,12 +809,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.6 FANS */}
         <div
           onClick={() => setDrawerOpen('fans')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl border ${
+            activeFans.length > 0 ? 'border-cyan-400/40' : 'border-slate-200/80 dark:border-white/10'
+          } backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
             activeFans.length > 0
-              ? 'bg-cyan-500/15'
+              ? 'bg-cyan-500/20 text-slate-900 dark:text-white'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+              ? 'bg-black/20 hover:bg-black/30 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
         >
           <div className="flex items-center justify-between relative z-10">
@@ -848,12 +862,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.7 AUDIO & MEDIA */}
         <div
           onClick={() => setDrawerOpen('media')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl border ${
+            isPlayingMedia ? 'border-purple-400/40' : 'border-slate-200/80 dark:border-white/10'
+          } backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
             isPlayingMedia
-              ? 'bg-purple-500/15'
+              ? 'bg-purple-500/20 text-slate-900 dark:text-white'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+              ? 'bg-black/20 hover:bg-black/30 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
         >
           <div className="flex items-center justify-between relative z-10">
@@ -901,12 +918,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.8 ALARM & SECURITY */}
         <div
           onClick={() => setDrawerOpen('alarm')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl border ${
+            isAlarmArmed ? 'border-emerald-400/40' : 'border-slate-200/80 dark:border-white/10'
+          } backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
             isAlarmArmed
-              ? 'bg-emerald-500/15'
+              ? 'bg-emerald-500/20 text-slate-900 dark:text-white'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+              ? 'bg-black/20 hover:bg-black/30 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
         >
           <div className="flex items-center justify-between relative z-10">
@@ -946,12 +966,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.9 ENTRY DOORS (SUBTLE ALERT) */}
         <div
           onClick={openDoorsDrawer}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl border ${
+            openDoors.length > 0 ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
+          } backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
             openDoors.length > 0
-              ? 'bg-amber-500/15'
+              ? 'bg-amber-500/20 text-slate-900 dark:text-white'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+              ? 'bg-black/20 hover:bg-black/30 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
         >
           <div className="flex items-center justify-between relative z-10">
@@ -993,12 +1016,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.10 WINDOWS (SUBTLE ALERT) */}
         <div
           onClick={openWindowsDrawer}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl border ${
+            openWindows.length > 0 ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
+          } backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
             openWindows.length > 0
-              ? 'bg-amber-500/15'
+              ? 'bg-amber-500/20 text-slate-900 dark:text-white'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+              ? 'bg-black/20 hover:bg-black/30 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
         >
           <div className="flex items-center justify-between relative z-10">
@@ -1040,12 +1066,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.11 MOTION */}
         <div
           onClick={() => openSensorsDrawer('motion')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl border ${
+            activeMotion.length > 0 ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
+          } backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
             activeMotion.length > 0
-              ? 'bg-amber-500/15'
+              ? 'bg-amber-500/20 text-slate-900 dark:text-white'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+              ? 'bg-black/20 hover:bg-black/30 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
         >
           <div className="flex items-center justify-between relative z-10">
@@ -1085,12 +1114,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.12 WATER LEAKAGE (SUBTLE ALERT) */}
         <div
           onClick={() => openSensorsDrawer('leak')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl border ${
+            activeLeaks.length > 0 ? 'border-rose-500/50' : 'border-slate-200/80 dark:border-white/10'
+          } backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
             activeLeaks.length > 0
-              ? 'bg-rose-500/15 text-rose-600 dark:text-rose-300'
+              ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+              ? 'bg-black/20 hover:bg-black/30 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
         >
           <div className="flex items-center justify-between relative z-10">
@@ -1132,12 +1164,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.13 SMOKE & FIRE (SUBTLE ALERT) */}
         <div
           onClick={() => openSensorsDrawer('smoke')}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl border ${
+            activeSmoke.length > 0 ? 'border-rose-500/50' : 'border-slate-200/80 dark:border-white/10'
+          } backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
             activeSmoke.length > 0
-              ? 'bg-rose-500/15 text-rose-600 dark:text-rose-300'
+              ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300'
               : darkMode
-                ? 'bg-slate-900/60 hover:bg-slate-900/80 text-white'
-                : 'bg-white/60 hover:bg-white/80 text-slate-900 shadow-xs'
+              ? 'bg-black/20 hover:bg-black/30 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
         >
           <div className="flex items-center justify-between relative z-10">

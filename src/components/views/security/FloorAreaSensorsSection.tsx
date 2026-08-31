@@ -328,14 +328,15 @@ export default function FloorAreaSensorsSection({
             return (
               <div
                 key={area.area_id}
-                className={`rounded-3xl backdrop-blur-md overflow-hidden isolate transition-all duration-300 shadow-xs ${
+                style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                className={`rounded-3xl border ${
+                  isAreaBreached ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
+                } backdrop-blur-sm overflow-hidden isolate transition-all duration-300 ${
                   isAreaBreached
-                    ? darkMode
-                      ? 'bg-slate-900/60 text-white'
-                      : 'bg-amber-500/10 text-slate-900 shadow-xs'
+                    ? 'bg-amber-500/20 text-slate-900 dark:text-white'
                     : darkMode
-                      ? 'bg-slate-900/60 text-white'
-                      : 'bg-white/60 text-slate-900 shadow-xs'
+                    ? 'bg-black/20 text-white'
+                    : 'bg-white/20 text-slate-900'
                 }`}
               >
                 {/* Area Header Bar with Room Picture & Status Chips */}

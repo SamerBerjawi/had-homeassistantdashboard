@@ -278,10 +278,11 @@ export default function PowerSourcesChart({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 backdrop-blur-md transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate shadow-xs ${
+      style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+      className={`w-full rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate ${
         darkMode
-          ? 'bg-slate-900/60 text-white'
-          : 'bg-white/60 text-slate-900'
+          ? 'bg-black/20 text-white'
+          : 'bg-white/20 text-slate-900'
       }`}
     >
       {/* Dynamic Multi-Color Ambient Background Glows with strict containment */}

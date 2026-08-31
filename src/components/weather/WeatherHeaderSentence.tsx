@@ -49,11 +49,11 @@ function computeWeatherData(activeEntity?: ResolvedEntity) {
       windUnit: 'km/h',
       rainChance: undefined as number | undefined,
       trend: {
-        prefix: 'Conditions will',
+        prefix: 'conditions will',
         icon: <Sparkle size={14} weight="duotone" className="text-amber-400" />,
         keyword: 'remain pleasant',
         keywordClass: 'text-amber-500 dark:text-amber-300 font-bold',
-        suffix: 'throughout the day.'
+        suffix: 'throughout the day'
       },
       highTemp: 25,
       lowTemp: 16
@@ -65,7 +65,19 @@ function computeWeatherData(activeEntity?: ResolvedEntity) {
   const isNight = state.toLowerCase().includes('night');
   const conditionInfo = getWeatherConditionInfo(state, isNight, 15);
 
-  const temp = typeof attr.temperature === 'number' ? Math.round(attr.temperature) : 22;
+  // 1. Resolve Current Temperature
+  let rawTemp: number | undefined = undefined;
+  if (typeof attr.temperature === 'number') {
+    rawTemp = attr.temperature;
+  } else if (typeof attr.current_temperature === 'number') {
+    rawTemp = attr.current_temperature;
+  } else if (typeof activeEntity.state === 'number') {
+    rawTemp = activeEntity.state;
+  } else if (typeof activeEntity.state === 'string' && !isNaN(Number(activeEntity.state))) {
+    rawTemp = Number(activeEntity.state);
+  }
+
+  const temp = rawTemp !== undefined ? Math.round(rawTemp) : 22;
   const rawUnit = attr.temperature_unit || '°C';
   const tempUnit = rawUnit.startsWith('°') ? rawUnit : `°${rawUnit}`;
   const humidity = typeof attr.humidity === 'number' ? Math.round(attr.humidity) : undefined;
@@ -75,9 +87,47 @@ function computeWeatherData(activeEntity?: ResolvedEntity) {
   const hourly = getHourlyForecast(activeEntity);
   const daily = getDailyForecast(activeEntity);
 
+  // 2. Resolve High & Low Temperatures
   const todayDaily = daily[0];
-  const highTemp = todayDaily?.temperature !== undefined ? Math.round(todayDaily.temperature) : temp + 3;
-  const lowTemp = todayDaily?.templow !== undefined ? Math.round(todayDaily.templow) : temp - 5;
+
+  let rawHigh: number | undefined = undefined;
+  if (todayDaily && typeof todayDaily.temperature === 'number') {
+    rawHigh = todayDaily.temperature;
+  } else if (typeof attr.temperature_high === 'number') {
+    rawHigh = attr.temperature_high;
+  } else if (typeof attr.high_temperature === 'number') {
+    rawHigh = attr.high_temperature;
+  } else if (hourly.length > 0) {
+    const next12 = hourly.slice(0, 12).map(h => h.temperature).filter(t => typeof t === 'number');
+    if (next12.length > 0) rawHigh = Math.max(...next12);
+  }
+
+  let rawLow: number | undefined = undefined;
+  if (todayDaily && typeof todayDaily.templow === 'number') {
+    rawLow = todayDaily.templow;
+  } else if (typeof attr.temperature_low === 'number') {
+    rawLow = attr.temperature_low;
+  } else if (typeof attr.low_temperature === 'number') {
+    rawLow = attr.low_temperature;
+  } else if (hourly.length > 0) {
+    const next12 = hourly.slice(0, 12).map(h => h.temperature).filter(t => typeof t === 'number');
+    if (next12.length > 0) rawLow = Math.min(...next12);
+  }
+
+  let highTemp = rawHigh !== undefined ? Math.round(rawHigh) : temp + 3;
+  let lowTemp = rawLow !== undefined ? Math.round(rawLow) : temp - 5;
+
+  if (highTemp < temp) {
+    highTemp = temp;
+  }
+  if (lowTemp > temp) {
+    lowTemp = Math.min(temp, highTemp - 2);
+  }
+  if (highTemp < lowTemp) {
+    const tmp = highTemp;
+    highTemp = lowTemp;
+    lowTemp = tmp;
+  }
 
   // Analyze upcoming 6 hours for weather events
   const upcomingHours = hourly.slice(0, 6);
@@ -177,24 +227,28 @@ export default function WeatherHeaderSentence({
 }: WeatherHeaderSentenceProps) {
   const domainGroups = useAutoLayoutStore((s) => s.domainGroups);
   const selectedWeatherEntityId = useAutoLayoutStore((s) => s.selectedWeatherEntityId);
+  const resolvedEntities = useAutoLayoutStore((s) => s.resolvedEntities);
 
-  const weatherEntities: ResolvedEntity[] = domainGroups['weather'] || [];
-  const activeEntity: ResolvedEntity | undefined = 
-    weatherEntities.find((w) => w.entity_id === selectedWeatherEntityId) || 
-    weatherEntities[0];
+  const weatherEntities: ResolvedEntity[] = useMemo(() => {
+    const fromDomain = domainGroups['weather'] || [];
+    if (fromDomain.length > 0) return fromDomain;
+    return Object.values(resolvedEntities).filter(
+      (e) => e.domain === 'weather' || e.entity_id.startsWith('weather.')
+    );
+  }, [domainGroups, resolvedEntities]);
 
-  // Lock initial load weather trend
-  const [lockedData, setLockedData] = React.useState<ReturnType<typeof computeWeatherData> | null>(() => {
-    return activeEntity ? computeWeatherData(activeEntity) : null;
-  });
-
-  React.useEffect(() => {
-    if (!lockedData && activeEntity) {
-      setLockedData(computeWeatherData(activeEntity));
+  const activeEntity: ResolvedEntity | undefined = useMemo(() => {
+    if (selectedWeatherEntityId) {
+      const direct = weatherEntities.find((w) => w.entity_id === selectedWeatherEntityId) || resolvedEntities[selectedWeatherEntityId];
+      if (direct) return direct;
     }
-  }, [activeEntity, lockedData]);
+    return weatherEntities[0];
+  }, [weatherEntities, selectedWeatherEntityId, resolvedEntities]);
 
-  const weatherData = lockedData || computeWeatherData(activeEntity);
+  // Dynamically compute live weather data from active entity
+  const weatherData = useMemo(() => {
+    return computeWeatherData(activeEntity);
+  }, [activeEntity]);
 
   return (
     <div 
