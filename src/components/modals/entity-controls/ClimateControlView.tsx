@@ -1,11 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- *
- * Climate Control View Component
- * Interactive Radial Dial & HVAC Mode Selector
- */
-
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Thermometer,
@@ -22,131 +14,85 @@ import {
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { getClimateModeTheme } from '../../../utils/climateTheme';
+import { formatRelativeTime } from '../../../lib/utils';
+import {
+  detectClimateCapabilities,
+  ClimateCapabilities
+} from '../../../services/climateClassification';
 
 interface ClimateControlViewProps {
   entity: HAEntity;
 }
 
-const ALL_HVAC_MODES = [
-  { id: 'heat', label: 'Heat', icon: Flame },
-  { id: 'cool', label: 'Cool', icon: Snowflake },
-  { id: 'heat_cool', label: 'Heat/Cool', icon: Sparkle },
-  { id: 'auto', label: 'Auto', icon: Sparkle },
-  { id: 'fan_only', label: 'Fan Only', icon: Fan },
-  { id: 'dry', label: 'Dry', icon: Drop },
-  { id: 'off', label: 'Off', icon: Power }
-];
-
-const DEFAULT_PRESET_MODES = ['Comfort', 'Eco', 'Boost', 'Away', 'Sleep'];
-const DEFAULT_FAN_MODES = ['Auto', 'Low', 'Medium', 'High', 'Turbo'];
+const HVAC_MODE_ICONS: Record<string, any> = {
+  heat: Flame,
+  cool: Snowflake,
+  heat_cool: Sparkle,
+  auto: Sparkle,
+  fan_only: Fan,
+  dry: Drop,
+  off: Power
+};
 
 export default function ClimateControlView({ entity }: ClimateControlViewProps) {
   const { callHAService, updateEntityState } = useAutoLayoutStore();
 
-  const currentTargetTemp = Number(
-    entity?.attributes?.temperature ?? entity?.attributes?.target_temp ?? 21.0
-  );
-  const currentAmbientTemp = Number(
-    entity?.attributes?.current_temperature ?? 21.5
-  );
-  const currentHumidity = Number(entity?.attributes?.humidity ?? 45);
-  const currentHvacMode = String(entity?.attributes?.mode || entity?.state || 'heat');
-  const currentFanMode = String(entity?.attributes?.fan_mode || 'Auto');
-  const currentPreset = String(entity?.attributes?.preset_mode || 'Comfort');
+  const caps: ClimateCapabilities = useMemo(() => {
+    return detectClimateCapabilities(entity);
+  }, [entity]);
 
-  const [targetTemp, setTargetTemp] = useState<number>(isNaN(currentTargetTemp) ? 21.0 : currentTargetTemp);
-  const [activeHvacMode, setActiveHvacMode] = useState<string>(currentHvacMode);
-  const [activeFanMode, setActiveFanMode] = useState<string>(currentFanMode);
-  const [activePreset, setActivePreset] = useState<string>(currentPreset);
+  const [targetTemp, setTargetTemp] = useState<number>(caps.targetTemp ?? 21.0);
+  const [activeHvacMode, setActiveHvacMode] = useState<string>(caps.hvacMode);
+  const [activeFanMode, setActiveFanMode] = useState<string>(caps.fanMode || '');
+  const [activePreset, setActivePreset] = useState<string>(caps.presetMode || '');
 
   useEffect(() => {
-    if (entity) {
-      const t = Number(entity.attributes?.temperature ?? entity.attributes?.target_temp ?? 21.0);
-      setTargetTemp(isNaN(t) ? 21.0 : t);
-      setActiveHvacMode(String(entity.attributes?.mode || entity.state || 'heat'));
-      setActiveFanMode(String(entity.attributes?.fan_mode || 'Auto'));
-      setActivePreset(String(entity.attributes?.preset_mode || 'Comfort'));
+    if (caps.targetTemp !== undefined) {
+      setTargetTemp(caps.targetTemp);
     }
-  }, [entity?.entity_id, entity?.state, entity?.attributes]);
+    setActiveHvacMode(caps.hvacMode);
+    if (caps.fanMode) setActiveFanMode(caps.fanMode);
+    if (caps.presetMode) setActivePreset(caps.presetMode);
+  }, [caps]);
 
-  // Dynamically extract supported HVAC modes from device attributes
-  const availableHvacModes = useMemo(() => {
-    const supported = entity?.attributes?.hvac_modes;
-    if (Array.isArray(supported) && supported.length > 0) {
-      return supported.map((m) => {
-        const found = ALL_HVAC_MODES.find((known) => known.id === m);
-        if (found) return found;
-        return {
-          id: m,
-          label: m.charAt(0).toUpperCase() + m.slice(1).replace(/_/g, ' '),
-          icon: Thermometer
-        };
-      });
-    }
-    return ALL_HVAC_MODES;
-  }, [entity?.attributes?.hvac_modes]);
+  const theme = useMemo(() => {
+    return getClimateModeTheme(activeHvacMode, activeHvacMode === 'off' ? 'off' : 'on');
+  }, [activeHvacMode]);
 
-  // Dynamically extract supported preset modes
-  const availablePresetModes = useMemo(() => {
-    const supported = entity?.attributes?.preset_modes;
-    if (Array.isArray(supported) && supported.length > 0) {
-      return supported;
-    }
-    return DEFAULT_PRESET_MODES;
-  }, [entity?.attributes?.preset_modes]);
-
-  // Dynamically extract supported fan modes
-  const availableFanModes = useMemo(() => {
-    const supported = entity?.attributes?.fan_modes;
-    if (Array.isArray(supported) && supported.length > 0) {
-      return supported;
-    }
-    return DEFAULT_FAN_MODES;
-  }, [entity?.attributes?.fan_modes]);
-
-  const minTemp = Number(entity?.attributes?.min_temp ?? 10);
-  const maxTemp = Number(entity?.attributes?.max_temp ?? 35);
-
-  const theme = getClimateModeTheme(activeHvacMode, activeHvacMode === 'off' ? 'off' : 'on');
-
-  const handleAdjustTemp = (delta: number) => {
-    const next = Math.round((targetTemp + delta) * 2) / 2;
-    if (next >= minTemp && next <= maxTemp) {
-      setTargetTemp(next);
-      const nextHvacState = activeHvacMode === 'off' ? 'heat' : entity?.state || 'heat';
-      updateEntityState(entity.entity_id, nextHvacState, {
-        ...entity.attributes,
-        target_temp: next,
-        temperature: next
-      });
-      callHAService(
-        'climate',
-        'set_temperature',
-        { temperature: next, target_temp_low: next - 1, target_temp_high: next + 1 },
-        { entity_id: entity.entity_id }
-      );
-    }
+  // Adjust Temperature Stepper
+  const handleTempAdjust = (delta: number) => {
+    const nextVal = Math.max(caps.minTemp, Math.min(caps.maxTemp, Math.round((targetTemp + delta) * 10) / 10));
+    setTargetTemp(nextVal);
+    updateEntityState(entity.entity_id, activeHvacMode === 'off' ? 'heat' : activeHvacMode, {
+      ...entity.attributes,
+      temperature: nextVal
+    });
+    callHAService('climate', 'set_temperature', { temperature: nextVal }, { entity_id: entity.entity_id });
   };
 
-  const handleSelectHvacMode = (mode: string) => {
-    setActiveHvacMode(mode);
-    updateEntityState(entity.entity_id, mode, {
+  // Adjust Temperature Slider
+  const handleTempSlider = (val: number) => {
+    setTargetTemp(val);
+    updateEntityState(entity.entity_id, activeHvacMode === 'off' ? 'heat' : activeHvacMode, {
       ...entity.attributes,
-      mode
+      temperature: val
+    });
+    callHAService('climate', 'set_temperature', { temperature: val }, { entity_id: entity.entity_id });
+  };
+
+  // Select HVAC Mode
+  const handleHvacModeChange = (mode: string) => {
+    setActiveHvacMode(mode);
+    const nextState = mode === 'off' ? 'off' : mode;
+    updateEntityState(entity.entity_id, nextState, {
+      ...entity.attributes,
+      hvac_mode: mode
     });
     callHAService('climate', 'set_hvac_mode', { hvac_mode: mode }, { entity_id: entity.entity_id });
   };
 
-  const handleSelectFanMode = (fanMode: string) => {
-    setActiveFanMode(fanMode);
-    updateEntityState(entity.entity_id, entity.state, {
-      ...entity.attributes,
-      fan_mode: fanMode
-    });
-    callHAService('climate', 'set_fan_mode', { fan_mode: fanMode }, { entity_id: entity.entity_id });
-  };
-
-  const handleSelectPreset = (preset: string) => {
+  // Select Preset Mode
+  const handlePresetChange = (preset: string) => {
     setActivePreset(preset);
     updateEntityState(entity.entity_id, entity.state, {
       ...entity.attributes,
@@ -155,153 +101,174 @@ export default function ClimateControlView({ entity }: ClimateControlViewProps) 
     callHAService('climate', 'set_preset_mode', { preset_mode: preset }, { entity_id: entity.entity_id });
   };
 
-  // Circular gauge percentage calculation
-  const tempRange = maxTemp - minTemp || 25;
-  const tempPercent = Math.min(100, Math.max(0, ((targetTemp - minTemp) / tempRange) * 100));
-  const strokeDashoffset = 283 - (283 * tempPercent * 0.75) / 100;
+  // Select Fan Mode
+  const handleFanModeChange = (fanMode: string) => {
+    setActiveFanMode(fanMode);
+    updateEntityState(entity.entity_id, entity.state, {
+      ...entity.attributes,
+      fan_mode: fanMode
+    });
+    callHAService('climate', 'set_fan_mode', { fan_mode: fanMode }, { entity_id: entity.entity_id });
+  };
+
+  const lastChangedStr = formatRelativeTime(caps.lastChanged);
+  const ModeIcon = theme.icon;
 
   return (
-    <div className="space-y-6">
-      {/* Interactive Radial Dial Hero Card */}
-      <div className={`p-6 rounded-3xl border ${theme.borderDark} ${theme.bgDark} flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-md transition-all duration-300`}>
-        {/* Glow ambient background aura */}
+    <div className="space-y-5">
+      {/* 1. MASTER ERGONOMIC THERMOSTAT HERO CARD */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-slate-800/40 border border-white/10 flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-md">
+        {/* Dynamic ambient glow aura */}
         <div
           className={`absolute -inset-10 opacity-30 blur-3xl rounded-full transition-all duration-500 pointer-events-none ${
-            theme.isOff
-              ? 'bg-transparent'
-              : theme.id === 'heat'
-              ? 'bg-orange-500/30'
-              : theme.id === 'cool'
-              ? 'bg-cyan-500/30'
-              : theme.id === 'auto'
-              ? 'bg-emerald-500/30'
-              : 'bg-teal-500/30'
+            activeHvacMode === 'heat'
+              ? 'bg-rose-500/40'
+              : activeHvacMode === 'cool'
+              ? 'bg-sky-500/40'
+              : activeHvacMode === 'dry'
+              ? 'bg-teal-500/40'
+              : activeHvacMode === 'fan_only'
+              ? 'bg-emerald-500/40'
+              : activeHvacMode === 'auto' || activeHvacMode === 'heat_cool'
+              ? 'bg-indigo-500/40'
+              : 'bg-transparent'
           }`}
         />
 
-        {/* Circular Thermostat Visual Dial */}
-        <div className="relative w-56 h-56 flex items-center justify-center my-2">
-          {/* Radial SVG Track */}
-          <svg className="w-full h-full -rotate-135 transform" viewBox="0 0 100 100">
-            {/* Background Track */}
-            <circle
-              cx="50"
-              cy="50"
-              r="45"
-              fill="transparent"
-              stroke="rgba(255,255,255,0.08)"
-              strokeWidth="8"
-              strokeDasharray="283"
-              strokeDashoffset="70"
-              strokeLinecap="round"
-            />
-            {/* Active Progress Arc */}
-            <circle
-              cx="50"
-              cy="50"
-              r="45"
-              fill="transparent"
-              stroke="currentColor"
-              strokeWidth="8"
-              strokeDasharray="283"
-              strokeDashoffset={strokeDashoffset}
-              strokeLinecap="round"
-              className={`${theme.iconClass} transition-all duration-300`}
-            />
-          </svg>
+        {/* HVAC Action & Status Badge */}
+        <div className="relative mb-3 flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-extrabold uppercase tracking-wider text-slate-300">
+          <ModeIcon size={14} weight="duotone" className={theme.textClass} />
+          <span>{caps.hvacAction ? `${caps.hvacAction.toUpperCase()}` : theme.name.toUpperCase()}</span>
+          {lastChangedStr && <span className="text-slate-400 font-normal">• {lastChangedStr}</span>}
+        </div>
 
-          {/* Center Temperature & Controls */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className={`text-5xl font-black font-mono tracking-tight leading-none ${theme.isOff ? 'text-slate-500' : 'text-white'}`}>
-              {Number(targetTemp || 21).toFixed(1)}°
-            </span>
-            <span className={`text-[11px] font-extrabold uppercase tracking-widest mt-1 ${theme.textClass}`}>
-              {theme.isOff ? 'Standby' : `${theme.name} Target`}
-            </span>
-            <span className="text-[10px] text-slate-400 font-mono mt-0.5">
-              Ambient: <strong className="text-white font-semibold">{Number(currentAmbientTemp || 21.5).toFixed(1)}°C</strong>
-            </span>
-          </div>
-
-          {/* Minus & Plus Buttons Floating on Arc Sides */}
+        {/* Ergonomic Stepper Target Temperature Control */}
+        <div className="flex items-center justify-center gap-4 sm:gap-6 my-2">
+          {/* Minus Button */}
           <button
             type="button"
-            onClick={() => handleAdjustTemp(-0.5)}
-            className="absolute left-1 bottom-3 w-11 h-11 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border border-white/15 shadow-md"
-            title="Decrease Target Temp"
+            onClick={() => handleTempAdjust(-caps.targetTempStep)}
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 text-slate-200 hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-md"
+            title="Decrease Target Temperature"
           >
-            <Minus size={18} weight="bold" />
+            <Minus size={22} weight="bold" />
           </button>
 
+          {/* Large Target Readout */}
+          <div className="text-center min-w-[120px]">
+            <div className="text-4xl sm:text-5xl font-black font-mono tracking-tight text-white flex items-baseline justify-center">
+              <span>{targetTemp.toFixed(1)}</span>
+              <span className="text-xl sm:text-2xl font-bold ml-0.5 text-slate-400">{caps.unit}</span>
+            </div>
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Target</span>
+          </div>
+
+          {/* Plus Button */}
           <button
             type="button"
-            onClick={() => handleAdjustTemp(0.5)}
-            className={`absolute right-1 bottom-3 w-11 h-11 rounded-2xl text-white ${theme.stepperBtnBg} ${theme.stepperBtnHover} ${theme.stepperBtnShadow} flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-lg`}
-            title="Increase Target Temp"
+            onClick={() => handleTempAdjust(caps.targetTempStep)}
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-md ${theme.stepperBtnBg} ${theme.stepperBtnHover}`}
+            title="Increase Target Temperature"
           >
-            <Plus size={18} weight="bold" />
+            <Plus size={22} weight="bold" />
           </button>
         </div>
 
-        {/* Ambient Telemetry Pills Footer */}
-        <div className="w-full flex items-center justify-around mt-4 pt-4 border-t border-white/10 text-xs">
-          <div className="flex items-center gap-1.5 text-slate-300">
-            <Thermometer size={16} weight="duotone" className="text-amber-400" />
-            <span>Ambient: <strong className="text-white font-mono">{Number(currentAmbientTemp || 21.5).toFixed(1)}°C</strong></span>
-          </div>
-          <div className="flex items-center gap-1.5 text-slate-300">
-            <Drop size={16} weight="duotone" className="text-cyan-400" />
-            <span>Humidity: <strong className="text-white font-mono">{currentHumidity}%</strong></span>
-          </div>
+        {/* Ambient Room Temperature & Humidity Telemetry */}
+        <div className="mt-3 flex items-center gap-3 text-xs text-slate-300 bg-slate-900/60 px-3.5 py-1.5 rounded-full border border-white/10 font-medium">
+          {caps.currentTemp !== undefined && (
+            <span className="flex items-center gap-1">
+              <Thermometer size={14} weight="duotone" className="text-rose-400" />
+              <span>Room: </span>
+              <strong className="font-mono text-white">{caps.currentTemp}°C</strong>
+            </span>
+          )}
+          {caps.currentHumidity !== undefined && (
+            <span className="flex items-center gap-1">
+              <Drop size={14} weight="duotone" className="text-sky-400" />
+              <span>Humidity: </span>
+              <strong className="font-mono text-white">{caps.currentHumidity}%</strong>
+            </span>
+          )}
         </div>
       </div>
 
-      {/* HVAC Mode Selector */}
-      <div className="space-y-2.5">
-        <label className="text-xs font-bold text-slate-300 block">HVAC Operation Mode</label>
-        <div className={`grid gap-2 ${availableHvacModes.length <= 4 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3 sm:grid-cols-6'}`}>
-          {availableHvacModes.map((mode) => {
-            const Icon = mode.icon || Thermometer;
-            const isSelected = activeHvacMode === mode.id;
-            const modeTheme = getClimateModeTheme(mode.id, mode.id === 'off' ? 'off' : 'on');
+      {/* 2. SMOOTH TARGET TEMPERATURE SLIDER */}
+      <div className="space-y-2 p-3.5 sm:p-4 rounded-2xl bg-slate-800/30 border border-white/10">
+        <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+          <span className="flex items-center gap-1.5 text-slate-400">
+            <Thermometer size={15} weight="duotone" />
+            <span>Target Slider</span>
+          </span>
+          <span className="font-mono text-white">{targetTemp}°C</span>
+        </div>
+
+        <input
+          type="range"
+          min={caps.minTemp}
+          max={caps.maxTemp}
+          step={caps.targetTempStep}
+          value={targetTemp}
+          onChange={(e) => handleTempSlider(Number(e.target.value))}
+          className={`w-full h-2.5 bg-slate-700/50 rounded-lg appearance-none cursor-pointer ${theme.sliderAccent}`}
+        />
+
+        <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+          <span>{caps.minTemp}°C</span>
+          <span>{Math.round((caps.minTemp + caps.maxTemp) / 2)}°C</span>
+          <span>{caps.maxTemp}°C</span>
+        </div>
+      </div>
+
+      {/* 3. HVAC MODE SELECTOR PILLS */}
+      <div className="space-y-2">
+        <label className="text-xs font-bold text-slate-300 block">HVAC Operating Mode</label>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {caps.hvacModes.map((mode) => {
+            const isSelected = activeHvacMode === mode;
+            const Icon = HVAC_MODE_ICONS[mode] || Thermometer;
+            const modeTheme = getClimateModeTheme(mode, mode === 'off' ? 'off' : 'on');
+
             return (
               <button
-                key={mode.id}
+                key={mode}
                 type="button"
-                onClick={() => handleSelectHvacMode(mode.id)}
-                className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all cursor-pointer active:scale-95 ${
+                onClick={() => handleHvacModeChange(mode)}
+                className={`p-2.5 rounded-2xl border flex flex-col items-center gap-1 transition-all cursor-pointer active:scale-95 text-center ${
                   isSelected
-                    ? `${modeTheme.badgeBgDark} ${modeTheme.badgeBorderDark} ${modeTheme.badgeTextDark} border shadow-lg scale-105 font-extrabold`
-                    : 'bg-slate-800/30 hover:bg-slate-800/60 border-white/10 text-slate-400'
+                    ? `${modeTheme.badgeBgDark} ${modeTheme.badgeBorderDark} text-white shadow-md scale-105 font-black`
+                    : 'bg-slate-800/30 hover:bg-slate-800/70 border-white/10 text-slate-400 hover:text-white'
                 }`}
               >
-                <Icon size={20} weight={isSelected ? 'fill' : 'duotone'} />
-                <span className="text-[11px] font-bold">{mode.label}</span>
+                <Icon size={18} weight={isSelected ? 'fill' : 'duotone'} className={isSelected ? modeTheme.textClass : ''} />
+                <span className="text-[11px] font-bold capitalize truncate w-full">
+                  {mode.replace(/_/g, ' ')}
+                </span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Fan Speed Selector */}
-      {availableFanModes.length > 0 && (
-        <div className="space-y-2.5">
-          <label className="text-xs font-bold text-slate-300 block">Fan Speed</label>
-          <div className="flex flex-wrap gap-2">
-            {availableFanModes.map((fMode) => {
-              const isSelected = activeFanMode.toLowerCase() === String(fMode).toLowerCase();
+      {/* 4. PRESET MODES (Strictly only if physical device has presets) */}
+      {caps.presetModes.length > 0 && (
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-slate-300 block">Preset Mode</label>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {caps.presetModes.map((preset) => {
+              const isSelected = activePreset.toLowerCase() === preset.toLowerCase();
               return (
                 <button
-                  key={fMode}
+                  key={preset}
                   type="button"
-                  onClick={() => handleSelectFanMode(String(fMode))}
-                  className={`flex-1 min-w-[60px] py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  onClick={() => handlePresetChange(preset)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 ${
                     isSelected
-                      ? 'bg-teal-500 text-slate-950 shadow-md font-extrabold scale-105'
-                      : 'bg-slate-800/30 hover:bg-slate-800/60 border border-white/10 text-slate-400'
+                      ? 'bg-rose-500 text-white shadow-md scale-105 font-black'
+                      : 'bg-slate-800/40 hover:bg-slate-800 border border-white/10 text-slate-300'
                   }`}
                 >
-                  {fMode}
+                  {preset}
                 </button>
               );
             })}
@@ -309,25 +276,28 @@ export default function ClimateControlView({ entity }: ClimateControlViewProps) 
         </div>
       )}
 
-      {/* Preset Modes */}
-      {availablePresetModes.length > 0 && (
-        <div className="space-y-2.5">
-          <label className="text-xs font-bold text-slate-300 block">Comfort Preset</label>
-          <div className="flex flex-wrap gap-2">
-            {availablePresetModes.map((preset) => {
-              const isSelected = activePreset.toLowerCase() === String(preset).toLowerCase();
+      {/* 5. FAN SPEED MODES (Strictly only if physical device has fan speeds) */}
+      {caps.fanModes.length > 0 && (
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+            <Wind size={15} weight="duotone" className="text-teal-400" />
+            <span>Fan Speed</span>
+          </label>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {caps.fanModes.map((fMode) => {
+              const isSelected = activeFanMode.toLowerCase() === fMode.toLowerCase();
               return (
                 <button
-                  key={preset}
+                  key={fMode}
                   type="button"
-                  onClick={() => handleSelectPreset(String(preset))}
-                  className={`flex-1 min-w-[70px] py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  onClick={() => handleFanModeChange(fMode)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 ${
                     isSelected
-                      ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold scale-105'
-                      : 'bg-slate-800/30 hover:bg-slate-800/60 border border-white/10 text-slate-400'
+                      ? 'bg-teal-500 text-slate-950 shadow-md scale-105 font-black'
+                      : 'bg-slate-800/40 hover:bg-slate-800 border border-white/10 text-slate-300'
                   }`}
                 >
-                  {preset}
+                  {fMode}
                 </button>
               );
             })}

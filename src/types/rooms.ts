@@ -31,6 +31,7 @@ export interface AreaEntityGroup<T = ResolvedEntity> {
   sensors: T[];
   binarySensors: T[];
   vacuums: T[];
+  cameras?: T[];
   scenes?: T[];
 }
 

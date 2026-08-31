@@ -35,6 +35,9 @@ import CoverControlView from './entity-controls/CoverControlView';
 import SwitchControlView from './entity-controls/SwitchControlView';
 import SensorHistoryView from './entity-controls/SensorHistoryView';
 import VacuumControlView from './entity-controls/VacuumControlView';
+import LockControlView from './entity-controls/LockControlView';
+import FanControlView from './entity-controls/FanControlView';
+import CameraControlView from './entity-controls/CameraControlView';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -367,6 +370,12 @@ export default function EntityDetailModal() {
                   <MediaPlayerControlView entity={entity} />
                 ) : domain === 'cover' ? (
                   <CoverControlView entity={entity} />
+                ) : domain === 'lock' ? (
+                  <LockControlView entity={entity} />
+                ) : domain === 'fan' ? (
+                  <FanControlView entity={entity} />
+                ) : domain === 'camera' ? (
+                  <CameraControlView entity={entity} />
                 ) : domain === 'vacuum' ? (
                   <VacuumControlView entity={entity} />
                 ) : domain === 'switch' || domain === 'outlet' || domain === 'input_boolean' ? (

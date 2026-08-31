@@ -56,8 +56,11 @@ import {
   CheckCircle,
   Pause,
   Play,
+  Stop,
   Broom,
-  ArrowArcLeft
+  ArrowArcLeft,
+  VideoCamera,
+  Camera
 } from '@phosphor-icons/react';
 import { AreaData } from '../../types/rooms';
 import { ResolvedEntity } from '../../types';
@@ -69,6 +72,14 @@ import MediaOverviewDrawer from '../overview/modals/MediaOverviewDrawer';
 import ViewEmptyState from '../ui/ViewEmptyState';
 import MiniSensorSparkline from '../sensors/MiniSensorSparkline';
 import { detectLightCapabilities } from '../../services/lightClassification';
+import { detectSwitchCapabilities } from '../../services/switchClassification';
+import { detectClimateCapabilities } from '../../services/climateClassification';
+import { detectCoverCapabilities } from '../../services/coverClassification';
+import { detectLockCapabilities } from '../../services/lockClassification';
+import { detectFanCapabilities } from '../../services/fanClassification';
+import { detectVacuumCapabilities } from '../../services/vacuumClassification';
+import { detectSensorCapabilities } from '../../services/sensorClassification';
+import { detectCameraCapabilities } from '../../services/cameraClassification';
 
 interface AreaDetailViewProps {
   area: AreaData;
@@ -799,19 +810,21 @@ export default function AreaDetailView({
               </h3>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
               {/* Thermostats / AC / Heating Entities */}
               {entities.climates.map((climate) => {
-                const currentTemp = climate.attributes?.current_temperature;
-                const currentHumidity = climate.attributes?.current_humidity;
-                const targetTemp = climate.attributes?.temperature ?? climate.attributes?.target_temp ?? 21;
-                const minTemp = climate.attributes?.min_temp ?? 10;
-                const maxTemp = climate.attributes?.max_temp ?? 35;
-                const hvacModes: string[] = climate.attributes?.hvac_modes || ['heat', 'cool', 'auto', 'fan_only', 'off'];
-                const currentHvacMode = climate.state || 'off';
+                const caps = detectClimateCapabilities(climate);
+                const currentTemp = caps.currentTemp;
+                const currentHumidity = caps.currentHumidity;
+                const targetTemp = caps.targetTemp ?? 21;
+                const minTemp = caps.minTemp;
+                const maxTemp = caps.maxTemp;
+                const hvacModes = caps.hvacModes;
+                const currentHvacMode = caps.hvacMode;
                 const theme = getClimateModeTheme(currentHvacMode, climate.state);
                 const ModeIcon = theme.icon;
                 const battery = getEntityBattery(climate);
+                const lastChangedStr = formatRelativeTime(caps.lastChanged);
 
                 return (
                   <div
@@ -822,9 +835,9 @@ export default function AreaDetailView({
                       openEntityDetails(climate.entity_id);
                     }}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-4.5 rounded-3xl border ${
+                    className={`col-span-1 p-3.5 sm:p-4.5 rounded-3xl border ${
                       darkMode ? theme.borderDark : theme.borderLight
-                    } backdrop-blur-sm flex flex-col justify-between gap-3.5 transition-all overflow-hidden isolate ${
+                    } backdrop-blur-sm flex flex-col justify-between gap-3 sm:gap-3.5 transition-all overflow-hidden isolate ${
                       darkMode ? theme.bgDark : theme.bgLight
                     }`}
                   >
@@ -860,6 +873,9 @@ export default function AreaDetailView({
                               <span className="text-cyan-400">• {currentHumidity}%</span>
                             )}
                             <span>• {theme.name}</span>
+                            {lastChangedStr && (
+                              <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
+                            )}
                             {battery !== undefined && (
                               <span className="flex items-center gap-0.5 text-slate-400">
                                 • <BatteryMedium size={12} weight="bold" /> {battery}%
@@ -941,8 +957,12 @@ export default function AreaDetailView({
 
               {/* Fan Entities */}
               {entities.fans.map((fan) => {
-                const isOn = fan.state === 'on';
-                const speed = fan.attributes?.percentage || (isOn ? 100 : 0);
+                const caps = detectFanCapabilities(fan, Object.values(entities).flat());
+                const isOn = caps.isOn;
+                const speed = caps.percentage || (isOn ? 100 : 0);
+                const battery = getEntityBattery(fan);
+                const lastChanged = (fan as any).last_changed || (fan as any).last_updated || fan.attributes?.last_changed;
+                const lastChangedStr = formatRelativeTime(lastChanged);
 
                 return (
                   <div
@@ -953,9 +973,9 @@ export default function AreaDetailView({
                       openEntityDetails(fan.entity_id);
                     }}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-4 rounded-3xl border ${
+                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border ${
                       isOn ? 'border-teal-400/40' : 'border-slate-200/80 dark:border-white/10'
-                    } backdrop-blur-sm transition-all flex flex-col justify-between gap-3 overflow-hidden isolate ${
+                    } backdrop-blur-sm transition-all flex flex-col justify-between gap-2.5 sm:gap-3 overflow-hidden isolate ${
                       isOn
                         ? 'bg-teal-500/20 text-slate-900 dark:text-white'
                         : darkMode
@@ -988,41 +1008,57 @@ export default function AreaDetailView({
                           <h5 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                             {formatEntityDisplayName(fan.name, area.name)}
                           </h5>
-                          <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                            {isOn ? `${speed}% Speed` : 'Off'}
-                          </p>
+                          <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-slate-900 dark:text-white">
+                              {isOn ? `${speed}% Speed` : 'Off'}
+                            </span>
+                            {caps.isOscillating && (
+                              <span className="text-teal-400 font-medium">• Oscillating</span>
+                            )}
+                            {lastChangedStr && (
+                              <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
+                            )}
+                            {battery !== undefined && (
+                              <span className="flex items-center gap-0.5 text-slate-400">
+                                • <BatteryMedium size={12} weight="bold" /> {battery}%
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => handleToggleFan(fan)}
-                        className={`p-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 ${
+                        className={`p-1.5 sm:p-2 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 shrink-0 ${
                           isOn
                             ? 'bg-teal-500 text-slate-950 shadow-xs'
                             : darkMode
                             ? 'bg-white/10 hover:bg-white/15 text-slate-400'
                             : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-600'
                         }`}
+                        title={isOn ? 'Turn Off' : 'Turn On'}
                       >
                         <Power size={15} weight="bold" />
                       </button>
                     </div>
 
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-                        <span>Speed</span>
-                        <span>{isOn ? `${speed}%` : '0%'}</span>
+                    {caps.supportsSpeed && (
+                      <div className="space-y-1 pt-0.5">
+                        <div className="flex justify-between text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                          <span>Speed</span>
+                          <span className="font-mono">{isOn ? `${speed}%` : '0%'}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={isOn ? speed : 0}
+                          onChange={(e) => handleFanSpeed(fan, Number(e.target.value))}
+                          className="w-full h-1.5 bg-slate-700/40 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-teal-400"
+                        />
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={isOn ? speed : 0}
-                        onChange={(e) => handleFanSpeed(fan, Number(e.target.value))}
-                        className="w-full h-1.5 bg-slate-700/40 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-teal-400"
-                      />
-                    </div>
+                    )}
                   </div>
                 );
               })}
@@ -1108,10 +1144,12 @@ export default function AreaDetailView({
               </button>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
               {entities.locks.map((lock) => {
-                const isLocked = lock.state === 'locked';
+                const caps = detectLockCapabilities(lock);
+                const isLocked = caps.isLocked;
                 const battery = getEntityBattery(lock);
+                const lastChangedStr = formatRelativeTime(caps.lastChanged);
 
                 return (
                   <div
@@ -1122,7 +1160,7 @@ export default function AreaDetailView({
                       openEntityDetails(lock.entity_id);
                     }}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-4 rounded-3xl border ${
+                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border ${
                       !isLocked ? 'border-amber-400/40' : 'border-slate-200/80 dark:border-white/10'
                     } backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
                       !isLocked
@@ -1156,6 +1194,9 @@ export default function AreaDetailView({
                           <span className={`font-semibold capitalize ${isLocked ? 'text-emerald-400' : 'text-amber-400'}`}>
                             {lock.state || 'locked'}
                           </span>
+                          {lastChangedStr && (
+                            <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
+                          )}
                           {battery !== undefined && (
                             <span className="flex items-center gap-0.5 text-slate-400">
                               • <BatteryMedium size={12} weight="bold" /> {battery}%
@@ -1225,11 +1266,13 @@ export default function AreaDetailView({
               </button>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
               {entities.switches.map((sw) => {
-                const isOn = sw.state === 'on';
-                const powerWatts = sw.attributes?.current_power_w ?? sw.attributes?.power ?? sw.powerWatts;
+                const caps = detectSwitchCapabilities(sw);
+                const isOn = caps.isOn;
                 const battery = getEntityBattery(sw);
+                const hasPower = caps.hasPowerMonitoring && typeof caps.currentPowerWatts === 'number' && caps.currentPowerWatts > 0 && isOn;
+                const lastChangedStr = formatRelativeTime(sw.last_changed || sw.last_updated);
 
                 return (
                   <div
@@ -1240,7 +1283,7 @@ export default function AreaDetailView({
                       openEntityDetails(sw.entity_id);
                     }}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-4 rounded-3xl border ${
+                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border ${
                       isOn ? 'border-indigo-400/40' : 'border-slate-200/80 dark:border-white/10'
                     } backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
                       isOn
@@ -1274,30 +1317,40 @@ export default function AreaDetailView({
                         <h5 className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                           {formatEntityDisplayName(sw.name, area.name)}
                         </h5>
-                        <p className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
-                          <span>{isOn ? 'Active' : 'Off'}</span>
-                          {powerWatts !== undefined && isOn && (
-                            <span className="text-indigo-400 font-semibold">• {powerWatts}W</span>
+                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {isOn ? 'Active' : 'Off'}
+                          </span>
+                          {lastChangedStr && (
+                            <span className="text-slate-500 dark:text-slate-400">
+                              • {lastChangedStr}
+                            </span>
+                          )}
+                          {hasPower && (
+                            <span className="text-indigo-400 font-medium">
+                              • {caps.currentPowerWatts}W
+                            </span>
                           )}
                           {battery !== undefined && (
                             <span className="flex items-center gap-0.5 text-slate-400">
                               • <BatteryMedium size={12} weight="bold" /> {battery}%
                             </span>
                           )}
-                        </p>
+                        </div>
                       </div>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleToggleSwitch(sw)}
-                      className={`p-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 ${
+                      className={`p-1.5 sm:p-2 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-90 shrink-0 ${
                         isOn
                           ? 'bg-indigo-500 text-white shadow-xs'
                           : darkMode
                           ? 'bg-white/10 hover:bg-white/15 text-slate-400'
                           : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-600'
                       }`}
+                      title={isOn ? 'Turn Off' : 'Turn On'}
                     >
                       <Power size={15} weight="bold" />
                     </button>
@@ -1322,10 +1375,12 @@ export default function AreaDetailView({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
               {motionSensors.map((ms) => {
-                const isActive = ms.state === 'on' || ms.state === 'detected';
-                const battery = getEntityBattery(ms);
+                const caps = detectSensorCapabilities(ms);
+                const isActive = caps.isActiveAlert;
+                const battery = caps.batteryPct;
+                const lastChangedStr = formatRelativeTime(caps.lastChanged);
 
                 return (
                   <div
@@ -1356,8 +1411,13 @@ export default function AreaDetailView({
                         <div className="text-xs font-bold truncate">
                           {formatEntityDisplayName(ms.name, area.name)}
                         </div>
-                        <div className="text-[11px] text-slate-500 flex items-center gap-1.5 truncate mt-0.5">
-                          <span>{isActive ? 'Motion Detected' : 'Clear'}</span>
+                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap mt-0.5">
+                          <span className={`font-semibold ${isActive ? 'text-emerald-400' : ''}`}>
+                            {caps.alertLabel}
+                          </span>
+                          {lastChangedStr && (
+                            <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
+                          )}
                           {battery !== undefined && (
                             <span className="flex items-center gap-0.5 text-slate-400">
                               • <BatteryMedium size={12} weight="bold" /> {battery}%
@@ -1369,10 +1429,10 @@ export default function AreaDetailView({
 
                     <span className={`px-2 py-0.5 rounded-lg text-[11px] font-bold shrink-0 ${
                       isActive
-                        ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                        : 'bg-slate-900/[0.06] dark:bg-white/10 text-slate-500'
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-slate-200/60 dark:bg-white/10 text-slate-600 dark:text-slate-400'
                     }`}>
-                      {isActive ? 'Active' : 'Idle'}
+                      {isActive ? 'Detected' : 'Clear'}
                     </span>
                   </div>
                 );
@@ -1484,14 +1544,14 @@ export default function AreaDetailView({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
               {environmentalSensors.map((sensor) => {
-                const uom = sensor.attributes?.unit_of_measurement || '';
-                const dc = (sensor.attributes?.device_class || '').toLowerCase();
-                const isTemp = dc === 'temperature' || uom.includes('°');
-                const isHum = dc === 'humidity' || (uom === '%' && (sensor.name.toLowerCase().includes('humidity') || sensor.entity_id.includes('humidity')));
-                const isLux = dc === 'illuminance' || uom === 'lx' || uom === 'lux';
-                const battery = getEntityBattery(sensor);
+                const caps = detectSensorCapabilities(sensor);
+                const isTemp = caps.kind === 'temperature';
+                const isHum = caps.kind === 'humidity';
+                const isLux = caps.kind === 'illuminance';
+                const battery = caps.batteryPct;
+                const lastChangedStr = formatRelativeTime(caps.lastChanged);
 
                 const hasSparkline = isTemp || isHum;
                 const sparkColor = isTemp ? '#fb7185' : '#38bdf8';
@@ -1521,17 +1581,20 @@ export default function AreaDetailView({
                             {formatEntityDisplayName(sensor.name, area.name)}
                           </div>
                           <div className="text-sm font-black truncate mt-0.5 font-mono">
-                            {sensor.state} {uom}
+                            {caps.formattedValue}
                           </div>
                         </div>
                       </div>
 
-                      {battery !== undefined && (
-                        <span className="flex items-center gap-0.5 text-[11px] font-bold text-slate-400 shrink-0">
-                          <BatteryMedium size={12} weight="bold" />
-                          <span>{battery}%</span>
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0 text-[11px] text-slate-400">
+                        {lastChangedStr && <span>{lastChangedStr}</span>}
+                        {battery !== undefined && (
+                          <span className="flex items-center gap-0.5 font-bold">
+                            • <BatteryMedium size={12} weight="bold" />
+                            <span>{battery}%</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Embedded 24h History Trend Sparkline directly on tile */}
@@ -1714,63 +1777,95 @@ export default function AreaDetailView({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
-              {entities.covers.map((cover) => (
-                <div
-                  key={cover.entity_id}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openEntityDetails(cover.entity_id);
-                  }}
-                  style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                  className={`col-span-1 p-4 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
-                    darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEntityDetails(cover.entity_id);
-                      }}
-                      className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
-                      title="Open cover position slider"
-                    >
-                      <AppWindow size={24} weight="duotone" className="text-purple-400 shrink-0" />
-                    </button>
-                    <div className="min-w-0">
-                      <h5 className="text-sm font-bold truncate">{formatEntityDisplayName(cover.name, area.name)}</h5>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 capitalize">{cover.state || 'closed'}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
+              {entities.covers.map((cover) => {
+                const caps = detectCoverCapabilities(cover);
+                const position = caps.currentPosition;
+                const battery = getEntityBattery(cover);
+                const lastChangedStr = formatRelativeTime(caps.lastChanged);
+
+                return (
+                  <div
+                    key={cover.entity_id}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openEntityDetails(cover.entity_id);
+                    }}
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
+                      darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEntityDetails(cover.entity_id);
+                        }}
+                        className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
+                        title="Open cover controls"
+                      >
+                        <AppWindow size={24} weight="duotone" className="text-purple-400 shrink-0" />
+                      </button>
+                      <div className="min-w-0">
+                        <h5 className="text-sm font-bold truncate">{formatEntityDisplayName(cover.name, area.name)}</h5>
+                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-slate-900 dark:text-white capitalize">
+                            {caps.isOpening
+                              ? 'Opening...'
+                              : caps.isClosing
+                              ? 'Closing...'
+                              : position !== undefined
+                              ? position === 0
+                                ? 'Closed'
+                                : position === 100
+                                ? 'Open'
+                                : `${position}% Open`
+                              : cover.state || 'Closed'}
+                          </span>
+                          {lastChangedStr && (
+                            <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
+                          )}
+                          {battery !== undefined && (
+                            <span className="flex items-center gap-0.5 text-slate-400">
+                              • <BatteryMedium size={12} weight="bold" /> {battery}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleCoverCommand(cover, 'open_cover')}
+                        className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 cursor-pointer active:scale-95"
+                      >
+                        Open
+                      </button>
+                      {caps.supportsStop && (
+                        <button
+                          type="button"
+                          onClick={() => handleCoverCommand(cover, 'stop_cover')}
+                          className="p-1.5 rounded-xl text-xs font-bold bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 cursor-pointer active:scale-95"
+                          title="Stop"
+                        >
+                          <Stop size={14} weight="fill" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleCoverCommand(cover, 'close_cover')}
+                        className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 cursor-pointer active:scale-95"
+                      >
+                        Close
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleCoverCommand(cover, 'open_cover')}
-                      className="px-2 py-1 rounded-xl text-xs font-bold bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 cursor-pointer active:scale-95"
-                    >
-                      Open
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCoverCommand(cover, 'stop_cover')}
-                      className="px-2 py-1 rounded-xl text-xs font-bold bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 cursor-pointer active:scale-95"
-                    >
-                      Stop
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCoverCommand(cover, 'close_cover')}
-                      className="px-2 py-1 rounded-xl text-xs font-bold bg-slate-900/[0.06] hover:bg-slate-900/10 dark:bg-white/10 dark:hover:bg-white/15 cursor-pointer active:scale-95"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -1785,11 +1880,12 @@ export default function AreaDetailView({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
               {entities.vacuums.map((vac) => {
-                const rawState = (vac.state || 'docked').toLowerCase();
-                const isCleaning = rawState === 'cleaning' || rawState === 'on';
-                const battery = getEntityBattery(vac);
+                const caps = detectVacuumCapabilities(vac);
+                const isCleaning = caps.isCleaning;
+                const battery = caps.batteryLevel;
+                const lastChangedStr = formatRelativeTime(caps.lastChanged);
 
                 return (
                   <div
@@ -1800,7 +1896,7 @@ export default function AreaDetailView({
                       openEntityDetails(vac.entity_id);
                     }}
                     style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-                    className={`col-span-1 p-4 rounded-3xl border ${
+                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border ${
                       isCleaning ? 'border-teal-400/40' : 'border-slate-200/80 dark:border-white/10'
                     } backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate ${
                       isCleaning
@@ -1831,14 +1927,27 @@ export default function AreaDetailView({
                       </button>
                       <div className="min-w-0">
                         <h5 className="text-sm font-bold truncate">{formatEntityDisplayName(vac.name, area.name)}</h5>
-                        <p className="text-xs text-slate-500 capitalize flex items-center gap-1.5 mt-0.5">
-                          <span>{rawState}</span>
+                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap mt-0.5">
+                          <span className={`font-semibold capitalize ${isCleaning ? 'text-teal-400 font-bold' : ''}`}>
+                            {caps.isCleaning
+                              ? 'Cleaning'
+                              : caps.isReturning
+                              ? 'Returning'
+                              : caps.isPaused
+                              ? 'Paused'
+                              : caps.isDocked
+                              ? 'Docked'
+                              : caps.state}
+                          </span>
+                          {lastChangedStr && (
+                            <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
+                          )}
                           {battery !== undefined && (
                             <span className="flex items-center gap-0.5 text-slate-400">
                               • <BatteryMedium size={12} weight="bold" /> {battery}%
                             </span>
                           )}
-                        </p>
+                        </div>
                       </div>
                     </div>
 
@@ -1846,7 +1955,7 @@ export default function AreaDetailView({
                       <button
                         type="button"
                         onClick={() => handleVacuumToggle(vac)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 shrink-0 ${
                           isCleaning
                             ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/30'
                             : 'bg-teal-600 hover:bg-teal-500 text-white shadow-xs'
@@ -1873,7 +1982,63 @@ export default function AreaDetailView({
         )}
 
         {/* ========================================================================= */}
-        {/* 13. GENERAL TELEMETRY & OTHER SENSORS */}
+        {/* 13. SURVEILLANCE CAMERAS & VIDEO DOORBELLS */}
+        {/* ========================================================================= */}
+        {entities.cameras && entities.cameras.length > 0 && (
+          <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <VideoCamera size={22} weight="duotone" className="text-blue-400 shrink-0" />
+                <h3 className={`text-base sm:text-lg font-bold truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  Live Cameras & Surveillance ({entities.cameras.length})
+                </h3>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3 items-start">
+              {entities.cameras.map((cam) => {
+                const caps = detectCameraCapabilities(cam);
+                const lastChangedStr = formatRelativeTime(caps.lastChanged);
+
+                return (
+                  <div
+                    key={cam.entity_id}
+                    onClick={() => openEntityDetails(cam.entity_id)}
+                    style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
+                    className={`col-span-1 p-3.5 sm:p-4 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all flex items-center justify-between gap-3 overflow-hidden isolate cursor-pointer hover:scale-[1.02] ${
+                      darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
+                        <VideoCamera size={22} weight="duotone" />
+                      </div>
+                      <div className="min-w-0">
+                        <h5 className="text-sm font-bold truncate">{formatEntityDisplayName(cam.name, area.name)}</h5>
+                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 flex-wrap mt-0.5">
+                          <span className="font-semibold text-blue-400 capitalize">
+                            {caps.isOffline ? 'Offline' : 'Live Stream'}
+                          </span>
+                          {lastChangedStr && (
+                            <span className="text-slate-500 dark:text-slate-400">• {lastChangedStr}</span>
+                          )}
+                          <span className="text-slate-400 font-mono">• {caps.resolution}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 shrink-0">
+                      View
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* 14. GENERAL TELEMETRY & OTHER SENSORS */}
         {/* ========================================================================= */}
         {generalSensors.length > 0 && (
           <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-3">

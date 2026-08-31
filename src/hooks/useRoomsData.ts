@@ -118,6 +118,7 @@ export function useRoomsData() {
         sensors: [],
         binarySensors: [],
         vacuums: [],
+        cameras: [],
         scenes: []
       };
 
@@ -137,6 +138,8 @@ export function useRoomsData() {
           entityGroup.covers.push(ent);
         } else if (domain === 'lock') {
           entityGroup.locks.push(ent);
+        } else if (domain === 'camera') {
+          entityGroup.cameras?.push(ent);
         } else if (domain === 'sensor') {
           entityGroup.sensors.push(ent);
         } else if (domain === 'binary_sensor') {
