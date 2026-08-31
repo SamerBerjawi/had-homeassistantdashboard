@@ -2,33 +2,24 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * Media & Audio Control View:
- * Rebuilt with:
- * 1. Adaptive natural-language subtitle sentence (MediaHeaderSentence)
- * 2. "Now Playing" hero highlight section with ambient glow & waveform scrubbers
- * 3. Complete media player inventory grouped by Floor → Area hierarchy
- * 4. Responsive design (desktop multi-column, tablet 2-column, mobile swipeable)
- * 5. Full detail modal integration
+ * Media & Audio Command Center
+ * Clean, modern layout featuring active "Now Playing" highlight cards,
+ * floor tabs via AdaptiveSectionTabs, and responsive VirtualGrid player inventory.
  */
 
 import React, { useState, useMemo } from 'react';
 import {
   SpeakerHigh,
   MusicNotes,
-  Television,
   PlayCircle,
-  Broadcast,
   Stack,
   Buildings,
   Tree,
-  HouseLine,
-  SlidersHorizontal,
-  Sparkle
+  SlidersHorizontal
 } from '@phosphor-icons/react';
 import { useRoomsData } from '../../hooks/useRoomsData';
 import { ResolvedEntity, HAEntity } from '../../types';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
-import MediaHeaderSentence from '../media/MediaHeaderSentence';
 import NowPlayingHighlightCard from '../media/NowPlayingHighlightCard';
 import MediaHierarchyPlayerCard from '../media/MediaHierarchyPlayerCard';
 import MediaDetailModal from '../canvas/modals/MediaDetailModal';
@@ -36,6 +27,7 @@ import { resolvedEntityToHAEntity } from '../../services/graphResolution';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import ViewEmptyState from '../ui/ViewEmptyState';
 import ViewLoadingState from '../ui/ViewLoadingState';
+import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 
 interface MediaViewProps {
   darkMode?: boolean;
@@ -46,11 +38,11 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
   const {
     areasDataList,
     floorDataList,
-    houseSummary,
     callHAService,
     updateEntityState
   } = useRoomsData();
 
+  const [selectedFloorTab, setSelectedFloorTab] = useState<string>('all');
   const [selectedMediaForModal, setSelectedMediaForModal] = useState<HAEntity | null>(null);
 
   // 1. Gather all currently playing media players across all areas
@@ -103,17 +95,52 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
     return floorsWithMedia.reduce((sum, f) => sum + f.totalMediaPlayers, 0);
   }, [floorsWithMedia]);
 
+  // Build Floor Tabs for AdaptiveSectionTabs
+  const floorTabs: SectionTabItem[] = useMemo(() => {
+    const tabs: SectionTabItem[] = [
+      {
+        id: 'all',
+        label: 'All Floors',
+        icon: Stack,
+        badge: playingMediaList.length > 0 ? `${playingMediaList.length} playing` : undefined,
+        badgeColor: playingMediaList.length > 0 ? 'bg-purple-500/20 text-purple-300 font-bold' : undefined
+      }
+    ];
+
+    floorsWithMedia.forEach((f) => {
+      tabs.push({
+        id: f.floorId,
+        label: f.name,
+        badge: f.activeMediaPlayers > 0 ? `${f.activeMediaPlayers}` : undefined,
+        badgeColor: f.activeMediaPlayers > 0 ? 'bg-purple-500/20 text-purple-300 font-bold' : undefined
+      });
+    });
+
+    return tabs;
+  }, [floorsWithMedia, playingMediaList]);
+
+  const filteredFloors = useMemo(() => {
+    if (selectedFloorTab === 'all') return floorsWithMedia;
+    return floorsWithMedia.filter((f) => f.floorId === selectedFloorTab);
+  }, [floorsWithMedia, selectedFloorTab]);
+
   const handleOpenDetail = (media: ResolvedEntity) => {
     setSelectedMediaForModal(resolvedEntityToHAEntity(media));
   };
 
   if (isLoading) {
-    return <ViewLoadingState title="Loading Media & Audio..." subtitle="Discovering smart speakers, TVs, and streaming players" darkMode={darkMode} />;
+    return (
+      <ViewLoadingState
+        title="Loading Media & Audio..."
+        subtitle="Discovering smart speakers, TVs, and streaming players"
+        darkMode={darkMode}
+      />
+    );
   }
 
   if (totalAllPlayers === 0) {
     return (
-      <div className="w-full flex-1 flex flex-col items-center justify-center">
+      <div className="w-full flex-1 flex flex-col items-center justify-center pb-24 md:pb-8">
         <ViewEmptyState
           icon={SpeakerHigh}
           title="No Media Players Configured"
@@ -127,49 +154,40 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
   }
 
   return (
-    <div className="w-full flex-1 flex flex-col gap-8 animate-fadeIn pb-16">
+    <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-24 md:pb-8">
       {/* ----------------------------------------------------------------- */}
-      {/* 1. NOW PLAYING HIGHLIGHT SECTION                                  */}
+      {/* 1. FLOOR SELECTOR TABS                                            */}
       {/* ----------------------------------------------------------------- */}
-      <section className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center shadow-xs">
-              <PlayCircle size={18} weight="duotone" className={playingMediaList.length > 0 ? 'animate-pulse' : ''} />
-            </div>
-            <div>
-              <h2
-                className={`text-lg sm:text-xl font-black tracking-tight ${
-                  darkMode ? 'text-white' : 'text-slate-900'
-                }`}
-              >
+      {floorTabs.length > 2 && (
+        <div className="sticky top-0 z-30 -mx-4 px-4 py-1 sm:static sm:mx-0 sm:px-0 sm:py-0 backdrop-blur-md">
+          <AdaptiveSectionTabs
+            tabs={floorTabs}
+            activeTab={selectedFloorTab}
+            onChange={(tab) => setSelectedFloorTab(tab)}
+            darkMode={darkMode}
+          />
+        </div>
+      )}
+
+      {/* ----------------------------------------------------------------- */}
+      {/* 2. NOW PLAYING HIGHLIGHT SECTION (Only when media is active)      */}
+      {/* ----------------------------------------------------------------- */}
+      {playingMediaList.length > 0 && (
+        <section className="flex flex-col gap-3.5">
+          <div className="flex items-center justify-between gap-3 pb-1 border-b border-slate-200/50 dark:border-white/10">
+            <div className="flex items-center gap-2">
+              <PlayCircle size={20} weight="duotone" className="text-purple-400 animate-pulse" />
+              <h2 className={`text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                 Now Playing
               </h2>
-              <p className="text-xs font-medium text-slate-400 dark:text-slate-400">
-                {playingMediaList.length > 0
-                  ? `${playingMediaList.length} active ${playingMediaList.length === 1 ? 'stream' : 'streams'} in progress`
-                  : 'No active media streams across the house'}
-              </p>
             </div>
+
+            <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+              {playingMediaList.length} Active {playingMediaList.length === 1 ? 'Stream' : 'Streams'}
+            </span>
           </div>
 
-          {playingMediaList.length > 0 && (
-            <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border transition-colors ${
-                darkMode
-                  ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
-                  : 'bg-purple-50 border-purple-200 text-purple-700'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
-              <span>Live Audio</span>
-            </span>
-          )}
-        </div>
-
-        {/* Highlight Cards Grid or Empty/Idle State */}
-        {playingMediaList.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {playingMediaList.map(({ media, areaName, floorName }) => (
               <NowPlayingHighlightCard
                 key={media.entity_id}
@@ -183,190 +201,94 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
               />
             ))}
           </div>
-        ) : (
-          <div
-            className={`p-6 sm:p-8 rounded-3xl border flex flex-col sm:flex-row items-center justify-between gap-4 transition-all ${
-              darkMode
-                ? 'bg-white/5 border-white/10 text-white'
-                : 'bg-white/80 border-slate-200 text-slate-900 shadow-xs'
-            }`}
-          >
-            <div className="flex items-center gap-4 text-center sm:text-left flex-col sm:flex-row">
-              <div className="w-12 h-12 rounded-2xl bg-slate-500/10 border border-slate-500/20 text-slate-400 flex items-center justify-center shrink-0">
-                <MusicNotes size={24} weight="duotone" />
-              </div>
-              <div>
-                <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-200">
-                  All Speakers & TVs Are Idle
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 max-w-md">
-                  Select any speaker or TV from the floor list below to begin playback or resume media.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 dark:text-slate-500">
-              <Sparkle size={15} weight="duotone" className="text-amber-400" />
-              <span>{totalAllPlayers} devices connected</span>
-            </div>
-          </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* ----------------------------------------------------------------- */}
-      {/* 2. FULL MEDIA PLAYERS BY FLOOR & AREA HIERARCHY                   */}
+      {/* 3. MEDIA PLAYERS BY AREA                                          */}
       {/* ----------------------------------------------------------------- */}
-      <section className="flex flex-col gap-6">
-        <div className="flex items-center justify-between pb-1 border-b border-white/5 dark:border-white/5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shadow-xs">
-              <Stack size={18} weight="duotone" />
-            </div>
-            <div>
-              <h2
-                className={`text-lg sm:text-xl font-black tracking-tight ${
-                  darkMode ? 'text-white' : 'text-slate-900'
-                }`}
-              >
-                All Audio & Video Devices
-              </h2>
-              <p className="text-xs font-medium text-slate-400 dark:text-slate-400">
-                Organized hierarchically across {floorsWithMedia.length} {floorsWithMedia.length === 1 ? 'level' : 'levels'}
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="flex flex-col gap-8">
+        {filteredFloors.map((floor) => {
+          const isOutdoor =
+            floor.level < 0 ||
+            floor.name.toLowerCase().includes('outdoor') ||
+            floor.name.toLowerCase().includes('garden');
+          const isUpper = floor.level >= 1;
+          const floorIconName = floor.icon || (isOutdoor ? 'Tree' : isUpper ? 'Buildings' : 'Stack');
 
-        {/* Floor Hierarchy List */}
-        {floorsWithMedia.length > 0 ? (
-          <div className="flex flex-col gap-8">
-            {floorsWithMedia.map((floor) => {
-              const isOutdoor =
-                floor.level < 0 ||
-                floor.name.toLowerCase().includes('outdoor') ||
-                floor.name.toLowerCase().includes('garden');
-              const isUpper = floor.level >= 1;
-              const floorIconName = floor.icon || (isOutdoor ? 'Tree' : isUpper ? 'Buildings' : 'Stack');
+          return (
+            <section key={floor.floorId} className="flex flex-col gap-5">
+              {/* Floor Header */}
+              <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/50 dark:border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <DynamicPhosphorIcon
+                    name={floorIconName}
+                    fallback={isOutdoor ? Tree : isUpper ? Buildings : Stack}
+                    size={20}
+                    weight="duotone"
+                    className={darkMode ? 'text-indigo-400' : 'text-indigo-600'}
+                  />
+                  <h3 className={`text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {floor.name}
+                  </h3>
+                </div>
 
-              return (
-                <div key={floor.floorId} className="flex flex-col gap-4">
-                  {/* Floor Header */}
-                  <div className="flex items-center justify-between pb-1">
-                    <div className="flex items-center gap-2.5">
-                      <DynamicPhosphorIcon
-                        name={floorIconName}
-                        fallback={isOutdoor ? Tree : isUpper ? Buildings : Stack}
-                        size={22}
-                        weight="duotone"
-                        style={{ color: floor.color || undefined }}
-                        className={`shrink-0 ${
-                          floor.color
-                            ? ''
-                            : darkMode
-                            ? 'text-indigo-400'
-                            : 'text-indigo-600'
-                        }`}
-                      />
-                      <div>
-                        <h3
-                          className={`text-base sm:text-lg font-black tracking-tight ${
-                            darkMode ? 'text-white' : 'text-slate-900'
-                          }`}
-                        >
-                          {floor.name}
-                        </h3>
-                        <p className="text-xs font-medium text-slate-400">
-                          {floor.totalMediaPlayers} {floor.totalMediaPlayers === 1 ? 'Player' : 'Players'}
-                          {floor.activeMediaPlayers > 0 && ` • ${floor.activeMediaPlayers} active`}
-                        </p>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  {floor.totalMediaPlayers} {floor.totalMediaPlayers === 1 ? 'Device' : 'Devices'}
+                </span>
+              </div>
+
+              {/* Area Groups */}
+              <div className="flex flex-col gap-6">
+                {floor.areas.map((area) => (
+                  <div key={area.areaId} className="flex flex-col gap-3">
+                    {/* Area Title Strip */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        {area.picture ? (
+                          <img src={area.picture} alt={area.name} className="w-5 h-5 rounded-md object-cover" />
+                        ) : (
+                          <div
+                            className={`w-5 h-5 rounded-md flex items-center justify-center font-bold text-[10px] ${
+                              darkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-200 text-slate-700'
+                            }`}
+                          >
+                            {area.name.charAt(0)}
+                          </div>
+                        )}
+                        <h4 className={`text-xs sm:text-sm font-bold ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                          {area.name}
+                        </h4>
                       </div>
                     </div>
+
+                    {/* Area Players 2-Column Mobile Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 items-stretch">
+                      {area.mediaPlayers.map((player) => (
+                        <MediaHierarchyPlayerCard
+                          key={player.entity_id}
+                          media={player}
+                          darkMode={darkMode}
+                          onOpenDetail={handleOpenDetail}
+                          callHAService={callHAService}
+                          updateEntityState={updateEntityState}
+                        />
+                      ))}
+                    </div>
                   </div>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
 
-                  {/* Areas within Floor */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {floor.areas.map((area) => (
-                      <div
-                        key={area.areaId}
-                        style={{
-                          clipPath: 'inset(0 round 1.5rem)',
-                          boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)'
-                        }}
-                        className={`p-4 rounded-3xl border overflow-hidden isolate backdrop-blur-sm flex flex-col gap-3 transition-all ${
-                          darkMode
-                            ? 'bg-white/[0.03] border-white/10'
-                            : 'bg-white/70 border-slate-200/90 shadow-xs'
-                        }`}
-                      >
-                        {/* Area Title Header */}
-                        <div className="flex items-center justify-between pb-1 border-b border-white/5 dark:border-white/5">
-                          <div className="flex items-center gap-2">
-                            <DynamicPhosphorIcon
-                              name={area.icon || 'HouseLine'}
-                              fallback={HouseLine}
-                              size={16}
-                              weight="duotone"
-                              style={{ color: area.color || undefined }}
-                              className={area.color ? '' : 'text-indigo-400'}
-                            />
-                            <span
-                              className={`text-xs font-bold ${
-                                darkMode ? 'text-slate-200' : 'text-slate-800'
-                              }`}
-                            >
-                              {area.name}
-                            </span>
-                          </div>
-
-                          <span className="text-[10px] font-semibold text-slate-400">
-                            {area.mediaPlayers.length} {area.mediaPlayers.length === 1 ? 'device' : 'devices'}
-                          </span>
-                        </div>
-
-                        {/* Players in Area */}
-                        <div className="flex flex-col gap-2.5">
-                          {area.mediaPlayers.map((media) => (
-                            <MediaHierarchyPlayerCard
-                              key={media.entity_id}
-                              media={media}
-                              darkMode={darkMode}
-                              onOpenDetail={handleOpenDetail}
-                              callHAService={callHAService}
-                              updateEntityState={updateEntityState}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div
-            className={`p-8 rounded-3xl border text-center flex flex-col items-center justify-center gap-3 ${
-              darkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
-            }`}
-          >
-            <SpeakerHigh size={32} weight="duotone" className="text-slate-400" />
-            <h3 className="text-base font-bold">No Media Player Entities Discovered</h3>
-            <p className="text-xs text-slate-400 max-w-sm">
-              Connect Sonos, Apple TV, Google Cast, or HomePod integrations in Home Assistant to manage them here.
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* Detail Modal */}
+      {/* Media Detail Full Modal */}
       {selectedMediaForModal && (
         <MediaDetailModal
-          isOpen={Boolean(selectedMediaForModal)}
+          isOpen={!!selectedMediaForModal}
           onClose={() => setSelectedMediaForModal(null)}
           entity={selectedMediaForModal}
-          onUpdateEntity={(entityId, newState, attrs) => {
-            updateEntityState(entityId, newState, attrs);
-          }}
         />
       )}
     </div>

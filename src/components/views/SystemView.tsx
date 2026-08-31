@@ -1,6 +1,10 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * System & Host Command Center
+ * Clean layout featuring Home Assistant Host and UGreen NAS system telemetry
+ * with floating AdaptiveSectionTabs.
  */
 
 import React, { useState } from 'react';
@@ -8,6 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { HouseLine, HardDrives } from '@phosphor-icons/react';
 import { HostMonitorTab } from './system/HostMonitorTab';
 import { UgreenNasTab } from './system/UgreenNasTab';
+import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 
 interface SystemViewProps {
   darkMode?: boolean;
@@ -18,53 +23,33 @@ type SystemSubTab = 'ha_host' | 'ugreen_nas';
 export default function SystemView({ darkMode = true }: SystemViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<SystemSubTab>('ha_host');
 
+  const systemTabs: SectionTabItem[] = [
+    {
+      id: 'ha_host',
+      label: 'Home Assistant Host',
+      icon: HouseLine
+    },
+    {
+      id: 'ugreen_nas',
+      label: 'UGreen NAS',
+      icon: HardDrives
+    }
+  ];
+
   return (
-    <div className="w-full flex-1 flex flex-col space-y-6">
+    <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-24 md:pb-8">
       {/* Top Segmented Sub-View Switcher */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div
-          className={`p-1.5 rounded-2xl flex items-center gap-1.5 transition-all ${
-            darkMode ? 'bg-white/[0.04]' : 'bg-slate-900/[0.04] shadow-xs'
-          }`}
-        >
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('ha_host')}
-            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              activeSubTab === 'ha_host'
-                ? darkMode
-                  ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
-                  : 'bg-cyan-500 text-slate-950 shadow-sm'
-                : darkMode
-                ? 'text-slate-400 hover:text-white hover:bg-white/5'
-                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-900/[0.04]'
-            }`}
-          >
-            <HouseLine size={16} weight={activeSubTab === 'ha_host' ? 'bold' : 'duotone'} />
-            <span>Home Assistant Host</span>
-          </button>
+        <AdaptiveSectionTabs
+          tabs={systemTabs}
+          activeTab={activeSubTab}
+          onChange={(tab) => setActiveSubTab(tab as SystemSubTab)}
+          darkMode={darkMode}
+        />
 
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('ugreen_nas')}
-            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              activeSubTab === 'ugreen_nas'
-                ? darkMode
-                  ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
-                  : 'bg-amber-500 text-slate-950 shadow-sm'
-                : darkMode
-                ? 'text-slate-400 hover:text-white hover:bg-white/5'
-                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-900/[0.04]'
-            }`}
-          >
-            <HardDrives size={16} weight={activeSubTab === 'ugreen_nas' ? 'bold' : 'duotone'} />
-            <span>UGreen NAS</span>
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>System Infrastructure Monitor</span>
+        <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 ml-auto">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>System Healthy</span>
         </div>
       </div>
 

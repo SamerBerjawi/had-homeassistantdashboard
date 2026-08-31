@@ -1,11 +1,19 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * Environmental Health & Air Quality Command Center
+ * Clean 2-column mobile and responsive desktop VirtualGrid layout for air quality,
+ * CO2 concentrations, volatile compounds, and ambient comfort sensors.
  */
 
 import React from 'react';
-import { Heartbeat, Wind, Drop, Thermometer, Tree } from '@phosphor-icons/react';
+import { Heartbeat, Wind, Drop, Thermometer, ShieldCheck } from '@phosphor-icons/react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import { useEntityPopup } from '../../contexts/EntityPopupContext';
+import VirtualGrid from '../layout/VirtualGrid';
+import GridTile from '../layout/GridTile';
+import SensorTile from '../tiles/SensorTile';
 import ViewEmptyState from '../ui/ViewEmptyState';
 import ViewLoadingState from '../ui/ViewLoadingState';
 
@@ -16,6 +24,8 @@ interface ViewProps {
 export default function HealthView({ darkMode = true }: ViewProps) {
   const isLoading = useAutoLayoutStore((s) => s.isLoading);
   const domainGroups = useAutoLayoutStore((s) => s.domainGroups);
+  const { openEntityDetails } = useEntityPopup();
+
   const sensorEntities = domainGroups['sensor'] || [];
 
   const healthSensors = sensorEntities.filter((s) => {
@@ -28,20 +38,29 @@ export default function HealthView({ darkMode = true }: ViewProps) {
       dc === 'pm25' ||
       dc === 'pm10' ||
       dc === 'volatile_organic_compounds' ||
+      dc === 'nitrogen_dioxide' ||
       name.includes('aqi') ||
       name.includes('air quality') ||
       name.includes('co2') ||
-      name.includes('voc')
+      name.includes('voc') ||
+      name.includes('pm2.5') ||
+      name.includes('pm10')
     );
   });
 
   if (isLoading) {
-    return <ViewLoadingState title="Loading Environmental Health..." subtitle="Gathering air quality, CO2, and comfort telemetry" darkMode={darkMode} />;
+    return (
+      <ViewLoadingState
+        title="Loading Environmental Health..."
+        subtitle="Gathering air quality, CO2, and comfort telemetry"
+        darkMode={darkMode}
+      />
+    );
   }
 
   if (healthSensors.length === 0) {
     return (
-      <div className="w-full flex-1 flex flex-col items-center justify-center">
+      <div className="w-full flex-1 flex flex-col items-center justify-center pb-24 md:pb-8">
         <ViewEmptyState
           icon={Heartbeat}
           title="No Environmental Health Sensors Configured"
@@ -55,28 +74,49 @@ export default function HealthView({ darkMode = true }: ViewProps) {
   }
 
   return (
-    <div className="w-full flex-1 flex flex-col">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {healthSensors.map((sensor) => (
-          <div
-            key={sensor.entity_id}
-            style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-            className={`p-5 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all overflow-hidden isolate ${
-              darkMode ? 'bg-black/20 hover:bg-black/30 text-white' : 'bg-white/20 hover:bg-white/30 text-slate-900'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-400 flex items-center justify-center">
-                <Heartbeat size={20} weight="duotone" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold">{sensor.name}</h4>
-                <p className="text-xs text-slate-400 font-mono font-medium">{sensor.state} {sensor.attributes?.unit_of_measurement || ''}</p>
-              </div>
-            </div>
+    <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-24 md:pb-8">
+      {/* Header Strip */}
+      <div className="flex items-center justify-between gap-3 pb-1 border-b border-slate-200/50 dark:border-white/10">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-teal-500/15 border border-teal-500/30 text-teal-400 flex items-center justify-center">
+            <Wind size={18} weight="duotone" />
           </div>
-        ))}
+          <h2 className={`text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            Air Quality & Wellness
+          </h2>
+        </div>
+
+        <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-teal-500/20 text-teal-300 border border-teal-500/40">
+          {healthSensors.length} {healthSensors.length === 1 ? 'Sensor' : 'Sensors'} Monitored
+        </span>
       </div>
+
+      {/* Sensor Bento Grid */}
+      <VirtualGrid>
+        {healthSensors.map((sensor) => {
+          const isUnavailable = sensor.state === 'unavailable' || sensor.state === 'unknown';
+
+          return (
+            <GridTile
+              key={sensor.entity_id}
+              id={sensor.entity_id}
+              colSpan={2}
+              rowSpan={1}
+              tabletColSpan={3}
+              desktopColSpan={3}
+              isUnavailable={isUnavailable}
+              onLongPress={() => openEntityDetails(sensor.entity_id)}
+            >
+              <SensorTile
+                entity={sensor}
+                darkMode={darkMode}
+                onIconClick={() => openEntityDetails(sensor.entity_id)}
+                onContextMenu={() => openEntityDetails(sensor.entity_id)}
+              />
+            </GridTile>
+          );
+        })}
+      </VirtualGrid>
     </div>
   );
 }

@@ -1,6 +1,10 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * Network & Infrastructure Command Center
+ * Clean layout featuring TP-Link Router and AdGuard Home DNS protection
+ * with floating AdaptiveSectionTabs.
  */
 
 import React, { useState } from 'react';
@@ -8,6 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Globe, ShieldCheck } from '@phosphor-icons/react';
 import { TpLinkRouterTab } from './network/TpLinkRouterTab';
 import { AdGuardTab } from './network/AdGuardTab';
+import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 
 interface NetworkViewProps {
   darkMode?: boolean;
@@ -18,55 +23,33 @@ type NetworkSubTab = 'tplink_router' | 'adguard_home';
 export default function NetworkView({ darkMode = true }: NetworkViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<NetworkSubTab>('tplink_router');
 
+  const networkTabs: SectionTabItem[] = [
+    {
+      id: 'tplink_router',
+      label: 'TP-Link Router',
+      icon: Globe
+    },
+    {
+      id: 'adguard_home',
+      label: 'AdGuard Home',
+      icon: ShieldCheck
+    }
+  ];
+
   return (
-    <div className="w-full flex-1 flex flex-col space-y-6">
+    <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-24 md:pb-8">
       {/* Top Segmented Sub-View Switcher */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div
-          className={`p-1.5 rounded-2xl flex items-center gap-1.5 transition-all ${
-            darkMode ? 'bg-white/[0.04]' : 'bg-slate-900/[0.04] shadow-xs'
-          }`}
-        >
-          {/* TP-Link Router Tab */}
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('tplink_router')}
-            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              activeSubTab === 'tplink_router'
-                ? darkMode
-                  ? 'bg-sky-500 text-black shadow-lg shadow-sky-500/20'
-                  : 'bg-sky-500 text-slate-950 shadow-sm'
-                : darkMode
-                ? 'text-slate-400 hover:text-white hover:bg-white/5'
-                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-900/[0.04]'
-            }`}
-          >
-            <Globe size={16} weight={activeSubTab === 'tplink_router' ? 'bold' : 'duotone'} />
-            <span>TP-Link Router</span>
-          </button>
+        <AdaptiveSectionTabs
+          tabs={networkTabs}
+          activeTab={activeSubTab}
+          onChange={(tab) => setActiveSubTab(tab as NetworkSubTab)}
+          darkMode={darkMode}
+        />
 
-          {/* AdGuard Home Tab */}
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('adguard_home')}
-            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              activeSubTab === 'adguard_home'
-                ? darkMode
-                  ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
-                  : 'bg-emerald-500 text-slate-950 shadow-sm'
-                : darkMode
-                ? 'text-slate-400 hover:text-white hover:bg-white/5'
-                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-900/[0.04]'
-            }`}
-          >
-            <ShieldCheck size={16} weight={activeSubTab === 'adguard_home' ? 'bold' : 'duotone'} />
-            <span>AdGuard Home</span>
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Local Network Infrastructure</span>
+        <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 ml-auto">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Local Network Active</span>
         </div>
       </div>
 
