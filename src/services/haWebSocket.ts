@@ -698,11 +698,17 @@ class HAWebSocketClient {
       });
 
       this.pendingRequests.set(id, {
-        resolve: () => {
-          if (unsubscribed) {
-            unsubscribe();
+        resolve: (result: any) => {
+          if (!unsubscribed) {
+            if (result !== undefined && result !== null) {
+              try {
+                callback(result);
+              } catch (cbErr) {
+                console.warn('[haWebSocket] Error in subscription callback:', cbErr);
+              }
+            }
+            resolve(unsubscribe);
           }
-          resolve(unsubscribe);
         },
         reject: (err) => {
           this.subscriptions.delete(id);

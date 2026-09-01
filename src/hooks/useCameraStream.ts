@@ -15,7 +15,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Hls from 'hls.js';
 import { haWebSocketService } from '../services/haWebSocket';
-import { requestHACameraHlsStream, getHACameraMjpegUrl } from '../services/haCameraService';
+import { requestHACameraHlsStream, getHACameraMjpegUrl, getHACameraSnapshotUrl } from '../services/haCameraService';
 import { useCameraWebRtc } from './useCameraWebRtc';
 import { getActiveHAToken } from '../services/haAuth';
 
@@ -40,6 +40,7 @@ export interface CameraStreamResult {
   mediaStream: MediaStream | null;
   hlsUrl: string | null;
   mjpegUrl: string | null;
+  snapshotUrl: string | null;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   error: string | null;
   isPaused: boolean;
@@ -73,27 +74,40 @@ export function useCameraStream(
   const [isPaused, setIsPaused] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(muted);
 
-  // Active protocol state
-  const [activeTier, setActiveTier] = useState<1 | 2 | 3>(1); // 1 = WebRTC, 2 = HLS, 3 = MJPEG
+  // Active protocol state: 1 = WebRTC, 2 = HLS, 3 = MJPEG, 4 = Snapshot fallback
+  const [activeTier, setActiveTier] = useState<1 | 2 | 3 | 4>(
+    preferProtocol === 'hls' ? 2 : preferProtocol === 'mjpeg' ? 3 : 1
+  );
   const [protocol, setProtocol] = useState<StreamProtocol>('none');
-  const [status, setStatus] = useState<StreamStatus>('idle');
+  const [status, setStatus] = useState<StreamStatus>('connecting');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hlsUrl, setHlsUrl] = useState<string | null>(null);
   const [mjpegUrl, setMjpegUrl] = useState<string | null>(null);
+  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null);
   const [retryCounter, setRetryCounter] = useState(0);
 
   const isStreamActive = enabled && isVisible && isTabActive && !isPaused;
 
   // 1. IntersectionObserver to detect when tile is visible in viewport
   useEffect(() => {
-    const targetElement = elementRef?.current || videoRef.current;
-    if (!targetElement || typeof IntersectionObserver === 'undefined') return;
+    if (typeof IntersectionObserver === 'undefined') return;
+
+    let targetElement = elementRef?.current || videoRef.current;
+    if (!targetElement) return;
 
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
+      (entries) => {
+        const [entry] = entries;
+        if (entry) {
+          // If bounding rect is 0 (e.g. during initial modal transition), keep visible
+          if (entry.boundingClientRect.width === 0 && entry.boundingClientRect.height === 0) {
+            setIsVisible(true);
+          } else {
+            setIsVisible(entry.isIntersecting);
+          }
+        }
       },
-      { threshold: 0.05 }
+      { threshold: [0, 0.05] }
     );
 
     observer.observe(targetElement);
@@ -137,7 +151,9 @@ export function useCameraStream(
   // Attach WebRTC stream to HTMLVideoElement when available
   useEffect(() => {
     if (activeTier === 1 && webrtc.stream && videoRef.current) {
-      videoRef.current.srcObject = webrtc.stream;
+      if (videoRef.current.srcObject !== webrtc.stream) {
+        videoRef.current.srcObject = webrtc.stream;
+      }
       videoRef.current.play().catch(() => {});
       setProtocol('webrtc');
       setStatus('connected');
@@ -169,7 +185,13 @@ export function useCameraStream(
           return;
         }
 
-        setHlsUrl(streamResult.hlsUrl);
+        const activeToken = haWebSocketService.getCurrentToken() || getActiveHAToken();
+        let authenticatedHlsUrl = streamResult.hlsUrl;
+        if (activeToken && !authenticatedHlsUrl.includes('token=')) {
+          authenticatedHlsUrl += (authenticatedHlsUrl.includes('?') ? '&' : '?') + `token=${encodeURIComponent(activeToken)}`;
+        }
+
+        setHlsUrl(authenticatedHlsUrl);
         const video = videoRef.current;
         if (!video) return;
 
@@ -178,11 +200,9 @@ export function useCameraStream(
           video.srcObject = null;
         }
 
-        const activeToken = haWebSocketService.getCurrentToken() || getActiveHAToken();
-
-        // If native HLS is supported (Safari / WebKit)
+        // If native HLS is supported (Safari / iOS WebKit)
         if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          video.src = streamResult.hlsUrl;
+          video.src = authenticatedHlsUrl;
           video.addEventListener('loadedmetadata', () => {
             if (isCancelled) return;
             video.play().catch(() => {});
@@ -208,7 +228,7 @@ export function useCameraStream(
           });
 
           hlsRef.current = hls;
-          hls.loadSource(streamResult.hlsUrl);
+          hls.loadSource(authenticatedHlsUrl);
           hls.attachMedia(video);
 
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -230,7 +250,6 @@ export function useCameraStream(
             }
           });
         } else {
-          // No HLS support, fallback to Tier 3
           setActiveTier(3);
         }
       } catch (err: any) {
@@ -267,7 +286,17 @@ export function useCameraStream(
     onStreamReady?.('mjpeg');
   }, [entityId, isStreamActive, activeTier, serverUrl, retryCounter, onStreamReady]);
 
-  // 6. Demo Mode Handling
+  // 6. Snapshot Fallback (Tier 4)
+  useEffect(() => {
+    if (activeTier === 4) {
+      const snapUrl = getHACameraSnapshotUrl(entityId, serverUrl);
+      setSnapshotUrl(snapUrl);
+      setProtocol('snapshot');
+      setStatus('connected');
+    }
+  }, [entityId, activeTier, serverUrl, retryCounter]);
+
+  // 7. Demo Mode Handling
   useEffect(() => {
     if (haWebSocketService.isDemo() || haWebSocketService.getStatus() !== 'connected') {
       setStatus('demo');
@@ -284,12 +313,12 @@ export function useCameraStream(
 
   // Reconnection action
   const reconnect = useCallback(() => {
-    setActiveTier(1);
+    setActiveTier(preferProtocol === 'hls' ? 2 : preferProtocol === 'mjpeg' ? 3 : 1);
     setErrorMessage(null);
     setStatus('connecting');
     setRetryCounter((c) => c + 1);
     webrtc.reconnect();
-  }, [webrtc]);
+  }, [preferProtocol, webrtc]);
 
   const togglePause = useCallback(() => {
     setIsPaused((prev) => {
@@ -309,6 +338,7 @@ export function useCameraStream(
     mediaStream: webrtc.stream,
     hlsUrl,
     mjpegUrl,
+    snapshotUrl,
     videoRef,
     error: errorMessage || webrtc.error,
     isPaused,

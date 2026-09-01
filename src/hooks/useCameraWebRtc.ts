@@ -138,8 +138,12 @@ export function useCameraWebRtc(
         pcRef.current = pc;
 
         // 3. Add recvonly transceivers for audio & video
-        pc.addTransceiver('audio', { direction: 'recvonly' });
-        pc.addTransceiver('video', { direction: 'recvonly' });
+        try {
+          pc.addTransceiver('video', { direction: 'recvonly' });
+          pc.addTransceiver('audio', { direction: 'recvonly' });
+        } catch (e) {
+          console.debug('[useCameraWebRtc] Add transceiver warning:', e);
+        }
 
         // Optional 2-way microphone intercom audio track
         if (enableIntercom && typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
@@ -157,17 +161,21 @@ export function useCameraWebRtc(
         // 4. Remote track handler
         pc.ontrack = (event) => {
           if (isAborted) return;
-          if (event.streams && event.streams[0]) {
-            isStreamReady = true;
-            if (timeoutTimerRef.current) {
-              clearTimeout(timeoutTimerRef.current);
-              timeoutTimerRef.current = null;
-            }
-            setStream(event.streams[0]);
-            setStatus('connected');
-            setError(null);
-            onConnected?.();
+          isStreamReady = true;
+          if (timeoutTimerRef.current) {
+            clearTimeout(timeoutTimerRef.current);
+            timeoutTimerRef.current = null;
           }
+
+          if (event.streams && event.streams[0]) {
+            setStream(event.streams[0]);
+          } else if (event.track) {
+            setStream(new MediaStream([event.track]));
+          }
+
+          setStatus('connected');
+          setError(null);
+          onConnected?.();
         };
 
         // Connection state monitoring
@@ -183,7 +191,7 @@ export function useCameraWebRtc(
             setError(null);
             onConnected?.();
           } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-            console.warn(`[useCameraWebRtc] PC connectionState changed to: ${pc.connectionState}`);
+            console.warn(`[useCameraWebRtc] PC connectionState: ${pc.connectionState}`);
             setStatus('fallback');
             const failMsg = `WebRTC peer connection ${pc.connectionState}`;
             setError(failMsg);
@@ -214,68 +222,103 @@ export function useCameraWebRtc(
         if (isAborted) return;
         await pc.setLocalDescription(offer);
 
-        // 7. Subscribe to camera/webrtc/offer signaling events
-        const unsubscribe = await haWebSocketService.subscribeMessage(
-          async (event: any) => {
-            if (!event || isAborted || !pcRef.current) return;
+        // Wait briefly (up to 300ms) for initial ICE gathering to embed candidates in offer SDP for non-trickle servers
+        await new Promise<void>((resolve) => {
+          if (pc.iceGatheringState === 'complete') {
+            resolve();
+          } else {
+            const checkGathering = () => {
+              if (pc.iceGatheringState === 'complete') {
+                pc.removeEventListener('icegatheringstatechange', checkGathering);
+                resolve();
+              }
+            };
+            pc.addEventListener('icegatheringstatechange', checkGathering);
+            setTimeout(() => {
+              pc.removeEventListener('icegatheringstatechange', checkGathering);
+              resolve();
+            }, 300);
+          }
+        });
 
-            switch (event.type) {
-              case 'session':
-                sessionId = event.session_id;
-                if (sessionId && queuedCandidates.length > 0) {
-                  for (const cand of queuedCandidates) {
-                    haWebSocketService.sendRequest('camera/webrtc/candidate', {
-                      entity_id: entityId,
-                      session_id: sessionId,
-                      candidate: cand
-                    }).catch(() => {});
-                  }
-                  queuedCandidates = [];
-                }
-                break;
+        if (isAborted) return;
 
-              case 'answer':
-                if (pc.signalingState !== 'stable' && pc.signalingState !== 'closed') {
-                  try {
-                    await pc.setRemoteDescription({
-                      type: 'answer',
-                      sdp: event.answer
-                    });
-                  } catch (e: any) {
-                    console.error('[useCameraWebRtc] Set remote description failed:', e);
-                    setStatus('fallback');
-                    setError(e?.message || 'Remote description error');
-                    onFallback?.(e?.message || 'Remote description error');
-                  }
-                }
-                break;
+        const offerSdp = pc.localDescription?.sdp || offer.sdp;
 
-              case 'candidate':
-                if (event.candidate) {
-                  try {
-                    await pc.addIceCandidate(event.candidate);
-                  } catch (e) {
-                    console.debug('[useCameraWebRtc] Add remote ICE candidate failed:', e);
-                  }
-                }
-                break;
+        // 7. Process answer or session messages from HA
+        const handleSignalingPayload = async (payload: any) => {
+          if (!payload || isAborted || !pcRef.current) return;
 
-              case 'error':
-                console.warn('[useCameraWebRtc] Signaling error received from HA:', event);
-                setStatus('fallback');
-                const errMsg = event.message || event.code || 'WebRTC signaling failed';
-                setError(errMsg);
-                onFallback?.(errMsg);
-                break;
-
-              default:
-                break;
+          // Check for Session ID
+          if (payload.type === 'session' && payload.session_id) {
+            sessionId = payload.session_id;
+            if (sessionId && queuedCandidates.length > 0) {
+              for (const cand of queuedCandidates) {
+                haWebSocketService.sendRequest('camera/webrtc/candidate', {
+                  entity_id: entityId,
+                  session_id: sessionId,
+                  candidate: cand
+                }).catch(() => {});
+              }
+              queuedCandidates = [];
             }
+          } else if (payload.session_id) {
+            sessionId = payload.session_id;
+          }
+
+          // Check for Remote SDP Answer
+          const rawAnswer =
+            (typeof payload === 'string' && payload.startsWith('v='))
+              ? payload
+              : payload.answer ||
+                payload.sdp ||
+                payload.value ||
+                payload.result?.answer ||
+                (typeof payload.result === 'string' && payload.result.startsWith('v=') ? payload.result : null);
+
+          if (rawAnswer && pc.signalingState !== 'stable' && pc.signalingState !== 'closed') {
+            try {
+              await pc.setRemoteDescription(new RTCSessionDescription({
+                type: 'answer',
+                sdp: rawAnswer
+              }));
+              isStreamReady = true;
+            } catch (e: any) {
+              console.error('[useCameraWebRtc] Set remote description failed:', e);
+              setStatus('fallback');
+              setError(e?.message || 'Remote description error');
+              onFallback?.(e?.message || 'Remote description error');
+            }
+          }
+
+          // Check for trickle candidate from remote
+          if (payload.type === 'candidate' && payload.candidate) {
+            try {
+              await pc.addIceCandidate(payload.candidate);
+            } catch (e) {
+              console.debug('[useCameraWebRtc] Add remote ICE candidate failed:', e);
+            }
+          }
+
+          // Check for signaling error
+          if (payload.type === 'error' || payload.error) {
+            console.warn('[useCameraWebRtc] Signaling error received from HA:', payload);
+            setStatus('fallback');
+            const errMsg = payload.message || payload.error?.message || payload.code || 'WebRTC signaling failed';
+            setError(errMsg);
+            onFallback?.(errMsg);
+          }
+        };
+
+        // 8. Subscribe to camera/webrtc/offer signaling events
+        const unsubscribe = await haWebSocketService.subscribeMessage(
+          (event: any) => {
+            handleSignalingPayload(event);
           },
           {
             type: 'camera/webrtc/offer',
             entity_id: entityId,
-            offer: offer.sdp
+            offer: offerSdp
           }
         );
 

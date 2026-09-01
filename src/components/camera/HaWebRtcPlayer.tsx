@@ -59,17 +59,19 @@ export default function HaWebRtcPlayer({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSnapshotting, setIsSnapshotting] = useState(false);
+  const [isMjpegFailed, setIsMjpegFailed] = useState(false);
 
   const { serverUrl } = useAutoLayoutStore();
-  const entityId = camera.entity_id;
-  const cameraName = (camera as any).name || (camera as any).attributes?.friendly_name || entityId;
-  const snapshotFallbackUrl = (camera as any).attributes?.entity_picture || getHACameraSnapshotUrl(entityId, serverUrl);
+  const entityId = camera?.entity_id || '';
+  const cameraName = (camera as any)?.name || (camera as any)?.attributes?.friendly_name || entityId;
+  const snapshotFallbackUrl = (camera as any)?.attributes?.entity_picture || getHACameraSnapshotUrl(entityId, serverUrl);
 
   // Multi-tier stream lifecycle hook
   const {
     status,
     protocol,
     mjpegUrl,
+    snapshotUrl,
     videoRef,
     error,
     isPaused,
@@ -78,7 +80,7 @@ export default function HaWebRtcPlayer({
     togglePause,
     reconnect
   } = useCameraStream(entityId, {
-    enabled: true,
+    enabled: Boolean(entityId),
     autoPlay,
     muted,
     enableIntercom: isIntercomActive,
@@ -129,6 +131,8 @@ export default function HaWebRtcPlayer({
     }
   }, []);
 
+  const isVideoActive = (protocol === 'webrtc' || protocol === 'hls') && status === 'connected';
+
   return (
     <div
       ref={containerRef}
@@ -141,30 +145,29 @@ export default function HaWebRtcPlayer({
         playsInline
         muted={isAudioMuted}
         className={`w-full h-full object-cover transition-opacity duration-300 ${
-          (protocol === 'webrtc' || protocol === 'hls') && status === 'connected'
-            ? 'opacity-100'
-            : 'opacity-0 absolute pointer-events-none'
+          isVideoActive ? 'opacity-100 z-10' : 'opacity-0 absolute pointer-events-none'
         }`}
       />
 
       {/* MJPEG Proxy Stream Image */}
-      {protocol === 'mjpeg' && mjpegUrl && (
+      {protocol === 'mjpeg' && mjpegUrl && !isMjpegFailed && (
         <img
           src={mjpegUrl}
           alt={cameraName}
-          className="w-full h-full object-cover"
+          onError={() => setIsMjpegFailed(true)}
+          className="w-full h-full object-cover z-10"
         />
       )}
 
-      {/* Fallback Snapshot / Demo Feed */}
-      {(status === 'demo' || status === 'fallback' || status === 'failed' || protocol === 'snapshot') && (
+      {/* Fallback Snapshot / Background Preview when video is not active */}
+      {!isVideoActive && (
         <div className="absolute inset-0 w-full h-full">
-          {snapshotFallbackUrl ? (
+          {snapshotFallbackUrl || snapshotUrl ? (
             <>
               <img
-                src={snapshotFallbackUrl}
+                src={snapshotUrl || snapshotFallbackUrl}
                 alt={cameraName}
-                className="w-full h-full object-cover opacity-80 filter brightness-95"
+                className="w-full h-full object-cover opacity-70 filter brightness-90"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
             </>
@@ -226,13 +229,13 @@ export default function HaWebRtcPlayer({
 
       {/* Loading Spinner during connection */}
       {status === 'connecting' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 backdrop-blur-xs z-10 p-4 text-center">
-          <div className="relative flex items-center justify-center mb-3">
-            <div className="w-11 h-11 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin" />
-            <Broadcast size={18} weight="duotone" className="text-cyan-400 absolute animate-pulse" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs z-10 p-4 text-center">
+          <div className="relative flex items-center justify-center mb-2.5">
+            <div className="w-10 h-10 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin" />
+            <Broadcast size={16} weight="duotone" className="text-cyan-400 absolute animate-pulse" />
           </div>
-          <p className="text-xs font-bold text-white tracking-wide">{cameraName}</p>
-          <p className="text-[11px] text-cyan-300/80 mt-0.5">Negotiating WebSocket WebRTC Session...</p>
+          <p className="text-xs font-bold text-white tracking-wide drop-shadow-md">{cameraName}</p>
+          <p className="text-[11px] text-cyan-300 mt-0.5 drop-shadow-md">Connecting WebRTC Stream...</p>
         </div>
       )}
 
