@@ -20,6 +20,7 @@ import { useUserConfig } from './contexts/ConfigContext';
 
 import { PAGE_THEMES } from './config/pageThemes';
 import DynamicPhosphorIcon from './components/ui/DynamicPhosphorIcon';
+import { AnimatedCircularProgressBar } from './components/ui/animated-circular-progress-bar';
 import { useRoomsData } from './hooks/useRoomsData';
 import { haWebSocketService } from './services/haWebSocket';
 
@@ -346,12 +347,25 @@ export default function App() {
   const pageTitle = activeTab === 'overview'
     ? `${getTimeGreeting()}, ${userName}`
     : currentSelectedArea
-    ? currentSelectedArea.name
-    : currentSettingsMeta
-    ? currentSettingsMeta.title
-    : currentTheme.title;
+      ? currentSelectedArea.name
+      : currentSettingsMeta
+        ? currentSettingsMeta.title
+        : currentTheme.title;
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [reconnectProgress, setReconnectProgress] = useState<number>(20);
+
+  useEffect(() => {
+    const isReconnecting = isLiveMode && connectionStatus !== 'connected' && connectionStatus !== 'auth_failed';
+    if (!isReconnecting) {
+      setReconnectProgress(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setReconnectProgress((prev) => (prev >= 95 ? 10 : prev + 5));
+    }, 200);
+    return () => clearInterval(interval);
+  }, [isLiveMode, connectionStatus]);
 
   const handleManualRefresh = async () => {
     if (isManualRefreshing) return;
@@ -374,31 +388,27 @@ export default function App() {
   };
 
   return (
-    <div className={`fixed inset-0 flex w-full h-full overflow-hidden font-sans select-none ${
-      darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
-    }`}>
+    <div className={`fixed inset-0 flex h-full h-[100dvh] min-h-screen min-h-[100dvh] w-full overflow-hidden font-sans select-none ${darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
+      }`}>
       {/* Ambient background decoration with distinct page accent glows */}
       {backgroundStyle === 'glow' && (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden transition-opacity duration-700 ease-in-out">
           {/* Primary Top-Right Accent Bloom */}
-          <div className={`absolute -top-24 right-0 sm:right-1/6 w-[450px] sm:w-[620px] h-[450px] sm:h-[620px] rounded-full blur-[100px] sm:blur-[140px] opacity-16 dark:opacity-28 transform-gpu transition-all duration-1000 ${
-            currentTheme.glow1
-          }`} />
+          <div className={`absolute -top-24 right-0 sm:right-1/6 w-[450px] sm:w-[620px] h-[450px] sm:h-[620px] rounded-full blur-[100px] sm:blur-[140px] opacity-16 dark:opacity-28 transform-gpu transition-all duration-1000 ${currentTheme.glow1
+            }`} />
           {/* Secondary Bottom-Left Accent Bloom */}
-          <div className={`absolute -bottom-24 left-0 sm:left-1/6 w-[400px] sm:w-[550px] h-[400px] sm:h-[550px] rounded-full blur-[100px] sm:blur-[140px] opacity-14 dark:opacity-24 transform-gpu transition-all duration-1000 ${
-            currentTheme.glow2
-          }`} />
+          <div className={`absolute -bottom-24 left-0 sm:left-1/6 w-[400px] sm:w-[550px] h-[400px] sm:h-[550px] rounded-full blur-[100px] sm:blur-[140px] opacity-14 dark:opacity-24 transform-gpu transition-all duration-1000 ${currentTheme.glow2
+            }`} />
           {/* Tertiary Center Accent Radiance */}
-          <div className={`absolute top-1/3 left-1/3 w-[300px] sm:w-[450px] h-[300px] sm:h-[450px] rounded-full blur-[90px] sm:blur-[120px] opacity-10 dark:opacity-18 transform-gpu transition-all duration-1000 ${
-            currentTheme.glow3 || currentTheme.glow1
-          }`} />
+          <div className={`absolute top-1/3 left-1/3 w-[300px] sm:w-[450px] h-[300px] sm:h-[450px] rounded-full blur-[90px] sm:blur-[120px] opacity-10 dark:opacity-18 transform-gpu transition-all duration-1000 ${currentTheme.glow3 || currentTheme.glow1
+            }`} />
         </div>
       )}
 
       {/* Modern Glassmorphic Nav Sidebar */}
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
         darkMode={darkMode}
         toggleDarkMode={handleToggleDarkMode}
         onOpenNotifications={() => setIsNotificationDrawerOpen(true)}
@@ -410,7 +420,7 @@ export default function App() {
         {/* Persistent Demo Mode Status Banner */}
         <DemoBanner />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:p-6 sm:pb-8 lg:p-8 lg:pb-8 flex flex-col">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container p-4 pt-[max(1.25rem,calc(env(safe-area-inset-top,0px)+0.75rem))] pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:p-6 sm:pb-8 lg:p-8 lg:pb-8 flex flex-col">
           {/* Header Bar - Title & Actions Top Row, 100% Full-Width Sentence Below */}
           <header className="mb-6 flex flex-col gap-3 pb-1 w-full">
             {/* Top Row: Title on Left, Global Action Controls on Right */}
@@ -462,7 +472,7 @@ export default function App() {
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 {/* Subtle Boot & Background Sync Indicator */}
                 {isConfigLoading && (
-                  <div 
+                  <div
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/30 text-sky-600 dark:text-sky-400 text-xs font-semibold backdrop-blur-sm animate-pulse"
                     title="Synchronizing configuration across devices..."
                   >
@@ -476,13 +486,12 @@ export default function App() {
                   type="button"
                   onClick={handleManualRefresh}
                   disabled={isManualRefreshing}
-                  className={`p-2 rounded-xl border transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center ${
-                    isManualRefreshing
+                  className={`p-2 rounded-xl border transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center ${isManualRefreshing
                       ? 'bg-sky-500/20 border-sky-500/40 text-sky-400'
                       : darkMode
-                      ? 'bg-slate-900/80 hover:bg-slate-800 border-white/10 text-slate-300 hover:text-white shadow-xs'
-                      : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-900 shadow-xs'
-                  }`}
+                        ? 'bg-slate-900/80 hover:bg-slate-800 border-white/10 text-slate-300 hover:text-white shadow-xs'
+                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-900 shadow-xs'
+                    }`}
                   title="Refresh Dashboard"
                 >
                   <ArrowsClockwise
@@ -530,17 +539,24 @@ export default function App() {
           {/* Non-Blocking Transient Reconnection Status Indicator */}
           {isLiveMode && connectionStatus !== 'connected' && connectionStatus !== 'auth_failed' && (
             <div className="mb-4 px-4 py-2.5 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-center justify-between gap-3 shadow-sm backdrop-blur-md animate-in fade-in duration-300">
-              <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping shrink-0" />
-                <span className="text-xs font-semibold">
-                  Reconnecting to Home Assistant... Controls temporarily using cached state.
+              <div className="flex items-center gap-3 min-w-0">
+                <AnimatedCircularProgressBar
+                  max={100}
+                  min={0}
+                  value={reconnectProgress}
+                  gaugePrimaryColor={darkMode ? "#f59e0b" : "#d97706"}
+                  gaugeSecondaryColor={darkMode ? "rgba(245, 158, 11, 0.2)" : "rgba(217, 119, 6, 0.15)"}
+                  className="size-7 sm:size-8 text-[9px] sm:text-[10px] font-bold shrink-0 text-amber-600 dark:text-amber-400"
+                />
+                <span className="text-xs sm:text-sm font-semibold tracking-tight truncate">
+                  trying to reconnect to Home Assistant
                 </span>
               </div>
               <button
                 type="button"
                 onClick={handleManualRefresh}
                 disabled={isManualRefreshing}
-                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-800 dark:text-amber-200 text-[11px] font-bold transition-all cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-800 dark:text-amber-200 text-xs font-bold transition-all cursor-pointer shrink-0 active:scale-95"
               >
                 Retry Now
               </button>
@@ -631,10 +647,10 @@ export default function App() {
       />
 
       {/* Global Notifications */}
-      <NotificationToast 
-        toasts={toasts} 
-        onDismiss={dismissToast} 
-        darkMode={darkMode} 
+      <NotificationToast
+        toasts={toasts}
+        onDismiss={dismissToast}
+        darkMode={darkMode}
       />
 
       {/* In-App PWA Install Prompt (Chromium / iOS) */}
