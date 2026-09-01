@@ -7,15 +7,12 @@
 
 import React from 'react';
 import {
-  Palette,
   Sun,
   Moon,
-  Desktop,
   DeviceMobile,
   Sparkle,
+  Square,
   FloppyDisk,
-  Clock,
-  Thermometer,
   CloudSun
 } from '@phosphor-icons/react';
 import { WeatherBackdropType } from '../../types/canvas';
@@ -24,10 +21,8 @@ interface ThemeCustomizationSectionProps {
   darkMode: boolean;
   themeMode: 'auto' | 'dark' | 'light';
   setThemeMode: (mode: 'auto' | 'dark' | 'light') => void;
-  tempUnit: 'C' | 'F';
-  setTempUnit: (unit: 'C' | 'F') => void;
-  clockFormat: '24h' | '12h';
-  setClockFormat: (format: '24h' | '12h') => void;
+  backgroundStyle: 'glow' | 'flat';
+  setBackgroundStyle: (style: 'glow' | 'flat') => void;
   weatherBackdrop: WeatherBackdropType;
   setWeatherBackdrop: (backdrop: WeatherBackdropType) => void;
   handleSavePreferences: () => void;
@@ -37,24 +32,22 @@ export default function ThemeCustomizationSection({
   darkMode,
   themeMode,
   setThemeMode,
-  tempUnit,
-  setTempUnit,
-  clockFormat,
-  setClockFormat,
+  backgroundStyle,
+  setBackgroundStyle,
   weatherBackdrop,
   setWeatherBackdrop,
   handleSavePreferences
 }: ThemeCustomizationSectionProps) {
   return (
     <div className="space-y-5 w-full animate-in fade-in duration-200">
-      {/* Visual Mode Selector: Auto vs Dark vs Light */}
+      {/* 1. Visual Mode Selector: Auto vs Dark vs Light */}
       <div className="p-4 sm:p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3 shadow-xs">
         <div>
           <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Appearance & Visual Mode
           </h4>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Choose how your dashboard appears across all device screens.
+            Choose how your dashboard theme appears across all device screens.
           </p>
         </div>
 
@@ -139,72 +132,81 @@ export default function ThemeCustomizationSection({
         </div>
       </div>
 
-      {/* Measurement Units & Formatting (2 Clean Columns) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="p-4 sm:p-5 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3 shadow-xs">
-          <div className="flex items-center gap-2">
-            <Thermometer size={20} weight="duotone" className="text-sky-500" />
-            <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">Temperature Unit</label>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setTempUnit('C')}
-              className={`py-3 rounded-2xl text-xs sm:text-sm font-bold border transition-all cursor-pointer ${
-                tempUnit === 'C'
-                  ? 'bg-sky-500 text-white border-sky-400 shadow-md'
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-400'
-              }`}
-            >
-              Celsius (°C)
-            </button>
-            <button
-              type="button"
-              onClick={() => setTempUnit('F')}
-              className={`py-3 rounded-2xl text-xs sm:text-sm font-bold border transition-all cursor-pointer ${
-                tempUnit === 'F'
-                  ? 'bg-sky-500 text-white border-sky-400 shadow-md'
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-400'
-              }`}
-            >
-              Fahrenheit (°F)
-            </button>
-          </div>
+      {/* 2. Background Style Selector: Background Glow vs Flat */}
+      <div className="p-4 sm:p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3 shadow-xs">
+        <div>
+          <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            Background Style
+          </h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Choose whether pages display dynamic ambient glowing blooms or a clean, flat solid background.
+          </p>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3 shadow-xs">
-          <div className="flex items-center gap-2">
-            <Clock size={20} weight="duotone" className="text-indigo-500" />
-            <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">Time Format</label>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setClockFormat('24h')}
-              className={`py-3 rounded-2xl text-xs sm:text-sm font-bold border transition-all cursor-pointer ${
-                clockFormat === '24h'
-                  ? 'bg-sky-500 text-white border-sky-400 shadow-md'
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-400'
-              }`}
-            >
-              24-Hour (18:45)
-            </button>
-            <button
-              type="button"
-              onClick={() => setClockFormat('12h')}
-              className={`py-3 rounded-2xl text-xs sm:text-sm font-bold border transition-all cursor-pointer ${
-                clockFormat === '12h'
-                  ? 'bg-sky-500 text-white border-sky-400 shadow-md'
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-400'
-              }`}
-            >
-              12-Hour (6:45 PM)
-            </button>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Background Glow Option */}
+          <button
+            type="button"
+            onClick={() => setBackgroundStyle('glow')}
+            className={`p-4 rounded-2xl border flex items-center sm:flex-col sm:items-start gap-3.5 text-left transition-all cursor-pointer relative overflow-hidden ${
+              backgroundStyle === 'glow'
+                ? 'bg-purple-500/15 border-purple-500 text-purple-950 dark:text-white font-bold shadow-md shadow-purple-500/10'
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-300'
+            }`}
+          >
+            {/* Subtle preview glow in card background when selected */}
+            {backgroundStyle === 'glow' && (
+              <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-purple-500/25 blur-xl pointer-events-none" />
+            )}
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border relative z-10 ${
+              backgroundStyle === 'glow'
+                ? 'bg-purple-500 text-white border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                : 'bg-slate-100 dark:bg-white/10 border-slate-200 dark:border-white/10 text-purple-400'
+            }`}>
+              <Sparkle size={22} weight="duotone" />
+            </div>
+            <div className="relative z-10">
+              <div className="text-sm font-bold flex items-center gap-1.5">
+                <span>Background Glow</span>
+                {backgroundStyle === 'glow' && <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />}
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Luminous ambient color blooms and soft radial gradients
+              </div>
+            </div>
+          </button>
+
+          {/* Flat Option */}
+          <button
+            type="button"
+            onClick={() => setBackgroundStyle('flat')}
+            className={`p-4 rounded-2xl border flex items-center sm:flex-col sm:items-start gap-3.5 text-left transition-all cursor-pointer ${
+              backgroundStyle === 'flat'
+                ? 'bg-slate-200 dark:bg-slate-800 border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white font-bold shadow-md'
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-slate-300'
+            }`}
+          >
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+              backgroundStyle === 'flat'
+                ? 'bg-slate-700 dark:bg-slate-600 text-white border-slate-500'
+                : 'bg-slate-100 dark:bg-white/10 border-slate-200 dark:border-white/10 text-slate-400'
+            }`}>
+              <Square size={22} weight="duotone" />
+            </div>
+            <div>
+              <div className="text-sm font-bold flex items-center gap-1.5">
+                <span>Flat & Clean</span>
+                {backgroundStyle === 'flat' && <span className="w-2 h-2 rounded-full bg-slate-500 animate-pulse" />}
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Minimalist solid background without ambient light blooms
+              </div>
+            </div>
+          </button>
         </div>
       </div>
 
-      {/* Weather Backdrop Simulation */}
+      {/* 3. Weather Backdrop Simulation */}
       <div className="p-4 sm:p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3 shadow-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -241,7 +243,7 @@ export default function ThemeCustomizationSection({
         </div>
       </div>
 
-      {/* Save Button */}
+      {/* 4. Save Button */}
       <div className="flex justify-end pt-1">
         <button
           type="button"

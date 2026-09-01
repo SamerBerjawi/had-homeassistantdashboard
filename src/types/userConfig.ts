@@ -38,6 +38,7 @@ export interface UserDashboardConfig {
     carbonIntensityFactor?: number;
   };
   preferences?: {
+    backgroundStyle?: 'glow' | 'flat';
     tempUnit?: 'C' | 'F';
     clockFormat?: '24h' | '12h';
     energyTariff?: number;
@@ -125,6 +126,7 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
     carbonIntensityFactor: 0.385
   },
   preferences: {
+    backgroundStyle: 'glow',
     tempUnit: 'C',
     clockFormat: '24h',
     energyTariff: 0.28,

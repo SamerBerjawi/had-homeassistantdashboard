@@ -48,8 +48,9 @@ interface SettingsHubProps {
     avatarInitials: string;
   };
   hasPin: boolean;
-  tempUnit: 'C' | 'F';
-  clockFormat: '24h' | '12h';
+  backgroundStyle?: 'glow' | 'flat';
+  tempUnit?: 'C' | 'F';
+  clockFormat?: '24h' | '12h';
   currencySymbol: string;
   energyTariff: number;
   totalEntitiesCount: number;
@@ -73,6 +74,7 @@ export default function SettingsHub({
   connectionStatus,
   profileData,
   hasPin,
+  backgroundStyle = 'glow',
   tempUnit,
   clockFormat,
   totalEntitiesCount,
@@ -116,8 +118,8 @@ export default function SettingsHub({
       badgeType: 'info',
       metrics: [
         { label: 'Theme', value: themeMode === 'auto' ? 'System' : darkMode ? 'Dark' : 'Light' },
-        { label: 'Temp', value: `°${tempUnit}` },
-        { label: 'Time', value: clockFormat }
+        { label: 'Background', value: backgroundStyle === 'flat' ? 'Flat' : 'Glow' },
+        { label: 'Style', value: backgroundStyle === 'flat' ? 'Solid' : 'Ambient' }
       ]
     },
     {
@@ -253,7 +255,7 @@ export default function SettingsHub({
                     Theme & Customization
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">
-                    Units (°{tempUnit}), Clock ({clockFormat}), Backdrop
+                    Theme ({themeMode === 'auto' ? 'Auto' : darkMode ? 'Dark' : 'Light'}), BG ({backgroundStyle === 'flat' ? 'Flat' : 'Glow'})
                   </div>
                 </div>
               </div>

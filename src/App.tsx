@@ -32,7 +32,7 @@ const SETTINGS_SECTIONS_META: Record<string, { title: string; subtitle: string; 
   },
   theme_customization: {
     title: 'Theme & Customization',
-    subtitle: 'Visual theme, temperature units, clock format, and energy tariff.',
+    subtitle: 'Visual theme mode, background glow ambiance, and weather simulation.',
     icon: Palette,
     color: 'text-purple-400'
   },
@@ -173,6 +173,23 @@ export default function App() {
     mql.addEventListener('change', handleSystemChange);
     return () => mql.removeEventListener('change', handleSystemChange);
   }, [themeMode]);
+
+  // Background Style State: 'glow' (Ambient Blobs) | 'flat' (Minimalist Solid)
+  const [backgroundStyle, setBackgroundStyle] = useState<'glow' | 'flat'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('homz_background_style') || localStorage.getItem('background_style');
+      if (saved === 'glow' || saved === 'flat') return saved;
+    }
+    return 'glow';
+  });
+
+  const handleSetBackgroundStyle = (style: 'glow' | 'flat') => {
+    setBackgroundStyle(style);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('homz_background_style', style);
+      localStorage.setItem('background_style', style);
+    }
+  };
 
   // Tab State with URL Path Synchronization
   const [activeTab, setActiveTabState] = useState<string>(getTabFromUrl);
@@ -361,20 +378,22 @@ export default function App() {
       darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
     }`}>
       {/* Ambient background decoration with distinct page accent glows */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Primary Top-Right Accent Bloom */}
-        <div className={`absolute -top-24 right-0 sm:right-1/6 w-[450px] sm:w-[620px] h-[450px] sm:h-[620px] rounded-full blur-[100px] sm:blur-[140px] opacity-16 dark:opacity-28 transform-gpu transition-all duration-1000 ${
-          currentTheme.glow1
-        }`} />
-        {/* Secondary Bottom-Left Accent Bloom */}
-        <div className={`absolute -bottom-24 left-0 sm:left-1/6 w-[400px] sm:w-[550px] h-[400px] sm:h-[550px] rounded-full blur-[100px] sm:blur-[140px] opacity-14 dark:opacity-24 transform-gpu transition-all duration-1000 ${
-          currentTheme.glow2
-        }`} />
-        {/* Tertiary Center Accent Radiance */}
-        <div className={`absolute top-1/3 left-1/3 w-[300px] sm:w-[450px] h-[300px] sm:h-[450px] rounded-full blur-[90px] sm:blur-[120px] opacity-10 dark:opacity-18 transform-gpu transition-all duration-1000 ${
-          currentTheme.glow3 || currentTheme.glow1
-        }`} />
-      </div>
+      {backgroundStyle === 'glow' && (
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden transition-opacity duration-700 ease-in-out">
+          {/* Primary Top-Right Accent Bloom */}
+          <div className={`absolute -top-24 right-0 sm:right-1/6 w-[450px] sm:w-[620px] h-[450px] sm:h-[620px] rounded-full blur-[100px] sm:blur-[140px] opacity-16 dark:opacity-28 transform-gpu transition-all duration-1000 ${
+            currentTheme.glow1
+          }`} />
+          {/* Secondary Bottom-Left Accent Bloom */}
+          <div className={`absolute -bottom-24 left-0 sm:left-1/6 w-[400px] sm:w-[550px] h-[400px] sm:h-[550px] rounded-full blur-[100px] sm:blur-[140px] opacity-14 dark:opacity-24 transform-gpu transition-all duration-1000 ${
+            currentTheme.glow2
+          }`} />
+          {/* Tertiary Center Accent Radiance */}
+          <div className={`absolute top-1/3 left-1/3 w-[300px] sm:w-[450px] h-[300px] sm:h-[450px] rounded-full blur-[90px] sm:blur-[120px] opacity-10 dark:opacity-18 transform-gpu transition-all duration-1000 ${
+            currentTheme.glow3 || currentTheme.glow1
+          }`} />
+        </div>
+      )}
 
       {/* Modern Glassmorphic Nav Sidebar */}
       <Sidebar 
@@ -577,6 +596,8 @@ export default function App() {
                   darkMode={darkMode}
                   themeMode={themeMode}
                   setThemeMode={setThemeMode}
+                  backgroundStyle={backgroundStyle}
+                  setBackgroundStyle={handleSetBackgroundStyle}
                   toggleDarkMode={handleToggleDarkMode}
                   entities={entities}
                   setEntities={setEntities}

@@ -29,6 +29,8 @@ interface SettingsViewProps {
   darkMode: boolean;
   themeMode?: 'auto' | 'dark' | 'light';
   setThemeMode?: (mode: 'auto' | 'dark' | 'light') => void;
+  backgroundStyle?: 'glow' | 'flat';
+  setBackgroundStyle?: (style: 'glow' | 'flat') => void;
   toggleDarkMode: (mode?: boolean) => void;
   entities: HAEntity[];
   setEntities: React.Dispatch<React.SetStateAction<HAEntity[]>>;
@@ -70,6 +72,8 @@ export default function SettingsView({
   darkMode,
   themeMode = 'auto',
   setThemeMode = () => {},
+  backgroundStyle,
+  setBackgroundStyle,
   toggleDarkMode,
   entities,
   setEntities,
@@ -204,6 +208,18 @@ export default function SettingsView({
   // ==========================================
   // 2. THEME & CUSTOMIZATION STATE
   // ==========================================
+  const [internalBgStyle, setInternalBgStyle] = useState<'glow' | 'flat'>(() => {
+    return (config?.preferences?.backgroundStyle as 'glow' | 'flat') || (localStorage.getItem('homz_background_style') as 'glow' | 'flat') || 'glow';
+  });
+  const effectiveBackgroundStyle = backgroundStyle || internalBgStyle;
+
+  const handleSetBgStyle = (style: 'glow' | 'flat') => {
+    setInternalBgStyle(style);
+    setBackgroundStyle?.(style);
+    localStorage.setItem('homz_background_style', style);
+    localStorage.setItem('background_style', style);
+  };
+
   const [tempUnit, setTempUnit] = useState<'C' | 'F'>(() => {
     return (config?.preferences?.tempUnit as 'C' | 'F') || (localStorage.getItem('homz_temp_unit') as 'C' | 'F') || 'C';
   });
@@ -238,6 +254,8 @@ export default function SettingsView({
   }, [config]);
 
   const handleSavePreferences = () => {
+    localStorage.setItem('homz_background_style', effectiveBackgroundStyle);
+    localStorage.setItem('background_style', effectiveBackgroundStyle);
     localStorage.setItem('homz_temp_unit', tempUnit);
     localStorage.setItem('homz_clock_format', clockFormat);
     localStorage.setItem('homz_energy_tariff', energyTariff.toString());
@@ -247,6 +265,7 @@ export default function SettingsView({
       ...prev,
       preferences: {
         ...(prev.preferences || {}),
+        backgroundStyle: effectiveBackgroundStyle,
         tempUnit,
         clockFormat,
         energyTariff,
@@ -257,7 +276,7 @@ export default function SettingsView({
     addToast?.({
       type: 'success',
       title: 'Customization Saved',
-      message: 'System appearance & unit preferences synced.'
+      message: 'System appearance & theme preferences synced.'
     });
   };
 
@@ -290,6 +309,7 @@ export default function SettingsView({
       rooms,
       profileData,
       settings: {
+        backgroundStyle: effectiveBackgroundStyle,
         tempUnit,
         clockFormat,
         energyTariff,
@@ -359,6 +379,7 @@ export default function SettingsView({
       rooms,
       userProfile: profileData,
       preferences: {
+        backgroundStyle: effectiveBackgroundStyle,
         tempUnit,
         clockFormat,
         energyTariff,
@@ -578,6 +599,7 @@ export default function SettingsView({
             <SettingsHub
               darkMode={darkMode}
               themeMode={themeMode}
+              backgroundStyle={effectiveBackgroundStyle}
               onSelectCategory={(sec) => setSelectedSettingsSection(sec)}
               isLiveMode={isLiveMode}
               connectionStatus={connectionStatus}
@@ -638,10 +660,8 @@ export default function SettingsView({
               darkMode={darkMode}
               themeMode={themeMode}
               setThemeMode={setThemeMode}
-              tempUnit={tempUnit}
-              setTempUnit={setTempUnit}
-              clockFormat={clockFormat}
-              setClockFormat={setClockFormat}
+              backgroundStyle={effectiveBackgroundStyle}
+              setBackgroundStyle={handleSetBgStyle}
               weatherBackdrop={weatherBackdrop}
               setWeatherBackdrop={setWeatherBackdrop}
               handleSavePreferences={handleSavePreferences}
