@@ -1304,7 +1304,7 @@ export default function AreaDetailView({
                       key={sensor.entity_id}
                       id={sensor.entity_id}
                       colSpan={2}
-                      rowSpan={isSpark ? 2 : 1}
+                      rowSpan={1}
                       tabletColSpan={3}
                       desktopColSpan={3}
                       isUnavailable={isUnavailable}

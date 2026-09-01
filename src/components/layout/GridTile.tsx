@@ -115,14 +115,14 @@ export const GridTile: React.FC<GridTileProps> = ({
       {...(onLongPress || onClick ? longPressHandlers : {})}
       style={style}
       className={`w-full h-full min-w-0 ${colClass} ${tabletColClass} ${desktopColClass} ${rowClass} ${
-        isUnavailable ? 'opacity-50 grayscale pointer-events-none cursor-not-allowed select-none' : ''
+        isUnavailable ? 'pointer-events-none cursor-not-allowed select-none' : ''
       } ${className}`}
     >
       {isUnavailable ? (
-        <div className="relative w-full h-full rounded-3xl border border-slate-700/40 bg-slate-900/30 backdrop-blur-xs flex flex-col items-center justify-center p-3 text-center overflow-hidden">
-          <div className="flex items-center gap-1.5 text-slate-400 text-xs font-semibold">
-            <WarningCircle size={16} weight="duotone" className="text-amber-400" />
-            <span>{unavailableText}</span>
+        <div className="relative w-full h-full min-h-[92px] rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-slate-900/40 backdrop-blur-md shadow-xs flex flex-col items-center justify-center p-3 text-center overflow-hidden">
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-semibold">
+            <WarningCircle size={18} weight="duotone" className="text-amber-500 dark:text-amber-400 shrink-0" />
+            <span className="font-medium">{unavailableText}</span>
           </div>
         </div>
       ) : (

@@ -13,6 +13,7 @@ import { ResolvedEntity } from '../../types';
 import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
 import { detectLightCapabilities } from '../../services/lightClassification';
 import { TelemetryLine } from '../common/TelemetryBadge';
+import DotSlider from '../ui/DotSlider';
 import CompactTile from './CompactTile';
 import StandardTile from './StandardTile';
 
@@ -100,20 +101,21 @@ export const LightTile: React.FC<LightTileProps> = ({
           else if (onIconClick) onIconClick();
         }}
       >
-        <div className="space-y-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
+        <div className="space-y-1 pt-1 w-full" onClick={(e) => e.stopPropagation()}>
           <div className="flex justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1">
               <Sun size={12} weight="bold" /> Brightness
             </span>
             <span className="font-mono">{isOn ? `${brightness}%` : '0%'}</span>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
+          <DotSlider
             value={isOn ? brightness : 0}
-            onChange={(e) => onBrightnessChange(entity, Number(e.target.value))}
-            className="w-full h-2 bg-slate-700/40 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-400"
+            min={0}
+            max={100}
+            step={1}
+            activeColor="bg-amber-400"
+            activeGlowColor="rgba(251, 191, 36, 0.75)"
+            onChange={(val) => onBrightnessChange(entity, val)}
           />
         </div>
       </StandardTile>

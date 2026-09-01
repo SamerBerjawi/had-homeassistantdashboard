@@ -13,6 +13,7 @@ import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
 import { detectClimateCapabilities } from '../../services/climateClassification';
 import { getClimateModeTheme } from '../../utils/climateTheme';
 import { TelemetryLine } from '../common/TelemetryBadge';
+import DotSlider from '../ui/DotSlider';
 import StandardTile from './StandardTile';
 
 interface ClimateTileProps {
@@ -159,7 +160,7 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
         </div>
       }
     >
-      {/* Target Temperature Readout + Steppers & Full-Width Range Slider */}
+      {/* Target Temperature Readout + Steppers & Full-Width Dotted Slider */}
       <div className="space-y-1.5 pt-0.5 w-full" onClick={(e) => e.stopPropagation()}>
         {/* Row 1: Target Temp Label & Readout */}
         <div className="flex items-center justify-between text-xs font-semibold">
@@ -169,7 +170,7 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
           </span>
         </div>
 
-        {/* Row 2: Steppers and Full-Width Slider */}
+        {/* Row 2: Steppers and Dotted Slider */}
         <div className="flex items-center gap-1.5 w-full">
           <button
             type="button"
@@ -180,14 +181,14 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
             -
           </button>
           <div className="flex-1 px-1 flex items-center">
-            <input
-              type="range"
+            <DotSlider
+              value={targetTemp}
               min={minTemp}
               max={maxTemp}
-              step="0.5"
-              value={targetTemp}
-              onChange={(e) => onTempSlider(entity, Number(e.target.value))}
-              className={`w-full h-2 bg-slate-700/40 dark:bg-white/10 rounded-lg appearance-none cursor-pointer ${theme.sliderAccent}`}
+              step={0.5}
+              activeColor="bg-amber-500"
+              activeGlowColor="rgba(245, 158, 11, 0.75)"
+              onChange={(val) => onTempSlider(entity, val)}
             />
           </div>
           <button

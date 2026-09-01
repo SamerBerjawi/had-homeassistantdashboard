@@ -26,6 +26,7 @@ interface StandardTileProps {
   onIconClick?: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
   className?: string;
+  bodyClassName?: string;
 }
 
 export const StandardTile: React.FC<StandardTileProps> = ({
@@ -43,7 +44,8 @@ export const StandardTile: React.FC<StandardTileProps> = ({
   onClick,
   onIconClick,
   onContextMenu,
-  className = ''
+  className = '',
+  bodyClassName = ''
 }) => {
   return (
     <TileShell
@@ -95,8 +97,12 @@ export const StandardTile: React.FC<StandardTileProps> = ({
         {headerAction && <div className="shrink-0 flex items-center">{headerAction}</div>}
       </div>
 
-      {/* Middle Body Content (e.g. Sliders, Steppers, Metrics) */}
-      {children && <div className="relative z-10 my-auto py-0.5">{children}</div>}
+      {/* Middle Body Content (e.g. Sliders, Steppers, Metrics, Sparklines) */}
+      {children && (
+        <div className={`relative z-10 w-full ${bodyClassName || 'my-auto py-0.5'}`}>
+          {children}
+        </div>
+      )}
 
       {/* Bottom Footer Content (e.g. Mode Badges, Sub-controls) */}
       {footer && (
