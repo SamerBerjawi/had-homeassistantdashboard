@@ -43,6 +43,8 @@ import { Line } from '../../charts/line';
 import { CarEvMetrics } from '../../../types/mobility';
 import { MobilityMap } from './MobilityMap';
 import { MobilityAssetBadge } from './MobilityAssetBadge';
+import { resolveAssetUrl } from '../../../utils/assetUrl';
+import { useUserConfig } from '../../../contexts/ConfigContext';
 import { ActionConfirmModal } from './ActionConfirmModal';
 
 interface CarEvTabProps {
@@ -80,9 +82,23 @@ export function CarEvTab({
   onOpenCustomizer,
   darkMode = true
 }: CarEvTabProps) {
+  const { config } = useUserConfig();
   const [activeModal, setActiveModal] = useState<CarModalType>(null);
   const [isActionPending, setIsActionPending] = useState(false);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  const [logoError, setLogoError] = useState(false);
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [metrics.customVehicleImage]);
+
+  React.useEffect(() => {
+    setLogoError(false);
+  }, [metrics.customBrandLogo]);
+
+  const resolvedCarImage = resolveAssetUrl(metrics.customVehicleImage, config?.updatedAt);
+  const resolvedCarLogo = resolveAssetUrl(metrics.customBrandLogo, config?.updatedAt);
 
   const cardStyle =
     'rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ' +
@@ -212,8 +228,13 @@ export function CarEvTab({
           {/* Section Header */}
           <div className="flex items-center justify-between gap-2 z-10">
             <div className="flex items-center gap-3">
-              {metrics.customBrandLogo ? (
-                <img src={metrics.customBrandLogo} alt="Logo" className="h-8 max-w-[120px] object-contain drop-shadow-md" />
+              {resolvedCarLogo && !logoError ? (
+                <img
+                  src={resolvedCarLogo}
+                  alt="Logo"
+                  className="h-8 max-w-[120px] object-contain drop-shadow-md"
+                  onError={() => setLogoError(true)}
+                />
               ) : (
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
                   <span className="text-xs font-black tracking-widest uppercase">FORDPASS</span>
@@ -239,11 +260,12 @@ export function CarEvTab({
                 <div className="absolute -inset-4 rounded-full bg-emerald-500/20 blur-xl animate-pulse pointer-events-none" />
               )}
 
-              {metrics.customVehicleImage ? (
+              {resolvedCarImage && !imageError ? (
                 <img
-                  src={metrics.customVehicleImage}
+                  src={resolvedCarImage}
                   alt="Vehicle Render"
                   className="max-h-52 max-w-full object-contain mx-auto drop-shadow-[0_20px_25px_rgba(0,0,0,0.5)]"
+                  onError={() => setImageError(true)}
                 />
               ) : (
                 <div className="relative w-[280px] sm:w-[380px] max-w-full h-[140px] sm:h-[175px] mx-auto flex items-center justify-center">

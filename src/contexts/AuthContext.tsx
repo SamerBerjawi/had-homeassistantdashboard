@@ -3,24 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  * 
  * Global Reactive Authentication Context Provider
- * Manages Home Assistant OAuth2, Long-Lived Access Tokens (LLAT), and Sandboxed Demo Mode
+ * Manages Home Assistant OAuth2, Long-Lived Access Tokens (LLAT), and Sandboxed Demo Mode.
+ * Handles proactive silent token refresh, resilient network reconnection, and persistent storage.
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { AuthState, AuthContextType, AuthUser, AuthTokens } from '../types/auth';
 import { 
   handleHAOAuthCallback, 
-  getStoredHAAuth, 
   startHAOAuthFlow, 
-  clearStoredHAAuth, 
-  saveStoredHAAuth, 
-  refreshHAOAuthToken,
+  refreshHAOAuthTokenWithStatus,
   normalizeHAUrl 
 } from '../services/haAuth';
+import { 
+  getStoredAuthConfig, 
+  saveStoredAuthConfig, 
+  clearStoredAuthConfig, 
+  updateStoredTokens,
+  isTokenExpired,
+  StoredAuthConfig 
+} from '../services/authStorage';
 import { haWebSocketService, HAConnectionStatus } from '../services/haWebSocket';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
-
-const STORAGE_KEY_DEMO = 'had_auth_demo';
 
 const initialAuthState: AuthState = {
   isAuthenticated: false,
@@ -37,9 +41,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
-  // Sync with autoLayoutStore for graph & registries
-  const setLiveMode = useAutoLayoutStore((s) => s.setLiveMode);
+  const refreshTimerRef = useRef<any>(null);
   const reloadDemoData = useAutoLayoutStore((s) => s.reloadDemoData);
+
+  const clearRefreshTimer = useCallback(() => {
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+  }, []);
 
   const fetchHAUserProfile = useCallback(async (): Promise<AuthUser> => {
     try {
@@ -53,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       }
     } catch {
-      // Ignore if command not supported or demo
+      // Ignore if command not supported
     }
 
     return {
@@ -62,6 +72,124 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isOwner: true
     };
   }, []);
+
+  // Schedule proactive silent token refresh 5 minutes (300s) before access token expires
+  const scheduleProactiveTokenRefresh = useCallback((tokens: AuthTokens) => {
+    clearRefreshTimer();
+
+    if (tokens.auth_type !== 'oauth' || !tokens.refresh_token) {
+      return;
+    }
+
+    const now = Date.now();
+    const expiresAt = tokens.expires_at || (now + (tokens.expires_in || 1800) * 1000);
+    const safetyBufferMs = 300000; // 5 minutes before expiry
+    const refreshDelay = Math.max(5000, expiresAt - now - safetyBufferMs);
+
+    refreshTimerRef.current = setTimeout(async () => {
+      try {
+        const result = await refreshHAOAuthTokenWithStatus(tokens);
+        if (result.success && result.tokens) {
+          haWebSocketService.updateToken(result.tokens.access_token);
+          setAuthState((prev) => ({
+            ...prev,
+            tokens: result.tokens
+          }));
+          scheduleProactiveTokenRefresh(result.tokens);
+        } else if (result.isFatal) {
+          console.error('[AuthContext] OAuth refresh token rejected by Home Assistant. Logging out.');
+          clearStoredAuthConfig();
+          haWebSocketService.disconnect();
+          setAuthState({
+            isAuthenticated: false,
+            isDemo: false,
+            authMethod: null
+          });
+          setError('Session expired. Please sign in again.');
+          setIsAuthModalOpen(true);
+        } else {
+          // Transient network failure: retry in 30 seconds
+          console.warn('[AuthContext] Proactive refresh transient failure. Retrying in 30s...');
+          refreshTimerRef.current = setTimeout(() => {
+            scheduleProactiveTokenRefresh(tokens);
+          }, 30000);
+        }
+      } catch (err) {
+        console.error('[AuthContext] Error in proactive token refresh timer:', err);
+      }
+    }, refreshDelay);
+  }, [clearRefreshTimer]);
+
+  // Hook into haWebSocketService onAuthInvalid for seamless socket-level token recovery
+  useEffect(() => {
+    // Also listen for connection status auth_failed
+    const handleAuthStatus = (event: any) => {
+      const status: HAConnectionStatus = event?.detail?.status;
+      if (status === 'auth_failed') {
+        setError('Authentication expired or invalid token. Please sign in again.');
+        setIsAuthModalOpen(true);
+      }
+    };
+
+    window.addEventListener('ha_connection_status' as any, handleAuthStatus);
+    return () => {
+      window.removeEventListener('ha_connection_status' as any, handleAuthStatus);
+    };
+  }, []);
+
+  // Listen for window focus, visibilitychange, and online to refresh stale tokens
+  useEffect(() => {
+    const handleVisibilityOrOnline = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        return;
+      }
+
+      const stored = getStoredAuthConfig();
+      if (stored && stored.authMethod === 'oauth' && stored.tokens?.refresh_token) {
+        if (isTokenExpired(stored.tokens, 300)) {
+          try {
+            const result = await refreshHAOAuthTokenWithStatus(stored.tokens);
+            if (result.success && result.tokens) {
+              haWebSocketService.updateToken(result.tokens.access_token);
+              setAuthState((prev) => ({
+                ...prev,
+                tokens: result.tokens
+              }));
+              scheduleProactiveTokenRefresh(result.tokens);
+            } else if (result.isFatal) {
+              clearStoredAuthConfig();
+              haWebSocketService.disconnect();
+              setAuthState({
+                isAuthenticated: false,
+                isDemo: false,
+                authMethod: null
+              });
+              setError('Session expired. Please sign in again.');
+              setIsAuthModalOpen(true);
+            }
+          } catch (e) {
+            console.warn('[AuthContext] Error during wake/online token refresh:', e);
+          }
+        }
+      }
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityOrOnline);
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', handleVisibilityOrOnline);
+    }
+
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityOrOnline);
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', handleVisibilityOrOnline);
+      }
+    };
+  }, [scheduleProactiveTokenRefresh]);
 
   // Initialize Auth State on Initial Mount
   useEffect(() => {
@@ -75,14 +203,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const oauthResult = await handleHAOAuthCallback();
         if (oauthResult.success && oauthResult.tokens && isMounted) {
-          const tokens: AuthTokens = oauthResult.tokens;
-          localStorage.removeItem(STORAGE_KEY_DEMO);
-          localStorage.setItem('ha_live_mode', 'true');
-
+          const tokens = oauthResult.tokens;
           haWebSocketService.setDemoMode(false);
           haWebSocketService.connect(tokens.server_url, tokens.access_token);
+          scheduleProactiveTokenRefresh(tokens);
 
-          // Authenticate immediately to close modal and reveal overview instantly
           setAuthState({
             isAuthenticated: true,
             isDemo: false,
@@ -95,7 +220,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsLoading(false);
           setIsInitializing(false);
 
-          // Fetch full user profile in background once connection completes
           fetchHAUserProfile()
             .then((user) => {
               if (isMounted) {
@@ -110,19 +234,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('[AuthContext] OAuth callback error:', err);
       }
 
-      // 2. Check for stored credentials
-      const stored = getStoredHAAuth();
-      if (stored && isMounted) {
-        if (stored.auth_type === 'oauth') {
-          let validTokens = stored;
-          // Check if expired or about to expire in 3m
-          if (!stored.expires_at || stored.expires_at < Date.now() + 180000) {
-            const refreshed = await refreshHAOAuthToken(stored);
-            if (refreshed) {
-              validTokens = refreshed;
-            } else {
-              console.warn('[AuthContext] Stored OAuth token expired and refresh failed.');
-              clearStoredHAAuth();
+      // 2. Check for stored credentials via hardened authStorage
+      const storedConfig = getStoredAuthConfig();
+      if (storedConfig && isMounted) {
+        if (storedConfig.authMethod === 'oauth' && storedConfig.tokens) {
+          let activeTokens = storedConfig.tokens;
+
+          // Check if token is expired or close to expiry (within 5 minutes)
+          if (isTokenExpired(activeTokens, 300)) {
+            const refreshResult = await refreshHAOAuthTokenWithStatus(activeTokens);
+            if (refreshResult.success && refreshResult.tokens) {
+              activeTokens = refreshResult.tokens;
+            } else if (refreshResult.isFatal) {
+              console.warn('[AuthContext] Stored OAuth token revoked. Clearing credentials.');
+              clearStoredAuthConfig();
               setAuthState({
                 isAuthenticated: false,
                 isDemo: false,
@@ -132,19 +257,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setIsLoading(false);
               setIsInitializing(false);
               return;
+            } else {
+              // Transient failure (e.g. offline on mount): proceed with existing tokens
+              console.warn('[AuthContext] Token refresh delayed due to network. Proceeding with stored session.');
             }
           }
 
           haWebSocketService.setDemoMode(false);
-          haWebSocketService.connect(validTokens.server_url, validTokens.access_token);
+          haWebSocketService.connect(activeTokens.server_url, activeTokens.access_token);
+          scheduleProactiveTokenRefresh(activeTokens);
 
           setAuthState({
             isAuthenticated: true,
             isDemo: false,
             authMethod: 'oauth',
-            haUrl: validTokens.server_url,
+            haUrl: activeTokens.server_url,
             user: { id: 'oauth_user', name: 'Home Assistant User', isOwner: true },
-            tokens: validTokens
+            tokens: activeTokens
           });
           setIsAuthModalOpen(false);
           setIsLoading(false);
@@ -159,17 +288,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .catch(() => {});
 
           return;
-        } else if (stored.auth_type === 'llat' && stored.access_token) {
+        } else if (storedConfig.authMethod === 'llat' && storedConfig.tokens?.access_token) {
           haWebSocketService.setDemoMode(false);
-          haWebSocketService.connect(stored.server_url, stored.access_token);
+          haWebSocketService.connect(storedConfig.tokens.server_url, storedConfig.tokens.access_token);
 
           setAuthState({
             isAuthenticated: true,
             isDemo: false,
             authMethod: 'llat',
-            haUrl: stored.server_url,
+            haUrl: storedConfig.tokens.server_url,
             user: { id: 'kiosk_user', name: 'Wall Kiosk Operator', isOwner: true },
-            tokens: stored
+            tokens: storedConfig.tokens
+          });
+          setIsAuthModalOpen(false);
+          setIsLoading(false);
+          setIsInitializing(false);
+          return;
+        } else if (storedConfig.authMethod === 'demo') {
+          haWebSocketService.setDemoMode(true);
+          setAuthState({
+            isAuthenticated: false,
+            isDemo: true,
+            authMethod: 'demo',
+            user: { id: 'demo_user', name: 'Demo Guest', isOwner: false }
           });
           setIsAuthModalOpen(false);
           setIsLoading(false);
@@ -178,50 +319,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // 3. Fallback: check legacy localStorage ha_token
-      const legacyToken = localStorage.getItem('ha_token');
-      const legacyUrl = localStorage.getItem('ha_server_url') || 'http://homeassistant.local:8123';
-      if (legacyToken && legacyToken.trim() && isMounted) {
-        const tokens: AuthTokens = {
-          access_token: legacyToken.trim(),
-          server_url: normalizeHAUrl(legacyUrl).wsUrl,
-          auth_type: 'llat'
-        };
-        saveStoredHAAuth(tokens);
-        haWebSocketService.setDemoMode(false);
-        haWebSocketService.connect(tokens.server_url, tokens.access_token);
-
-        setAuthState({
-          isAuthenticated: true,
-          isDemo: false,
-          authMethod: 'llat',
-          haUrl: tokens.server_url,
-          user: { id: 'kiosk_user', name: 'Kiosk Display', isOwner: true },
-          tokens
-        });
-        setIsAuthModalOpen(false);
-        setIsLoading(false);
-        setIsInitializing(false);
-        return;
-      }
-
-      // 4. Check if demo mode was explicitly selected
-      const isDemoSaved = localStorage.getItem(STORAGE_KEY_DEMO) === 'true';
-      if (isDemoSaved && isMounted) {
-        haWebSocketService.setDemoMode(true);
-        setAuthState({
-          isAuthenticated: false,
-          isDemo: true,
-          authMethod: 'demo',
-          user: { id: 'demo_user', name: 'Demo Guest', isOwner: false }
-        });
-        setIsAuthModalOpen(false);
-        setIsLoading(false);
-        setIsInitializing(false);
-        return;
-      }
-
-      // 5. Unauthenticated — Gatekeeper opens AuthModal
+      // 3. Unauthenticated — Open AuthModal
       if (isMounted) {
         setAuthState({
           isAuthenticated: false,
@@ -238,31 +336,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       isMounted = false;
+      clearRefreshTimer();
     };
-  }, [fetchHAUserProfile]);
-
-  // Handle Auth Rejections or Expired Sessions from WebSocket
-  useEffect(() => {
-    const handleAuthStatus = (event: any) => {
-      const status: HAConnectionStatus = event?.detail?.status;
-      if (status === 'auth_failed') {
-        setError('Authentication expired or invalid token. Please sign in again.');
-        setIsAuthModalOpen(true);
-      }
-    };
-
-    window.addEventListener('ha_connection_status' as any, handleAuthStatus);
-    return () => {
-      window.removeEventListener('ha_connection_status' as any, handleAuthStatus);
-    };
-  }, []);
+  }, [fetchHAUserProfile, scheduleProactiveTokenRefresh, clearRefreshTimer]);
 
   const openAuthModal = useCallback(() => {
     setIsAuthModalOpen(true);
   }, []);
 
   const closeAuthModal = useCallback(() => {
-    // Only allow closing if already authenticated or in demo mode
     if (authState.isAuthenticated || authState.isDemo) {
       setIsAuthModalOpen(false);
     }
@@ -277,8 +359,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     setIsLoading(true);
     const targetUrl = (customUrl || authState.haUrl || 'http://homeassistant.local:8123').trim();
-    localStorage.removeItem(STORAGE_KEY_DEMO);
-    localStorage.setItem('ha_live_mode', 'true');
     startHAOAuthFlow(targetUrl);
   }, [authState.haUrl]);
 
@@ -313,7 +393,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
+        const errorText = await response.text().catch(() => '');
         const errMsg = response.status === 401
           ? '401 Unauthorized: The Long-Lived Access Token is invalid or expired.'
           : `Connection error (${response.status}): ${errorText || 'Could not verify token'}`;
@@ -328,11 +408,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         auth_type: 'llat'
       };
 
-      saveStoredHAAuth(tokens);
-      localStorage.removeItem(STORAGE_KEY_DEMO);
-      localStorage.setItem('ha_live_mode', 'true');
-      localStorage.setItem('ha_token', token);
-      localStorage.setItem('ha_server_url', httpUrl);
+      const config: StoredAuthConfig = {
+        version: 1,
+        authMethod: 'llat',
+        serverUrl: wsUrl,
+        httpUrl,
+        tokens,
+        lastUpdated: Date.now()
+      };
+
+      saveStoredAuthConfig(config);
+      clearRefreshTimer();
 
       haWebSocketService.setDemoMode(false);
       haWebSocketService.connect(wsUrl, token);
@@ -355,14 +441,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
       return { success: false, error: errMsg };
     }
-  }, []);
+  }, [clearRefreshTimer]);
 
   // 3. Enter Sandboxed Demo Mode
   const enterDemoMode = useCallback(() => {
     setError(null);
-    clearStoredHAAuth();
-    localStorage.setItem(STORAGE_KEY_DEMO, 'true');
-    localStorage.setItem('ha_live_mode', 'false');
+    clearRefreshTimer();
+    
+    const config: StoredAuthConfig = {
+      version: 1,
+      authMethod: 'demo',
+      serverUrl: '',
+      httpUrl: '',
+      lastUpdated: Date.now()
+    };
+    saveStoredAuthConfig(config);
 
     haWebSocketService.setDemoMode(true);
     reloadDemoData();
@@ -376,15 +469,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setIsAuthModalOpen(false);
     setIsLoading(false);
-  }, [reloadDemoData]);
+  }, [clearRefreshTimer, reloadDemoData]);
 
   // 4. Clean Sign Out
   const logout = useCallback(() => {
-    clearStoredHAAuth();
-    localStorage.removeItem(STORAGE_KEY_DEMO);
-    localStorage.removeItem('ha_token');
-    localStorage.removeItem('ha_server_url');
-    localStorage.setItem('ha_live_mode', 'false');
+    clearRefreshTimer();
+    clearStoredAuthConfig();
 
     haWebSocketService.disconnect();
     haWebSocketService.setDemoMode(false);
@@ -399,7 +489,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setIsAuthModalOpen(true);
     setError(null);
-  }, []);
+  }, [clearRefreshTimer]);
 
   const contextValue: AuthContextType = {
     authState,

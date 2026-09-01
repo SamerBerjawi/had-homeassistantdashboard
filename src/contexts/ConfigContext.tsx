@@ -17,7 +17,8 @@ import {
 import { 
   createConfigStorageDriver, 
   mergeConfig, 
-  LocalStorageDriver 
+  LocalStorageDriver,
+  readFileAsDataUrl
 } from '../services/configStorageService';
 import { useAuth } from './AuthContext';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
@@ -212,30 +213,37 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [config]);
 
   // Upload Custom Vehicle PNGs or Brand Logos
-  const uploadVehicleAsset = useCallback(async (file: File, key: string): Promise<string> => {
+  const uploadVehicleAsset = useCallback(async (fileOrDataUrl: File | string, key: string): Promise<string> => {
     setIsSaving(true);
     try {
       let assetUrl = '';
       if (activeDriverRef.current.uploadAsset) {
-        assetUrl = await activeDriverRef.current.uploadAsset(file, key);
+        assetUrl = await activeDriverRef.current.uploadAsset(fileOrDataUrl, key);
       } else {
-        const reader = new FileReader();
-        assetUrl = await new Promise((res, rej) => {
-          reader.onload = () => res(reader.result as string);
-          reader.onerror = rej;
-          reader.readAsDataURL(file);
-        });
+        if (typeof fileOrDataUrl === 'string') {
+          assetUrl = fileOrDataUrl;
+        } else {
+          assetUrl = await readFileAsDataUrl(fileOrDataUrl);
+        }
       }
 
-      // Auto-save asset URL into configuration schema based on key
+      // Auto-save asset URL into configuration schema based on key using updater pattern
       if (key === 'car_image') {
-        await updateConfig({ mobility: { ...config.mobility, car: { ...config.mobility.car, vehicleImageUrl: assetUrl } } });
+        await updateConfig((prev) => ({
+          mobility: { ...prev.mobility, car: { ...prev.mobility.car, vehicleImageUrl: assetUrl } }
+        }));
       } else if (key === 'car_logo') {
-        await updateConfig({ mobility: { ...config.mobility, car: { ...config.mobility.car, brandLogoUrl: assetUrl } } });
+        await updateConfig((prev) => ({
+          mobility: { ...prev.mobility, car: { ...prev.mobility.car, brandLogoUrl: assetUrl } }
+        }));
       } else if (key === 'bike_image') {
-        await updateConfig({ mobility: { ...config.mobility, bike: { ...config.mobility.bike, bikeImageUrl: assetUrl } } });
+        await updateConfig((prev) => ({
+          mobility: { ...prev.mobility, bike: { ...prev.mobility.bike, bikeImageUrl: assetUrl } }
+        }));
       } else if (key === 'bike_logo') {
-        await updateConfig({ mobility: { ...config.mobility, bike: { ...config.mobility.bike, brandLogoUrl: assetUrl } } });
+        await updateConfig((prev) => ({
+          mobility: { ...prev.mobility, bike: { ...prev.mobility.bike, brandLogoUrl: assetUrl } }
+        }));
       }
 
       setIsSaving(false);
@@ -245,7 +253,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setIsSaving(false);
       throw err;
     }
-  }, [config, updateConfig]);
+  }, [updateConfig]);
 
   // Reset to Default Configuration
   const resetConfig = useCallback(async (): Promise<UserDashboardConfig> => {

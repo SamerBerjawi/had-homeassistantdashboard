@@ -153,7 +153,7 @@ const STORAGE_KEYS = {
 
 export function useMobilityData() {
   const { states, resolvedZones, isLiveMode } = useAutoLayoutStore();
-  const { config, updateConfig } = useUserConfig();
+  const { config, updateConfig, uploadVehicleAsset } = useUserConfig();
 
   // Custom asset state with fallback to config and localStorage
   const [customAssets, setCustomAssets] = useState<{
@@ -768,41 +768,17 @@ export function useMobilityData() {
   }, [bikeMetrics.controls?.refreshButtonId]);
 
   // -------------------------------------------------------------
+  // Custom Asset Persistence & Multi-Device Sync
   // -------------------------------------------------------------
-  // Custom Asset Persistence
-  // -------------------------------------------------------------
-  const uploadAssetToNas = async (dataUrl: string, key: string): Promise<string> => {
-    if (!dataUrl || !dataUrl.startsWith('data:')) return dataUrl;
-    try {
-      const response = await fetch('/api/assets', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ dataUrl, key }),
-        signal: AbortSignal.timeout(12000)
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data.success && data.url) {
-          return data.url;
-        }
-      } else {
-        console.warn('[useMobilityData] /api/assets responded with status:', response.status);
-      }
-    } catch (err) {
-      console.warn('[useMobilityData] Asset upload to /api/assets failed, falling back to base64:', err);
-    }
-    return dataUrl;
-  };
-
   const saveCustomAsset = useCallback(async (
     type: 'car_image' | 'car_logo' | 'bike_image' | 'bike_logo',
     base64Data: string
   ) => {
     try {
-      // 1. Upload to NAS persistent volume storage to get public URL
-      const finalUrl = await uploadAssetToNas(base64Data, type);
+      // 1. Upload via unified storage driver and auto-persist to remote JSON config
+      const finalUrl = await uploadVehicleAsset(base64Data, type);
 
-      // 2. Update local state and storage
+      // 2. Update local state and fallback storage cache
       if (type === 'car_image') {
         localStorage.setItem(STORAGE_KEYS.CAR_IMAGE, finalUrl);
         setCustomAssets((prev) => ({ ...prev, carImage: finalUrl }));
@@ -816,41 +792,10 @@ export function useMobilityData() {
         localStorage.setItem(STORAGE_KEYS.BIKE_LOGO, finalUrl);
         setCustomAssets((prev) => ({ ...prev, bikeLogo: finalUrl }));
       }
-
-      // 3. Persist into global shared configuration (synced to all connected devices via SSE / REST)
-      if (type === 'car_image') {
-        await updateConfig((prev) => ({
-          mobility: {
-            ...prev.mobility,
-            car: { ...prev.mobility.car, vehicleImageUrl: finalUrl }
-          }
-        }));
-      } else if (type === 'car_logo') {
-        await updateConfig((prev) => ({
-          mobility: {
-            ...prev.mobility,
-            car: { ...prev.mobility.car, brandLogoUrl: finalUrl }
-          }
-        }));
-      } else if (type === 'bike_image') {
-        await updateConfig((prev) => ({
-          mobility: {
-            ...prev.mobility,
-            bike: { ...prev.mobility.bike, bikeImageUrl: finalUrl }
-          }
-        }));
-      } else if (type === 'bike_logo') {
-        await updateConfig((prev) => ({
-          mobility: {
-            ...prev.mobility,
-            bike: { ...prev.mobility.bike, brandLogoUrl: finalUrl }
-          }
-        }));
-      }
     } catch (e) {
       console.error('Failed to save asset', e);
     }
-  }, [updateConfig]);
+  }, [uploadVehicleAsset]);
 
   const resetCustomAssets = useCallback((targetType: 'car' | 'bike' | 'all' = 'all') => {
     try {

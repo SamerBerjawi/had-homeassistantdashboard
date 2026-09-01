@@ -334,9 +334,20 @@ async function startServer() {
   // Payload Limit Middleware (allows asset sync and large configs)
   app.use(express.json({ limit: '15mb' }));
 
-  // Static Assets Directory for NAS uploaded vehicle PNGs / brand logos
-  app.use('/api/assets', express.static(assetsDir, { maxAge: '30d' }));
-  app.use('/data/assets', express.static(assetsDir, { maxAge: '30d' }));
+  // Static Assets Directory for NAS uploaded vehicle PNGs / brand logos with CORS headers
+  app.use('/api/assets', (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Cache-Control', 'public, max-age=2592000');
+    next();
+  }, express.static(assetsDir));
+
+  app.use('/data/assets', (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Cache-Control', 'public, max-age=2592000');
+    next();
+  }, express.static(assetsDir));
 
   // Health check endpoint
   app.get('/api/health', (req, res) => {

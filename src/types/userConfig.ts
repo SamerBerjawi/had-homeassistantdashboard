@@ -66,7 +66,7 @@ export interface UserDashboardConfig {
 export interface IConfigStorageDriver {
   loadConfig(): Promise<UserDashboardConfig>;
   saveConfig(config: Partial<UserDashboardConfig>): Promise<UserDashboardConfig>;
-  uploadAsset?(file: File, key: string): Promise<string>;
+  uploadAsset?(fileOrDataUrl: File | string, key: string): Promise<string>;
 }
 
 export type StorageDriverType = 'remote_ha' | 'remote_nas' | 'local_storage';
@@ -84,7 +84,7 @@ export interface ConfigContextType {
       | Partial<UserDashboardConfig>
       | ((prev: UserDashboardConfig) => Partial<UserDashboardConfig>)
   ) => Promise<UserDashboardConfig>;
-  uploadVehicleAsset: (file: File, key: string) => Promise<string>;
+  uploadVehicleAsset: (fileOrDataUrl: File | string, key: string) => Promise<string>;
   resetConfig: () => Promise<UserDashboardConfig>;
   exportConfigJson: () => string;
   importConfigJson: (jsonStr: string) => Promise<boolean>;

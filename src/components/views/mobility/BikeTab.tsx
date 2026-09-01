@@ -30,6 +30,8 @@ import { BikeMetrics } from '../../../types/mobility';
 import { MobilityMap } from './MobilityMap';
 import { MobilityAssetBadge } from './MobilityAssetBadge';
 import { ActionConfirmModal } from './ActionConfirmModal';
+import { resolveAssetUrl } from '../../../utils/assetUrl';
+import { useUserConfig } from '../../../contexts/ConfigContext';
 
 interface BikeTabProps {
   metrics: BikeMetrics;
@@ -49,9 +51,23 @@ export function BikeTab({
   onOpenCustomizer,
   darkMode = true
 }: BikeTabProps) {
+  const { config } = useUserConfig();
   const [activeModal, setActiveModal] = useState<BikeModalType>(null);
   const [isActionPending, setIsActionPending] = useState(false);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  const [logoError, setLogoError] = useState(false);
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [metrics.customBikeImage]);
+
+  React.useEffect(() => {
+    setLogoError(false);
+  }, [metrics.customBrandLogo]);
+
+  const resolvedBikeImage = resolveAssetUrl(metrics.customBikeImage, config?.updatedAt);
+  const resolvedBikeLogo = resolveAssetUrl(metrics.customBrandLogo, config?.updatedAt);
 
   const cardStyle =
     'rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ' +
@@ -169,11 +185,12 @@ export function BikeTab({
           {/* Top Bar: Brand Badge & Security Status */}
           <div className="flex items-center justify-between gap-2 z-10">
             <div className="flex items-center gap-2.5 sm:gap-3">
-              {metrics.customBrandLogo ? (
+              {resolvedBikeLogo && !logoError ? (
                 <img
-                  src={metrics.customBrandLogo}
+                  src={resolvedBikeLogo}
                   alt="Bike Brand Logo"
                   className="h-8 max-w-[120px] object-contain drop-shadow-md"
+                  onError={() => setLogoError(true)}
                 />
               ) : (
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400">
@@ -209,11 +226,12 @@ export function BikeTab({
 
           {/* Bike Canvas Stage */}
           <div className="relative my-auto py-6 flex flex-col items-center justify-center min-h-[200px]">
-            {metrics.customBikeImage ? (
+            {resolvedBikeImage && !imageError ? (
               <img
-                src={metrics.customBikeImage}
+                src={resolvedBikeImage}
                 alt="E-Bike Render"
                 className="max-h-48 sm:max-h-56 max-w-full object-contain mx-auto drop-shadow-[0_20px_25px_rgba(0,0,0,0.5)]"
+                onError={() => setImageError(true)}
               />
             ) : (
               /* Ultra-sleek Default Stealth E-Bike Vector Illustration */

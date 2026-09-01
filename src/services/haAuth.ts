@@ -3,30 +3,35 @@
  * SPDX-License-Identifier: Apache-2.0
  * 
  * Home Assistant Official OAuth2 Authentication Service
- * Compatible with Home Assistant auth/authorize and auth/token flows (as used by HAPulse / home-assistant-js-websocket)
+ * Compatible with Home Assistant auth/authorize and auth/token flows (as used by home-assistant-js-websocket)
  */
 
-export interface HAAuthTokens {
-  access_token: string;
-  refresh_token?: string;
-  expires_in?: number;
-  token_type?: string;
-  expires_at?: number;
-  server_url: string;
-  auth_type: 'oauth' | 'llat';
-  client_id?: string;
-}
+import { AuthTokens } from '../types/auth';
+import {
+  getStoredAuthConfig,
+  saveStoredAuthConfig,
+  updateStoredTokens,
+  clearStoredAuthConfig,
+  setPendingOAuthState,
+  getPendingOAuthState,
+  clearPendingOAuthState,
+  StoredAuthConfig
+} from './authStorage';
 
-const STORAGE_KEY_AUTH = 'had_ha_auth_tokens';
-const STORAGE_KEY_PENDING_URL = 'had_pending_ha_url';
-const STORAGE_KEY_PENDING_STATE = 'had_pending_ha_state';
-const STORAGE_KEY_PENDING_CLIENT_ID = 'had_pending_ha_client_id';
+export type HAAuthTokens = AuthTokens;
+
+export interface TokenRefreshResult {
+  success: boolean;
+  tokens?: HAAuthTokens;
+  isFatal: boolean; // true if refresh token was revoked / 400 invalid_grant; false if transient network/server blip
+  error?: string;
+}
 
 /**
  * Standardize Home Assistant Base URL (ensure no trailing slashes or /api/websocket)
  */
 export function normalizeHAUrl(rawUrl: string): { httpUrl: string; wsUrl: string } {
-  let cleaned = rawUrl.trim();
+  let cleaned = (rawUrl || '').trim();
   if (!cleaned) {
     cleaned = 'http://homeassistant.local:8123';
   }
@@ -64,34 +69,28 @@ export function getCanonicalClientId(): string {
   return `${origin}/`;
 }
 
-/**
- * Get current Redirect URI for OAuth
- */
-let inFlightOAuthPromise: Promise<{ success: boolean; tokens?: HAAuthTokens; error?: string }> | null = null;
-
 export function getHARedirectUri(): string {
   return getCanonicalClientId();
 }
+
+let inFlightOAuthPromise: Promise<{ success: boolean; tokens?: HAAuthTokens; error?: string }> | null = null;
+let inFlightRefreshPromise: Promise<TokenRefreshResult> | null = null;
 
 /**
  * Initiate Home Assistant OAuth authorization redirect (Sign in with HA credentials)
  */
 export function startHAOAuthFlow(serverUrl: string): void {
-  const { httpUrl } = normalizeHAUrl(serverUrl);
+  const { httpUrl, wsUrl } = normalizeHAUrl(serverUrl);
   const clientId = getCanonicalClientId();
   const redirectUri = getHARedirectUri();
   const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
-  sessionStorage.setItem(STORAGE_KEY_PENDING_URL, httpUrl);
-  sessionStorage.setItem(STORAGE_KEY_PENDING_STATE, state);
-  sessionStorage.setItem(STORAGE_KEY_PENDING_CLIENT_ID, clientId);
-
-  try {
-    localStorage.setItem(STORAGE_KEY_PENDING_URL, httpUrl);
-    localStorage.setItem(STORAGE_KEY_PENDING_STATE, state);
-    localStorage.setItem(STORAGE_KEY_PENDING_CLIENT_ID, clientId);
-    localStorage.setItem('had_last_ha_url', httpUrl);
-  } catch {}
+  setPendingOAuthState({
+    serverUrl: wsUrl,
+    state,
+    clientId,
+    createdAt: Date.now()
+  });
 
   const authUrl = `${httpUrl}/auth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}&response_type=code`;
 
@@ -104,7 +103,7 @@ export function startHAOAuthFlow(serverUrl: string): void {
 export async function handleHAOAuthCallback(): Promise<{ success: boolean; tokens?: HAAuthTokens; error?: string }> {
   if (typeof window === 'undefined') return { success: false };
 
-  // Return existing in-flight promise if already processing
+  // Return existing in-flight promise if already processing to avoid race conditions
   if (inFlightOAuthPromise) {
     return inFlightOAuthPromise;
   }
@@ -114,41 +113,25 @@ export async function handleHAOAuthCallback(): Promise<{ success: boolean; token
   const state = searchParams.get('state');
 
   if (!code) {
-    const existing = getStoredHAAuth();
-    if (existing) {
-      return { success: true, tokens: existing };
+    const existingConfig = getStoredAuthConfig();
+    if (existingConfig?.tokens) {
+      return { success: true, tokens: existingConfig.tokens };
     }
     return { success: false };
   }
 
   inFlightOAuthPromise = (async () => {
     try {
-      const savedUrl =
-        sessionStorage.getItem(STORAGE_KEY_PENDING_URL) ||
-        localStorage.getItem(STORAGE_KEY_PENDING_URL) ||
-        localStorage.getItem('had_last_ha_url') ||
-        'http://homeassistant.local:8123';
-      const savedState =
-        sessionStorage.getItem(STORAGE_KEY_PENDING_STATE) ||
-        localStorage.getItem(STORAGE_KEY_PENDING_STATE);
-      const savedClientId =
-        sessionStorage.getItem(STORAGE_KEY_PENDING_CLIENT_ID) ||
-        localStorage.getItem(STORAGE_KEY_PENDING_CLIENT_ID) ||
-        getCanonicalClientId();
+      const pending = getPendingOAuthState();
+      const savedUrl = pending?.serverUrl || 'http://homeassistant.local:8123';
+      const savedClientId = pending?.clientId || getCanonicalClientId();
 
       // Validate state if saved
-      if (savedState && state && state !== savedState) {
-        console.warn('[HA Auth] OAuth state mismatch:', { state, savedState });
+      if (pending?.state && state && state !== pending.state) {
+        console.warn('[HA Auth] OAuth state mismatch:', { state, savedState: pending.state });
       }
 
-      sessionStorage.removeItem(STORAGE_KEY_PENDING_URL);
-      sessionStorage.removeItem(STORAGE_KEY_PENDING_STATE);
-      sessionStorage.removeItem(STORAGE_KEY_PENDING_CLIENT_ID);
-      try {
-        localStorage.removeItem(STORAGE_KEY_PENDING_URL);
-        localStorage.removeItem(STORAGE_KEY_PENDING_STATE);
-        localStorage.removeItem(STORAGE_KEY_PENDING_CLIENT_ID);
-      } catch {}
+      clearPendingOAuthState();
 
       const { httpUrl, wsUrl } = normalizeHAUrl(savedUrl);
       const clientId = savedClientId;
@@ -188,7 +171,16 @@ export async function handleHAOAuthCallback(): Promise<{ success: boolean; token
         client_id: clientId
       };
 
-      saveStoredHAAuth(tokens);
+      const config: StoredAuthConfig = {
+        version: 1,
+        authMethod: 'oauth',
+        serverUrl: wsUrl,
+        httpUrl,
+        tokens,
+        lastUpdated: Date.now()
+      };
+
+      saveStoredAuthConfig(config);
 
       // Clean URL parameters only after token is successfully saved
       try {
@@ -198,7 +190,7 @@ export async function handleHAOAuthCallback(): Promise<{ success: boolean; token
 
       return { success: true, tokens };
     } catch (err: any) {
-      return { success: false, error: `Failed to exchange token: ${err.message}` };
+      return { success: false, error: `Failed to exchange token: ${err?.message || err}` };
     } finally {
       inFlightOAuthPromise = null;
     }
@@ -208,91 +200,133 @@ export async function handleHAOAuthCallback(): Promise<{ success: boolean; token
 }
 
 /**
- * Refresh an existing OAuth access token using refresh_token
+ * Refresh an existing OAuth access token using refresh_token with detailed status
  */
-export async function refreshHAOAuthToken(tokens?: HAAuthTokens): Promise<HAAuthTokens | null> {
-  const current = tokens || getStoredHAAuth();
+export async function refreshHAOAuthTokenWithStatus(tokens?: HAAuthTokens): Promise<TokenRefreshResult> {
+  const activeConfig = getStoredAuthConfig();
+  const current = tokens || activeConfig?.tokens;
+
   if (!current || !current.refresh_token || current.auth_type !== 'oauth') {
-    return null;
+    return { success: false, isFatal: false, error: 'No OAuth refresh token available' };
   }
 
-  const { httpUrl } = normalizeHAUrl(current.server_url);
-  // Ensure the exact client_id used at login is resent during refresh
-  const clientId = current.client_id || getCanonicalClientId();
+  // Reuse in-flight refresh promise to prevent duplicate simultaneous token exchange requests
+  if (inFlightRefreshPromise) {
+    return inFlightRefreshPromise;
+  }
 
-  try {
-    const bodyParams = new URLSearchParams();
-    bodyParams.append('grant_type', 'refresh_token');
-    bodyParams.append('refresh_token', current.refresh_token);
-    bodyParams.append('client_id', clientId);
-
-    const tokenEndpoint = `${httpUrl}/auth/token`;
-    const response = await fetch(tokenEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-      },
-      body: bodyParams.toString()
-    });
-
-    if (!response.ok) {
-      console.error('[HA Auth] Token refresh failed with status:', response.status);
-      return null;
+  inFlightRefreshPromise = (async () => {
+    // Check if browser is currently offline
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      console.warn('[HA Auth] Skipping token refresh: browser is offline');
+      return { success: false, isFatal: false, error: 'Browser is offline' };
     }
 
-    const data = await response.json();
-    const expiresInSec = data.expires_in || 1800;
-    const updated: HAAuthTokens = {
-      ...current,
-      access_token: data.access_token,
-      refresh_token: data.refresh_token || current.refresh_token,
-      expires_in: expiresInSec,
-      expires_at: Date.now() + expiresInSec * 1000,
-      client_id: clientId
-    };
+    const { httpUrl, wsUrl } = normalizeHAUrl(current.server_url);
+    const clientId = current.client_id || getCanonicalClientId();
 
-    saveStoredHAAuth(updated);
-    return updated;
-  } catch (e) {
-    console.error('[HA Auth] Error refreshing token:', e);
-    return null;
-  }
+    try {
+      const bodyParams = new URLSearchParams();
+      bodyParams.append('grant_type', 'refresh_token');
+      bodyParams.append('refresh_token', current.refresh_token);
+      bodyParams.append('client_id', clientId);
+
+      const tokenEndpoint = `${httpUrl}/auth/token`;
+      const response = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+        },
+        body: bodyParams.toString(),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        console.warn(`[HA Auth] Token refresh endpoint returned HTTP ${response.status}: ${errorText}`);
+
+        // HTTP 400 / 401 specifically indicates invalid_grant (revoked or expired refresh token)
+        const isFatal = response.status === 400 || response.status === 401;
+        return {
+          success: false,
+          isFatal,
+          error: `HTTP ${response.status}: ${errorText || 'Token refresh rejected'}`
+        };
+      }
+
+      const data = await response.json();
+      const expiresInSec = data.expires_in || 1800;
+      const updated: HAAuthTokens = {
+        ...current,
+        access_token: data.access_token,
+        refresh_token: data.refresh_token || current.refresh_token,
+        expires_in: expiresInSec,
+        expires_at: Date.now() + expiresInSec * 1000,
+        server_url: wsUrl,
+        client_id: clientId
+      };
+
+      updateStoredTokens(updated);
+
+      // Dispatch event to inform any active WebSocket clients or UI elements of fresh token
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ha_token_refreshed', { detail: { tokens: updated } }));
+      }
+
+      return { success: true, tokens: updated, isFatal: false };
+    } catch (e: any) {
+      console.warn('[HA Auth] Transient error during token refresh:', e?.message || e);
+      // Network failures, aborts, DNS errors are transient and non-fatal
+      return { success: false, isFatal: false, error: e?.message || 'Network error' };
+    } finally {
+      inFlightRefreshPromise = null;
+    }
+  })();
+
+  return inFlightRefreshPromise;
 }
 
 /**
- * Retrieve saved Home Assistant Auth credentials from localStorage
+ * Backward-compatible refresh helper returning updated tokens or null
+ */
+export async function refreshHAOAuthToken(tokens?: HAAuthTokens): Promise<HAAuthTokens | null> {
+  const result = await refreshHAOAuthTokenWithStatus(tokens);
+  return result.success && result.tokens ? result.tokens : null;
+}
+
+/**
+ * Retrieve saved Home Assistant Auth credentials from persistent storage
  */
 export function getStoredHAAuth(): HAAuthTokens | null {
-  if (typeof window === 'undefined') return null;
-  const raw = localStorage.getItem(STORAGE_KEY_AUTH);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+  const config = getStoredAuthConfig();
+  return config?.tokens || null;
 }
 
 /**
- * Save Home Assistant Auth credentials to localStorage
+ * Save Home Assistant Auth credentials to persistent storage
  */
 export function saveStoredHAAuth(tokens: HAAuthTokens): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(tokens));
-  localStorage.setItem('had_last_ha_url', tokens.server_url);
+  const { httpUrl, wsUrl } = normalizeHAUrl(tokens.server_url);
+  const config: StoredAuthConfig = {
+    version: 1,
+    authMethod: tokens.auth_type || 'oauth',
+    serverUrl: wsUrl,
+    httpUrl,
+    tokens,
+    lastUpdated: Date.now()
+  };
+  saveStoredAuthConfig(config);
 }
 
 /**
  * Remove stored credentials (Sign out)
  */
 export function clearStoredHAAuth(): void {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem(STORAGE_KEY_AUTH);
+  clearStoredAuthConfig();
 }
 
 /**
  * Single source of truth to retrieve the currently valid HA access token
- * regardless of OAuth2 or LLAT session.
  */
 export function getActiveHAToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -304,11 +338,5 @@ export function getActiveHAToken(): string | null {
   if (legacyToken && legacyToken.trim()) {
     return legacyToken.trim();
   }
-  try {
-    const { haWebSocketService } = require('./haWebSocket');
-    const wsToken = haWebSocketService?.getCurrentToken?.();
-    if (wsToken) return wsToken;
-  } catch {}
   return null;
 }
-

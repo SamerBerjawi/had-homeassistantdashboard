@@ -5,6 +5,7 @@
 
 import React, { useState, useRef, ChangeEvent, DragEvent } from 'react';
 import { X, UploadSimple, Trash, Image, Sparkle, Car, Bicycle, Check } from '@phosphor-icons/react';
+import { resolveAssetUrl } from '../../../utils/assetUrl';
 
 interface VehicleCustomizerModalProps {
   isOpen: boolean;
@@ -222,7 +223,7 @@ export function VehicleCustomizerModal({
                   {carImageDraft ? (
                     <div className="space-y-2">
                       <img
-                        src={carImageDraft}
+                        src={resolveAssetUrl(carImageDraft)}
                         alt="Car Preview"
                         className="max-h-28 max-w-full object-contain mx-auto drop-shadow-xl"
                       />
@@ -277,7 +278,7 @@ export function VehicleCustomizerModal({
                   />
                   {carLogoDraft ? (
                     <div className="flex items-center gap-3">
-                      <img src={carLogoDraft} alt="Brand Logo" className="h-8 max-w-[120px] object-contain" />
+                      <img src={resolveAssetUrl(carLogoDraft)} alt="Brand Logo" className="h-8 max-w-[120px] object-contain" />
                       <span className="text-[11px] font-bold text-cyan-400">Replace logo</span>
                     </div>
                   ) : (
@@ -329,7 +330,7 @@ export function VehicleCustomizerModal({
                   {bikeImageDraft ? (
                     <div className="space-y-2">
                       <img
-                        src={bikeImageDraft}
+                        src={resolveAssetUrl(bikeImageDraft)}
                         alt="Bike Preview"
                         className="max-h-28 max-w-full object-contain mx-auto drop-shadow-xl"
                       />
@@ -384,7 +385,7 @@ export function VehicleCustomizerModal({
                   />
                   {bikeLogoDraft ? (
                     <div className="flex items-center gap-3">
-                      <img src={bikeLogoDraft} alt="Bike Logo" className="h-8 max-w-[120px] object-contain" />
+                      <img src={resolveAssetUrl(bikeLogoDraft)} alt="Bike Logo" className="h-8 max-w-[120px] object-contain" />
                       <span className="text-[11px] font-bold text-amber-400">Replace logo</span>
                     </div>
                   ) : (

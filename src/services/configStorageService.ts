@@ -158,8 +158,11 @@ export class LocalStorageDriver implements IConfigStorageDriver {
     return updated;
   }
 
-  public async uploadAsset(file: File): Promise<string> {
-    return readFileAsDataUrl(file);
+  public async uploadAsset(fileOrDataUrl: File | string): Promise<string> {
+    if (typeof fileOrDataUrl === 'string') {
+      return fileOrDataUrl;
+    }
+    return readFileAsDataUrl(fileOrDataUrl);
   }
 }
 
@@ -400,8 +403,11 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
     return updated;
   }
 
-  public async uploadAsset(file: File, key: string): Promise<string> {
-    const dataUrl = await readFileAsDataUrl(file);
+  public async uploadAsset(fileOrDataUrl: File | string, key: string): Promise<string> {
+    const dataUrl = typeof fileOrDataUrl === 'string'
+      ? fileOrDataUrl
+      : await readFileAsDataUrl(fileOrDataUrl);
+    const filename = typeof fileOrDataUrl === 'object' && 'name' in fileOrDataUrl ? fileOrDataUrl.name : `${key}.png`;
 
     // Try posting to NAS persistent volume storage (/api/assets)
     if (typeof fetch !== 'undefined') {
@@ -412,9 +418,9 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
           body: JSON.stringify({
             dataUrl,
             key,
-            filename: file.name
+            filename
           }),
-          signal: AbortSignal.timeout(8000)
+          signal: AbortSignal.timeout(12000)
         });
 
         if (response.ok) {
@@ -422,9 +428,11 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
           if (res && res.success && res.url) {
             return res.url;
           }
+        } else {
+          console.warn('[RemoteStorageDriver] /api/assets responded with status:', response.status);
         }
       } catch (err) {
-        console.warn('[RemoteStorageDriver] Asset upload to /api/assets failed; falling back to local base64:', err);
+        console.warn('[RemoteStorageDriver] Asset upload to /api/assets failed; falling back to dataUrl:', err);
       }
     }
 

@@ -1,6 +1,10 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ * 
+ * Home Assistant WebSocket Client & Real-Time Lifecycle Engine
+ * Handles resilient duplex connection, automatic reconnect with exponential backoff,
+ * seamless token refresh on auth challenge, and registry ingestion.
  */
 
 import {
@@ -15,6 +19,7 @@ import {
   HANativeRepairIssue
 } from '../types';
 import { MOCK_AREAS, MOCK_DEVICES, MOCK_ENTITY_REGISTRY, MOCK_FLOORS, MOCK_STATES } from '../data/mockRegistries';
+import { getStoredAuthConfig, isTokenExpired } from './authStorage';
 
 export type { HAConnectionStatus };
 
@@ -36,8 +41,6 @@ export interface HAWebSocketCallbacks {
   onStatesBatchUpdated?: (statesList: HAState[]) => void;
   onLogMessage: (type: 'info' | 'service_call' | 'state_changed' | 'warning' | 'error', msg: string, details?: any) => void;
 }
-
-
 
 export function normalizeHAWebSocketUrl(rawUrl: string): string {
   let url = (rawUrl || '').trim();
@@ -72,12 +75,18 @@ class HAWebSocketClient {
   private status: HAConnectionStatus = 'disconnected';
   private currentUrl = '';
   private currentToken = '';
-  private rejectedToken: string | null = null;
   private isRefreshingAuth = false;
   private isDemoMode = true;
   private isExplicitDisconnect = false;
   private reconnectTimer: any = null;
   private reconnectAttempts = 0;
+  private networkListenersAttached = false;
+  private pollTimer: any = null;
+  private visibilityHandler: (() => void) | null = null;
+
+  constructor() {
+    this.attachNetworkLifecycleListeners();
+  }
 
   public init(callbacks: HAWebSocketCallbacks) {
     this.callbacks = callbacks;
@@ -88,6 +97,43 @@ class HAWebSocketClient {
     if (demo) {
       this.disconnect();
       this.loadDemoRegistries();
+    }
+  }
+
+  private attachNetworkLifecycleListeners() {
+    if (typeof window === 'undefined' || this.networkListenersAttached) return;
+    this.networkListenersAttached = true;
+
+    // Listen for background token updates from AuthContext / haAuth
+    window.addEventListener('ha_token_refreshed' as any, (event: any) => {
+      const refreshedTokens = event?.detail?.tokens;
+      if (refreshedTokens?.access_token) {
+        this.updateToken(refreshedTokens.access_token);
+      }
+    });
+
+    // On browser back online or tab visible, reconnect immediately if disconnected
+    window.addEventListener('online', () => {
+      if (!this.isDemoMode && !this.isExplicitDisconnect && this.currentUrl && this.currentToken) {
+        if (this.status !== 'connected' && this.status !== 'connecting') {
+          this.callbacks?.onLogMessage('info', 'Network connection restored. Reconnecting to Home Assistant...');
+          this.reconnectAttempts = 0;
+          this.connect(this.currentUrl, this.currentToken, true);
+        }
+      }
+    });
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          if (!this.isDemoMode && !this.isExplicitDisconnect && this.currentUrl && this.currentToken) {
+            if (this.status !== 'connected' && this.status !== 'connecting') {
+              this.reconnectAttempts = 0;
+              this.connect(this.currentUrl, this.currentToken, true);
+            }
+          }
+        }
+      });
     }
   }
 
@@ -161,9 +207,6 @@ class HAWebSocketClient {
    */
   public updateToken(token: string) {
     this.currentToken = token;
-    if (this.rejectedToken && this.rejectedToken !== token) {
-      this.rejectedToken = null;
-    }
   }
 
   public loadDemoRegistries() {
@@ -212,17 +255,15 @@ class HAWebSocketClient {
         }
       ]
     });
-
   }
 
   private scheduleReconnect() {
-    // Guard against reconnection if credentials were confirmed invalid or disconnected explicitly
+    // Guard against reconnection if disconnected explicitly or unconfigured
     if (
       this.isDemoMode ||
       this.isExplicitDisconnect ||
       !this.currentUrl ||
       !this.currentToken ||
-      (this.rejectedToken && this.currentToken === this.rejectedToken) ||
       this.status === 'auth_failed'
     ) {
       return;
@@ -234,6 +275,7 @@ class HAWebSocketClient {
     }
 
     this.reconnectAttempts++;
+    // Exponential backoff: 2s, 2.8s, 3.9s, ... capped at 30s + jitter
     const delay = Math.min(30000, 2000 * Math.pow(1.4, Math.min(this.reconnectAttempts, 8))) + Math.floor(Math.random() * 1000);
     this.callbacks?.onLogMessage('warning', `Live connection dropped. Auto-reconnecting in ${(delay / 1000).toFixed(1)}s (attempt ${this.reconnectAttempts})...`);
 
@@ -241,7 +283,6 @@ class HAWebSocketClient {
       if (
         !this.isDemoMode &&
         !this.isExplicitDisconnect &&
-        !(this.rejectedToken && this.currentToken === this.rejectedToken) &&
         this.status !== 'auth_failed'
       ) {
         this.connect(this.currentUrl, this.currentToken, true);
@@ -250,7 +291,7 @@ class HAWebSocketClient {
   }
 
   public clearRejectedToken() {
-    this.rejectedToken = null;
+    // No-op for API compatibility
   }
 
   public connect(url: string, token: string, isAutoReconnect = false) {
@@ -260,17 +301,8 @@ class HAWebSocketClient {
     }
 
     if (!isAutoReconnect) {
-      // Manual or explicit connect: clear rejected token memory and explicit disconnect state
-      this.rejectedToken = null;
       this.isExplicitDisconnect = false;
-    } else {
-      // Auto-reconnect: avoid looping on confirmed rejected credentials
-      if (this.rejectedToken && token === this.rejectedToken) {
-        this.isExplicitDisconnect = true;
-        this.emitStatus('auth_failed', 'Session expired. Please sign in again.');
-        this.callbacks?.onLogMessage('error', 'Skipping auto-reconnect: credentials were confirmed invalid. Please re-authenticate.');
-        return;
-      }
+      this.reconnectAttempts = 0;
     }
 
     const normalizedUrl = normalizeHAWebSocketUrl(url);
@@ -283,7 +315,9 @@ class HAWebSocketClient {
       this.socket.onmessage = null;
       this.socket.onerror = null;
       this.socket.onclose = null;
-      this.socket.close();
+      try {
+        this.socket.close();
+      } catch {}
       this.socket = null;
     }
 
@@ -307,6 +341,7 @@ class HAWebSocketClient {
       };
 
       this.socket.onerror = (err) => {
+        // Transient socket error - do NOT de-authenticate
         this.emitStatus('error', 'WebSocket connection error');
         this.callbacks?.onLogMessage('error', 'WebSocket connection error occurred', err);
       };
@@ -318,13 +353,14 @@ class HAWebSocketClient {
         this.pendingRequests.clear();
         this.subscriptions.clear();
 
-        if ((this.status as HAConnectionStatus) === 'auth_failed') {
+        if (this.status === 'auth_failed') {
           return;
         }
+
         if (this.status !== 'disconnected') {
           this.emitStatus('disconnected');
           this.callbacks?.onLogMessage('warning', 'WebSocket connection closed');
-          if (!this.isExplicitDisconnect && !this.rejectedToken) {
+          if (!this.isExplicitDisconnect) {
             this.scheduleReconnect();
           }
         }
@@ -332,7 +368,7 @@ class HAWebSocketClient {
     } catch (err: any) {
       this.emitStatus('error', err.message);
       this.callbacks?.onLogMessage('error', `Failed to initialize WebSocket: ${err.message}`);
-      if (!this.isExplicitDisconnect && !this.rejectedToken) {
+      if (!this.isExplicitDisconnect) {
         this.scheduleReconnect();
       }
     }
@@ -351,7 +387,9 @@ class HAWebSocketClient {
       this.socket.onmessage = null;
       this.socket.onerror = null;
       this.socket.onclose = null;
-      this.socket.close();
+      try {
+        this.socket.close();
+      } catch {}
       this.socket = null;
     }
     for (const [, pending] of this.pendingRequests.entries()) {
@@ -359,6 +397,7 @@ class HAWebSocketClient {
     }
     this.pendingRequests.clear();
     this.subscriptions.clear();
+    this.stopStatePolling();
     this.emitStatus('disconnected');
   }
 
@@ -374,7 +413,6 @@ class HAWebSocketClient {
 
     if (msg.type === 'auth_ok') {
       this.reconnectAttempts = 0;
-      this.rejectedToken = null;
       this.emitStatus('connected');
       this.callbacks?.onLogMessage('info', `Authentication successful! Home Assistant version: ${msg.ha_version || '2026.x'}`);
       this.fetchAllRegistries();
@@ -384,26 +422,39 @@ class HAWebSocketClient {
     if (msg.type === 'auth_invalid') {
       const errorMsg = msg.message || 'Invalid Access Token';
 
-      // Attempt exactly one fresh token refresh if handler is provided and not already refreshing
+      // Attempt fresh token refresh if handler is provided and not already refreshing
       if (this.callbacks?.onAuthInvalid && !this.isRefreshingAuth) {
         this.isRefreshingAuth = true;
-        this.callbacks.onLogMessage('warning', 'Received auth_invalid from Home Assistant. Attempting single fresh token refresh...');
+        this.callbacks.onLogMessage('warning', 'Received auth_invalid from Home Assistant. Attempting automatic token refresh...');
 
         this.callbacks.onAuthInvalid()
           .then((newToken) => {
             this.isRefreshingAuth = false;
             if (newToken && newToken !== this.currentToken) {
-              this.rejectedToken = null;
-              this.callbacks?.onLogMessage('info', 'OAuth token refreshed after auth rejection. Reconnecting with fresh token...');
+              this.currentToken = newToken;
+              this.callbacks?.onLogMessage('info', 'OAuth token refreshed successfully. Reconnecting with fresh token...');
               this.connect(this.currentUrl, newToken);
             } else {
-              this.failAuth(errorMsg);
+              // If the refresh failed because of a temporary network issue, do not destroy credentials!
+              const stored = getStoredAuthConfig();
+              if (stored && stored.authMethod === 'oauth' && stored.tokens?.refresh_token) {
+                this.callbacks?.onLogMessage('warning', 'Token refresh temporary delay. Retrying connection with exponential backoff...');
+                this.scheduleReconnect();
+              } else {
+                this.failAuth(errorMsg);
+              }
             }
           })
           .catch((err) => {
             this.isRefreshingAuth = false;
             this.callbacks?.onLogMessage('error', `Token refresh failed during auth recovery: ${err?.message || err}`);
-            this.failAuth(errorMsg);
+            // Check if stored config still exists
+            const stored = getStoredAuthConfig();
+            if (stored && stored.authMethod === 'oauth' && stored.tokens?.refresh_token) {
+              this.scheduleReconnect();
+            } else {
+              this.failAuth(errorMsg);
+            }
           });
         return;
       }
@@ -411,7 +462,6 @@ class HAWebSocketClient {
       this.failAuth(errorMsg);
       return;
     }
-
 
     if (msg.type === 'result') {
       const pending = this.pendingRequests.get(msg.id);
@@ -445,30 +495,27 @@ class HAWebSocketClient {
   }
 
   private failAuth(errorMsg?: string) {
-    this.rejectedToken = this.currentToken;
     this.isExplicitDisconnect = true;
     if (this.socket) {
       this.socket.onopen = null;
       this.socket.onmessage = null;
       this.socket.onerror = null;
       this.socket.onclose = null;
-      this.socket.close();
+      try {
+        this.socket.close();
+      } catch {}
       this.socket = null;
     }
     this.emitStatus('auth_failed', errorMsg || 'Session expired. Please sign in again.');
     this.callbacks?.onLogMessage('error', `Authentication failed: ${errorMsg || 'Invalid Access Token'}`);
   }
 
-  private pollTimer: any = null;
-  private visibilityHandler: (() => void) | null = null;
-
   private startStatePolling() {
     this.stopStatePolling();
-    // Do not poll on interval - Home Assistant sends real-time state_changed pushes.
-    // Only refresh when the tab becomes visible.
+    // Real-time state_changed pushes handle updates; refresh states when tab becomes visible
     if (typeof document !== 'undefined') {
       this.visibilityHandler = () => {
-        if (document.visibilityState === 'visible') {
+        if (document.visibilityState === 'visible' && this.status === 'connected') {
           this.refreshStates();
         }
       };
@@ -519,7 +566,6 @@ class HAWebSocketClient {
     }
   }
 
-
   private async fetchAllRegistries() {
     try {
       this.callbacks?.onLogMessage('info', 'Querying Home Assistant Area, Device, Entity, Floor, Label registries, native persistent notifications, and repairs...');
@@ -569,11 +615,9 @@ class HAWebSocketClient {
     }
   }
 
-
   public async fetchWeatherForecast(entityId: string): Promise<void> {
     if (this.isDemoMode || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
     try {
-      // 1. Try Home Assistant 2023.9+ get_forecasts service call
       const res = await this.sendRequest('call_service', {
         domain: 'weather',
         service: 'get_forecasts',
@@ -604,7 +648,6 @@ class HAWebSocketClient {
   public sendRequest<T = any>(type: string, extra: Record<string, any> = {}): Promise<T> {
     return new Promise((resolve, reject) => {
       if (this.isDemoMode) {
-        // Handle mock responses in demo mode
         resolve(null as any);
         return;
       }
@@ -627,7 +670,6 @@ class HAWebSocketClient {
   ): Promise<() => void> {
     return new Promise((resolve, reject) => {
       if (this.isDemoMode) {
-        // In demo mode, provide safe no-op subscription
         resolve(() => {});
         return;
       }
@@ -687,7 +729,6 @@ class HAWebSocketClient {
     this.callbacks?.onLogMessage('service_call', `call_service -> ${domain}.${service}`, { serviceData, target });
 
     if (this.isDemoMode) {
-      // In demo mode, we simulate service call response immediately
       return Promise.resolve({ success: true });
     }
 

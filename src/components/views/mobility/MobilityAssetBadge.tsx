@@ -29,6 +29,8 @@ import {
   Circuitry
 } from '@phosphor-icons/react';
 import { CarEvMetrics, BikeMetrics } from '../../../types/mobility';
+import { resolveAssetUrl } from '../../../utils/assetUrl';
+import { useUserConfig } from '../../../contexts/ConfigContext';
 
 interface MobilityAssetBadgeProps {
   type: 'car' | 'bike';
@@ -45,6 +47,18 @@ export function MobilityAssetBadge({
   darkMode = true,
   onOpenCustomizer
 }: MobilityAssetBadgeProps) {
+  const { config } = useUserConfig();
+  const [carImgError, setCarImgError] = React.useState(false);
+  const [bikeImgError, setBikeImgError] = React.useState(false);
+
+  React.useEffect(() => {
+    setCarImgError(false);
+  }, [carMetrics?.customVehicleImage]);
+
+  React.useEffect(() => {
+    setBikeImgError(false);
+  }, [bikeMetrics?.customBikeImage]);
+
   if (type === 'car' && carMetrics) {
     const {
       soc,
@@ -70,6 +84,7 @@ export function MobilityAssetBadge({
       customVehicleImage
     } = carMetrics;
 
+    const resolvedCarImage = resolveAssetUrl(customVehicleImage, config?.updatedAt);
     const isCharging = chargingState.toLowerCase().includes('charge');
     const isIgnitionOn = ignitionStatus.toLowerCase() === 'on';
     const isRemoteStarted = ignitionStatus.toLowerCase().includes('remote');
@@ -93,8 +108,13 @@ export function MobilityAssetBadge({
           title={`Vehicle Tracker: ${locationZone}`}
         >
           <div className="w-7 h-7 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 overflow-hidden">
-            {customVehicleImage ? (
-              <img src={customVehicleImage} alt="Car" className="w-5 h-5 object-contain" />
+            {resolvedCarImage && !carImgError ? (
+              <img
+                src={resolvedCarImage}
+                alt="Car"
+                className="w-5 h-5 object-contain"
+                onError={() => setCarImgError(true)}
+              />
             ) : (
               <Car size={15} weight="duotone" />
             )}
@@ -309,6 +329,8 @@ export function MobilityAssetBadge({
       customBikeImage
     } = bikeMetrics;
 
+    const resolvedBikeImage = resolveAssetUrl(customBikeImage, config?.updatedAt);
+
     return (
       <div className="flex flex-wrap items-center gap-2">
         {/* 1. Bike Location / Tracker */}
@@ -325,8 +347,13 @@ export function MobilityAssetBadge({
           title={`Cowboy E-Bike: ${locationZone}`}
         >
           <div className="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 overflow-hidden">
-            {customBikeImage ? (
-              <img src={customBikeImage} alt="Bike" className="w-5 h-5 object-contain" />
+            {resolvedBikeImage && !bikeImgError ? (
+              <img
+                src={resolvedBikeImage}
+                alt="Bike"
+                className="w-5 h-5 object-contain"
+                onError={() => setBikeImgError(true)}
+              />
             ) : (
               <Bicycle size={15} weight="duotone" />
             )}
