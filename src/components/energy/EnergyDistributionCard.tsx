@@ -66,7 +66,7 @@ export default function EnergyDistributionCard({
   return (
     <div
       style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-      className={`w-full rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all duration-300 relative overflow-hidden isolate flex flex-col justify-between ${
+      className={`w-full rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all duration-300 relative overflow-hidden isolate flex flex-col justify-between ${
         darkMode
           ? 'bg-black/20 text-white'
           : 'bg-white/20 text-slate-900'
@@ -79,7 +79,7 @@ export default function EnergyDistributionCard({
       </div>
 
       {/* Card Header & Live/Period Toggle */}
-      <div className="flex items-center justify-between gap-3 mb-4 z-10">
+      <div className="flex items-center justify-between gap-3 mb-2 z-10">
         <div className="flex items-center gap-2.5">
           <div
             className={`p-2 rounded-2xl ${
@@ -137,10 +137,10 @@ export default function EnergyDistributionCard({
       </div>
 
       {/* Interactive SVG Flow Diagram */}
-      <div className="relative w-full h-[320px] sm:h-[360px] flex items-center justify-center select-none">
+      <div className="relative w-full h-[220px] sm:h-[250px] flex items-center justify-center select-none my-auto">
         <svg
-          viewBox="0 0 560 360"
-          className="w-full h-full max-h-[360px] overflow-visible"
+          viewBox="65 15 400 280"
+          className="w-full h-full max-h-[260px] overflow-visible"
         >
           <defs>
             <style>
@@ -161,7 +161,7 @@ export default function EnergyDistributionCard({
           {/* Solar -> Home */}
           {hasSolar && (
             <path
-              d="M 280 80 Q 360 80 430 180"
+              d="M 265 60 Q 350 60 415 155"
               fill="none"
               stroke={hasSolarToHome ? '#f59e0b' : (darkMode ? '#334155' : '#cbd5e1')}
               strokeWidth={hasSolarToHome ? '3.5' : '1.5'}
@@ -174,7 +174,7 @@ export default function EnergyDistributionCard({
           {/* Solar -> Grid (Export) */}
           {hasSolar && hasGrid && (
             <path
-              d="M 280 80 Q 200 80 130 180"
+              d="M 265 60 Q 180 60 115 155"
               fill="none"
               stroke={hasSolarToGrid ? '#818cf8' : (darkMode ? '#334155' : '#cbd5e1')}
               strokeWidth={hasSolarToGrid ? '3.5' : '1.5'}
@@ -187,7 +187,7 @@ export default function EnergyDistributionCard({
           {/* Solar -> Battery */}
           {hasSolar && hasBattery && (
             <path
-              d="M 280 80 Q 220 180 150 280"
+              d="M 265 60 Q 200 145 140 245"
               fill="none"
               stroke={hasSolarToBattery ? '#10b981' : (darkMode ? '#334155' : '#cbd5e1')}
               strokeWidth={hasSolarToBattery ? '3.5' : '1.5'}
@@ -200,7 +200,7 @@ export default function EnergyDistributionCard({
           {/* Grid -> Home (Import) */}
           {hasGrid && (
             <path
-              d="M 130 180 L 430 180"
+              d="M 115 155 L 415 155"
               fill="none"
               stroke={hasGridToHome ? '#38bdf8' : (darkMode ? '#334155' : '#cbd5e1')}
               strokeWidth={hasGridToHome ? '3.5' : '1.5'}
@@ -213,7 +213,7 @@ export default function EnergyDistributionCard({
           {/* Battery -> Home */}
           {hasBattery && (
             <path
-              d="M 150 280 Q 300 300 430 180"
+              d="M 140 245 Q 280 255 415 155"
               fill="none"
               stroke={hasBatteryToHome ? '#10b981' : (darkMode ? '#334155' : '#cbd5e1')}
               strokeWidth={hasBatteryToHome ? '3.5' : '1.5'}
@@ -226,7 +226,7 @@ export default function EnergyDistributionCard({
           {/* Gas -> Home */}
           {hasGas && (
             <path
-              d="M 430 60 L 430 180"
+              d="M 415 35 L 415 155"
               fill="none"
               stroke={hasGasFlow ? '#f97316' : (darkMode ? '#334155' : '#cbd5e1')}
               strokeWidth={hasGasFlow ? '3' : '1.5'}
@@ -239,7 +239,7 @@ export default function EnergyDistributionCard({
           {/* Water -> Home */}
           {hasWater && (
             <path
-              d="M 430 300 L 430 180"
+              d="M 415 275 L 415 155"
               fill="none"
               stroke={hasWaterFlow ? '#06b6d4' : (darkMode ? '#334155' : '#cbd5e1')}
               strokeWidth={hasWaterFlow ? '3' : '1.5'}
@@ -253,25 +253,25 @@ export default function EnergyDistributionCard({
 
           {/* 1. SOLAR PV NODE */}
           {hasSolar && (
-            <g transform="translate(280, 80)">
+            <g transform="translate(265, 60)">
               <circle
-                r="38"
+                r="34"
                 className={`${darkMode ? 'fill-slate-900 stroke-amber-500/50' : 'fill-white stroke-amber-400'}`}
                 strokeWidth="2.5"
                 filter="drop-shadow(0 4px 12px rgba(245, 158, 11, 0.25))"
               />
-              <foreignObject x="-36" y="-36" width="72" height="72">
+              <foreignObject x="-32" y="-32" width="64" height="64">
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
-                  <Sun size={22} weight="duotone" className="text-amber-500" />
-                  <span className={`text-[11px] font-black font-mono leading-none mt-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  <Sun size={20} weight="duotone" className="text-amber-500" />
+                  <span className={`text-[11px] font-black font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {solarVal.toFixed(1)}
                   </span>
-                  <span className={`text-[9px] font-bold uppercase leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span className={`text-[8px] font-bold uppercase leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     {solarUnit}
                   </span>
                 </div>
               </foreignObject>
-              <text y="52" textAnchor="middle" className={`text-[11px] font-extrabold ${darkMode ? 'fill-amber-400' : 'fill-amber-600'}`}>
+              <text y="48" textAnchor="middle" className={`text-[11px] font-extrabold ${darkMode ? 'fill-amber-400' : 'fill-amber-600'}`}>
                 Solar PV
               </text>
             </g>
@@ -279,29 +279,29 @@ export default function EnergyDistributionCard({
 
           {/* 2. GRID NODE */}
           {hasGrid && (
-            <g transform="translate(130, 180)">
+            <g transform="translate(115, 155)">
               <circle
-                r="38"
+                r="34"
                 className={`${darkMode ? 'fill-slate-900 stroke-sky-500/50' : 'fill-white stroke-sky-400'}`}
                 strokeWidth="2.5"
                 filter="drop-shadow(0 4px 12px rgba(56, 189, 248, 0.25))"
               />
-              <foreignObject x="-36" y="-36" width="72" height="72">
+              <foreignObject x="-32" y="-32" width="64" height="64">
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
-                  <Plug size={22} weight="duotone" className="text-sky-400" />
-                  <span className={`text-[11px] font-black font-mono leading-none mt-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  <Plug size={20} weight="duotone" className="text-sky-400" />
+                  <span className={`text-[11px] font-black font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {gridImportVal.toFixed(1)}
                   </span>
-                  <span className={`text-[9px] font-bold uppercase leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span className={`text-[8px] font-bold uppercase leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     {solarUnit}
                   </span>
                 </div>
               </foreignObject>
-              <text y="52" textAnchor="middle" className={`text-[11px] font-extrabold ${darkMode ? 'fill-sky-400' : 'fill-sky-600'}`}>
+              <text y="48" textAnchor="middle" className={`text-[11px] font-extrabold ${darkMode ? 'fill-sky-400' : 'fill-sky-600'}`}>
                 Grid
               </text>
               {gridExportVal > 0 && (
-                <text y="64" textAnchor="middle" className={`text-[9px] font-mono font-bold ${darkMode ? 'fill-slate-400' : 'fill-slate-500'}`}>
+                <text y="60" textAnchor="middle" className={`text-[9px] font-mono font-bold ${darkMode ? 'fill-slate-400' : 'fill-slate-500'}`}>
                   Export: {gridExportVal.toFixed(1)} {solarUnit}
                 </text>
               )}
@@ -310,71 +310,71 @@ export default function EnergyDistributionCard({
 
           {/* 3. BATTERY NODE */}
           {hasBattery && (
-            <g transform="translate(150, 280)">
+            <g transform="translate(140, 245)">
               <circle
-                r="36"
+                r="32"
                 className={`${darkMode ? 'fill-slate-900 stroke-emerald-500/50' : 'fill-white stroke-emerald-400'}`}
                 strokeWidth="2.5"
                 filter="drop-shadow(0 4px 12px rgba(16, 185, 129, 0.25))"
               />
-              <foreignObject x="-34" y="-34" width="68" height="68">
+              <foreignObject x="-30" y="-30" width="60" height="60">
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
-                  <BatteryCharging size={20} weight="duotone" className="text-emerald-400" />
-                  <span className={`text-[11px] font-black font-mono leading-none mt-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  <BatteryCharging size={18} weight="duotone" className="text-emerald-400" />
+                  <span className={`text-[11px] font-black font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {batterySoc !== null ? `${batterySoc}%` : `${batteryOutVal.toFixed(1)}`}
                   </span>
-                  <span className={`text-[9px] font-bold uppercase leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span className={`text-[8px] font-bold uppercase leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     {batterySoc !== null ? 'SoC' : solarUnit}
                   </span>
                 </div>
               </foreignObject>
-              <text y="50" textAnchor="middle" className={`text-[11px] font-extrabold ${darkMode ? 'fill-emerald-400' : 'fill-emerald-600'}`}>
+              <text y="46" textAnchor="middle" className={`text-[11px] font-extrabold ${darkMode ? 'fill-emerald-400' : 'fill-emerald-600'}`}>
                 Battery
               </text>
             </g>
           )}
 
           {/* 4. HOME CONSUMPTION NODE */}
-          <g transform="translate(430, 180)">
+          <g transform="translate(415, 155)">
             <circle
-              r="42"
+              r="38"
               className={`${darkMode ? 'fill-slate-900 stroke-purple-500/60' : 'fill-white stroke-purple-400'}`}
               strokeWidth="3"
               filter="drop-shadow(0 6px 16px rgba(168, 85, 247, 0.3))"
             />
-            <foreignObject x="-40" y="-40" width="80" height="80">
+            <foreignObject x="-36" y="-36" width="72" height="72">
               <div className="w-full h-full flex flex-col items-center justify-center text-center">
-                <House size={24} weight="duotone" className="text-purple-500" />
-                <span className={`text-xs font-black font-mono leading-none mt-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                <House size={22} weight="duotone" className="text-purple-500" />
+                <span className={`text-xs font-black font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                   {homeVal.toFixed(1)}
                 </span>
-                <span className={`text-[9px] font-bold uppercase leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <span className={`text-[8px] font-bold uppercase leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                   {solarUnit}
                 </span>
               </div>
             </foreignObject>
-            <text y="56" textAnchor="middle" className={`text-[11px] font-extrabold ${darkMode ? 'fill-purple-400' : 'fill-purple-600'}`}>
+            <text y="52" textAnchor="middle" className={`text-[11px] font-extrabold ${darkMode ? 'fill-purple-400' : 'fill-purple-600'}`}>
               Home
             </text>
           </g>
 
           {/* 5. GAS NODE */}
           {hasGas && (
-            <g transform="translate(430, 40)">
+            <g transform="translate(415, 35)">
               <circle
-                r="26"
+                r="24"
                 className={`${darkMode ? 'fill-slate-900 stroke-orange-500/50' : 'fill-white stroke-orange-400'}`}
                 strokeWidth="2"
               />
-              <foreignObject x="-24" y="-24" width="48" height="48">
+              <foreignObject x="-22" y="-22" width="44" height="44">
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
-                  <Fire size={16} weight="duotone" className="text-orange-500" />
-                  <span className={`text-[10px] font-bold font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  <Fire size={15} weight="duotone" className="text-orange-500" />
+                  <span className={`text-[9px] font-bold font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {totals.gasUsage.toFixed(1)}
                   </span>
                 </div>
               </foreignObject>
-              <text x="34" y="4" textAnchor="start" className={`text-[10px] font-bold ${darkMode ? 'fill-orange-400' : 'fill-orange-600'}`}>
+              <text x="30" y="4" textAnchor="start" className={`text-[10px] font-bold ${darkMode ? 'fill-orange-400' : 'fill-orange-600'}`}>
                 Gas ({totals.gasUnit})
               </text>
             </g>
@@ -382,21 +382,21 @@ export default function EnergyDistributionCard({
 
           {/* 6. WATER NODE */}
           {hasWater && (
-            <g transform="translate(430, 320)">
+            <g transform="translate(415, 275)">
               <circle
-                r="26"
+                r="24"
                 className={`${darkMode ? 'fill-slate-900 stroke-cyan-500/50' : 'fill-white stroke-cyan-400'}`}
                 strokeWidth="2"
               />
-              <foreignObject x="-24" y="-24" width="48" height="48">
+              <foreignObject x="-22" y="-22" width="44" height="44">
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
-                  <Drop size={16} weight="duotone" className="text-cyan-500" />
-                  <span className={`text-[10px] font-bold font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  <Drop size={15} weight="duotone" className="text-cyan-500" />
+                  <span className={`text-[9px] font-bold font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {totals.waterUsage.toFixed(0)}
                   </span>
                 </div>
               </foreignObject>
-              <text x="34" y="4" textAnchor="start" className={`text-[10px] font-bold ${darkMode ? 'fill-cyan-400' : 'fill-cyan-600'}`}>
+              <text x="30" y="4" textAnchor="start" className={`text-[10px] font-bold ${darkMode ? 'fill-cyan-400' : 'fill-cyan-600'}`}>
                 Water ({totals.waterUnit})
               </text>
             </g>
@@ -405,7 +405,7 @@ export default function EnergyDistributionCard({
       </div>
 
       {/* Bottom Summary Flow Chips */}
-      <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t z-10 ${darkMode ? 'border-white/10' : 'border-slate-200'}`}>
+      <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2.5 border-t z-10 ${darkMode ? 'border-white/10' : 'border-slate-200'}`}>
         <div className="flex flex-col">
           <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Grid Import</span>
           <span className="text-xs font-bold font-mono text-sky-500">
