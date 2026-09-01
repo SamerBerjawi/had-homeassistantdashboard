@@ -374,7 +374,7 @@ export default function App() {
   };
 
   return (
-    <div className={`flex h-screen h-[100dvh] w-screen overflow-hidden font-sans select-none ${
+    <div className={`fixed inset-0 flex w-full h-full overflow-hidden font-sans select-none ${
       darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
     }`}>
       {/* Ambient background decoration with distinct page accent glows */}
