@@ -93,59 +93,61 @@ export const SensorTile: React.FC<SensorTileProps> = ({
           if (onContextMenu) onContextMenu();
           else if (onIconClick) onIconClick();
         }}
-        className="p-3 min-h-[92px] sm:min-h-[98px] justify-between gap-1"
+        className="p-3 min-h-[92px] sm:min-h-[98px] justify-center"
       >
-        {/* Top Header: Icon + Title & Subtitle */}
-        <div className="flex items-center justify-between gap-2 relative z-10 w-full">
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            {onIconClick ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onIconClick();
-                }}
-                className="shrink-0 flex items-center justify-center min-w-[28px] min-h-[28px] rounded-xl hover:bg-white/10 dark:hover:bg-white/10 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-              >
-                {isTemp ? (
-                  <Thermometer size={22} weight="duotone" className="text-rose-400" />
-                ) : (
-                  <Drop size={22} weight="duotone" className="text-sky-400" />
-                )}
-              </button>
-            ) : (
-              <div className="shrink-0 flex items-center justify-center min-w-[28px] min-h-[28px]">
-                {isTemp ? (
-                  <Thermometer size={22} weight="duotone" className="text-rose-400" />
-                ) : (
-                  <Drop size={22} weight="duotone" className="text-sky-400" />
-                )}
-              </div>
-            )}
-            <div className="min-w-0 flex-1 flex flex-col justify-center">
-              <h4
-                className={`text-xs sm:text-sm font-bold truncate leading-tight ${
-                  darkMode ? 'text-white' : 'text-slate-900'
-                }`}
-              >
-                {formatEntityDisplayName(entity.name, areaName)}
-              </h4>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5 leading-tight font-medium flex items-center">
-                {subtitle}
+        <div className="flex flex-col justify-center h-full w-full relative z-10 my-auto gap-1">
+          {/* Top Header: Icon + Title & Subtitle */}
+          <div className="flex items-center justify-between gap-2 min-w-0 w-full">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              {onIconClick ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onIconClick();
+                  }}
+                  className="shrink-0 flex items-center justify-center min-w-[28px] min-h-[28px] rounded-xl hover:bg-white/10 dark:hover:bg-white/10 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+                >
+                  {isTemp ? (
+                    <Thermometer size={22} weight="duotone" className="text-rose-400" />
+                  ) : (
+                    <Drop size={22} weight="duotone" className="text-sky-400" />
+                  )}
+                </button>
+              ) : (
+                <div className="shrink-0 flex items-center justify-center min-w-[28px] min-h-[28px]">
+                  {isTemp ? (
+                    <Thermometer size={22} weight="duotone" className="text-rose-400" />
+                  ) : (
+                    <Drop size={22} weight="duotone" className="text-sky-400" />
+                  )}
+                </div>
+              )}
+              <div className="min-w-0 flex-1 flex flex-col justify-center">
+                <h4
+                  className={`text-xs sm:text-sm font-bold truncate leading-tight ${
+                    darkMode ? 'text-white' : 'text-slate-900'
+                  }`}
+                >
+                  {formatEntityDisplayName(entity.name, areaName)}
+                </h4>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5 leading-tight font-medium flex items-center">
+                  {subtitle}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Bottom Sparkline: Compact 28px height */}
-        <div className="w-full pt-1">
-          <MiniSensorSparkline
-            entityId={entity.entity_id}
-            currentValue={entity.state}
-            color={sparkColor}
-            height={28}
-            strokeWidth={2}
-          />
+          {/* Bottom Sparkline: Compact 28px height */}
+          <div className="w-full pt-1">
+            <MiniSensorSparkline
+              entityId={entity.entity_id}
+              currentValue={entity.state}
+              color={sparkColor}
+              height={28}
+              strokeWidth={2}
+            />
+          </div>
         </div>
       </TileShell>
     );

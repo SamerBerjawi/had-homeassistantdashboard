@@ -264,8 +264,9 @@ export default function EntityDetailModal() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onClick={closeEntityDetails}
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl transition-all"
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
           />
 
           {/* Modal / Mobile Bottom Drawer */}

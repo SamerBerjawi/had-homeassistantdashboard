@@ -442,6 +442,16 @@ export default function AreaDetailView({
     callHAService('climate', 'set_hvac_mode', { hvac_mode: mode }, { entity_id: climate.entity_id });
   };
 
+  const handleToggleClimate = (climate: ResolvedEntity) => {
+    const isCurrentlyOff = climate.state === 'off' || climate.attributes?.hvac_action === 'off';
+    const hvacModes: string[] = climate.attributes?.hvac_modes || ['heat', 'off'];
+    const activeMode = hvacModes.find((m) => m !== 'off') || 'heat';
+    const nextMode = isCurrentlyOff ? activeMode : 'off';
+    
+    updateEntityState(climate.entity_id, nextMode);
+    callHAService('climate', 'set_hvac_mode', { hvac_mode: nextMode }, { entity_id: climate.entity_id });
+  };
+
   const handleToggleLock = (lockEntity: ResolvedEntity) => {
     if (onToggleEntityLock) {
       onToggleEntityLock(lockEntity.entity_id);
@@ -687,7 +697,7 @@ export default function AreaDetailView({
                   key={light.entity_id}
                   id={light.entity_id}
                   colSpan={2}
-                  rowSpan={isDimmable ? 2 : 1}
+                  rowSpan={1}
                   tabletColSpan={3}
                   desktopColSpan={3}
                   isUnavailable={isUnavailable}
@@ -760,7 +770,8 @@ export default function AreaDetailView({
                     onTempAdjust={handleTempAdjust}
                     onTempSlider={handleTempSlider}
                     onModeChange={handleHvacModeChange}
-                    onIconClick={() => openEntityDetails(climate.entity_id)}
+                    onToggle={handleToggleClimate}
+                    onClick={() => openEntityDetails(climate.entity_id)}
                     onContextMenu={() => openEntityDetails(climate.entity_id)}
                   />
                 </GridTile>
@@ -805,7 +816,13 @@ export default function AreaDetailView({
                     accentColor="#14b8a6"
                     activeBorderColor="border-teal-400/50"
                     onIconClick={() => handleToggleFan(fan)}
-                    icon={<Fan size={22} weight="duotone" className={isOn ? 'text-teal-400 animate-spin' : 'text-slate-400'} />}
+                    icon={
+                      <Fan
+                        size={22}
+                        weight={isOn ? 'fill' : 'duotone'}
+                        className={isOn ? 'text-teal-400 drop-shadow-[0_0_8px_rgba(45,212,191,0.85)] animate-spin' : 'text-slate-400'}
+                      />
+                    }
                     actionButton={
                       <div
                         onClick={(e) => {

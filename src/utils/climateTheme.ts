@@ -60,7 +60,7 @@ export function getClimateModeTheme(rawMode?: string, entityState?: string): Cli
       id: 'off',
       name: 'Off',
       isOff: true,
-      icon: Power,
+      icon: Flame,
       iconClass: 'text-slate-400',
       iconDropShadow: '',
       textClass: 'text-slate-400',

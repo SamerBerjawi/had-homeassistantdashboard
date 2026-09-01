@@ -104,14 +104,8 @@ export const GridTile: React.FC<GridTileProps> = ({
   const rowClass = ROW_SPAN_CLASSES[rowSpan] || 'row-span-1';
 
   return (
-    <motion.div
-      layout
-      layoutId={id}
-      transition={{
-        type: 'spring',
-        stiffness: 300,
-        damping: 30
-      }}
+    <div
+      id={id}
       {...(onLongPress || onClick ? longPressHandlers : {})}
       style={style}
       className={`w-full h-full min-w-0 ${colClass} ${tabletColClass} ${desktopColClass} ${rowClass} ${
@@ -128,7 +122,7 @@ export const GridTile: React.FC<GridTileProps> = ({
       ) : (
         children
       )}
-    </motion.div>
+    </div>
   );
 };
 

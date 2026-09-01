@@ -1,53 +1,33 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React from 'react';
+import { create } from 'zustand';
 
-interface EntityPopupContextType {
+interface EntityPopupState {
   isOpen: boolean;
   selectedEntityId: string | null;
   openEntityDetails: (entityId: string) => void;
   closeEntityDetails: () => void;
 }
 
-const EntityPopupContext = createContext<EntityPopupContextType | undefined>(undefined);
+export const useEntityPopupStore = create<EntityPopupState>((set) => ({
+  isOpen: false,
+  selectedEntityId: null,
+  openEntityDetails: (entityId: string) => {
+    if (!entityId) return;
+    set({ selectedEntityId: entityId, isOpen: true });
+  },
+  closeEntityDetails: () => {
+    set({ isOpen: false });
+    setTimeout(() => {
+      set({ selectedEntityId: null });
+    }, 200);
+  }
+}));
+
+export function useEntityPopup() {
+  return useEntityPopupStore();
+}
 
 export function EntityPopupProvider({ children }: { children: React.ReactNode }) {
-  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-
-  const openEntityDetails = useCallback((entityId: string) => {
-    if (!entityId) return;
-    setSelectedEntityId(entityId);
-    setIsOpen(true);
-  }, []);
-
-  const closeEntityDetails = useCallback(() => {
-    setIsOpen(false);
-    // Retain selectedEntityId briefly during exit animation, or clear immediately
-    setTimeout(() => {
-      setSelectedEntityId(null);
-    }, 200);
-  }, []);
-
-  const value = useMemo(
-    () => ({
-      isOpen,
-      selectedEntityId,
-      openEntityDetails,
-      closeEntityDetails
-    }),
-    [isOpen, selectedEntityId, openEntityDetails, closeEntityDetails]
-  );
-
-  return (
-    <EntityPopupContext.Provider value={value}>
-      {children}
-    </EntityPopupContext.Provider>
-  );
+  return <>{children}</>;
 }
 
-export function useEntityPopup(): EntityPopupContextType {
-  const context = useContext(EntityPopupContext);
-  if (!context) {
-    throw new Error('useEntityPopup must be used within an EntityPopupProvider');
-  }
-  return context;
-}

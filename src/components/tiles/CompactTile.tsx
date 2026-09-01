@@ -50,9 +50,9 @@ export const CompactTile: React.FC<CompactTileProps> = ({
       activeBorderColor={activeBorderColor}
       onClick={onClick}
       onContextMenu={onContextMenu}
-      className={`p-3 sm:p-3.5 ${badge ? 'min-h-[84px] justify-between' : 'min-h-[72px] justify-center'}`}
+      className={`p-3 sm:p-3.5 justify-center ${badge ? 'min-h-[84px]' : 'min-h-[72px]'}`}
     >
-      <div className={`flex flex-col justify-between h-full w-full relative z-10 ${badge ? 'gap-1.5' : ''}`}>
+      <div className={`flex flex-col justify-center h-full w-full relative z-10 my-auto ${badge ? 'gap-1.5' : ''}`}>
         {/* Main Row: Icon + Title & Subtitle + Optional Action Button */}
         <div className="flex items-center justify-between gap-2 min-w-0 w-full">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">

@@ -73,7 +73,7 @@ export const TileShell: React.FC<TileShellProps> = ({
       onContextMenu={onContextMenu}
       title={title}
       style={customStyle}
-      className={`group relative w-full h-full rounded-3xl border ${borderClass} backdrop-blur-md transition-all duration-200 flex flex-col justify-between overflow-hidden isolate ${bgClass} ${
+      className={`group relative w-full h-full rounded-3xl border ${borderClass} backdrop-blur-md transition-all duration-200 flex flex-col justify-center overflow-hidden isolate ${bgClass} ${
         onClick ? 'cursor-pointer active:scale-[0.985]' : ''
       } ${className}`}
     >

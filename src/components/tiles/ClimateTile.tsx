@@ -23,6 +23,7 @@ interface ClimateTileProps {
   onTempAdjust: (entity: ResolvedEntity, delta: number) => void;
   onTempSlider: (entity: ResolvedEntity, temp: number) => void;
   onModeChange: (entity: ResolvedEntity, mode: string) => void;
+  onToggle?: (entity: ResolvedEntity) => void;
   onClick?: () => void;
   onIconClick?: () => void;
   onContextMenu?: () => void;
@@ -72,6 +73,7 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
   onTempAdjust,
   onTempSlider,
   onModeChange,
+  onToggle,
   onClick,
   onIconClick,
   onContextMenu
@@ -105,6 +107,16 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
     />
   );
 
+  const handleToggleThermostat = () => {
+    if (onToggle) {
+      onToggle(entity);
+    } else {
+      const isOff = theme.isOff;
+      const activeMode = hvacModes.find((m) => m !== 'off') || 'heat';
+      onModeChange(entity, isOff ? activeMode : 'off');
+    }
+  };
+
   return (
     <StandardTile
       darkMode={darkMode}
@@ -113,8 +125,14 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
       isActive={!theme.isOff}
       accentColor={accentColor}
       activeBorderColor={activeBorderColor}
-      onIconClick={onIconClick || onClick}
-      icon={<ModeIcon size={24} weight={theme.isOff ? 'duotone' : 'fill'} className={`${theme.iconClass} shrink-0`} />}
+      onIconClick={handleToggleThermostat}
+      icon={
+        <ModeIcon
+          size={24}
+          weight={theme.isOff ? 'duotone' : 'fill'}
+          className={`${theme.iconClass} ${!theme.isOff ? 'drop-shadow-[0_0_8px_rgba(249,115,22,0.85)]' : ''} shrink-0`}
+        />
+      }
       headerAction={
         <div
           onClick={(e) => {
