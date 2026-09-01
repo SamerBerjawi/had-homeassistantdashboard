@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import { CaretRight } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../types';
 import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
 import { detectClimateCapabilities } from '../../services/climateClassification';
@@ -111,12 +112,27 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
       isActive={!theme.isOff}
       accentColor={accentColor}
       activeBorderColor={activeBorderColor}
-      onIconClick={onIconClick}
+      onIconClick={onIconClick || onClick}
       icon={<ModeIcon size={24} weight={theme.isOff ? 'duotone' : 'fill'} className={`${theme.iconClass} shrink-0`} />}
-      onClick={onClick}
+      headerAction={
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onClick) onClick();
+            else if (onContextMenu) onContextMenu();
+            else if (onIconClick) onIconClick();
+          }}
+          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+          title="Open Device Details"
+        >
+          <CaretRight size={15} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+        </div>
+      }
+      onClick={onClick || onContextMenu || onIconClick}
       onContextMenu={(e) => {
         e.preventDefault();
         if (onContextMenu) onContextMenu();
+        else if (onClick) onClick();
         else if (onIconClick) onIconClick();
       }}
       footer={
@@ -143,38 +159,46 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
         </div>
       }
     >
-      {/* Inline Ergonomic Steppers and Slider: Prevents clipping device title */}
-      <div className="flex items-center gap-2 pt-1 w-full" onClick={(e) => e.stopPropagation()}>
-        <button
-          type="button"
-          onClick={() => onTempAdjust(entity, -0.5)}
-          className="min-w-[36px] min-h-[36px] rounded-xl bg-slate-900/[0.06] dark:bg-white/10 hover:bg-slate-900/10 dark:hover:bg-white/15 flex items-center justify-center font-bold text-base cursor-pointer active:scale-90 shrink-0 select-none"
-          title="Decrease Temp"
-        >
-          -
-        </button>
-        <div className="flex-1 px-1 flex items-center">
-          <input
-            type="range"
-            min={minTemp}
-            max={maxTemp}
-            step="0.5"
-            value={targetTemp}
-            onChange={(e) => onTempSlider(entity, Number(e.target.value))}
-            className={`w-full h-2 bg-slate-700/40 dark:bg-white/10 rounded-lg appearance-none cursor-pointer ${theme.sliderAccent}`}
-          />
+      {/* Target Temperature Readout + Steppers & Full-Width Range Slider */}
+      <div className="space-y-1.5 pt-0.5 w-full" onClick={(e) => e.stopPropagation()}>
+        {/* Row 1: Target Temp Label & Readout */}
+        <div className="flex items-center justify-between text-xs font-semibold">
+          <span className="text-slate-500 dark:text-slate-400">Target Temp</span>
+          <span className="font-mono font-black text-sm sm:text-base text-slate-800 dark:text-white">
+            {targetTemp}°C
+          </span>
         </div>
-        <button
-          type="button"
-          onClick={() => onTempAdjust(entity, 0.5)}
-          className={`min-w-[36px] min-h-[36px] rounded-xl text-white ${theme.stepperBtnBg} ${theme.stepperBtnHover} ${theme.stepperBtnShadow} flex items-center justify-center font-bold text-base cursor-pointer active:scale-90 shrink-0 select-none`}
-          title="Increase Temp"
-        >
-          +
-        </button>
-        <span className="text-xs sm:text-sm font-mono font-black min-w-[34px] text-right shrink-0 text-slate-800 dark:text-white">
-          {targetTemp}°
-        </span>
+
+        {/* Row 2: Steppers and Full-Width Slider */}
+        <div className="flex items-center gap-1.5 w-full">
+          <button
+            type="button"
+            onClick={() => onTempAdjust(entity, -0.5)}
+            className="w-8 h-8 rounded-xl bg-slate-900/[0.06] dark:bg-white/10 hover:bg-slate-900/10 dark:hover:bg-white/15 flex items-center justify-center font-bold text-sm cursor-pointer active:scale-90 shrink-0 select-none"
+            title="Decrease Temp"
+          >
+            -
+          </button>
+          <div className="flex-1 px-1 flex items-center">
+            <input
+              type="range"
+              min={minTemp}
+              max={maxTemp}
+              step="0.5"
+              value={targetTemp}
+              onChange={(e) => onTempSlider(entity, Number(e.target.value))}
+              className={`w-full h-2 bg-slate-700/40 dark:bg-white/10 rounded-lg appearance-none cursor-pointer ${theme.sliderAccent}`}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => onTempAdjust(entity, 0.5)}
+            className={`w-8 h-8 rounded-xl text-white ${theme.stepperBtnBg} ${theme.stepperBtnHover} ${theme.stepperBtnShadow} flex items-center justify-center font-bold text-sm cursor-pointer active:scale-90 shrink-0 select-none`}
+            title="Increase Temp"
+          >
+            +
+          </button>
+        </div>
       </div>
     </StandardTile>
   );

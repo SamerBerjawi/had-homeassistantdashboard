@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { Plug, Power } from '@phosphor-icons/react';
+import { Plug, CaretRight } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../types';
 import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
 import { detectSwitchCapabilities } from '../../services/switchClassification';
@@ -63,10 +63,10 @@ export const SwitchTile: React.FC<SwitchTileProps> = ({
       isActive={isOn}
       accentColor="#6366f1"
       activeBorderColor="border-indigo-400/50"
-      onIconClick={onIconClick}
+      onIconClick={() => onToggle(entity)}
       icon={
         <Plug
-          size={24}
+          size={22}
           weight={isOn ? 'fill' : 'duotone'}
           className={`shrink-0 transition-transform ${
             isOn ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.75)]' : 'text-slate-400'
@@ -74,28 +74,24 @@ export const SwitchTile: React.FC<SwitchTileProps> = ({
         />
       }
       actionButton={
-        <button
-          type="button"
+        <div
           onClick={(e) => {
             e.stopPropagation();
-            onToggle(entity);
+            if (onClick) onClick();
+            else if (onContextMenu) onContextMenu();
+            else if (onIconClick) onIconClick();
           }}
-          className={`min-w-[44px] min-h-[44px] rounded-2xl flex items-center justify-center transition-all cursor-pointer active:scale-90 ${
-            isOn
-              ? 'bg-indigo-500 text-white font-bold shadow-xs'
-              : darkMode
-              ? 'bg-white/10 hover:bg-white/15 text-slate-300'
-              : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-700'
-          }`}
-          title={isOn ? 'Turn Off' : 'Turn On'}
+          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+          title="Open Device Details"
         >
-          <Power size={20} weight="bold" />
-        </button>
+          <CaretRight size={15} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+        </div>
       }
-      onClick={onClick || (() => onToggle(entity))}
+      onClick={onClick || onContextMenu || onIconClick}
       onContextMenu={(e) => {
         e.preventDefault();
         if (onContextMenu) onContextMenu();
+        else if (onClick) onClick();
         else if (onIconClick) onIconClick();
       }}
     />

@@ -102,18 +102,12 @@ export const SensorTile: React.FC<SensorTileProps> = ({
           else if (onIconClick) onIconClick();
         }}
       >
-        <div className="w-full pt-1.5 space-y-1">
-          <div className="flex items-center justify-between text-[10px] font-mono text-slate-500">
-            <span>24h trend</span>
-            <span className={isTemp ? 'text-rose-400' : 'text-sky-400'}>
-              {isTemp ? 'Temperature' : 'Humidity'}
-            </span>
-          </div>
+        <div className="w-full">
           <MiniSensorSparkline
             entityId={entity.entity_id}
             currentValue={entity.state}
             color={sparkColor}
-            height={34}
+            height={44}
             strokeWidth={2}
           />
         </div>

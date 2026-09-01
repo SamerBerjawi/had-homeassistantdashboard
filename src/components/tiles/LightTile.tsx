@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Lightbulb, Power, Sun } from '@phosphor-icons/react';
+import { Lightbulb, CaretRight, Sun } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../types';
 import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
 import { detectLightCapabilities } from '../../services/lightClassification';
@@ -69,38 +69,34 @@ export const LightTile: React.FC<LightTileProps> = ({
         isActive={isOn}
         accentColor="#f59e0b"
         activeBorderColor="border-amber-400/50"
-        onIconClick={onIconClick}
+        onIconClick={() => onToggle(entity)}
         icon={
           <Lightbulb
-            size={26}
+            size={24}
             weight={isOn ? 'fill' : 'duotone'}
             style={{ color: isOn && caps.supportsColor ? caps.displayColor : undefined }}
             className={isOn ? 'text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.85)]' : 'text-slate-400'}
           />
         }
         headerAction={
-          <button
-            type="button"
+          <div
             onClick={(e) => {
               e.stopPropagation();
-              onToggle(entity);
+              if (onClick) onClick();
+              else if (onContextMenu) onContextMenu();
+              else if (onIconClick) onIconClick();
             }}
-            className={`min-w-[44px] min-h-[44px] rounded-2xl flex items-center justify-center transition-all cursor-pointer active:scale-90 ${
-              isOn
-                ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
-                : darkMode
-                ? 'bg-white/10 hover:bg-white/15 text-slate-300'
-                : 'bg-slate-900/[0.06] hover:bg-slate-900/10 text-slate-700'
-            }`}
-            title={isOn ? 'Turn Off' : 'Turn On'}
+            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+            title="Open Device Details"
           >
-            <Power size={20} weight="bold" />
-          </button>
+            <CaretRight size={15} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+          </div>
         }
-        onClick={onClick}
+        onClick={onClick || onContextMenu || onIconClick}
         onContextMenu={(e) => {
           e.preventDefault();
           if (onContextMenu) onContextMenu();
+          else if (onClick) onClick();
           else if (onIconClick) onIconClick();
         }}
       >
@@ -132,36 +128,33 @@ export const LightTile: React.FC<LightTileProps> = ({
       isActive={isOn}
       accentColor="#f59e0b"
       activeBorderColor="border-amber-400/50"
-      onIconClick={onIconClick}
+      onIconClick={() => onToggle(entity)}
       icon={
         <Lightbulb
-          size={24}
+          size={22}
           weight={isOn ? 'fill' : 'duotone'}
           className={isOn ? 'text-amber-400' : 'text-slate-400'}
         />
       }
       actionButton={
-        <button
-          type="button"
+        <div
           onClick={(e) => {
             e.stopPropagation();
-            onToggle(entity);
+            if (onClick) onClick();
+            else if (onContextMenu) onContextMenu();
+            else if (onIconClick) onIconClick();
           }}
-          className={`min-w-[44px] min-h-[44px] rounded-2xl flex items-center justify-center transition-all cursor-pointer active:scale-90 ${
-            isOn
-              ? 'bg-amber-500 text-slate-950 font-bold'
-              : darkMode
-              ? 'bg-white/10 text-slate-300'
-              : 'bg-slate-900/[0.06] text-slate-700'
-          }`}
+          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+          title="Open Device Details"
         >
-          <Power size={20} weight="bold" />
-        </button>
+          <CaretRight size={15} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+        </div>
       }
-      onClick={onClick || (() => onToggle(entity))}
+      onClick={onClick || onContextMenu || onIconClick}
       onContextMenu={(e) => {
         e.preventDefault();
         if (onContextMenu) onContextMenu();
+        else if (onClick) onClick();
         else if (onIconClick) onIconClick();
       }}
     />

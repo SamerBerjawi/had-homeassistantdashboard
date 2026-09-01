@@ -346,12 +346,12 @@ export default function FloorAreaSensorsSection({
                                   e.stopPropagation();
                                   handleToggleLock(ent);
                                 }}
-                                className={`min-w-[40px] sm:min-w-[44px] min-h-[40px] sm:min-h-[44px] px-2.5 sm:px-3.5 rounded-2xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 ${
+                                className={`h-9 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 shrink-0 ${
                                   isLocked
                                     ? darkMode
                                       ? 'bg-white/10 text-slate-300'
                                       : 'bg-slate-100 text-slate-700 border border-slate-200'
-                                    : 'bg-amber-500 text-slate-950 font-black'
+                                    : 'bg-amber-500 text-slate-950 font-black shadow-xs'
                                 }`}
                               >
                                 {isLocked ? 'Unlock' : 'Lock'}

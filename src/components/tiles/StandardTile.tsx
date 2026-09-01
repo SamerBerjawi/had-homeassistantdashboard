@@ -54,10 +54,10 @@ export const StandardTile: React.FC<StandardTileProps> = ({
       activeBorderColor={activeBorderColor}
       onClick={onClick}
       onContextMenu={onContextMenu}
-      className={`p-3.5 sm:p-4 min-h-[148px] justify-between gap-2.5 ${className}`}
+      className={`p-3 sm:p-3.5 min-h-[148px] justify-between gap-2 ${className}`}
     >
       {/* Top Row: Icon, Title, and Action/Toggle */}
-      <div className="flex items-start justify-between gap-2 relative z-10">
+      <div className="flex items-center justify-between gap-2 relative z-10 w-full">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           {onIconClick ? (
             <button
@@ -67,25 +67,25 @@ export const StandardTile: React.FC<StandardTileProps> = ({
                 onIconClick();
               }}
               title="Open Device Details"
-              className="shrink-0 flex items-center justify-center min-w-[36px] min-h-[36px] rounded-xl hover:bg-white/10 dark:hover:bg-white/10 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+              className="shrink-0 flex items-center justify-center min-w-[32px] min-h-[32px] rounded-xl hover:bg-white/10 dark:hover:bg-white/10 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
             >
               {icon}
             </button>
           ) : (
-            <div className="shrink-0 flex items-center justify-center min-w-[36px] min-h-[36px]">
+            <div className="shrink-0 flex items-center justify-center min-w-[32px] min-h-[32px]">
               {icon}
             </div>
           )}
           <div className="min-w-0 flex-1 flex flex-col justify-center">
             <h4
-              className={`text-sm font-bold truncate leading-snug ${
+              className={`text-xs sm:text-sm font-bold truncate leading-tight ${
                 darkMode ? 'text-white' : 'text-slate-900'
               }`}
             >
               {title}
             </h4>
             {subtitle && (
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-1 leading-normal font-medium flex items-center">
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5 leading-tight font-medium flex items-center">
                 {subtitle}
               </div>
             )}

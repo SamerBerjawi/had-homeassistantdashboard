@@ -29,7 +29,8 @@ import {
   VideoCamera,
   SquaresFour,
   Warning,
-  Gear
+  Gear,
+  CaretRight
 } from '@phosphor-icons/react';
 import { AreaData } from '../../types/rooms';
 import { ResolvedEntity } from '../../types';
@@ -803,27 +804,21 @@ export default function AreaDetailView({
                     isActive={isOn}
                     accentColor="#14b8a6"
                     activeBorderColor="border-teal-400/50"
-                    onIconClick={() => openEntityDetails(fan.entity_id)}
+                    onIconClick={() => handleToggleFan(fan)}
                     icon={<Fan size={22} weight="duotone" className={isOn ? 'text-teal-400 animate-spin' : 'text-slate-400'} />}
                     actionButton={
-                      <button
-                        type="button"
+                      <div
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleToggleFan(fan);
+                          openEntityDetails(fan.entity_id);
                         }}
-                        className={`min-w-[44px] min-h-[44px] rounded-2xl flex items-center justify-center transition-all cursor-pointer active:scale-90 ${
-                          isOn
-                            ? 'bg-teal-500 text-slate-950 font-bold'
-                            : darkMode
-                            ? 'bg-white/10 text-slate-300'
-                            : 'bg-slate-100 text-slate-700 border border-slate-200'
-                        }`}
+                        className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+                        title="Open Device Details"
                       >
-                        <Power size={18} weight="bold" />
-                      </button>
+                        <CaretRight size={15} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+                      </div>
                     }
-                    onClick={() => handleToggleFan(fan)}
+                    onClick={() => openEntityDetails(fan.entity_id)}
                     onContextMenu={(e) => {
                       e.preventDefault();
                       openEntityDetails(fan.entity_id);
@@ -962,12 +957,12 @@ export default function AreaDetailView({
                           e.stopPropagation();
                           handleToggleLock(lock);
                         }}
-                        className={`min-w-[44px] min-h-[44px] px-3.5 rounded-2xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 ${
+                        className={`h-9 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 shrink-0 ${
                           isLocked
                             ? darkMode
                               ? 'bg-white/10 text-slate-300'
                               : 'bg-slate-100 text-slate-700 border border-slate-200'
-                            : 'bg-amber-500 text-slate-950 font-black'
+                            : 'bg-amber-500 text-slate-950 font-black shadow-xs'
                         }`}
                       >
                         {isLocked ? 'Unlock' : 'Lock'}
@@ -1017,11 +1012,11 @@ export default function AreaDetailView({
                     onIconClick={() => openEntityDetails(cover.entity_id)}
                     icon={<AppWindow size={22} weight="duotone" className="text-purple-500 dark:text-purple-400" />}
                     actionButton={
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
                           onClick={() => handleCoverCommand(cover, 'open_cover')}
-                          className={`min-w-[44px] min-h-[44px] px-2.5 rounded-xl text-xs font-bold cursor-pointer active:scale-95 ${
+                          className={`h-8 px-2.5 rounded-lg text-xs font-bold cursor-pointer active:scale-95 ${
                             darkMode ? 'bg-white/10 hover:bg-white/20 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
                           }`}
                         >
@@ -1030,7 +1025,7 @@ export default function AreaDetailView({
                         <button
                           type="button"
                           onClick={() => handleCoverCommand(cover, 'close_cover')}
-                          className={`min-w-[44px] min-h-[44px] px-2.5 rounded-xl text-xs font-bold cursor-pointer active:scale-95 ${
+                          className={`h-8 px-2.5 rounded-lg text-xs font-bold cursor-pointer active:scale-95 ${
                             darkMode ? 'bg-white/10 hover:bg-white/20 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
                           }`}
                         >
@@ -1143,8 +1138,8 @@ export default function AreaDetailView({
                     activeBorderColor="border-teal-400/50"
                     onIconClick={() => openEntityDetails(vac.entity_id)}
                     icon={<Broom size={22} weight={caps.isCleaning ? 'fill' : 'duotone'} className={caps.isCleaning ? 'text-teal-400' : 'text-slate-400'} />}
-                    actionButton={
-                      <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${
+                    badge={
+                      <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${
                         caps.isCleaning
                           ? 'bg-teal-500/20 text-teal-700 dark:text-teal-300'
                           : darkMode
