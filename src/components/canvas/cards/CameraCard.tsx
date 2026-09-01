@@ -6,8 +6,9 @@
 import React from 'react';
 import { Camera, Broadcast } from '@phosphor-icons/react';
 import { CardConfig } from '../../../types/canvas';
-import { HAEntity } from '../../../types';
+import { HAEntity, ResolvedEntity } from '../../../types';
 import CameraNoSignalPlaceholder from '../../ui/CameraNoSignalPlaceholder';
+import HaWebRtcPlayer from '../../camera/HaWebRtcPlayer';
 
 interface CameraCardProps {
   config: CardConfig;
@@ -28,22 +29,32 @@ export default function CameraCard({
       onClick={onOpenModal}
       className="relative w-full h-full flex flex-col justify-between overflow-hidden rounded-2xl cursor-pointer group bg-black"
     >
-      {/* Live Stream Snapshot Background or No Signal Placeholder */}
-      {snapshotUrl ? (
+      {/* Live Stream or Snapshot Background */}
+      {entity ? (
+        <div className="absolute inset-0 w-full h-full">
+          <HaWebRtcPlayer
+            camera={entity as ResolvedEntity}
+            showControls={false}
+            autoPlay={true}
+            muted={true}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
+        </div>
+      ) : snapshotUrl ? (
         <>
           <img
             src={snapshotUrl}
             alt={title}
             className="absolute inset-0 w-full h-full object-cover brightness-[0.75] group-hover:scale-105 transition-transform duration-500"
           />
-          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
         </>
       ) : (
         <CameraNoSignalPlaceholder title={title} compact={true} className="absolute inset-0 w-full h-full" />
       )}
 
       {/* Top row: Status Tag & Live indicator */}
-      <div className="relative z-10 flex items-center justify-between p-3">
+      <div className="relative z-10 flex items-center justify-between p-3 pointer-events-none">
         <div className="flex items-center gap-2 min-w-0">
           <Camera
             size={18}
@@ -53,14 +64,14 @@ export default function CameraCard({
           <span className="text-xs font-bold text-white drop-shadow-md truncate">{title}</span>
         </div>
 
-        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/80 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider shrink-0">
+        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/80 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider shrink-0 shadow-md">
           <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
           <span>Live 1080p</span>
         </div>
       </div>
 
       {/* Bottom row: Motion Status badge */}
-      <div className="relative z-10 flex items-center justify-between text-[11px] text-slate-200 p-3 pt-1">
+      <div className="relative z-10 flex items-center justify-between text-[11px] text-slate-200 p-3 pt-1 pointer-events-none">
         <span className="flex items-center gap-1 font-semibold text-emerald-300">
           <Broadcast size={14} weight="duotone" className="text-emerald-400" /> Motion Cleared
         </span>

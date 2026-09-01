@@ -56,6 +56,7 @@ import { detectLightCapabilities } from '../../services/lightClassification';
 import { detectLockCapabilities } from '../../services/lockClassification';
 import { detectVacuumCapabilities } from '../../services/vacuumClassification';
 import { detectSensorCapabilities } from '../../services/sensorClassification';
+import HaWebRtcPlayer from '../camera/HaWebRtcPlayer';
 
 interface AreaDetailViewProps {
   area: AreaData;
@@ -1206,8 +1207,17 @@ export default function AreaDetailView({
                     headerAction={<span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-500/20 text-blue-700 dark:text-blue-300">Live</span>}
                     onIconClick={() => openEntityDetails(cam.entity_id)}
                   >
-                    <div className="w-full h-24 rounded-2xl bg-black/10 dark:bg-black/40 border border-slate-200 dark:border-white/10 flex items-center justify-center text-xs font-mono text-slate-600 dark:text-slate-400">
-                      Tap icon to open live stream
+                    <div 
+                      onClick={() => openEntityDetails(cam.entity_id)}
+                      className="w-full h-32 rounded-2xl overflow-hidden bg-black border border-slate-200 dark:border-white/10 relative group cursor-pointer"
+                    >
+                      <HaWebRtcPlayer
+                        camera={cam}
+                        darkMode={darkMode}
+                        showControls={false}
+                        autoPlay={true}
+                        muted={true}
+                      />
                     </div>
                   </WideTile>
                 </GridTile>

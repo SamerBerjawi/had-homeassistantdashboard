@@ -1,7 +1,8 @@
 # ==========================================
 # 1. Builder Stage
+# Builds on the native host runner architecture (e.g., amd64) to avoid slow QEMU emulation
 # ==========================================
-FROM node:22-alpine AS builder
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
 WORKDIR /app
 

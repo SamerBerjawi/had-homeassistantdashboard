@@ -6,12 +6,14 @@
 import React, { useState } from 'react';
 import { Camera, Microphone, MicrophoneSlash, DownloadSimple, Broadcast } from '@phosphor-icons/react';
 import CardModalContainer from './CardModalContainer';
+import HaWebRtcPlayer from '../../camera/HaWebRtcPlayer';
 import CameraNoSignalPlaceholder from '../../ui/CameraNoSignalPlaceholder';
 
 interface CameraDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   cameraName?: string;
+  entityId?: string;
   snapshotUrl?: string | null;
 }
 
@@ -19,6 +21,7 @@ export default function CameraDetailModal({
   isOpen,
   onClose,
   cameraName = 'Surveillance Camera',
+  entityId = 'camera.surveillance',
   snapshotUrl = null
 }: CameraDetailModalProps) {
   const [isMicActive, setIsMicActive] = useState(false);
@@ -41,7 +44,13 @@ export default function CameraDetailModal({
       <div className="space-y-5">
         {/* Fullscreen Camera Stream Frame */}
         <div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-black border border-white/15 shadow-2xl">
-          {snapshotUrl ? (
+          {entityId ? (
+            <HaWebRtcPlayer
+              camera={{ entity_id: entityId, name: cameraName }}
+              isIntercomActive={isMicActive}
+              showControls={true}
+            />
+          ) : snapshotUrl ? (
             <img
               src={snapshotUrl}
               alt={cameraName}
@@ -55,22 +64,6 @@ export default function CameraDetailModal({
           {isSnapshotting && (
             <div className="absolute inset-0 bg-white animate-ping opacity-75 pointer-events-none" />
           )}
-
-          {/* Stream Overlay HUD */}
-          <div className="absolute top-4 left-4 flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full bg-rose-500 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md">
-              <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-              LIVE WebRTC
-            </span>
-            <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-mono border border-white/10">
-              1080p • 4.2 Mbps
-            </span>
-          </div>
-
-          {/* Timestamp in HUD */}
-          <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-slate-200 text-[10px] font-mono border border-white/10">
-            {new Date().toLocaleTimeString()}
-          </div>
         </div>
 
         {/* Action Controls Toolbar */}
