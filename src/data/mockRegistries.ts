@@ -3660,6 +3660,136 @@ export const MOCK_STATES: Record<string, HAState> = {
     }
   },
 
+  // ---------------- Ookla Speedtest Diagnostics & Telemetry ----------------
+  'sensor.ookla_speedtest_download': {
+    entity_id: 'sensor.ookla_speedtest_download',
+    state: '842.50',
+    attributes: {
+      friendly_name: 'Speedtest Download',
+      unit_of_measurement: 'Mbps',
+      device_class: 'data_rate',
+      icon: 'mdi:download-network'
+    }
+  },
+  'sensor.ookla_speedtest_upload': {
+    entity_id: 'sensor.ookla_speedtest_upload',
+    state: '486.20',
+    attributes: {
+      friendly_name: 'Speedtest Upload',
+      unit_of_measurement: 'Mbps',
+      device_class: 'data_rate',
+      icon: 'mdi:upload-network'
+    }
+  },
+  'sensor.ookla_speedtest_download_percent': {
+    entity_id: 'sensor.ookla_speedtest_download_percent',
+    state: '94.8',
+    attributes: {
+      friendly_name: 'Download Plan Compliance',
+      unit_of_measurement: '%'
+    }
+  },
+  'sensor.ookla_speedtest_upload_percent': {
+    entity_id: 'sensor.ookla_speedtest_upload_percent',
+    state: '97.2',
+    attributes: {
+      friendly_name: 'Upload Plan Compliance',
+      unit_of_measurement: '%'
+    }
+  },
+  'sensor.ookla_speedtest_ping': {
+    entity_id: 'sensor.ookla_speedtest_ping',
+    state: '8.4',
+    attributes: {
+      friendly_name: 'Speedtest Ping',
+      unit_of_measurement: 'ms',
+      icon: 'mdi:timer-outline'
+    }
+  },
+  'sensor.ookla_speedtest_ping_min': {
+    entity_id: 'sensor.ookla_speedtest_ping_min',
+    state: '6.1',
+    attributes: {
+      friendly_name: 'Speedtest Ping Min',
+      unit_of_measurement: 'ms'
+    }
+  },
+  'sensor.ookla_speedtest_ping_max': {
+    entity_id: 'sensor.ookla_speedtest_ping_max',
+    state: '14.2',
+    attributes: {
+      friendly_name: 'Speedtest Ping Max',
+      unit_of_measurement: 'ms'
+    }
+  },
+  'sensor.ookla_speedtest_jitter': {
+    entity_id: 'sensor.ookla_speedtest_jitter',
+    state: '1.8',
+    attributes: {
+      friendly_name: 'Speedtest Jitter',
+      unit_of_measurement: 'ms'
+    }
+  },
+  'sensor.ookla_speedtest_jitter_during_download': {
+    entity_id: 'sensor.ookla_speedtest_jitter_during_download',
+    state: '3.2',
+    attributes: {
+      friendly_name: 'Speedtest Download Jitter',
+      unit_of_measurement: 'ms'
+    }
+  },
+  'sensor.ookla_speedtest_jitter_during_upload': {
+    entity_id: 'sensor.ookla_speedtest_jitter_during_upload',
+    state: '4.1',
+    attributes: {
+      friendly_name: 'Speedtest Upload Jitter',
+      unit_of_measurement: 'ms'
+    }
+  },
+  'sensor.ookla_speedtest_bufferbloat_grade': {
+    entity_id: 'sensor.ookla_speedtest_bufferbloat_grade',
+    state: 'A',
+    attributes: {
+      friendly_name: 'Bufferbloat Grade',
+      rating: 'Excellent (Low latency under load)'
+    }
+  },
+  'sensor.ookla_speedtest_isp': {
+    entity_id: 'sensor.ookla_speedtest_isp',
+    state: 'Ogero Telecom / Fiber One',
+    attributes: {
+      friendly_name: 'Internet Service Provider'
+    }
+  },
+  'sensor.ookla_speedtest_server': {
+    entity_id: 'sensor.ookla_speedtest_server',
+    state: 'Beirut - IDM Network (ID: 4122)',
+    attributes: {
+      friendly_name: 'Speedtest Server'
+    }
+  },
+  'sensor.ookla_speedtest_last_test': {
+    entity_id: 'sensor.ookla_speedtest_last_test',
+    state: '14 minutes ago',
+    attributes: {
+      friendly_name: 'Last Speed Test'
+    }
+  },
+  'sensor.ookla_speedtest_result_url': {
+    entity_id: 'sensor.ookla_speedtest_result_url',
+    state: 'https://www.speedtest.net/result/16281920194',
+    attributes: {
+      friendly_name: 'Speedtest Result URL'
+    }
+  },
+  'button.ookla_speedtest_start': {
+    entity_id: 'button.ookla_speedtest_start',
+    state: '2026-09-02T08:30:00Z',
+    attributes: {
+      friendly_name: 'Start Ookla Speed Test'
+    }
+  },
+
   // ---------------- Connected Network Devices (Device Trackers) ----------------
   'device_tracker.samers_macbook_pro_m3_max': {
     entity_id: 'device_tracker.samers_macbook_pro_m3_max',

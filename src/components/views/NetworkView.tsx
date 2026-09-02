@@ -9,16 +9,17 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Globe, ShieldCheck } from '@phosphor-icons/react';
+import { Globe, ShieldCheck, Speedometer } from '@phosphor-icons/react';
 import { TpLinkRouterTab } from './network/TpLinkRouterTab';
 import { AdGuardTab } from './network/AdGuardTab';
+import { SpeedTestTab } from './network/SpeedTestTab';
 import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 
 interface NetworkViewProps {
   darkMode?: boolean;
 }
 
-type NetworkSubTab = 'tplink_router' | 'adguard_home';
+type NetworkSubTab = 'tplink_router' | 'adguard_home' | 'speed_test';
 
 export default function NetworkView({ darkMode = true }: NetworkViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<NetworkSubTab>('tplink_router');
@@ -33,6 +34,11 @@ export default function NetworkView({ darkMode = true }: NetworkViewProps) {
       id: 'adguard_home',
       label: 'AdGuard Home',
       icon: ShieldCheck
+    },
+    {
+      id: 'speed_test',
+      label: 'Speed Test',
+      icon: Speedometer
     }
   ];
 
@@ -55,7 +61,7 @@ export default function NetworkView({ darkMode = true }: NetworkViewProps) {
 
       {/* Animated Sub-View Content */}
       <AnimatePresence mode="wait">
-        {activeSubTab === 'tplink_router' ? (
+        {activeSubTab === 'tplink_router' && (
           <motion.div
             key="tplink_router"
             initial={{ opacity: 0, y: 8 }}
@@ -66,7 +72,9 @@ export default function NetworkView({ darkMode = true }: NetworkViewProps) {
           >
             <TpLinkRouterTab darkMode={darkMode} />
           </motion.div>
-        ) : (
+        )}
+
+        {activeSubTab === 'adguard_home' && (
           <motion.div
             key="adguard_home"
             initial={{ opacity: 0, y: 8 }}
@@ -76,6 +84,19 @@ export default function NetworkView({ darkMode = true }: NetworkViewProps) {
             className="w-full"
           >
             <AdGuardTab darkMode={darkMode} />
+          </motion.div>
+        )}
+
+        {activeSubTab === 'speed_test' && (
+          <motion.div
+            key="speed_test"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="w-full"
+          >
+            <SpeedTestTab darkMode={darkMode} />
           </motion.div>
         )}
       </AnimatePresence>

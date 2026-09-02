@@ -125,3 +125,42 @@ export interface AdGuardMetrics {
   avgProcessingSpeedUnit: string;    // from unit_of_measurement or 'ms'
   safeSearchesEnforcedCount: number; // sensor.*safe_searches_enforced
 }
+
+export interface SpeedTestTimeseriesPoint {
+  date: Date;
+  downloadMbps: number;
+  uploadMbps: number;
+  pingMs: number;
+  jitterMs: number;
+}
+
+export interface SpeedTestMetrics {
+  // Primary Throughput (Mbps)
+  downloadSpeedMbps: number;              // sensor.ookla_speedtest_download
+  uploadSpeedMbps: number;                // sensor.ookla_speedtest_upload
+
+  // Plan Compliance (%)
+  downloadPlanCompliancePercent: number;  // sensor.ookla_speedtest_download_percent
+  uploadPlanCompliancePercent: number;    // sensor.ookla_speedtest_upload_percent
+
+  // Latency & Ping (ms)
+  pingMs: number;                         // sensor.ookla_speedtest_ping
+  pingMinMs: number;                      // sensor.ookla_speedtest_ping_min
+  pingMaxMs: number;                      // sensor.ookla_speedtest_ping_max
+
+  // Jitter (ms)
+  jitterMs: number;                       // sensor.ookla_speedtest_jitter
+  downloadJitterMs: number;               // sensor.ookla_speedtest_jitter_during_download
+  uploadJitterMs: number;                 // sensor.ookla_speedtest_jitter_during_upload
+
+  // Diagnostics & Metadata
+  bufferbloatGrade: string;               // sensor.ookla_speedtest_bufferbloat_grade (A-F)
+  isp: string;                            // sensor.ookla_speedtest_isp
+  server: string;                         // sensor.ookla_speedtest_server
+  lastTest: string;                       // sensor.ookla_speedtest_last_test
+  resultUrl: string;                      // sensor.ookla_speedtest_result_url
+
+  // Control
+  startButtonEntityId?: string;           // button.ookla_speedtest_start / button.speedtest_start
+}
+
