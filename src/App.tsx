@@ -26,6 +26,11 @@ import { PAGE_THEMES } from './config/pageThemes';
 import DynamicPhosphorIcon from './components/ui/DynamicPhosphorIcon';
 import { useRoomsData } from './hooks/useRoomsData';
 import { haWebSocketService } from './services/haWebSocket';
+import { alertService } from './services/alertService';
+import { useAlertStore } from './store/useAlertStore';
+import ToastContainer from './components/alerts/ToastContainer';
+import AlertDrawer from './components/alerts/AlertDrawer';
+import CriticalAlertModal from './components/alerts/CriticalAlertModal';
 
 const SETTINGS_SECTIONS_META: Record<string, { title: string; subtitle: string; icon: React.ComponentType<any>; color: string }> = {
   devices_rooms: {
@@ -270,6 +275,7 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState<boolean>(false);
   const [isWeatherDrawerOpen, setIsWeatherDrawerOpen] = useState<boolean>(false);
+  const { isDrawerOpen: isAlertDrawerOpen, setDrawerOpen: setAlertDrawerOpen } = useAlertStore();
 
   // Authentication Context
   const { authState, enterDemoMode, isInitializing: isAuthInitializing } = useAuth();
@@ -293,6 +299,7 @@ export default function App() {
 
   useEffect(() => {
     initAutoLayout();
+    alertService.initialize();
   }, [initAutoLayout]);
 
   // Entity & Room State
@@ -475,7 +482,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         darkMode={darkMode}
         toggleDarkMode={handleToggleDarkMode}
-        onOpenNotifications={() => setIsNotificationDrawerOpen(true)}
+        onOpenNotifications={() => setAlertDrawerOpen(true)}
       />
 
 
@@ -579,7 +586,7 @@ export default function App() {
                 {/* Notification Center Trigger */}
                 <NotificationBell
                   darkMode={darkMode}
-                  onClick={() => setIsNotificationDrawerOpen(true)}
+                  onClick={() => setAlertDrawerOpen(true)}
                 />
               </div>
             </div>
@@ -681,6 +688,12 @@ export default function App() {
         </main>
       </div>
 
+      {/* Global Event & Alert Center Drawer */}
+      <AlertDrawer
+        isOpen={isAlertDrawerOpen}
+        onClose={() => setAlertDrawerOpen(false)}
+      />
+
       {/* Global Notification Drawer */}
       <NotificationDrawer
         isOpen={isNotificationDrawerOpen}
@@ -693,6 +706,17 @@ export default function App() {
         isOpen={isWeatherDrawerOpen}
         onClose={() => setIsWeatherDrawerOpen(false)}
         darkMode={darkMode}
+      />
+
+      {/* Real-Time Glassmorphic Toast Alerts */}
+      <ToastContainer />
+
+      {/* High-Visibility Emergency Hazard Critical Modal */}
+      <CriticalAlertModal
+        onNavigateArea={(areaId) => {
+          setActiveTab('rooms');
+          setSelectedAreaId(areaId);
+        }}
       />
 
       {/* Global Notifications */}

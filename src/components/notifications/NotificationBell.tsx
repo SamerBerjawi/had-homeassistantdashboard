@@ -9,6 +9,8 @@ import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { useShallow } from 'zustand/react/shallow';
 import { extractHANotifications } from '../../services/notificationsService';
 
+import { useAlertStore } from '../../store/useAlertStore';
+
 interface NotificationBellProps {
   darkMode?: boolean;
   onClick: () => void;
@@ -48,6 +50,8 @@ export default function NotificationBell({
     clearSkippedUpdate: s.clearSkippedUpdate
   })));
 
+  const alertStoreAlerts = useAlertStore(s => s.alerts);
+
   const notifications = useMemo(() => {
     return extractHANotifications({
       domainGroups,
@@ -64,10 +68,11 @@ export default function NotificationBell({
     });
   }, [domainGroups, states, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate]);
 
-  const totalCount = notifications.length;
+  // Combined count from HA extract and real-time alert store
+  const totalCount = Math.max(notifications.length, alertStoreAlerts.length);
 
-  const hasCritical = notifications.some(n => n.severity === 'critical');
-  const hasWarning = notifications.some(n => n.severity === 'warning' || n.severity === 'error');
+  const hasCritical = notifications.some(n => n.severity === 'critical') || alertStoreAlerts.some(a => a.severity === 'critical');
+  const hasWarning = notifications.some(n => n.severity === 'warning' || n.severity === 'error') || alertStoreAlerts.some(a => a.severity === 'warning');
   const hasUpdates = notifications.some(n => n.category === 'update' && !n.skippedVersion);
   const updatesCount = notifications.filter(n => n.category === 'update' && !n.skippedVersion).length;
 

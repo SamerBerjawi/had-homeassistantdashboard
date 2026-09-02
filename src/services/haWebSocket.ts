@@ -20,6 +20,7 @@ import {
 } from '../types';
 import { MOCK_AREAS, MOCK_DEVICES, MOCK_ENTITY_REGISTRY, MOCK_FLOORS, MOCK_STATES } from '../data/mockRegistries';
 import { getStoredAuthConfig, isTokenExpired } from './authStorage';
+import { alertService } from './alertService';
 
 export type { HAConnectionStatus };
 
@@ -486,10 +487,16 @@ class HAWebSocketClient {
       const data = msg.event?.data || msg.data;
       const entityId = data?.entity_id || msg.event?.entity_id;
       const newState = data?.new_state || data?.state || msg.event?.new_state;
+      const oldState = data?.old_state;
 
       if (entityId && newState) {
         this.callbacks?.onStateChanged(entityId, newState);
         this.callbacks?.onLogMessage('state_changed', `State updated: ${entityId} -> ${newState.state}`, newState.attributes);
+        try {
+          alertService.evaluateStateChange(entityId, newState, oldState);
+        } catch (alertErr) {
+          console.error('[AlertService] Error evaluating state change:', alertErr);
+        }
       }
     }
   }
@@ -560,6 +567,9 @@ class HAWebSocketClient {
           Array.isArray(nativeNotifications) ? nativeNotifications : [],
           Array.isArray(repairsRes?.issues) ? repairsRes.issues : []
         );
+        try {
+          alertService.syncNativePersistentNotifications(Array.isArray(nativeNotifications) ? nativeNotifications : []);
+        } catch {}
       }
     } catch {
       // ignore
@@ -598,6 +608,9 @@ class HAWebSocketClient {
         nativeNotifications: Array.isArray(nativeNotifications) ? nativeNotifications : [],
         nativeRepairs
       });
+      try {
+        alertService.syncNativePersistentNotifications(Array.isArray(nativeNotifications) ? nativeNotifications : []);
+      } catch {}
 
       // Subscribe to live events
       this.sendRequest('subscribe_events', { event_type: 'state_changed' });
