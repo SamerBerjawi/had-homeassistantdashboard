@@ -47,6 +47,7 @@ export default function CameraDetailModal({
           {entityId ? (
             <HaWebRtcPlayer
               camera={{ entity_id: entityId, name: cameraName }}
+              mode="live"
               isIntercomActive={isMicActive}
               showControls={true}
             />

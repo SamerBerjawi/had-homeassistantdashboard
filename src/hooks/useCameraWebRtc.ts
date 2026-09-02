@@ -16,6 +16,7 @@ export interface WebRtcStreamState {
   stream: MediaStream | null;
   status: 'idle' | 'connecting' | 'connected' | 'failed' | 'fallback';
   error: string | null;
+  isCodecMismatch?: boolean;
   reconnect: () => void;
 }
 
@@ -23,8 +24,9 @@ export interface UseCameraWebRtcOptions {
   enabled?: boolean;
   timeoutMs?: number;
   enableIntercom?: boolean;
+  codecMode?: 'auto' | 'h264' | 'copy';
   onConnected?: () => void;
-  onFallback?: (reason: string) => void;
+  onFallback?: (reason: string, isCodecIssue?: boolean) => void;
   onError?: (err: string) => void;
 }
 
@@ -38,8 +40,9 @@ export function useCameraWebRtc(
 
   const {
     enabled = true,
-    timeoutMs = 5000,
+    timeoutMs = 4000,
     enableIntercom = false,
+    codecMode = 'auto',
     onConnected,
     onFallback,
     onError
@@ -48,6 +51,7 @@ export function useCameraWebRtc(
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [status, setStatus] = useState<'idle' | 'connecting' | 'connected' | 'failed' | 'fallback'>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [isCodecMismatch, setIsCodecMismatch] = useState<boolean>(false);
   const [retryKey, setRetryKey] = useState<number>(0);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -88,6 +92,7 @@ export function useCameraWebRtc(
   }, []);
 
   const reconnect = useCallback(() => {
+    setIsCodecMismatch(false);
     setRetryKey((prev) => prev + 1);
   }, []);
 
@@ -96,6 +101,7 @@ export function useCameraWebRtc(
       cleanup();
       setStatus('idle');
       setError(null);
+      setIsCodecMismatch(false);
       return;
     }
 
@@ -104,7 +110,7 @@ export function useCameraWebRtc(
       cleanup();
       setStatus('fallback');
       setError('Demo Mode / HA WebSocket disconnected');
-      onFallback?.('Demo Mode / HA WebSocket disconnected');
+      onFallback?.('Demo Mode / HA WebSocket disconnected', false);
       return;
     }
 
@@ -116,17 +122,35 @@ export function useCameraWebRtc(
     cleanup();
     setStatus('connecting');
     setError(null);
+    setIsCodecMismatch(false);
 
-    // Timeout detection (5s default)
+    // Timeout detection (4s default budget)
     timeoutTimerRef.current = setTimeout(() => {
       if (!isStreamReady && !isAborted) {
         const timeoutMsg = `WebRTC signaling timed out after ${timeoutMs / 1000}s`;
         console.warn(`[useCameraWebRtc] ${timeoutMsg} for ${entityId}`);
         setStatus('fallback');
         setError(timeoutMsg);
-        onFallback?.(timeoutMsg);
+        onFallback?.(timeoutMsg, false);
       }
     }, timeoutMs);
+
+    const checkCodecIncompatibility = (reasonStr: string, sdpText?: string): boolean => {
+      const lowerReason = (reasonStr || '').toLowerCase();
+      const lowerSdp = (sdpText || '').toLowerCase();
+      const isMismatch =
+        lowerReason.includes('codec') ||
+        lowerReason.includes('hevc') ||
+        lowerReason.includes('h265') ||
+        lowerReason.includes('h.265') ||
+        lowerReason.includes('unsupported payload') ||
+        (lowerSdp.includes('h265') && !lowerSdp.includes('h264'));
+
+      if (isMismatch) {
+        setIsCodecMismatch(true);
+      }
+      return isMismatch;
+    };
 
     const startWebRtc = async () => {
       try {
@@ -193,10 +217,11 @@ export function useCameraWebRtc(
             onConnected?.();
           } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
             console.warn(`[useCameraWebRtc] PC connectionState: ${pc.connectionState}`);
-            setStatus('fallback');
             const failMsg = `WebRTC peer connection ${pc.connectionState}`;
+            const isCodec = checkCodecIncompatibility(failMsg);
+            setStatus('fallback');
             setError(failMsg);
-            onFallback?.(failMsg);
+            onFallback?.(failMsg, isCodec);
           }
         };
 
@@ -220,9 +245,13 @@ export function useCameraWebRtc(
 
         // If direct go2rtc stream entity (go2rtc.<stream_name>)
         const isGo2RtcDirect = entityId.startsWith('go2rtc.');
-        const go2rtcStreamName = isGo2RtcDirect 
+        let go2rtcStreamName = isGo2RtcDirect 
           ? entityId.replace(/^go2rtc\./, '') 
           : entityId.replace(/^camera\./, '');
+
+        if (codecMode === 'h264' && !go2rtcStreamName.includes('#video=h264')) {
+          go2rtcStreamName = `${go2rtcStreamName}#video=h264`;
+        }
 
         if (isGo2RtcDirect) {
           const go2rtcCleanup = await negotiateGo2RtcWebRtcSession(
@@ -241,9 +270,11 @@ export function useCameraWebRtc(
             },
             (err) => {
               console.warn(`[useCameraWebRtc] go2rtc direct negotiation failed for ${entityId}:`, err);
+              const errMsg = err?.message || 'go2rtc WebRTC negotiation failed';
+              const isCodec = checkCodecIncompatibility(errMsg);
               setStatus('fallback');
-              setError(err?.message || 'go2rtc WebRTC negotiation failed');
-              onFallback?.(err?.message || 'go2rtc WebRTC negotiation failed');
+              setError(errMsg);
+              onFallback?.(errMsg, isCodec);
             }
           );
           if (isAborted) {
@@ -283,24 +314,17 @@ export function useCameraWebRtc(
         const offerSdp = pc.localDescription?.sdp || offer.sdp;
 
         // Try secondary go2rtc negotiation if HA signaling reports error.
-        // IMPORTANT: Create a fresh RTCPeerConnection — the original PC is in a
-        // stale signaling state (have-local-offer or worse) from the failed HA
-        // flow, so reusing it for a new createOffer/setLocalDescription will
-        // throw InvalidStateError and silently kill the fallback.
         const tryGo2RtcFallback = async (reason: string) => {
           if (isAborted) return;
           console.info(`[useCameraWebRtc] HA WebRTC failed (${reason}), creating fresh PC for go2rtc fallback for ${go2rtcStreamName}...`);
           try {
-            // Close the stale HA-path PeerConnection
             if (pcRef.current) {
               try { pcRef.current.close(); } catch { /* ignore */ }
             }
 
-            // Create a fresh PeerConnection with the same ICE config
             const freshPc = new RTCPeerConnection(rtcConfig);
             pcRef.current = freshPc;
 
-            // Re-add recvonly transceivers on the fresh PC
             try {
               freshPc.addTransceiver('video', { direction: 'recvonly' });
               freshPc.addTransceiver('audio', { direction: 'recvonly' });
@@ -308,7 +332,6 @@ export function useCameraWebRtc(
               console.debug('[useCameraWebRtc] Fresh PC add transceiver warning:', e);
             }
 
-            // Wire up track and connection state handlers on the fresh PC
             freshPc.ontrack = (event) => {
               if (isAborted) return;
               isStreamReady = true;
@@ -339,9 +362,11 @@ export function useCameraWebRtc(
                 onConnected?.();
               } else if (freshPc.connectionState === 'failed' || freshPc.connectionState === 'disconnected') {
                 console.warn(`[useCameraWebRtc] go2rtc fallback PC connectionState: ${freshPc.connectionState}`);
+                const failMsg = `WebRTC peer connection ${freshPc.connectionState}`;
+                const isCodec = checkCodecIncompatibility(failMsg);
                 setStatus('fallback');
-                setError(`WebRTC peer connection ${freshPc.connectionState}`);
-                onFallback?.(`WebRTC peer connection ${freshPc.connectionState}`);
+                setError(failMsg);
+                onFallback?.(failMsg, isCodec);
               }
             };
 
@@ -361,9 +386,11 @@ export function useCameraWebRtc(
               },
               (fallbackErr) => {
                 console.warn(`[useCameraWebRtc] Secondary go2rtc fallback also failed:`, fallbackErr);
+                const errMsg = fallbackErr?.message || reason;
+                const isCodec = checkCodecIncompatibility(errMsg);
                 setStatus('fallback');
-                setError(fallbackErr?.message || reason);
-                onFallback?.(fallbackErr?.message || reason);
+                setError(errMsg);
+                onFallback?.(errMsg, isCodec);
               }
             );
             if (!isAborted) {
@@ -371,9 +398,10 @@ export function useCameraWebRtc(
             }
           } catch (e: any) {
             console.warn('[useCameraWebRtc] go2rtc fallback PC creation failed:', e);
+            const isCodec = checkCodecIncompatibility(reason);
             setStatus('fallback');
             setError(reason);
-            onFallback?.(reason);
+            onFallback?.(reason, isCodec);
           }
         };
 
@@ -410,6 +438,7 @@ export function useCameraWebRtc(
 
           if (rawAnswer && pc.signalingState !== 'stable' && pc.signalingState !== 'closed') {
             try {
+              checkCodecIncompatibility('', rawAnswer);
               await pc.setRemoteDescription(new RTCSessionDescription({
                 type: 'answer',
                 sdp: rawAnswer
@@ -417,6 +446,10 @@ export function useCameraWebRtc(
               isStreamReady = true;
             } catch (e: any) {
               console.error('[useCameraWebRtc] Set remote description failed:', e);
+              const isCodec = checkCodecIncompatibility(e?.message || '');
+              if (isCodec) {
+                setIsCodecMismatch(true);
+              }
               await tryGo2RtcFallback(e?.message || 'Remote description error');
             }
           }
@@ -434,6 +467,7 @@ export function useCameraWebRtc(
           if (payload.type === 'error' || payload.error) {
             console.warn('[useCameraWebRtc] Signaling error received from HA:', payload);
             const errMsg = payload.message || payload.error?.message || payload.code || 'WebRTC signaling failed';
+            checkCodecIncompatibility(errMsg);
             await tryGo2RtcFallback(errMsg);
           }
         };
@@ -458,10 +492,12 @@ export function useCameraWebRtc(
       } catch (err: any) {
         if (!isAborted) {
           console.warn('[useCameraWebRtc] WebRTC negotiation error, switching to fallback:', err);
+          const errMsg = err?.message || 'WebRTC setup error';
+          const isCodec = checkCodecIncompatibility(errMsg);
           setStatus('fallback');
-          setError(err?.message || 'WebRTC setup error');
-          onFallback?.(err?.message || 'WebRTC setup error');
-          onError?.(err?.message || 'WebRTC setup error');
+          setError(errMsg);
+          onFallback?.(errMsg, isCodec);
+          onError?.(errMsg);
         }
       }
     };
@@ -472,12 +508,13 @@ export function useCameraWebRtc(
       isAborted = true;
       cleanup();
     };
-  }, [entityId, enabled, enableIntercom, timeoutMs, retryKey, cleanup, onConnected, onFallback, onError]);
+  }, [entityId, enabled, enableIntercom, codecMode, timeoutMs, retryKey, cleanup, onConnected, onFallback, onError]);
 
   return {
     stream,
     status,
     error,
+    isCodecMismatch,
     reconnect
   };
 }

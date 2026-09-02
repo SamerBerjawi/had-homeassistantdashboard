@@ -204,8 +204,9 @@ export default function CameraFeedSection({
                 <div className="relative w-full aspect-video bg-black overflow-hidden">
                   <HaWebRtcPlayer
                     camera={camera}
+                    mode="preview"
                     darkMode={darkMode}
-                    showControls={true}
+                    showControls={false}
                     muted={true}
                   />
 

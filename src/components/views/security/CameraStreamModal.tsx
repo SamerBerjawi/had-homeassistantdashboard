@@ -33,6 +33,7 @@ import {
   captureAndDownloadSnapshot, 
   PtzDirection 
 } from '../../../services/cameraIntegrationService';
+import { getCameraCodecPreference, setCameraCodecPreference, CameraCodecMode } from '../../../services/haCameraService';
 
 interface CameraStreamModalProps {
   isOpen: boolean;
@@ -56,7 +57,21 @@ export default function CameraStreamModal({
   const [activePanDirection, setActivePanDirection] = useState<string | null>(null);
   const [isSirenActive, setIsSirenActive] = useState(false);
   const [ptzStatusMsg, setPtzStatusMsg] = useState<string | null>(null);
+  const [codecMode, setCodecMode] = useState<CameraCodecMode>(() => {
+    return camera ? getCameraCodecPreference(camera.entity_id) : 'auto';
+  });
   const modalContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleCodecChange = (mode: CameraCodecMode) => {
+    if (!camera) return;
+    setCodecMode(mode);
+    setCameraCodecPreference(camera.entity_id, mode);
+    addToast?.({
+      type: 'info',
+      title: 'Stream Codec Preference Saved',
+      message: mode === 'h264' ? 'Forcing H.264 transcode for WebRTC compatibility' : mode === 'copy' ? 'Passthrough copy mode selected' : 'Auto codec detection active'
+    });
+  };
 
   if (!isOpen || !camera) return null;
 
@@ -160,21 +175,41 @@ export default function CameraStreamModal({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className={`p-2 rounded-2xl border transition-all cursor-pointer ${
-              darkMode ? 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-300' : 'bg-slate-900/[0.04] border-slate-900/[0.08] hover:bg-slate-900/[0.08] text-slate-700'
-            }`}
-          >
-            <X size={18} weight="bold" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Codec Mode Selector for RTSP cameras */}
+            {(camera.attributes?.is_rtsp_stream || camera.attributes?.stream_source === 'go2rtc' || camera.entity_id?.startsWith('go2rtc.')) && (
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900/40 border border-amber-500/30 text-[10px] font-bold">
+                <span className="text-amber-400 px-1 hidden sm:inline">Codec:</span>
+                <select
+                  value={codecMode}
+                  onChange={(e) => handleCodecChange(e.target.value as CameraCodecMode)}
+                  className="bg-transparent text-white font-mono text-[10px] outline-none cursor-pointer"
+                >
+                  <option value="auto" className="bg-slate-900 text-white">Auto</option>
+                  <option value="h264" className="bg-slate-900 text-amber-300">Force H.264 Transcode</option>
+                  <option value="copy" className="bg-slate-900 text-white">Copy (Passthrough)</option>
+                </select>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={onClose}
+              className={`p-2 rounded-2xl border transition-all cursor-pointer ${
+                darkMode ? 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-300' : 'bg-slate-900/[0.04] border-slate-900/[0.08] hover:bg-slate-900/[0.08] text-slate-700'
+              }`}
+            >
+              <X size={18} weight="bold" />
+            </button>
+          </div>
         </div>
 
         {/* Video Canvas Container powered by HaWebRtcPlayer */}
         <div className="relative w-full aspect-video bg-black overflow-hidden flex items-center justify-center">
           <HaWebRtcPlayer
             camera={camera}
+            mode="live"
+            codecMode={codecMode}
             darkMode={darkMode}
             isIntercomActive={isMicActive}
             muted={isAudioMuted}

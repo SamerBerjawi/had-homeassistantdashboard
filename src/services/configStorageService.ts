@@ -153,6 +153,10 @@ export function mergeConfig(
     canvas: {
       ...(base.canvas || {}),
       ...(partial.canvas || {})
+    },
+    layoutOverrides: {
+      ...(base.layoutOverrides || {}),
+      ...(partial.layoutOverrides || {})
     }
   };
 }

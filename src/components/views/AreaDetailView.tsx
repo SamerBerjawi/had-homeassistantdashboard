@@ -36,10 +36,14 @@ import { AreaData } from '../../types/rooms';
 import { ResolvedEntity } from '../../types';
 import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
 import { useEntityPopup } from '../../contexts/EntityPopupContext';
+import { useUserConfig } from '../../contexts/ConfigContext';
+import { useEditMode } from '../../contexts/EditModeContext';
 import MediaOverviewDrawer from '../overview/modals/MediaOverviewDrawer';
 import ViewEmptyState from '../ui/ViewEmptyState';
 import VirtualGrid from '../layout/VirtualGrid';
+import SortableGrid from '../layout/SortableGrid';
 import GridTile from '../layout/GridTile';
+import { sortTilesForBento } from '../../utils/bentoLayout';
 import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 import { TelemetryLine } from '../common/TelemetryBadge';
 
@@ -411,6 +415,122 @@ export default function AreaDetailView({
     };
   }, [entities]);
 
+  const { config } = useUserConfig();
+  const { isEditMode } = useEditMode();
+  const layoutOverrides = config?.layoutOverrides;
+
+  const sortedLights = useMemo(() => sortTilesForBento({
+    items: enrichedLights,
+    getId: (l) => l.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [enrichedLights, layoutOverrides, isEditMode]);
+
+  const sortedClimates = useMemo(() => sortTilesForBento({
+    items: enrichedClimates,
+    getId: (c) => c.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [enrichedClimates, layoutOverrides, isEditMode]);
+
+  const sortedFans = useMemo(() => sortTilesForBento({
+    items: enrichedFans,
+    getId: (f) => f.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [enrichedFans, layoutOverrides, isEditMode]);
+
+  const sortedSwitches = useMemo(() => sortTilesForBento({
+    items: enrichedSwitches,
+    getId: (s) => s.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [enrichedSwitches, layoutOverrides, isEditMode]);
+
+  const sortedLocks = useMemo(() => sortTilesForBento({
+    items: enrichedLocks,
+    getId: (l) => l.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [enrichedLocks, layoutOverrides, isEditMode]);
+
+  const sortedCovers = useMemo(() => sortTilesForBento({
+    items: enrichedCovers,
+    getId: (c) => c.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [enrichedCovers, layoutOverrides, isEditMode]);
+
+  const sortedMediaPlayers = useMemo(() => sortTilesForBento({
+    items: entities.mediaPlayers || [],
+    getId: (m) => m.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [entities.mediaPlayers, layoutOverrides, isEditMode]);
+
+  const sortedVacuums = useMemo(() => sortTilesForBento({
+    items: enrichedVacuums || [],
+    getId: (v) => v.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [enrichedVacuums, layoutOverrides, isEditMode]);
+
+  const sortedCameras = useMemo(() => sortTilesForBento({
+    items: entities.cameras || [],
+    getId: (c) => c.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [entities.cameras, layoutOverrides, isEditMode]);
+
+  const sortedContactSensors = useMemo(() => sortTilesForBento({
+    items: contactSensors,
+    getId: (s) => s.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [contactSensors, layoutOverrides, isEditMode]);
+
+  const sortedMotionSensors = useMemo(() => sortTilesForBento({
+    items: motionSensors,
+    getId: (s) => s.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [motionSensors, layoutOverrides, isEditMode]);
+
+  const sortedHazardSensors = useMemo(() => sortTilesForBento({
+    items: hazardSensors,
+    getId: (s) => s.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [hazardSensors, layoutOverrides, isEditMode]);
+
+  const sortedEnergySensors = useMemo(() => sortTilesForBento({
+    items: energySensors,
+    getId: (s) => s.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [energySensors, layoutOverrides, isEditMode]);
+
+  const sortedEnvironmentalSensors = useMemo(() => sortTilesForBento({
+    items: environmentalSensors,
+    getId: (s) => s.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [environmentalSensors, layoutOverrides, isEditMode]);
+
+  const sortedBatterySensors = useMemo(() => sortTilesForBento({
+    items: unclaimedBatterySensors,
+    getId: (s) => s.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [unclaimedBatterySensors, layoutOverrides, isEditMode]);
+
+  const sortedGeneralSensors = useMemo(() => sortTilesForBento({
+    items: generalSensors,
+    getId: (s) => s.entity_id,
+    layoutOverrides,
+    isEditMode
+  }), [generalSensors, layoutOverrides, isEditMode]);
+
   // =========================================================================
   // CONTROL ACTION HANDLERS
   // =========================================================================
@@ -698,8 +818,8 @@ export default function AreaDetailView({
             </button>
           </div>
 
-          <VirtualGrid>
-            {enrichedLights.map((light) => {
+          <SortableGrid items={sortedLights.map((l) => l.entity_id)}>
+            {sortedLights.map((light) => {
               const isUnavailable = light.state === 'unavailable' || light.state === 'unknown';
               const caps = detectLightCapabilities(light);
               const isDimmable = caps.supportsBrightness;
@@ -727,7 +847,7 @@ export default function AreaDetailView({
                 </GridTile>
               );
             })}
-          </VirtualGrid>
+          </SortableGrid>
         </section>
       )}
 
@@ -761,8 +881,8 @@ export default function AreaDetailView({
             )}
           </div>
 
-          <VirtualGrid>
-            {enrichedClimates.map((climate) => {
+          <SortableGrid items={[...sortedClimates.map((c) => c.entity_id), ...sortedFans.map((f) => f.entity_id)]}>
+            {sortedClimates.map((climate) => {
               const isUnavailable = climate.state === 'unavailable' || climate.state === 'unknown';
               return (
                 <GridTile
@@ -790,7 +910,7 @@ export default function AreaDetailView({
               );
             })}
 
-            {enrichedFans.map((fan) => {
+            {sortedFans.map((fan) => {
               const isUnavailable = fan.state === 'unavailable' || fan.state === 'unknown';
               const isOn = fan.state === 'on';
               const speed = fan.attributes?.percentage;
@@ -856,7 +976,7 @@ export default function AreaDetailView({
                 </GridTile>
               );
             })}
-          </VirtualGrid>
+          </SortableGrid>
         </section>
       )}
 
@@ -910,8 +1030,8 @@ export default function AreaDetailView({
             </div>
           </div>
 
-          <VirtualGrid>
-            {enrichedSwitches.map((sw) => {
+          <SortableGrid items={[...sortedSwitches.map((s) => s.entity_id), ...sortedLocks.map((l) => l.entity_id), ...sortedCovers.map((c) => c.entity_id)]}>
+            {sortedSwitches.map((sw) => {
               const isUnavailable = sw.state === 'unavailable' || sw.state === 'unknown';
               return (
                 <GridTile
@@ -936,7 +1056,7 @@ export default function AreaDetailView({
               );
             })}
 
-            {enrichedLocks.map((lock) => {
+            {sortedLocks.map((lock) => {
               const isUnavailable = lock.state === 'unavailable' || lock.state === 'unknown';
               const caps = detectLockCapabilities(lock);
               const isLocked = caps.isLocked;
@@ -1007,7 +1127,7 @@ export default function AreaDetailView({
               );
             })}
 
-            {enrichedCovers.map((cover) => {
+            {sortedCovers.map((cover) => {
               const isUnavailable = cover.state === 'unavailable' || cover.state === 'unknown';
               const pos = cover.attributes?.current_position;
               const rawBattery = cover.attributes?.battery_level ?? cover.attributes?.battery;
@@ -1070,7 +1190,7 @@ export default function AreaDetailView({
                 </GridTile>
               );
             })}
-          </VirtualGrid>
+          </SortableGrid>
         </section>
       )}
 
@@ -1103,8 +1223,8 @@ export default function AreaDetailView({
             )}
           </div>
 
-          <VirtualGrid>
-            {entities.mediaPlayers.map((media) => {
+          <SortableGrid items={[...sortedMediaPlayers.map((m) => m.entity_id), ...sortedVacuums.map((v) => v.entity_id), ...sortedCameras.map((c) => c.entity_id)]}>
+            {sortedMediaPlayers.map((media) => {
               const isPlaying = media.state === 'playing' || media.state === 'paused';
               const isUnavailable = media.state === 'unavailable' || media.state === 'unknown';
 
@@ -1131,7 +1251,7 @@ export default function AreaDetailView({
               );
             })}
 
-            {(enrichedVacuums || []).map((vac) => {
+            {sortedVacuums.map((vac) => {
               const caps = detectVacuumCapabilities(vac);
               const isUnavailable = vac.state === 'unavailable' || vac.state === 'unknown';
               const bat = vac.attributes?.battery_level;
@@ -1187,7 +1307,7 @@ export default function AreaDetailView({
               );
             })}
 
-            {(entities.cameras || []).map((cam) => {
+            {sortedCameras.map((cam) => {
               const isUnavailable = cam.state === 'unavailable' || cam.state === 'unknown';
               const lastChanged = formatRelativeTime(cam.last_changed || cam.last_updated);
               const subtitle = (
@@ -1224,6 +1344,7 @@ export default function AreaDetailView({
                     >
                       <HaWebRtcPlayer
                         camera={cam}
+                        mode="preview"
                         darkMode={darkMode}
                         showControls={false}
                         autoPlay={true}
@@ -1234,7 +1355,7 @@ export default function AreaDetailView({
                 </GridTile>
               );
             })}
-          </VirtualGrid>
+          </SortableGrid>
         </section>
       )}
 
@@ -1261,8 +1382,8 @@ export default function AreaDetailView({
                 <Door size={16} weight="duotone" className="text-amber-500" />
                 <span>Entry & Openings ({contactSensors.length})</span>
               </div>
-              <VirtualGrid>
-                {contactSensors.map((cs) => {
+              <SortableGrid items={sortedContactSensors.map((cs) => cs.entity_id)}>
+                {sortedContactSensors.map((cs) => {
                   const isUnavailable = cs.state === 'unavailable' || cs.state === 'unknown';
                   return (
                     <GridTile
@@ -1285,7 +1406,7 @@ export default function AreaDetailView({
                     </GridTile>
                   );
                 })}
-              </VirtualGrid>
+              </SortableGrid>
             </div>
           )}
 
@@ -1296,8 +1417,8 @@ export default function AreaDetailView({
                 <PersonSimpleWalk size={16} weight="duotone" className="text-emerald-500" />
                 <span>Motion & Occupancy ({motionSensors.length})</span>
               </div>
-              <VirtualGrid>
-                {motionSensors.map((ms) => {
+              <SortableGrid items={sortedMotionSensors.map((ms) => ms.entity_id)}>
+                {sortedMotionSensors.map((ms) => {
                   const isUnavailable = ms.state === 'unavailable' || ms.state === 'unknown';
                   return (
                     <GridTile
@@ -1320,7 +1441,7 @@ export default function AreaDetailView({
                     </GridTile>
                   );
                 })}
-              </VirtualGrid>
+              </SortableGrid>
             </div>
           )}
 
@@ -1331,12 +1452,9 @@ export default function AreaDetailView({
                 <Thermometer size={16} weight="duotone" className="text-rose-500" />
                 <span>Environmental & Air Quality ({environmentalSensors.length})</span>
               </div>
-              <VirtualGrid>
-                {environmentalSensors.map((sensor) => {
+              <SortableGrid items={sortedEnvironmentalSensors.map((sensor) => sensor.entity_id)}>
+                {sortedEnvironmentalSensors.map((sensor) => {
                   const isUnavailable = sensor.state === 'unavailable' || sensor.state === 'unknown';
-                  const caps = detectSensorCapabilities(sensor);
-                  const isSpark = caps.kind === 'temperature' || caps.kind === 'humidity';
-
                   return (
                     <GridTile
                       key={sensor.entity_id}
@@ -1358,7 +1476,7 @@ export default function AreaDetailView({
                     </GridTile>
                   );
                 })}
-              </VirtualGrid>
+              </SortableGrid>
             </div>
           )}
 
@@ -1369,8 +1487,8 @@ export default function AreaDetailView({
                 <Warning size={16} weight="fill" />
                 <span>Safety & Hazards ({hazardSensors.length})</span>
               </div>
-              <VirtualGrid>
-                {hazardSensors.map((hs) => {
+              <SortableGrid items={sortedHazardSensors.map((hs) => hs.entity_id)}>
+                {sortedHazardSensors.map((hs) => {
                   const isUnavailable = hs.state === 'unavailable' || hs.state === 'unknown';
                   return (
                     <GridTile
@@ -1393,7 +1511,7 @@ export default function AreaDetailView({
                     </GridTile>
                   );
                 })}
-              </VirtualGrid>
+              </SortableGrid>
             </div>
           )}
 
@@ -1404,8 +1522,8 @@ export default function AreaDetailView({
                 <Lightning size={16} weight="duotone" className="text-emerald-500" />
                 <span>Power & Energy ({energySensors.length})</span>
               </div>
-              <VirtualGrid>
-                {energySensors.map((sensor) => {
+              <SortableGrid items={sortedEnergySensors.map((sensor) => sensor.entity_id)}>
+                {sortedEnergySensors.map((sensor) => {
                   const isUnavailable = sensor.state === 'unavailable' || sensor.state === 'unknown';
                   return (
                     <GridTile
@@ -1428,7 +1546,7 @@ export default function AreaDetailView({
                     </GridTile>
                   );
                 })}
-              </VirtualGrid>
+              </SortableGrid>
             </div>
           )}
 
@@ -1439,8 +1557,8 @@ export default function AreaDetailView({
                 <BatteryMedium size={16} weight="duotone" className="text-amber-500" />
                 <span>Standalone Batteries ({unclaimedBatterySensors.length})</span>
               </div>
-              <VirtualGrid>
-                {unclaimedBatterySensors.map((bs) => {
+              <SortableGrid items={sortedBatterySensors.map((bs) => bs.entity_id)}>
+                {sortedBatterySensors.map((bs) => {
                   const isUnavailable = bs.state === 'unavailable' || bs.state === 'unknown';
                   return (
                     <GridTile
@@ -1463,7 +1581,7 @@ export default function AreaDetailView({
                     </GridTile>
                   );
                 })}
-              </VirtualGrid>
+              </SortableGrid>
             </div>
           )}
 
@@ -1474,8 +1592,8 @@ export default function AreaDetailView({
                 <Gear size={16} weight="duotone" className="text-slate-500" />
                 <span>Diagnostics & Status ({generalSensors.length})</span>
               </div>
-              <VirtualGrid>
-                {generalSensors.map((sensor) => {
+              <SortableGrid items={sortedGeneralSensors.map((sensor) => sensor.entity_id)}>
+                {sortedGeneralSensors.map((sensor) => {
                   const isUnavailable = sensor.state === 'unavailable' || sensor.state === 'unknown';
                   return (
                     <GridTile
@@ -1498,7 +1616,7 @@ export default function AreaDetailView({
                     </GridTile>
                   );
                 })}
-              </VirtualGrid>
+              </SortableGrid>
             </div>
           )}
         </div>

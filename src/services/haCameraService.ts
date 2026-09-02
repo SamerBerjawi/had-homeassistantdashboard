@@ -147,6 +147,55 @@ export function getHACameraSnapshotUrl(
 }
 
 /**
+ * Builds an authenticated preview snapshot URL with a cache-busting query parameter.
+ */
+export function getHACameraPreviewSnapshotUrl(
+  entityId: string,
+  serverUrl?: string,
+  token?: string,
+  timestamp: number = Date.now()
+): string {
+  const baseSnapUrl = getHACameraSnapshotUrl(entityId, serverUrl, token);
+  const separator = baseSnapUrl.includes('?') ? '&' : '?';
+  return `${baseSnapUrl}${separator}_ts=${timestamp}`;
+}
+
+export type CameraCodecMode = 'auto' | 'h264' | 'copy';
+
+/**
+ * Retrieves stored codec mode preference for a camera entity.
+ */
+export function getCameraCodecPreference(entityId: string): CameraCodecMode {
+  if (typeof window === 'undefined') return 'auto';
+  try {
+    const stored = localStorage.getItem(`homz_camera_codec_${entityId}`);
+    if (stored === 'h264' || stored === 'copy' || stored === 'auto') {
+      return stored as CameraCodecMode;
+    }
+  } catch {
+    // ignore
+  }
+  return 'auto';
+}
+
+/**
+ * Saves codec mode preference for a camera entity.
+ */
+export function setCameraCodecPreference(entityId: string, mode: CameraCodecMode): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (mode === 'auto') {
+      localStorage.removeItem(`homz_camera_codec_${entityId}`);
+    } else {
+      localStorage.setItem(`homz_camera_codec_${entityId}`, mode);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+
+/**
  * Captures a high-resolution frame from a playing video element or snapshot URL and triggers file download.
  */
 export async function downloadCameraFrame(

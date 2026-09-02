@@ -7,15 +7,18 @@
  * CO2 concentrations, volatile compounds, and ambient comfort sensors.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Heartbeat, Wind, Drop, Thermometer, ShieldCheck } from '@phosphor-icons/react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { useEntityPopup } from '../../contexts/EntityPopupContext';
-import VirtualGrid from '../layout/VirtualGrid';
+import { useUserConfig } from '../../contexts/ConfigContext';
+import { useEditMode } from '../../contexts/EditModeContext';
+import SortableGrid from '../layout/SortableGrid';
 import GridTile from '../layout/GridTile';
 import SensorTile from '../tiles/SensorTile';
 import ViewEmptyState from '../ui/ViewEmptyState';
 import ViewLoadingState from '../ui/ViewLoadingState';
+import { sortTilesForBento } from '../../utils/bentoLayout';
 
 interface ViewProps {
   darkMode?: boolean;
@@ -25,28 +28,41 @@ export default function HealthView({ darkMode = true }: ViewProps) {
   const isLoading = useAutoLayoutStore((s) => s.isLoading);
   const domainGroups = useAutoLayoutStore((s) => s.domainGroups);
   const { openEntityDetails } = useEntityPopup();
+  const { config } = useUserConfig();
+  const { isEditMode } = useEditMode();
 
   const sensorEntities = domainGroups['sensor'] || [];
 
-  const healthSensors = sensorEntities.filter((s) => {
-    const dc = s.attributes?.device_class;
-    const name = (s.name || s.entity_id).toLowerCase();
-    return (
-      dc === 'aqi' ||
-      dc === 'carbon_dioxide' ||
-      dc === 'carbon_monoxide' ||
-      dc === 'pm25' ||
-      dc === 'pm10' ||
-      dc === 'volatile_organic_compounds' ||
-      dc === 'nitrogen_dioxide' ||
-      name.includes('aqi') ||
-      name.includes('air quality') ||
-      name.includes('co2') ||
-      name.includes('voc') ||
-      name.includes('pm2.5') ||
-      name.includes('pm10')
-    );
-  });
+  const healthSensors = useMemo(() => {
+    return sensorEntities.filter((s) => {
+      const dc = s.attributes?.device_class;
+      const name = (s.name || s.entity_id).toLowerCase();
+      return (
+        dc === 'aqi' ||
+        dc === 'carbon_dioxide' ||
+        dc === 'carbon_monoxide' ||
+        dc === 'pm25' ||
+        dc === 'pm10' ||
+        dc === 'volatile_organic_compounds' ||
+        dc === 'nitrogen_dioxide' ||
+        name.includes('aqi') ||
+        name.includes('air quality') ||
+        name.includes('co2') ||
+        name.includes('voc') ||
+        name.includes('pm2.5') ||
+        name.includes('pm10')
+      );
+    });
+  }, [sensorEntities]);
+
+  const sortedSensors = useMemo(() => {
+    return sortTilesForBento({
+      items: healthSensors,
+      getId: (s) => s.entity_id,
+      layoutOverrides: config?.layoutOverrides,
+      isEditMode
+    });
+  }, [healthSensors, config?.layoutOverrides, isEditMode]);
 
   if (isLoading) {
     return (
@@ -92,8 +108,8 @@ export default function HealthView({ darkMode = true }: ViewProps) {
       </div>
 
       {/* Sensor Bento Grid */}
-      <VirtualGrid>
-        {healthSensors.map((sensor) => {
+      <SortableGrid items={sortedSensors.map((s) => s.entity_id)}>
+        {sortedSensors.map((sensor) => {
           const isUnavailable = sensor.state === 'unavailable' || sensor.state === 'unknown';
 
           return (
@@ -116,7 +132,7 @@ export default function HealthView({ darkMode = true }: ViewProps) {
             </GridTile>
           );
         })}
-      </VirtualGrid>
+      </SortableGrid>
     </div>
   );
 }

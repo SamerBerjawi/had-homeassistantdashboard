@@ -3,38 +3,72 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Multi-Tier Camera Stream Pipeline Orchestrator Hook:
- * Tier 1: Native HA WebRTC via duplex WebSocket signaling (`camera/webrtc/offer`)
- * Tier 2: HA HLS Stream via `camera/get_stream` with hls.js / native WebKit HLS
- * Tier 3: Authenticated MJPEG Proxy Stream (`/api/camera_proxy_stream`)
  *
- * Includes automatic bandwidth/CPU conservation:
- * - IntersectionObserver to disconnect when scrolled out of view
- * - document.visibilityState watcher to pause when browser tab is hidden
+ * Modes:
+ * - Preview Mode ('preview'): Lightweight periodic snapshot polling (every 3-6s), zero WebRTC/HLS negotiation load.
+ * - Live Mode ('live'): Full multi-tier streaming pipeline gated by StreamConcurrencyManager:
+ *   Tier 1: Native HA WebRTC via duplex WebSocket signaling (4s timeout budget)
+ *   Tier 2: HA HLS Stream via `camera/get_stream` with hls.js / native WebKit HLS (6s timeout budget)
+ *   Tier 3: Authenticated MJPEG Proxy Stream (`/api/camera_proxy_stream`)
+ *   Tier 4: Static Snapshot fallback
+ *
+ * Includes session-tier memory to avoid repeated WebRTC timeouts on cameras known to land on HLS/MJPEG.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Hls from 'hls.js';
 import { haWebSocketService } from '../services/haWebSocket';
-import { requestHACameraHlsStream, getHACameraMjpegUrl, getHACameraSnapshotUrl } from '../services/haCameraService';
+import {
+  requestHACameraHlsStream,
+  getHACameraMjpegUrl,
+  getHACameraSnapshotUrl,
+  getHACameraPreviewSnapshotUrl,
+  getCameraCodecPreference,
+  CameraCodecMode
+} from '../services/haCameraService';
 import { useCameraWebRtc } from './useCameraWebRtc';
 import { getActiveHAToken } from '../services/haAuth';
+import { streamConcurrencyManager } from '../services/streamConcurrencyManager';
+
+export const WEBRTC_TIMEOUT_MS = 4000;
+export const HLS_SETUP_TIMEOUT_MS = 6000;
+export const PREVIEW_REFRESH_INTERVAL_MS = 4000;
 
 export type StreamProtocol = 'webrtc' | 'hls' | 'mjpeg' | 'snapshot' | 'demo' | 'none';
 export type StreamStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'fallback' | 'failed' | 'paused' | 'demo';
+export type StreamMode = 'preview' | 'live';
+
+// In-memory session tier memory (remembers successful tier per entity for the active session)
+const sessionTierMemory = new Map<string, 1 | 2 | 3>();
+
+/**
+ * Resets the in-memory tier memory for an entity or all entities, forcing Tier 1 on next live stream open.
+ */
+export function resetCameraTierMemory(entityId?: string): void {
+  if (entityId) {
+    sessionTierMemory.delete(entityId);
+  } else {
+    sessionTierMemory.clear();
+  }
+}
 
 export interface UseCameraStreamOptions {
+  mode?: StreamMode;
   enabled?: boolean;
   autoPlay?: boolean;
   muted?: boolean;
   enableIntercom?: boolean;
   serverUrl?: string;
   preferProtocol?: 'auto' | 'webrtc' | 'hls' | 'mjpeg';
+  codecMode?: CameraCodecMode;
+  previewIntervalMs?: number;
   elementRef?: React.RefObject<HTMLElement | null>;
   onStreamReady?: (protocol: StreamProtocol) => void;
   onError?: (err: string) => void;
 }
 
 export interface CameraStreamResult {
+  mode: StreamMode;
   status: StreamStatus;
   protocol: StreamProtocol;
   mediaStream: MediaStream | null;
@@ -43,11 +77,13 @@ export interface CameraStreamResult {
   snapshotUrl: string | null;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   error: string | null;
+  isCodecMismatch: boolean;
   isPaused: boolean;
   isAudioMuted: boolean;
   setIsAudioMuted: (muted: boolean) => void;
   togglePause: () => void;
   reconnect: () => void;
+  retryFromWebRtc: () => void;
 }
 
 export function useCameraStream(
@@ -55,12 +91,15 @@ export function useCameraStream(
   options: UseCameraStreamOptions = {}
 ): CameraStreamResult {
   const {
+    mode = 'live',
     enabled = true,
     autoPlay = true,
     muted = true,
     enableIntercom = false,
     serverUrl,
     preferProtocol = 'auto',
+    codecMode,
+    previewIntervalMs = PREVIEW_REFRESH_INTERVAL_MS,
     elementRef,
     onStreamReady,
     onError
@@ -68,25 +107,47 @@ export function useCameraStream(
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const concurrencyReleaseRef = useRef<(() => void) | null>(null);
 
   const [isVisible, setIsVisible] = useState(true);
   const [isTabActive, setIsTabActive] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(muted);
+  const [hasNegotiationSlot, setHasNegotiationSlot] = useState(false);
+
+  // Derive initial tier from session memory or preferences
+  const getInitialTier = useCallback((): 1 | 2 | 3 | 4 => {
+    if (preferProtocol === 'hls') return 2;
+    if (preferProtocol === 'mjpeg') return 3;
+    const remembered = sessionTierMemory.get(entityId);
+    if (remembered) return remembered;
+    return 1;
+  }, [entityId, preferProtocol]);
 
   // Active protocol state: 1 = WebRTC, 2 = HLS, 3 = MJPEG, 4 = Snapshot fallback
-  const [activeTier, setActiveTier] = useState<1 | 2 | 3 | 4>(
-    preferProtocol === 'hls' ? 2 : preferProtocol === 'mjpeg' ? 3 : 1
-  );
-  const [protocol, setProtocol] = useState<StreamProtocol>('none');
+  const [activeTier, setActiveTier] = useState<1 | 2 | 3 | 4>(getInitialTier);
+  const [protocol, setProtocol] = useState<StreamProtocol>(mode === 'preview' ? 'snapshot' : 'none');
   const [status, setStatus] = useState<StreamStatus>('connecting');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isCodecMismatch, setIsCodecMismatch] = useState(false);
   const [hlsUrl, setHlsUrl] = useState<string | null>(null);
   const [mjpegUrl, setMjpegUrl] = useState<string | null>(null);
-  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null);
+  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(() => {
+    return getHACameraSnapshotUrl(entityId, serverUrl);
+  });
   const [retryCounter, setRetryCounter] = useState(0);
 
   const isStreamActive = enabled && isVisible && isTabActive && !isPaused;
+  const effectiveCodecMode = codecMode || getCameraCodecPreference(entityId);
+
+  // Helper to release concurrency slot
+  const releaseConcurrencySlot = useCallback(() => {
+    if (concurrencyReleaseRef.current) {
+      concurrencyReleaseRef.current();
+      concurrencyReleaseRef.current = null;
+    }
+    setHasNegotiationSlot(false);
+  }, []);
 
   // 1. IntersectionObserver to detect when tile is visible in viewport
   useEffect(() => {
@@ -99,7 +160,6 @@ export function useCameraStream(
       (entries) => {
         const [entry] = entries;
         if (entry) {
-          // If bounding rect is 0 (e.g. during initial modal transition), keep visible
           if (entry.boundingClientRect.width === 0 && entry.boundingClientRect.height === 0) {
             setIsVisible(true);
           } else {
@@ -129,40 +189,114 @@ export function useCameraStream(
     };
   }, []);
 
-  // 3. WebRTC Sub-Hook (Tier 1)
-  const isWebRtcEligible = isStreamActive && activeTier === 1 && preferProtocol !== 'hls' && preferProtocol !== 'mjpeg';
+  // -------------------------------------------------------------
+  // PREVIEW MODE: Periodic snapshot polling, zero live negotiation
+  // -------------------------------------------------------------
+  useEffect(() => {
+    if (mode !== 'preview') return;
+
+    // Set initial snapshot URL
+    setSnapshotUrl(getHACameraPreviewSnapshotUrl(entityId, serverUrl, undefined, Date.now()));
+    setProtocol('snapshot');
+    setStatus('connected');
+    setErrorMessage(null);
+
+    if (!isStreamActive) return;
+
+    const intervalTimer = setInterval(() => {
+      setSnapshotUrl(getHACameraPreviewSnapshotUrl(entityId, serverUrl, undefined, Date.now()));
+    }, previewIntervalMs);
+
+    return () => {
+      clearInterval(intervalTimer);
+    };
+  }, [mode, entityId, serverUrl, isStreamActive, previewIntervalMs, retryCounter]);
+
+  // -------------------------------------------------------------
+  // LIVE MODE: Concurrency Limiter Slot Acquisition
+  // -------------------------------------------------------------
+  useEffect(() => {
+    if (mode !== 'live' || !isStreamActive || (activeTier !== 1 && activeTier !== 2)) {
+      releaseConcurrencySlot();
+      return;
+    }
+
+    let isCancelled = false;
+    setStatus('connecting');
+    setErrorMessage('Acquiring stream slot...');
+
+    streamConcurrencyManager.acquireSlot(entityId, 1, 12000).then((release) => {
+      if (isCancelled) {
+        release();
+        return;
+      }
+      concurrencyReleaseRef.current = release;
+      setHasNegotiationSlot(true);
+      setErrorMessage(null);
+    });
+
+    return () => {
+      isCancelled = true;
+      releaseConcurrencySlot();
+    };
+  }, [mode, entityId, isStreamActive, activeTier, retryCounter, releaseConcurrencySlot]);
+
+  // -------------------------------------------------------------
+  // LIVE MODE - TIER 1: WebRTC
+  // -------------------------------------------------------------
+  const isWebRtcEligible =
+    mode === 'live' &&
+    isStreamActive &&
+    hasNegotiationSlot &&
+    activeTier === 1 &&
+    preferProtocol !== 'hls' &&
+    preferProtocol !== 'mjpeg';
+
   const webrtc = useCameraWebRtc(entityId, {
     enabled: isWebRtcEligible,
     enableIntercom,
-    timeoutMs: 5000,
+    timeoutMs: WEBRTC_TIMEOUT_MS,
+    codecMode: effectiveCodecMode,
     onConnected: () => {
       setProtocol('webrtc');
       setStatus('connected');
       setErrorMessage(null);
+      setIsCodecMismatch(false);
+      sessionTierMemory.set(entityId, 1);
+      releaseConcurrencySlot();
       onStreamReady?.('webrtc');
     },
-    onFallback: (reason) => {
+    onFallback: (reason, isCodecIssue) => {
       console.warn(`[useCameraStream] WebRTC fallback triggered for ${entityId}: ${reason}`);
+      if (isCodecIssue) {
+        setIsCodecMismatch(true);
+      }
       // Step up to Tier 2 (HLS)
       setActiveTier(2);
+    },
+    onError: (err) => {
+      onError?.(err);
     }
   });
 
   // Attach WebRTC stream to HTMLVideoElement when available
   useEffect(() => {
-    if (activeTier === 1 && webrtc.stream && videoRef.current) {
+    if (mode === 'live' && activeTier === 1 && webrtc.stream && videoRef.current) {
       if (videoRef.current.srcObject !== webrtc.stream) {
         videoRef.current.srcObject = webrtc.stream;
       }
       videoRef.current.play().catch(() => {});
       setProtocol('webrtc');
       setStatus('connected');
+      sessionTierMemory.set(entityId, 1);
     }
-  }, [activeTier, webrtc.stream]);
+  }, [mode, activeTier, webrtc.stream, entityId]);
 
-  // 4. HLS Stream (Tier 2)
+  // -------------------------------------------------------------
+  // LIVE MODE - TIER 2: HLS Stream
+  // -------------------------------------------------------------
   useEffect(() => {
-    if (!isStreamActive || activeTier !== 2 || preferProtocol === 'mjpeg') {
+    if (mode !== 'live' || !isStreamActive || activeTier !== 2 || preferProtocol === 'mjpeg') {
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
@@ -171,8 +305,23 @@ export function useCameraStream(
     }
 
     let isCancelled = false;
+    let hlsTimeoutTimer: any = null;
+
     setStatus('connecting');
     setErrorMessage('Initiating Home Assistant HLS stream...');
+
+    // HLS Setup Timeout Budget (6s)
+    hlsTimeoutTimer = setTimeout(() => {
+      if (!isCancelled) {
+        console.warn(`[useCameraStream] HLS setup timed out after ${HLS_SETUP_TIMEOUT_MS / 1000}s for ${entityId}, stepping to Tier 3 (MJPEG)`);
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+          hlsRef.current = null;
+        }
+        releaseConcurrencySlot();
+        setActiveTier(3);
+      }
+    }, HLS_SETUP_TIMEOUT_MS);
 
     const setupHls = async () => {
       try {
@@ -181,6 +330,8 @@ export function useCameraStream(
 
         if (!streamResult || !streamResult.hlsUrl) {
           console.warn(`[useCameraStream] HLS stream request returned empty URL for ${entityId}. Stepping to Tier 3 (MJPEG)`);
+          if (hlsTimeoutTimer) clearTimeout(hlsTimeoutTimer);
+          releaseConcurrencySlot();
           setActiveTier(3);
           return;
         }
@@ -195,26 +346,28 @@ export function useCameraStream(
         const video = videoRef.current;
         if (!video) return;
 
-        // Clear any previous WebRTC srcObject
         if (video.srcObject) {
           video.srcObject = null;
         }
 
-        // If native HLS is supported (Safari / iOS WebKit)
+        // Native Safari / iOS WebKit HLS
         if (video.canPlayType('application/vnd.apple.mpegurl')) {
           video.src = authenticatedHlsUrl;
           video.addEventListener('loadedmetadata', () => {
             if (isCancelled) return;
+            if (hlsTimeoutTimer) clearTimeout(hlsTimeoutTimer);
             video.play().catch(() => {});
             setProtocol('hls');
             setStatus('connected');
             setErrorMessage(null);
+            sessionTierMemory.set(entityId, 2);
+            releaseConcurrencySlot();
             onStreamReady?.('hls');
           }, { once: true });
           return;
         }
 
-        // If Hls.js is supported (Chrome, Firefox, Edge, Android)
+        // Hls.js for Chrome, Firefox, Edge, Android
         if (Hls.isSupported()) {
           const hls = new Hls({
             enableWorker: true,
@@ -233,10 +386,13 @@ export function useCameraStream(
 
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
             if (isCancelled) return;
+            if (hlsTimeoutTimer) clearTimeout(hlsTimeoutTimer);
             video.play().catch(() => {});
             setProtocol('hls');
             setStatus('connected');
             setErrorMessage(null);
+            sessionTierMemory.set(entityId, 2);
+            releaseConcurrencySlot();
             onStreamReady?.('hls');
           });
 
@@ -244,17 +400,23 @@ export function useCameraStream(
             if (isCancelled) return;
             if (data.fatal) {
               console.warn('[useCameraStream] Fatal HLS error, falling back to MJPEG:', data.details);
+              if (hlsTimeoutTimer) clearTimeout(hlsTimeoutTimer);
               hls.destroy();
               hlsRef.current = null;
+              releaseConcurrencySlot();
               setActiveTier(3);
             }
           });
         } else {
+          if (hlsTimeoutTimer) clearTimeout(hlsTimeoutTimer);
+          releaseConcurrencySlot();
           setActiveTier(3);
         }
       } catch (err: any) {
         if (!isCancelled) {
           console.warn('[useCameraStream] HLS initialization error:', err);
+          if (hlsTimeoutTimer) clearTimeout(hlsTimeoutTimer);
+          releaseConcurrencySlot();
           setActiveTier(3);
         }
       }
@@ -264,39 +426,49 @@ export function useCameraStream(
 
     return () => {
       isCancelled = true;
+      if (hlsTimeoutTimer) clearTimeout(hlsTimeoutTimer);
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
     };
-  }, [entityId, isStreamActive, activeTier, preferProtocol, serverUrl, retryCounter, onStreamReady]);
+  }, [mode, entityId, isStreamActive, activeTier, preferProtocol, serverUrl, retryCounter, onStreamReady, releaseConcurrencySlot]);
 
-  // 5. MJPEG Proxy (Tier 3)
+  // -------------------------------------------------------------
+  // LIVE MODE - TIER 3: MJPEG Proxy
+  // -------------------------------------------------------------
   useEffect(() => {
-    if (!isStreamActive || activeTier !== 3) {
+    if (mode !== 'live' || !isStreamActive || activeTier !== 3) {
       setMjpegUrl(null);
       return;
     }
 
+    releaseConcurrencySlot();
     const mjpegStreamUrl = getHACameraMjpegUrl(entityId, serverUrl);
     setMjpegUrl(mjpegStreamUrl);
     setProtocol('mjpeg');
     setStatus('connected');
     setErrorMessage(null);
+    sessionTierMemory.set(entityId, 3);
     onStreamReady?.('mjpeg');
-  }, [entityId, isStreamActive, activeTier, serverUrl, retryCounter, onStreamReady]);
+  }, [mode, entityId, isStreamActive, activeTier, serverUrl, retryCounter, onStreamReady, releaseConcurrencySlot]);
 
-  // 6. Snapshot Fallback (Tier 4)
+  // -------------------------------------------------------------
+  // LIVE MODE - TIER 4: Snapshot Fallback
+  // -------------------------------------------------------------
   useEffect(() => {
-    if (activeTier === 4) {
+    if (mode === 'live' && activeTier === 4) {
+      releaseConcurrencySlot();
       const snapUrl = getHACameraSnapshotUrl(entityId, serverUrl);
       setSnapshotUrl(snapUrl);
       setProtocol('snapshot');
       setStatus('connected');
     }
-  }, [entityId, activeTier, serverUrl, retryCounter]);
+  }, [mode, entityId, activeTier, serverUrl, retryCounter, releaseConcurrencySlot]);
 
-  // 7. Demo Mode Handling
+  // -------------------------------------------------------------
+  // Demo Mode Handling
+  // -------------------------------------------------------------
   useEffect(() => {
     if (haWebSocketService.isDemo() || haWebSocketService.getStatus() !== 'connected') {
       setStatus('demo');
@@ -313,12 +485,22 @@ export function useCameraStream(
 
   // Reconnection action
   const reconnect = useCallback(() => {
-    setActiveTier(preferProtocol === 'hls' ? 2 : preferProtocol === 'mjpeg' ? 3 : 1);
+    setActiveTier(getInitialTier());
     setErrorMessage(null);
     setStatus('connecting');
     setRetryCounter((c) => c + 1);
     webrtc.reconnect();
-  }, [preferProtocol, webrtc]);
+  }, [getInitialTier, webrtc]);
+
+  // Manual retry from WebRTC (clears session memory)
+  const retryFromWebRtc = useCallback(() => {
+    sessionTierMemory.delete(entityId);
+    setActiveTier(1);
+    setErrorMessage(null);
+    setStatus('connecting');
+    setRetryCounter((c) => c + 1);
+    webrtc.reconnect();
+  }, [entityId, webrtc]);
 
   const togglePause = useCallback(() => {
     setIsPaused((prev) => {
@@ -333,6 +515,7 @@ export function useCameraStream(
   }, []);
 
   return {
+    mode,
     status: !isStreamActive && isPaused ? 'paused' : status,
     protocol,
     mediaStream: webrtc.stream,
@@ -341,10 +524,12 @@ export function useCameraStream(
     snapshotUrl,
     videoRef,
     error: errorMessage || webrtc.error,
+    isCodecMismatch: isCodecMismatch || webrtc.isCodecMismatch || false,
     isPaused,
     isAudioMuted,
     setIsAudioMuted,
     togglePause,
-    reconnect
+    reconnect,
+    retryFromWebRtc
   };
 }

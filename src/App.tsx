@@ -15,9 +15,10 @@ import { UpdateToast } from './components/pwa/UpdateToast';
 import AuthModal from './components/auth/AuthModal';
 import EntityDetailModal from './components/modals/EntityDetailModal';
 import DemoBanner from './components/auth/DemoBanner';
-import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power, ArrowsClockwise, SlidersHorizontal, Palette, User, WifiHigh, DownloadSimple, GearSix, Warning } from '@phosphor-icons/react';
+import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power, ArrowsClockwise, SlidersHorizontal, Palette, User, WifiHigh, DownloadSimple, GearSix, Warning, PencilSimpleLine, CheckCircle } from '@phosphor-icons/react';
 import { useUserConfig } from './contexts/ConfigContext';
 import { useAuth } from './contexts/AuthContext';
+import { useEditMode } from './contexts/EditModeContext';
 import FullScreenLoadingPage from './components/ui/FullScreenLoadingPage';
 import { hasConfiguredHACredentials } from './store/useAutoLayoutStore';
 
@@ -110,6 +111,7 @@ function getTabFromUrl(): TabKey {
 
 export default function App() {
   const { config, updateConfig, isLoading: isConfigLoading, syncStatus, lastSuccessfulSync } = useUserConfig();
+  const { isEditMode, setEditMode } = useEditMode();
 
   // Theme Mode State: 'auto' (system OS) | 'dark' (OLED) | 'light' (Daylight)
   const [themeMode, setThemeMode] = useState<'auto' | 'dark' | 'light'>(() => {
@@ -711,6 +713,40 @@ export default function App() {
 
       {/* Global Entity Detail Modal & Bottom Sheet Drawer */}
       <EntityDetailModal />
+
+      {/* Global Floating "Exit Edit Mode" Banner / FAB */}
+      {isEditMode && (
+        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300 pointer-events-auto">
+          <div className="flex items-center gap-3.5 px-4 py-2.5 rounded-2xl bg-slate-900/95 dark:bg-black/90 border border-sky-500/50 shadow-2xl shadow-sky-500/30 backdrop-blur-xl ring-4 ring-sky-500/10">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-sky-500 text-white flex items-center justify-center shadow-md shadow-sky-500/30 shrink-0 animate-pulse">
+                <PencilSimpleLine size={18} weight="duotone" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-white tracking-wide uppercase">
+                    Edit Mode Active
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                </div>
+                <p className="text-[11px] text-slate-300 dark:text-slate-400 hidden sm:block">
+                  Drag tiles to reorder • Tap Eye to toggle • Tap size to resize
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setEditMode(false)}
+              className="px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 active:bg-sky-600 text-white font-black text-xs shadow-md shadow-sky-500/30 transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0"
+              title="Save & Exit Dashboard Edit Mode"
+            >
+              <CheckCircle size={15} weight="bold" />
+              <span>Done Editing</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

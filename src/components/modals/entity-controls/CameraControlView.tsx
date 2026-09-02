@@ -31,6 +31,7 @@ import {
   captureAndDownloadSnapshot,
   PtzDirection
 } from '../../../services/cameraIntegrationService';
+import { getCameraCodecPreference, setCameraCodecPreference, CameraCodecMode } from '../../../services/haCameraService';
 
 interface CameraControlViewProps {
   entity: HAEntity;
@@ -44,6 +45,9 @@ export default function CameraControlView({ entity }: CameraControlViewProps) {
   const [activePanDirection, setActivePanDirection] = useState<string | null>(null);
   const [isSirenActive, setIsSirenActive] = useState(false);
   const [ptzStatusMsg, setPtzStatusMsg] = useState<string | null>(null);
+  const [codecMode, setCodecMode] = useState<CameraCodecMode>(() => {
+    return getCameraCodecPreference(entity.entity_id);
+  });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const caps: CameraCapabilities = useMemo(() => {
@@ -76,6 +80,11 @@ export default function CameraControlView({ entity }: CameraControlViewProps) {
     await toggleCameraSiren(resolvedCamera, Object.values(domainGroups).flat(), nextState);
   };
 
+  const handleCodecChange = (mode: CameraCodecMode) => {
+    setCodecMode(mode);
+    setCameraCodecPreference(entity.entity_id, mode);
+  };
+
   const lastChangedStr = formatRelativeTime(caps.lastChanged);
 
   return (
@@ -84,6 +93,8 @@ export default function CameraControlView({ entity }: CameraControlViewProps) {
       <div className="relative rounded-3xl overflow-hidden bg-black border border-white/10 shadow-2xl aspect-video max-h-[360px] flex items-center justify-center isolate">
         <HaWebRtcPlayer
           camera={resolvedCamera}
+          mode="live"
+          codecMode={codecMode}
           isIntercomActive={isMicActive}
           muted={isAudioMuted}
         />
@@ -162,6 +173,22 @@ export default function CameraControlView({ entity }: CameraControlViewProps) {
           >
             {isAudioMuted ? <SpeakerSlash size={16} weight="bold" /> : <SpeakerHigh size={16} weight="bold" />}
           </button>
+
+          {/* Codec Mode Selector for RTSP cameras */}
+          {(resolvedCamera.attributes?.is_rtsp_stream || resolvedCamera.attributes?.stream_source === 'go2rtc' || resolvedCamera.entity_id?.startsWith('go2rtc.')) && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-700/50 border border-amber-500/30 text-[11px] font-bold">
+              <span className="text-amber-400">Codec:</span>
+              <select
+                value={codecMode}
+                onChange={(e) => handleCodecChange(e.target.value as CameraCodecMode)}
+                className="bg-transparent text-white font-mono text-[11px] outline-none cursor-pointer"
+              >
+                <option value="auto" className="bg-slate-900 text-white">Auto</option>
+                <option value="h264" className="bg-slate-900 text-amber-300">Force H.264</option>
+                <option value="copy" className="bg-slate-900 text-white">Copy (Passthrough)</option>
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Emergency Siren (Strictly if supportsSiren) */}

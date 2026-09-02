@@ -58,6 +58,7 @@ interface ConnectionWebSocketSectionProps {
     success?: boolean;
     streamsCount?: number;
     streamNames?: string[];
+    latencyMs?: number | null;
     error?: string;
   };
   handleTestGo2Rtc: () => void;
@@ -384,7 +385,7 @@ export default function ConnectionWebSocketSection({
                 </span>
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Auto-detect RTSP camera feeds configured in go2rtc server.
+                Auto-detect and relay RTSP camera feeds configured in go2rtc server.
               </p>
             </div>
           </div>
@@ -396,36 +397,60 @@ export default function ConnectionWebSocketSection({
                 : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
             }`}>
               {go2RtcStatus.success ? <CheckCircle size={14} weight="bold" /> : <Warning size={14} weight="bold" />}
-              <span>{go2RtcStatus.success ? `${go2RtcStatus.streamsCount} Stream(s) Online` : 'Endpoint Unreachable'}</span>
+              <span>
+                {go2RtcStatus.success
+                  ? `${go2RtcStatus.streamsCount} Stream(s) Online${go2RtcStatus.latencyMs !== null ? ` (${go2RtcStatus.latencyMs}ms)` : ''}`
+                  : 'go2rtc Unreachable'}
+              </span>
             </div>
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-2.5">
-          <input
-            type="text"
-            placeholder="http://homeassistant.local:1984"
-            value={go2RtcUrlInput}
-            onChange={(e) => setGo2RtcUrlInput(e.target.value)}
-            className="w-full sm:flex-1 px-4 py-2 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-amber-500 shadow-xs"
-          />
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={handleTestGo2Rtc}
-              disabled={go2RtcStatus.loading}
-              className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/15 text-slate-800 dark:text-white text-xs font-semibold cursor-pointer transition-all"
-            >
-              {go2RtcStatus.loading ? 'Probing...' : 'Test Streams'}
-            </button>
-            <button
-              type="button"
-              onClick={handleSaveGo2RtcUrl}
-              className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-all cursor-pointer"
-            >
-              Save URL
-            </button>
+        {/* Diagnostic Banner if go2rtc unreachable */}
+        {go2RtcStatus.tested && !go2RtcStatus.success && (
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-300">
+            <Info size={18} weight="duotone" className="shrink-0 text-amber-400 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-bold text-amber-300">
+                go2rtc unreachable at <code className="font-mono text-amber-200">{go2RtcUrlInput || 'configured URL'}</code>
+              </p>
+              <p className="text-[11px] text-amber-300/80 leading-relaxed">
+                RTSP camera streams will use degraded MJPEG fallback until go2rtc is reachable. Ensure port 1984 is accessible on your Home Assistant host.
+              </p>
+            </div>
           </div>
+        )}
+
+        <div className="space-y-2">
+          <div className="flex flex-col sm:flex-row items-center gap-2.5">
+            <input
+              type="text"
+              placeholder="http://homeassistant.local:1984"
+              value={go2RtcUrlInput}
+              onChange={(e) => setGo2RtcUrlInput(e.target.value)}
+              className="w-full sm:flex-1 px-4 py-2 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-amber-500 shadow-xs"
+            />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleTestGo2Rtc}
+                disabled={go2RtcStatus.loading}
+                className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/15 text-slate-800 dark:text-white text-xs font-semibold cursor-pointer transition-all"
+              >
+                {go2RtcStatus.loading ? 'Probing...' : 'Test Streams'}
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveGo2RtcUrl}
+                className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-all cursor-pointer"
+              >
+                Save URL
+              </button>
+            </div>
+          </div>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+            💡 <strong>Multi-Host Deployments:</strong> If this dashboard runs on separate hardware than Home Assistant (e.g. in a standalone Docker container on a NAS), set this to <code className="font-mono text-amber-400 bg-black/40 px-1 py-0.5 rounded">http://&lt;home-assistant-ip&gt;:1984</code>.
+          </p>
         </div>
       </div>
 

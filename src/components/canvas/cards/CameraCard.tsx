@@ -34,6 +34,7 @@ export default function CameraCard({
         <div className="absolute inset-0 w-full h-full">
           <HaWebRtcPlayer
             camera={entity as ResolvedEntity}
+            mode="preview"
             showControls={false}
             autoPlay={true}
             muted={true}
@@ -64,9 +65,9 @@ export default function CameraCard({
           <span className="text-xs font-bold text-white drop-shadow-md truncate">{title}</span>
         </div>
 
-        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/80 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider shrink-0 shadow-md">
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-          <span>Live 1080p</span>
+        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan-500/80 backdrop-blur-md text-slate-950 text-[10px] font-black uppercase tracking-wider shrink-0 shadow-md">
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping" />
+          <span>Live Feed</span>
         </div>
       </div>
 
@@ -75,8 +76,8 @@ export default function CameraCard({
         <span className="flex items-center gap-1 font-semibold text-emerald-300">
           <Broadcast size={14} weight="duotone" className="text-emerald-400" /> Motion Cleared
         </span>
-        <span className="text-[10px] text-slate-400 bg-black/50 px-2 py-0.5 rounded-md backdrop-blur-md">
-          WebRTC
+        <span className="text-[10px] text-slate-300 bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-md border border-white/10">
+          Tap to Open
         </span>
       </div>
     </div>

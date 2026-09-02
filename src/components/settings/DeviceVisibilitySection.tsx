@@ -354,16 +354,29 @@ export default function DeviceVisibilitySection({
     const nextHidden = !currentHidden;
     setEntityHidden(entityId, nextHidden);
 
-    updateConfig(prev => ({
-      ...prev,
-      entities: {
-        ...(prev.entities || {}),
-        [entityId]: {
-          ...(prev.entities?.[entityId] || {}),
-          hidden: nextHidden
-        }
+    updateConfig(prev => {
+      const hiddenList = new Set(prev.entities?.hiddenEntityIds || []);
+      if (nextHidden) {
+        hiddenList.add(entityId);
+      } else {
+        hiddenList.delete(entityId);
       }
-    }));
+
+      return {
+        ...prev,
+        entities: {
+          ...(prev.entities || {}),
+          hiddenEntityIds: Array.from(hiddenList),
+          customizations: {
+            ...(prev.entities?.customizations || {}),
+            [entityId]: {
+              ...(prev.entities?.customizations?.[entityId] || {}),
+              hidden: nextHidden
+            }
+          }
+        }
+      };
+    });
 
     addToast?.({
       type: nextHidden ? 'info' : 'success',
@@ -377,16 +390,28 @@ export default function DeviceVisibilitySection({
     bulkSetEntitiesHidden(entityIds, setHidden);
 
     updateConfig(prev => {
-      const updatedEntities = { ...(prev.entities || {}) };
+      const hiddenList = new Set(prev.entities?.hiddenEntityIds || []);
+      const updatedCustomizations = { ...(prev.entities?.customizations || {}) };
+
       for (const eid of entityIds) {
-        updatedEntities[eid] = {
-          ...(updatedEntities[eid] || {}),
+        if (setHidden) {
+          hiddenList.add(eid);
+        } else {
+          hiddenList.delete(eid);
+        }
+        updatedCustomizations[eid] = {
+          ...(updatedCustomizations[eid] || {}),
           hidden: setHidden
         };
       }
+
       return {
         ...prev,
-        entities: updatedEntities
+        entities: {
+          ...(prev.entities || {}),
+          hiddenEntityIds: Array.from(hiddenList),
+          customizations: updatedCustomizations
+        }
       };
     });
 

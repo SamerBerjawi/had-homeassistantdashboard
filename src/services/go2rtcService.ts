@@ -8,6 +8,7 @@
  */
 
 import { ResolvedEntity } from '../types';
+import { haWebSocketService } from './haWebSocket';
 
 export interface Go2RtcProducer {
   url?: string;
@@ -21,10 +22,33 @@ export interface Go2RtcStreamInfo {
   [key: string]: any;
 }
 
+export interface Go2RtcHealthStatus {
+  tested: boolean;
+  loading: boolean;
+  reachable: boolean;
+  latencyMs: number | null;
+  streamsCount: number;
+  streamNames: string[];
+  baseUrl: string;
+  error?: string;
+}
+
+let lastHealthStatus: Go2RtcHealthStatus = {
+  tested: false,
+  loading: false,
+  reachable: false,
+  latencyMs: null,
+  streamsCount: 0,
+  streamNames: [],
+  baseUrl: ''
+};
+
+const healthListeners: Set<(status: Go2RtcHealthStatus) => void> = new Set();
+
 /**
  * Resolves the go2rtc HTTP and WebSocket base URLs.
  * Checks localStorage preference first ('homz_go2rtc_url'), then derives from HA serverUrl,
- * window.location.hostname, or falls back to localhost:1984.
+ * haWebSocketService connection URL, window.location.hostname, or falls back to localhost:1984.
  */
 export function getGo2RtcBaseUrls(serverUrl?: string): { httpUrl: string; wsUrl: string } {
   if (typeof window !== 'undefined') {
@@ -40,19 +64,28 @@ export function getGo2RtcBaseUrls(serverUrl?: string): { httpUrl: string; wsUrl:
     }
   }
 
-  // Derive hostname from HA serverUrl
-  let hostname = 'localhost';
-  if (serverUrl) {
+  // 1. Derive hostname from HA serverUrl or active HA WebSocket URL
+  const effectiveHaUrl = serverUrl || haWebSocketService.getCurrentUrl() || '';
+  let hostname = '';
+
+  if (effectiveHaUrl) {
     try {
-      const u = new URL(serverUrl.replace(/^ws:\/\//i, 'http://').replace(/^wss:\/\//i, 'https://'));
+      const u = new URL(effectiveHaUrl.replace(/^ws:\/\//i, 'http://').replace(/^wss:\/\//i, 'https://'));
       if (u.hostname && !u.hostname.includes('hass.homz.internal')) {
         hostname = u.hostname;
       }
     } catch {
       // ignore
     }
-  } else if (typeof window !== 'undefined' && window.location.hostname) {
+  }
+
+  // 2. Fallback to browser's current hostname if not localhost or if HA url wasn't set
+  if (!hostname && typeof window !== 'undefined' && window.location.hostname) {
     hostname = window.location.hostname;
+  }
+
+  if (!hostname) {
+    hostname = 'localhost';
   }
 
   const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
@@ -154,7 +187,7 @@ export async function fetchGo2RtcStreams(serverUrl?: string): Promise<Record<str
         return data;
       }
     }
-  } catch (err) {
+  } catch {
     // Direct fetch failed (e.g. CORS/Private Network Access/Port mismatch). Proceed to backend proxy.
   }
 
@@ -163,7 +196,8 @@ export async function fetchGo2RtcStreams(serverUrl?: string): Promise<Record<str
     const proxyEndpoint = `/api/go2rtc/streams?url=${encodeURIComponent(httpUrl)}`;
     const proxyResponse = await fetch(proxyEndpoint, {
       method: 'GET',
-      headers: { Accept: 'application/json' }
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(3000)
     });
 
     if (proxyResponse.ok) {
@@ -175,7 +209,7 @@ export async function fetchGo2RtcStreams(serverUrl?: string): Promise<Record<str
         return result;
       }
     }
-  } catch (err) {
+  } catch {
     // Backend proxy query failed
   }
 
@@ -183,25 +217,112 @@ export async function fetchGo2RtcStreams(serverUrl?: string): Promise<Record<str
 }
 
 /**
- * Tests connection to go2rtc and returns stream count and names.
+ * Tests connection to go2rtc, measures round-trip latency, and updates global health state.
  */
 export async function testGo2RtcConnection(
   targetUrl?: string
-): Promise<{ success: boolean; streamsCount: number; streamNames: string[]; error?: string }> {
+): Promise<{ success: boolean; streamsCount: number; streamNames: string[]; latencyMs: number | null; error?: string }> {
+  const startTime = Date.now();
+  const { httpUrl } = getGo2RtcBaseUrls(targetUrl);
+
   try {
     const streams = await fetchGo2RtcStreams(targetUrl);
     const names = Object.keys(streams);
+    const latency = Date.now() - startTime;
+
     if (names.length >= 0) {
+      const status: Go2RtcHealthStatus = {
+        tested: true,
+        loading: false,
+        reachable: true,
+        latencyMs: latency,
+        streamsCount: names.length,
+        streamNames: names,
+        baseUrl: httpUrl
+      };
+      updateGo2RtcHealth(status);
+
       return {
         success: true,
         streamsCount: names.length,
-        streamNames: names
+        streamNames: names,
+        latencyMs: latency
       };
     }
-    return { success: false, streamsCount: 0, streamNames: [], error: 'No streams returned' };
+
+    const failedStatus: Go2RtcHealthStatus = {
+      tested: true,
+      loading: false,
+      reachable: false,
+      latencyMs: null,
+      streamsCount: 0,
+      streamNames: [],
+      baseUrl: httpUrl,
+      error: 'No streams returned'
+    };
+    updateGo2RtcHealth(failedStatus);
+
+    return { success: false, streamsCount: 0, streamNames: [], latencyMs: null, error: 'No streams returned' };
   } catch (err: any) {
-    return { success: false, streamsCount: 0, streamNames: [], error: err?.message || 'Connection failed' };
+    const errMsg = err?.message || 'Connection failed';
+    const failedStatus: Go2RtcHealthStatus = {
+      tested: true,
+      loading: false,
+      reachable: false,
+      latencyMs: null,
+      streamsCount: 0,
+      streamNames: [],
+      baseUrl: httpUrl,
+      error: errMsg
+    };
+    updateGo2RtcHealth(failedStatus);
+
+    return { success: false, streamsCount: 0, streamNames: [], latencyMs: null, error: errMsg };
   }
+}
+
+/**
+ * Subscribe to go2rtc health changes.
+ */
+export function subscribeGo2RtcHealth(listener: (status: Go2RtcHealthStatus) => void): () => void {
+  healthListeners.add(listener);
+  listener(lastHealthStatus);
+  return () => {
+    healthListeners.delete(listener);
+  };
+}
+
+/**
+ * Get current cached go2rtc health status.
+ */
+export function getGo2RtcHealth(): Go2RtcHealthStatus {
+  return lastHealthStatus;
+}
+
+function updateGo2RtcHealth(status: Go2RtcHealthStatus): void {
+  lastHealthStatus = status;
+  for (const listener of healthListeners) {
+    try {
+      listener(status);
+    } catch (e) {
+      console.error('[go2rtc] Health listener error:', e);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('homz_go2rtc_health_changed', { detail: status }));
+  }
+}
+
+/**
+ * Generates an actionable go2rtc.yaml `streams:` configuration snippet for H.265 transcode.
+ */
+export function generateGo2RtcConfigSnippet(streamName: string, rtspUrl?: string): string {
+  const safeStreamName = streamName.replace(/^go2rtc\./, '').replace(/^camera\./, '') || 'camera_feed';
+  const sampleUrl = rtspUrl || 'rtsp://admin:password@192.168.1.100:554/live/ch0';
+  return `streams:
+  ${safeStreamName}:
+    - ${sampleUrl}#video=h264`;
 }
 
 /**
@@ -431,7 +552,7 @@ export async function negotiateGo2RtcWebRtcSession(
             value: offer.sdp
           }));
         }
-      } catch (err) {
+      } catch {
         negotiateHttp();
       }
     };

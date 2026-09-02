@@ -110,6 +110,11 @@ export interface UserDashboardConfig {
     pinCode?: string;
     weatherBackdrop?: string;
   };
+  layoutOverrides?: Record<string, {
+    colSpan?: 2 | 4 | 6 | 8 | 12;
+    rowSpan?: 1 | 2 | 3 | 4;
+    order?: number;
+  }>;
 }
 
 export interface IConfigStorageDriver {
@@ -226,5 +231,6 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
     activeProfileId: 'profile_main',
     pinCode: '',
     weatherBackdrop: 'auto'
-  }
+  },
+  layoutOverrides: {}
 };

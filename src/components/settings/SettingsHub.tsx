@@ -24,8 +24,10 @@ import {
   Moon,
   Sun,
   ShieldCheck,
-  HardDrives
+  HardDrives,
+  PencilSimpleLine
 } from '@phosphor-icons/react';
+import { useEditMode } from '../../contexts/EditModeContext';
 
 export type SettingsSection = 
   | 'user_profile' 
@@ -89,6 +91,8 @@ export default function SettingsHub({
   go2rtcStreamsCount,
   authType
 }: SettingsHubProps) {
+  const { isEditMode, toggleEditMode } = useEditMode();
+
   const CATEGORIES = [
     {
       id: 'devices_rooms' as SettingsSection,
@@ -203,6 +207,47 @@ export default function SettingsHub({
             </div>
           </div>
           <CaretRight size={20} weight="bold" className="text-slate-400 shrink-0 ml-2" />
+        </div>
+
+        {/* Mobile Edit Mode Card */}
+        <div className="p-4 rounded-3xl bg-linear-to-r from-sky-500/15 via-indigo-500/10 to-purple-500/15 border border-sky-500/30 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-xs shrink-0 transition-colors ${
+              isEditMode 
+                ? 'bg-sky-500 text-white border-sky-400 shadow-sky-500/30' 
+                : 'bg-sky-500/20 text-sky-400 border-sky-500/30'
+            }`}>
+              <PencilSimpleLine size={24} weight="duotone" className={isEditMode ? 'animate-pulse' : ''} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-black text-slate-900 dark:text-white truncate">
+                  Dashboard Edit Mode
+                </h3>
+                {isEditMode && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-sky-500 text-white animate-pulse">
+                    Live
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                {isEditMode ? 'Exit button floating across dashboard' : 'Drag, resize & toggle tile visibility'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={toggleEditMode}
+            className={`relative inline-flex h-7 w-13 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+              isEditMode ? 'bg-sky-500' : darkMode ? 'bg-white/20' : 'bg-slate-300'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                isEditMode ? 'translate-x-6' : 'translate-x-0'
+              }`}
+            />
+          </button>
         </div>
 
         {/* Section 1: Dashboard Setup & Visibility */}
@@ -338,6 +383,55 @@ export default function SettingsHub({
       {/* 2. DESKTOP CARDS VIEW (hidden md:grid) */}
       {/* ========================================================================= */}
       <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Desktop Edit Mode Hero Banner */}
+        <div className="md:col-span-2 lg:col-span-3 p-5 sm:p-6 rounded-3xl border border-sky-500/30 bg-linear-to-r from-sky-500/10 via-indigo-500/10 to-purple-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs relative overflow-hidden">
+          <div className="flex items-center gap-4 min-w-0 relative z-10">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-md shrink-0 transition-all ${
+              isEditMode 
+                ? 'bg-sky-500 text-white border-sky-400 shadow-sky-500/30 ring-4 ring-sky-500/20' 
+                : 'bg-sky-500/15 text-sky-400 border-sky-500/30'
+            }`}>
+              <PencilSimpleLine size={28} weight="duotone" className={isEditMode ? 'animate-bounce' : ''} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2.5">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                  Dashboard Edit & Layout Mode
+                </h3>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-tight border flex items-center gap-1.5 shadow-2xs ${
+                  isEditMode
+                    ? 'bg-sky-500 text-white border-sky-400 animate-pulse'
+                    : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10'
+                }`}>
+                  {isEditMode ? '● EDITING ACTIVE' : 'INACTIVE'}
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                When enabled, navigate to Overview, Rooms, and Areas to reorder tiles, resize cards, and toggle ghosted entity visibility directly.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 relative z-10 shrink-0 self-end sm:self-auto">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              {isEditMode ? 'Editing Enabled' : 'Enable Editing'}
+            </span>
+            <button
+              type="button"
+              onClick={toggleEditMode}
+              className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                isEditMode ? 'bg-sky-500 shadow-lg shadow-sky-500/30' : darkMode ? 'bg-white/20' : 'bg-slate-300'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                  isEditMode ? 'translate-x-6' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
         {CATEGORIES.map((cat, idx) => {
           const Icon = cat.icon;
           const isHighlight = idx === 0;

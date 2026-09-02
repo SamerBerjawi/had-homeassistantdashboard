@@ -3,14 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Integrated Native Home Assistant WebRTC Camera Stream Player (with multi-tier HLS/MJPEG fallback).
- * Operates securely over authenticated Home Assistant WebSocket signaling (`camera/webrtc/offer`).
- * Compatible with Cloudflare Tunnels and remote proxy configurations.
+ *
+ * Supports two distinct modes:
+ * 1. Preview Mode ('preview'): Grid tiles and dashboard overviews. Renders lightweight,
+ *    periodically-refreshed snapshots (every 4s) without initiating heavy WebRTC or HLS negotiations.
+ * 2. Live Mode ('live'): Detail views and modals. Runs the full multi-tier WebRTC -> HLS -> MJPEG
+ *    cascade with codec mismatch detection and stream concurrency management.
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Broadcast,
-  VideoCamera,
   ArrowsClockwise,
   WarningCircle,
   SpeakerHigh,
@@ -20,18 +23,22 @@ import {
   Pause,
   ArrowsOut,
   ArrowsIn,
-  Microphone,
-  MicrophoneSlash
+  Copy,
+  Check,
+  Warning,
+  Sparkle
 } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../types';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
-import { useCameraStream, StreamProtocol } from '../../hooks/useCameraStream';
-import { downloadCameraFrame, getHACameraSnapshotUrl } from '../../services/haCameraService';
+import { useCameraStream, StreamProtocol, StreamMode } from '../../hooks/useCameraStream';
+import { downloadCameraFrame, getHACameraSnapshotUrl, CameraCodecMode } from '../../services/haCameraService';
+import { generateGo2RtcConfigSnippet } from '../../services/go2rtcService';
 import { resolveHAImageUrl } from '../../services/haImageService';
 import CameraNoSignalPlaceholder from '../ui/CameraNoSignalPlaceholder';
 
 export interface HaWebRtcPlayerProps {
   camera: ResolvedEntity | { entity_id: string; name?: string; attributes?: any; state?: string };
+  mode?: StreamMode;
   darkMode?: boolean;
   className?: string;
   showControls?: boolean;
@@ -39,13 +46,17 @@ export interface HaWebRtcPlayerProps {
   muted?: boolean;
   isIntercomActive?: boolean;
   preferProtocol?: 'auto' | 'webrtc' | 'hls' | 'mjpeg';
+  codecMode?: CameraCodecMode;
+  previewIntervalMs?: number;
   onReady?: () => void;
   onError?: (error: Error | string) => void;
   onSnapshotReady?: (canvas: HTMLCanvasElement) => void;
+  onGoLive?: () => void;
 }
 
 export default function HaWebRtcPlayer({
   camera,
+  mode = 'live',
   darkMode = true,
   className = '',
   showControls = true,
@@ -53,31 +64,41 @@ export default function HaWebRtcPlayer({
   muted = true,
   isIntercomActive = false,
   preferProtocol = 'auto',
+  codecMode,
+  previewIntervalMs = 4000,
   onReady,
   onError,
-  onSnapshotReady
+  onSnapshotReady,
+  onGoLive
 }: HaWebRtcPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSnapshotting, setIsSnapshotting] = useState(false);
   const [isMjpegFailed, setIsMjpegFailed] = useState(false);
   const [isSnapshotFailed, setIsSnapshotFailed] = useState(false);
+  const [copiedSnippet, setCopiedSnippet] = useState(false);
+  const [showCodecModal, setShowCodecModal] = useState(false);
 
   const { serverUrl } = useAutoLayoutStore();
   const entityId = camera?.entity_id || '';
   const cameraName = (camera as any)?.name || (camera as any)?.attributes?.friendly_name || entityId;
   const rawEntityPic = (camera as any)?.attributes?.entity_picture;
+  const rtspUrl = (camera as any)?.attributes?.rtsp_url;
+  const isRtsp = (camera as any)?.attributes?.is_rtsp_stream || (camera as any)?.attributes?.stream_source === 'go2rtc';
+
   const snapshotFallbackUrl = rawEntityPic
     ? resolveHAImageUrl(rawEntityPic, serverUrl)
     : getHACameraSnapshotUrl(entityId, serverUrl);
 
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
-  // Reset snapshot and video failure states when entity changes
+  // Reset states on entity change
   useEffect(() => {
     setIsSnapshotFailed(false);
     setIsMjpegFailed(false);
     setIsVideoPlaying(false);
+    setShowCodecModal(false);
+    setCopiedSnippet(false);
   }, [entityId]);
 
   // Multi-tier stream lifecycle hook
@@ -88,18 +109,23 @@ export default function HaWebRtcPlayer({
     snapshotUrl,
     videoRef,
     error,
+    isCodecMismatch,
     isPaused,
     isAudioMuted,
     setIsAudioMuted,
     togglePause,
-    reconnect
+    reconnect,
+    retryFromWebRtc
   } = useCameraStream(entityId, {
+    mode,
     enabled: Boolean(entityId),
     autoPlay,
     muted,
     enableIntercom: isIntercomActive,
     serverUrl,
     preferProtocol,
+    codecMode,
+    previewIntervalMs,
     elementRef: containerRef,
     onStreamReady: () => {
       onReady?.();
@@ -152,8 +178,72 @@ export default function HaWebRtcPlayer({
     }
   }, []);
 
+  const handleCopyYaml = () => {
+    const snippet = generateGo2RtcConfigSnippet(entityId, rtspUrl);
+    navigator.clipboard.writeText(snippet).then(() => {
+      setCopiedSnippet(true);
+      setTimeout(() => setCopiedSnippet(false), 2500);
+    });
+  };
+
   const isVideoActive = (protocol === 'webrtc' || protocol === 'hls') && status === 'connected';
 
+  // =========================================================================
+  // PREVIEW MODE RENDER (Lightweight Periodic Snapshot Tile)
+  // =========================================================================
+  if (mode === 'preview') {
+    return (
+      <div
+        ref={containerRef}
+        onClick={onGoLive}
+        className={`relative w-full h-full bg-slate-950 flex items-center justify-center select-none overflow-hidden group ${className}`}
+      >
+        {/* Periodic Preview Snapshot */}
+        {(snapshotUrl || snapshotFallbackUrl) && !isSnapshotFailed ? (
+          <>
+            <img
+              key={snapshotUrl}
+              src={snapshotUrl || snapshotFallbackUrl}
+              alt={cameraName}
+              onError={() => setIsSnapshotFailed(true)}
+              className="w-full h-full object-cover transition-opacity duration-500 ease-out"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
+          </>
+        ) : (
+          <CameraNoSignalPlaceholder
+            title={cameraName}
+            subtitle={error || (status === 'demo' ? 'Demo Mode Feed' : 'Preview Unavailable')}
+          />
+        )}
+
+        {/* Top Left Preview Badge */}
+        <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-2 pointer-events-none">
+          <div className="px-2 py-0.5 rounded-lg bg-black/60 backdrop-blur-md text-white border border-white/15 text-[10px] font-bold flex items-center gap-1.5 shadow-md">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-slate-300">Preview</span>
+          </div>
+          {isRtsp && (
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
+              RTSP
+            </span>
+          )}
+        </div>
+
+        {/* Center Hover "Tap to Go Live" Affordance */}
+        <div className="absolute inset-0 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/30 pointer-events-none">
+          <div className="px-3 py-1.5 rounded-xl bg-black/70 backdrop-blur-md border border-white/20 text-white text-xs font-bold flex items-center gap-1.5 shadow-xl transform scale-95 group-hover:scale-100 transition-transform">
+            <Play size={13} weight="fill" className="text-cyan-400" />
+            <span>Tap for Live Stream</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // LIVE MODE RENDER (Full Multi-Tier Interactive Streaming Player)
+  // =========================================================================
   return (
     <div
       ref={containerRef}
@@ -183,7 +273,7 @@ export default function HaWebRtcPlayer({
         />
       )}
 
-      {/* Fallback Snapshot / Background Preview when video is not actively active */}
+      {/* Fallback Snapshot / Background Preview when video is not active */}
       {!isVideoActive && (
         <div className="absolute inset-0 w-full h-full z-0">
           {(snapshotFallbackUrl || snapshotUrl) && !isSnapshotFailed ? (
@@ -211,7 +301,7 @@ export default function HaWebRtcPlayer({
       )}
 
       {/* Top Left Protocol & Connection Badge */}
-      <div className="absolute top-3 left-3 z-20 flex items-center gap-2 pointer-events-none">
+      <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
         {protocol === 'webrtc' && status === 'connected' && (
           <div className="px-2.5 py-1 rounded-xl bg-black/60 backdrop-blur-md text-white border border-emerald-500/30 text-[11px] font-semibold flex items-center gap-1.5 shadow-md">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -222,18 +312,40 @@ export default function HaWebRtcPlayer({
         )}
 
         {protocol === 'hls' && status === 'connected' && (
-          <div className="px-2.5 py-1 rounded-xl bg-black/60 backdrop-blur-md text-white border border-amber-500/30 text-[11px] font-semibold flex items-center gap-1.5 shadow-md">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <span className="text-amber-300 font-bold">HLS Stream</span>
-            <span className="text-white/40">•</span>
-            <span className="text-slate-300">Buffered</span>
+          <div className="flex items-center gap-1.5">
+            <div className="px-2.5 py-1 rounded-xl bg-black/60 backdrop-blur-md text-white border border-amber-500/30 text-[11px] font-semibold flex items-center gap-1.5 shadow-md">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span className="text-amber-300 font-bold">HLS Stream</span>
+              <span className="text-white/40">•</span>
+              <span className="text-slate-300">Buffered</span>
+            </div>
+            <button
+              type="button"
+              onClick={retryFromWebRtc}
+              title="Force retry WebRTC tier"
+              className="px-2 py-1 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-md"
+            >
+              <ArrowsClockwise size={11} weight="bold" />
+              <span>Retry WebRTC</span>
+            </button>
           </div>
         )}
 
         {protocol === 'mjpeg' && status === 'connected' && (
-          <div className="px-2.5 py-1 rounded-xl bg-black/60 backdrop-blur-md text-white border border-purple-500/30 text-[11px] font-semibold flex items-center gap-1.5 shadow-md">
-            <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
-            <span className="text-purple-300 font-bold">MJPEG Proxy</span>
+          <div className="flex items-center gap-1.5">
+            <div className="px-2.5 py-1 rounded-xl bg-black/60 backdrop-blur-md text-white border border-purple-500/30 text-[11px] font-semibold flex items-center gap-1.5 shadow-md">
+              <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+              <span className="text-purple-300 font-bold">MJPEG Proxy</span>
+            </div>
+            <button
+              type="button"
+              onClick={retryFromWebRtc}
+              title="Force retry WebRTC tier"
+              className="px-2 py-1 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-md"
+            >
+              <ArrowsClockwise size={11} weight="bold" />
+              <span>Retry WebRTC</span>
+            </button>
           </div>
         )}
 
@@ -252,6 +364,59 @@ export default function HaWebRtcPlayer({
         )}
       </div>
 
+      {/* Codec Warning Pill (If H.265 / HEVC mismatch detected) */}
+      {isCodecMismatch && (
+        <div className="absolute top-12 left-3 z-30 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowCodecModal(true)}
+            className="px-2.5 py-1 rounded-xl bg-amber-500/90 hover:bg-amber-400 text-slate-950 text-[11px] font-black flex items-center gap-1.5 shadow-lg border border-amber-300 transition-all cursor-pointer animate-pulse"
+          >
+            <Warning size={14} weight="fill" />
+            <span>H.265 Codec Detected (Fix Available)</span>
+          </button>
+        </div>
+      )}
+
+      {/* Codec Guidance Modal Overlay */}
+      {showCodecModal && (
+        <div className="absolute inset-0 z-40 bg-black/85 backdrop-blur-md p-4 flex flex-col justify-between animate-in fade-in duration-200">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+                <WarningCircle size={18} weight="fill" />
+                <span>H.265 / HEVC RTSP Codec Incompatibility</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCodecModal(false)}
+                className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded-lg bg-white/10"
+              >
+                Close
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Browsers require <strong>H.264</strong> video for ultra-low latency WebRTC. This camera sends H.265 video without a transcode directive. Add <code className="text-amber-300 bg-black/60 px-1 py-0.5 rounded font-mono">#video=h264</code> to your go2rtc stream configuration.
+            </p>
+
+            <div className="relative p-2.5 rounded-xl bg-black/80 border border-amber-500/30 font-mono text-[10px] text-amber-200 overflow-x-auto">
+              <pre>{generateGo2RtcConfigSnippet(entityId, rtspUrl)}</pre>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={handleCopyYaml}
+              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              {copiedSnippet ? <Check size={14} weight="bold" /> : <Copy size={14} weight="bold" />}
+              <span>{copiedSnippet ? 'Copied to Clipboard!' : 'Copy go2rtc YAML'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Loading Spinner during connection */}
       {status === 'connecting' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs z-10 p-4 text-center">
@@ -260,7 +425,9 @@ export default function HaWebRtcPlayer({
             <Broadcast size={16} weight="duotone" className="text-cyan-400 absolute animate-pulse" />
           </div>
           <p className="text-xs font-bold text-white tracking-wide drop-shadow-md">{cameraName}</p>
-          <p className="text-[11px] text-cyan-300 mt-0.5 drop-shadow-md">Connecting WebRTC Stream...</p>
+          <p className="text-[11px] text-cyan-300 mt-0.5 drop-shadow-md">
+            {error || 'Negotiating Camera Stream...'}
+          </p>
         </div>
       )}
 

@@ -487,8 +487,33 @@ export default function SettingsView({
     success?: boolean;
     streamsCount?: number;
     streamNames?: string[];
+    latencyMs?: number | null;
     error?: string;
   }>({ tested: false, loading: false });
+
+  // Auto-probe go2rtc health on mount
+  useEffect(() => {
+    let isCancelled = false;
+    const probe = async () => {
+      const url = go2RtcUrlInput.trim();
+      const res = await testGo2RtcConnection(url);
+      if (!isCancelled) {
+        setGo2RtcStatus({
+          tested: true,
+          loading: false,
+          success: res.success,
+          streamsCount: res.streamsCount,
+          streamNames: res.streamNames,
+          latencyMs: res.latencyMs,
+          error: res.error
+        });
+      }
+    };
+    probe();
+    return () => {
+      isCancelled = true;
+    };
+  }, [go2RtcUrlInput]);
 
   const handleTestGo2Rtc = async () => {
     setGo2RtcStatus({ tested: true, loading: true });
@@ -500,6 +525,7 @@ export default function SettingsView({
       success: res.success,
       streamsCount: res.streamsCount,
       streamNames: res.streamNames,
+      latencyMs: res.latencyMs,
       error: res.error
     });
     if (res.success) {
@@ -519,9 +545,9 @@ export default function SettingsView({
       addToast?.({
         type: 'success',
         title: 'go2rtc Online',
-        message: `Discovered ${res.streamsCount} stream(s): ${res.streamNames.join(', ') || 'None'}`
+        message: `Discovered ${res.streamsCount} stream(s) (${res.latencyMs}ms): ${res.streamNames.join(', ') || 'None'}`
       });
-      addLog('info', `go2rtc online: found ${res.streamsCount} stream(s) [${res.streamNames.join(', ')}]`);
+      addLog('info', `go2rtc online: found ${res.streamsCount} stream(s) (${res.latencyMs}ms) [${res.streamNames.join(', ')}]`);
     } else {
       addToast?.({
         type: 'warning',

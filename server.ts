@@ -733,19 +733,67 @@ async function startServer() {
     }
   });
 
+  // Helper to build list of candidate URLs for go2rtc proxy probing
+  const resolveGo2RtcCandidateUrls = (rawUrl?: string, haUrl?: string): string[] => {
+    const candidates = new Set<string>();
+
+    const addCandidate = (u?: string) => {
+      if (!u) return;
+      const clean = u.trim().replace(/\/+$/, '');
+      if (clean) {
+        candidates.add(clean);
+        if (clean.includes(':1984')) {
+          candidates.add(clean.replace(':1984', ':11984'));
+        }
+      }
+    };
+
+    // 1. Target URL explicitly requested by client
+    addCandidate(rawUrl);
+
+    // 2. Server URL from Home Assistant
+    if (haUrl) {
+      try {
+        const u = new URL(haUrl.replace(/^ws:\/\//i, 'http://').replace(/^wss:\/\//i, 'https://'));
+        if (u.hostname) {
+          const proto = u.protocol === 'https:' ? 'https:' : 'http:';
+          addCandidate(`${proto}//${u.hostname}:1984`);
+          addCandidate(`http://${u.hostname}:1984`);
+          addCandidate(`http://${u.hostname}:11984`);
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // 3. Environment variable overrides (if container has them set)
+    if (process.env.GO2RTC_URL) addCandidate(process.env.GO2RTC_URL);
+    if (process.env.HOMZ_GO2RTC_URL) addCandidate(process.env.HOMZ_GO2RTC_URL);
+    if (process.env.HASS_URL) {
+      try {
+        const u = new URL(process.env.HASS_URL);
+        if (u.hostname) addCandidate(`http://${u.hostname}:1984`);
+      } catch { /* ignore */ }
+    }
+
+    // 4. HA network hostnames and supervisor
+    candidates.add('http://homeassistant.local:1984');
+    candidates.add('http://homeassistant:1984');
+    candidates.add('http://supervisor:1984');
+
+    // 5. Localhost fallbacks
+    candidates.add('http://localhost:1984');
+    candidates.add('http://127.0.0.1:1984');
+    candidates.add('http://localhost:11984');
+
+    return Array.from(candidates);
+  };
+
   // Proxy endpoint to query go2rtc streams bypassing any browser CORS / Private Network Access restrictions
   app.get('/api/go2rtc/streams', async (req, res) => {
     const rawUrl = (req.query.url as string) || '';
-    const cleanUrl = rawUrl.trim().replace(/\/+$/, '');
-    
-    const candidates: string[] = [];
-    if (cleanUrl) {
-      candidates.push(cleanUrl);
-      if (cleanUrl.includes(':1984')) {
-        candidates.push(cleanUrl.replace(':1984', ':11984'));
-      }
-    }
-    candidates.push('http://localhost:1984', 'http://127.0.0.1:1984', 'http://homeassistant.local:1984', 'http://localhost:11984');
+    const haUrl = (req.query.haUrl as string) || (req.headers['x-ha-server-url'] as string) || '';
+    const candidates = resolveGo2RtcCandidateUrls(rawUrl, haUrl);
 
     for (const base of candidates) {
       try {
@@ -773,6 +821,7 @@ async function startServer() {
   // Proxy endpoint to negotiate go2rtc WebRTC SDP offer/answer
   app.post('/api/go2rtc/webrtc', express.text({ type: '*/*' }), async (req, res) => {
     const rawUrl = (req.query.url as string) || '';
+    const haUrl = (req.query.haUrl as string) || (req.headers['x-ha-server-url'] as string) || '';
     const src = (req.query.src as string) || '';
     const sdpOffer = req.body;
 
@@ -780,15 +829,7 @@ async function startServer() {
       return res.status(400).json({ error: 'Missing src or SDP offer body' });
     }
 
-    const cleanUrl = rawUrl.trim().replace(/\/+$/, '');
-    const candidates: string[] = [];
-    if (cleanUrl) {
-      candidates.push(cleanUrl);
-      if (cleanUrl.includes(':1984')) {
-        candidates.push(cleanUrl.replace(':1984', ':11984'));
-      }
-    }
-    candidates.push('http://localhost:1984', 'http://127.0.0.1:1984', 'http://homeassistant.local:1984', 'http://localhost:11984');
+    const candidates = resolveGo2RtcCandidateUrls(rawUrl, haUrl);
 
     for (const base of candidates) {
       try {

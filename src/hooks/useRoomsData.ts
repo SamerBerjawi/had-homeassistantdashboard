@@ -27,9 +27,11 @@ import {
   isSmokeSensor
 } from '../lib/entityClassifiers';
 import { resolveAssetUrl } from '../utils/assetUrl';
+import { useEditMode } from '../contexts/EditModeContext';
 
 export function useRoomsData() {
   const { config } = useUserConfig();
+  const { isEditMode } = useEditMode();
   const {
     resolvedEntities,
     areas: storeAreas,
@@ -72,7 +74,8 @@ export function useRoomsData() {
     }
 
     for (const entity of entityList) {
-      if (entity.hidden || entity.disabled_by) continue;
+      if (entity.disabled_by) continue;
+      if (!isEditMode && entity.hidden) continue;
 
       let areaId = entity.area_id;
       if (!areaId && entity.device_id) {
@@ -88,7 +91,7 @@ export function useRoomsData() {
     }
 
     return map;
-  }, [resolvedEntities, rawDevices]);
+  }, [resolvedEntities, rawDevices, isEditMode]);
 
   // 2. Build Floor Name Lookup (with custom icon & accent color)
   const floorMap = useMemo(() => {
@@ -343,40 +346,43 @@ export function useRoomsData() {
         };
       }
 
-        const customArea = (config.rooms?.areaOverrides?.[area.area_id] || config.areas?.[area.area_id]) as any;
-        const effectiveName = customArea?.customName || customArea?.name || area.name;
-        const effectiveIcon = customArea?.customIcon || customArea?.icon || area.icon;
-        const effectiveColor = customArea?.customColor || customArea?.color || area.color;
-        const rawBg = customArea?.backgroundImageUrl || customArea?.picture || area.picture;
-        const resolvedBg = resolveAssetUrl(rawBg, config.updatedAt);
-        const isFavorite = Boolean(config.rooms?.favoriteAreas?.includes(area.area_id));
+      const customArea = (config.rooms?.areaOverrides?.[area.area_id] || config.areas?.[area.area_id]) as any;
+      const effectiveName = customArea?.customName || customArea?.name || area.name;
+      const effectiveIcon = customArea?.customIcon || customArea?.icon || area.icon;
+      const effectiveColor = customArea?.customColor || customArea?.color || area.color;
+      const rawBg = customArea?.backgroundImageUrl || customArea?.picture || area.picture;
+      const resolvedBg = resolveAssetUrl(rawBg, config.updatedAt);
+      const isFavorite = Boolean(config.rooms?.favoriteAreas?.includes(area.area_id));
 
-        return {
-          areaId: area.area_id,
-          name: effectiveName,
-          icon: effectiveIcon || undefined,
-          color: effectiveColor || undefined,
-          picture: resolvedBg || undefined,
-          backgroundImageUrl: resolvedBg || undefined,
-          isFavorite,
-          floorId: area.floor_id || undefined,
-          floorName: floor?.name,
-          sensors: sensorSummary,
-          entities: entityGroup,
-          activeLightsCount,
-          totalLightsCount,
-          activeSwitchesCount,
-          activeFansCount,
-          activeMediaPlayersCount,
-          unlockedLocksCount,
-          totalLocksCount,
-          climateState
-        };
-      });
+      return {
+        areaId: area.area_id,
+        name: effectiveName,
+        icon: effectiveIcon || undefined,
+        color: effectiveColor || undefined,
+        picture: resolvedBg || undefined,
+        backgroundImageUrl: resolvedBg || undefined,
+        isFavorite,
+        floorId: area.floor_id || undefined,
+        floorName: floor?.name,
+        sensors: sensorSummary,
+        entities: entityGroup,
+        activeLightsCount,
+        totalLightsCount,
+        activeSwitchesCount,
+        activeFansCount,
+        activeMediaPlayersCount,
+        unlockedLocksCount,
+        totalLocksCount,
+        climateState
+      };
+    });
 
-    // Apply remote config hidden areas and custom sort order if present
+    // Apply remote config hidden areas (preserved during Edit Mode for ghosted rendering)
     const hiddenSet = new Set(config.rooms?.hiddenAreas || []);
-    let filtered = rawList.filter((a) => !hiddenSet.has(a.areaId));
+    let filtered = rawList;
+    if (!isEditMode) {
+      filtered = rawList.filter((a) => !hiddenSet.has(a.areaId));
+    }
 
     const sortOrder = (config.rooms?.areaOrder && config.rooms.areaOrder.length > 0)
       ? config.rooms.areaOrder
@@ -392,12 +398,15 @@ export function useRoomsData() {
     }
 
     return filtered;
-  }, [activeAreas, entitiesByArea, floorMap, config.rooms, config.areas, config.updatedAt]);
+  }, [activeAreas, entitiesByArea, floorMap, config.rooms, config.areas, config.updatedAt, isEditMode]);
 
   // 4. Organize Areas Hierarchically by Floor (Descending Level Order or custom floorOrder) with custom floor styling
   const floorDataList: FloorData[] = useMemo(() => {
     const hiddenFloorSet = new Set(config.rooms?.hiddenFloors || []);
-    let floors = activeFloors.filter((f) => !hiddenFloorSet.has(f.floor_id));
+    let floors = activeFloors;
+    if (!isEditMode) {
+      floors = activeFloors.filter((f) => !hiddenFloorSet.has(f.floor_id));
+    }
 
     // Sort floors according to custom floorOrder or fallback to level descending
     if (config.rooms?.floorOrder && config.rooms.floorOrder.length > 0) {

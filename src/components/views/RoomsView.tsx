@@ -22,7 +22,11 @@ import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import ViewEmptyState from '../ui/ViewEmptyState';
 import ViewLoadingState from '../ui/ViewLoadingState';
 import VirtualGrid from '../layout/VirtualGrid';
+import SortableGrid from '../layout/SortableGrid';
 import GridTile from '../layout/GridTile';
+import { sortTilesForBento } from '../../utils/bentoLayout';
+import { useUserConfig } from '../../contexts/ConfigContext';
+import { useEditMode } from '../../contexts/EditModeContext';
 import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 
 interface RoomsViewProps {
@@ -31,6 +35,8 @@ interface RoomsViewProps {
 
 export default function RoomsView({ darkMode = true }: RoomsViewProps) {
   const isLoading = useAutoLayoutStore((s) => s.isLoading);
+  const { config } = useUserConfig();
+  const { isEditMode } = useEditMode();
   const {
     areasDataList = [],
     floorDataList = [],
@@ -204,29 +210,47 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
                 </div>
               )}
 
-              {/* 2-Grid Mobile Layout for Room Tiles */}
-              <VirtualGrid>
-                {floor.areas.map((area) => (
-                  <GridTile
-                    key={area.areaId}
-                    id={area.areaId}
-                    colSpan={2}
-                    tabletColSpan={3}
-                    desktopColSpan={3}
-                  >
-                    <AreaTile
-                      area={area}
-                      darkMode={darkMode}
-                      onSelectArea={(areaId) => setSelectedAreaId(areaId)}
-                      onToggleLights={toggleAreaLights}
-                      onToggleSwitches={toggleAreaSwitches}
-                      onToggleFans={toggleAreaFans}
-                      onToggleMedia={toggleAreaMedia}
-                      onToggleLocks={toggleAreaLocks}
-                    />
-                  </GridTile>
-                ))}
-              </VirtualGrid>
+              {/* 2-Grid Mobile Layout for Room Tiles with SortableGrid */}
+              {(() => {
+                const hiddenAreasSet = new Set(config?.rooms?.hiddenAreas || []);
+                const sortedAreas = sortTilesForBento({
+                  items: floor.areas,
+                  getId: (a) => a.areaId,
+                  layoutOverrides: config?.layoutOverrides,
+                  isEditMode
+                });
+
+                return (
+                  <SortableGrid items={sortedAreas.map((a) => a.areaId)}>
+                    {sortedAreas.map((area) => {
+                      const isGhosted = hiddenAreasSet.has(area.areaId);
+
+                      return (
+                        <GridTile
+                          key={area.areaId}
+                          id={area.areaId}
+                          areaId={area.areaId}
+                          isGhosted={isGhosted}
+                          colSpan={2}
+                          tabletColSpan={3}
+                          desktopColSpan={3}
+                        >
+                          <AreaTile
+                            area={area}
+                            darkMode={darkMode}
+                            onSelectArea={(areaId) => setSelectedAreaId(areaId)}
+                            onToggleLights={toggleAreaLights}
+                            onToggleSwitches={toggleAreaSwitches}
+                            onToggleFans={toggleAreaFans}
+                            onToggleMedia={toggleAreaMedia}
+                            onToggleLocks={toggleAreaLocks}
+                          />
+                        </GridTile>
+                      );
+                    })}
+                  </SortableGrid>
+                );
+              })()}
             </section>
           );
         })}
