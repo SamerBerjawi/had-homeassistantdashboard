@@ -79,8 +79,8 @@ export function detectCameraCapabilities(
     attrs.supports_siren
   );
 
-  const resolution = String(attrs.resolution || attrs.stream_resolution || (isDoorbell ? '1080p Full HD' : '2K HD (30 FPS)'));
-  const modelName = String(attrs.model_name || attrs.model || (isDoorbell ? 'Smart Video Doorbell' : 'Live Stream Camera'));
+  const resolution = String(attrs.resolution || attrs.stream_resolution || (isDoorbell ? '1080p Full HD' : (attrs.fps ? `${attrs.fps} FPS` : 'HD Live Stream')));
+  const modelName = String(attrs.model_name || attrs.brand || attrs.model || (isDoorbell ? 'Smart Video Doorbell' : 'Live Stream Camera'));
 
   const lastChanged = (entity as any).last_changed || (entity as any).last_updated || attrs.last_changed;
 

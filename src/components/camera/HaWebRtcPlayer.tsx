@@ -7,7 +7,7 @@
  * Compatible with Cloudflare Tunnels and remote proxy configurations.
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Broadcast,
   VideoCamera,
@@ -66,6 +66,8 @@ export default function HaWebRtcPlayer({
   const cameraName = (camera as any)?.name || (camera as any)?.attributes?.friendly_name || entityId;
   const snapshotFallbackUrl = (camera as any)?.attributes?.entity_picture || getHACameraSnapshotUrl(entityId, serverUrl);
 
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+
   // Multi-tier stream lifecycle hook
   const {
     status,
@@ -94,6 +96,13 @@ export default function HaWebRtcPlayer({
       onError?.(err);
     }
   });
+
+  // Reset isVideoPlaying when stream reconnects or protocol changes
+  useEffect(() => {
+    if (status !== 'connected') {
+      setIsVideoPlaying(false);
+    }
+  }, [status, protocol]);
 
   // Snapshot trigger
   const handleTakeSnapshot = useCallback(async () => {
@@ -136,7 +145,7 @@ export default function HaWebRtcPlayer({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full bg-black flex items-center justify-center select-none overflow-hidden group ${className}`}
+      className={`relative w-full h-full bg-slate-950 flex items-center justify-center select-none overflow-hidden group ${className}`}
     >
       {/* Video Element for WebRTC and HLS Tiers */}
       <video
@@ -144,8 +153,17 @@ export default function HaWebRtcPlayer({
         autoPlay={autoPlay}
         playsInline
         muted={isAudioMuted}
+        onPlaying={() => setIsVideoPlaying(true)}
+        onLoadedData={() => setIsVideoPlaying(true)}
+        onTimeUpdate={(e) => {
+          const v = e.currentTarget;
+          if (v.videoWidth > 0 && !isVideoPlaying) {
+            setIsVideoPlaying(true);
+          }
+        }}
+        onError={() => setIsVideoPlaying(false)}
         className={`w-full h-full object-cover transition-opacity duration-300 ${
-          isVideoActive ? 'opacity-100 z-10' : 'opacity-0 absolute pointer-events-none'
+          isVideoActive && isVideoPlaying ? 'opacity-100 z-10' : 'opacity-0 absolute pointer-events-none'
         }`}
       />
 
@@ -154,27 +172,28 @@ export default function HaWebRtcPlayer({
         <img
           src={mjpegUrl}
           alt={cameraName}
+          onLoad={() => setIsVideoPlaying(true)}
           onError={() => setIsMjpegFailed(true)}
           className="w-full h-full object-cover z-10"
         />
       )}
 
-      {/* Fallback Snapshot / Background Preview when video is not active */}
-      {!isVideoActive && (
-        <div className="absolute inset-0 w-full h-full">
+      {/* Fallback Snapshot / Background Preview when video is not actively rendering frames */}
+      {(!isVideoActive || !isVideoPlaying) && (
+        <div className="absolute inset-0 w-full h-full z-0">
           {snapshotFallbackUrl || snapshotUrl ? (
             <>
               <img
                 src={snapshotUrl || snapshotFallbackUrl}
                 alt={cameraName}
-                className="w-full h-full object-cover opacity-70 filter brightness-90"
+                className="w-full h-full object-cover opacity-80 filter brightness-95"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
             </>
           ) : (
             <CameraNoSignalPlaceholder
               title={cameraName}
-              subtitle={error || (status === 'demo' ? 'Demo Mode Feed' : 'No signal')}
+              subtitle={error || (status === 'demo' ? 'Demo Mode Feed' : status === 'connecting' ? 'Loading Camera Stream...' : 'No signal')}
             />
           )}
         </div>

@@ -10,6 +10,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { haWebSocketService } from '../services/haWebSocket';
 import { getCameraWebRtcConfig } from '../services/haCameraService';
+import { negotiateGo2RtcWebRtcSession } from '../services/go2rtcService';
 
 export interface WebRtcStreamState {
   stream: MediaStream | null;
@@ -217,7 +218,43 @@ export function useCameraWebRtc(
           }
         };
 
-        // 6. Create SDP Offer
+        // If direct go2rtc stream entity (go2rtc.<stream_name>)
+        const isGo2RtcDirect = entityId.startsWith('go2rtc.');
+        const go2rtcStreamName = isGo2RtcDirect 
+          ? entityId.replace(/^go2rtc\./, '') 
+          : entityId.replace(/^camera\./, '');
+
+        if (isGo2RtcDirect) {
+          const go2rtcCleanup = await negotiateGo2RtcWebRtcSession(
+            pc,
+            go2rtcStreamName,
+            undefined,
+            () => {
+              isStreamReady = true;
+              if (timeoutTimerRef.current) {
+                clearTimeout(timeoutTimerRef.current);
+                timeoutTimerRef.current = null;
+              }
+              setStatus('connected');
+              setError(null);
+              onConnected?.();
+            },
+            (err) => {
+              console.warn(`[useCameraWebRtc] go2rtc direct negotiation failed for ${entityId}:`, err);
+              setStatus('fallback');
+              setError(err?.message || 'go2rtc WebRTC negotiation failed');
+              onFallback?.(err?.message || 'go2rtc WebRTC negotiation failed');
+            }
+          );
+          if (isAborted) {
+            go2rtcCleanup();
+          } else {
+            unsubscribeWsRef.current = go2rtcCleanup;
+          }
+          return;
+        }
+
+        // 6. Create SDP Offer for Home Assistant native WebRTC
         const offer = await pc.createOffer();
         if (isAborted) return;
         await pc.setLocalDescription(offer);
@@ -244,6 +281,42 @@ export function useCameraWebRtc(
         if (isAborted) return;
 
         const offerSdp = pc.localDescription?.sdp || offer.sdp;
+
+        // Try secondary go2rtc negotiation if HA signaling reports error
+        const tryGo2RtcFallback = async (reason: string) => {
+          if (isAborted || !pcRef.current) return;
+          console.info(`[useCameraWebRtc] HA WebRTC failed (${reason}), trying go2rtc stream fallback for ${go2rtcStreamName}...`);
+          try {
+            const go2rtcCleanup = await negotiateGo2RtcWebRtcSession(
+              pc,
+              go2rtcStreamName,
+              undefined,
+              () => {
+                isStreamReady = true;
+                if (timeoutTimerRef.current) {
+                  clearTimeout(timeoutTimerRef.current);
+                  timeoutTimerRef.current = null;
+                }
+                setStatus('connected');
+                setError(null);
+                onConnected?.();
+              },
+              (fallbackErr) => {
+                console.warn(`[useCameraWebRtc] Secondary go2rtc fallback also failed:`, fallbackErr);
+                setStatus('fallback');
+                setError(fallbackErr?.message || reason);
+                onFallback?.(fallbackErr?.message || reason);
+              }
+            );
+            if (!isAborted) {
+              unsubscribeWsRef.current = go2rtcCleanup;
+            }
+          } catch {
+            setStatus('fallback');
+            setError(reason);
+            onFallback?.(reason);
+          }
+        };
 
         // 7. Process answer or session messages from HA
         const handleSignalingPayload = async (payload: any) => {
@@ -285,9 +358,7 @@ export function useCameraWebRtc(
               isStreamReady = true;
             } catch (e: any) {
               console.error('[useCameraWebRtc] Set remote description failed:', e);
-              setStatus('fallback');
-              setError(e?.message || 'Remote description error');
-              onFallback?.(e?.message || 'Remote description error');
+              await tryGo2RtcFallback(e?.message || 'Remote description error');
             }
           }
 
@@ -303,10 +374,8 @@ export function useCameraWebRtc(
           // Check for signaling error
           if (payload.type === 'error' || payload.error) {
             console.warn('[useCameraWebRtc] Signaling error received from HA:', payload);
-            setStatus('fallback');
             const errMsg = payload.message || payload.error?.message || payload.code || 'WebRTC signaling failed';
-            setError(errMsg);
-            onFallback?.(errMsg);
+            await tryGo2RtcFallback(errMsg);
           }
         };
 

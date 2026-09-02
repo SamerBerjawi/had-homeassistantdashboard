@@ -347,20 +347,39 @@ export async function negotiateGo2RtcWebRtcSession(
       if (isCleanedUp) return;
 
       const postUrl = `${httpUrl}/api/webrtc?src=${encodeURIComponent(streamName)}`;
-      const response = await fetch(postUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: pc.localDescription?.sdp || offer.sdp
-      });
+      let answerSdp = '';
 
-      if (response.ok) {
-        const answerSdp = await response.text();
-        if (!isCleanedUp && pc.signalingState !== 'closed') {
-          await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
-          onConnected?.();
+      try {
+        const response = await fetch(postUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: pc.localDescription?.sdp || offer.sdp
+        });
+        if (response.ok) {
+          answerSdp = await response.text();
         }
+      } catch {
+        // Fallback to local server proxy endpoint
+        try {
+          const proxyUrl = `/api/go2rtc/webrtc?url=${encodeURIComponent(httpUrl)}&src=${encodeURIComponent(streamName)}`;
+          const proxyRes = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: pc.localDescription?.sdp || offer.sdp
+          });
+          if (proxyRes.ok) {
+            answerSdp = await proxyRes.text();
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      if (answerSdp && !isCleanedUp && pc.signalingState !== 'closed') {
+        await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+        onConnected?.();
       } else {
-        throw new Error(`go2rtc HTTP WebRTC negotiation failed (${response.status})`);
+        throw new Error(`go2rtc HTTP WebRTC negotiation failed for stream "${streamName}"`);
       }
     } catch (e: any) {
       if (!isCleanedUp) {

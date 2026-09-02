@@ -767,6 +767,49 @@ async function startServer() {
     return res.status(502).json({ success: false, error: 'Could not connect to go2rtc API endpoint on probed ports.' });
   });
 
+  // Proxy endpoint to negotiate go2rtc WebRTC SDP offer/answer
+  app.post('/api/go2rtc/webrtc', express.text({ type: '*/*' }), async (req, res) => {
+    const rawUrl = (req.query.url as string) || '';
+    const src = (req.query.src as string) || '';
+    const sdpOffer = req.body;
+
+    if (!src || !sdpOffer) {
+      return res.status(400).json({ error: 'Missing src or SDP offer body' });
+    }
+
+    const cleanUrl = rawUrl.trim().replace(/\/+$/, '');
+    const candidates: string[] = [];
+    if (cleanUrl) {
+      candidates.push(cleanUrl);
+      if (cleanUrl.includes(':1984')) {
+        candidates.push(cleanUrl.replace(':1984', ':11984'));
+      }
+    }
+    candidates.push('http://localhost:1984', 'http://127.0.0.1:1984', 'http://homeassistant.local:1984', 'http://localhost:11984');
+
+    for (const base of candidates) {
+      try {
+        const postEndpoint = `${base.replace(/\/+$/, '')}/api/webrtc?src=${encodeURIComponent(src)}`;
+        const response = await fetch(postEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: sdpOffer,
+          signal: AbortSignal.timeout(4000)
+        });
+
+        if (response.ok) {
+          const answerSdp = await response.text();
+          res.setHeader('Content-Type', 'text/plain');
+          return res.send(answerSdp);
+        }
+      } catch {
+        // continue to next candidate
+      }
+    }
+
+    return res.status(502).json({ error: 'Failed to negotiate WebRTC with go2rtc' });
+  });
+
   // Universal Image Proxy to bypass CORS / Private Network restrictions for artwork color extraction
   app.get('/api/image-proxy', async (req, res) => {
     const rawUrl = (req.query.url as string) || '';

@@ -61,8 +61,8 @@ export default function CameraStreamModal({
   if (!isOpen || !camera) return null;
 
   const cameraName = camera.name || camera.attributes?.friendly_name || 'Surveillance Camera';
-  const modelName = camera.attributes?.model_name || 'UniFi Protect Stream';
-  const resolution = camera.attributes?.resolution || '2K HD (30 FPS)';
+  const modelName = camera.attributes?.model_name || camera.attributes?.brand || camera.attributes?.model || (camera.entity_id?.startsWith('go2rtc.') ? 'go2rtc RTSP Stream' : 'Live Camera Feed');
+  const resolution = camera.attributes?.resolution || camera.attributes?.stream_resolution || (camera.attributes?.fps ? `${camera.attributes.fps} FPS` : 'HD Live Stream');
   const motionStatus = getCameraMotionStatus(camera, domainGroups['binary_sensor'] || []);
 
   const handleCaptureSnapshot = async () => {
