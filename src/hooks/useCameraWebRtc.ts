@@ -282,13 +282,71 @@ export function useCameraWebRtc(
 
         const offerSdp = pc.localDescription?.sdp || offer.sdp;
 
-        // Try secondary go2rtc negotiation if HA signaling reports error
+        // Try secondary go2rtc negotiation if HA signaling reports error.
+        // IMPORTANT: Create a fresh RTCPeerConnection — the original PC is in a
+        // stale signaling state (have-local-offer or worse) from the failed HA
+        // flow, so reusing it for a new createOffer/setLocalDescription will
+        // throw InvalidStateError and silently kill the fallback.
         const tryGo2RtcFallback = async (reason: string) => {
-          if (isAborted || !pcRef.current) return;
-          console.info(`[useCameraWebRtc] HA WebRTC failed (${reason}), trying go2rtc stream fallback for ${go2rtcStreamName}...`);
+          if (isAborted) return;
+          console.info(`[useCameraWebRtc] HA WebRTC failed (${reason}), creating fresh PC for go2rtc fallback for ${go2rtcStreamName}...`);
           try {
+            // Close the stale HA-path PeerConnection
+            if (pcRef.current) {
+              try { pcRef.current.close(); } catch { /* ignore */ }
+            }
+
+            // Create a fresh PeerConnection with the same ICE config
+            const freshPc = new RTCPeerConnection(rtcConfig);
+            pcRef.current = freshPc;
+
+            // Re-add recvonly transceivers on the fresh PC
+            try {
+              freshPc.addTransceiver('video', { direction: 'recvonly' });
+              freshPc.addTransceiver('audio', { direction: 'recvonly' });
+            } catch (e) {
+              console.debug('[useCameraWebRtc] Fresh PC add transceiver warning:', e);
+            }
+
+            // Wire up track and connection state handlers on the fresh PC
+            freshPc.ontrack = (event) => {
+              if (isAborted) return;
+              isStreamReady = true;
+              if (timeoutTimerRef.current) {
+                clearTimeout(timeoutTimerRef.current);
+                timeoutTimerRef.current = null;
+              }
+              if (event.streams && event.streams[0]) {
+                setStream(event.streams[0]);
+              } else if (event.track) {
+                setStream(new MediaStream([event.track]));
+              }
+              setStatus('connected');
+              setError(null);
+              onConnected?.();
+            };
+
+            freshPc.onconnectionstatechange = () => {
+              if (isAborted) return;
+              if (freshPc.connectionState === 'connected') {
+                isStreamReady = true;
+                if (timeoutTimerRef.current) {
+                  clearTimeout(timeoutTimerRef.current);
+                  timeoutTimerRef.current = null;
+                }
+                setStatus('connected');
+                setError(null);
+                onConnected?.();
+              } else if (freshPc.connectionState === 'failed' || freshPc.connectionState === 'disconnected') {
+                console.warn(`[useCameraWebRtc] go2rtc fallback PC connectionState: ${freshPc.connectionState}`);
+                setStatus('fallback');
+                setError(`WebRTC peer connection ${freshPc.connectionState}`);
+                onFallback?.(`WebRTC peer connection ${freshPc.connectionState}`);
+              }
+            };
+
             const go2rtcCleanup = await negotiateGo2RtcWebRtcSession(
-              pc,
+              freshPc,
               go2rtcStreamName,
               undefined,
               () => {
@@ -311,7 +369,8 @@ export function useCameraWebRtc(
             if (!isAborted) {
               unsubscribeWsRef.current = go2rtcCleanup;
             }
-          } catch {
+          } catch (e: any) {
+            console.warn('[useCameraWebRtc] go2rtc fallback PC creation failed:', e);
             setStatus('fallback');
             setError(reason);
             onFallback?.(reason);

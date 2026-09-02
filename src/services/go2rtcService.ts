@@ -325,6 +325,13 @@ export async function negotiateGo2RtcWebRtcSession(
   const negotiateHttp = async () => {
     if (isCleanedUp) return;
     try {
+      // Guard: ensure PC is in a valid state for a new offer
+      if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-local-offer') {
+        console.warn(`[go2rtc] HTTP fallback: PC signalingState is '${pc.signalingState}', cannot create offer`);
+        onError?.(new Error(`PC in unexpected signaling state: ${pc.signalingState}`));
+        return;
+      }
+
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
@@ -375,7 +382,7 @@ export async function negotiateGo2RtcWebRtcSession(
         }
       }
 
-      if (answerSdp && !isCleanedUp && pc.signalingState !== 'closed') {
+      if (answerSdp && !isCleanedUp && (pc.signalingState as string) !== 'closed') {
         await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
         onConnected?.();
       } else {
@@ -408,6 +415,13 @@ export async function negotiateGo2RtcWebRtcSession(
       if (isCleanedUp) return;
 
       try {
+        // Guard: ensure PC is in a valid signaling state for a new offer
+        if (pc.signalingState !== 'stable') {
+          console.warn(`[go2rtc] WS onopen: PC signalingState is '${pc.signalingState}', falling back to HTTP`);
+          negotiateHttp();
+          return;
+        }
+
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
@@ -454,11 +468,19 @@ export async function negotiateGo2RtcWebRtcSession(
       }
     };
 
-    ws.onerror = () => {
+    ws.onerror = (ev) => {
+      console.warn('[go2rtc] WebSocket connection error, falling back to HTTP POST:', ev);
       clearTimeout(wsTimeout);
       negotiateHttp();
     };
-  } catch {
+
+    ws.onclose = (ev) => {
+      if (!isCleanedUp && ev.code !== 1000) {
+        console.debug(`[go2rtc] WebSocket closed (code=${ev.code}, reason=${ev.reason || 'none'})`);
+      }
+    };
+  } catch (e) {
+    console.warn('[go2rtc] WebSocket creation failed, falling back to HTTP POST:', e);
     negotiateHttp();
   }
 

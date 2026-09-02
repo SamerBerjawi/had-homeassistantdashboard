@@ -27,6 +27,7 @@ import { ResolvedEntity } from '../../types';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { useCameraStream, StreamProtocol } from '../../hooks/useCameraStream';
 import { downloadCameraFrame, getHACameraSnapshotUrl } from '../../services/haCameraService';
+import { resolveHAImageUrl } from '../../services/haImageService';
 import CameraNoSignalPlaceholder from '../ui/CameraNoSignalPlaceholder';
 
 export interface HaWebRtcPlayerProps {
@@ -60,13 +61,24 @@ export default function HaWebRtcPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSnapshotting, setIsSnapshotting] = useState(false);
   const [isMjpegFailed, setIsMjpegFailed] = useState(false);
+  const [isSnapshotFailed, setIsSnapshotFailed] = useState(false);
 
   const { serverUrl } = useAutoLayoutStore();
   const entityId = camera?.entity_id || '';
   const cameraName = (camera as any)?.name || (camera as any)?.attributes?.friendly_name || entityId;
-  const snapshotFallbackUrl = (camera as any)?.attributes?.entity_picture || getHACameraSnapshotUrl(entityId, serverUrl);
+  const rawEntityPic = (camera as any)?.attributes?.entity_picture;
+  const snapshotFallbackUrl = rawEntityPic
+    ? resolveHAImageUrl(rawEntityPic, serverUrl)
+    : getHACameraSnapshotUrl(entityId, serverUrl);
 
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+
+  // Reset snapshot and video failure states when entity changes
+  useEffect(() => {
+    setIsSnapshotFailed(false);
+    setIsMjpegFailed(false);
+    setIsVideoPlaying(false);
+  }, [entityId]);
 
   // Multi-tier stream lifecycle hook
   const {
@@ -155,15 +167,8 @@ export default function HaWebRtcPlayer({
         muted={isAudioMuted}
         onPlaying={() => setIsVideoPlaying(true)}
         onLoadedData={() => setIsVideoPlaying(true)}
-        onTimeUpdate={(e) => {
-          const v = e.currentTarget;
-          if (v.videoWidth > 0 && !isVideoPlaying) {
-            setIsVideoPlaying(true);
-          }
-        }}
-        onError={() => setIsVideoPlaying(false)}
-        className={`w-full h-full object-cover transition-opacity duration-300 ${
-          isVideoActive && isVideoPlaying ? 'opacity-100 z-10' : 'opacity-0 absolute pointer-events-none'
+        className={`w-full h-full object-cover z-10 transition-opacity duration-300 ${
+          isVideoActive ? 'opacity-100' : 'opacity-0 absolute pointer-events-none'
         }`}
       />
 
@@ -178,14 +183,15 @@ export default function HaWebRtcPlayer({
         />
       )}
 
-      {/* Fallback Snapshot / Background Preview when video is not actively rendering frames */}
-      {(!isVideoActive || !isVideoPlaying) && (
+      {/* Fallback Snapshot / Background Preview when video is not actively active */}
+      {!isVideoActive && (
         <div className="absolute inset-0 w-full h-full z-0">
-          {snapshotFallbackUrl || snapshotUrl ? (
+          {(snapshotFallbackUrl || snapshotUrl) && !isSnapshotFailed ? (
             <>
               <img
                 src={snapshotUrl || snapshotFallbackUrl}
                 alt={cameraName}
+                onError={() => setIsSnapshotFailed(true)}
                 className="w-full h-full object-cover opacity-80 filter brightness-95"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />

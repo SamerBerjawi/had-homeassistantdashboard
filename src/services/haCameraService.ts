@@ -13,6 +13,7 @@
 import { haWebSocketService } from './haWebSocket';
 import { getActiveHAToken } from './haAuth';
 import { getHAHttpBaseUrl, resolveHAImageUrl } from './haImageService';
+import { getGo2RtcBaseUrls } from './go2rtcService';
 import { ResolvedEntity } from '../types';
 
 export interface WebRtcClientConfig {
@@ -103,6 +104,12 @@ export function getHACameraMjpegUrl(
   serverUrl?: string,
   token?: string
 ): string {
+  if (entityId.startsWith('go2rtc.')) {
+    const streamName = entityId.replace(/^go2rtc\./, '');
+    const { httpUrl } = getGo2RtcBaseUrls(serverUrl);
+    return `${httpUrl}/api/stream.mjpeg?src=${encodeURIComponent(streamName)}`;
+  }
+
   const baseUrl = getHAHttpBaseUrl(serverUrl || haWebSocketService.getCurrentUrl());
   const activeToken = token || haWebSocketService.getCurrentToken() || getActiveHAToken();
   const tokenParam = activeToken ? `?token=${encodeURIComponent(activeToken)}` : '';
@@ -122,6 +129,12 @@ export function getHACameraSnapshotUrl(
   serverUrl?: string,
   token?: string
 ): string {
+  if (entityId.startsWith('go2rtc.')) {
+    const streamName = entityId.replace(/^go2rtc\./, '');
+    const { httpUrl } = getGo2RtcBaseUrls(serverUrl);
+    return `${httpUrl}/api/frame.jpeg?src=${encodeURIComponent(streamName)}`;
+  }
+
   const baseUrl = getHAHttpBaseUrl(serverUrl || haWebSocketService.getCurrentUrl());
   const activeToken = token || haWebSocketService.getCurrentToken() || getActiveHAToken();
   const tokenParam = activeToken ? `?token=${encodeURIComponent(activeToken)}` : '';
