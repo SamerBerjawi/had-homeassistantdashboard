@@ -16,7 +16,8 @@ import {
   EyeSlash,
   DotsSixVertical,
   ArrowsOutSimple,
-  HandGrabbing
+  HandGrabbing,
+  ArrowSquareOut
 } from '@phosphor-icons/react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -217,26 +218,45 @@ export const GridTile: React.FC<GridTileProps> = ({
       {/* ========================================================================= */}
       {isEditMode && (
         <div className="absolute top-2 left-2 right-2 z-30 flex items-center justify-between pointer-events-auto">
-          {/* Eye Visibility 2-Way Mirror Toggle Button */}
-          <button
-            type="button"
-            onClick={handleToggleEye}
-            className={`p-1.5 rounded-xl border backdrop-blur-md shadow-md cursor-pointer transition-all active:scale-90 flex items-center gap-1 ${
-              effectiveIsGhosted
-                ? 'bg-amber-500/25 border-amber-500/60 text-amber-300 hover:bg-amber-500/40'
-                : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30'
-            }`}
-            title={effectiveIsGhosted ? 'Click to show this tile on dashboard' : 'Click to hide this tile from dashboard'}
-          >
-            {effectiveIsGhosted ? (
-              <>
-                <EyeSlash size={15} weight="bold" />
-                <span className="text-[10px] font-bold uppercase tracking-wider pr-0.5">Hidden</span>
-              </>
-            ) : (
-              <Eye size={15} weight="bold" />
+          {/* Left Action: Eye Visibility 2-Way Mirror Toggle Button */}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleToggleEye}
+              className={`p-1.5 rounded-xl border backdrop-blur-md shadow-md cursor-pointer transition-all active:scale-90 flex items-center gap-1 ${
+                effectiveIsGhosted
+                  ? 'bg-amber-500/25 border-amber-500/60 text-amber-300 hover:bg-amber-500/40'
+                  : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30'
+              }`}
+              title={effectiveIsGhosted ? 'Click to show this tile on dashboard' : 'Click to hide this tile from dashboard'}
+            >
+              {effectiveIsGhosted ? (
+                <>
+                  <EyeSlash size={15} weight="bold" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider pr-0.5">Hidden</span>
+                </>
+              ) : (
+                <Eye size={15} weight="bold" />
+              )}
+            </button>
+
+            {/* Direct Open Area Action in Edit Mode */}
+            {onClick && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClick();
+                }}
+                className="px-2 py-1 rounded-xl bg-sky-500 hover:bg-sky-400 active:bg-sky-600 text-white text-[11px] font-bold shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1 shrink-0 backdrop-blur-md"
+                title="Access Area page to customize entities inside this room"
+              >
+                <span>Open Area</span>
+                <ArrowSquareOut size={13} weight="bold" />
+              </button>
             )}
-          </button>
+          </div>
 
           {/* Right Action Tools: Size Cycle + Drag Handle */}
           <div className="flex items-center gap-1">
@@ -264,12 +284,21 @@ export const GridTile: React.FC<GridTileProps> = ({
         </div>
       )}
 
-      {/* Edit Mode Click Shield: Prevents accidental device triggering while editing */}
+      {/* Edit Mode Click Shield: Prevents accidental device triggering while editing, forwards navigation clicks */}
       {isEditMode && (
         <div
           {...attributes}
           {...listeners}
-          className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing rounded-3xl bg-black/5 dark:bg-white/3"
+          onClick={(e) => {
+            if (onClick) {
+              e.preventDefault();
+              e.stopPropagation();
+              onClick();
+            }
+          }}
+          className={`absolute inset-0 z-20 rounded-3xl ${
+            onClick ? 'cursor-pointer hover:bg-sky-500/10' : 'cursor-grab active:cursor-grabbing'
+          } bg-black/5 dark:bg-white/3 transition-colors`}
         />
       )}
 

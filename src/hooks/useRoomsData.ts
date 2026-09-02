@@ -60,6 +60,18 @@ export function useRoomsData() {
   const activeAreas = (storeAreas && storeAreas.length > 0) ? storeAreas : rawAreas || [];
   const activeFloors = (storeFloors && storeFloors.length > 0) ? storeFloors : rawFloors || [];
 
+  // Master set of hidden entity IDs combining remote config hiddenEntityIds and customizations
+  const hiddenEntitySet = useMemo(() => {
+    const set = new Set<string>(config?.entities?.hiddenEntityIds || []);
+    if (config?.entities?.customizations) {
+      for (const [id, custom] of Object.entries(config.entities.customizations)) {
+        if (custom.hidden === true) set.add(id);
+        else if (custom.hidden === false) set.delete(id);
+      }
+    }
+    return set;
+  }, [config?.entities?.hiddenEntityIds, config?.entities?.customizations]);
+
   // 1. Group all resolved entities by areaId (direct match or inherited from device)
   const entitiesByArea = useMemo(() => {
     const map: Record<string, ResolvedEntity[]> = {};
@@ -75,7 +87,8 @@ export function useRoomsData() {
 
     for (const entity of entityList) {
       if (entity.disabled_by) continue;
-      if (!isEditMode && entity.hidden) continue;
+      const isHidden = hiddenEntitySet.has(entity.entity_id) || Boolean(entity.hidden);
+      if (!isEditMode && isHidden) continue;
 
       let areaId = entity.area_id;
       if (!areaId && entity.device_id) {
@@ -86,12 +99,16 @@ export function useRoomsData() {
         if (!map[areaId]) {
           map[areaId] = [];
         }
-        map[areaId].push(entity);
+        map[areaId].push(
+          isHidden && !entity.hidden
+            ? { ...entity, hidden: true }
+            : entity
+        );
       }
     }
 
     return map;
-  }, [resolvedEntities, rawDevices, isEditMode]);
+  }, [resolvedEntities, rawDevices, isEditMode, hiddenEntitySet]);
 
   // 2. Build Floor Name Lookup (with custom icon & accent color)
   const floorMap = useMemo(() => {

@@ -175,6 +175,9 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const merged = mergeConfig(config, nextPartial);
     // Optimistic UI state update
     setConfig(merged);
+    try {
+      useAutoLayoutStore.getState().applyConfigCustomizations(merged);
+    } catch {}
     setIsSaving(true);
 
     // Accumulate granular delta for debounced save

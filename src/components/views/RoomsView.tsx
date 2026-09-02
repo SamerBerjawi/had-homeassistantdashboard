@@ -234,6 +234,7 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
                           colSpan={2}
                           tabletColSpan={3}
                           desktopColSpan={3}
+                          onClick={() => setSelectedAreaId(area.areaId)}
                         >
                           <AreaTile
                             area={area}

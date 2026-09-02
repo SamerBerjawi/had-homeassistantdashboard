@@ -11,7 +11,7 @@
  * - Floor & Area Styling, Labels, and Zones management
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   SlidersHorizontal,
@@ -136,8 +136,26 @@ export default function DeviceVisibilitySection({
   addToast,
   addLog
 }: DeviceVisibilitySectionProps) {
-  const { updateConfig } = useUserConfig();
+  const { config, updateConfig } = useUserConfig();
   const { setEntityHidden, bulkSetEntitiesHidden } = useAutoLayoutStore();
+
+  // Master set of hidden entity IDs combining remote config hiddenEntityIds, customizations, and store
+  const hiddenEntityIdsSet = useMemo(() => {
+    const set = new Set<string>(config?.entities?.hiddenEntityIds || []);
+    if (config?.entities?.customizations) {
+      for (const [id, custom] of Object.entries(config.entities.customizations)) {
+        if (custom.hidden === true) set.add(id);
+        else if (custom.hidden === false) set.delete(id);
+      }
+    }
+    return set;
+  }, [config?.entities?.hiddenEntityIds, config?.entities?.customizations]);
+
+  const isEntityHidden = useCallback((entity: ResolvedEntity | { entity_id: string; hidden?: boolean } | null | undefined): boolean => {
+    if (!entity) return false;
+    if (hiddenEntityIdsSet.has(entity.entity_id)) return true;
+    return Boolean(entity.hidden);
+  }, [hiddenEntityIdsSet]);
 
   const [activeTab, setActiveTab] = useState<'visibility' | 'styling' | 'labels' | 'zones'>('visibility');
   const [searchQuery, setSearchQuery] = useState('');
@@ -336,8 +354,8 @@ export default function DeviceVisibilitySection({
   // Combined Search & Visibility Filter
   const matchesFilter = (entity: ResolvedEntity): boolean => {
     if (!matchesCategory(entity)) return false;
-    if (visibilityFilter === 'visible' && entity.hidden) return false;
-    if (visibilityFilter === 'hidden' && !entity.hidden) return false;
+    if (visibilityFilter === 'visible' && isEntityHidden(entity)) return false;
+    if (visibilityFilter === 'hidden' && !isEntityHidden(entity)) return false;
     if (!searchQuery.trim()) return true;
 
     const q = searchQuery.toLowerCase();
@@ -385,7 +403,7 @@ export default function DeviceVisibilitySection({
     });
   };
 
-  const handleBulkSetVisibility = (entityIds: string[], setHidden: boolean, scopeName: string) => {
+  const handleBulkSetVisibility = (entityIds: string[], setHidden: boolean, scopeName: string, areaId?: string) => {
     if (!entityIds || entityIds.length === 0) return;
     bulkSetEntitiesHidden(entityIds, setHidden);
 
@@ -405,8 +423,23 @@ export default function DeviceVisibilitySection({
         };
       }
 
+      let updatedRooms = prev.rooms;
+      if (areaId) {
+        const hiddenAreas = new Set(prev.rooms?.hiddenAreas || []);
+        if (setHidden) {
+          hiddenAreas.add(areaId);
+        } else {
+          hiddenAreas.delete(areaId);
+        }
+        updatedRooms = {
+          ...prev.rooms,
+          hiddenAreas: Array.from(hiddenAreas)
+        };
+      }
+
       return {
         ...prev,
+        rooms: updatedRooms,
         entities: {
           ...(prev.entities || {}),
           hiddenEntityIds: Array.from(hiddenList),
@@ -475,7 +508,7 @@ export default function DeviceVisibilitySection({
   }, [allResolvedList, categoryFilter, binarySubcategory, sensorSubcategory]);
 
   const activeCategoryTotalCount = activeCategoryAllEntities.length;
-  const activeCategoryVisibleCount = activeCategoryAllEntities.filter(e => !e.hidden).length;
+  const activeCategoryVisibleCount = activeCategoryAllEntities.filter(e => !isEntityHidden(e)).length;
   const activeCategoryHiddenCount = activeCategoryTotalCount - activeCategoryVisibleCount;
   const activeCategoryEntityIds = useMemo(() => activeCategoryAllEntities.map(e => e.entity_id), [activeCategoryAllEntities]);
 
@@ -642,7 +675,7 @@ export default function DeviceVisibilitySection({
 
   // Visibility metrics
   const totalCount = allResolvedList.length;
-  const hiddenCount = allResolvedList.filter(e => Boolean(e.hidden)).length;
+  const hiddenCount = allResolvedList.filter(e => isEntityHidden(e)).length;
   const visibleCount = totalCount - hiddenCount;
 
   // Toggle Collapse All / Expand All
@@ -777,7 +810,7 @@ export default function DeviceVisibilitySection({
                 const count = catEntities.length;
                 if (count === 0 && cat.id !== 'all') return null;
 
-                const catVisible = catEntities.filter(e => !e.hidden).length;
+                const catVisible = catEntities.filter(e => !isEntityHidden(e)).length;
 
                 return (
                   <button
@@ -831,7 +864,7 @@ export default function DeviceVisibilitySection({
                     
                     const count = subEntities.length;
                     if (count === 0 && sub.id !== 'all') return null;
-                    const subVis = subEntities.filter(e => !e.hidden).length;
+                    const subVis = subEntities.filter(e => !isEntityHidden(e)).length;
 
                     return (
                       <button
@@ -877,7 +910,7 @@ export default function DeviceVisibilitySection({
                     
                     const count = subEntities.length;
                     if (count === 0 && sub.id !== 'all') return null;
-                    const subVis = subEntities.filter(e => !e.hidden).length;
+                    const subVis = subEntities.filter(e => !isEntityHidden(e)).length;
 
                     return (
                       <button
@@ -1063,7 +1096,7 @@ export default function DeviceVisibilitySection({
               ) : (
                 <div className="space-y-2">
                   {activeMatchingEntities.map(entity => {
-                    const isHidden = Boolean(entity.hidden);
+                    const isHidden = isEntityHidden(entity);
                     const domain = entity.domain;
                     const isOn = entity.state === 'on' || entity.state === 'open' || entity.state === 'unlocked' || entity.state === 'playing';
 
@@ -1151,7 +1184,7 @@ export default function DeviceVisibilitySection({
                   return null;
                 }
 
-                const floorVisibleCount = matchingFloorEntityIds.filter(id => !resolvedEntities[id]?.hidden).length;
+                const floorVisibleCount = matchingFloorEntityIds.filter(id => !isEntityHidden(resolvedEntities[id])).length;
                 const floorTotalCount = matchingFloorEntityIds.length;
 
                 return (
@@ -1239,7 +1272,7 @@ export default function DeviceVisibilitySection({
                             return null;
                           }
 
-                          const areaVisibleCount = matchingAreaEntityIds.filter(id => !resolvedEntities[id]?.hidden).length;
+                          const areaVisibleCount = matchingAreaEntityIds.filter(id => !isEntityHidden(resolvedEntities[id])).length;
                           const areaTotalCount = matchingAreaEntityIds.length;
 
                           return (
@@ -1281,14 +1314,14 @@ export default function DeviceVisibilitySection({
                                 <div className="flex items-center gap-2">
                                   <button
                                     type="button"
-                                    onClick={() => handleBulkSetVisibility(matchingAreaEntityIds, false, area.name)}
+                                    onClick={() => handleBulkSetVisibility(matchingAreaEntityIds, false, area.name, area.area_id)}
                                     className="px-3 py-1 rounded-lg bg-white dark:bg-white/10 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400 border border-slate-200 dark:border-white/10 text-xs font-bold transition-all cursor-pointer"
                                   >
                                     Show Area
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => handleBulkSetVisibility(matchingAreaEntityIds, true, area.name)}
+                                    onClick={() => handleBulkSetVisibility(matchingAreaEntityIds, true, area.name, area.area_id)}
                                     className="px-3 py-1 rounded-lg bg-white dark:bg-white/10 hover:bg-amber-50 text-slate-700 hover:text-amber-600 dark:text-slate-200 dark:hover:text-amber-400 border border-slate-200 dark:border-white/10 text-xs font-bold transition-all cursor-pointer"
                                   >
                                     Hide Area
@@ -1308,7 +1341,7 @@ export default function DeviceVisibilitySection({
                                     }
 
                                     const devEntityIds = filteredDevEntities.map(e => e.entity_id);
-                                    const devVisibleCount = filteredDevEntities.filter(e => !e.hidden).length;
+                                    const devVisibleCount = filteredDevEntities.filter(e => !isEntityHidden(e)).length;
                                     const devTotalCount = filteredDevEntities.length;
 
                                     return (
@@ -1360,7 +1393,7 @@ export default function DeviceVisibilitySection({
                                         {!isDevCollapsed && (
                                           <div className="p-2.5 sm:p-3 space-y-2">
                                             {filteredDevEntities.map(entity => {
-                                              const isHidden = Boolean(entity.hidden);
+                                              const isHidden = isEntityHidden(entity);
                                               const domain = entity.domain;
                                               const isOn = entity.state === 'on' || entity.state === 'open' || entity.state === 'unlocked' || entity.state === 'playing';
 
@@ -1424,7 +1457,7 @@ export default function DeviceVisibilitySection({
                                       </span>
                                       <div className="space-y-2">
                                         {standaloneEntities.filter(matchesFilter).map(entity => {
-                                          const isHidden = Boolean(entity.hidden);
+                                          const isHidden = isEntityHidden(entity);
                                           return (
                                             <div
                                               key={entity.entity_id}
@@ -1585,10 +1618,10 @@ export default function DeviceVisibilitySection({
                                           <span className="font-semibold truncate">{entity.name}</span>
                                           <button
                                             type="button"
-                                            onClick={() => handleToggleEntityVisibility(entity.entity_id, Boolean(entity.hidden))}
+                                            onClick={() => handleToggleEntityVisibility(entity.entity_id, isEntityHidden(entity))}
                                             className="text-xs font-bold px-2.5 py-1 rounded-lg border"
                                           >
-                                            {entity.hidden ? 'Hidden' : 'Visible'}
+                                            {isEntityHidden(entity) ? 'Hidden' : 'Visible'}
                                           </button>
                                         </div>
                                       ))}
@@ -1679,66 +1712,72 @@ export default function DeviceVisibilitySection({
                             </div>
 
                             <div className="space-y-2 pt-1">
-                              {filteredDevEntities.map(entity => (
-                                <div
-                                  key={entity.entity_id}
-                                  className={`p-3 rounded-xl flex items-center justify-between gap-3 border transition-all ${
-                                    entity.hidden
-                                      ? 'bg-slate-100/40 dark:bg-white/1 border-dashed border-slate-300 dark:border-white/5 opacity-60'
-                                      : 'bg-slate-50 dark:bg-black/30 border-slate-200 dark:border-white/10'
-                                  }`}
-                                >
-                                  <div className="min-w-0">
-                                    <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate block">{entity.name}</span>
-                                    <span className="text-xs font-mono text-slate-500 truncate block mt-0.5">{entity.entity_id}</span>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleEntityVisibility(entity.entity_id, Boolean(entity.hidden))}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border ${
-                                      !entity.hidden
-                                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                                        : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400 border-slate-300 dark:border-white/10'
+                              {filteredDevEntities.map(entity => {
+                                const isHidden = isEntityHidden(entity);
+                                return (
+                                  <div
+                                    key={entity.entity_id}
+                                    className={`p-3 rounded-xl flex items-center justify-between gap-3 border transition-all ${
+                                      isHidden
+                                        ? 'bg-slate-100/40 dark:bg-white/1 border-dashed border-slate-300 dark:border-white/5 opacity-60'
+                                        : 'bg-slate-50 dark:bg-black/30 border-slate-200 dark:border-white/10'
                                     }`}
                                   >
-                                    {!entity.hidden ? <Eye size={15} /> : <EyeSlash size={15} />}
-                                    <span>{!entity.hidden ? 'Visible' : 'Hidden'}</span>
-                                  </button>
-                                </div>
-                              ))}
+                                    <div className="min-w-0">
+                                      <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate block">{entity.name}</span>
+                                      <span className="text-xs font-mono text-slate-500 truncate block mt-0.5">{entity.entity_id}</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
+                                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border ${
+                                        !isHidden
+                                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                                          : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400 border-slate-300 dark:border-white/10'
+                                      }`}
+                                    >
+                                      {!isHidden ? <Eye size={15} /> : <EyeSlash size={15} />}
+                                      <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
+                                    </button>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         );
                       })}
 
                       {/* Loose unassigned entities */}
-                      {hierarchyData.looseUnassignedEntities.filter(matchesFilter).map(entity => (
-                        <div
-                          key={entity.entity_id}
-                          className={`p-3 rounded-2xl flex items-center justify-between gap-3 border ${
-                            entity.hidden
-                              ? 'bg-slate-100/40 dark:bg-white/1 border-dashed opacity-60'
-                              : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10'
-                          }`}
-                        >
-                          <div className="min-w-0">
-                            <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate block">{entity.name}</span>
-                            <span className="text-xs font-mono text-slate-500 truncate block mt-0.5">{entity.entity_id}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleToggleEntityVisibility(entity.entity_id, Boolean(entity.hidden))}
-                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border ${
-                              !entity.hidden
-                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                                : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400 border-slate-300 dark:border-white/10'
+                      {hierarchyData.looseUnassignedEntities.filter(matchesFilter).map(entity => {
+                        const isHidden = isEntityHidden(entity);
+                        return (
+                          <div
+                            key={entity.entity_id}
+                            className={`p-3 rounded-2xl flex items-center justify-between gap-3 border ${
+                              isHidden
+                                ? 'bg-slate-100/40 dark:bg-white/1 border-dashed opacity-60'
+                                : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10'
                             }`}
                           >
-                            {!entity.hidden ? <Eye size={15} /> : <EyeSlash size={15} />}
-                            <span>{!entity.hidden ? 'Visible' : 'Hidden'}</span>
-                          </button>
-                        </div>
-                      ))}
+                            <div className="min-w-0">
+                              <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate block">{entity.name}</span>
+                              <span className="text-xs font-mono text-slate-500 truncate block mt-0.5">{entity.entity_id}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
+                              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border ${
+                                !isHidden
+                                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                                  : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400 border-slate-300 dark:border-white/10'
+                              }`}
+                            >
+                              {!isHidden ? <Eye size={15} /> : <EyeSlash size={15} />}
+                              <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

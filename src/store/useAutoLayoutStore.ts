@@ -910,8 +910,17 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         }
       }
 
+      const nextEntityCustomizations = {
+        ...prev.entityCustomizations,
+        ...(typeof entityCustoms === 'object' ? entityCustoms : {})
+      };
+
       if (Array.isArray(config.entities?.hiddenEntityIds)) {
         for (const hiddenId of config.entities.hiddenEntityIds) {
+          nextEntityCustomizations[hiddenId] = {
+            ...(nextEntityCustomizations[hiddenId] || {}),
+            hidden: true
+          };
           if (newResolved[hiddenId]) {
             newResolved[hiddenId] = {
               ...newResolved[hiddenId],
@@ -920,11 +929,6 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           }
         }
       }
-
-      const nextEntityCustomizations = {
-        ...prev.entityCustomizations,
-        ...(typeof entityCustoms === 'object' ? entityCustoms : {})
-      };
 
       const selectedWeather = config.preferences?.selectedWeatherEntityId || prev.selectedWeatherEntityId;
       const selectedAlarm = config.preferences?.selectedAlarmEntityId || prev.selectedAlarmEntityId;
