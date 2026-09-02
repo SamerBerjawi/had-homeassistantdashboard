@@ -355,7 +355,7 @@ export default function Sidebar({
       {showMoreMenu && (
         <div 
           id="sidebar-more-menu"
-          className={`md:hidden fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto rounded-3xl p-4 border shadow-2xl z-50 animate-fadeIn ${
+          className={`md:hidden fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto rounded-3xl p-4 border shadow-2xl z-50 animate-fadeIn ${
             darkMode 
               ? 'bg-slate-950/50 backdrop-blur-2xl border-white/15 text-white shadow-black/90' 
               : 'bg-white/60 backdrop-blur-2xl border-slate-200/80 text-slate-900 shadow-slate-400/20'
@@ -463,7 +463,7 @@ export default function Sidebar({
       {/* MOBILE BOTTOM NAVIGATION */}
       <nav 
         id="sidebar-mobile" 
-        className={`md:hidden fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto h-16 rounded-[26px] border shadow-2xl z-50 px-3 flex items-center justify-around transition-all ${
+        className={`md:hidden fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto h-16 rounded-[26px] border shadow-2xl z-50 px-3 flex items-center justify-around transition-all ${
           darkMode 
             ? 'bg-slate-950/30 backdrop-blur-2xl border-white/15 text-white shadow-2xl shadow-black/80' 
             : 'bg-white/35 backdrop-blur-2xl border-white/50 text-slate-900 shadow-xl shadow-slate-900/10'
