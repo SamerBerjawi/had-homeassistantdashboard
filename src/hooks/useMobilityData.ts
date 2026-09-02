@@ -143,41 +143,14 @@ function generateSpeedTimeseries(currentSpeed: number): Array<{ date: Date; spee
   return points;
 }
 
-// LocalStorage Keys
-const STORAGE_KEYS = {
-  CAR_IMAGE: 'mobility_car_custom_image',
-  CAR_LOGO: 'mobility_car_custom_logo',
-  BIKE_IMAGE: 'mobility_bike_custom_image',
-  BIKE_LOGO: 'mobility_bike_custom_logo',
-};
-
 export function useMobilityData() {
   const { states, resolvedZones, isLiveMode } = useAutoLayoutStore();
   const { config, updateConfig, uploadVehicleAsset } = useUserConfig();
 
-  // Custom asset state with fallback to config and localStorage
-  const [customAssets, setCustomAssets] = useState<{
-    carImage?: string;
-    carLogo?: string;
-    bikeImage?: string;
-    bikeLogo?: string;
-  }>(() => {
-    try {
-      return {
-        carImage: localStorage.getItem(STORAGE_KEYS.CAR_IMAGE) || undefined,
-        carLogo: localStorage.getItem(STORAGE_KEYS.CAR_LOGO) || undefined,
-        bikeImage: localStorage.getItem(STORAGE_KEYS.BIKE_IMAGE) || undefined,
-        bikeLogo: localStorage.getItem(STORAGE_KEYS.BIKE_LOGO) || undefined,
-      };
-    } catch {
-      return {};
-    }
-  });
-
-  const effectiveCarImage = config.mobility?.car?.vehicleImageUrl || customAssets.carImage;
-  const effectiveCarLogo = config.mobility?.car?.brandLogoUrl || customAssets.carLogo;
-  const effectiveBikeImage = config.mobility?.bike?.bikeImageUrl || customAssets.bikeImage;
-  const effectiveBikeLogo = config.mobility?.bike?.brandLogoUrl || customAssets.bikeLogo;
+  const effectiveCarImage = config.mobility?.car?.vehicleImageUrl;
+  const effectiveCarLogo = config.mobility?.car?.brandLogoUrl;
+  const effectiveBikeImage = config.mobility?.bike?.bikeImageUrl;
+  const effectiveBikeLogo = config.mobility?.bike?.brandLogoUrl;
 
   // Local state for optimistic UI feedback
   const [optimisticCar, setOptimisticCar] = useState<Partial<CarEvMetrics>>({});
@@ -776,48 +749,72 @@ export function useMobilityData() {
   ) => {
     try {
       // 1. Upload via unified storage driver and auto-persist to remote JSON config
-      const finalUrl = await uploadVehicleAsset(base64Data, type);
-
-      // 2. Update local state and fallback storage cache
-      if (type === 'car_image') {
-        localStorage.setItem(STORAGE_KEYS.CAR_IMAGE, finalUrl);
-        setCustomAssets((prev) => ({ ...prev, carImage: finalUrl }));
-      } else if (type === 'car_logo') {
-        localStorage.setItem(STORAGE_KEYS.CAR_LOGO, finalUrl);
-        setCustomAssets((prev) => ({ ...prev, carLogo: finalUrl }));
-      } else if (type === 'bike_image') {
-        localStorage.setItem(STORAGE_KEYS.BIKE_IMAGE, finalUrl);
-        setCustomAssets((prev) => ({ ...prev, bikeImage: finalUrl }));
-      } else if (type === 'bike_logo') {
-        localStorage.setItem(STORAGE_KEYS.BIKE_LOGO, finalUrl);
-        setCustomAssets((prev) => ({ ...prev, bikeLogo: finalUrl }));
-      }
+      return await uploadVehicleAsset(base64Data, type);
     } catch (e) {
       console.error('Failed to save asset', e);
+      throw e;
     }
   }, [uploadVehicleAsset]);
+
+  const saveVehicleSettings = useCallback(async (settings: {
+    car?: {
+      customName?: string;
+      targetSocDefault?: number;
+      batteryCapacityKwh?: number;
+      vehicleImageUrl?: string;
+      brandLogoUrl?: string;
+    };
+    bike?: {
+      customName?: string;
+      bikeImageUrl?: string;
+      brandLogoUrl?: string;
+    };
+  }) => {
+    try {
+      await updateConfig((prev) => ({
+        ...prev,
+        mobility: {
+          car: {
+            ...prev.mobility.car,
+            ...(settings.car || {})
+          },
+          bike: {
+            ...prev.mobility.bike,
+            ...(settings.bike || {})
+          }
+        }
+      }));
+    } catch (e) {
+      console.error('Failed to save vehicle settings', e);
+      throw e;
+    }
+  }, [updateConfig]);
 
   const resetCustomAssets = useCallback((targetType: 'car' | 'bike' | 'all' = 'all') => {
     try {
       if (targetType === 'car' || targetType === 'all') {
-        localStorage.removeItem(STORAGE_KEYS.CAR_IMAGE);
-        localStorage.removeItem(STORAGE_KEYS.CAR_LOGO);
-        setCustomAssets((prev) => ({ ...prev, carImage: undefined, carLogo: undefined }));
         updateConfig((prev) => ({
+          ...prev,
           mobility: {
             ...prev.mobility,
-            car: { ...prev.mobility.car, vehicleImageUrl: undefined, brandLogoUrl: undefined }
+            car: {
+              ...prev.mobility.car,
+              vehicleImageUrl: undefined,
+              brandLogoUrl: undefined
+            }
           }
         }));
       }
       if (targetType === 'bike' || targetType === 'all') {
-        localStorage.removeItem(STORAGE_KEYS.BIKE_IMAGE);
-        localStorage.removeItem(STORAGE_KEYS.BIKE_LOGO);
-        setCustomAssets((prev) => ({ ...prev, bikeImage: undefined, bikeLogo: undefined }));
         updateConfig((prev) => ({
+          ...prev,
           mobility: {
             ...prev.mobility,
-            bike: { ...prev.mobility.bike, bikeImageUrl: undefined, brandLogoUrl: undefined }
+            bike: {
+              ...prev.mobility.bike,
+              bikeImageUrl: undefined,
+              brandLogoUrl: undefined
+            }
           }
         }));
       }
@@ -842,6 +839,7 @@ export function useMobilityData() {
       toggleBikeLock,
       requestBikeSync,
       saveCustomAsset,
+      saveVehicleSettings,
       resetCustomAssets,
     }
   };

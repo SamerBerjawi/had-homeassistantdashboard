@@ -62,13 +62,16 @@ export function resolveAssetUrl(
   }
 
   // 4. Relative URLs (/api/assets/... or /data/assets/... or /local/...)
-  // If running in browser, ensure path has leading slash
   const normalizedPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
 
-  // If the dashboard is connecting to a remote Home Assistant instance directly from a different origin
-  if (typeof window !== 'undefined') {
-    // If relative path and we are on same origin, relative works directly
-    return appendVersion(normalizedPath);
+  // If pointing to Home Assistant /local/ asset and we have a custom HA server URL configured
+  if (normalizedPath.startsWith('/local/')) {
+    const auth: any = getStoredHAAuth() || getStoredAuthConfig();
+    const serverUrl = auth?.serverUrl || auth?.server_url || auth?.httpUrl;
+    if (serverUrl) {
+      const baseUrl = serverUrl.replace(/\/+$/, '').replace(/\/api\/websocket\/?$/, '').replace(/^ws/, 'http');
+      return appendVersion(`${baseUrl}${normalizedPath}`);
+    }
   }
 
   return appendVersion(normalizedPath);

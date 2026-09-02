@@ -109,8 +109,11 @@ function getTabFromUrl(): TabKey {
 }
 
 export default function App() {
+  const { config, updateConfig, isLoading: isConfigLoading } = useUserConfig();
+
   // Theme Mode State: 'auto' (system OS) | 'dark' (OLED) | 'light' (Daylight)
   const [themeMode, setThemeMode] = useState<'auto' | 'dark' | 'light'>(() => {
+    if (config?.theme?.mode) return config.theme.mode;
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('theme_mode');
       if (saved === 'auto' || saved === 'dark' || saved === 'light') return saved;
@@ -123,13 +126,21 @@ export default function App() {
 
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      const savedMode = localStorage.getItem('theme_mode');
+      const savedMode = config?.theme?.mode || config?.theme?.themeMode || localStorage.getItem('theme_mode');
       if (savedMode === 'dark') return true;
       if (savedMode === 'light') return false;
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
     return false;
   });
+
+  // Sync theme with config when remote config changes
+  useEffect(() => {
+    const currentConfigMode = config?.theme?.mode || config?.theme?.themeMode;
+    if (currentConfigMode && currentConfigMode !== themeMode) {
+      setThemeMode(currentConfigMode);
+    }
+  }, [config?.theme?.mode, config?.theme?.themeMode]);
 
   const handleToggleDarkMode = (next?: boolean) => {
     const nextDark = next !== undefined ? next : !darkMode;
@@ -141,8 +152,14 @@ export default function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-    localStorage.setItem('theme_mode', nextMode);
-    localStorage.setItem('theme', nextDark ? 'dark' : 'light');
+    updateConfig((prev) => ({
+      ...prev,
+      theme: {
+        ...prev.theme,
+        mode: nextMode,
+        themeMode: nextMode
+      }
+    }));
   };
 
   useEffect(() => {
@@ -164,8 +181,6 @@ export default function App() {
     };
 
     applyTheme();
-    localStorage.setItem('theme_mode', themeMode);
-    localStorage.setItem('theme', themeMode === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : themeMode);
 
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
     const handleSystemChange = () => {
@@ -179,24 +194,35 @@ export default function App() {
 
   // Background Style State: 'glow' (Ambient Blobs) | 'flat' (Minimalist Solid)
   const [backgroundStyle, setBackgroundStyle] = useState<'glow' | 'flat'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('homz_background_style') || localStorage.getItem('background_style');
-      if (saved === 'glow' || saved === 'flat') return saved;
-    }
+    if (config?.theme?.backgroundStyle) return config.theme.backgroundStyle;
+    if (config?.preferences?.backgroundStyle) return config.preferences.backgroundStyle;
     return 'glow';
   });
 
+  useEffect(() => {
+    const style = config?.theme?.backgroundStyle || config?.preferences?.backgroundStyle;
+    if (style && style !== backgroundStyle) {
+      setBackgroundStyle(style);
+    }
+  }, [config?.theme?.backgroundStyle, config?.preferences?.backgroundStyle]);
+
   const handleSetBackgroundStyle = (style: 'glow' | 'flat') => {
     setBackgroundStyle(style);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('homz_background_style', style);
-      localStorage.setItem('background_style', style);
-    }
+    updateConfig((prev) => ({
+      ...prev,
+      theme: {
+        ...prev.theme,
+        backgroundStyle: style
+      },
+      preferences: {
+        ...(prev.preferences || {}),
+        backgroundStyle: style
+      }
+    }));
   };
 
   // Tab State with URL Path Synchronization
   const [activeTab, setActiveTabState] = useState<string>(getTabFromUrl);
-  const { isLoading: isConfigLoading } = useUserConfig();
 
   const setActiveTab = (tab: string) => {
     if (tab === 'rooms') {
@@ -279,22 +305,7 @@ export default function App() {
     }
   }, [resolvedEntities]);
 
-  const [rooms, setRooms] = useState<Room[]>(() => {
-    const saved = localStorage.getItem('homz_rooms');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Failed to parse saved rooms:', e);
-      }
-    }
-    return [];
-  });
-
-
-  useEffect(() => {
-    localStorage.setItem('homz_rooms', JSON.stringify(rooms));
-  }, [rooms]);
+  const [rooms, setRooms] = useState<Room[]>([]);
 
   // Diagnostics Logs
   const [logs, setLogs] = useState<LogMessage[]>([]);

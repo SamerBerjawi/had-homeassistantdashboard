@@ -4,18 +4,36 @@
  */
 
 import React, { useState, useRef, ChangeEvent, DragEvent } from 'react';
-import { X, UploadSimple, Trash, Image, Sparkle, Car, Bicycle, Check } from '@phosphor-icons/react';
+import { X, UploadSimple, Trash, Sparkle, Car, Bicycle, Check, Sliders, BatteryCharging, Lightning } from '@phosphor-icons/react';
 import { resolveAssetUrl } from '../../../utils/assetUrl';
 
 interface VehicleCustomizerModalProps {
   isOpen: boolean;
   onClose: () => void;
   target: 'car' | 'bike';
+  currentCarName?: string;
+  currentCarTargetSoc?: number;
+  currentCarBatteryCapacity?: number;
   currentCarImage?: string;
   currentCarLogo?: string;
+  currentBikeName?: string;
   currentBikeImage?: string;
   currentBikeLogo?: string;
-  onSaveAsset: (type: 'car_image' | 'car_logo' | 'bike_image' | 'bike_logo', dataUrl: string) => void;
+  onSaveAsset: (type: 'car_image' | 'car_logo' | 'bike_image' | 'bike_logo', dataUrl: string) => Promise<string>;
+  onSaveSettings?: (settings: {
+    car?: {
+      customName?: string;
+      targetSocDefault?: number;
+      batteryCapacityKwh?: number;
+      vehicleImageUrl?: string;
+      brandLogoUrl?: string;
+    };
+    bike?: {
+      customName?: string;
+      bikeImageUrl?: string;
+      brandLogoUrl?: string;
+    };
+  }) => Promise<void> | void;
   onResetAssets: (target: 'car' | 'bike') => void;
   darkMode?: boolean;
 }
@@ -24,19 +42,31 @@ export function VehicleCustomizerModal({
   isOpen,
   onClose,
   target: initialTarget,
+  currentCarName = 'Porsche Taycan 4S',
+  currentCarTargetSoc = 80,
+  currentCarBatteryCapacity = 93.4,
   currentCarImage,
   currentCarLogo,
+  currentBikeName = 'VanMoof S3',
   currentBikeImage,
   currentBikeLogo,
   onSaveAsset,
+  onSaveSettings,
   onResetAssets,
   darkMode = true
 }: VehicleCustomizerModalProps) {
   const [activeTab, setActiveTab] = useState<'car' | 'bike'>(initialTarget);
+  const [carNameDraft, setCarNameDraft] = useState<string>(currentCarName);
+  const [carTargetSocDraft, setCarTargetSocDraft] = useState<number>(currentCarTargetSoc);
+  const [carCapacityDraft, setCarCapacityDraft] = useState<number>(currentCarBatteryCapacity);
   const [carImageDraft, setCarImageDraft] = useState<string | undefined>(currentCarImage);
   const [carLogoDraft, setCarLogoDraft] = useState<string | undefined>(currentCarLogo);
+
+  const [bikeNameDraft, setBikeNameDraft] = useState<string>(currentBikeName);
   const [bikeImageDraft, setBikeImageDraft] = useState<string | undefined>(currentBikeImage);
   const [bikeLogoDraft, setBikeLogoDraft] = useState<string | undefined>(currentBikeLogo);
+
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const [savedFeedback, setSavedFeedback] = useState<boolean>(false);
 
   const carImgInputRef = useRef<HTMLInputElement>(null);
@@ -47,12 +77,16 @@ export function VehicleCustomizerModal({
   React.useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTarget);
+      setCarNameDraft(currentCarName);
+      setCarTargetSocDraft(currentCarTargetSoc);
+      setCarCapacityDraft(currentCarBatteryCapacity);
       setCarImageDraft(currentCarImage);
       setCarLogoDraft(currentCarLogo);
+      setBikeNameDraft(currentBikeName);
       setBikeImageDraft(currentBikeImage);
       setBikeLogoDraft(currentBikeLogo);
     }
-  }, [isOpen, initialTarget, currentCarImage, currentCarLogo, currentBikeImage, currentBikeLogo]);
+  }, [isOpen, initialTarget, currentCarName, currentCarTargetSoc, currentCarBatteryCapacity, currentCarImage, currentCarLogo, currentBikeName, currentBikeImage, currentBikeLogo]);
 
   if (!isOpen) return null;
 
@@ -93,19 +127,54 @@ export function VehicleCustomizerModal({
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
-    if (activeTab === 'car') {
-      if (carImageDraft) onSaveAsset('car_image', carImageDraft);
-      if (carLogoDraft) onSaveAsset('car_logo', carLogoDraft);
-    } else {
-      if (bikeImageDraft) onSaveAsset('bike_image', bikeImageDraft);
-      if (bikeLogoDraft) onSaveAsset('bike_logo', bikeLogoDraft);
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      let finalCarImage = carImageDraft;
+      let finalCarLogo = carLogoDraft;
+      let finalBikeImage = bikeImageDraft;
+      let finalBikeLogo = bikeLogoDraft;
+
+      if (carImageDraft && carImageDraft.startsWith('data:')) {
+        finalCarImage = await onSaveAsset('car_image', carImageDraft);
+      }
+      if (carLogoDraft && carLogoDraft.startsWith('data:')) {
+        finalCarLogo = await onSaveAsset('car_logo', carLogoDraft);
+      }
+      if (bikeImageDraft && bikeImageDraft.startsWith('data:')) {
+        finalBikeImage = await onSaveAsset('bike_image', bikeImageDraft);
+      }
+      if (bikeLogoDraft && bikeLogoDraft.startsWith('data:')) {
+        finalBikeLogo = await onSaveAsset('bike_logo', bikeLogoDraft);
+      }
+
+      if (onSaveSettings) {
+        await onSaveSettings({
+          car: {
+            customName: carNameDraft.trim() || undefined,
+            targetSocDefault: carTargetSocDraft,
+            batteryCapacityKwh: carCapacityDraft > 0 ? carCapacityDraft : undefined,
+            vehicleImageUrl: finalCarImage,
+            brandLogoUrl: finalCarLogo
+          },
+          bike: {
+            customName: bikeNameDraft.trim() || undefined,
+            bikeImageUrl: finalBikeImage,
+            brandLogoUrl: finalBikeLogo
+          }
+        });
+      }
+
+      setSavedFeedback(true);
+      setTimeout(() => {
+        setSavedFeedback(false);
+        setIsSaving(false);
+        onClose();
+      }, 500);
+    } catch (err) {
+      console.error('Failed to save vehicle customizations:', err);
+      setIsSaving(false);
     }
-    setSavedFeedback(true);
-    setTimeout(() => {
-      setSavedFeedback(false);
-      onClose();
-    }, 600);
   };
 
   const handleReset = () => {
@@ -128,16 +197,15 @@ export function VehicleCustomizerModal({
             : 'bg-white border-slate-200 text-slate-900 shadow-slate-300'
         }`}
       >
-        {/* Header */}
         <div className="p-5 sm:p-6 border-b border-slate-200/60 dark:border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center">
               <Sparkle size={20} weight="duotone" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-black tracking-tight">Customize Vehicle Appearance</h3>
+              <h3 className="text-base sm:text-lg font-black tracking-tight">Vehicle & Fleet Customizer</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                Upload custom vehicle renders and manufacturer logos
+                Customize vehicle names, target SoC, battery capacity, and assets (synced to NAS)
               </p>
             </div>
           </div>
@@ -152,7 +220,6 @@ export function VehicleCustomizerModal({
           </button>
         </div>
 
-        {/* Tab Selector */}
         <div className="p-4 bg-slate-100/60 dark:bg-white/[0.02] border-b border-slate-200/60 dark:border-white/10 flex items-center justify-center gap-2">
           <button
             type="button"
@@ -181,11 +248,54 @@ export function VehicleCustomizerModal({
           </button>
         </div>
 
-        {/* Modal Body */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-5">
           {activeTab === 'car' ? (
             <>
-              {/* Car Main Image Upload */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Vehicle Display Name
+                  </label>
+                  <input
+                    type="text"
+                    value={carNameDraft}
+                    onChange={(e) => setCarNameDraft(e.target.value)}
+                    placeholder="e.g. Porsche Taycan 4S"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                    <span>Target SoC Limit</span>
+                    <span className="text-cyan-400 font-bold">{carTargetSocDraft}%</span>
+                  </label>
+                  <input
+                    type="range"
+                    min={50}
+                    max={100}
+                    step={5}
+                    value={carTargetSocDraft}
+                    onChange={(e) => setCarTargetSocDraft(Number(e.target.value))}
+                    className="w-full h-2 bg-slate-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-cyan-400 mt-2"
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Battery Capacity (kWh)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={carCapacityDraft || ''}
+                    onChange={(e) => setCarCapacityDraft(parseFloat(e.target.value) || 0)}
+                    placeholder="e.g. 93.4"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -233,15 +343,14 @@ export function VehicleCustomizerModal({
                     <div className="space-y-1.5 py-4">
                       <UploadSimple size={28} weight="duotone" className="mx-auto text-slate-400 dark:text-slate-500" />
                       <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                        Click to browse or drag & drop PNG/JPG
+                        Click to browse or drag & drop PNG/JPG/WebP
                       </p>
-                      <p className="text-[10px] text-slate-500">Supports transparent Mach-E / Lightning / Tesla cutouts</p>
+                      <p className="text-[10px] text-slate-500">Supports transparent Mach-E / Taycan / Model Y cutouts</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Car Brand Logo Upload */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -263,7 +372,7 @@ export function VehicleCustomizerModal({
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => handleDrop(e, 'car_logo')}
                   onClick={() => carLogoInputRef.current?.click()}
-                  className={`p-3 rounded-2xl border-2 border-dashed flex items-center justify-center gap-3 cursor-pointer transition-all ${
+                  className={`p-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
                     carLogoDraft
                       ? 'border-cyan-500/50 bg-cyan-500/5'
                       : 'border-slate-300 dark:border-white/15 hover:border-cyan-500/50 bg-slate-50 dark:bg-white/[0.02]'
@@ -277,14 +386,20 @@ export function VehicleCustomizerModal({
                     onChange={(e) => handleFileUpload(e, 'car_logo')}
                   />
                   {carLogoDraft ? (
-                    <div className="flex items-center gap-3">
-                      <img src={resolveAssetUrl(carLogoDraft)} alt="Brand Logo" className="h-8 max-w-[120px] object-contain" />
-                      <span className="text-[11px] font-bold text-cyan-400">Replace logo</span>
+                    <div className="space-y-2">
+                      <img
+                        src={resolveAssetUrl(carLogoDraft)}
+                        alt="Logo Preview"
+                        className="max-h-12 max-w-[120px] object-contain mx-auto drop-shadow-md"
+                      />
+                      <p className="text-[11px] text-cyan-400 font-bold">Click or drag to replace logo</p>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 py-1 text-slate-500">
-                      <Image size={18} weight="duotone" />
-                      <span className="text-xs font-bold">Upload Custom Brand Logo (PNG)</span>
+                    <div className="space-y-1.5 py-2">
+                      <UploadSimple size={24} weight="duotone" className="mx-auto text-slate-400 dark:text-slate-500" />
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                        Upload manufacturer logo (PNG/SVG/WebP)
+                      </p>
                     </div>
                   )}
                 </div>
@@ -292,7 +407,19 @@ export function VehicleCustomizerModal({
             </>
           ) : (
             <>
-              {/* Bike Main Image Upload */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  Smart E-Bike Name
+                </label>
+                <input
+                  type="text"
+                  value={bikeNameDraft}
+                  onChange={(e) => setBikeNameDraft(e.target.value)}
+                  placeholder="e.g. VanMoof S3 / Cowboy 4"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -334,21 +461,19 @@ export function VehicleCustomizerModal({
                         alt="Bike Preview"
                         className="max-h-28 max-w-full object-contain mx-auto drop-shadow-xl"
                       />
-                      <p className="text-[11px] text-amber-400 font-bold">Click or drag to replace image</p>
+                      <p className="text-[11px] text-amber-400 font-bold">Click or drag to replace bike render</p>
                     </div>
                   ) : (
                     <div className="space-y-1.5 py-4">
                       <UploadSimple size={28} weight="duotone" className="mx-auto text-slate-400 dark:text-slate-500" />
                       <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                        Click to browse or drag & drop PNG/JPG
+                        Click to browse or drag & drop PNG/JPG/WebP
                       </p>
-                      <p className="text-[10px] text-slate-500">Upload side-profile transparent Dark Avenger or E-Bike PNG</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Bike Logo Upload */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -370,7 +495,7 @@ export function VehicleCustomizerModal({
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => handleDrop(e, 'bike_logo')}
                   onClick={() => bikeLogoInputRef.current?.click()}
-                  className={`p-3 rounded-2xl border-2 border-dashed flex items-center justify-center gap-3 cursor-pointer transition-all ${
+                  className={`p-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
                     bikeLogoDraft
                       ? 'border-amber-500/50 bg-amber-500/5'
                       : 'border-slate-300 dark:border-white/15 hover:border-amber-500/50 bg-slate-50 dark:bg-white/[0.02]'
@@ -384,14 +509,20 @@ export function VehicleCustomizerModal({
                     onChange={(e) => handleFileUpload(e, 'bike_logo')}
                   />
                   {bikeLogoDraft ? (
-                    <div className="flex items-center gap-3">
-                      <img src={resolveAssetUrl(bikeLogoDraft)} alt="Bike Logo" className="h-8 max-w-[120px] object-contain" />
-                      <span className="text-[11px] font-bold text-amber-400">Replace logo</span>
+                    <div className="space-y-2">
+                      <img
+                        src={resolveAssetUrl(bikeLogoDraft)}
+                        alt="Logo Preview"
+                        className="max-h-12 max-w-[120px] object-contain mx-auto drop-shadow-md"
+                      />
+                      <p className="text-[11px] text-amber-400 font-bold">Click or drag to replace logo</p>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 py-1 text-slate-500">
-                      <Image size={18} weight="duotone" />
-                      <span className="text-xs font-bold">Upload Custom Brand Logo (PNG)</span>
+                    <div className="space-y-1.5 py-2">
+                      <UploadSimple size={24} weight="duotone" className="mx-auto text-slate-400 dark:text-slate-500" />
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                        Upload brand badge (Cowboy/VanMoof/Specialized)
+                      </p>
                     </div>
                   )}
                 </div>
@@ -400,36 +531,51 @@ export function VehicleCustomizerModal({
           )}
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-4 sm:p-5 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between gap-3 bg-slate-100/50 dark:bg-white/[0.02]">
+        <div className="p-4 sm:p-5 border-t border-slate-200/60 dark:border-white/10 bg-slate-100/60 dark:bg-white/[0.02] flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={handleReset}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 border border-rose-500/20 transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
           >
-            Reset to Default
+            Reset Defaults
           </button>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/5 transition-colors cursor-pointer"
             >
               Cancel
             </button>
+
             <button
               type="button"
               onClick={handleSave}
-              className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-black bg-cyan-500 hover:bg-cyan-400 text-black shadow-lg shadow-cyan-500/25 transition-all cursor-pointer"
+              disabled={isSaving}
+              className={`flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer disabled:opacity-50 ${
+                savedFeedback
+                  ? 'bg-emerald-500 text-black'
+                  : activeTab === 'car'
+                  ? 'bg-cyan-500 hover:bg-cyan-400 text-black shadow-md shadow-cyan-500/20'
+                  : 'bg-amber-500 hover:bg-amber-400 text-black shadow-md shadow-amber-500/20'
+              }`}
             >
               {savedFeedback ? (
                 <>
                   <Check size={14} weight="bold" />
-                  <span>Saved!</span>
+                  <span>Saved to NAS!</span>
+                </>
+              ) : isSaving ? (
+                <>
+                  <Sparkle size={14} className="animate-spin" />
+                  <span>Saving...</span>
                 </>
               ) : (
-                <span>Save & Apply</span>
+                <>
+                  <Sparkle size={14} weight="bold" />
+                  <span>Save & Sync</span>
+                </>
               )}
             </button>
           </div>

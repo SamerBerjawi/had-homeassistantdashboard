@@ -643,7 +643,18 @@ export default function AreaDetailView({
   ];
 
   return (
-    <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-24 md:pb-8">
+    <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-24 md:pb-8 relative">
+      {/* Ambient Room Wallpaper Backdrop */}
+      {(area.picture || area.backgroundImageUrl) && (
+        <div className="absolute -top-6 -left-6 -right-6 h-64 -z-10 overflow-hidden pointer-events-none opacity-15 dark:opacity-20 mask-[linear-gradient(to_bottom,black_50%,transparent)]">
+          <img
+            src={area.picture || area.backgroundImageUrl}
+            alt={area.name}
+            className="w-full h-full object-cover blur-sm scale-105"
+          />
+        </div>
+      )}
+
       {/* Top Floating Filter Bar (No grey box) */}
       <div className="sticky top-0 z-30 -mx-4 px-4 py-1 sm:static sm:mx-0 sm:px-0 sm:py-0 backdrop-blur-md">
         <AdaptiveSectionTabs

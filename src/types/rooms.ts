@@ -41,6 +41,8 @@ export interface AreaData {
   icon?: string;
   color?: string;
   picture?: string;
+  backgroundImageUrl?: string;
+  isFavorite?: boolean;
   floorId?: string;
   floorName?: string;
   sensors: AreaSensorSummary;

@@ -69,6 +69,15 @@ export function mergeConfig(
       }
     },
     rooms: {
+      floorOrder: Array.isArray(partial.rooms?.floorOrder)
+        ? [...partial.rooms.floorOrder]
+        : base.rooms.floorOrder,
+      hiddenFloors: Array.isArray(partial.rooms?.hiddenFloors)
+        ? [...partial.rooms.hiddenFloors]
+        : base.rooms.hiddenFloors,
+      areaOrder: Array.isArray(partial.rooms?.areaOrder)
+        ? [...partial.rooms.areaOrder]
+        : base.rooms.areaOrder,
       hiddenAreas: Array.isArray(partial.rooms?.hiddenAreas)
         ? [...partial.rooms.hiddenAreas]
         : base.rooms.hiddenAreas,
@@ -77,7 +86,36 @@ export function mergeConfig(
         : base.rooms.favoriteAreas,
       areaSortOrder: Array.isArray(partial.rooms?.areaSortOrder)
         ? [...partial.rooms.areaSortOrder]
-        : base.rooms.areaSortOrder
+        : base.rooms.areaSortOrder,
+      areaOverrides: {
+        ...(base.rooms.areaOverrides || {}),
+        ...(partial.rooms?.areaOverrides || {})
+      }
+    },
+    entities: {
+      hiddenEntityIds: Array.isArray(partial.entities?.hiddenEntityIds)
+        ? [...partial.entities.hiddenEntityIds]
+        : base.entities.hiddenEntityIds,
+      nameOverrides: {
+        ...(base.entities.nameOverrides || {}),
+        ...(partial.entities?.nameOverrides || {})
+      },
+      iconOverrides: {
+        ...(base.entities.iconOverrides || {}),
+        ...(partial.entities?.iconOverrides || {})
+      },
+      customizations: {
+        ...(base.entities.customizations || {}),
+        ...(partial.entities?.customizations || {})
+      }
+    },
+    cameras: {
+      ...base.cameras,
+      ...(partial.cameras || {}),
+      customStreamEntities: {
+        ...(base.cameras.customStreamEntities || {}),
+        ...(partial.cameras?.customStreamEntities || {})
+      }
     },
     network: {
       ...base.network,
@@ -102,10 +140,6 @@ export function mergeConfig(
     floors: {
       ...(base.floors || {}),
       ...(partial.floors || {})
-    },
-    entities: {
-      ...(base.entities || {}),
-      ...(partial.entities || {})
     },
     canvas: {
       ...(base.canvas || {}),

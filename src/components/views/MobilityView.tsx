@@ -11,6 +11,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Car, Bicycle, Sliders } from '@phosphor-icons/react';
 import { useMobilityData } from '../../hooks/useMobilityData';
+import { useUserConfig } from '../../contexts/ConfigContext';
 import { CarEvTab } from './mobility/CarEvTab';
 import { BikeTab } from './mobility/BikeTab';
 import { VehicleCustomizerModal } from './mobility/VehicleCustomizerModal';
@@ -25,6 +26,7 @@ interface MobilityViewProps {
 
 export default function MobilityView({ darkMode = true }: MobilityViewProps) {
   const isLoading = useAutoLayoutStore((s) => s.isLoading);
+  const { config } = useUserConfig();
   const [activeSubTab, setActiveSubTab] = useState<MobilityAssetType>('car');
   const [customizerOpen, setCustomizerOpen] = useState(false);
 
@@ -131,11 +133,16 @@ export default function MobilityView({ darkMode = true }: MobilityViewProps) {
         isOpen={customizerOpen}
         onClose={() => setCustomizerOpen(false)}
         target={activeSubTab}
+        currentCarName={config.mobility?.car?.customName}
+        currentCarTargetSoc={config.mobility?.car?.targetSocDefault}
+        currentCarBatteryCapacity={config.mobility?.car?.batteryCapacityKwh}
         currentCarImage={carMetrics.customVehicleImage}
         currentCarLogo={carMetrics.customBrandLogo}
+        currentBikeName={config.mobility?.bike?.customName}
         currentBikeImage={bikeMetrics.customBikeImage}
         currentBikeLogo={bikeMetrics.customBrandLogo}
         onSaveAsset={actions.saveCustomAsset}
+        onSaveSettings={actions.saveVehicleSettings}
         onResetAssets={actions.resetCustomAssets}
         darkMode={darkMode}
       />

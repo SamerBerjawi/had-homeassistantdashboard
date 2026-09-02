@@ -10,6 +10,12 @@ export interface UserDashboardConfig {
     accentColor: string;
     glassOpacity: number;
     backgroundBlur: number;
+    sensorTrendWindowHours: 24 | 72;
+    themeMode?: 'auto' | 'dark' | 'light';
+    mode?: 'auto' | 'dark' | 'light';
+    backgroundStyle?: 'glow' | 'flat';
+    weatherBackdrop?: string;
+    bentoGridDensity?: 'compact' | 'detailed';
   };
   mobility: {
     car: {
@@ -17,6 +23,7 @@ export interface UserDashboardConfig {
       brandLogoUrl?: string;
       vehicleImageUrl?: string;
       targetSocDefault: number;
+      batteryCapacityKwh?: number;
     };
     bike: {
       customName?: string;
@@ -25,9 +32,36 @@ export interface UserDashboardConfig {
     };
   };
   rooms: {
+    floorOrder: string[];
+    hiddenFloors: string[];
+    areaOrder: string[];
     hiddenAreas: string[];
     favoriteAreas: string[];
-    areaSortOrder: string[];
+    areaSortOrder?: string[];
+    areaOverrides: Record<string, {
+      customName?: string;
+      name?: string;
+      customIcon?: string;
+      icon?: string;
+      customColor?: string;
+      color?: string;
+      backgroundImageUrl?: string;
+      picture?: string;
+      order?: number;
+    }>;
+  };
+  entities: {
+    hiddenEntityIds?: string[];
+    nameOverrides?: Record<string, string>;
+    iconOverrides?: Record<string, string>;
+    customizations?: Record<string, { customName?: string; hidden?: boolean }>;
+  };
+  cameras: {
+    defaultStreamType: 'webrtc' | 'hls' | 'mjpeg';
+    mutedByDefault: boolean;
+    autoPlayPreferences?: boolean;
+    aspectRatio?: '16:9' | '4:3' | '1:1' | 'cover';
+    customStreamEntities: Record<string, string>;
   };
   network: {
     adguardTimelineDefault: '24H' | '7D' | '30D' | '90D';
@@ -36,6 +70,8 @@ export interface UserDashboardConfig {
   energy: {
     defaultPeriod: 'today' | 'yesterday' | '7d' | 'month' | 'year';
     carbonIntensityFactor?: number;
+    energyTariff?: number;
+    currencySymbol?: string;
   };
   preferences?: {
     backgroundStyle?: 'glow' | 'flat';
@@ -46,6 +82,9 @@ export interface UserDashboardConfig {
     glassBlurLevel?: 'subtle' | 'balanced' | 'deep' | 'ultra';
     specularHighlight?: boolean;
     go2rtcUrl?: string;
+    selectedWeatherEntityId?: string | null;
+    selectedAlarmEntityId?: string | null;
+    dismissedNotificationIds?: string[];
   };
   profile?: {
     name?: string;
@@ -53,9 +92,18 @@ export interface UserDashboardConfig {
     role?: string;
     avatar?: string;
   };
-  areas?: Record<string, { icon?: string; color?: string; name?: string; picture?: string; order?: number }>;
+  areas?: Record<string, {
+    icon?: string;
+    customIcon?: string;
+    color?: string;
+    customColor?: string;
+    name?: string;
+    customName?: string;
+    picture?: string;
+    backgroundImageUrl?: string;
+    order?: number;
+  }>;
   floors?: Record<string, { icon?: string; color?: string; name?: string; order?: number; level?: number }>;
-  entities?: Record<string, { customName?: string; hidden?: boolean }>;
   canvas?: {
     profiles?: Record<string, any>;
     activeProfileId?: string;
@@ -97,14 +145,20 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
   theme: {
     accentColor: '#38bdf8', // sky-400
     glassOpacity: 0.75,
-    backgroundBlur: 16
+    backgroundBlur: 16,
+    sensorTrendWindowHours: 24,
+    themeMode: 'auto',
+    backgroundStyle: 'glow',
+    weatherBackdrop: 'auto',
+    bentoGridDensity: 'detailed'
   },
   mobility: {
     car: {
       customName: 'Porsche Taycan 4S',
       brandLogoUrl: undefined,
       vehicleImageUrl: undefined,
-      targetSocDefault: 80
+      targetSocDefault: 80,
+      batteryCapacityKwh: 93.4
     },
     bike: {
       customName: 'VanMoof S3',
@@ -113,9 +167,26 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
     }
   },
   rooms: {
+    floorOrder: [],
+    hiddenFloors: [],
+    areaOrder: [],
     hiddenAreas: [],
     favoriteAreas: [],
-    areaSortOrder: []
+    areaSortOrder: [],
+    areaOverrides: {}
+  },
+  entities: {
+    hiddenEntityIds: [],
+    nameOverrides: {},
+    iconOverrides: {},
+    customizations: {}
+  },
+  cameras: {
+    defaultStreamType: 'webrtc',
+    mutedByDefault: true,
+    autoPlayPreferences: true,
+    aspectRatio: '16:9',
+    customStreamEntities: {}
   },
   network: {
     adguardTimelineDefault: '24H',
@@ -123,7 +194,9 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
   },
   energy: {
     defaultPeriod: 'today',
-    carbonIntensityFactor: 0.385
+    carbonIntensityFactor: 0.385,
+    energyTariff: 0.28,
+    currencySymbol: '€'
   },
   preferences: {
     backgroundStyle: 'glow',
@@ -133,12 +206,23 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
     currencySymbol: '€',
     glassBlurLevel: 'deep',
     specularHighlight: true,
-    go2rtcUrl: ''
+    go2rtcUrl: '',
+    selectedWeatherEntityId: null,
+    selectedAlarmEntityId: null,
+    dismissedNotificationIds: []
   },
   profile: {
     name: 'Samer Berjawi',
     email: 'admin@homz.ai',
     role: 'Home Owner (Admin)',
     avatar: ''
+  },
+  areas: {},
+  floors: {},
+  canvas: {
+    profiles: {},
+    activeProfileId: 'profile_main',
+    pinCode: '',
+    weatherBackdrop: 'auto'
   }
 };

@@ -169,24 +169,19 @@ export default function SettingsView({
   // ==========================================
   // 1. USER PROFILE STATE
   // ==========================================
-  const [profileData, setProfileData] = useState<UserProfileData>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('homz_user_profile_v1');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {}
-      }
-    }
-    return DEFAULT_PROFILE_DATA;
-  });
+  const [profileData, setProfileData] = useState<UserProfileData>(() => ({
+    displayName: config?.profile?.name || DEFAULT_PROFILE_DATA.displayName,
+    email: config?.profile?.email || DEFAULT_PROFILE_DATA.email,
+    role: (config?.profile?.role as any) || DEFAULT_PROFILE_DATA.role,
+    avatarInitials: config?.profile?.avatar || DEFAULT_PROFILE_DATA.avatarInitials,
+    homeName: DEFAULT_PROFILE_DATA.homeName
+  }));
 
   const [profileSavedNotice, setProfileSavedNotice] = useState(false);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('homz_user_profile_v1', JSON.stringify(profileData));
-    updateConfig((prev) => ({
+    await updateConfig((prev) => ({
       ...prev,
       profile: {
         name: profileData.displayName,
@@ -200,7 +195,7 @@ export default function SettingsView({
     addToast?.({
       type: 'success',
       title: 'Profile Updated',
-      message: 'User profile settings successfully saved and synced.'
+      message: 'User profile settings successfully saved and synced to remote NAS.'
     });
     setTimeout(() => setProfileSavedNotice(false), 2500);
   };
@@ -209,30 +204,37 @@ export default function SettingsView({
   // 2. THEME & CUSTOMIZATION STATE
   // ==========================================
   const [internalBgStyle, setInternalBgStyle] = useState<'glow' | 'flat'>(() => {
-    return (config?.preferences?.backgroundStyle as 'glow' | 'flat') || (localStorage.getItem('homz_background_style') as 'glow' | 'flat') || 'glow';
+    return (config?.preferences?.backgroundStyle as 'glow' | 'flat') || 'glow';
   });
   const effectiveBackgroundStyle = backgroundStyle || internalBgStyle;
 
   const handleSetBgStyle = (style: 'glow' | 'flat') => {
     setInternalBgStyle(style);
     setBackgroundStyle?.(style);
-    localStorage.setItem('homz_background_style', style);
-    localStorage.setItem('background_style', style);
+    updateConfig((prev) => ({
+      ...prev,
+      theme: {
+        ...prev.theme,
+        backgroundStyle: style
+      },
+      preferences: {
+        ...(prev.preferences || {}),
+        backgroundStyle: style
+      }
+    }));
   };
 
   const [tempUnit, setTempUnit] = useState<'C' | 'F'>(() => {
-    return (config?.preferences?.tempUnit as 'C' | 'F') || (localStorage.getItem('homz_temp_unit') as 'C' | 'F') || 'C';
+    return (config?.preferences?.tempUnit as 'C' | 'F') || 'C';
   });
   const [clockFormat, setClockFormat] = useState<'24h' | '12h'>(() => {
-    return (config?.preferences?.clockFormat as '24h' | '12h') || (localStorage.getItem('homz_clock_format') as '24h' | '12h') || '24h';
+    return (config?.preferences?.clockFormat as '24h' | '12h') || '24h';
   });
   const [energyTariff, setEnergyTariff] = useState<number>(() => {
-    if (config?.preferences?.energyTariff !== undefined) return config.preferences.energyTariff;
-    const saved = localStorage.getItem('homz_energy_tariff');
-    return saved ? parseFloat(saved) : 0.18;
+    return config?.preferences?.energyTariff !== undefined ? config.preferences.energyTariff : (config?.energy?.energyTariff ?? 0.28);
   });
   const [currencySymbol, setCurrencySymbol] = useState<string>(() => {
-    return config?.preferences?.currencySymbol || localStorage.getItem('homz_currency_symbol') || '€';
+    return config?.preferences?.currencySymbol || config?.energy?.currencySymbol || '€';
   });
 
   useEffect(() => {
@@ -250,19 +252,22 @@ export default function SettingsView({
       if (config.preferences.clockFormat) setClockFormat(config.preferences.clockFormat);
       if (config.preferences.energyTariff !== undefined) setEnergyTariff(config.preferences.energyTariff);
       if (config.preferences.currencySymbol) setCurrencySymbol(config.preferences.currencySymbol);
+      if (config.preferences.backgroundStyle) setInternalBgStyle(config.preferences.backgroundStyle);
     }
   }, [config]);
 
-  const handleSavePreferences = () => {
-    localStorage.setItem('homz_background_style', effectiveBackgroundStyle);
-    localStorage.setItem('background_style', effectiveBackgroundStyle);
-    localStorage.setItem('homz_temp_unit', tempUnit);
-    localStorage.setItem('homz_clock_format', clockFormat);
-    localStorage.setItem('homz_energy_tariff', energyTariff.toString());
-    localStorage.setItem('homz_currency_symbol', currencySymbol);
-
-    updateConfig((prev) => ({
+  const handleSavePreferences = async () => {
+    await updateConfig((prev) => ({
       ...prev,
+      theme: {
+        ...prev.theme,
+        backgroundStyle: effectiveBackgroundStyle
+      },
+      energy: {
+        ...prev.energy,
+        energyTariff,
+        currencySymbol
+      },
       preferences: {
         ...(prev.preferences || {}),
         backgroundStyle: effectiveBackgroundStyle,
@@ -276,7 +281,7 @@ export default function SettingsView({
     addToast?.({
       type: 'success',
       title: 'Customization Saved',
-      message: 'System appearance & theme preferences synced.'
+      message: 'System appearance & theme preferences synced to remote NAS storage.'
     });
   };
 
@@ -441,15 +446,14 @@ export default function SettingsView({
     reader.readAsText(file);
   };
 
-  const handleFactoryReset = () => {
+  const handleFactoryReset = async () => {
+    await resetDashboardConfig();
     resetToDefaults();
-    localStorage.removeItem('homz_user_profile_v1');
-    localStorage.removeItem('homz_saved_snapshots_v1');
     setShowResetConfirm(false);
     addToast?.({
       type: 'warning',
       title: 'Factory Reset Complete',
-      message: 'Dashboard reset to original default state.'
+      message: 'Dashboard reset to original default state across all devices.'
     });
   };
 
@@ -475,11 +479,7 @@ export default function SettingsView({
   const [logFilter, setLogFilter] = useState<'all' | 'service_call' | 'state_changed' | 'info' | 'error'>('all');
 
   const [go2RtcUrlInput, setGo2RtcUrlInput] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('homz_go2rtc_url');
-      if (saved) return saved;
-    }
-    return getGo2RtcBaseUrls(storeServerUrl).httpUrl;
+    return config?.preferences?.go2rtcUrl || getGo2RtcBaseUrls(storeServerUrl).httpUrl;
   });
   const [go2RtcStatus, setGo2RtcStatus] = useState<{
     tested: boolean;
@@ -504,9 +504,17 @@ export default function SettingsView({
     });
     if (res.success) {
       const clean = go2RtcUrlInput.trim();
-      if (typeof window !== 'undefined' && clean) {
-        localStorage.setItem('homz_go2rtc_url', clean);
-        window.dispatchEvent(new CustomEvent('go2rtc_updated'));
+      if (clean) {
+        await updateConfig((prev) => ({
+          ...prev,
+          preferences: {
+            ...(prev.preferences || {}),
+            go2rtcUrl: clean
+          }
+        }));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('go2rtc_updated'));
+        }
       }
       addToast?.({
         type: 'success',

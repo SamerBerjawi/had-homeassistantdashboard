@@ -26,6 +26,7 @@ import {
   isLeakSensor,
   isSmokeSensor
 } from '../lib/entityClassifiers';
+import { resolveAssetUrl } from '../utils/assetUrl';
 
 export function useRoomsData() {
   const { config } = useUserConfig();
@@ -342,33 +343,47 @@ export function useRoomsData() {
         };
       }
 
-      return {
-        areaId: area.area_id,
-        name: area.name,
-        icon: area.icon || undefined,
-        color: area.color || undefined,
-        picture: area.picture || undefined,
-        floorId: area.floor_id || undefined,
-        floorName: floor?.name,
-        sensors: sensorSummary,
-        entities: entityGroup,
-        activeLightsCount,
-        totalLightsCount,
-        activeSwitchesCount,
-        activeFansCount,
-        activeMediaPlayersCount,
-        unlockedLocksCount,
-        totalLocksCount,
-        climateState
-      };
-    });
+        const customArea = (config.rooms?.areaOverrides?.[area.area_id] || config.areas?.[area.area_id]) as any;
+        const effectiveName = customArea?.customName || customArea?.name || area.name;
+        const effectiveIcon = customArea?.customIcon || customArea?.icon || area.icon;
+        const effectiveColor = customArea?.customColor || customArea?.color || area.color;
+        const rawBg = customArea?.backgroundImageUrl || customArea?.picture || area.picture;
+        const resolvedBg = resolveAssetUrl(rawBg, config.updatedAt);
+        const isFavorite = Boolean(config.rooms?.favoriteAreas?.includes(area.area_id));
+
+        return {
+          areaId: area.area_id,
+          name: effectiveName,
+          icon: effectiveIcon || undefined,
+          color: effectiveColor || undefined,
+          picture: resolvedBg || undefined,
+          backgroundImageUrl: resolvedBg || undefined,
+          isFavorite,
+          floorId: area.floor_id || undefined,
+          floorName: floor?.name,
+          sensors: sensorSummary,
+          entities: entityGroup,
+          activeLightsCount,
+          totalLightsCount,
+          activeSwitchesCount,
+          activeFansCount,
+          activeMediaPlayersCount,
+          unlockedLocksCount,
+          totalLocksCount,
+          climateState
+        };
+      });
 
     // Apply remote config hidden areas and custom sort order if present
     const hiddenSet = new Set(config.rooms?.hiddenAreas || []);
     let filtered = rawList.filter((a) => !hiddenSet.has(a.areaId));
 
-    if (config.rooms?.areaSortOrder && config.rooms.areaSortOrder.length > 0) {
-      const orderMap = new Map(config.rooms.areaSortOrder.map((id, index) => [id, index]));
+    const sortOrder = (config.rooms?.areaOrder && config.rooms.areaOrder.length > 0)
+      ? config.rooms.areaOrder
+      : config.rooms?.areaSortOrder;
+
+    if (sortOrder && sortOrder.length > 0) {
+      const orderMap = new Map(sortOrder.map((id, index) => [id, index]));
       filtered = [...filtered].sort((a, b) => {
         const orderA = orderMap.has(a.areaId) ? (orderMap.get(a.areaId) as number) : 999;
         const orderB = orderMap.has(b.areaId) ? (orderMap.get(b.areaId) as number) : 999;
@@ -377,14 +392,25 @@ export function useRoomsData() {
     }
 
     return filtered;
-  }, [activeAreas, entitiesByArea, floorMap, config.rooms]);
+  }, [activeAreas, entitiesByArea, floorMap, config.rooms, config.areas, config.updatedAt]);
 
-  // 4. Organize Areas Hierarchically by Floor (Descending Level Order) with custom floor styling
+  // 4. Organize Areas Hierarchically by Floor (Descending Level Order or custom floorOrder) with custom floor styling
   const floorDataList: FloorData[] = useMemo(() => {
-    const floors = [...activeFloors];
+    const hiddenFloorSet = new Set(config.rooms?.hiddenFloors || []);
+    let floors = activeFloors.filter((f) => !hiddenFloorSet.has(f.floor_id));
 
-    // Sort floors in descending order of level (e.g. Level 2 -> Level 1 -> Level 0 -> Outdoors/Basement)
-    floors.sort((a, b) => (b.level ?? 0) - (a.level ?? 0));
+    // Sort floors according to custom floorOrder or fallback to level descending
+    if (config.rooms?.floorOrder && config.rooms.floorOrder.length > 0) {
+      const floorOrderMap = new Map(config.rooms.floorOrder.map((id, index) => [id, index]));
+      floors.sort((a, b) => {
+        const oA = floorOrderMap.has(a.floor_id) ? (floorOrderMap.get(a.floor_id) as number) : 999;
+        const oB = floorOrderMap.has(b.floor_id) ? (floorOrderMap.get(b.floor_id) as number) : 999;
+        return oA - oB;
+      });
+    } else {
+      // Sort floors in descending order of level (e.g. Level 2 -> Level 1 -> Level 0 -> Outdoors/Basement)
+      floors.sort((a, b) => (b.level ?? 0) - (a.level ?? 0));
+    }
 
     const result: FloorData[] = [];
     const assignedAreaIds = new Set<string>();
@@ -395,12 +421,13 @@ export function useRoomsData() {
         assignedAreaIds.add(a.areaId);
       }
 
+      const customFloor = config.floors?.[floor.floor_id];
       result.push({
         floorId: floor.floor_id,
-        name: floor.name,
-        level: floor.level ?? 0,
-        icon: floor.icon || undefined,
-        color: floor.color || undefined,
+        name: customFloor?.name || floor.name,
+        level: customFloor?.level ?? floor.level ?? 0,
+        icon: customFloor?.icon || floor.icon || undefined,
+        color: customFloor?.color || floor.color || undefined,
         areas: matchingAreas
       });
     }
@@ -418,7 +445,7 @@ export function useRoomsData() {
     }
 
     return result;
-  }, [activeFloors, areasDataList]);
+  }, [activeFloors, areasDataList, config.rooms, config.floors]);
 
   // 5. Compute Global House State Summary & Natural Language Sentence
   const houseSummary: HouseStateSummary = useMemo(() => {

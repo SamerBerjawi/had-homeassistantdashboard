@@ -856,41 +856,66 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   applyConfigCustomizations: (config: any) => {
     if (!config || typeof config !== 'object') return;
     set(prev => {
-      let changed = false;
       let newAreas = [...prev.areas];
       let newFloors = [...prev.floors];
       let newResolved = { ...prev.resolvedEntities };
 
-      if (config.areas && typeof config.areas === 'object') {
+      // 1. Process Area Overrides
+      const areaOverrides = config.rooms?.areaOverrides || config.areas;
+      if (areaOverrides && typeof areaOverrides === 'object') {
         newAreas = newAreas.map(a => {
-          const custom = config.areas[a.area_id];
+          const custom = areaOverrides[a.area_id];
           if (custom) {
-            changed = true;
-            return { ...a, ...custom };
+            return {
+              ...a,
+              name: custom.customName || custom.name || a.name,
+              icon: custom.customIcon || custom.icon || a.icon,
+              color: custom.customColor || custom.color || a.color,
+              picture: custom.backgroundImageUrl || custom.picture || a.picture
+            };
           }
           return a;
         });
       }
 
+      // 2. Process Floor Overrides
       if (config.floors && typeof config.floors === 'object') {
         newFloors = newFloors.map(f => {
           const custom = config.floors[f.floor_id];
           if (custom) {
-            changed = true;
-            return { ...f, ...custom };
+            return {
+              ...f,
+              name: custom.name || f.name,
+              icon: custom.icon || f.icon,
+              color: custom.color || f.color,
+              level: custom.level !== undefined ? custom.level : f.level
+            };
           }
           return f;
         });
       }
 
-      if (config.entities && typeof config.entities === 'object') {
-        for (const [id, custom] of Object.entries(config.entities as Record<string, any>)) {
+      // 3. Process Entity Customizations
+      const entityCustoms = config.entities?.customizations || config.entities;
+      if (entityCustoms && typeof entityCustoms === 'object') {
+        for (const [id, custom] of Object.entries(entityCustoms as Record<string, any>)) {
           if (newResolved[id] && custom) {
-            changed = true;
             newResolved[id] = {
               ...newResolved[id],
-              name: custom.customName || newResolved[id].name,
+              name: custom.customName || custom.name || newResolved[id].name,
+              icon: custom.customIcon || custom.icon || newResolved[id].icon,
               hidden: custom.hidden !== undefined ? custom.hidden : newResolved[id].hidden
+            };
+          }
+        }
+      }
+
+      if (Array.isArray(config.entities?.hiddenEntityIds)) {
+        for (const hiddenId of config.entities.hiddenEntityIds) {
+          if (newResolved[hiddenId]) {
+            newResolved[hiddenId] = {
+              ...newResolved[hiddenId],
+              hidden: true
             };
           }
         }
@@ -898,8 +923,14 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
 
       const nextEntityCustomizations = {
         ...prev.entityCustomizations,
-        ...(config.entities && typeof config.entities === 'object' ? config.entities : {})
+        ...(typeof entityCustoms === 'object' ? entityCustoms : {})
       };
+
+      const selectedWeather = config.preferences?.selectedWeatherEntityId || prev.selectedWeatherEntityId;
+      const selectedAlarm = config.preferences?.selectedAlarmEntityId || prev.selectedAlarmEntityId;
+      const dismissedIds = Array.isArray(config.preferences?.dismissedNotificationIds)
+        ? Array.from(new Set([...prev.dismissedNotificationIds, ...config.preferences.dismissedNotificationIds]))
+        : prev.dismissedNotificationIds;
 
       return {
         areas: newAreas,
@@ -907,7 +938,10 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         floors: newFloors,
         rawFloors: newFloors,
         resolvedEntities: newResolved,
-        entityCustomizations: nextEntityCustomizations
+        entityCustomizations: nextEntityCustomizations,
+        selectedWeatherEntityId: selectedWeather,
+        selectedAlarmEntityId: selectedAlarm,
+        dismissedNotificationIds: dismissedIds
       };
     });
     get().recomputeGraph();
@@ -970,7 +1004,9 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
     set(prev => {
       const nextIds = Array.from(new Set([...prev.dismissedNotificationIds, id]));
       if (typeof window !== 'undefined') {
-        localStorage.setItem('ha_dismissed_notifications', JSON.stringify(nextIds));
+        try {
+          localStorage.setItem('ha_dismissed_notifications', JSON.stringify(nextIds));
+        } catch {}
       }
       return { dismissedNotificationIds: nextIds };
     });
@@ -980,7 +1016,9 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
     set(prev => {
       const nextIds = Array.from(new Set([...prev.dismissedNotificationIds, ...ids]));
       if (typeof window !== 'undefined') {
-        localStorage.setItem('ha_dismissed_notifications', JSON.stringify(nextIds));
+        try {
+          localStorage.setItem('ha_dismissed_notifications', JSON.stringify(nextIds));
+        } catch {}
       }
       return { dismissedNotificationIds: nextIds };
     });
@@ -1065,21 +1103,25 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   setSelectedSettingsSection: (section: string | null) => set({ selectedSettingsSection: section }),
   setSelectedWeatherEntityId: (id: string | null) => {
     if (typeof window !== 'undefined') {
-      if (id) {
-        localStorage.setItem('ha_selected_weather_id', id);
-      } else {
-        localStorage.removeItem('ha_selected_weather_id');
-      }
+      try {
+        if (id) {
+          localStorage.setItem('ha_selected_weather_id', id);
+        } else {
+          localStorage.removeItem('ha_selected_weather_id');
+        }
+      } catch {}
     }
     set({ selectedWeatherEntityId: id });
   },
   setSelectedAlarmEntityId: (id: string | null) => {
     if (typeof window !== 'undefined') {
-      if (id) {
-        localStorage.setItem('ha_selected_alarm_id', id);
-      } else {
-        localStorage.removeItem('ha_selected_alarm_id');
-      }
+      try {
+        if (id) {
+          localStorage.setItem('ha_selected_alarm_id', id);
+        } else {
+          localStorage.removeItem('ha_selected_alarm_id');
+        }
+      } catch {}
     }
     set({ selectedAlarmEntityId: id });
   },
