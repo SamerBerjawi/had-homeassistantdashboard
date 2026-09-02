@@ -472,16 +472,18 @@ async function startServer() {
     }
   }
 
-  // Periodic heartbeat to prevent intermediate proxy/NAT connection dropouts (every 25s)
+  // Periodic heartbeat to prevent intermediate proxy/NAT connection dropouts (every 15s)
   setInterval(() => {
+    const pingPayload = `event: ping\ndata: ${JSON.stringify({ timestamp: Date.now() })}\n\n`;
     for (const client of sseClients) {
       try {
         client.write(': heartbeat\n\n');
+        client.write(pingPayload);
       } catch {
         sseClients.delete(client);
       }
     }
-  }, 25000);
+  }, 15000);
 
   // Real-time Push Stream (Server-Sent Events) for multi-device synchronization
   app.get('/api/config/stream', requireHAAuth, (req, res) => {
@@ -491,8 +493,9 @@ async function startServer() {
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders?.();
 
-    // Initial handshake comment
+    // Initial handshake comment and ping event
     res.write(': connected\n\n');
+    res.write(`event: ping\ndata: ${JSON.stringify({ timestamp: Date.now(), status: 'connected' })}\n\n`);
 
     sseClients.add(res);
 

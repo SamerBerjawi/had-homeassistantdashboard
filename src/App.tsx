@@ -15,7 +15,7 @@ import { UpdateToast } from './components/pwa/UpdateToast';
 import AuthModal from './components/auth/AuthModal';
 import EntityDetailModal from './components/modals/EntityDetailModal';
 import DemoBanner from './components/auth/DemoBanner';
-import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power, ArrowsClockwise, SlidersHorizontal, Palette, User, WifiHigh, DownloadSimple, GearSix } from '@phosphor-icons/react';
+import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power, ArrowsClockwise, SlidersHorizontal, Palette, User, WifiHigh, DownloadSimple, GearSix, Warning } from '@phosphor-icons/react';
 import { useUserConfig } from './contexts/ConfigContext';
 import { useAuth } from './contexts/AuthContext';
 import FullScreenLoadingPage from './components/ui/FullScreenLoadingPage';
@@ -109,7 +109,7 @@ function getTabFromUrl(): TabKey {
 }
 
 export default function App() {
-  const { config, updateConfig, isLoading: isConfigLoading } = useUserConfig();
+  const { config, updateConfig, isLoading: isConfigLoading, syncStatus, lastSuccessfulSync } = useUserConfig();
 
   // Theme Mode State: 'auto' (system OS) | 'dark' (OLED) | 'light' (Daylight)
   const [themeMode, setThemeMode] = useState<'auto' | 'dark' | 'light'>(() => {
@@ -530,8 +530,19 @@ export default function App() {
                 </h1>
               </div>
 
-              {/* Global Header Action Controls (Sync, Manual Refresh, Notifications) */}
+              {/* Global Header Action Controls (Sync, Offline Fallback Pill, Manual Refresh, Notifications) */}
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {/* Offline Fallback Cache Indicator */}
+                {syncStatus === 'offline_fallback' && (
+                  <div
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-semibold backdrop-blur-sm animate-pulse"
+                    title={`NAS storage currently unreachable. Displaying cached settings mirror (last synced: ${lastSuccessfulSync || 'recent'}).`}
+                  >
+                    <Warning size={14} weight="fill" className="text-amber-500 shrink-0" />
+                    <span className="hidden sm:inline">Offline (Cached)</span>
+                  </div>
+                )}
+
                 {/* Subtle Boot & Background Sync Indicator */}
                 {isConfigLoading && (
                   <div

@@ -18,7 +18,16 @@ import { getStoredHAAuth } from './haAuth';
 
 const STORAGE_KEY_CONFIG = 'had_dashboard_config';
 const STORAGE_KEY_SERVER_VERSION = 'had_last_server_version';
+const STORAGE_KEY_SHADOW_CACHE = 'had_shadow_config_mirror_v1';
 const HA_USER_DATA_KEY = 'had_dashboard_config';
+
+import { optimizeImageForUpload } from '../utils/imageOptimizer';
+
+export interface ShadowCacheRecord {
+  config: UserDashboardConfig;
+  last_successful_sync: string;
+  serverVersion?: number;
+}
 
 /**
  * Build Authorization headers for NAS REST requests
@@ -193,10 +202,15 @@ export class LocalStorageDriver implements IConfigStorageDriver {
   }
 
   public async uploadAsset(fileOrDataUrl: File | string): Promise<string> {
-    if (typeof fileOrDataUrl === 'string') {
-      return fileOrDataUrl;
+    try {
+      const optimized = await optimizeImageForUpload(fileOrDataUrl);
+      return optimized.dataUrl;
+    } catch {
+      if (typeof fileOrDataUrl === 'string') {
+        return fileOrDataUrl;
+      }
+      return readFileAsDataUrl(fileOrDataUrl);
     }
-    return readFileAsDataUrl(fileOrDataUrl);
   }
 }
 
@@ -301,16 +315,46 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
       }
     }
 
-    // 3. If remote found, merge and cache in local storage as reliable backup
+    // 3. If remote found, merge and cache in shadow mirror cache as reliable backup
     if (bestRemote && typeof bestRemote === 'object') {
       const merged = mergeConfig(DEFAULT_USER_CONFIG, bestRemote);
+      const shadowRecord: ShadowCacheRecord = {
+        config: merged,
+        last_successful_sync: new Date().toISOString(),
+        serverVersion: this.lastKnownServerVersion ?? undefined
+      };
       try {
+        localStorage.setItem(STORAGE_KEY_SHADOW_CACHE, JSON.stringify(shadowRecord));
         localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(merged));
       } catch {}
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('had_sync_status_changed', {
+          detail: { status: 'synced', lastSync: shadowRecord.last_successful_sync }
+        }));
+      }
+
       return merged;
     }
 
-    // 4. Fallback to cached local copy so offline/bootstrapping always works
+    // 4. Read-Through Shadow Mirror Fallback: If remote is unreachable, serve shadow mirror cache
+    if (typeof window !== 'undefined') {
+      try {
+        const cachedShadow = localStorage.getItem(STORAGE_KEY_SHADOW_CACHE);
+        if (cachedShadow) {
+          const parsed: ShadowCacheRecord = JSON.parse(cachedShadow);
+          if (parsed && parsed.config) {
+            console.warn(`[RemoteStorageDriver] NAS & HA offline. Serving shadow mirror cache (last synced: ${parsed.last_successful_sync})`);
+            window.dispatchEvent(new CustomEvent('had_sync_status_changed', {
+              detail: { status: 'offline_fallback', lastSync: parsed.last_successful_sync }
+            }));
+            return mergeConfig(DEFAULT_USER_CONFIG, parsed.config);
+          }
+        }
+      } catch {}
+    }
+
+    // 5. Fallback to basic local copy
     return this.localFallback.loadConfig();
   }
 
@@ -343,22 +387,39 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
             } catch {}
           }
         } else if (response.status === 409) {
-          // Conflict detected! Another device saved in between
+          // Conflict detected! Another device saved concurrently
           const errData = await response.json();
           const serverVersion = Number(errData.serverVersion) || 1;
-          const serverConfig = errData.config || current;
+          let serverConfig = errData.config;
+
+          if (!serverConfig) {
+            // Fetch authoritative remote config if not provided in error body
+            try {
+              const fetchLatest = await fetch('/api/config', {
+                method: 'GET',
+                headers: getAuthHeaders(),
+                signal: AbortSignal.timeout(2500)
+              });
+              if (fetchLatest.ok) {
+                const latestJson = await fetchLatest.json();
+                serverConfig = latestJson.config;
+              }
+            } catch {}
+          }
+
+          const baseConfig = serverConfig || current;
 
           console.warn(
-            `[RemoteStorageDriver] Conflict detected (expected v${this.lastKnownServerVersion}, server is v${serverVersion}). Merging changes and retrying once...`
+            `[RemoteStorageDriver] Optimistic concurrency conflict (expected v${this.lastKnownServerVersion}, server is v${serverVersion}). Merging local changes onto v${serverVersion} and retrying...`
           );
 
-          // Re-apply client's pending partial changes on top of fresh server config
-          const reMerged = mergeConfig(serverConfig, {
+          // Re-apply client's pending partial changes on top of fresh authoritative config
+          const reMerged = mergeConfig(baseConfig, {
             ...partial,
             updatedAt: new Date().toISOString()
           });
 
-          // Retry once with the latest known server version
+          // Retry with the authoritative server version
           try {
             const retryRes = await fetch('/api/config', {
               method: 'POST',
@@ -381,13 +442,13 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
               updated = reMerged;
             } else {
               console.warn(
-                '[RemoteStorageDriver] Retry save also encountered a conflict. Accepting server configuration to prevent infinite loop.'
+                '[RemoteStorageDriver] Retry save also encountered a conflict. Accepting server configuration.'
               );
               this.lastKnownServerVersion = serverVersion;
               try {
                 localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(serverVersion));
               } catch {}
-              updated = serverConfig;
+              updated = baseConfig;
             }
           } catch (retryErr) {
             console.warn('[RemoteStorageDriver] Retry request failed:', retryErr);
@@ -417,8 +478,14 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
       }
     }
 
-    // 3. Always keep local backup up to date
+    // 3. Always keep local backup & shadow mirror cache up to date
+    const shadowRecord: ShadowCacheRecord = {
+      config: updated,
+      last_successful_sync: new Date().toISOString(),
+      serverVersion: this.lastKnownServerVersion ?? undefined
+    };
     try {
+      localStorage.setItem(STORAGE_KEY_SHADOW_CACHE, JSON.stringify(shadowRecord));
       localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(updated));
     } catch {}
 
@@ -431,6 +498,9 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
           bc.close();
         }
         window.dispatchEvent(new CustomEvent('had_config_updated', { detail: updated }));
+        window.dispatchEvent(new CustomEvent('had_sync_status_changed', {
+          detail: { status: 'synced', lastSync: shadowRecord.last_successful_sync }
+        }));
       } catch {}
     }
 
@@ -438,19 +508,33 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
   }
 
   public async uploadAsset(fileOrDataUrl: File | string, key: string): Promise<string> {
-    const dataUrl = typeof fileOrDataUrl === 'string'
-      ? fileOrDataUrl
-      : await readFileAsDataUrl(fileOrDataUrl);
-    const filename = typeof fileOrDataUrl === 'object' && 'name' in fileOrDataUrl ? fileOrDataUrl.name : `${key}.png`;
+    // 1. Client-Side Image Pre-Upload Optimization & Validation
+    let uploadDataUrl: string;
+    try {
+      const optimized = await optimizeImageForUpload(fileOrDataUrl, {
+        maxDimension: 1920,
+        maxSizeBytes: 1.5 * 1024 * 1024
+      });
+      uploadDataUrl = optimized.dataUrl;
+    } catch (optErr) {
+      console.warn('[RemoteStorageDriver] Pre-upload optimization notice:', optErr);
+      uploadDataUrl = typeof fileOrDataUrl === 'string'
+        ? fileOrDataUrl
+        : await readFileAsDataUrl(fileOrDataUrl);
+    }
 
-    // Try posting to NAS persistent volume storage (/api/assets)
+    const filename = typeof fileOrDataUrl === 'object' && 'name' in fileOrDataUrl
+      ? fileOrDataUrl.name
+      : `${key}.png`;
+
+    // 2. Post to NAS persistent volume storage (/api/assets)
     if (typeof fetch !== 'undefined') {
       try {
         const response = await fetch('/api/assets', {
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify({
-            dataUrl,
+            dataUrl: uploadDataUrl,
             key,
             filename
           }),
@@ -471,7 +555,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
     }
 
     // Fallback: return encoded base64 string
-    return dataUrl;
+    return uploadDataUrl;
   }
 }
 

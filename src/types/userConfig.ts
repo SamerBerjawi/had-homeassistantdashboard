@@ -128,6 +128,8 @@ export interface ConfigContextType {
   driverType: StorageDriverType;
   driverName: string;
   isSyncingRemote: boolean;
+  syncStatus: 'synced' | 'syncing' | 'offline_fallback' | 'error';
+  lastSuccessfulSync: string | null;
   updateConfig: (
     partialOrUpdater:
       | Partial<UserDashboardConfig>

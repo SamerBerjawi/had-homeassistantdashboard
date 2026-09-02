@@ -63,6 +63,7 @@ export default defineConfig(() => {
           // Explicitly exclude API, WebSocket, auth, camera streams, and WebRTC from Workbox navigation & runtime caching
           navigateFallbackDenylist: [
             /^\/api/,
+            /^\/data\/assets/,
             /^\/auth/,
             /^\/manifest\.json/,
             /^\/websocket/,
@@ -72,7 +73,33 @@ export default defineConfig(() => {
           ],
           runtimeCaching: [
             {
-              // Live Home Assistant API, streams, and WebSocket must NEVER be cached
+              // 1. Config API and live SSE stream MUST NEVER be cached
+              urlPattern: ({ url }) =>
+                url.pathname === '/api/config/stream' ||
+                url.pathname.startsWith('/api/config'),
+              handler: 'NetworkOnly',
+            },
+            {
+              // 2. Synced Remote NAS Assets & Room/Vehicle Media
+              // Respect cache-busting query parameter (?v=...) and revalidate in background
+              urlPattern: ({ url }) =>
+                url.pathname.startsWith('/api/assets') ||
+                url.pathname.startsWith('/data/assets') ||
+                url.pathname.startsWith('/local/'),
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'homz-synced-assets',
+                expiration: {
+                  maxEntries: 200,
+                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30 Days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
+              // 3. Live Home Assistant API, streams, camera proxies, and WebSockets
               urlPattern: ({ url }) =>
                 url.pathname.startsWith('/api') ||
                 url.pathname.startsWith('/auth') ||
@@ -82,7 +109,7 @@ export default defineConfig(() => {
               handler: 'NetworkOnly',
             },
             {
-              // External web fonts
+              // 4. External web fonts
               urlPattern: ({ url }) =>
                 url.origin === 'https://fonts.googleapis.com' ||
                 url.origin === 'https://fonts.gstatic.com',
@@ -96,7 +123,7 @@ export default defineConfig(() => {
               },
             },
             {
-              // Static app images (excluding camera proxy streams)
+              // 5. Static app images
               urlPattern: ({ request, url }) =>
                 request.destination === 'image' &&
                 !url.pathname.includes('/camera_proxy') &&

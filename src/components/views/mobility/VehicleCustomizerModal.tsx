@@ -1,11 +1,7 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState, useRef, ChangeEvent, DragEvent } from 'react';
-import { X, UploadSimple, Trash, Sparkle, Car, Bicycle, Check, Sliders, BatteryCharging, Lightning } from '@phosphor-icons/react';
+import { X, UploadSimple, Trash, Sparkle, Car, Bicycle, Check, Sliders, BatteryCharging, Lightning, Warning } from '@phosphor-icons/react';
 import { resolveAssetUrl } from '../../../utils/assetUrl';
+import { optimizeImageForUpload } from '../../../utils/imageOptimizer';
 
 interface VehicleCustomizerModalProps {
   isOpen: boolean;
@@ -68,6 +64,7 @@ export function VehicleCustomizerModal({
 
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [savedFeedback, setSavedFeedback] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const carImgInputRef = useRef<HTMLInputElement>(null);
   const carLogoInputRef = useRef<HTMLInputElement>(null);
@@ -85,10 +82,33 @@ export function VehicleCustomizerModal({
       setBikeNameDraft(currentBikeName);
       setBikeImageDraft(currentBikeImage);
       setBikeLogoDraft(currentBikeLogo);
+      setUploadError(null);
     }
   }, [isOpen, initialTarget, currentCarName, currentCarTargetSoc, currentCarBatteryCapacity, currentCarImage, currentCarLogo, currentBikeName, currentBikeImage, currentBikeLogo]);
 
   if (!isOpen) return null;
+
+  const processFile = async (
+    file: File,
+    type: 'car_image' | 'car_logo' | 'bike_image' | 'bike_logo'
+  ) => {
+    setUploadError(null);
+    try {
+      const isLogo = type.endsWith('_logo');
+      const maxDim = isLogo ? 1024 : 1920;
+      const optimized = await optimizeImageForUpload(file, {
+        maxDimension: maxDim,
+        maxSizeBytes: 1.5 * 1024 * 1024
+      });
+
+      if (type === 'car_image') setCarImageDraft(optimized.dataUrl);
+      if (type === 'car_logo') setCarLogoDraft(optimized.dataUrl);
+      if (type === 'bike_image') setBikeImageDraft(optimized.dataUrl);
+      if (type === 'bike_logo') setBikeLogoDraft(optimized.dataUrl);
+    } catch (err: any) {
+      setUploadError(err.message || 'Could not process image.');
+    }
+  };
 
   const handleFileUpload = (
     e: ChangeEvent<HTMLInputElement>,
@@ -96,16 +116,7 @@ export function VehicleCustomizerModal({
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (type === 'car_image') setCarImageDraft(result);
-      if (type === 'car_logo') setCarLogoDraft(result);
-      if (type === 'bike_image') setBikeImageDraft(result);
-      if (type === 'bike_logo') setBikeLogoDraft(result);
-    };
-    reader.readAsDataURL(file);
+    processFile(file, type);
   };
 
   const handleDrop = (
@@ -115,16 +126,7 @@ export function VehicleCustomizerModal({
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (type === 'car_image') setCarImageDraft(result);
-      if (type === 'car_logo') setCarLogoDraft(result);
-      if (type === 'bike_image') setBikeImageDraft(result);
-      if (type === 'bike_logo') setBikeLogoDraft(result);
-    };
-    reader.readAsDataURL(file);
+    processFile(file, type);
   };
 
   const handleSave = async () => {
@@ -247,6 +249,13 @@ export function VehicleCustomizerModal({
             <span>Smart E-Bike</span>
           </button>
         </div>
+
+        {uploadError && (
+          <div className="mx-5 sm:mx-6 mt-4 p-3 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+            <Warning size={16} weight="fill" className="shrink-0" />
+            <span>{uploadError}</span>
+          </div>
+        )}
 
         <div className="p-5 sm:p-6 overflow-y-auto space-y-5">
           {activeTab === 'car' ? (

@@ -20,6 +20,7 @@ import {
   LocalStorageDriver,
   readFileAsDataUrl
 } from '../services/configStorageService';
+import { configSyncService, SyncConnectionState } from '../services/configSyncService';
 import { useAuth } from './AuthContext';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 
@@ -35,6 +36,8 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [driverType, setDriverType] = useState<StorageDriverType>('local_storage');
   const [driverName, setDriverName] = useState<string>('Isolated LocalStorage');
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline_fallback' | 'error'>('synced');
+  const [lastSuccessfulSync, setLastSuccessfulSync] = useState<string | null>(null);
 
   const activeDriverRef = useRef<IConfigStorageDriver>(new LocalStorageDriver());
   const pendingSaveTimeoutRef = useRef<any>(null);
@@ -57,15 +60,19 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const loadData = async (silent = false) => {
       if (!silent) setIsLoading(true);
+      setSyncStatus('syncing');
       try {
         const loaded = await driver.loadConfig();
         if (isMounted && loaded) {
           setConfig(loaded);
           setLastSaved(loaded.updatedAt);
           applyToSubsystems(loaded);
+          setSyncStatus('synced');
+          setLastSuccessfulSync(new Date().toISOString());
         }
       } catch (err) {
         console.error('[ConfigProvider] Error loading user configuration:', err);
+        setSyncStatus('offline_fallback');
       } finally {
         if (isMounted && !silent) {
           setIsLoading(false);
@@ -84,28 +91,18 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     window.addEventListener('ha_connection_status' as any, handleConnectionStatus);
 
-    // 2. Re-sync on window focus / visibility change (e.g. tablet screen on / tab switched)
-    const handleFocus = () => {
-      if (document.visibilityState === 'visible' && authState.isAuthenticated && !authState.isDemo) {
-        loadData(true);
+    // 2. Listen to custom sync status change events dispatched by storage driver
+    const handleSyncStatus = (e: any) => {
+      if (e?.detail?.status && isMounted) {
+        setSyncStatus(e.detail.status);
+        if (e.detail.lastSync) {
+          setLastSuccessfulSync(e.detail.lastSync);
+        }
       }
     };
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
+    window.addEventListener('had_sync_status_changed' as any, handleSyncStatus);
 
     // 3. Listen to local/cross-tab broadcast updates
-    let bc: BroadcastChannel | null = null;
-    if ('BroadcastChannel' in window) {
-      bc = new BroadcastChannel('had_config_channel');
-      bc.onmessage = (event) => {
-        if (event.data?.type === 'config_saved' && event.data.config && isMounted) {
-          setConfig(event.data.config);
-          setLastSaved(event.data.config.updatedAt);
-          applyToSubsystems(event.data.config);
-        }
-      };
-    }
-
     const handleLocalUpdated = (e: any) => {
       if (e?.detail && isMounted) {
         setConfig(e.detail);
@@ -123,45 +120,39 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     window.addEventListener('had_manual_refresh', handleGlobalRefresh);
 
-    // 5. Real-Time Push Stream (SSE) for instant cross-device synchronization (~1s)
-    let eventSource: EventSource | null = null;
-    if (typeof window !== 'undefined' && 'EventSource' in window && authState.isAuthenticated && !authState.isDemo) {
-      try {
-        const auth = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('had_ha_auth_tokens') || '{}') : {};
-        const params = new URLSearchParams();
-        if (auth?.access_token) {
-          params.set('token', auth.access_token);
-        }
-        if (auth?.server_url) {
-          params.set('haUrl', auth.server_url);
-        }
-        const streamUrl = `/api/config/stream${params.toString() ? `?${params.toString()}` : ''}`;
-        eventSource = new EventSource(streamUrl);
-
-        eventSource.addEventListener('config_updated', (event: MessageEvent) => {
+    // 5. Start Resilient SSE Sync Service for cross-device live updates
+    let unsubscribeSync: (() => void) | null = null;
+    if (authState.isAuthenticated && !authState.isDemo) {
+      configSyncService.start();
+      unsubscribeSync = configSyncService.subscribe({
+        onConfigChanged: () => {
           if (isMounted) {
             loadData(true);
           }
-        });
-
-        eventSource.onerror = (err) => {
-          // EventSource automatically retries connection natively; log for observability
-          console.warn('[ConfigProvider] Config push stream encountered an issue (native auto-reconnect active):', err);
-        };
-      } catch (err) {
-        console.warn('[ConfigProvider] Could not initialize EventSource stream:', err);
-      }
+        },
+        onReconcileNeeded: () => {
+          if (isMounted) {
+            loadData(true);
+          }
+        },
+        onStatusChanged: (status: SyncConnectionState) => {
+          if (status === 'connected') {
+            setSyncStatus('synced');
+          } else if (status === 'reconnecting') {
+            setSyncStatus('syncing');
+          }
+        }
+      });
     }
 
     return () => {
       isMounted = false;
       window.removeEventListener('ha_connection_status' as any, handleConnectionStatus);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('had_sync_status_changed' as any, handleSyncStatus);
       window.removeEventListener('had_config_updated' as any, handleLocalUpdated);
       window.removeEventListener('had_manual_refresh', handleGlobalRefresh);
-      if (bc) bc.close();
-      if (eventSource) eventSource.close();
+      if (unsubscribeSync) unsubscribeSync();
+      configSyncService.stop();
     };
   }, [authState, isInitializing, isProduction]);
 
@@ -302,6 +293,8 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     driverType,
     driverName,
     isSyncingRemote,
+    syncStatus,
+    lastSuccessfulSync,
     updateConfig,
     uploadVehicleAsset,
     resetConfig,
