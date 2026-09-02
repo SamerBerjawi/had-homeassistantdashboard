@@ -17,10 +17,12 @@ import EntityDetailModal from './components/modals/EntityDetailModal';
 import DemoBanner from './components/auth/DemoBanner';
 import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power, ArrowsClockwise, SlidersHorizontal, Palette, User, WifiHigh, DownloadSimple, GearSix } from '@phosphor-icons/react';
 import { useUserConfig } from './contexts/ConfigContext';
+import { useAuth } from './contexts/AuthContext';
+import FullScreenLoadingPage from './components/ui/FullScreenLoadingPage';
+import { hasConfiguredHACredentials } from './store/useAutoLayoutStore';
 
 import { PAGE_THEMES } from './config/pageThemes';
 import DynamicPhosphorIcon from './components/ui/DynamicPhosphorIcon';
-import { AnimatedCircularProgressBar } from './components/ui/animated-circular-progress-bar';
 import { useRoomsData } from './hooks/useRoomsData';
 import { haWebSocketService } from './services/haWebSocket';
 
@@ -241,19 +243,24 @@ export default function App() {
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState<boolean>(false);
   const [isWeatherDrawerOpen, setIsWeatherDrawerOpen] = useState<boolean>(false);
 
+  // Authentication Context
+  const { authState, enterDemoMode, isInitializing: isAuthInitializing } = useAuth();
+
   // Auto-Layout Graph Store
   const {
     init: initAutoLayout,
     resolvedEntities,
     isLiveMode,
     connectionStatus,
-    connectionError
+    connectionError,
+    serverUrl
   } = useAutoLayoutStore(useShallow(s => ({
     init: s.init,
     resolvedEntities: s.resolvedEntities,
     isLiveMode: s.isLiveMode,
     connectionStatus: s.connectionStatus,
-    connectionError: s.connectionError
+    connectionError: s.connectionError,
+    serverUrl: s.serverUrl
   })));
 
   useEffect(() => {
@@ -353,19 +360,45 @@ export default function App() {
         : currentTheme.title;
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
-  const [reconnectProgress, setReconnectProgress] = useState<number>(20);
+  const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
 
   useEffect(() => {
-    const isReconnecting = isLiveMode && connectionStatus !== 'connected' && connectionStatus !== 'auth_failed';
-    if (!isReconnecting) {
-      setReconnectProgress(0);
+    if (connectionStatus === 'connected' && Object.keys(resolvedEntities).length > 0) {
+      setHasInitialLoaded(true);
+    }
+  }, [connectionStatus, resolvedEntities]);
+
+  const isConnectingToHA = (isLiveMode || hasConfiguredHACredentials()) && connectionStatus !== 'connected' && connectionStatus !== 'auth_failed';
+  const isInitialSyncPending = isLiveMode && !hasInitialLoaded && connectionStatus !== 'auth_failed';
+  const isAppLoading = !authState.isDemo && (isConnectingToHA || isInitialSyncPending || (isAuthInitializing && hasConfiguredHACredentials()));
+
+  const [loadingProgress, setLoadingProgress] = useState<number>(15);
+
+  useEffect(() => {
+    if (!isAppLoading) {
+      setLoadingProgress(100);
       return;
     }
+
+    setLoadingProgress(15);
+    const t1 = setTimeout(() => setLoadingProgress(35), 400);
+    const t2 = setTimeout(() => setLoadingProgress(65), 1000);
+    const t3 = setTimeout(() => setLoadingProgress(82), 2000);
+
     const interval = setInterval(() => {
-      setReconnectProgress((prev) => (prev >= 95 ? 10 : prev + 5));
-    }, 200);
-    return () => clearInterval(interval);
-  }, [isLiveMode, connectionStatus]);
+      setLoadingProgress((prev) => {
+        if (prev >= 95) return 92;
+        return prev + 1;
+      });
+    }, 500);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearInterval(interval);
+    };
+  }, [isAppLoading]);
 
   const handleManualRefresh = async () => {
     if (isManualRefreshing) return;
@@ -386,6 +419,24 @@ export default function App() {
       setTimeout(() => setIsManualRefreshing(false), 600);
     }
   };
+
+  // Full-Screen Loading Page — Prevents rendering the demo environment while connecting
+  if (isAppLoading) {
+    return (
+      <FullScreenLoadingPage
+        progress={loadingProgress}
+        serverUrl={serverUrl || authState.haUrl}
+        connectionStatus={connectionStatus}
+        connectionError={connectionError}
+        onEnterDemoMode={() => {
+          enterDemoMode();
+          useAutoLayoutStore.getState().reloadDemoData();
+        }}
+        onRetry={handleManualRefresh}
+        isRetrying={isManualRefreshing}
+      />
+    );
+  }
 
   return (
     <div className={`fixed inset-0 flex h-full h-[100dvh] min-h-screen min-h-[100dvh] w-full overflow-hidden font-sans select-none ${darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
@@ -536,32 +587,6 @@ export default function App() {
             </div>
           </header>
 
-          {/* Non-Blocking Transient Reconnection Status Indicator */}
-          {isLiveMode && connectionStatus !== 'connected' && connectionStatus !== 'auth_failed' && (
-            <div className="mb-4 px-4 py-2.5 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-center justify-between gap-3 shadow-sm backdrop-blur-md animate-in fade-in duration-300">
-              <div className="flex items-center gap-3 min-w-0">
-                <AnimatedCircularProgressBar
-                  max={100}
-                  min={0}
-                  value={reconnectProgress}
-                  gaugePrimaryColor={darkMode ? "#f59e0b" : "#d97706"}
-                  gaugeSecondaryColor={darkMode ? "rgba(245, 158, 11, 0.2)" : "rgba(217, 119, 6, 0.15)"}
-                  className="size-7 sm:size-8 text-[9px] sm:text-[10px] font-bold shrink-0 text-amber-600 dark:text-amber-400"
-                />
-                <span className="text-xs sm:text-sm font-semibold tracking-tight truncate">
-                  trying to reconnect to Home Assistant
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleManualRefresh}
-                disabled={isManualRefreshing}
-                className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-800 dark:text-amber-200 text-xs font-bold transition-all cursor-pointer shrink-0 active:scale-95"
-              >
-                Retry Now
-              </button>
-            </div>
-          )}
 
           {/* Session Expired / Re-authentication Prompt Banner */}
           {connectionStatus === 'auth_failed' && (
