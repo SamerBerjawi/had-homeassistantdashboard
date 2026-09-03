@@ -144,8 +144,8 @@ export const PAGE_THEMES: Record<string, PageThemeConfig> = {
   },
   health: {
     id: 'health',
-    title: 'Health & Environment',
-    subtitle: 'Track indoor air quality, humidity levels, temperature comfort indices, and environmental wellness.',
+    title: 'Health & Vitals',
+    subtitle: 'Track Apple Health activity rings, vital signs, cardiovascular metrics, and body composition.',
     icon: Heartbeat,
     color: 'text-rose-500 dark:text-rose-400',
     accentHex: '#f43f5e',

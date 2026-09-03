@@ -460,16 +460,22 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
   --color-color-4: var(--color-4);
   --color-color-3: var(--color-3);
   --color-color-2: var(--color-2);
-  --color-color-1: var(--color-1)
-;
+  --color-color-1: var(--color-1);
   @keyframes rainbow {
-  0% {
-    background-position: 0%;
+    0% {
+      background-position: 0%;
     }
-  100% {
-    background-position: 200%;
+    100% {
+      background-position: 200%;
     }
-  }}
+  }
+  --animate-border-beam: border-beam var(--duration, 15s) infinite linear;
+  @keyframes border-beam {
+    100% {
+      offset-distance: 100%;
+    }
+  }
+}
 
   /* Magic UI Animated Theme Toggler View Transition */
   html[data-magicui-theme-vt="active"]::view-transition-old(root),
