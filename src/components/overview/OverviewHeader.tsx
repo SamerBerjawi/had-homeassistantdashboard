@@ -284,271 +284,242 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
   const alarmDetails = getAlarmBadgeDetails();
 
+  const hasAnyActiveBadge =
+    homeUsers.length > 0 ||
+    onLights.length > 0 ||
+    onSwitches.length > 0 ||
+    activeFans.length > 0 ||
+    isVacuumCleaning ||
+    isPlayingMedia ||
+    isAlarmArmed ||
+    openDoors.length > 0 ||
+    openWindows.length > 0 ||
+    activeMotion.length > 0 ||
+    activeLeaks.length > 0 ||
+    activeSmoke.length > 0;
+
   return (
     <section aria-label="House Telemetry and Fast Controls" className="space-y-4 mb-6">
       {/* ============================================================= */}
-      {/* 1. STATUS PILLS BAR (WRAPS TO MULTIPLE LINES)                 */}
+      {/* 1. STATUS PILLS BAR (ONLY ACTIVE BADGES IN EXACT ORDER)      */}
       {/* ============================================================= */}
-      <div className="flex flex-wrap items-center gap-2">
-        
-        {/* 1.1 USERS PRESENCE PILLS */}
-        {userEntities.map((user) => {
-          const isHome = user.state === 'home';
-          const firstName = user.name.split(' ')[0];
+      {hasAnyActiveBadge && (
+        <div className="flex flex-wrap items-center gap-2 animate-fadeIn">
+          {/* 1.1 USERS AT HOME */}
+          {homeUsers.map((user) => {
+            const firstName = user.name.split(' ')[0];
 
-          return (
-            <button
-              key={user.entity_id}
-              type="button"
-              onClick={() => openUsersDrawer(user)}
-              className={`h-8.5 pl-1 pr-2.5 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 border flex items-center gap-1.5 shadow-xs select-none whitespace-nowrap shrink-0 ${
-                isHome
-                  ? darkMode
+            return (
+              <button
+                key={user.entity_id}
+                type="button"
+                onClick={() => openUsersDrawer(user)}
+                className={`h-8.5 pl-1 pr-2.5 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 border flex items-center gap-1.5 shadow-xs select-none whitespace-nowrap shrink-0 ${
+                  darkMode
                     ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
                     : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                  : darkMode
-                    ? 'bg-white/5 hover:bg-white/10 text-slate-400 border-white/10 opacity-75'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                }`}
+                title={`${user.name}: At Home`}
+              >
+                <PersonAvatar
+                  name={user.name}
+                  entity_picture={user.attributes?.entity_picture}
+                  state={user.state}
+                  isHome={true}
+                  size="sm"
+                  showPresenceDot={false}
+                  className="w-6 h-6 shrink-0"
+                />
+                <span className="whitespace-nowrap">{firstName}</span>
+                <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-emerald-500" />
+              </button>
+            );
+          })}
+
+          {/* 1.2 LIGHTS BADGE (ONLY WHEN ACTIVE) */}
+          {onLights.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setDrawerOpen('lights')}
+              className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
+                darkMode
+                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                  : 'bg-amber-50 text-amber-800 border-amber-300'
               }`}
-              title={`${user.name}: ${isHome ? 'At Home' : user.state}`}
             >
-              <PersonAvatar
-                name={user.name}
-                entity_picture={user.attributes?.entity_picture}
-                state={user.state}
-                isHome={isHome}
-                size="sm"
-                showPresenceDot={false}
-                className="w-6 h-6 shrink-0"
-              />
-              <span className="whitespace-nowrap">{firstName}</span>
-              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isHome ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+              <Lightbulb size={16} weight="fill" className="text-amber-500 shrink-0" />
+              <span className="whitespace-nowrap">{onLights.length} Lights</span>
             </button>
-          );
-        })}
+          )}
 
-        {/* LIGHTS BADGE */}
-        <button
-          type="button"
-          onClick={() => setDrawerOpen('lights')}
-          className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
-            onLights.length > 0
-              ? darkMode
-                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                : 'bg-amber-50 text-amber-800 border-amber-300'
-              : darkMode
-                ? 'bg-white/5 text-slate-400 border-white/10'
-                : 'bg-slate-100 text-slate-600 border-slate-200'
-          }`}
-        >
-          <Lightbulb size={16} weight={onLights.length > 0 ? 'fill' : 'duotone'} className="text-amber-500 shrink-0" />
-          <span className="whitespace-nowrap">{onLights.length} Lights</span>
-        </button>
+          {/* 1.3 SWITCHES BADGE (ONLY WHEN ACTIVE) */}
+          {onSwitches.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setDrawerOpen('switches')}
+              className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
+                darkMode
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+              }`}
+            >
+              <ToggleRight size={16} weight="duotone" className="text-emerald-500 shrink-0" />
+              <span className="whitespace-nowrap">{onSwitches.length} Switches</span>
+            </button>
+          )}
 
-        {/* SWITCHES BADGE */}
-        <button
-          type="button"
-          onClick={() => setDrawerOpen('switches')}
-          className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
-            onSwitches.length > 0
-              ? darkMode
-                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-              : darkMode
-                ? 'bg-white/5 text-slate-400 border-white/10'
-                : 'bg-slate-100 text-slate-600 border-slate-200'
-          }`}
-        >
-          <ToggleRight size={16} weight="duotone" className="text-emerald-500 shrink-0" />
-          <span className="whitespace-nowrap">{onSwitches.length} Switches</span>
-        </button>
+          {/* 1.4 FANS BADGE (ONLY WHEN ACTIVE) */}
+          {activeFans.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setDrawerOpen('fans')}
+              className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
+                darkMode
+                  ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+                  : 'bg-cyan-50 text-cyan-800 border-cyan-300'
+              }`}
+            >
+              <Fan size={16} weight="duotone" className="text-cyan-500 shrink-0 animate-spin" style={{ animationDuration: '3s' }} />
+              <span className="whitespace-nowrap">{activeFans.length} Fans</span>
+            </button>
+          )}
 
-        {/* FANS BADGE */}
-        <button
-          type="button"
-          onClick={() => setDrawerOpen('fans')}
-          className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
-            activeFans.length > 0
-              ? darkMode
-                ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
-                : 'bg-cyan-50 text-cyan-800 border-cyan-300'
-              : darkMode
-                ? 'bg-white/5 text-slate-400 border-white/10'
-                : 'bg-slate-100 text-slate-600 border-slate-200'
-          }`}
-        >
-          <Fan size={16} weight="duotone" className={`text-cyan-500 shrink-0 ${activeFans.length > 0 ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
-          <span className="whitespace-nowrap">{activeFans.length} Fans</span>
-        </button>
-
-        {/* VACUUM ROBOTS BADGE */}
-        {vacuumEntities.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setDrawerOpen('vacuums')}
-            className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
-              isVacuumCleaning
-                ? darkMode
+          {/* 1.5 VACUUM ROBOTS BADGE (ONLY WHEN CLEANING) */}
+          {isVacuumCleaning && (
+            <button
+              type="button"
+              onClick={() => setDrawerOpen('vacuums')}
+              className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
+                darkMode
                   ? 'bg-teal-500/15 text-teal-300 border-teal-500/30'
                   : 'bg-teal-50 text-teal-800 border-teal-300'
-                : darkMode
-                  ? 'bg-white/5 text-slate-400 border-white/10'
-                  : 'bg-slate-100 text-slate-600 border-slate-200'
-            }`}
-          >
-            <Broom size={16} weight="duotone" className="text-teal-500 shrink-0" />
-            <span className="whitespace-nowrap">{isVacuumCleaning ? `${activeVacuums.length} Cleaning` : `${vacuumEntities.length} Vacuums`}</span>
-          </button>
-        )}
-
-        {/* AUDIO / MEDIA BADGE */}
-        <button
-          type="button"
-          onClick={() => setDrawerOpen('media')}
-          className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
-            isPlayingMedia
-              ? darkMode
-                ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
-                : 'bg-purple-50 text-purple-800 border-purple-300'
-              : darkMode
-                ? 'bg-white/5 text-slate-400 border-white/10'
-                : 'bg-slate-100 text-slate-600 border-slate-200'
-          }`}
-          title={
-            playingMediaEntities.length === 1
-              ? `Playing: ${playingSongTitle || 'Audio'}`
-              : playingMediaEntities.length > 1
-                ? `${playingMediaEntities.length} speakers currently playing`
-                : 'Audio & Media'
-          }
-        >
-          <MusicNotes size={16} weight="duotone" className="text-purple-500 shrink-0" />
-          <span className="whitespace-nowrap">
-            {playingMediaEntities.length === 1
-              ? (playingSongTitle || 'Playing Audio')
-              : playingMediaEntities.length > 1
-                ? `${playingMediaEntities.length} Playing`
-                : 'Audio'}
-          </span>
-        </button>
-
-        {/* ALARM BADGE */}
-        <button
-          type="button"
-          onClick={() => setDrawerOpen('alarm')}
-          className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
-            isAlarmArmed
-              ? darkMode
-                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-              : darkMode
-                ? 'bg-white/5 text-slate-400 border-white/10'
-                : 'bg-slate-100 text-slate-600 border-slate-200'
-          }`}
-        >
-          {isAlarmArmed ? (
-            <ShieldCheck size={16} weight="duotone" className="text-emerald-500 shrink-0" />
-          ) : (
-            <LockOpen size={16} weight="duotone" className="text-slate-400 shrink-0" />
+              }`}
+            >
+              <Broom size={16} weight="duotone" className="text-teal-500 shrink-0" />
+              <span className="whitespace-nowrap">{activeVacuums.length} Cleaning</span>
+            </button>
           )}
-          <span className="whitespace-nowrap">{isAlarmArmed ? 'Armed' : 'Alarm'}</span>
-        </button>
 
-        {/* DOORS BADGE */}
-        <button
-          type="button"
-          onClick={openDoorsDrawer}
-          className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
-            openDoors.length > 0
-              ? darkMode
-                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                : 'bg-amber-50 text-amber-800 border-amber-300'
-              : darkMode
-                ? 'bg-white/5 text-slate-400 border-white/10'
-                : 'bg-slate-100 text-slate-600 border-slate-200'
-          }`}
-        >
-          {openDoors.length > 0 ? (
-            <DoorOpen size={16} weight="duotone" className="text-amber-500 shrink-0" />
-          ) : (
-            <Door size={16} weight="duotone" className="text-slate-400 shrink-0" />
+          {/* 1.6 AUDIO / MEDIA BADGE (ONLY WHEN PLAYING) */}
+          {isPlayingMedia && (
+            <button
+              type="button"
+              onClick={() => setDrawerOpen('media')}
+              className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
+                darkMode
+                  ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                  : 'bg-purple-50 text-purple-800 border-purple-300'
+              }`}
+              title={
+                playingMediaEntities.length === 1
+                  ? `Playing: ${playingSongTitle || 'Audio'}`
+                  : `${playingMediaEntities.length} speakers currently playing`
+              }
+            >
+              <MusicNotes size={16} weight="duotone" className="text-purple-500 shrink-0" />
+              <span className="whitespace-nowrap">
+                {playingMediaEntities.length === 1
+                  ? (playingSongTitle || 'Playing Audio')
+                  : `${playingMediaEntities.length} Playing`}
+              </span>
+            </button>
           )}
-          <span className="whitespace-nowrap">{openDoors.length} Doors</span>
-        </button>
 
-        {/* WINDOWS BADGE */}
-        <button
-          type="button"
-          onClick={openWindowsDrawer}
-          className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
-            openWindows.length > 0
-              ? darkMode
-                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                : 'bg-amber-50 text-amber-800 border-amber-300'
-              : darkMode
-                ? 'bg-white/5 text-slate-400 border-white/10'
-                : 'bg-slate-100 text-slate-600 border-slate-200'
-          }`}
-        >
-          <FrameCorners size={16} weight="duotone" className={openWindows.length > 0 ? 'text-amber-500 shrink-0' : 'text-slate-400 shrink-0'} />
-          <span className="whitespace-nowrap">{openWindows.length} Windows</span>
-        </button>
+          {/* 1.7 ALARM BADGE (ONLY WHEN ARMED) */}
+          {isAlarmArmed && (
+            <button
+              type="button"
+              onClick={() => setDrawerOpen('alarm')}
+              className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
+                alarmDetails.bg
+              } ${alarmDetails.text} border-current/30`}
+            >
+              <ShieldCheck size={16} weight="duotone" className="shrink-0" />
+              <span className="whitespace-nowrap">{alarmDetails.label}</span>
+            </button>
+          )}
 
-        {/* MOTION BADGE */}
-        <button
-          type="button"
-          onClick={() => openSensorsDrawer('motion')}
-          className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
-            activeMotion.length > 0
-              ? darkMode
-                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                : 'bg-amber-50 text-amber-800 border-amber-300'
-              : darkMode
-                ? 'bg-white/5 text-slate-400 border-white/10'
-                : 'bg-slate-100 text-slate-600 border-slate-200'
-          }`}
-        >
-          <PersonSimpleWalk size={16} weight="duotone" className={activeMotion.length > 0 ? 'text-amber-500 shrink-0' : 'text-slate-400 shrink-0'} />
-          <span className="whitespace-nowrap">{activeMotion.length} Motion</span>
-        </button>
+          {/* 1.8 DOORS BADGE (ONLY WHEN OPEN) */}
+          {openDoors.length > 0 && (
+            <button
+              type="button"
+              onClick={openDoorsDrawer}
+              className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
+                darkMode
+                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                  : 'bg-amber-50 text-amber-800 border-amber-300'
+              }`}
+            >
+              <DoorOpen size={16} weight="duotone" className="text-amber-500 shrink-0" />
+              <span className="whitespace-nowrap">{openDoors.length} Doors</span>
+            </button>
+          )}
 
-        {/* LEAKAGE BADGE */}
-        <button
-          type="button"
-          onClick={() => openSensorsDrawer('leak')}
-          className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
-            activeLeaks.length > 0
-              ? darkMode
-                ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                : 'bg-rose-50 text-rose-800 border-rose-300'
-              : darkMode
-                ? 'bg-white/5 text-slate-400 border-white/10'
-                : 'bg-slate-100 text-slate-600 border-slate-200'
-          }`}
-        >
-          <Drop size={16} weight="duotone" className={activeLeaks.length > 0 ? 'text-rose-500 shrink-0' : 'text-slate-400 shrink-0'} />
-          <span className="whitespace-nowrap">{activeLeaks.length > 0 ? `${activeLeaks.length} Leaks` : '0 Leaks'}</span>
-        </button>
+          {/* 1.9 WINDOWS BADGE (ONLY WHEN OPEN) */}
+          {openWindows.length > 0 && (
+            <button
+              type="button"
+              onClick={openWindowsDrawer}
+              className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
+                darkMode
+                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                  : 'bg-amber-50 text-amber-800 border-amber-300'
+              }`}
+            >
+              <FrameCorners size={16} weight="duotone" className="text-amber-500 shrink-0" />
+              <span className="whitespace-nowrap">{openWindows.length} Windows</span>
+            </button>
+          )}
 
-        {/* SMOKE BADGE */}
-        <button
-          type="button"
-          onClick={() => openSensorsDrawer('smoke')}
-          className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
-            activeSmoke.length > 0
-              ? darkMode
-                ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                : 'bg-rose-50 text-rose-800 border-rose-300'
-              : darkMode
-                ? 'bg-white/5 text-slate-400 border-white/10'
-                : 'bg-slate-100 text-slate-600 border-slate-200'
-          }`}
-        >
-          <Flame size={16} weight="duotone" className={activeSmoke.length > 0 ? 'text-rose-500 shrink-0' : 'text-slate-400 shrink-0'} />
-          <span className="whitespace-nowrap">{activeSmoke.length > 0 ? `${activeSmoke.length} Smoke` : '0 Smoke'}</span>
-        </button>
+          {/* 1.10 MOTION BADGE (ONLY WHEN DETECTED) */}
+          {activeMotion.length > 0 && (
+            <button
+              type="button"
+              onClick={() => openSensorsDrawer('motion')}
+              className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
+                darkMode
+                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                  : 'bg-amber-50 text-amber-800 border-amber-300'
+              }`}
+            >
+              <PersonSimpleWalk size={16} weight="duotone" className="text-amber-500 shrink-0" />
+              <span className="whitespace-nowrap">{activeMotion.length} Motion</span>
+            </button>
+          )}
 
-      </div>
+          {/* 1.11 LEAKAGE BADGE (ONLY WHEN DETECTED) */}
+          {activeLeaks.length > 0 && (
+            <button
+              type="button"
+              onClick={() => openSensorsDrawer('leak')}
+              className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
+                darkMode
+                  ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                  : 'bg-rose-50 text-rose-800 border-rose-300'
+              }`}
+            >
+              <Drop size={16} weight="duotone" className="text-rose-500 shrink-0 animate-pulse" />
+              <span className="whitespace-nowrap">{activeLeaks.length} Leaks</span>
+            </button>
+          )}
+
+          {/* 1.12 SMOKE BADGE (ONLY WHEN DETECTED) */}
+          {activeSmoke.length > 0 && (
+            <button
+              type="button"
+              onClick={() => openSensorsDrawer('smoke')}
+              className={`h-8.5 px-3 rounded-full border text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs whitespace-nowrap shrink-0 ${
+                darkMode
+                  ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                  : 'bg-rose-50 text-rose-800 border-rose-300'
+              }`}
+            >
+              <Flame size={16} weight="duotone" className="text-rose-500 shrink-0 animate-pulse" />
+              <span className="whitespace-nowrap">{activeSmoke.length} Smoke</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ============================================================= */}
       {/* 2. BENTO TILES GRID (BORDERLESS 4-COLS MOBILE / ADAPTIVE)    */}

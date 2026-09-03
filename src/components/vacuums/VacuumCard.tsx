@@ -42,9 +42,10 @@ import { useHAImage } from '../../services/haImageService';
 interface VacuumCardProps {
   vacuum: VacuumDeviceData;
   darkMode?: boolean;
+  showMap?: boolean;
 }
 
-export default function VacuumCard({ vacuum, darkMode = true }: VacuumCardProps) {
+export default function VacuumCard({ vacuum, darkMode = true, showMap = false }: VacuumCardProps) {
   const { callHAService, updateEntityState } = useAutoLayoutStore();
   const { openEntityDetails } = useEntityPopup();
 
@@ -236,80 +237,82 @@ export default function VacuumCard({ vacuum, darkMode = true }: VacuumCardProps)
       {/* ------------------------------------------------------------- */}
       {/* 2. HERO MAP CANVAS WITH AUTHENTICATED HA PROXY STREAM        */}
       {/* ------------------------------------------------------------- */}
-      <div className="relative rounded-2xl overflow-hidden bg-slate-950/80 border border-white/10 h-44 flex items-center justify-center text-center group">
-        {/* Intelligently Rendered Map Image or Live Radar Fallback */}
-        {resolvedMapUrl && !imgLoadFailed ? (
-          <img
-            src={resolvedMapUrl}
-            alt={activeMap?.name || 'Cleaning Map'}
-            onError={() => setImgLoadFailed(true)}
-            className="w-full h-full object-contain bg-slate-950/90 transition-all duration-300"
-          />
-        ) : isMapLoading ? (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400">
-            <CircleNotch size={24} className="animate-spin text-teal-400" />
-            <span className="text-[11px] font-mono">Loading map...</span>
-          </div>
-        ) : (
-          <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
-            {/* Architectural Grid lines */}
-            <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] opacity-20" />
-
-            {/* Radar Pulse Rings when cleaning */}
-            {isCleaning && (
-              <>
-                <div className="absolute w-24 h-24 rounded-full border border-emerald-500/40 animate-ping [animation-duration:3s]" />
-                <div className="absolute w-36 h-36 rounded-full border border-emerald-500/20 animate-ping [animation-duration:4s]" />
-              </>
-            )}
-
-            {/* Center Robot Beacon */}
-            <div className="relative z-10 flex flex-col items-center">
-              <div
-                className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
-                  isCleaning
-                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-[0_0_15px_rgba(52,211,153,0.6)] animate-pulse'
-                    : isReturning
-                    ? 'bg-sky-500/20 border-sky-400 text-sky-300 shadow-[0_0_12px_rgba(56,189,248,0.5)]'
-                    : 'bg-slate-800 border-white/20 text-slate-400'
-                }`}
-              >
-                <NavigationArrow size={18} weight="fill" className={isCleaning ? 'animate-bounce' : ''} />
-              </div>
-              <span className="text-[11px] font-mono font-bold text-slate-300 mt-1.5 uppercase tracking-wider">
-                {isCleaning ? `Cleaning ${vacuum.currentRoom}` : vacuum.statusText}
-              </span>
+      {showMap && (
+        <div className="relative rounded-2xl overflow-hidden bg-slate-950/80 border border-white/10 h-44 flex items-center justify-center text-center group">
+          {/* Intelligently Rendered Map Image or Live Radar Fallback */}
+          {resolvedMapUrl && !imgLoadFailed ? (
+            <img
+              src={resolvedMapUrl}
+              alt={activeMap?.name || 'Cleaning Map'}
+              onError={() => setImgLoadFailed(true)}
+              className="w-full h-full object-contain bg-slate-950/90 transition-all duration-300"
+            />
+          ) : isMapLoading ? (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400">
+              <CircleNotch size={24} className="animate-spin text-teal-400" />
+              <span className="text-[11px] font-mono">Loading map...</span>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
+              {/* Architectural Grid lines */}
+              <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] opacity-20" />
 
-        {/* Top Floating Map Toggle Pill Bar (Strictly Camera / Image Maps) */}
-        {availableMaps.length > 1 && (
-          <div className="absolute top-2.5 right-2.5 z-20 flex items-center bg-black/85 backdrop-blur-md rounded-xl p-1 border border-white/20 shadow-lg max-w-[90%] overflow-x-auto no-scrollbar gap-1">
-            {availableMaps.map((m) => {
-              const isSelected = activeMap?.id === m.id;
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => {
-                    setImgLoadFailed(false);
-                    setSelectedMapId(m.id);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
-                    isSelected
-                      ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 shadow-xs'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+              {/* Radar Pulse Rings when cleaning */}
+              {isCleaning && (
+                <>
+                  <div className="absolute w-24 h-24 rounded-full border border-emerald-500/40 animate-ping [animation-duration:3s]" />
+                  <div className="absolute w-36 h-36 rounded-full border border-emerald-500/20 animate-ping [animation-duration:4s]" />
+                </>
+              )}
+
+              {/* Center Robot Beacon */}
+              <div className="relative z-10 flex flex-col items-center">
+                <div
+                  className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
+                    isCleaning
+                      ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-[0_0_15px_rgba(52,211,153,0.6)] animate-pulse'
+                      : isReturning
+                      ? 'bg-sky-500/20 border-sky-400 text-sky-300 shadow-[0_0_12px_rgba(56,189,248,0.5)]'
+                      : 'bg-slate-800 border-white/20 text-slate-400'
                   }`}
                 >
-                  <Images size={12} weight={isSelected ? 'fill' : 'regular'} />
-                  <span>{m.name}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                  <NavigationArrow size={18} weight="fill" className={isCleaning ? 'animate-bounce' : ''} />
+                </div>
+                <span className="text-[11px] font-mono font-bold text-slate-300 mt-1.5 uppercase tracking-wider">
+                  {isCleaning ? `Cleaning ${vacuum.currentRoom}` : vacuum.statusText}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Top Floating Map Toggle Pill Bar (Strictly Camera / Image Maps) */}
+          {availableMaps.length > 1 && (
+            <div className="absolute top-2.5 right-2.5 z-20 flex items-center bg-black/85 backdrop-blur-md rounded-xl p-1 border border-white/20 shadow-lg max-w-[90%] overflow-x-auto no-scrollbar gap-1">
+              {availableMaps.map((m) => {
+                const isSelected = activeMap?.id === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      setImgLoadFailed(false);
+                      setSelectedMapId(m.id);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+                      isSelected
+                        ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 shadow-xs'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Images size={12} weight={isSelected ? 'fill' : 'regular'} />
+                    <span>{m.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ------------------------------------------------------------- */}
       {/* 3. CLEANING SESSION TELEMETRY STRIP                            */}
