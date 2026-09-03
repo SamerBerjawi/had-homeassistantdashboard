@@ -12,6 +12,7 @@ import { ResolvedEntity } from '../../types';
 import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
 import { detectSwitchCapabilities } from '../../services/switchClassification';
 import { TelemetryLine } from '../common/TelemetryBadge';
+import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import CompactTile from './CompactTile';
 
 interface SwitchTileProps {
@@ -65,13 +66,24 @@ export const SwitchTile: React.FC<SwitchTileProps> = ({
       activeBorderColor="border-indigo-400/50"
       onIconClick={() => onToggle(entity)}
       icon={
-        <Plug
-          size={22}
-          weight={isOn ? 'fill' : 'duotone'}
-          className={`shrink-0 transition-transform ${
-            isOn ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.75)]' : 'text-slate-400'
-          }`}
-        />
+        entity.icon ? (
+          <DynamicPhosphorIcon
+            name={entity.icon}
+            size={22}
+            weight={isOn ? 'fill' : 'duotone'}
+            className={`shrink-0 transition-transform ${
+              isOn ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.75)]' : 'text-slate-400'
+            }`}
+          />
+        ) : (
+          <Plug
+            size={22}
+            weight={isOn ? 'fill' : 'duotone'}
+            className={`shrink-0 transition-transform ${
+              isOn ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.75)]' : 'text-slate-400'
+            }`}
+          />
+        )
       }
       actionButton={
         <div

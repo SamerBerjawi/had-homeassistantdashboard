@@ -14,6 +14,7 @@ import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
 import { detectLightCapabilities } from '../../services/lightClassification';
 import { TelemetryLine } from '../common/TelemetryBadge';
 import DotSlider from '../ui/DotSlider';
+import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import TileShell from './TileShell';
 import CompactTile from './CompactTile';
 import StandardTile from './StandardTile';
@@ -91,12 +92,22 @@ export const LightTile: React.FC<LightTileProps> = ({
                 title="Toggle Power"
                 className="shrink-0 flex items-center justify-center min-w-[28px] min-h-[28px] rounded-xl hover:bg-white/10 dark:hover:bg-white/10 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
               >
-                <Lightbulb
-                  size={22}
-                  weight={isOn ? 'fill' : 'duotone'}
-                  style={{ color: isOn && caps.supportsColor ? caps.displayColor : undefined }}
-                  className={isOn ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.85)]' : 'text-slate-400'}
-                />
+                {entity.icon ? (
+                  <DynamicPhosphorIcon
+                    name={entity.icon}
+                    size={22}
+                    weight={isOn ? 'fill' : 'duotone'}
+                    style={{ color: isOn && caps.supportsColor ? caps.displayColor : undefined }}
+                    className={isOn ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.85)]' : 'text-slate-400'}
+                  />
+                ) : (
+                  <Lightbulb
+                    size={22}
+                    weight={isOn ? 'fill' : 'duotone'}
+                    style={{ color: isOn && caps.supportsColor ? caps.displayColor : undefined }}
+                    className={isOn ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.85)]' : 'text-slate-400'}
+                  />
+                )}
               </button>
               <div className="min-w-0 flex-1 flex flex-col justify-center">
                 <h4
@@ -156,11 +167,20 @@ export const LightTile: React.FC<LightTileProps> = ({
       activeBorderColor="border-amber-400/50"
       onIconClick={() => onToggle(entity)}
       icon={
-        <Lightbulb
-          size={22}
-          weight={isOn ? 'fill' : 'duotone'}
-          className={isOn ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.85)]' : 'text-slate-400'}
-        />
+        entity.icon ? (
+          <DynamicPhosphorIcon
+            name={entity.icon}
+            size={22}
+            weight={isOn ? 'fill' : 'duotone'}
+            className={isOn ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.85)]' : 'text-slate-400'}
+          />
+        ) : (
+          <Lightbulb
+            size={22}
+            weight={isOn ? 'fill' : 'duotone'}
+            className={isOn ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.85)]' : 'text-slate-400'}
+          />
+        )
       }
       actionButton={
         <div

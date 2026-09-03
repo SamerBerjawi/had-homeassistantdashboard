@@ -63,7 +63,7 @@ export function resolveHAGraph(
   labels: HALabel[] = [],
   options: { 
     includeDiagnostics?: boolean;
-    entityOverrides?: Record<string, { customName?: string; hidden?: boolean }>;
+    entityOverrides?: Record<string, { customName?: string; hidden?: boolean; customIcon?: string; icon?: string }>;
   } = {}
 ): GraphResolutionResult {
   const areaMap = new Map<string, HAArea>(areas.map(a => [a.area_id, a]));
@@ -240,7 +240,7 @@ export function resolveHAGraph(
       isDiagnostic: isDiag,
       powerWatts,
       batteryPct,
-      icon: regEntry?.icon || liveState.attributes.icon,
+      icon: customOverride?.customIcon || customOverride?.icon || regEntry?.icon || liveState.attributes.icon,
       labels: regEntry?.labels || liveState.attributes.labels || matchedDevice?.labels || [],
       last_changed: (liveState as any).last_changed,
       last_updated: (liveState as any).last_updated

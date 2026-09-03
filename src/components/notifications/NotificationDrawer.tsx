@@ -4,19 +4,19 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { 
-  Bell, 
-  ArrowsClockwise, 
-  Trash, 
-  ArrowSquareOut, 
-  CheckCircle, 
-  Warning, 
-  ShieldWarning, 
-  Drop, 
-  Flame, 
-  BatteryLow, 
-  DownloadSimple, 
-  SkipForward, 
+import {
+  Bell,
+  ArrowsClockwise,
+  Trash,
+  ArrowSquareOut,
+  CheckCircle,
+  Warning,
+  ShieldWarning,
+  Drop,
+  Flame,
+  BatteryLow,
+  DownloadSimple,
+  SkipForward,
   Sparkle,
   Info,
   X,
@@ -28,7 +28,7 @@ import DetailsRightDrawer from '../overview/DetailsRightDrawer';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { useShallow } from 'zustand/react/shallow';
 import { extractHANotifications, formatTimeAgo } from '../../services/notificationsService';
-import { HANotificationItem, NotificationCategory } from '../../types/notifications';
+import { HANotificationItem, NotificationCategory, HANotificationAction } from '../../types/notifications';
 import { haWebSocketService } from '../../services/haWebSocket';
 import { useAlertStore } from '../../store/useAlertStore';
 import NotificationRichContent from './NotificationRichContent';
@@ -142,21 +142,21 @@ export default function NotificationDrawer({
     const dismissableIds = allNotifications
       .filter(n => n.dismissable && n.category !== 'update')
       .map(n => n.id);
-    
+
     // Call dismiss services for persistent notifications, issues & alerts
     for (const notif of allNotifications) {
       if (notif.category === 'persistent_notification' && notif.entity_id) {
-        await callHAService('persistent_notification', 'dismiss', { notification_id: notif.id }).catch(() => {});
+        await callHAService('persistent_notification', 'dismiss', { notification_id: notif.id }).catch(() => { });
         if (updateEntityState) updateEntityState(notif.entity_id, 'dismissed');
       } else if (notif.category === 'repair' && notif.issueId) {
-        await callHAService('repairs', 'ignore_issue', { issue_id: notif.issueId }).catch(() => {});
+        await callHAService('repairs', 'ignore_issue', { issue_id: notif.issueId }).catch(() => { });
         if (updateEntityState) updateEntityState(notif.entity_id || '', 'ignored');
       } else if (notif.category === 'alert' && notif.entity_id) {
-        await callHAService('alert', 'acknowledge', { entity_id: notif.entity_id }).catch(() => {});
+        await callHAService('alert', 'acknowledge', { entity_id: notif.entity_id }).catch(() => { });
       }
     }
 
-    await useAlertStore.getState().clearAllAlerts().catch(() => {});
+    await useAlertStore.getState().clearAllAlerts().catch(() => { });
     clearAllNotifications(dismissableIds);
   };
 
@@ -171,7 +171,7 @@ export default function NotificationDrawer({
           if (installUpdate) {
             installUpdate(item.entity_id);
           } else {
-            await callHAService('update', 'install', {}, { entity_id: item.entity_id }).catch(() => {});
+            await callHAService('update', 'install', {}, { entity_id: item.entity_id }).catch(() => { });
           }
           if (updateEntityState) {
             updateEntityState(item.entity_id, 'installing');
@@ -282,7 +282,7 @@ export default function NotificationDrawer({
       darkMode={darkMode}
     >
       <div className="space-y-3.5 pb-24 sm:pb-6">
-        
+
         {/* Streamlined Controls Bar: Dynamic Filter Tabs + Quick Actions */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           {/* Filter Pills with Counts */}
@@ -301,18 +301,16 @@ export default function NotificationDrawer({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id as TabType)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                    isActive
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${isActive
                       ? 'bg-sky-500 text-white shadow-xs'
                       : darkMode
                         ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-white'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900'
-                  }`}
+                    }`}
                 >
                   <span>{tab.label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    isActive ? 'bg-white/20 text-white' : darkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-200 text-slate-700'
-                  }`}>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${isActive ? 'bg-white/20 text-white' : darkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-200 text-slate-700'
+                    }`}>
                     {tab.count}
                   </span>
                 </button>
@@ -338,9 +336,8 @@ export default function NotificationDrawer({
             <button
               type="button"
               onClick={handleRefresh}
-              className={`p-1.5 rounded-xl transition-all cursor-pointer ${
-                darkMode ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-              }`}
+              className={`p-1.5 rounded-xl transition-all cursor-pointer ${darkMode ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                }`}
               title="Refresh States & Notifications"
             >
               <ArrowsClockwise size={15} className={isRefreshing ? 'animate-spin text-sky-400' : ''} />
@@ -350,11 +347,10 @@ export default function NotificationDrawer({
               <button
                 type="button"
                 onClick={handleDismissAll}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  darkMode
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${darkMode
                     ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-rose-400'
                     : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-rose-600'
-                }`}
+                  }`}
                 title="Dismiss all"
               >
                 <Trash size={13} />
@@ -373,11 +369,10 @@ export default function NotificationDrawer({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search notifications..."
-              className={`w-full pl-8.5 pr-8 py-1.5 rounded-xl text-xs transition-all focus:outline-hidden ${
-                darkMode
+              className={`w-full pl-8.5 pr-8 py-1.5 rounded-xl text-xs transition-all focus:outline-hidden ${darkMode
                   ? 'bg-white/[0.04] text-white placeholder-slate-500 focus:bg-white/[0.07]'
                   : 'bg-slate-100 text-slate-900 placeholder-slate-400 focus:bg-slate-200/70'
-              }`}
+                }`}
             />
             {searchQuery && (
               <button
@@ -395,9 +390,8 @@ export default function NotificationDrawer({
         <div className="space-y-2.5">
           {filteredNotifications.length === 0 ? (
             /* Empty State */
-            <div className={`p-8 rounded-2xl text-center flex flex-col items-center justify-center gap-3 ${
-              darkMode ? 'bg-white/[0.02]' : 'bg-slate-50'
-            }`}>
+            <div className={`p-8 rounded-2xl text-center flex flex-col items-center justify-center gap-3 ${darkMode ? 'bg-white/[0.02]' : 'bg-slate-50'
+              }`}>
               <div className="w-13 h-13 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shadow-xs">
                 <CheckCircle size={30} weight="duotone" />
               </div>
@@ -425,11 +419,11 @@ export default function NotificationDrawer({
                 const isProgress = item.inProgress;
 
                 // Split actions into primary (header action) and secondary (footer actions)
-                const primaryAction = item.actions?.find(a => 
-                  a.variant === 'primary' || 
-                  a.id === 'install' || 
-                  a.id.startsWith('restart_') || 
-                  a.id.startsWith('ack_') || 
+                const primaryAction = item.actions?.find(a =>
+                  a.variant === 'primary' ||
+                  a.id === 'install' ||
+                  a.id.startsWith('restart_') ||
+                  a.id.startsWith('ack_') ||
                   a.id === 'unskip'
                 );
                 const secondaryActions = (item.actions || []).filter(a => a !== primaryAction);
@@ -446,8 +440,7 @@ export default function NotificationDrawer({
                       type="button"
                       disabled={isLoading || isProgress}
                       onClick={() => runAction(act.id, act.onClick)}
-                      className={`flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                        isPrimaryInHeader
+                      className={`flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${isPrimaryInHeader
                           ? isRestartAction
                             ? 'px-2 py-0.5 rounded-md text-[11px] font-black bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-xs active:scale-95'
                             : isPrimary
@@ -458,7 +451,7 @@ export default function NotificationDrawer({
                             : darkMode
                               ? 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white active:scale-95'
                               : 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 active:scale-95'
-                      }`}
+                        }`}
                     >
                       {isLoading ? (
                         <ArrowsClockwise size={11} className="animate-spin" />
@@ -481,11 +474,10 @@ export default function NotificationDrawer({
                 return (
                   <div
                     key={item.id}
-                    className={`p-2.5 rounded-xl transition-all duration-200 flex flex-col justify-between gap-1.5 group ${
-                      darkMode
+                    className={`p-2.5 rounded-xl transition-all duration-200 flex flex-col justify-between gap-1.5 group ${darkMode
                         ? 'bg-white/[0.03] hover:bg-white/[0.055] text-white border border-white/[0.04]'
                         : 'bg-slate-50/90 hover:bg-slate-100/90 text-slate-900 border border-slate-200/60 shadow-xs'
-                    }`}
+                      }`}
                   >
                     {/* Row 1: Icon + Title + Category Badge + Primary Action + Time + Dismiss */}
                     <div className="flex items-center justify-between gap-2">
@@ -565,10 +557,10 @@ export default function NotificationDrawer({
                         {/* Message / Description Body */}
                         {item.message ? (
                           <div className={item.category === 'update' ? 'pt-1' : ''}>
-                            <NotificationRichContent 
-                              content={item.message} 
-                              imageUrl={item.image} 
-                              darkMode={darkMode} 
+                            <NotificationRichContent
+                              content={item.message}
+                              imageUrl={item.image}
+                              darkMode={darkMode}
                               compact={true}
                             />
                           </div>
@@ -585,7 +577,7 @@ export default function NotificationDrawer({
                               <span>{item.updatePercentage ? `${item.updatePercentage}%` : 'In Progress'}</span>
                             </div>
                             <div className="w-full h-1 rounded-full bg-sky-500/20 overflow-hidden">
-                              <div 
+                              <div
                                 className="h-full bg-sky-500 rounded-full animate-pulse transition-all duration-300"
                                 style={{ width: item.updatePercentage ? `${item.updatePercentage}%` : '70%' }}
                               />
@@ -605,8 +597,8 @@ export default function NotificationDrawer({
                 );
               })}
             </AnimatedList>
-        )}
-      </div>
+          )}
+        </div>
 
       </div>
     </DetailsRightDrawer>

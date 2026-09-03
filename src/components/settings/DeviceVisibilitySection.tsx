@@ -51,13 +51,16 @@ import {
   ListBullets,
   TreeStructure,
   CheckCircle,
-  ArrowsClockwise
+  ArrowsClockwise,
+  PencilSimple
 } from '@phosphor-icons/react';
 import { HAEntity, HAArea, HAFloor, HALabel, HAZone, HADevice, ResolvedEntity } from '../../types';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import CustomDropdown from '../ui/CustomDropdown';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
+import IconPickerField from '../ui/IconPickerField';
+import EntityCustomizerModal from '../modals/EntityCustomizerModal';
 import { detectSensorCapabilities } from '../../services/sensorClassification';
 
 interface DeviceVisibilitySectionProps {
@@ -137,7 +140,7 @@ export default function DeviceVisibilitySection({
   addLog
 }: DeviceVisibilitySectionProps) {
   const { config, updateConfig, flushPendingSave } = useUserConfig();
-  const { setEntityHidden, bulkSetEntitiesHidden } = useAutoLayoutStore();
+  const { setEntityHidden, bulkSetEntitiesHidden, updateLabel } = useAutoLayoutStore();
 
   // Master set of hidden entity IDs combining remote config hiddenEntityIds, customizations, and store
   const hiddenEntityIdsSet = useMemo(() => {
@@ -170,9 +173,11 @@ export default function DeviceVisibilitySection({
   const [collapsedAreas, setCollapsedAreas] = useState<Record<string, boolean>>({});
   const [collapsedDevices, setCollapsedDevices] = useState<Record<string, boolean>>({});
 
-  // Floor/Area styling modals
+  // Floor/Area/Label/Entity styling modals
   const [editingFloor, setEditingFloor] = useState<HAFloor | null>(null);
   const [editingArea, setEditingArea] = useState<HAArea | null>(null);
+  const [editingLabel, setEditingLabel] = useState<HALabel | null>(null);
+  const [customizingEntity, setCustomizingEntity] = useState<ResolvedEntity | null>(null);
 
   // Helper to render phosphor icons
   const renderIconByName = (iconName?: string | null, size = 20, colorClass = '') => {
@@ -1407,7 +1412,9 @@ export default function DeviceVisibilitySection({
                                                   }`}
                                                 >
                                                   <div className="flex items-center gap-3 min-w-0">
-                                                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isOn ? 'bg-sky-500 shadow-xs' : 'bg-slate-400'}`} />
+                                                    <div className="w-8 h-8 rounded-xl bg-slate-200/60 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-300">
+                                                      <DynamicPhosphorIcon name={entity.icon} size={18} weight="duotone" />
+                                                    </div>
                                                     <div className="min-w-0">
                                                       <div className="flex items-center gap-2 flex-wrap">
                                                         <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
@@ -1428,18 +1435,29 @@ export default function DeviceVisibilitySection({
                                                     </div>
                                                   </div>
 
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
-                                                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 border ${
-                                                      !isHidden
-                                                        ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 shadow-2xs'
-                                                        : 'bg-slate-200 hover:bg-slate-300 text-slate-600 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-400 border-slate-300 dark:border-white/10'
-                                                    }`}
-                                                  >
-                                                    {!isHidden ? <Eye size={16} weight="bold" /> : <EyeSlash size={16} weight="bold" />}
-                                                    <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
-                                                  </button>
+                                                  <div className="flex items-center gap-2 shrink-0">
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => setCustomizingEntity(entity)}
+                                                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-sky-50 dark:hover:bg-sky-500/20 text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-all cursor-pointer shadow-2xs"
+                                                      title="Customize entity name, icon & visibility"
+                                                    >
+                                                      <PencilSimple size={15} weight="bold" />
+                                                      <span className="hidden sm:inline">Customize</span>
+                                                    </button>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
+                                                      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 border ${
+                                                        !isHidden
+                                                          ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 shadow-2xs'
+                                                          : 'bg-slate-200 hover:bg-slate-300 text-slate-600 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-400 border-slate-300 dark:border-white/10'
+                                                      }`}
+                                                    >
+                                                      {!isHidden ? <Eye size={16} weight="bold" /> : <EyeSlash size={16} weight="bold" />}
+                                                      <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
+                                                    </button>
+                                                  </div>
                                                 </div>
                                               );
                                             })}
@@ -1467,26 +1485,42 @@ export default function DeviceVisibilitySection({
                                                   : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 shadow-xs'
                                               }`}
                                             >
-                                              <div className="min-w-0">
-                                                <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate block">
-                                                  {entity.name}
-                                                </span>
-                                                <span className="text-xs font-mono text-slate-500 truncate block mt-0.5">
-                                                  {entity.entity_id}
-                                                </span>
+                                              <div className="flex items-center gap-2.5 min-w-0">
+                                                <div className="w-8 h-8 rounded-xl bg-slate-200/60 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-300">
+                                                  <DynamicPhosphorIcon name={entity.icon} size={18} weight="duotone" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                  <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate block">
+                                                    {entity.name}
+                                                  </span>
+                                                  <span className="text-xs font-mono text-slate-500 truncate block mt-0.5">
+                                                    {entity.entity_id}
+                                                  </span>
+                                                </div>
                                               </div>
-                                              <button
-                                                type="button"
-                                                onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
-                                                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 border ${
-                                                  !isHidden
-                                                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                                                    : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400 border-slate-300 dark:border-white/10'
-                                                }`}
-                                              >
-                                                {!isHidden ? <Eye size={16} weight="bold" /> : <EyeSlash size={16} weight="bold" />}
-                                                <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
-                                              </button>
+                                              <div className="flex items-center gap-2 shrink-0">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setCustomizingEntity(entity)}
+                                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-sky-50 dark:hover:bg-sky-500/20 text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-all cursor-pointer shadow-2xs"
+                                                  title="Customize entity name, icon & visibility"
+                                                >
+                                                  <PencilSimple size={15} weight="bold" />
+                                                  <span className="hidden sm:inline">Customize</span>
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
+                                                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 border ${
+                                                    !isHidden
+                                                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                                                      : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400 border-slate-300 dark:border-white/10'
+                                                  }`}
+                                                >
+                                                  {!isHidden ? <Eye size={16} weight="bold" /> : <EyeSlash size={16} weight="bold" />}
+                                                  <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
+                                                </button>
+                                              </div>
                                             </div>
                                           );
                                         })}
@@ -1723,22 +1757,38 @@ export default function DeviceVisibilitySection({
                                         : 'bg-slate-50 dark:bg-black/30 border-slate-200 dark:border-white/10'
                                     }`}
                                   >
-                                    <div className="min-w-0">
-                                      <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate block">{entity.name}</span>
-                                      <span className="text-xs font-mono text-slate-500 truncate block mt-0.5">{entity.entity_id}</span>
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      <div className="w-8 h-8 rounded-xl bg-slate-200/60 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-300">
+                                        <DynamicPhosphorIcon name={entity.icon} size={18} weight="duotone" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate block">{entity.name}</span>
+                                        <span className="text-xs font-mono text-slate-500 truncate block mt-0.5">{entity.entity_id}</span>
+                                      </div>
                                     </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
-                                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border ${
-                                        !isHidden
-                                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                                          : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400 border-slate-300 dark:border-white/10'
-                                      }`}
-                                    >
-                                      {!isHidden ? <Eye size={15} /> : <EyeSlash size={15} />}
-                                      <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
-                                    </button>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={() => setCustomizingEntity(entity)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-sky-50 dark:hover:bg-sky-500/20 text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-all cursor-pointer shadow-2xs"
+                                        title="Customize entity name, icon & visibility"
+                                      >
+                                        <PencilSimple size={14} weight="bold" />
+                                        <span className="hidden sm:inline">Customize</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border ${
+                                          !isHidden
+                                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                                            : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400 border-slate-300 dark:border-white/10'
+                                        }`}
+                                      >
+                                        {!isHidden ? <Eye size={15} /> : <EyeSlash size={15} />}
+                                        <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
+                                      </button>
+                                    </div>
                                   </div>
                                 );
                               })}
@@ -1759,22 +1809,38 @@ export default function DeviceVisibilitySection({
                                 : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10'
                             }`}
                           >
-                            <div className="min-w-0">
-                              <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate block">{entity.name}</span>
-                              <span className="text-xs font-mono text-slate-500 truncate block mt-0.5">{entity.entity_id}</span>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-xl bg-slate-200/60 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-300">
+                                <DynamicPhosphorIcon name={entity.icon} size={18} weight="duotone" />
+                              </div>
+                              <div className="min-w-0">
+                                <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate block">{entity.name}</span>
+                                <span className="text-xs font-mono text-slate-500 truncate block mt-0.5">{entity.entity_id}</span>
+                              </div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
-                              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border ${
-                                !isHidden
-                                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                                  : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400 border-slate-300 dark:border-white/10'
-                              }`}
-                            >
-                              {!isHidden ? <Eye size={15} /> : <EyeSlash size={15} />}
-                              <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
-                            </button>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setCustomizingEntity(entity)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-sky-50 dark:hover:bg-sky-500/20 text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-all cursor-pointer shadow-2xs"
+                                title="Customize entity name, icon & visibility"
+                              >
+                                <PencilSimple size={14} weight="bold" />
+                                <span className="hidden sm:inline">Customize</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
+                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border ${
+                                  !isHidden
+                                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                                    : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400 border-slate-300 dark:border-white/10'
+                                }`}
+                              >
+                                {!isHidden ? <Eye size={15} /> : <EyeSlash size={15} />}
+                                <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -1957,11 +2023,27 @@ export default function DeviceVisibilitySection({
             return (
               <div key={lbl.label_id} className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 space-y-2 shadow-xs">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Tag size={18} weight="bold" style={{ color: lbl.color || '#6366f1' }} />
-                    <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">{lbl.name}</span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center border shrink-0 shadow-2xs"
+                      style={{
+                        backgroundColor: `${lbl.color || '#6366f1'}1a`,
+                        borderColor: `${lbl.color || '#6366f1'}40`,
+                        color: lbl.color || '#6366f1'
+                      }}
+                    >
+                      <DynamicPhosphorIcon name={lbl.icon || 'Tag'} size={18} weight="duotone" />
+                    </div>
+                    <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">{lbl.name}</span>
                   </div>
-                  <span className="w-3.5 h-3.5 rounded-full border" style={{ backgroundColor: lbl.color || '#6366f1' }} />
+                  <button
+                    type="button"
+                    onClick={() => setEditingLabel(lbl)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-sky-50 dark:bg-white/10 dark:hover:bg-sky-500/20 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 border border-slate-200 dark:border-white/10 transition-all cursor-pointer shadow-2xs shrink-0"
+                  >
+                    <PaintBrush size={13} weight="bold" />
+                    <span>Style</span>
+                  </button>
                 </div>
                 <p className="text-xs text-slate-500">{lbl.description || 'Home Assistant Tag'}</p>
                 <span className="text-xs font-mono text-slate-400 block pt-1 font-semibold">{count} tagged entities</span>
@@ -1996,30 +2078,22 @@ export default function DeviceVisibilitySection({
         </div>
       )}
 
-      {/* Modals for Floor and Area Style Editing */}
+      {/* Modals for Floor, Area, and Label Style Editing */}
       {editingFloor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 space-y-4 shadow-2xl">
             <h4 className="text-base font-bold text-slate-900 dark:text-white">Edit Floor Style: {editingFloor.name}</h4>
             <div className="space-y-3">
-              <div>
-                <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1">Floor Icon</label>
-                <div className="grid grid-cols-5 gap-2">
-                  {FLOOR_ICON_OPTIONS.map(iconOpt => (
-                    <button
-                      key={iconOpt}
-                      type="button"
-                      onClick={() => setEditingFloor({ ...editingFloor, icon: iconOpt })}
-                      className={`p-2.5 rounded-xl flex flex-col items-center gap-1 border ${
-                        editingFloor.icon === iconOpt ? 'bg-sky-500/20 border-sky-500 text-sky-500' : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10'
-                      }`}
-                    >
-                      <DynamicPhosphorIcon name={iconOpt} size={20} />
-                      <span className="text-[9px] font-semibold truncate">{iconOpt}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <IconPickerField
+                label="Floor Icon"
+                value={editingFloor.icon}
+                defaultValue="Stairs"
+                onChange={newIcon => setEditingFloor({ ...editingFloor, icon: newIcon || 'Stairs' })}
+                accentColor={editingFloor.color || '#0ea5e9'}
+                quickPresets={FLOOR_ICON_OPTIONS}
+                modalTitle={`Select Icon for Floor: ${editingFloor.name}`}
+                modalSubtitle="Choose any Phosphor icon for this floor level"
+              />
               <div>
                 <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1">Accent Color</label>
                 <div className="flex flex-wrap gap-2">
@@ -2071,24 +2145,16 @@ export default function DeviceVisibilitySection({
           <div className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 space-y-4 shadow-2xl">
             <h4 className="text-base font-bold text-slate-900 dark:text-white">Edit Area Style: {editingArea.name}</h4>
             <div className="space-y-3">
-              <div>
-                <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1">Area Icon</label>
-                <div className="grid grid-cols-6 gap-2">
-                  {AREA_ICON_OPTIONS.map(iconOpt => (
-                    <button
-                      key={iconOpt}
-                      type="button"
-                      onClick={() => setEditingArea({ ...editingArea, icon: iconOpt })}
-                      className={`p-2 rounded-xl flex flex-col items-center gap-1 border ${
-                        editingArea.icon === iconOpt ? 'bg-indigo-500/20 border-indigo-500 text-indigo-500' : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10'
-                      }`}
-                    >
-                      <DynamicPhosphorIcon name={iconOpt} size={18} />
-                      <span className="text-[9px] font-semibold truncate">{iconOpt}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <IconPickerField
+                label="Area Icon"
+                value={editingArea.icon}
+                defaultValue="Armchair"
+                onChange={newIcon => setEditingArea({ ...editingArea, icon: newIcon || 'Armchair' })}
+                accentColor={editingArea.color || '#6366f1'}
+                quickPresets={AREA_ICON_OPTIONS}
+                modalTitle={`Select Icon for Area: ${editingArea.name}`}
+                modalSubtitle="Choose any Phosphor icon for this living space"
+              />
               <div>
                 <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1">Accent Color</label>
                 <div className="flex flex-wrap gap-2">
@@ -2150,6 +2216,80 @@ export default function DeviceVisibilitySection({
           </div>
         </div>
       )}
+
+      {editingLabel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 space-y-4 shadow-2xl">
+            <h4 className="text-base font-bold text-slate-900 dark:text-white">Edit Label Style: {editingLabel.name}</h4>
+            <div className="space-y-3">
+              <IconPickerField
+                label="Label Icon"
+                value={editingLabel.icon}
+                defaultValue="Tag"
+                onChange={newIcon => setEditingLabel({ ...editingLabel, icon: newIcon || 'Tag' })}
+                accentColor={editingLabel.color || '#6366f1'}
+                quickPresets={['Tag', 'Bookmark', 'Hash', 'Star', 'Heart', 'ShieldCheck', 'Flag', 'Sparkle']}
+                modalTitle={`Select Icon for Label: ${editingLabel.name}`}
+                modalSubtitle="Choose any Phosphor icon for this tag"
+              />
+              <div>
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1">Accent Color</label>
+                <div className="flex flex-wrap gap-2">
+                  {PRESET_COLORS.map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setEditingLabel({ ...editingLabel, color: c })}
+                      className={`w-7 h-7 rounded-full border-2 ${editingLabel.color === c ? 'scale-110 border-white' : 'border-transparent'}`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setEditingLabel(null)} className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-white/10">Cancel</button>
+              <button
+                type="button"
+                onClick={async () => {
+                  updateLabel(editingLabel.label_id, { icon: editingLabel.icon, color: editingLabel.color });
+                  await updateConfig(prev => ({
+                    ...prev,
+                    labels: {
+                      ...(prev.labels || {}),
+                      [editingLabel.label_id]: {
+                        ...(prev.labels?.[editingLabel.label_id] || {}),
+                        icon: editingLabel.icon,
+                        color: editingLabel.color,
+                        name: editingLabel.name
+                      }
+                    }
+                  }));
+                  await flushPendingSave();
+                  setEditingLabel(null);
+                  addToast?.({ type: 'success', title: 'Label Saved', message: `Updated ${editingLabel.name} and synced to NAS.` });
+                }}
+                className="px-4 py-2 text-xs font-bold rounded-xl bg-sky-500 text-white"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Entity Customizer Modal with Phosphor Icon Finder */}
+      <EntityCustomizerModal
+        isOpen={Boolean(customizingEntity)}
+        onClose={() => setCustomizingEntity(null)}
+        entityId={customizingEntity?.entity_id || null}
+        defaultName={customizingEntity?.name}
+        defaultIcon={customizingEntity?.icon}
+        domain={customizingEntity?.domain}
+        areaName={customizingEntity?.area?.name}
+        floorName={customizingEntity?.floor?.name}
+        addToast={addToast}
+      />
     </div>
   );
 }

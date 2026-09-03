@@ -54,7 +54,7 @@ export interface UserDashboardConfig {
     hiddenEntityIds?: string[];
     nameOverrides?: Record<string, string>;
     iconOverrides?: Record<string, string>;
-    customizations?: Record<string, { customName?: string; hidden?: boolean }>;
+    customizations?: Record<string, { customName?: string; name?: string; customIcon?: string; icon?: string; hidden?: boolean }>;
   };
   cameras: {
     defaultStreamType: 'webrtc' | 'hls' | 'mjpeg';
@@ -104,6 +104,7 @@ export interface UserDashboardConfig {
     order?: number;
   }>;
   floors?: Record<string, { icon?: string; color?: string; name?: string; order?: number; level?: number }>;
+  labels?: Record<string, { icon?: string; color?: string; name?: string; description?: string }>;
   canvas?: {
     profiles?: Record<string, any>;
     activeProfileId?: string;
@@ -238,6 +239,7 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
   },
   areas: {},
   floors: {},
+  labels: {},
   canvas: {
     profiles: {},
     activeProfileId: 'profile_main',

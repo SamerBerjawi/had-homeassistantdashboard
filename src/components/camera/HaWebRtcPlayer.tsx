@@ -45,7 +45,7 @@ export interface HaWebRtcPlayerProps {
   autoPlay?: boolean;
   muted?: boolean;
   isIntercomActive?: boolean;
-  preferProtocol?: 'auto' | 'webrtc' | 'hls' | 'mjpeg';
+  preferProtocol?: 'auto' | 'mse' | 'webrtc' | 'hls' | 'mjpeg';
   codecMode?: CameraCodecMode;
   previewIntervalMs?: number;
   onReady?: () => void;

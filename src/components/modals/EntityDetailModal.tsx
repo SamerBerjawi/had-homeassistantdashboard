@@ -22,12 +22,15 @@ import {
   Buildings,
   Tag,
   MagnifyingGlass,
-  Warning
+  Warning,
+  PencilSimple
 } from '@phosphor-icons/react';
 import { useEntityPopup } from '../../contexts/EntityPopupContext';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { HAEntity } from '../../types';
 import { formatRelativeTime } from '../../lib/utils';
+import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
+import EntityCustomizerModal from './EntityCustomizerModal';
 import LightControlView from './entity-controls/LightControlView';
 import ClimateControlView from './entity-controls/ClimateControlView';
 import MediaPlayerControlView from './entity-controls/MediaPlayerControlView';
@@ -79,6 +82,7 @@ export default function EntityDetailModal() {
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [attributeFilter, setAttributeFilter] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  const [customizerOpen, setCustomizerOpen] = useState(false);
 
   // Track window resize to switch modal vs bottom drawer mode on mobile
   useEffect(() => {
@@ -298,7 +302,16 @@ export default function EntityDetailModal() {
                 <div
                   className={`w-10 h-10 rounded-2xl flex items-center justify-center border shrink-0 ${domainTheme.badgeBg}`}
                 >
-                  <HeaderIcon size={22} weight="duotone" className={`${domainTheme.color} ${domainTheme.glow}`} />
+                  {(entity as any)?.icon || entity?.attributes?.icon ? (
+                    <DynamicPhosphorIcon
+                      name={(entity as any)?.icon || entity?.attributes?.icon}
+                      size={22}
+                      weight="duotone"
+                      className={`${domainTheme.color} ${domainTheme.glow}`}
+                    />
+                  ) : (
+                    <HeaderIcon size={22} weight="duotone" className={`${domainTheme.color} ${domainTheme.glow}`} />
+                  )}
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-base font-extrabold text-white truncate leading-snug">
@@ -319,6 +332,15 @@ export default function EntityDetailModal() {
 
               {/* Header Actions */}
               <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setCustomizerOpen(true)}
+                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-sky-500/20 hover:text-sky-300 text-slate-300 flex items-center justify-center transition-all cursor-pointer border border-white/10 active:scale-95"
+                  title="Customize entity name, icon & visibility"
+                >
+                  <PencilSimple size={15} weight="bold" />
+                </button>
+
                 <button
                   type="button"
                   onClick={handleCopyEntityId}
@@ -499,6 +521,18 @@ export default function EntityDetailModal() {
           </motion.div>
         </div>
       )}
+
+      {/* Entity Customizer Modal with Phosphor Icon Finder */}
+      <EntityCustomizerModal
+        isOpen={customizerOpen}
+        onClose={() => setCustomizerOpen(false)}
+        entityId={selectedEntityId}
+        defaultName={entity?.attributes?.friendly_name || selectedEntityId || ''}
+        defaultIcon={(entity as any)?.icon || entity?.attributes?.icon || ''}
+        domain={domain}
+        areaName={metadata?.areaName}
+        floorName={metadata?.floorName}
+      />
     </AnimatePresence>
   );
 }

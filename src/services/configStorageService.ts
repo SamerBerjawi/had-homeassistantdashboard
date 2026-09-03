@@ -184,6 +184,10 @@ export function mergeConfig(
       ...(safeBase.floors || {}),
       ...(partial.floors || {})
     },
+    labels: {
+      ...(safeBase.labels || {}),
+      ...(partial.labels || {})
+    },
     canvas: {
       ...(safeBase.canvas || {}),
       ...(partial.canvas || {})

@@ -108,13 +108,15 @@ export interface AutoLayoutStoreState {
   // Floor & Area Customization Actions
   updateFloor: (floorId: string, updates: Partial<HAFloor>) => void;
   updateArea: (areaId: string, updates: Partial<HAArea>) => void;
+  updateLabel: (labelId: string, updates: Partial<HALabel>) => void;
   reorderFloors: (newFloors: HAFloor[]) => void;
   reorderAreas: (newAreas: HAArea[]) => void;
   addFloor: (floor: Partial<HAFloor>) => void;
   addArea: (area: Partial<HAArea>) => void;
   deleteFloor: (floorId: string) => void;
   // Entity Customization & Visibility Actions
-  entityCustomizations: Record<string, { customName?: string; hidden?: boolean }>;
+  entityCustomizations: Record<string, { customName?: string; hidden?: boolean; customIcon?: string; icon?: string }>;
+  updateEntityCustomization: (entityId: string, updates: { customName?: string; customIcon?: string; icon?: string; hidden?: boolean }) => void;
   setEntityHidden: (entityId: string, hidden: boolean) => void;
   bulkSetEntitiesHidden: (entityIds: string[], hidden: boolean) => void;
   applyConfigCustomizations: (config: any) => void;
@@ -793,6 +795,19 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
     get().recomputeGraph();
   },
 
+  updateLabel: (labelId: string, updates: Partial<HALabel>) => {
+    set(prev => {
+      const updatedLabels = prev.labels.map(l => {
+        if (l.label_id === labelId) {
+          return { ...l, ...updates };
+        }
+        return l;
+      });
+      return { labels: updatedLabels, rawLabels: updatedLabels };
+    });
+    get().recomputeGraph();
+  },
+
   reorderFloors: (newFloors: HAFloor[]) => {
     const indexed = newFloors.map((f, idx) => ({ ...f, order: idx }));
     set({ floors: indexed, rawFloors: indexed });
@@ -908,6 +923,24 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         });
       }
 
+      // 2.5 Process Label Overrides
+      let newLabels = [...prev.labels];
+      if (config.labels && typeof config.labels === 'object') {
+        newLabels = newLabels.map(l => {
+          const custom = config.labels[l.label_id];
+          if (custom) {
+            return {
+              ...l,
+              name: custom.name || l.name,
+              icon: custom.icon || l.icon,
+              color: custom.color || l.color,
+              description: custom.description || l.description
+            };
+          }
+          return l;
+        });
+      }
+
       // 3. Process Entity Customizations
       const entityCustoms = config.entities?.customizations || config.entities;
       if (entityCustoms && typeof entityCustoms === 'object') {
@@ -918,6 +951,30 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
               name: custom.customName || custom.name || newResolved[id].name,
               icon: custom.customIcon || custom.icon || newResolved[id].icon,
               hidden: custom.hidden !== undefined ? custom.hidden : newResolved[id].hidden
+            };
+          }
+        }
+      }
+
+      // Process Entity Icon Overrides
+      if (config.entities?.iconOverrides && typeof config.entities.iconOverrides === 'object') {
+        for (const [id, icon] of Object.entries(config.entities.iconOverrides as Record<string, string>)) {
+          if (newResolved[id] && icon) {
+            newResolved[id] = {
+              ...newResolved[id],
+              icon
+            };
+          }
+        }
+      }
+
+      // Process Entity Name Overrides
+      if (config.entities?.nameOverrides && typeof config.entities.nameOverrides === 'object') {
+        for (const [id, name] of Object.entries(config.entities.nameOverrides as Record<string, string>)) {
+          if (newResolved[id] && name) {
+            newResolved[id] = {
+              ...newResolved[id],
+              name
             };
           }
         }
@@ -954,6 +1011,8 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         rawAreas: newAreas,
         floors: newFloors,
         rawFloors: newFloors,
+        labels: newLabels,
+        rawLabels: newLabels,
         resolvedEntities: newResolved,
         entityCustomizations: nextEntityCustomizations,
         selectedWeatherEntityId: selectedWeather,
@@ -962,6 +1021,34 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       };
     });
     get().recomputeGraph();
+  },
+
+  updateEntityCustomization: (
+    entityId: string,
+    updates: { customName?: string; customIcon?: string; icon?: string; hidden?: boolean }
+  ) => {
+    set(prev => {
+      const nextCustomizations = {
+        ...prev.entityCustomizations,
+        [entityId]: {
+          ...(prev.entityCustomizations[entityId] || {}),
+          ...updates
+        }
+      };
+      const nextResolved = { ...prev.resolvedEntities };
+      if (nextResolved[entityId]) {
+        nextResolved[entityId] = {
+          ...nextResolved[entityId],
+          name:
+            updates.customName !== undefined
+              ? updates.customName || nextResolved[entityId].name
+              : nextResolved[entityId].name,
+          icon: updates.customIcon || updates.icon || nextResolved[entityId].icon,
+          hidden: updates.hidden !== undefined ? updates.hidden : nextResolved[entityId].hidden
+        };
+      }
+      return { entityCustomizations: nextCustomizations, resolvedEntities: nextResolved };
+    });
   },
 
   setEntityHidden: (entityId: string, hidden: boolean) => {
