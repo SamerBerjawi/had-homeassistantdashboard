@@ -110,31 +110,25 @@ export default function MediaHierarchyPlayerCard({
       onClick={() => onOpenDetail(media)}
       style={{
         clipPath: 'inset(0 round 1.5rem)',
-        boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)'
       }}
-      className={`group relative flex flex-col justify-between p-4 rounded-3xl border ${
-        isPlaying ? 'border-purple-400/40' : 'border-slate-200/80 dark:border-white/10'
-      } backdrop-blur-sm transition-all duration-200 cursor-pointer overflow-hidden isolate ${
+      className={`group relative flex flex-col justify-between p-4 rounded-3xl backdrop-blur-2xl transition-all duration-200 cursor-pointer overflow-hidden isolate ${
         isPlaying
-          ? 'bg-purple-500/20 text-slate-900 dark:text-white'
+          ? darkMode
+            ? 'bg-purple-950/60 text-white shadow-xl shadow-purple-950/40'
+            : 'bg-purple-50/95 text-slate-900 shadow-xl shadow-purple-200/60'
           : darkMode
-          ? 'bg-black/20 hover:bg-black/30 text-white'
-          : 'bg-white/20 hover:bg-white/30 text-slate-900'
+          ? 'bg-slate-900/70 hover:bg-slate-900/85 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
+          : 'bg-white/95 hover:bg-white text-slate-900 shadow-xl shadow-slate-200/80 hover:shadow-2xl'
       }`}
     >
       {/* Top Row: Thumbnail + Details + Badges */}
       <div className="flex items-center gap-3 min-w-0">
         {/* Artwork / Icon Thumbnail */}
-        <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-white/15 shrink-0 bg-slate-800 flex items-center justify-center">
+        <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-800 flex items-center justify-center shadow-xs">
           {albumArt ? (
             <img src={albumArt} alt={visual.title} className="w-full h-full object-cover" />
           ) : (
-            <div
-              className="w-full h-full flex items-center justify-center"
-              style={{ backgroundColor: palette.badgeBg }}
-            >
-              <AppIcon size={22} weight="duotone" style={{ color: palette.light }} />
-            </div>
+            <AppIcon size={24} weight="duotone" className="text-slate-400" />
           )}
 
           {/* Active status pulse */}
@@ -155,21 +149,21 @@ export default function MediaHierarchyPlayerCard({
               {visual.title}
             </h4>
             <span
-              className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md shrink-0 border ${
+              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shrink-0 shadow-2xs ${
                 isPlaying
-                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 animate-pulse'
+                  ? 'bg-purple-500/20 text-purple-800 dark:text-purple-300 animate-pulse'
                   : isPaused
-                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                  ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
                   : isOff
-                  ? 'bg-slate-500/10 text-slate-400 border-slate-500/20'
-                  : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                  ? 'bg-slate-500/10 text-slate-500 dark:text-slate-400'
+                  : 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300'
               }`}
             >
               {media.state}
             </span>
           </div>
 
-          <p className="text-[11px] font-medium text-slate-400 dark:text-slate-400 truncate mt-0.5">
+          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5">
             {visual.subtitle}
           </p>
         </div>
@@ -177,7 +171,7 @@ export default function MediaHierarchyPlayerCard({
 
       {/* Bottom Row: Quick Controls (Play/Pause, Power, Volume) */}
       <div
-        className="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-white/5 dark:border-white/5"
+        className="flex items-center justify-between gap-2 mt-3 pt-2.5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-1.5">

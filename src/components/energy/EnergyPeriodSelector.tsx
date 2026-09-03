@@ -70,10 +70,10 @@ export default function EnergyPeriodSelector({
       <div className="flex flex-wrap items-center gap-2">
         {/* Date Window Navigation: < Date Label > */}
         <div
-          className={`flex items-center gap-1 px-2 py-1 rounded-2xl border backdrop-blur-md transition-all ${
+          className={`flex items-center gap-1 px-2 py-1 rounded-2xl backdrop-blur-md transition-all shadow-sm ${
             darkMode
-              ? 'bg-black/40 border-white/10 text-white'
-              : 'bg-slate-100 border-slate-200 text-slate-900'
+              ? 'bg-black/40 text-white'
+              : 'bg-white/90 text-slate-900'
           }`}
         >
           <button
@@ -98,13 +98,13 @@ export default function EnergyPeriodSelector({
             type="button"
             onClick={() => shiftPeriod(1)}
             disabled={isAtFutureLimit}
-            title={isAtFutureLimit ? 'Current period (cannot go to future)' : 'Next period'}
-            className={`p-1 rounded-xl transition-all cursor-pointer ${
+            title="Next period"
+            className={`p-1 rounded-xl active:scale-95 transition-all cursor-pointer ${
               isAtFutureLimit
-                ? 'opacity-30 cursor-not-allowed text-slate-400'
+                ? 'opacity-30 cursor-not-allowed text-slate-600'
                 : darkMode
-                ? 'text-slate-400 hover:text-white hover:bg-white/10 active:scale-95'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200 active:scale-95'
+                ? 'text-slate-400 hover:text-white hover:bg-white/10'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
             }`}
           >
             <CaretRight size={16} weight="bold" />
@@ -113,10 +113,10 @@ export default function EnergyPeriodSelector({
 
         {/* Period Tabs: Day / Week / Month / Year */}
         <div
-          className={`flex items-center p-1 rounded-2xl border backdrop-blur-md transition-all ${
+          className={`flex items-center p-1 rounded-2xl backdrop-blur-md transition-all shadow-sm ${
             darkMode
-              ? 'bg-black/40 border-white/10'
-              : 'bg-slate-100 border-slate-200'
+              ? 'bg-black/40'
+              : 'bg-white/90'
           }`}
         >
           {periodOptions.map((opt) => (
@@ -143,10 +143,10 @@ export default function EnergyPeriodSelector({
           onClick={onRefresh}
           disabled={isFetchingStats}
           title="Refresh energy statistics"
-          className={`p-2 rounded-2xl border text-xs font-bold transition-all shadow-xs cursor-pointer ${
+          className={`p-2 rounded-2xl text-xs font-bold transition-all shadow-sm cursor-pointer ${
             darkMode
-              ? 'bg-black/40 border-white/10 hover:bg-white/10 text-slate-200 hover:text-white'
-              : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700 hover:text-slate-900'
+              ? 'bg-black/40 hover:bg-white/10 text-slate-200 hover:text-white'
+              : 'bg-white/90 hover:bg-white text-slate-700 hover:text-slate-900'
           }`}
         >
           <ArrowsClockwise

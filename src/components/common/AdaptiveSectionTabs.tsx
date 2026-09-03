@@ -53,14 +53,14 @@ export const AdaptiveSectionTabs: React.FC<AdaptiveSectionTabsProps> = ({
               key={tab.id}
               type="button"
               onClick={() => onChange(tab.id)}
-              className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer shrink-0 select-none border ${
+              className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer shrink-0 select-none ${
                 isActive
                   ? darkMode
-                    ? 'bg-sky-500 text-black border-sky-400 shadow-lg shadow-sky-500/25 font-black'
-                    : 'bg-sky-500 text-slate-950 border-sky-600 shadow-md shadow-sky-500/20 font-black'
+                    ? 'bg-sky-500 text-slate-950 shadow-lg shadow-sky-500/25 font-black'
+                    : 'bg-sky-500 text-slate-950 shadow-md shadow-sky-500/25 font-black'
                   : darkMode
-                  ? 'bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white border-white/10'
-                  : 'bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border-slate-200/80 shadow-xs'
+                  ? 'bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white'
+                  : 'bg-white/95 hover:bg-white text-slate-800 hover:text-slate-950 shadow-sm hover:shadow-md'
               }`}
             >
               {/* Icon rendering */}

@@ -23,10 +23,10 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
   darkMode = true
 }) => {
   const cardStyle =
-    'rounded-2xl border backdrop-blur-md transition-all shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] p-4 sm:p-5 ' +
+    'rounded-3xl backdrop-blur-2xl transition-all p-5 sm:p-6 ' +
     (darkMode
-      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10 text-white'
-      : 'bg-white/70 border-slate-200/80 text-slate-900');
+      ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
+      : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80');
 
   const totalQueries = metrics.dnsQueriesTotal;
   const blockedQueries = metrics.dnsQueriesBlocked;

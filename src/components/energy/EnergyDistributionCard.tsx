@@ -65,11 +65,10 @@ export default function EnergyDistributionCard({
 
   return (
     <div
-      style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-      className={`w-full rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all duration-300 relative overflow-hidden isolate flex flex-col justify-between ${
+      className={`w-full rounded-3xl p-4 sm:p-6 backdrop-blur-2xl transition-all duration-300 relative overflow-hidden isolate flex flex-col justify-between ${
         darkMode
-          ? 'bg-black/20 text-white'
-          : 'bg-white/20 text-slate-900'
+          ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
+          : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80'
       }`}
     >
       {/* Ambient background glow with strict containment */}

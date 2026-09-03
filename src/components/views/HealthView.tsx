@@ -134,7 +134,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
   return (
     <div className="w-full flex-1 flex flex-col gap-5 sm:gap-6 animate-fadeIn pb-24 md:pb-8">
       {/* Top Header Command Strip */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200/50 dark:border-white/10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
         {/* Left: View Identity & Device Selector */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF2D55] to-[#AF52DE] text-white flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(255,45,85,0.35)]">
@@ -151,7 +151,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
                 <button
                   type="button"
                   onClick={() => setIsPreviewDemo(false)}
-                  className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1 hover:bg-amber-500/30 transition-all cursor-pointer"
+                  className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 flex items-center gap-1 hover:bg-amber-500/30 transition-all cursor-pointer shadow-xs"
                   title="Click to exit demo mode"
                 >
                   <Sparkle size={12} weight="fill" />
@@ -163,14 +163,14 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
                 </AnimatedBadge>
               )}
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               Apple Health biometric signals &amp; historical recorder analytics
             </p>
           </div>
 
           {/* Multi-Device Picker Pill (if >1 device found) */}
           {devices.length > 1 && (
-            <div className="relative inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/60 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200">
+            <div className="relative inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/95 dark:bg-white/5 text-slate-800 dark:text-slate-200 shadow-sm">
               <DeviceMobile size={15} weight="duotone" className="text-[#FF2D55]" />
               <select
                 value={selectedDeviceId}
@@ -190,7 +190,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
         {/* Right: Time-Range Filter & Refresh */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Time Range Selector */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-white/90 dark:bg-white/5 shadow-sm">
             <CalendarBlank size={14} weight="bold" className="text-slate-400 ml-1.5 mr-0.5 hidden sm:inline" />
             {timeRanges.map((range) => {
               const isSelected = timeRange === range.id;
@@ -202,7 +202,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     isSelected
                       ? 'bg-gradient-to-r from-[#FF2D55] to-[#FF5E3A] text-white shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   {range.label}
@@ -217,7 +217,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
             onClick={refreshHistory}
             disabled={isLoadingHistory}
             title="Refresh Health Telemetry"
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-slate-300 transition-all cursor-pointer disabled:opacity-50"
+            className="p-2 rounded-xl bg-white/90 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 transition-all cursor-pointer disabled:opacity-50 shadow-sm"
           >
             <ArrowClockwise
               size={16}

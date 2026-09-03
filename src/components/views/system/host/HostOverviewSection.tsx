@@ -21,16 +21,16 @@ export function HostOverviewSection({
   darkMode = true
 }: HostOverviewSectionProps) {
   const cardStyle =
-    'rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ' +
+    'rounded-3xl backdrop-blur-2xl transition-all overflow-hidden isolate ' +
     (darkMode
-      ? 'bg-black/20 text-white'
-      : 'bg-white/20 text-slate-900');
+      ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
+      : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80');
 
   const subCardStyle =
-    'flex items-center gap-3 p-2.5 rounded-2xl transition-all ' +
+    'flex items-center gap-3 p-3 rounded-2xl transition-all ' +
     (darkMode
       ? 'bg-white/[0.04]'
-      : 'bg-slate-900/[0.03]');
+      : 'bg-slate-100/90 shadow-xs');
 
   return (
     <div className={`${cardStyle} p-3.5 sm:p-4`}>

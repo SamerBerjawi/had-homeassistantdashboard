@@ -34,10 +34,10 @@ export function HostCpuSection({
   const [loadViewMode, setLoadViewMode] = useState<'unified' | 'split'>('unified');
 
   const cardStyle =
-    'rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ' +
+    'rounded-3xl backdrop-blur-2xl transition-all overflow-hidden isolate ' +
     (darkMode
-      ? 'bg-black/20 text-white'
-      : 'bg-white/20 text-slate-900') +
+      ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
+      : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80') +
     ' p-4 sm:p-5';
 
   // Threshold colors matching NAS page conventions
@@ -96,7 +96,7 @@ export function HostCpuSection({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch">
         {/* Left: 2 Gauges Side by Side (5 cols) */}
         <div className={`lg:col-span-5 ${cardStyle} flex flex-col justify-between`}>
-          <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-white/10">
+          <div className="flex items-center justify-between pb-2">
             <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
               Processor Metrics
             </span>

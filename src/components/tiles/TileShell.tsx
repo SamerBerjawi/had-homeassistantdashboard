@@ -34,37 +34,26 @@ export const TileShell: React.FC<TileShellProps> = ({
   onContextMenu,
   title
 }) => {
-  const borderClass = isAlert
-    ? 'border-rose-500/60 dark:border-rose-500/60'
-    : isActive
-    ? activeBorderColor || (accentColor ? '' : darkMode ? 'border-amber-400/40' : 'border-amber-400/70')
-    : darkMode
-    ? 'border-white/10 hover:border-white/20'
-    : 'border-slate-200 hover:border-slate-300 shadow-xs';
-
   const bgClass = isAlert
     ? darkMode
-      ? 'bg-rose-950/40 text-rose-200'
-      : 'bg-rose-50 text-rose-900 border-rose-300'
+      ? 'bg-rose-950/60 text-rose-200 shadow-lg shadow-rose-950/50'
+      : 'bg-rose-100 text-rose-950 shadow-md shadow-rose-200/50'
     : isActive
     ? accentColor
       ? darkMode
-        ? 'text-white'
-        : 'text-slate-950 shadow-sm'
+        ? 'text-white shadow-[0_8px_25px_rgba(0,0,0,0.5)]'
+        : 'text-slate-950 shadow-md shadow-amber-200/40'
       : darkMode
-      ? 'bg-amber-500/15 text-white'
-      : 'bg-amber-50/95 text-slate-950 shadow-sm'
+      ? 'bg-amber-500/20 text-white shadow-[0_8px_25px_rgba(0,0,0,0.5)]'
+      : 'bg-amber-50/95 text-slate-950 shadow-md shadow-amber-200/40'
     : darkMode
-    ? 'bg-black/20 hover:bg-black/30 text-white'
-    : 'bg-white/85 hover:bg-white text-slate-900 shadow-xs';
+    ? 'bg-slate-900/70 hover:bg-slate-900/85 text-white shadow-[0_8px_25px_rgba(0,0,0,0.4)]'
+    : 'bg-white/95 hover:bg-white text-slate-900 shadow-md shadow-slate-200/80 hover:shadow-lg';
 
-  const customStyle: React.CSSProperties = {
-    boxShadow: darkMode ? '4px 6px 14px rgba(0, 0, 0, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.05)'
-  };
+  const customStyle: React.CSSProperties = {};
 
   if (!isAlert && isActive && accentColor) {
-    customStyle.borderColor = `${accentColor}${darkMode ? '60' : '80'}`;
-    customStyle.backgroundColor = darkMode ? `${accentColor}1a` : `${accentColor}14`;
+    customStyle.backgroundColor = darkMode ? `${accentColor}22` : `${accentColor}18`;
   }
 
   return (
@@ -73,16 +62,16 @@ export const TileShell: React.FC<TileShellProps> = ({
       onContextMenu={onContextMenu}
       title={title}
       style={customStyle}
-      className={`group relative w-full h-full rounded-3xl border ${borderClass} backdrop-blur-md transition-all duration-200 flex flex-col justify-center overflow-hidden isolate ${bgClass} ${
+      className={`group relative w-full h-full rounded-3xl backdrop-blur-xl transition-all duration-200 flex flex-col justify-center overflow-hidden isolate ${bgClass} ${
         onClick ? 'cursor-pointer active:scale-[0.985]' : ''
       } ${className}`}
     >
       {/* Top Ambient Glow Bloom if Active */}
       {isActive && (
         <div
-          style={{ backgroundColor: accentColor ? `${accentColor}25` : undefined }}
-          className={`absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl pointer-events-none ${
-            accentColor ? '' : darkMode ? 'bg-amber-500/15' : 'bg-amber-500/20'
+          style={{ backgroundColor: accentColor ? `${accentColor}35` : undefined }}
+          className={`absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl pointer-events-none ${
+            accentColor ? '' : darkMode ? 'bg-amber-500/20' : 'bg-amber-500/25'
           }`}
         />
       )}

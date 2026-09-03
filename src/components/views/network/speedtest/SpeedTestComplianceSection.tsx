@@ -22,10 +22,10 @@ export const SpeedTestComplianceSection: React.FC<SpeedTestComplianceSectionProp
   darkMode = true
 }) => {
   const cardStyle =
-    'rounded-2xl border backdrop-blur-md transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] p-4 sm:p-5 ' +
+    'rounded-3xl backdrop-blur-2xl transition-all p-5 sm:p-6 ' +
     (darkMode
-      ? 'bg-white/[0.04] dark:bg-slate-900/30 border-white/10'
-      : 'bg-white/80 border-slate-200/80 shadow-slate-100');
+      ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
+      : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80');
 
   const downCompliance = metrics.downloadPlanCompliancePercent;
   const upCompliance = metrics.uploadPlanCompliancePercent;

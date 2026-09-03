@@ -159,10 +159,10 @@ export default function AlarmPanelSection({
     if (currentState === 'armed_away') {
       return {
         bg: darkMode
-          ? 'from-emerald-500/15 to-teal-500/10 border-emerald-400/40 bg-black/20'
-          : 'from-emerald-500/[0.08] to-teal-500/[0.04] border-emerald-400/40 bg-white/20',
-        text: darkMode ? 'text-emerald-300' : 'text-emerald-800',
-        glow: 'shadow-[4px_6px_12px_rgba(0,0,0,0.15)]',
+          ? 'from-emerald-950/40 to-teal-950/20 bg-slate-900/70'
+          : 'from-emerald-50 to-teal-50/50 bg-white/95',
+        text: darkMode ? 'text-emerald-300' : 'text-emerald-900',
+        glow: darkMode ? 'shadow-[0_20px_50px_rgba(0,0,0,0.5)]' : 'shadow-xl shadow-slate-200/80',
         badge: 'bg-emerald-500 text-slate-950 font-black',
         title: 'ARMED AWAY',
         desc: 'Maximum perimeter and interior motion protection active.'
@@ -171,10 +171,10 @@ export default function AlarmPanelSection({
     if (currentState === 'armed_home') {
       return {
         bg: darkMode
-          ? 'from-emerald-500/15 to-teal-500/10 border-emerald-400/40 bg-black/20'
-          : 'from-emerald-500/[0.08] to-teal-500/[0.04] border-emerald-400/40 bg-white/20',
-        text: darkMode ? 'text-emerald-300' : 'text-emerald-800',
-        glow: 'shadow-[4px_6px_12px_rgba(0,0,0,0.15)]',
+          ? 'from-emerald-950/40 to-teal-950/20 bg-slate-900/70'
+          : 'from-emerald-50 to-teal-50/50 bg-white/95',
+        text: darkMode ? 'text-emerald-300' : 'text-emerald-900',
+        glow: darkMode ? 'shadow-[0_20px_50px_rgba(0,0,0,0.5)]' : 'shadow-xl shadow-slate-200/80',
         badge: 'bg-emerald-500 text-slate-950 font-black',
         title: 'ARMED HOME',
         desc: 'Perimeter doors, windows, and outdoor zones secured.'
@@ -183,10 +183,10 @@ export default function AlarmPanelSection({
     if (currentState === 'armed_night') {
       return {
         bg: darkMode
-          ? 'from-indigo-500/15 to-purple-500/10 border-indigo-400/40 bg-black/20'
-          : 'from-indigo-500/[0.08] to-purple-500/[0.04] border-indigo-400/40 bg-white/20',
-        text: darkMode ? 'text-indigo-300' : 'text-indigo-800',
-        glow: 'shadow-[4px_6px_12px_rgba(0,0,0,0.15)]',
+          ? 'from-indigo-950/40 to-purple-950/20 bg-slate-900/70'
+          : 'from-indigo-50 to-purple-50/50 bg-white/95',
+        text: darkMode ? 'text-indigo-300' : 'text-indigo-900',
+        glow: darkMode ? 'shadow-[0_20px_50px_rgba(0,0,0,0.5)]' : 'shadow-xl shadow-slate-200/80',
         badge: 'bg-indigo-500 text-white font-black',
         title: 'ARMED NIGHT',
         desc: 'Exterior perimeter and downstairs sensors armed for sleep.'
@@ -194,10 +194,10 @@ export default function AlarmPanelSection({
     }
     return {
       bg: darkMode
-        ? 'from-slate-500/10 to-slate-600/5 border-slate-200/80 dark:border-white/10 bg-black/20'
-        : 'from-slate-500/[0.04] to-slate-600/[0.02] border-slate-200/80 dark:border-white/10 bg-white/20',
-      text: darkMode ? 'text-amber-400' : 'text-amber-700',
-      glow: 'shadow-[4px_6px_12px_rgba(0,0,0,0.15)]',
+        ? 'from-slate-800/40 to-slate-900/40 bg-slate-900/70'
+        : 'from-white to-slate-50/80 bg-white/95',
+      text: darkMode ? 'text-amber-400' : 'text-amber-800',
+      glow: darkMode ? 'shadow-[0_20px_50px_rgba(0,0,0,0.5)]' : 'shadow-xl shadow-slate-200/80',
       badge: 'bg-amber-500 text-slate-950 font-black',
       title: 'DISARMED',
       desc: 'Standby mode. All sensors active in telemetry-only monitoring.'
@@ -245,7 +245,7 @@ export default function AlarmPanelSection({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         
         {/* LEFT COLUMN: Status Visualizer & Mode Switcher (7 cols) */}
-        <div className={`lg:col-span-7 p-6 sm:p-8 rounded-3xl border backdrop-blur-sm overflow-hidden isolate transition-all flex flex-col justify-between bg-gradient-to-br ${
+        <div className={`lg:col-span-7 p-6 sm:p-8 rounded-3xl backdrop-blur-xl overflow-hidden isolate transition-all flex flex-col justify-between bg-gradient-to-br ${
           statusConfig.bg
         } ${statusConfig.glow}`}>
           
@@ -449,8 +449,10 @@ export default function AlarmPanelSection({
         </div>
 
         {/* RIGHT COLUMN: Interactive Security PIN Keypad (5 cols) */}
-        <div className={`lg:col-span-5 p-6 rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-col justify-between ${
-          darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
+        <div className={`lg:col-span-5 p-6 rounded-3xl backdrop-blur-2xl overflow-hidden isolate flex flex-col justify-between ${
+          darkMode
+            ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
+            : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80'
         }`}>
           <div>
             <div className="flex items-center justify-between mb-4">

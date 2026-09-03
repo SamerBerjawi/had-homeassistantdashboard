@@ -161,16 +161,13 @@ export default function NowPlayingHighlightCard({
   return (
     <div
       onClick={() => onOpenDetail(media)}
-      className={`group relative overflow-hidden isolate rounded-3xl border ${
-        isPlaying ? 'border-purple-400/40' : 'border-slate-200/80 dark:border-white/10'
-      } backdrop-blur-sm transition-all duration-300 cursor-pointer ${
+      className={`group relative overflow-hidden isolate rounded-3xl backdrop-blur-2xl transition-all duration-300 cursor-pointer ${
         darkMode
-          ? 'bg-black/20 hover:bg-black/30 text-white'
-          : 'bg-white/20 hover:bg-white/30 text-slate-900'
+          ? 'bg-slate-900/70 hover:bg-slate-900/85 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
+          : 'bg-white/95 hover:bg-white text-slate-900 shadow-xl shadow-slate-200/80 hover:shadow-2xl'
       }`}
       style={{
         clipPath: 'inset(0 round 1.5rem)',
-        boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)'
       }}
     >
       {/* Ambient background bloom with strict containment */}

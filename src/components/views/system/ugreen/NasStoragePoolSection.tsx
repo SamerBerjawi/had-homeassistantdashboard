@@ -31,10 +31,10 @@ export const NasStoragePoolSection: React.FC<NasStoragePoolSectionProps> = ({
     ? ((pool.usedSizeVal / (pool.usedSizeVal + pool.freeSizeVal)) * 100).toFixed(1)
     : '0.0';
 
-  const cardStyle = `rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+  const cardStyle = `rounded-3xl p-5 sm:p-6 backdrop-blur-2xl transition-all overflow-hidden isolate ${
     darkMode
-      ? 'bg-black/20 text-white'
-      : 'bg-white/20 text-slate-900'
+      ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
+      : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80'
   }`;
 
   return (

@@ -789,7 +789,7 @@ export default function AreaDetailView({
       {(activeDomainTab === 'all' || activeDomainTab === 'lights') && enrichedLights.length > 0 && (
         <section className="flex flex-col gap-3.5">
           {/* Category Title & Bulk Action Button */}
-          <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-slate-200 dark:border-white/10">
+          <div className="flex items-center justify-between gap-3 pb-1">
             <div className="flex items-center gap-2">
               <Lightbulb size={20} weight="duotone" className="text-amber-500 dark:text-amber-400" />
               <h3 className={`text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -803,14 +803,14 @@ export default function AreaDetailView({
             <button
               type="button"
               onClick={() => onToggleLights(area.areaId, activeLightsCount === 0)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 shadow-sm ${
                 activeLightsCount > 0
                   ? darkMode
-                    ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40'
-                    : 'bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-300 shadow-xs'
+                    ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300'
+                    : 'bg-amber-100 hover:bg-amber-200 text-amber-950'
                   : darkMode
-                  ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
-                  : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-xs'
+                  ? 'bg-white/5 hover:bg-white/10 text-slate-300'
+                  : 'bg-white/95 hover:bg-white text-slate-800'
               }`}
             >
               <Power size={14} weight="bold" />
@@ -983,7 +983,7 @@ export default function AreaDetailView({
       {/* 3. SWITCHES, LOCKS & COVERS CATEGORY */}
       {(activeDomainTab === 'all' || activeDomainTab === 'switches') && (enrichedSwitches.length > 0 || enrichedLocks.length > 0 || enrichedCovers.length > 0) && (
         <section className="flex flex-col gap-3.5">
-          <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-slate-200 dark:border-white/10">
+          <div className="flex items-center justify-between gap-3 pb-1">
             <div className="flex items-center gap-2">
               <Plug size={20} weight="duotone" className="text-indigo-500 dark:text-indigo-400" />
               <h3 className={`text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -999,10 +999,10 @@ export default function AreaDetailView({
                 <button
                   type="button"
                   onClick={handleToggleAllSwitches}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 shadow-sm ${
                     darkMode
-                      ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
-                      : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-xs'
+                      ? 'bg-white/5 hover:bg-white/10 text-slate-300'
+                      : 'bg-white/95 hover:bg-white text-slate-800'
                   }`}
                 >
                   <Power size={14} weight="bold" />
@@ -1013,14 +1013,14 @@ export default function AreaDetailView({
                 <button
                   type="button"
                   onClick={() => onToggleLocks(area.areaId)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 shadow-sm ${
                     unlockedLocksCount > 0
                       ? darkMode
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                        : 'bg-amber-100 text-amber-950 border-amber-300 shadow-xs'
+                        ? 'bg-amber-500/20 text-amber-300'
+                        : 'bg-amber-100 text-amber-950'
                       : darkMode
-                      ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
-                      : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-xs'
+                      ? 'bg-white/5 hover:bg-white/10 text-slate-300'
+                      : 'bg-white/95 hover:bg-white text-slate-800'
                   }`}
                 >
                   <Lock size={14} weight="bold" />
@@ -1197,7 +1197,7 @@ export default function AreaDetailView({
       {/* 4. MEDIA & PLAYERS CATEGORY */}
       {(activeDomainTab === 'all' || activeDomainTab === 'media') && (entities.mediaPlayers.length > 0 || (enrichedVacuums?.length || 0) > 0 || (entities.cameras?.length || 0) > 0) && (
         <section className="flex flex-col gap-3.5">
-          <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-slate-200 dark:border-white/10">
+          <div className="flex items-center justify-between gap-3 pb-1">
             <div className="flex items-center gap-2">
               <SpeakerHigh size={20} weight="duotone" className="text-cyan-500 dark:text-cyan-400" />
               <h3 className={`text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -1212,10 +1212,10 @@ export default function AreaDetailView({
               <button
                 type="button"
                 onClick={handlePauseAllMedia}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 border ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-sm ${
                   darkMode
-                    ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
-                    : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-xs'
+                    ? 'bg-white/5 hover:bg-white/10 text-slate-300'
+                    : 'bg-white/95 hover:bg-white text-slate-800'
                 }`}
               >
                 Pause All
@@ -1363,7 +1363,7 @@ export default function AreaDetailView({
       {(activeDomainTab === 'all' || activeDomainTab === 'sensors') && sensorsCount > 0 && (
         <div className="flex flex-col gap-6">
           {/* Main Category Header */}
-          <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-slate-200 dark:border-white/10">
+          <div className="flex items-center justify-between gap-3 pb-1">
             <div className="flex items-center gap-2">
               <Drop size={20} weight="duotone" className="text-teal-500 dark:text-teal-400" />
               <h3 className={`text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>

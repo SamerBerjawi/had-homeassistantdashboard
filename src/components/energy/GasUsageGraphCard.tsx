@@ -27,10 +27,10 @@ export default function GasUsageGraphCard({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 border backdrop-blur-xl transition-all duration-300 relative flex flex-col justify-between shadow-2xl ${
+      className={`w-full rounded-3xl p-5 sm:p-6 backdrop-blur-2xl transition-all duration-300 relative flex flex-col justify-between ${
         darkMode
-          ? 'bg-slate-900/80 border-white/10 text-white'
-          : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/80'
+          ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
+          : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80'
       }`}
     >
       {/* Header with Title and Total Badge */}

@@ -125,15 +125,15 @@ export default function AreaTile({
       {...tileLongPressHandlers}
       style={{
         clipPath: 'inset(0 round 1.5rem)',
-        borderColor: customAccentColor ? `${customAccentColor}4D` : undefined,
-        boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)'
       }}
-      className={`group relative flex flex-col justify-between rounded-3xl p-4 sm:p-4.5 border ${activeBorderClass} backdrop-blur-sm transition-all duration-300 cursor-pointer overflow-hidden isolate ${
+      className={`group relative flex flex-col justify-between rounded-3xl p-4 sm:p-5 backdrop-blur-xl transition-all duration-300 cursor-pointer overflow-hidden isolate ${
         isHazardActive
-          ? 'bg-rose-500/20 text-rose-200'
+          ? darkMode
+            ? 'bg-rose-950/60 text-white shadow-xl shadow-rose-950/40'
+            : 'bg-rose-100 text-rose-950 shadow-xl shadow-rose-200/60'
           : darkMode
-          ? 'bg-black/20 hover:bg-black/30 text-white'
-          : 'bg-white/20 hover:bg-white/30 text-slate-900'
+          ? 'bg-slate-900/70 hover:bg-slate-900/85 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
+          : 'bg-white/95 hover:bg-white text-slate-900 shadow-xl shadow-slate-200/80 hover:shadow-2xl'
       }`}
     >
       {/* Background ambient room picture with corner-bleed protection */}
@@ -211,7 +211,7 @@ export default function AreaTile({
           {/* Active Hazard Alert Pill */}
           {isHazardActive && (
             <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border shrink-0 bg-rose-500/25 border-rose-500/40 text-rose-300 animate-pulse"
+              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 bg-rose-500/25 text-rose-300 animate-pulse shadow-sm"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
               ALERT
@@ -230,10 +230,10 @@ export default function AreaTile({
                 if (primaryTempId) openEntityDetails(primaryTempId);
               }}
               title="Click to view temperature & humidity history"
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border backdrop-blur-md cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold backdrop-blur-md cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-xs ${
                 darkMode
-                  ? 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                  : 'bg-slate-100/90 border-slate-200/90 text-slate-700 hover:bg-slate-200'
+                  ? 'bg-white/5 text-slate-200 hover:bg-white/10'
+                  : 'bg-slate-100/90 text-slate-800 hover:bg-slate-200'
               }`}
             >
               {sensors.temperature !== undefined && (
@@ -262,7 +262,7 @@ export default function AreaTile({
                 e.stopPropagation();
                 if (primaryMotionId) openEntityDetails(primaryMotionId);
               }}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 animate-fadeIn cursor-pointer hover:scale-105"
+              className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 animate-fadeIn cursor-pointer hover:scale-105 shadow-xs"
             >
               <PersonSimpleWalk size={12} weight="bold" className="animate-pulse" />
               <span>Motion</span>
@@ -278,7 +278,7 @@ export default function AreaTile({
                 if (primaryWindowId) openEntityDetails(primaryWindowId);
               }}
               title={`${sensors.windowsOpenCount} ${sensors.windowsOpenCount === 1 ? 'window' : 'windows'} open`}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/15 border border-amber-500/30 text-amber-400 animate-fadeIn cursor-pointer hover:scale-105"
+              className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 animate-fadeIn cursor-pointer hover:scale-105 shadow-xs"
             >
               <AppWindow size={13} weight="bold" />
               <span>{sensors.windowsOpenCount}</span>
@@ -294,7 +294,7 @@ export default function AreaTile({
                 if (primaryDoorId) openEntityDetails(primaryDoorId);
               }}
               title={`${sensors.doorsOpenCount} ${sensors.doorsOpenCount === 1 ? 'door' : 'doors'} open`}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/15 border border-amber-500/30 text-amber-400 animate-fadeIn cursor-pointer hover:scale-105"
+              className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 animate-fadeIn cursor-pointer hover:scale-105 shadow-xs"
             >
               <Door size={13} weight="bold" />
               <span>{sensors.doorsOpenCount}</span>
@@ -310,7 +310,7 @@ export default function AreaTile({
                 if (primaryLockId) openEntityDetails(primaryLockId);
               }}
               title={`${unlockedLocksCount} locks unlocked`}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/20 border border-amber-500/35 text-amber-300 animate-pulse cursor-pointer hover:scale-105"
+              className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300 animate-pulse cursor-pointer hover:scale-105 shadow-xs"
             >
               <LockOpen size={13} weight="bold" />
               <span>{unlockedLocksCount > 1 ? `${unlockedLocksCount} Unlocked` : 'Unlocked'}</span>
@@ -325,7 +325,7 @@ export default function AreaTile({
                 e.stopPropagation();
                 if (primaryHazardId) openEntityDetails(primaryHazardId);
               }}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-rose-500/25 border border-rose-500/40 text-rose-400 animate-pulse cursor-pointer hover:scale-105"
+              className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-rose-500/25 text-rose-900 dark:text-rose-300 animate-pulse cursor-pointer hover:scale-105 shadow-xs"
             >
               <Warning size={12} weight="fill" />
               <span>Leak Detected</span>

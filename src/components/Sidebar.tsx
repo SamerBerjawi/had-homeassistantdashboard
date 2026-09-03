@@ -134,12 +134,12 @@ export default function Sidebar({
       {/* DESKTOP SIDEBAR - Collapsible Left Vertical Navbar */}
       <nav 
         id="sidebar-desktop" 
-        className={`hidden md:flex flex-col h-screen py-5 px-3 transition-all duration-300 shrink-0 sticky top-0 left-0 bottom-0 z-40 border-r ${
+        className={`hidden md:flex flex-col h-screen py-5 px-3 transition-all duration-300 shrink-0 sticky top-0 left-0 bottom-0 z-40 ${
           isCollapsed ? 'w-20 items-center' : 'w-64'
         } ${
           darkMode 
-            ? 'bg-slate-950/20 backdrop-blur-2xl border-white/10 text-white shadow-2xl' 
-            : 'bg-white/30 backdrop-blur-2xl border-slate-200/60 text-slate-900 shadow-xs'
+            ? 'bg-slate-950/70 backdrop-blur-2xl text-white shadow-[10px_0_30px_rgba(0,0,0,0.5)]' 
+            : 'bg-white/95 backdrop-blur-2xl text-slate-900 shadow-xl shadow-slate-200/80'
         }`}
       >
         {/* Header Branding & Collapse Toggle */}
@@ -294,13 +294,12 @@ export default function Sidebar({
 
           {/* Telemetry Status Bar */}
           {!isCollapsed ? (
-
-            <div className={`px-2.5 py-2 rounded-xl border flex items-center justify-between ${
-              darkMode ? 'bg-white/3 border-white/10' : 'bg-slate-100/80 border-slate-200/80'
+            <div className={`px-2.5 py-2 rounded-xl flex items-center justify-between shadow-xs ${
+              darkMode ? 'bg-white/5 text-white' : 'bg-slate-100/90 text-slate-900'
             }`}>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                <span className={`text-[11px] font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>HA Core Live</span>
+                <span className={`text-[11px] font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-800'}`}>HA Core Live</span>
               </div>
               <span className={`text-[10px] font-mono ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>v2026.8</span>
             </div>
@@ -469,10 +468,10 @@ export default function Sidebar({
       {/* MOBILE BOTTOM NAVIGATION */}
       <nav 
         id="sidebar-mobile" 
-        className={`md:hidden fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto h-16 rounded-[26px] border shadow-2xl z-50 px-3 flex items-center justify-around transition-all ${
+        className={`md:hidden fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto h-16 rounded-[26px] z-50 px-3 flex items-center justify-around transition-all ${
           darkMode 
-            ? 'bg-slate-950/30 backdrop-blur-2xl border-white/15 text-white shadow-2xl shadow-black/80' 
-            : 'bg-white/35 backdrop-blur-2xl border-white/50 text-slate-900 shadow-xl shadow-slate-900/10'
+            ? 'bg-slate-950/80 backdrop-blur-2xl text-white shadow-2xl shadow-black/80' 
+            : 'bg-white/95 backdrop-blur-2xl text-slate-900 shadow-2xl shadow-slate-300/60'
         }`}
       >
         {mobilePrimaryItems.map((item) => {

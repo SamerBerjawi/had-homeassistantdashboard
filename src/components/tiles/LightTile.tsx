@@ -68,8 +68,8 @@ export const LightTile: React.FC<LightTileProps> = ({
       <TileShell
         darkMode={darkMode}
         isActive={isOn}
-        accentColor="#f59e0b"
-        activeBorderColor="border-amber-400/50"
+        accentColor="#FBBF24"
+        activeBorderColor=""
         onClick={onClick || onContextMenu || onIconClick}
         onContextMenu={(e) => {
           e.preventDefault();
@@ -98,14 +98,14 @@ export const LightTile: React.FC<LightTileProps> = ({
                     size={22}
                     weight={isOn ? 'fill' : 'duotone'}
                     style={{ color: isOn && caps.supportsColor ? caps.displayColor : undefined }}
-                    className={isOn ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.85)]' : 'text-slate-400'}
+                    className={isOn ? 'text-amber-400 dark:text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.95)]' : 'text-slate-400'}
                   />
                 ) : (
                   <Lightbulb
                     size={22}
                     weight={isOn ? 'fill' : 'duotone'}
                     style={{ color: isOn && caps.supportsColor ? caps.displayColor : undefined }}
-                    className={isOn ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.85)]' : 'text-slate-400'}
+                    className={isOn ? 'text-amber-400 dark:text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.95)]' : 'text-slate-400'}
                   />
                 )}
               </button>
@@ -148,7 +148,7 @@ export const LightTile: React.FC<LightTileProps> = ({
               max={100}
               step={1}
               activeColor="bg-amber-400"
-              activeGlowColor="rgba(251, 191, 36, 0.75)"
+              activeGlowColor="rgba(251, 191, 36, 0.85)"
               onChange={(val) => onBrightnessChange(entity, val)}
             />
           </div>
@@ -163,8 +163,8 @@ export const LightTile: React.FC<LightTileProps> = ({
       title={formatEntityDisplayName(entity.name, areaName)}
       subtitle={subtitle}
       isActive={isOn}
-      accentColor="#f59e0b"
-      activeBorderColor="border-amber-400/50"
+      accentColor="#FBBF24"
+      activeBorderColor=""
       onIconClick={() => onToggle(entity)}
       icon={
         entity.icon ? (
@@ -172,13 +172,13 @@ export const LightTile: React.FC<LightTileProps> = ({
             name={entity.icon}
             size={22}
             weight={isOn ? 'fill' : 'duotone'}
-            className={isOn ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.85)]' : 'text-slate-400'}
+            className={isOn ? 'text-amber-400 dark:text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.95)]' : 'text-slate-400'}
           />
         ) : (
           <Lightbulb
             size={22}
             weight={isOn ? 'fill' : 'duotone'}
-            className={isOn ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.85)]' : 'text-slate-400'}
+            className={isOn ? 'text-amber-400 dark:text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.95)]' : 'text-slate-400'}
           />
         )
       }

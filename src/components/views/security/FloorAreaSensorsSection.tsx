@@ -184,8 +184,8 @@ export default function FloorAreaSensorsSection({
 
         {/* Quick Search */}
         <div
-          className={`relative flex items-center px-3 py-1.5 rounded-2xl border text-xs sm:ml-auto ${
-            darkMode ? 'bg-black/40 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-800'
+          className={`relative flex items-center px-3 py-1.5 rounded-2xl text-xs sm:ml-auto shadow-sm ${
+            darkMode ? 'bg-black/40 text-white' : 'bg-white/95 text-slate-900'
           }`}
         >
           <MagnifyingGlass size={15} className="text-slate-400 mr-2 shrink-0" />
@@ -203,8 +203,8 @@ export default function FloorAreaSensorsSection({
       <div className="space-y-6">
         {filteredAreas.length === 0 ? (
           <div
-            className={`p-8 rounded-3xl border text-center backdrop-blur-md ${
-              darkMode ? 'bg-black/30 border-white/10 text-slate-400' : 'bg-white/70 border-slate-200/80 text-slate-600'
+            className={`p-8 rounded-3xl text-center backdrop-blur-md shadow-md ${
+              darkMode ? 'bg-slate-900/60 text-slate-400' : 'bg-white/95 text-slate-800 shadow-slate-200/80'
             }`}
           >
             <p className="text-sm font-semibold">No security sensors found for this filter.</p>
@@ -215,7 +215,7 @@ export default function FloorAreaSensorsSection({
                 handleCategoryChange('all');
                 setSearchQuery('');
               }}
-              className="mt-2 text-xs font-bold text-emerald-500 hover:underline cursor-pointer"
+              className="mt-3 px-4 py-1.5 rounded-xl bg-sky-500/20 text-sky-400 text-xs font-bold hover:bg-sky-500/30 transition-colors cursor-pointer"
             >
               Reset Filters
             </button>
@@ -246,7 +246,7 @@ export default function FloorAreaSensorsSection({
             return (
               <section key={area.area_id} className="flex flex-col gap-3">
                 {/* Header: Area Name & Live Status Badges */}
-                <div className="flex items-center justify-between gap-3 pb-1.5 border-b border-slate-200/50 dark:border-white/10">
+                <div className="flex items-center justify-between gap-3 pb-1">
                   <div className="flex items-center gap-2.5">
                     {area.picture ? (
                       <img src={area.picture} alt={area.name} className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg object-cover shrink-0" />

@@ -170,9 +170,8 @@ export default function VacuumCard({ vacuum, darkMode = true, showMap = false }:
 
   return (
     <div
-      style={{ boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.3)' }}
-      className={`relative p-5 sm:p-6 rounded-3xl border ${stateTheme.border} backdrop-blur-2xl transition-all duration-300 flex flex-col justify-between gap-5 overflow-hidden isolate ${
-        darkMode ? 'bg-slate-900/80 text-white' : 'bg-white/80 text-slate-900'
+      className={`relative p-5 sm:p-6 rounded-3xl backdrop-blur-2xl transition-all duration-300 flex flex-col justify-between gap-5 overflow-hidden isolate ${
+        darkMode ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]' : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80'
       }`}
     >
       {/* Dynamic Ambient Aura Background */}
@@ -188,7 +187,7 @@ export default function VacuumCard({ vacuum, darkMode = true, showMap = false }:
           <button
             type="button"
             onClick={() => openEntityDetails(vacuum.entityId)}
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-transform cursor-pointer hover:scale-105 active:scale-95 shrink-0 ${stateTheme.bgGlow} ${stateTheme.border}`}
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform cursor-pointer hover:scale-105 active:scale-95 shrink-0 shadow-xs ${stateTheme.bgGlow}`}
             title="Click to view full entity details & telemetry"
           >
             <Broom
@@ -206,7 +205,7 @@ export default function VacuumCard({ vacuum, darkMode = true, showMap = false }:
 
           <div className="min-w-0">
             <h4 className="text-base font-extrabold truncate tracking-tight">{vacuum.name}</h4>
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 truncate mt-0.5">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5 font-medium">
               <MapPin size={13} weight="bold" className="shrink-0 text-slate-400" />
               <span className="truncate">{vacuum.areaName || 'Unassigned Area'}</span>
             </div>
@@ -215,17 +214,17 @@ export default function VacuumCard({ vacuum, darkMode = true, showMap = false }:
 
         {/* State Badge & Battery Tag */}
         <div className="flex items-center gap-2 shrink-0">
-          <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black uppercase tracking-wider border shadow-xs ${stateTheme.badgeBg}`}>
+          <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black uppercase tracking-wider shadow-xs ${stateTheme.badgeBg}`}>
             {stateTheme.badgeLabel}
           </span>
 
           <div
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-mono font-bold border ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-mono font-bold shadow-xs ${
               vacuum.batteryCharging
-                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-400'
                 : vacuum.batteryLevel <= 20
-                ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
-                : 'bg-white/5 border-white/10 text-slate-300'
+                ? 'bg-rose-500/15 text-rose-800 dark:text-rose-400'
+                : darkMode ? 'bg-white/5 text-slate-300' : 'bg-slate-100/90 text-slate-800'
             }`}
           >
             <BatteryIcon size={16} weight={vacuum.batteryCharging ? 'fill' : 'duotone'} />
