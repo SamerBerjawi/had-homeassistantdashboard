@@ -35,8 +35,17 @@ export interface CarEvMetrics {
   cabinTemp: number;               // sensor.fordpass_*_cabintemperature
   cabinTempUnit: string;           // '°C' or '°F'
   outdoorTemp: number;             // sensor.fordpass_*_outsidetemp
+  targetCabinTemp?: number;        // climate.*_vehicle target temperature
+  climateHvacMode?: string;        // 'off' | 'heat' | 'cool' | 'auto'
+  defrostActive?: boolean;         // defrost / windshield heater
+  rearDefrostActive?: boolean;     // rear window defogger
+  seatHeatingDriver?: number;      // 0 (off), 1 (low), 2 (mid), 3 (high)
+  seatHeatingPassenger?: number;   // 0 (off), 1 (low), 2 (mid), 3 (high)
   remoteClimateActive: boolean;    // switch.fordpass_*_ignition / sensor.fordpass_*_remotestartstatus
   remoteClimateTimeRemaining?: number; // sensor.fordpass_*_remotestartcountdown
+  hasClimate?: boolean;            // whether climate integration is present
+  chargePortOpen?: boolean;        // whether charge port is unlatched/open
+  targetSocPercent?: number;       // parsed target SoC (50-100)
 
   // Security & Hardware Health
   doorsLocked: boolean;            // sensor.fordpass_*_doorlock / lock.fordpass_*_doorlock
@@ -55,6 +64,7 @@ export interface CarEvMetrics {
     rearLeft: number | string;
     rearRight: number | string;
   };
+  hasTirePressure?: boolean;
 
   deepSleep: boolean;              // sensor.fordpass_*_deepsleep
   oilLifePercent?: number;         // sensor.fordpass_*_oil
@@ -76,7 +86,7 @@ export interface CarEvMetrics {
   lastRefreshed: string;           // sensor.fordpass_*_lastrefresh
 
   // Live speed timeseries for bklit chart
-  speedTimeseries: Array<{ date: Date; speed: number }>;
+  speedTimeseries: Array<{ date: Date; speed: number; timeLabel?: string }>;
 
   // Interactive Entity IDs
   controls: {
@@ -90,6 +100,10 @@ export interface CarEvMetrics {
     startChargingButtonId: string; // button.fordpass_*_evstart
     chargeSwitchId: string;        // switch.fordpass_*_elvehcharge (pause/resume)
     autoSoftwareUpdatesSwitchId: string; // switch.fordpass_*_autosoftwareupdates
+    climateEntityId?: string;      // climate.*_vehicle
+    targetSocEntityId?: string;    // number/select for charge limit
+    chargePortEntityId?: string;   // lock/switch for charge port
+    defrostEntityId?: string;      // defrost switch
   };
 }
 

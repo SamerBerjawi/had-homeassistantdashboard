@@ -131,7 +131,7 @@ export const PAGE_THEMES: Record<string, PageThemeConfig> = {
   mobility: {
     id: 'mobility',
     title: 'Mobility & Vehicles',
-    subtitle: 'Monitor vehicle battery levels, charging status, location tracking, and transit routes.',
+    subtitle: '',
     icon: Car,
     color: 'text-emerald-600 dark:text-emerald-400',
     accentHex: '#10b981',

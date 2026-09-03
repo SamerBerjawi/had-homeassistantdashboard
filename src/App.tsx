@@ -628,7 +628,7 @@ export default function App() {
                 <VacuumsHeaderSentence
                   darkMode={darkMode}
                 />
-              ) : (
+              ) : activeTab === 'mobility' || (!currentSettingsMeta && !currentTheme.subtitle) ? null : (
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 max-w-full leading-relaxed">
                   {currentSettingsMeta ? currentSettingsMeta.subtitle : currentTheme.subtitle}
                 </p>

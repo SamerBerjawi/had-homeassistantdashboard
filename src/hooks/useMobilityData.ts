@@ -125,19 +125,35 @@ function resolveZone(
   return { zoneName: 'In Home Zone', isAtHome: true };
 }
 
-function generateSpeedTimeseries(currentSpeed: number): Array<{ date: Date; speed: number }> {
-  const points: Array<{ date: Date; speed: number }> = [];
-  const count = 20;
+function generateSpeedTimeseries(currentSpeed: number): Array<{ date: Date; speed: number; timeLabel: string }> {
+  const points: Array<{ date: Date; speed: number; timeLabel: string }> = [];
+  const count = 24;
   const now = Date.now();
   const base = Math.max(0, currentSpeed);
 
   for (let i = count - 1; i >= 0; i--) {
-    const date = new Date(now - i * 60 * 1000);
-    const progress = (count - 1 - i) / count;
-    const wave = base > 0 ? base + Math.sin(progress * Math.PI * 3) * 6 : (i === 0 ? 0 : Math.max(0, Math.sin(progress * Math.PI * 2) * 20));
+    const date = new Date(now - i * 3600 * 1000);
+    const hour = date.getHours();
+    const timeLabel = `${hour.toString().padStart(2, '0')}:00`;
+
+    // Realistic daily driving peaks around commute hours (08:00 - 09:00 and 17:00 - 18:30)
+    let speed = 0;
+    if (i === 0) {
+      speed = base;
+    } else if (hour === 8 || hour === 9) {
+      speed = Math.round(52 + Math.sin(hour) * 20);
+    } else if (hour === 17 || hour === 18) {
+      speed = Math.round(68 + Math.cos(hour) * 25);
+    } else if (hour >= 11 && hour <= 14) {
+      speed = Math.round(35 + Math.sin(hour) * 15);
+    } else {
+      speed = 0;
+    }
+
     points.push({
       date,
-      speed: Math.max(0, Math.round(wave))
+      speed: Math.max(0, speed),
+      timeLabel
     });
   }
   return points;
@@ -157,65 +173,109 @@ export function useMobilityData() {
   const [optimisticBike, setOptimisticBike] = useState<Partial<BikeMetrics>>({});
 
   // -------------------------------------------------------------
-  // Resolving Car EV Metrics (FordPass: WF0TK1EM3PMA07438 / General EV)
+  // Resolving Car EV Metrics (FordPass / Standard HA EV Integrations)
   // -------------------------------------------------------------
   const carMetrics: CarEvMetrics = useMemo(() => {
-    const trackerEntity = findEntity(states, 'device_tracker', ['sensor.fordpass_wf0tk1em3pma07438_tracker', 'fordpass_wf0tk1em3pma07438_tracker', '_tracker']);
-    const ignitionEntity = findEntity(states, 'sensor', ['sensor.fordpass_wf0tk1em3pma07438_ignitionstatus', 'fordpass_wf0tk1em3pma07438_ignitionstatus', '_ignitionstatus']);
-    const socEntity = findEntity(states, 'sensor', ['sensor.fordpass_wf0tk1em3pma07438_soc', 'fordpass_wf0tk1em3pma07438_soc', '_soc']);
+    const trackerEntity = findEntity(states, 'device_tracker', [
+      'sensor.fordpass_wf0tk1em3pma07438_tracker',
+      'fordpass_wf0tk1em3pma07438_tracker',
+      '_tracker',
+      '_vehicle',
+      '_car'
+    ]);
+
+    const ignitionEntity = findEntity(states, 'sensor', [
+      'sensor.fordpass_wf0tk1em3pma07438_ignitionstatus',
+      'fordpass_wf0tk1em3pma07438_ignitionstatus',
+      '_ignitionstatus',
+      '_ignition_state',
+      'ignition'
+    ]);
+
+    const socEntity = findEntity(states, 'sensor', [
+      'sensor.fordpass_wf0tk1em3pma07438_soc',
+      'fordpass_wf0tk1em3pma07438_soc',
+      '_soc',
+      '_battery_level',
+      '_state_of_charge',
+      'battery_level',
+      'state_of_charge',
+      'ev_battery'
+    ]);
     
-    // Explicit lookup for range sensor.fordpass_wf0tk1em3pma07438_elveh
+    // Explicit lookup for range
     const rangeEntity = findEntity(states, 'sensor', [
       'sensor.fordpass_wf0tk1em3pma07438_elveh',
       'fordpass_wf0tk1em3pma07438_elveh',
       '_elveh',
       'electric_range',
-      'remaining_range'
+      'remaining_range',
+      'battery_range',
+      'range'
     ]);
 
     const chargingEntity = findEntity(states, 'sensor', [
       'sensor.fordpass_wf0tk1em3pma07438_elvehcharging',
       'fordpass_wf0tk1em3pma07438_elvehcharging',
       '_elvehcharging',
-      'charging_status'
+      'charging_status',
+      'charging_state',
+      'charge_state'
+    ]) || findEntity(states, 'binary_sensor', [
+      '_charging',
+      'charging'
     ]);
 
     const powerEntity = findEntity(states, 'sensor', [
       'sensor.fordpass_wf0tk1em3pma07438_elvehchargingpower',
       'fordpass_wf0tk1em3pma07438_elvehchargingpower',
       '_elvehchargingpower',
-      'charging_power'
+      'charging_power',
+      'charger_power',
+      'charge_rate'
     ]);
 
     const plugEntity = findEntity(states, 'sensor', [
       'sensor.fordpass_wf0tk1em3pma07438_elvehplug',
       'fordpass_wf0tk1em3pma07438_elvehplug',
       '_elvehplug',
-      'plug_status'
+      'plug_status',
+      'charger_type'
+    ]) || findEntity(states, 'binary_sensor', [
+      '_plugged_in',
+      '_charging_cable',
+      'plugged_in'
     ]);
 
     const doorLockSensor = findEntity(states, 'sensor', [
       'sensor.fordpass_wf0tk1em3pma07438_doorlock',
       'fordpass_wf0tk1em3pma07438_doorlock',
-      '_doorlock'
+      '_doorlock',
+      '_doors_locked'
     ]);
 
     const doorLockDomain = findEntity(states, 'lock', [
       'lock.fordpass_wf0tk1em3pma07438_doorlock',
       'fordpass_wf0tk1em3pma07438_doorlock',
-      '_doorlock'
+      '_doorlock',
+      '_doors',
+      '_vehicle',
+      '_car'
     ]);
 
     const windowEntity = findEntity(states, 'sensor', [
       'sensor.fordpass_wf0tk1em3pma07438_windowposition',
       'fordpass_wf0tk1em3pma07438_windowposition',
-      '_windowposition'
+      '_windowposition',
+      '_windows'
     ]);
 
     const odoEntity = findEntity(states, 'sensor', [
       'sensor.fordpass_wf0tk1em3pma07438_odometer',
       'fordpass_wf0tk1em3pma07438_odometer',
-      '_odometer'
+      '_odometer',
+      'odometer',
+      'mileage'
     ]);
 
     const alarmEntity = findEntity(states, 'sensor', [
@@ -227,7 +287,10 @@ export function useMobilityData() {
     const cabinTempEntity = findEntity(states, 'sensor', [
       'sensor.fordpass_wf0tk1em3pma07438_cabintemperature',
       'fordpass_wf0tk1em3pma07438_cabintemperature',
-      '_cabintemperature'
+      '_cabintemperature',
+      'inside_temperature',
+      'cabin_temperature',
+      'cabin_temp'
     ]);
 
     const indicatorsEntity = findEntity(states, 'sensor', [
@@ -239,19 +302,34 @@ export function useMobilityData() {
     const battery12VEntity = findEntity(states, 'sensor', [
       'sensor.fordpass_wf0tk1em3pma07438_battery',
       'fordpass_wf0tk1em3pma07438_battery',
-      '_battery'
+      '_battery',
+      '12v_battery',
+      'battery_12v',
+      'auxiliary_battery'
     ]);
 
     const outdoorTempEntity = findEntity(states, 'sensor', [
       'sensor.fordpass_wf0tk1em3pma07438_outsidetemp',
       'fordpass_wf0tk1em3pma07438_outsidetemp',
-      '_outsidetemp'
+      '_outsidetemp',
+      'outside_temperature',
+      'outdoor_temp'
+    ]);
+
+    const climateEntity = findEntity(states, 'climate', [
+      'climate.fordpass_wf0tk1em3pma07438',
+      '_vehicle',
+      '_car',
+      '_interior',
+      'vehicle_climate'
     ]);
 
     const remoteClimateSwitch = findEntity(states, 'switch', [
       'switch.fordpass_wf0tk1em3pma07438_ignition',
       'fordpass_wf0tk1em3pma07438_ignition',
-      '_ignition'
+      '_ignition',
+      '_climate',
+      '_preconditioning'
     ]);
 
     const countdownEntity = findEntity(states, 'sensor', [
@@ -260,10 +338,38 @@ export function useMobilityData() {
       '_remotestartcountdown'
     ]);
 
-    const targetSocEntity = findEntity(states, 'select', [
+    const targetSocEntity = findEntity(states, 'number', [
+      '_charge_limit',
+      '_target_soc',
+      '_target_charge',
+      '_target_charge_limit',
+      '_charging_limit',
+      '_target_state_of_charge',
+      '_battery_charge_limit',
+      'charge_limit',
+      'target_soc'
+    ]) || findEntity(states, 'select', [
       'select.fordpass_wf0tk1em3pma07438_elvehtargetcharge',
       'fordpass_wf0tk1em3pma07438_elvehtargetcharge',
-      '_elvehtargetcharge'
+      '_elvehtargetcharge',
+      '_target_charge',
+      '_charge_limit',
+      'target_charge'
+    ]);
+
+    const chargePortEntity = findEntity(states, 'lock', [
+      '_charge_port',
+      '_charge_port_latch',
+      'charge_port'
+    ]) || findEntity(states, 'switch', [
+      '_charge_port',
+      'charge_port'
+    ]);
+
+    const defrostSwitch = findEntity(states, 'switch', [
+      '_defrost',
+      '_windshield_defrost',
+      'defrost'
     ]);
 
     const energyConsumedEntity = findEntity(states, 'sensor', [
@@ -305,8 +411,15 @@ export function useMobilityData() {
     const tirePressureSensor = findEntity(states, 'sensor', [
       'sensor.fordpass_wf0tk1em3pma07438_tirepressure',
       'fordpass_wf0tk1em3pma07438_tirepressure',
-      '_tirepressure'
+      '_tirepressure',
+      '_tire_pressure'
     ]);
+
+    // Discrete tire pressure sensors fallback
+    const tpFrontLeftEntity = findEntity(states, 'sensor', ['_tire_pressure_front_left', '_tire_pressure_fl', '_front_left_tire_pressure']);
+    const tpFrontRightEntity = findEntity(states, 'sensor', ['_tire_pressure_front_right', '_tire_pressure_fr', '_front_right_tire_pressure']);
+    const tpRearLeftEntity = findEntity(states, 'sensor', ['_tire_pressure_rear_left', '_tire_pressure_rl', '_rear_left_tire_pressure']);
+    const tpRearRightEntity = findEntity(states, 'sensor', ['_tire_pressure_rear_right', '_tire_pressure_rr', '_rear_right_tire_pressure']);
 
     // Software updates entities
     const autoUpdatesSwitch = findEntity(states, 'switch', [
@@ -368,7 +481,7 @@ export function useMobilityData() {
     const speed = parseNum(speedEntity?.state, 0);
     const isMoving = speed > 0;
     const gear = String(gearEntity?.state || (isMoving ? 'D' : 'P')).toUpperCase();
-    const isCharging = (chargingEntity?.state || 'Charging').toLowerCase().includes('charge');
+    const isCharging = (chargingEntity?.state || 'Charging').toLowerCase().includes('charge') || chargingEntity?.state === 'on';
     const isPluggedIn = plugEntity ? (
       plugEntity.state === 'on' || 
       String(plugEntity.state).toLowerCase().includes('connect') ||
@@ -404,25 +517,28 @@ export function useMobilityData() {
 
     const remoteClimateActive = remoteClimateSwitch ? (
       remoteClimateSwitch.state === 'on'
-    ) : false;
+    ) : (climateEntity ? climateEntity.state !== 'off' : false);
 
     const ignitionStatus = ignitionEntity?.state || (isMoving ? 'On' : remoteClimateActive ? 'RemoteStarted' : 'Off');
     const ignitionOn = ignitionStatus.toLowerCase() === 'on' || isMoving;
 
-    // Tire Pressure attributes (FrontLeft, FrontRight, RearLeft, RearRight)
+    // Tire Pressure attributes or individual entities
     const tpAttrs = tirePressureSensor?.attributes || {};
-    const tpUnit = tpAttrs.unit_of_measurement || 'bar';
-    const tpFrontLeft = tpAttrs.FrontLeft || tpAttrs.front_left || tpAttrs.frontLeft || tpAttrs.FL || 2.6;
-    const tpFrontRight = tpAttrs.FrontRight || tpAttrs.front_right || tpAttrs.frontRight || tpAttrs.FR || 2.6;
-    const tpRearLeft = tpAttrs.RearLeft || tpAttrs.rear_left || tpAttrs.rearLeft || tpAttrs.RL || 2.5;
-    const tpRearRight = tpAttrs.RearRight || tpAttrs.rear_right || tpAttrs.rearRight || tpAttrs.RR || 2.5;
-    const tpStatus = tirePressureSensor?.state || 'Normal (All Systems OK)';
+    const tpUnit = tpAttrs.unit_of_measurement || tpFrontLeftEntity?.attributes?.unit_of_measurement || 'bar';
+    const tpFrontLeft = tpAttrs.FrontLeft || tpAttrs.front_left || tpAttrs.frontLeft || tpAttrs.FL || (tpFrontLeftEntity ? parseNum(tpFrontLeftEntity.state, 2.6) : 2.6);
+    const tpFrontRight = tpAttrs.FrontRight || tpAttrs.front_right || tpAttrs.frontRight || tpAttrs.FR || (tpFrontRightEntity ? parseNum(tpFrontRightEntity.state, 2.6) : 2.6);
+    const tpRearLeft = tpAttrs.RearLeft || tpAttrs.rear_left || tpAttrs.rearLeft || tpAttrs.RL || (tpRearLeftEntity ? parseNum(tpRearLeftEntity.state, 2.5) : 2.5);
+    const tpRearRight = tpAttrs.RearRight || tpAttrs.rear_right || tpAttrs.rearRight || tpAttrs.RR || (tpRearRightEntity ? parseNum(tpRearRightEntity.state, 2.5) : 2.5);
+    const tpStatus = tirePressureSensor?.state || (tpFrontLeftEntity ? 'Normal (All Systems OK)' : 'Normal (All Systems OK)');
 
     const chargeLogUnit = chargeLogEntity?.attributes?.unit_of_measurement || 'kWh';
     let lastChargingLog = String(chargeLogEntity?.state || '+34.2 kWh added • 2h 15m @ 11.4 kW AC');
     if (!isNaN(parseFloat(lastChargingLog)) && !lastChargingLog.toLowerCase().includes('kwh') && !lastChargingLog.toLowerCase().includes('wh')) {
       lastChargingLog = `${lastChargingLog} ${chargeLogUnit}`;
     }
+
+    const defaultTargetSoc = config.mobility?.car?.targetSocDefault || 80;
+    const targetSocParsed = targetSocEntity ? parseNum(targetSocEntity.state, defaultTargetSoc) : defaultTargetSoc;
 
     const base: CarEvMetrics = {
       customBrandLogo: effectiveCarLogo,
@@ -436,7 +552,8 @@ export function useMobilityData() {
       chargingState: chargingEntity?.state || (isCharging ? 'Charging' : isPluggedIn ? 'Connected' : 'Disconnected'),
       chargingPowerKW: parseNum(powerEntity?.state, isCharging ? 11.4 : 0),
       isPluggedIn,
-      targetSoc: targetSocEntity?.state || '90%',
+      targetSoc: `${targetSocParsed}%`,
+      targetSocPercent: targetSocParsed,
       lastTripEnergy: parseNum(energyConsumedEntity?.state, 18.6),
       lastTripEnergyUnit: energyConsumedEntity?.attributes?.unit_of_measurement || 'kWh',
       lastChargingLog,
@@ -450,11 +567,19 @@ export function useMobilityData() {
       gearPosition: gear,
       odometer: parseNum(odoEntity?.state, 24850),
       odometerUnit: odoEntity?.attributes?.unit_of_measurement || 'km',
-      cabinTemp: parseNum(cabinTempEntity?.state, 21.5),
+      cabinTemp: parseNum(cabinTempEntity?.state || climateEntity?.attributes?.current_temperature, 21.5),
       cabinTempUnit: cabinTempEntity?.attributes?.unit_of_measurement || '°C',
       outdoorTemp: parseNum(outdoorTempEntity?.state, 14.0),
+      targetCabinTemp: parseNum(climateEntity?.attributes?.temperature, 21.0),
+      climateHvacMode: climateEntity?.state || (remoteClimateActive ? 'heat' : 'off'),
+      defrostActive: defrostSwitch ? defrostSwitch.state === 'on' : false,
+      rearDefrostActive: false,
+      seatHeatingDriver: 0,
+      seatHeatingPassenger: 0,
       remoteClimateActive,
       remoteClimateTimeRemaining: parseNum(countdownEntity?.state, remoteClimateActive ? 15 : 0),
+      hasClimate: Boolean(climateEntity || remoteClimateSwitch),
+      chargePortOpen: chargePortEntity ? (chargePortEntity.state === 'open' || chargePortEntity.state === 'unlocked' || chargePortEntity.state === 'on') : false,
 
       doorsLocked,
       doorLockStatus: String(doorLockSensor?.state || (doorsLocked ? 'Locked' : 'Unlocked')),
@@ -471,6 +596,7 @@ export function useMobilityData() {
         rearLeft: tpRearLeft,
         rearRight: tpRearRight
       },
+      hasTirePressure: Boolean(tirePressureSensor || tpFrontLeftEntity),
 
       deepSleep: false,
       oilLifePercent: 94,
@@ -493,20 +619,24 @@ export function useMobilityData() {
 
       controls: {
         lockDoorButtonId: 'button.fordpass_wf0tk1em3pma07438_doorlock',
-        unlockDoorLockId: 'lock.fordpass_wf0tk1em3pma07438_doorlock',
-        startClimateSwitchId: 'switch.fordpass_wf0tk1em3pma07438_ignition',
+        unlockDoorLockId: doorLockDomain?.entity_id || 'lock.fordpass_wf0tk1em3pma07438_doorlock',
+        startClimateSwitchId: remoteClimateSwitch?.entity_id || 'switch.fordpass_wf0tk1em3pma07438_ignition',
         extendClimateButtonId: 'button.fordpass_wf0tk1em3pma07438_extendremotestart',
         flashHonkDefaultButtonId: 'button.fordpass_wf0tk1em3pma07438_hafdefault',
         updateDataButtonId: 'button.fordpass_wf0tk1em3pma07438_update_data',
         requestRefreshButtonId: 'button.fordpass_wf0tk1em3pma07438_request_refresh',
         startChargingButtonId: 'button.fordpass_wf0tk1em3pma07438_evstart',
         chargeSwitchId: 'switch.fordpass_wf0tk1em3pma07438_elvehcharge',
-        autoSoftwareUpdatesSwitchId: 'switch.fordpass_wf0tk1em3pma07438_autosoftwareupdates'
+        autoSoftwareUpdatesSwitchId: 'switch.fordpass_wf0tk1em3pma07438_autosoftwareupdates',
+        climateEntityId: climateEntity?.entity_id,
+        targetSocEntityId: targetSocEntity?.entity_id,
+        chargePortEntityId: chargePortEntity?.entity_id,
+        defrostEntityId: defrostSwitch?.entity_id
       }
     };
 
     return { ...base, ...optimisticCar };
-  }, [states, resolvedZones, effectiveCarLogo, effectiveCarImage, optimisticCar]);
+  }, [states, resolvedZones, effectiveCarLogo, effectiveCarImage, optimisticCar, config.mobility?.car?.targetSocDefault]);
 
   // -------------------------------------------------------------
   // Resolving Smart E-Bike Metrics (Cowboy / Dark Avenger E-Bike)
@@ -714,6 +844,124 @@ export function useMobilityData() {
     }
   }, [carMetrics.controls.autoSoftwareUpdatesSwitchId]);
 
+  const setTargetSoc = useCallback(async (targetPercent: number) => {
+    const safeTarget = Math.max(50, Math.min(100, Math.round(targetPercent)));
+    setOptimisticCar((prev) => ({
+      ...prev,
+      targetSoc: `${safeTarget}%`,
+      targetSocPercent: safeTarget
+    }));
+
+    try {
+      // 1. Update Home Assistant select/number entity if available
+      const entityId = carMetrics.controls.targetSocEntityId;
+      if (entityId) {
+        if (entityId.startsWith('number.')) {
+          await haWebSocketService.callService('number', 'set_value', { value: safeTarget }, { entity_id: entityId });
+        } else if (entityId.startsWith('select.')) {
+          await haWebSocketService.callService('select', 'select_option', { option: `${safeTarget}%` }, { entity_id: entityId });
+        }
+      }
+
+      // 2. Persist to UserDashboardConfig and remote NAS
+      await updateConfig((prev) => ({
+        ...prev,
+        mobility: {
+          ...prev.mobility,
+          car: {
+            ...(prev.mobility?.car || {}),
+            targetSocDefault: safeTarget
+          }
+        }
+      }));
+      await flushPendingSave();
+    } catch (e) {
+      console.error('Failed to save target SoC', e);
+    }
+  }, [carMetrics.controls.targetSocEntityId, updateConfig, flushPendingSave]);
+
+  const setCabinTemperature = useCallback(async (temperature: number) => {
+    const rounded = Math.round(temperature * 2) / 2;
+    setOptimisticCar((prev) => ({
+      ...prev,
+      targetCabinTemp: rounded
+    }));
+
+    try {
+      const climateId = carMetrics.controls.climateEntityId;
+      if (climateId) {
+        await haWebSocketService.callService('climate', 'set_temperature', { temperature: rounded }, { entity_id: climateId });
+      }
+    } catch (e) {
+      console.error('Failed to set cabin temperature', e);
+    }
+  }, [carMetrics.controls.climateEntityId]);
+
+  const setClimateHvacMode = useCallback(async (mode: string) => {
+    setOptimisticCar((prev) => ({
+      ...prev,
+      climateHvacMode: mode,
+      remoteClimateActive: mode !== 'off'
+    }));
+
+    try {
+      const climateId = carMetrics.controls.climateEntityId;
+      if (climateId) {
+        await haWebSocketService.callService('climate', 'set_hvac_mode', { hvac_mode: mode }, { entity_id: climateId });
+      } else {
+        await haWebSocketService.callService('switch', mode !== 'off' ? 'turn_on' : 'turn_off', {}, { entity_id: carMetrics.controls.startClimateSwitchId });
+      }
+    } catch (e) {
+      console.error('Failed to set HVAC mode', e);
+    }
+  }, [carMetrics.controls.climateEntityId, carMetrics.controls.startClimateSwitchId]);
+
+  const toggleDefroster = useCallback(async (mode: 'front' | 'rear') => {
+    setOptimisticCar((prev) => ({
+      ...prev,
+      defrostActive: mode === 'front' ? !prev.defrostActive : prev.defrostActive,
+      rearDefrostActive: mode === 'rear' ? !prev.rearDefrostActive : prev.rearDefrostActive
+    }));
+
+    try {
+      const entityId = carMetrics.controls.defrostEntityId;
+      if (entityId) {
+        await haWebSocketService.callService('switch', 'toggle', {}, { entity_id: entityId });
+      }
+    } catch (e) {
+      console.error('Failed to toggle defrost', e);
+    }
+  }, [carMetrics.controls.defrostEntityId]);
+
+  const toggleSeatHeater = useCallback(async (seat: 'driver' | 'passenger', level: number) => {
+    setOptimisticCar((prev) => ({
+      ...prev,
+      [seat === 'driver' ? 'seatHeatingDriver' : 'seatHeatingPassenger']: level
+    }));
+  }, []);
+
+  const openChargePort = useCallback(async () => {
+    setOptimisticCar((prev) => ({
+      ...prev,
+      chargePortOpen: true
+    }));
+
+    try {
+      const entityId = carMetrics.controls.chargePortEntityId;
+      if (entityId) {
+        if (entityId.startsWith('lock.')) {
+          await haWebSocketService.callService('lock', 'unlock', {}, { entity_id: entityId });
+        } else if (entityId.startsWith('button.')) {
+          await haWebSocketService.callService('button', 'press', {}, { entity_id: entityId });
+        } else {
+          await haWebSocketService.callService('switch', 'turn_on', {}, { entity_id: entityId });
+        }
+      }
+    } catch (e) {
+      console.error('Failed to open charge port', e);
+    }
+  }, [carMetrics.controls.chargePortEntityId]);
+
   // Bike Actions
   const toggleBikeLock = useCallback(async (shouldLock: boolean) => {
     const target = bikeMetrics.controls?.lockEntityId || 'lock.cowboy_lock';
@@ -838,6 +1086,12 @@ export function useMobilityData() {
       startCharging,
       toggleChargingState,
       toggleAutoSoftwareUpdates,
+      setTargetSoc,
+      setCabinTemperature,
+      setClimateHvacMode,
+      toggleDefroster,
+      toggleSeatHeater,
+      openChargePort,
       toggleBikeLock,
       requestBikeSync,
       saveCustomAsset,

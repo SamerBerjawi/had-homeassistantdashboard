@@ -2,23 +2,27 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * Mobility & Fleet Command Center
- * Clean layout with floating AdaptiveSectionTabs, live battery and range telemetry,
- * and quick asset customization.
+ * Native Electric Vehicle & Bike Companion Dashboard
+ * Main mobility dashboard presenting all 3 sections in full uniform fidelity
+ * on both mobile and desktop viewports.
  */
 
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Car, Bicycle, Sliders } from '@phosphor-icons/react';
+import { motion } from 'motion/react';
+import {
+  Car,
+  Bicycle,
+  Sliders
+} from '@phosphor-icons/react';
 import { useMobilityData } from '../../hooks/useMobilityData';
 import { useUserConfig } from '../../contexts/ConfigContext';
-import { CarEvTab } from './mobility/CarEvTab';
+import { VehicleHeroCard } from '../mobility/VehicleHeroCard';
+import { ChargingControlCard } from '../mobility/ChargingControlCard';
+import { VehicleTelemetryMap } from '../mobility/VehicleTelemetryMap';
 import { BikeTab } from './mobility/BikeTab';
 import { VehicleCustomizerModal } from './mobility/VehicleCustomizerModal';
-import { MobilityAssetType } from '../../types/mobility';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import ViewLoadingState from '../ui/ViewLoadingState';
-import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 
 interface MobilityViewProps {
   darkMode?: boolean;
@@ -27,112 +31,171 @@ interface MobilityViewProps {
 export default function MobilityView({ darkMode = true }: MobilityViewProps) {
   const isLoading = useAutoLayoutStore((s) => s.isLoading);
   const { config } = useUserConfig();
-  const [activeSubTab, setActiveSubTab] = useState<MobilityAssetType>('car');
+  const { carMetrics, bikeMetrics, actions } = useMobilityData();
+
+  const [activeAsset, setActiveAsset] = useState<'car' | 'bike'>('car');
   const [customizerOpen, setCustomizerOpen] = useState(false);
 
-  const { carMetrics, bikeMetrics, isLiveMode, actions } = useMobilityData();
-
-  const mobilityTabs: SectionTabItem[] = useMemo(() => [
-    {
-      id: 'car',
-      label: 'Electric Vehicle',
-      icon: Car,
-      badge: `${Math.round(carMetrics.soc || 0)}%`,
-      badgeColor: (carMetrics.soc || 0) <= 20 ? 'bg-rose-500/20 text-rose-300 font-bold' : 'bg-cyan-500/20 text-cyan-300 font-bold'
-    },
-    {
-      id: 'bike',
-      label: 'Cowboy E-Bike',
-      icon: Bicycle,
-      badge: `${Math.round(bikeMetrics.batteryPercent || 0)}%`,
-      badgeColor: (bikeMetrics.batteryPercent || 0) <= 20 ? 'bg-rose-500/20 text-rose-300 font-bold' : 'bg-amber-500/20 text-amber-300 font-bold'
-    }
-  ], [carMetrics.soc, bikeMetrics.batteryPercent]);
+  const hasBikeConfigured = useMemo(() => {
+    return Boolean(
+      config.mobility?.bike?.customName ||
+      config.mobility?.bike?.bikeImageUrl ||
+      (bikeMetrics && bikeMetrics.batteryPercent > 0)
+    );
+  }, [config.mobility?.bike, bikeMetrics]);
 
   if (isLoading) {
     return (
       <ViewLoadingState
-        title="Loading Mobility & Fleet..."
-        subtitle="Connecting to electric vehicle and smart bike telemetry"
+        title="Connecting to Vehicle Telemetry..."
+        subtitle="Retrieving battery state of charge, range estimate, and GPS coordinates"
         darkMode={darkMode}
       />
     );
   }
 
   return (
-    <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-24 md:pb-8">
-      {/* Top Controls: Floating Switcher & Customize Button */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <AdaptiveSectionTabs
-          tabs={mobilityTabs}
-          activeTab={activeSubTab}
-          onChange={(tab) => setActiveSubTab(tab as MobilityAssetType)}
-          darkMode={darkMode}
-        />
+    <div className="w-full flex-1 flex flex-col gap-3 sm:gap-4 animate-fadeIn -mt-2 sm:-mt-4 pb-12">
+      {/* Top Header Bar: Tab Selector with Icon-only Customize button right next to it (No Fleet Badge) */}
+      <header className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          {/* Top Asset Switcher ("Electric Car" & "Electric Bike") */}
+          {hasBikeConfigured ? (
+            <div
+              className={`p-1 rounded-2xl flex items-center gap-1 backdrop-blur-md transition-all shadow-inner ${
+                darkMode ? 'bg-slate-900/80' : 'bg-slate-200/80'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setActiveAsset('car')}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeAsset === 'car'
+                    ? darkMode
+                      ? 'bg-cyan-500 text-slate-950 font-black shadow-md shadow-cyan-500/20'
+                      : 'bg-cyan-600 text-white font-black shadow-md'
+                    : darkMode
+                    ? 'text-slate-400 hover:text-white'
+                    : 'text-slate-700 hover:text-slate-950'
+                }`}
+              >
+                <Car size={16} weight={activeAsset === 'car' ? 'fill' : 'bold'} />
+                <span>Electric Car</span>
+                <span className="text-[10px] font-mono opacity-85">
+                  {Math.round(carMetrics.soc)}%
+                </span>
+              </button>
 
-        <div className="flex items-center gap-2.5 ml-auto">
-          <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>{isLiveMode ? 'Live Fleet' : 'Fleet Simulation'}</span>
-          </div>
+              <button
+                type="button"
+                onClick={() => setActiveAsset('bike')}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeAsset === 'bike'
+                    ? darkMode
+                      ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20'
+                      : 'bg-amber-600 text-white font-black shadow-md'
+                    : darkMode
+                    ? 'text-slate-400 hover:text-white'
+                    : 'text-slate-700 hover:text-slate-950'
+                }`}
+              >
+                <Bicycle size={16} weight={activeAsset === 'bike' ? 'fill' : 'bold'} />
+                <span>Electric Bike</span>
+                <span className="text-[10px] font-mono opacity-85">
+                  {Math.round(bikeMetrics.batteryPercent)}%
+                </span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                  darkMode ? 'bg-cyan-500/15 text-cyan-400' : 'bg-cyan-100 text-cyan-800'
+                }`}
+              >
+                <Car size={18} weight="duotone" />
+              </div>
+              <h1 className={`text-base sm:text-lg font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                Electric Car
+              </h1>
+            </div>
+          )}
 
+          {/* Customize Button (Icon only, directly next to tab selector) */}
           <button
             type="button"
             onClick={() => setCustomizerOpen(true)}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl text-xs font-bold border transition-all cursor-pointer ${
+            aria-label="Customize vehicle specs and photos"
+            title="Customize"
+            className={`p-2 rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-xs ${
               darkMode
-                ? 'bg-black/40 hover:bg-white/10 border-white/10 text-white'
-                : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-900 shadow-xs'
+                ? 'bg-slate-900/80 hover:bg-white/10 text-cyan-400'
+                : 'bg-white hover:bg-slate-100 text-cyan-600'
             }`}
           >
-            <Sliders size={14} weight="bold" className="text-cyan-500 dark:text-cyan-400" />
-            <span>Customize</span>
+            <Sliders size={18} weight="bold" />
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Animated Sub-View Content */}
-      <AnimatePresence mode="wait">
-        {activeSubTab === 'car' ? (
-          <motion.div
-            key="car"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="w-full flex-1"
-          >
-            <CarEvTab
+      {/* Main Content: Both Mobile & Desktop maintain the exact same rich layout */}
+      {activeAsset === 'bike' ? (
+        <motion.div
+          key="bike-view"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.25 }}
+          className="w-full flex-1"
+        >
+          <BikeTab
+            metrics={bikeMetrics}
+            actions={actions}
+            onOpenCustomizer={() => setCustomizerOpen(true)}
+            darkMode={darkMode}
+          />
+        </motion.div>
+      ) : (
+        /* ========================================================================= */
+        /* ALL 3 SECTIONS: Maintaining identical layout on Mobile & Desktop           */
+        /* Desktop: 3-column panoramic grid (equal height).                          */
+        /* Mobile: 3 stacked full-featured sections with optimized mobile padding.   */
+        /* ========================================================================= */
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">
+          {/* Column 1: Automotive Hero, 40/60 Bento Cockpit & Action Dock */}
+          <div className="lg:col-span-4 h-full flex flex-col">
+            <VehicleHeroCard
               metrics={carMetrics}
               actions={actions}
               onOpenCustomizer={() => setCustomizerOpen(true)}
               darkMode={darkMode}
             />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="bike"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="w-full flex-1"
-          >
-            <BikeTab
-              metrics={bikeMetrics}
+          </div>
+
+          {/* Column 2: High-Voltage Charging, SoC Arc Gauge, Slider & Controls */}
+          <div className="lg:col-span-4 h-full flex flex-col">
+            <ChargingControlCard
+              metrics={carMetrics}
               actions={actions}
-              onOpenCustomizer={() => setCustomizerOpen(true)}
               darkMode={darkMode}
             />
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
 
-      {/* Custom Asset Uploader Modal */}
+          {/* Column 3: GPS Mini-Map HUD, 24h Speed History & TPMS Visualizer */}
+          <div className="lg:col-span-4 h-full flex flex-col">
+            <VehicleTelemetryMap
+              metrics={carMetrics}
+              darkMode={darkMode}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Vehicle & Asset Customizer Modal */}
       <VehicleCustomizerModal
         isOpen={customizerOpen}
         onClose={() => setCustomizerOpen(false)}
-        target={activeSubTab}
+        target={activeAsset}
         currentCarName={config.mobility?.car?.customName}
         currentCarTargetSoc={config.mobility?.car?.targetSocDefault}
         currentCarBatteryCapacity={config.mobility?.car?.batteryCapacityKwh}
