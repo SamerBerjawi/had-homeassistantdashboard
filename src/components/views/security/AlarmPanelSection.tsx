@@ -197,7 +197,7 @@ export default function AlarmPanelSection({
         ? 'from-slate-800/40 to-slate-900/40 bg-slate-900/70'
         : 'from-white to-slate-50/80 bg-white/95',
       text: darkMode ? 'text-amber-400' : 'text-amber-800',
-      glow: darkMode ? 'shadow-[0_20px_50px_rgba(0,0,0,0.5)]' : 'shadow-xl shadow-slate-200/80',
+      glow: 'shadow-[4px_6px_12px_rgba(0,0,0,0.15)]',
       badge: 'bg-amber-500 text-slate-950 font-black',
       title: 'DISARMED',
       desc: 'Standby mode. All sensors active in telemetry-only monitoring.'
@@ -211,7 +211,7 @@ export default function AlarmPanelSection({
       {/* Section Header with Partition Selector */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-1">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
             <ShieldCheck size={18} weight="duotone" />
           </div>
           <div>
@@ -245,7 +245,7 @@ export default function AlarmPanelSection({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         
         {/* LEFT COLUMN: Status Visualizer & Mode Switcher (7 cols) */}
-        <div className={`lg:col-span-7 p-6 sm:p-8 rounded-3xl backdrop-blur-xl overflow-hidden isolate transition-all flex flex-col justify-between bg-gradient-to-br ${
+        <div className={`lg:col-span-7 p-6 sm:p-8 rounded-3xl backdrop-blur-sm overflow-hidden isolate transition-all flex flex-col justify-between bg-gradient-to-br ${
           statusConfig.bg
         } ${statusConfig.glow}`}>
           
@@ -449,10 +449,10 @@ export default function AlarmPanelSection({
         </div>
 
         {/* RIGHT COLUMN: Interactive Security PIN Keypad (5 cols) */}
-        <div className={`lg:col-span-5 p-6 rounded-3xl backdrop-blur-2xl overflow-hidden isolate flex flex-col justify-between ${
+        <div className={`lg:col-span-5 p-6 rounded-3xl backdrop-blur-sm overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-col justify-between ${
           darkMode
-            ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
-            : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80'
+            ? 'bg-black/20 text-white'
+            : 'bg-white/20 text-slate-900'
         }`}>
           <div>
             <div className="flex items-center justify-between mb-4">

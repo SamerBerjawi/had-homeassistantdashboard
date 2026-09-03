@@ -170,7 +170,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
 
           {/* Multi-Device Picker Pill (if >1 device found) */}
           {devices.length > 1 && (
-            <div className="relative inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/95 dark:bg-white/5 text-slate-800 dark:text-slate-200 shadow-sm">
+            <div className="relative inline-flex items-center gap-1 px-3 py-1.5 rounded-2xl text-xs font-bold bg-white/20 dark:bg-black/20 text-slate-800 dark:text-slate-200 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
               <DeviceMobile size={15} weight="duotone" className="text-[#FF2D55]" />
               <select
                 value={selectedDeviceId}
@@ -190,7 +190,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
         {/* Right: Time-Range Filter & Refresh */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Time Range Selector */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-white/90 dark:bg-white/5 shadow-sm">
+          <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
             <CalendarBlank size={14} weight="bold" className="text-slate-400 ml-1.5 mr-0.5 hidden sm:inline" />
             {timeRanges.map((range) => {
               const isSelected = timeRange === range.id;
@@ -199,7 +199,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
                   key={range.id}
                   type="button"
                   onClick={() => setTimeRange(range.id)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     isSelected
                       ? 'bg-gradient-to-r from-[#FF2D55] to-[#FF5E3A] text-white shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -217,7 +217,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
             onClick={refreshHistory}
             disabled={isLoadingHistory}
             title="Refresh Health Telemetry"
-            className="p-2 rounded-xl bg-white/90 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 transition-all cursor-pointer disabled:opacity-50 shadow-sm"
+            className="p-2 rounded-2xl bg-white/20 hover:bg-white/30 dark:bg-black/20 dark:hover:bg-black/30 text-slate-700 dark:text-slate-300 backdrop-blur-sm transition-all cursor-pointer disabled:opacity-50 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]"
           >
             <ArrowClockwise
               size={16}

@@ -61,7 +61,7 @@ export default function BackupRestoreSection({
     <div className="space-y-6 w-full animate-in fade-in duration-300 pb-24 md:pb-6">
       {/* Primary Export & Import Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div className="p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4 flex flex-col justify-between shadow-xs">
+        <div className="p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-4 flex flex-col justify-between overflow-hidden isolate">
           <div>
             <div className="w-10 h-10 rounded-xl bg-sky-500/15 text-sky-500 flex items-center justify-center mb-3">
               <DownloadSimple size={22} weight="duotone" />
@@ -83,7 +83,7 @@ export default function BackupRestoreSection({
           </button>
         </div>
 
-        <div className="p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4 flex flex-col justify-between shadow-xs">
+        <div className="p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-4 flex flex-col justify-between overflow-hidden isolate">
           <div>
             <div className="w-10 h-10 rounded-xl bg-indigo-500/15 text-indigo-500 flex items-center justify-center mb-3">
               <UploadSimple size={22} weight="duotone" />
@@ -110,7 +110,7 @@ export default function BackupRestoreSection({
       </div>
 
       {/* Local Storage Snapshots Manager */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4 shadow-xs">
+      <div className="p-5 sm:p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-4 overflow-hidden isolate">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 border-slate-200 dark:border-white/10">
           <div>
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
@@ -181,7 +181,7 @@ export default function BackupRestoreSection({
       </div>
 
       {/* Factory Reset Card */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-rose-500/10 border border-rose-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="p-5 sm:p-6 rounded-3xl bg-rose-500/10 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden isolate">
         <div>
           <h4 className="text-sm font-bold text-rose-700 dark:text-rose-300 flex items-center gap-2">
             <Warning size={18} weight="duotone" /> Factory Reset Dashboard

@@ -126,14 +126,14 @@ export default function AreaTile({
       style={{
         clipPath: 'inset(0 round 1.5rem)',
       }}
-      className={`group relative flex flex-col justify-between rounded-3xl p-4 sm:p-5 backdrop-blur-xl transition-all duration-300 cursor-pointer overflow-hidden isolate ${
+      className={`group relative flex flex-col justify-between rounded-3xl p-4 sm:p-5 backdrop-blur-sm transition-all duration-300 cursor-pointer overflow-hidden isolate ${
         isHazardActive
           ? darkMode
-            ? 'bg-rose-950/60 text-white shadow-xl shadow-rose-950/40'
-            : 'bg-rose-100 text-rose-950 shadow-xl shadow-rose-200/60'
+            ? 'bg-rose-950/60 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'
+            : 'bg-rose-100 text-rose-950 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'
           : darkMode
-          ? 'bg-slate-900/70 hover:bg-slate-900/85 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
-          : 'bg-white/95 hover:bg-white text-slate-900 shadow-xl shadow-slate-200/80 hover:shadow-2xl'
+          ? 'bg-black/20 hover:bg-black/30 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'
+          : 'bg-white/20 hover:bg-white/30 text-slate-900 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'
       }`}
     >
       {/* Background ambient room picture with corner-bleed protection */}
@@ -232,8 +232,8 @@ export default function AreaTile({
               title="Click to view temperature & humidity history"
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold backdrop-blur-md cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-xs ${
                 darkMode
-                  ? 'bg-white/5 text-slate-200 hover:bg-white/10'
-                  : 'bg-slate-100/90 text-slate-800 hover:bg-slate-200'
+                  ? 'bg-white/[0.04] text-slate-200 hover:bg-white/[0.08]'
+                  : 'bg-slate-900/[0.03] text-slate-800 hover:bg-slate-900/[0.06]'
               }`}
             >
               {sensors.temperature !== undefined && (

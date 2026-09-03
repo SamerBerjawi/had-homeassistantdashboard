@@ -111,14 +111,14 @@ export default function MediaHierarchyPlayerCard({
       style={{
         clipPath: 'inset(0 round 1.5rem)',
       }}
-      className={`group relative flex flex-col justify-between p-4 rounded-3xl backdrop-blur-2xl transition-all duration-200 cursor-pointer overflow-hidden isolate ${
+      className={`group relative flex flex-col justify-between p-4 rounded-3xl backdrop-blur-sm transition-all duration-200 cursor-pointer overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
         isPlaying
           ? darkMode
-            ? 'bg-purple-950/60 text-white shadow-xl shadow-purple-950/40'
-            : 'bg-purple-50/95 text-slate-900 shadow-xl shadow-purple-200/60'
+            ? 'bg-purple-950/60 text-white'
+            : 'bg-purple-50/95 text-slate-900'
           : darkMode
-          ? 'bg-slate-900/70 hover:bg-slate-900/85 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
-          : 'bg-white/95 hover:bg-white text-slate-900 shadow-xl shadow-slate-200/80 hover:shadow-2xl'
+          ? 'bg-black/20 hover:bg-black/30 text-white'
+          : 'bg-white/20 hover:bg-white/30 text-slate-900'
       }`}
     >
       {/* Top Row: Thumbnail + Details + Badges */}

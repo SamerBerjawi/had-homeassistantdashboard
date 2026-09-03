@@ -185,7 +185,7 @@ export default function SettingsHub({
         {/* Mobile Profile Card */}
         <div 
           onClick={() => onSelectCategory('user_profile')}
-          className="p-4 rounded-3xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-between shadow-xs cursor-pointer active:scale-98 transition-all"
+          className="p-4 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex items-center justify-between cursor-pointer active:scale-98 transition-all"
         >
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="w-12 h-12 rounded-2xl bg-linear-to-tr from-sky-500 to-indigo-600 text-white font-black text-lg flex items-center justify-center shadow-md shadow-sky-500/20 shrink-0">
@@ -210,12 +210,12 @@ export default function SettingsHub({
         </div>
 
         {/* Mobile Edit Mode Card */}
-        <div className="p-4 rounded-3xl bg-linear-to-r from-sky-500/15 via-indigo-500/10 to-purple-500/15 border border-sky-500/30 flex items-center justify-between shadow-xs">
+        <div className="p-4 rounded-3xl bg-gradient-to-r from-sky-500/15 via-indigo-500/10 to-purple-500/15 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex items-center justify-between">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-xs shrink-0 transition-colors ${
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xs shrink-0 transition-colors ${
               isEditMode 
-                ? 'bg-sky-500 text-white border-sky-400 shadow-sky-500/30' 
-                : 'bg-sky-500/20 text-sky-400 border-sky-500/30'
+                ? 'bg-sky-500 text-white shadow-sky-500/30' 
+                : 'bg-sky-500/20 text-sky-400'
             }`}>
               <PencilSimpleLine size={24} weight="duotone" className={isEditMode ? 'animate-pulse' : ''} />
             </div>
@@ -224,27 +224,31 @@ export default function SettingsHub({
                 <h3 className="text-base font-black text-slate-900 dark:text-white truncate">
                   Dashboard Edit Mode
                 </h3>
-                {isEditMode && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-sky-500 text-white animate-pulse">
-                    Live
-                  </span>
-                )}
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-tight flex items-center gap-1 ${
+                  isEditMode
+                    ? 'bg-sky-500 text-white animate-pulse'
+                    : 'bg-slate-900/[0.04] dark:bg-white/10 text-slate-600 dark:text-slate-300'
+                }`}>
+                  {isEditMode ? 'ACTIVE' : 'OFF'}
+                </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                {isEditMode ? 'Exit button floating across dashboard' : 'Drag, resize & toggle tile visibility'}
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                Reorder cards, resize tiles, manage ghosts
               </p>
             </div>
           </div>
+
+          {/* Toggle Switch */}
           <button
             type="button"
             onClick={toggleEditMode}
             className={`relative inline-flex h-7 w-13 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-              isEditMode ? 'bg-sky-500' : darkMode ? 'bg-white/20' : 'bg-slate-300'
+              isEditMode ? 'bg-sky-500' : 'bg-slate-300 dark:bg-slate-700'
             }`}
           >
             <span
-              className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                isEditMode ? 'translate-x-6' : 'translate-x-0'
+              className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                isEditMode ? 'translate-x-6' : 'translate-x-0.5'
               }`}
             />
           </button>
@@ -255,14 +259,14 @@ export default function SettingsHub({
           <div className="text-xs font-bold uppercase tracking-wider text-slate-400 px-3">
             Dashboard & Living Space
           </div>
-          <div className="rounded-3xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/5 shadow-xs">
+          <div className="rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] overflow-hidden divide-y divide-slate-900/[0.05] dark:divide-white/5">
             {/* Device Visibility Row */}
             <div
               onClick={() => onSelectCategory('devices_rooms')}
               className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 dark:active:bg-white/10 transition-colors"
             >
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                   <SlidersHorizontal size={20} weight="duotone" />
                 </div>
                 <div className="min-w-0">
@@ -292,7 +296,7 @@ export default function SettingsHub({
               className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 dark:active:bg-white/10 transition-colors"
             >
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-10 h-10 rounded-2xl bg-purple-500/15 border border-purple-500/30 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
                   <Palette size={20} weight="duotone" />
                 </div>
                 <div className="min-w-0">
@@ -319,14 +323,14 @@ export default function SettingsHub({
           <div className="text-xs font-bold uppercase tracking-wider text-slate-400 px-3">
             Connectivity & Core Server
           </div>
-          <div className="rounded-3xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/5 shadow-xs">
+          <div className="rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] overflow-hidden divide-y divide-slate-900/[0.05] dark:divide-white/5">
             {/* Connection Status Row */}
             <div
               onClick={() => onSelectCategory('connection_websocket')}
               className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 dark:active:bg-white/10 transition-colors"
             >
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                   <WifiHigh size={20} weight="duotone" />
                 </div>
                 <div className="min-w-0">
@@ -356,7 +360,7 @@ export default function SettingsHub({
               className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 dark:active:bg-white/10 transition-colors"
             >
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                   <DownloadSimple size={20} weight="duotone" />
                 </div>
                 <div className="min-w-0">
@@ -384,12 +388,12 @@ export default function SettingsHub({
       {/* ========================================================================= */}
       <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Desktop Edit Mode Hero Banner */}
-        <div className="md:col-span-2 lg:col-span-3 p-5 sm:p-6 rounded-3xl border border-sky-500/30 bg-linear-to-r from-sky-500/10 via-indigo-500/10 to-purple-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs relative overflow-hidden">
+        <div className="md:col-span-2 lg:col-span-3 p-5 sm:p-6 rounded-3xl backdrop-blur-sm bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-purple-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] relative overflow-hidden isolate">
           <div className="flex items-center gap-4 min-w-0 relative z-10">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-md shrink-0 transition-all ${
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-md shrink-0 transition-all ${
               isEditMode 
-                ? 'bg-sky-500 text-white border-sky-400 shadow-sky-500/30 ring-4 ring-sky-500/20' 
-                : 'bg-sky-500/15 text-sky-400 border-sky-500/30'
+                ? 'bg-sky-500 text-white shadow-sky-500/30 ring-4 ring-sky-500/20' 
+                : 'bg-sky-500/15 text-sky-400'
             }`}>
               <PencilSimpleLine size={28} weight="duotone" className={isEditMode ? 'animate-bounce' : ''} />
             </div>
@@ -398,10 +402,10 @@ export default function SettingsHub({
                 <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
                   Dashboard Edit & Layout Mode
                 </h3>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-tight border flex items-center gap-1.5 shadow-2xs ${
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-tight flex items-center gap-1.5 shadow-2xs ${
                   isEditMode
-                    ? 'bg-sky-500 text-white border-sky-400 animate-pulse'
-                    : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10'
+                    ? 'bg-sky-500 text-white animate-pulse'
+                    : 'bg-slate-900/[0.04] dark:bg-white/10 text-slate-600 dark:text-slate-300'
                 }`}>
                   {isEditMode ? '● EDITING ACTIVE' : 'INACTIVE'}
                 </span>
@@ -442,11 +446,11 @@ export default function SettingsHub({
               whileHover={{ y: -2, transition: { duration: 0.15 } }}
               whileTap={{ scale: 0.99 }}
               onClick={() => onSelectCategory(cat.id)}
-              className={`group relative rounded-3xl border p-5 sm:p-6 flex flex-col justify-between cursor-pointer transition-all duration-200 shadow-xs ${
+              className={`group relative rounded-3xl backdrop-blur-sm p-5 sm:p-6 flex flex-col justify-between cursor-pointer transition-all duration-200 overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
                 darkMode
-                  ? 'bg-slate-900/60 border-white/10 hover:bg-slate-900/80 hover:shadow-lg hover:shadow-black/40'
-                  : 'bg-white/90 border-slate-200 hover:bg-white hover:shadow-md hover:shadow-slate-200/50'
-              } ${cat.borderColor} ${isHighlight ? 'md:col-span-2 lg:col-span-1' : ''}`}
+                  ? 'bg-black/20 hover:bg-black/30 text-white'
+                  : 'bg-white/20 hover:bg-white/30 text-slate-900'
+              } ${isHighlight ? 'md:col-span-2 lg:col-span-1' : ''}`}
             >
               {/* Subtle Ambient Accent */}
               <div
@@ -457,22 +461,22 @@ export default function SettingsHub({
                 {/* Header Row: Icon & Status Badge */}
                 <div className="flex items-center justify-between gap-3">
                   <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-xs transition-transform group-hover:scale-105 ${
-                      darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xs transition-transform group-hover:scale-105 ${
+                      darkMode ? 'bg-white/5' : 'bg-slate-900/[0.04]'
                     }`}
                   >
                     <Icon size={26} weight="duotone" className={cat.accentColor} />
                   </div>
 
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-bold tracking-tight border flex items-center gap-1.5 shadow-2xs ${
+                    className={`px-3 py-1 rounded-full text-xs font-bold tracking-tight flex items-center gap-1.5 shadow-2xs ${
                       cat.badgeType === 'success'
-                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
                         : cat.badgeType === 'warning'
-                          ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                          ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
                           : cat.badgeType === 'info'
-                            ? 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30'
-                            : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10'
+                            ? 'bg-sky-500/15 text-sky-700 dark:text-sky-400'
+                            : 'bg-slate-900/[0.04] dark:bg-white/10 text-slate-600 dark:text-slate-300'
                     }`}
                   >
                     {cat.badgeType === 'success' && <CheckCircle size={13} weight="bold" />}
@@ -493,7 +497,7 @@ export default function SettingsHub({
                   {cat.metrics.map((m, i) => (
                     <div
                       key={i}
-                      className="p-2 rounded-xl bg-slate-100/70 dark:bg-white/3 border border-slate-200/80 dark:border-white/5 text-center min-w-0"
+                      className="p-2 rounded-xl bg-slate-900/[0.03] dark:bg-white/[0.04] text-center min-w-0"
                     >
                       <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase truncate">
                         {m.label}
@@ -507,15 +511,15 @@ export default function SettingsHub({
               </div>
 
               {/* Bottom Action Row */}
-              <div className="relative pt-4 mt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+              <div className="relative pt-4 mt-3 border-t border-slate-900/[0.05] dark:border-white/5 flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
                   Configure
                 </span>
                 <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all duration-150 group-hover:translate-x-1 ${
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150 group-hover:translate-x-1 ${
                     darkMode
-                      ? 'bg-white/5 border-white/10 text-white group-hover:bg-sky-500 group-hover:border-sky-400'
-                      : 'bg-slate-100 border-slate-200 text-slate-800 group-hover:bg-sky-500 group-hover:text-white group-hover:border-sky-400'
+                      ? 'bg-white/5 text-white group-hover:bg-sky-500'
+                      : 'bg-slate-900/[0.04] text-slate-800 group-hover:bg-sky-500 group-hover:text-white'
                   }`}
                 >
                   <ArrowRight size={13} weight="bold" />

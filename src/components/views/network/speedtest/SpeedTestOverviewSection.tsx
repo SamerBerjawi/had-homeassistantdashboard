@@ -34,16 +34,16 @@ export const SpeedTestOverviewSection: React.FC<SpeedTestOverviewSectionProps> =
   darkMode = true
 }) => {
   const cardStyle =
-    'rounded-3xl backdrop-blur-2xl transition-all p-5 sm:p-6 ' +
+    'rounded-3xl backdrop-blur-sm transition-all overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] p-4 sm:p-5 ' +
     (darkMode
-      ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
-      : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80');
+      ? 'bg-black/20 text-white'
+      : 'bg-white/20 text-slate-900');
 
   const tileStyle =
-    'p-3.5 rounded-2xl backdrop-blur-xl transition-all ' +
+    'p-3.5 rounded-2xl backdrop-blur-sm transition-all ' +
     (darkMode
       ? 'bg-white/[0.04] text-white hover:bg-white/[0.07]'
-      : 'bg-slate-100/90 text-slate-900 shadow-xs hover:bg-slate-200/80');
+      : 'bg-slate-900/[0.03] text-slate-900 hover:bg-slate-900/[0.06]');
 
   // Bufferbloat grade styling helper
   const getGradeColor = (grade: string) => {

@@ -77,10 +77,10 @@ export default function DetailsRightDrawer({
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 32, stiffness: 340, mass: 0.8 }}
-              className={`pointer-events-auto w-full sm:w-[480px] lg:w-[540px] xl:w-[580px] h-full backdrop-blur-3xl shadow-2xl flex flex-col overflow-hidden transition-colors ${
+              className={`pointer-events-auto w-full sm:w-[480px] lg:w-[540px] xl:w-[580px] h-full backdrop-blur-md shadow-2xl flex flex-col overflow-hidden transition-colors ${
                 darkMode
-                  ? 'bg-slate-950/95 text-white shadow-black/90'
-                  : 'bg-white/95 text-slate-900 shadow-2xl'
+                  ? 'bg-slate-950/85 text-white shadow-black/90'
+                  : 'bg-white/85 text-slate-900 shadow-2xl'
               }`}
             >
               {/* Top Mobile Grab Handle */}

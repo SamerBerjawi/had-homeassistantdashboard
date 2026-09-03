@@ -93,51 +93,51 @@ button, a, input, select, textarea, [role="button"], [tabindex] {
 @layer utilities {
   /* Frosted Glassmorphism Tokens: Elevated Borderless Glass & Contrast */
   .glass-depth-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.20);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: none;
     border-radius: 24px;
     clip-path: inset(0 round 24px);
     -webkit-clip-path: inset(0 round 24px);
-    box-shadow: 0 20px 40px -15px rgba(226, 232, 240, 0.9), 0 4px 16px rgba(0, 0, 0, 0.04);
+    box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
     isolation: isolate;
   }
   .dark .glass-depth-card {
-    background: rgba(15, 23, 42, 0.70);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(0, 0, 0, 0.20);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: none;
     border-radius: 24px;
     clip-path: inset(0 round 24px);
     -webkit-clip-path: inset(0 round 24px);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
     isolation: isolate;
   }
 
   .apple-glass-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.20);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: none;
     border-radius: 24px;
     clip-path: inset(0 round 24px);
     -webkit-clip-path: inset(0 round 24px);
-    box-shadow: 0 20px 40px -15px rgba(226, 232, 240, 0.9), 0 4px 16px rgba(0, 0, 0, 0.04);
+    box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
     isolation: isolate;
   }
   .dark .apple-glass-card {
-    background: rgba(15, 23, 42, 0.70);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(0, 0, 0, 0.20);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: none;
     border-radius: 24px;
     clip-path: inset(0 round 24px);
     -webkit-clip-path: inset(0 round 24px);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
     isolation: isolate;
   }
@@ -210,25 +210,46 @@ button, a, input, select, textarea, [role="button"], [tabindex] {
 
   /* Refined Glassmorphism Tiers with Compact Backdrop Blurs */
   .glass-card-sm {
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(255, 255, 255, 0.20);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: none;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
+  }
+  .dark .glass-card-sm {
+    background: rgba(0, 0, 0, 0.20);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: none;
+    box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
   }
   .glass-card-md {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.20);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: none;
-    box-shadow: 0 16px 36px -8px rgba(226, 232, 240, 0.8), 0 4px 16px rgba(0, 0, 0, 0.04);
+    box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
+  }
+  .dark .glass-card-md {
+    background: rgba(0, 0, 0, 0.20);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: none;
+    box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
   }
   .glass-card-lg {
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.20);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: none;
-    box-shadow: 0 24px 48px -12px rgba(226, 232, 240, 0.9), 0 4px 20px rgba(0, 0, 0, 0.05);
+    box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
+  }
+  .dark .glass-card-lg {
+    background: rgba(0, 0, 0, 0.20);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: none;
+    box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
   }
   .glass-sidebar {
     background: rgba(255, 255, 255, 0.65);

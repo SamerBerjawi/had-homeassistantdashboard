@@ -233,12 +233,12 @@ export default function EntityCustomizerModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 12 }}
           transition={{ type: 'spring', damping: 26, stiffness: 350 }}
-          className="relative w-full max-w-lg p-5 sm:p-6 bg-slate-900 border border-white/15 rounded-3xl shadow-2xl backdrop-blur-2xl text-slate-100 space-y-5 isolate z-10"
+          className="relative w-full max-w-lg p-5 sm:p-6 bg-slate-900/85 rounded-3xl shadow-[4px_6px_20px_rgba(0,0,0,0.35)] backdrop-blur-md text-slate-100 space-y-5 isolate z-10"
         >
           {/* Header */}
           <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-2xl bg-sky-500/15 text-sky-400 border border-sky-500/30 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
                 <DynamicPhosphorIcon name={customIcon || defaultIcon || 'SlidersHorizontal'} size={22} weight="duotone" />
               </div>
               <div className="min-w-0">
@@ -254,7 +254,7 @@ export default function EntityCustomizerModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+              className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
             >
               <X size={16} weight="bold" />
             </button>
@@ -262,7 +262,7 @@ export default function EntityCustomizerModal({
 
           {/* Location details */}
           {(areaName || floorName) && (
-            <div className="p-3 rounded-2xl bg-white/4 border border-white/8 flex items-center gap-2 text-xs text-slate-400 font-medium">
+            <div className="p-3 rounded-2xl bg-white/5 flex items-center gap-2 text-xs text-slate-400 font-medium">
               <MapPin size={15} weight="duotone" className="text-sky-400 shrink-0" />
               <span>Assigned to:</span>
               <strong className="text-white font-bold">{areaName || 'Unassigned Area'}</strong>
@@ -319,7 +319,7 @@ export default function EntityCustomizerModal({
             />
 
             {/* Visibility Toggle */}
-            <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between gap-3">
+            <div className="p-3.5 rounded-2xl bg-white/5 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <span className="text-xs sm:text-sm font-bold text-white block">
                   Dashboard Visibility
@@ -331,10 +331,10 @@ export default function EntityCustomizerModal({
               <button
                 type="button"
                 onClick={() => setIsHidden(!isHidden)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   !isHidden
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
-                    : 'bg-white/10 text-slate-400 border-white/15'
+                    ? 'bg-emerald-500/20 text-emerald-300 shadow-xs'
+                    : 'bg-white/10 text-slate-400'
                 }`}
               >
                 {!isHidden ? <Eye size={15} weight="bold" /> : <EyeSlash size={15} weight="bold" />}

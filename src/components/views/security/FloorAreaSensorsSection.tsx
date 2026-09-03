@@ -184,8 +184,8 @@ export default function FloorAreaSensorsSection({
 
         {/* Quick Search */}
         <div
-          className={`relative flex items-center px-3 py-1.5 rounded-2xl text-xs sm:ml-auto shadow-sm ${
-            darkMode ? 'bg-black/40 text-white' : 'bg-white/95 text-slate-900'
+          className={`relative flex items-center px-3 py-1.5 rounded-2xl text-xs sm:ml-auto backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+            darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
           }`}
         >
           <MagnifyingGlass size={15} className="text-slate-400 mr-2 shrink-0" />
@@ -203,8 +203,8 @@ export default function FloorAreaSensorsSection({
       <div className="space-y-6">
         {filteredAreas.length === 0 ? (
           <div
-            className={`p-8 rounded-3xl text-center backdrop-blur-md shadow-md ${
-              darkMode ? 'bg-slate-900/60 text-slate-400' : 'bg-white/95 text-slate-800 shadow-slate-200/80'
+            className={`p-8 rounded-3xl text-center backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+              darkMode ? 'bg-black/20 text-slate-300' : 'bg-white/20 text-slate-700'
             }`}
           >
             <p className="text-sm font-semibold">No security sensors found for this filter.</p>

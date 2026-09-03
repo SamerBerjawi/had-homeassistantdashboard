@@ -59,8 +59,8 @@ export const AdaptiveSectionTabs: React.FC<AdaptiveSectionTabsProps> = ({
                     ? 'bg-sky-500 text-slate-950 shadow-lg shadow-sky-500/25 font-black'
                     : 'bg-sky-500 text-slate-950 shadow-md shadow-sky-500/25 font-black'
                   : darkMode
-                  ? 'bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white'
-                  : 'bg-white/95 hover:bg-white text-slate-800 hover:text-slate-950 shadow-sm hover:shadow-md'
+                  ? 'bg-black/20 hover:bg-black/30 text-white/80 hover:text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'
+                  : 'bg-white/20 hover:bg-white/30 text-slate-800 hover:text-slate-950 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'
               }`}
             >
               {/* Icon rendering */}

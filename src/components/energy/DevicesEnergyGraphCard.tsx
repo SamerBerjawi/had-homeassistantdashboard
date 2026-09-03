@@ -85,10 +85,10 @@ export default function DevicesEnergyGraphCard({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 backdrop-blur-2xl transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate ${
+      className={`w-full rounded-3xl p-5 sm:p-6 backdrop-blur-sm transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
         darkMode
-          ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
-          : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80'
+          ? 'bg-black/20 text-white'
+          : 'bg-white/20 text-slate-900'
       }`}
     >
       {/* Ambient Glow with strict containment */}

@@ -41,7 +41,7 @@ export default function ThemeCustomizationSection({
   return (
     <div className="space-y-5 w-full animate-in fade-in duration-200">
       {/* 1. Visual Mode Selector: Auto vs Dark vs Light */}
-      <div className="p-4 sm:p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3 shadow-xs">
+      <div className="p-4 sm:p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-3 overflow-hidden isolate">
         <div>
           <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Appearance & Visual Mode
@@ -133,7 +133,7 @@ export default function ThemeCustomizationSection({
       </div>
 
       {/* 2. Background Style Selector: Background Glow vs Flat */}
-      <div className="p-4 sm:p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3 shadow-xs">
+      <div className="p-4 sm:p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-3 overflow-hidden isolate">
         <div>
           <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Background Style
@@ -207,7 +207,7 @@ export default function ThemeCustomizationSection({
       </div>
 
       {/* 3. Weather Backdrop Simulation */}
-      <div className="p-4 sm:p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3 shadow-xs">
+      <div className="p-4 sm:p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-3 overflow-hidden isolate">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CloudSun size={20} weight="duotone" className="text-amber-500" />

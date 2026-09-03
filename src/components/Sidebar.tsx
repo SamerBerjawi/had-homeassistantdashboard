@@ -138,8 +138,8 @@ export default function Sidebar({
           isCollapsed ? 'w-20 items-center' : 'w-64'
         } ${
           darkMode 
-            ? 'bg-slate-950/70 backdrop-blur-2xl text-white shadow-[10px_0_30px_rgba(0,0,0,0.5)]' 
-            : 'bg-white/95 backdrop-blur-2xl text-slate-900 shadow-xl shadow-slate-200/80'
+            ? 'bg-black/20 backdrop-blur-sm text-white shadow-[4px_0_16px_rgba(0,0,0,0.15)]' 
+            : 'bg-white/20 backdrop-blur-sm text-slate-900 shadow-[4px_0_16px_rgba(0,0,0,0.08)]'
         }`}
       >
         {/* Header Branding & Collapse Toggle */}
@@ -358,10 +358,10 @@ export default function Sidebar({
       {showMoreMenu && (
         <div 
           id="sidebar-more-menu"
-          className={`md:hidden fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto rounded-3xl p-4 border shadow-2xl z-50 animate-fadeIn ${
+          className={`md:hidden fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto rounded-3xl p-4 shadow-[4px_6px_16px_rgba(0,0,0,0.25)] z-50 animate-fadeIn backdrop-blur-sm ${
             darkMode 
-              ? 'bg-slate-950/50 backdrop-blur-2xl border-white/15 text-white shadow-black/90' 
-              : 'bg-white/60 backdrop-blur-2xl border-slate-200/80 text-slate-900 shadow-slate-400/20'
+              ? 'bg-black/40 text-white' 
+              : 'bg-white/40 text-slate-900'
           }`}
         >
           {/* Sheet Header */}
@@ -398,14 +398,14 @@ export default function Sidebar({
                     setActiveTab(item.id);
                     setShowMoreMenu(false);
                   }}
-                  className={`p-3 rounded-2xl flex items-center gap-3 text-left transition-all border cursor-pointer ${
+                  className={`p-3 rounded-2xl flex items-center gap-3 text-left transition-all cursor-pointer ${
                     isActive
                       ? darkMode
                         ? itemTheme.activeSidebarDark + ' shadow-md font-bold'
                         : itemTheme.activeSidebarLight + ' shadow-sm font-bold'
                       : darkMode
-                        ? 'bg-slate-900/40 backdrop-blur-xs border-white/10 hover:bg-slate-800/60 text-slate-200'
-                        : 'bg-white/40 backdrop-blur-xs border-slate-200/50 hover:bg-white/70 text-slate-800'
+                        ? 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-200'
+                        : 'bg-slate-900/[0.03] hover:bg-slate-900/[0.06] text-slate-800'
                   }`}
                 >
                   <ItemIcon 
@@ -430,12 +430,12 @@ export default function Sidebar({
               setShowMoreMenu(false);
               if (onOpenNotifications) onOpenNotifications();
             }}
-            className={`w-full mb-3 p-3 rounded-2xl flex items-center justify-between border transition-all cursor-pointer ${
+            className={`w-full mb-3 p-3 rounded-2xl flex items-center justify-between transition-all cursor-pointer ${
               totalNotifications > 0
-                ? 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-300'
+                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
                 : darkMode
-                  ? 'bg-slate-900/40 backdrop-blur-xs border-white/10 text-slate-200 hover:bg-slate-800/60'
-                  : 'bg-white/40 backdrop-blur-xs border-slate-200/50 text-slate-800 hover:bg-white/70'
+                  ? 'bg-white/[0.04] text-slate-200 hover:bg-white/[0.08]'
+                  : 'bg-slate-900/[0.03] text-slate-800 hover:bg-slate-900/[0.06]'
             }`}
           >
             <div className="flex items-center gap-2.5">
@@ -468,10 +468,10 @@ export default function Sidebar({
       {/* MOBILE BOTTOM NAVIGATION */}
       <nav 
         id="sidebar-mobile" 
-        className={`md:hidden fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto h-16 rounded-[26px] z-50 px-3 flex items-center justify-around transition-all ${
+        className={`md:hidden fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto h-16 rounded-[26px] z-50 px-3 flex items-center justify-around transition-all shadow-[4px_6px_16px_rgba(0,0,0,0.2)] ${
           darkMode 
-            ? 'bg-slate-950/80 backdrop-blur-2xl text-white shadow-2xl shadow-black/80' 
-            : 'bg-white/95 backdrop-blur-2xl text-slate-900 shadow-2xl shadow-slate-300/60'
+            ? 'bg-black/40 backdrop-blur-sm text-white' 
+            : 'bg-white/40 backdrop-blur-sm text-slate-900'
         }`}
       >
         {mobilePrimaryItems.map((item) => {

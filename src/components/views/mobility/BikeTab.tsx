@@ -184,10 +184,10 @@ export function BikeTab({
         {/* ========================================================================= */}
         <div className="lg:col-span-4 h-full flex flex-col">
           <div
-            className={`w-full h-full rounded-3xl p-3.5 sm:p-7 overflow-hidden isolate backdrop-blur-2xl transition-all flex flex-col justify-between relative ${
+            className={`w-full h-full rounded-3xl p-3.5 sm:p-7 overflow-hidden isolate backdrop-blur-sm transition-all flex flex-col justify-between relative shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
               darkMode
-                ? 'bg-slate-900/70 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)]'
-                : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80'
+                ? 'bg-black/20 text-white'
+                : 'bg-white/20 text-slate-900'
             }`}
           >
             {/* Ambient Background Gradient */}
@@ -578,10 +578,10 @@ export function BikeTab({
         {/* ========================================================================= */}
         <div className="lg:col-span-4 h-full flex flex-col">
           <div
-            className={`w-full h-full rounded-3xl p-3.5 sm:p-7 backdrop-blur-2xl transition-all relative overflow-hidden flex flex-col justify-between gap-5 ${
+            className={`w-full h-full rounded-3xl p-3.5 sm:p-7 backdrop-blur-sm transition-all relative overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-col justify-between gap-5 ${
               darkMode
-                ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
-                : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80'
+                ? 'bg-black/20 text-white'
+                : 'bg-white/20 text-slate-900'
             }`}
           >
             {/* Header */}
@@ -728,10 +728,10 @@ export function BikeTab({
         {/* ========================================================================= */}
         <div className="lg:col-span-4 h-full flex flex-col">
           <div
-            className={`w-full h-full rounded-3xl p-3.5 sm:p-7 backdrop-blur-2xl transition-all relative overflow-hidden flex flex-col justify-between gap-5 ${
+            className={`w-full h-full rounded-3xl p-3.5 sm:p-7 backdrop-blur-sm transition-all relative overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-col justify-between gap-5 ${
               darkMode
-                ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
-                : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80'
+                ? 'bg-black/20 text-white'
+                : 'bg-white/20 text-slate-900'
             }`}
           >
             {/* Header */}

@@ -312,8 +312,8 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
           )}
 
           <div
-            className={`relative flex items-center px-3 py-1.5 rounded-2xl border text-xs ${
-              darkMode ? 'bg-black/40 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-800'
+            className={`relative flex items-center px-3 py-1.5 rounded-2xl text-xs backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+              darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-800'
             }`}
           >
             <MagnifyingGlass size={15} className="text-slate-400 mr-2 shrink-0" />
@@ -329,7 +329,7 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
       </div>
 
       {/* Main Table Card */}
-      <TableCard.Root className={darkMode ? 'bg-black/40 backdrop-blur-md border border-white/10' : 'bg-white/70 backdrop-blur-md border border-slate-200/90 shadow-xs'}>
+      <TableCard.Root className={darkMode ? 'bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)]' : 'bg-white/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'}>
         <TableCard.Header
           title="Automations & Scenes"
           badge={`${sortedItems.length} routines`}
@@ -338,14 +338,14 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
               <button
                 type="button"
                 onClick={() => handleBatchToggle(true)}
-                className="h-8 px-3 rounded-xl text-xs font-bold bg-violet-500/15 hover:bg-violet-500/25 text-violet-600 dark:text-violet-300 border border-violet-500/30 transition-all cursor-pointer"
+                className="h-8 px-3 rounded-xl text-xs font-bold bg-violet-500/15 hover:bg-violet-500/25 text-violet-600 dark:text-violet-300 transition-all cursor-pointer"
               >
                 Enable All
               </button>
               <button
                 type="button"
                 onClick={() => handleBatchToggle(false)}
-                className="h-8 px-3 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 transition-all cursor-pointer"
+                className="h-8 px-3 rounded-xl text-xs font-bold bg-white/20 hover:bg-white/30 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer"
               >
                 Pause All
               </button>
@@ -392,10 +392,10 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                         isScene 
-                          ? 'bg-violet-500/15 text-violet-400 border border-violet-500/20' 
+                          ? 'bg-violet-500/15 text-violet-400' 
                           : isOn 
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' 
-                          : 'bg-white/5 text-slate-400 border border-white/10'
+                          ? 'bg-emerald-500/15 text-emerald-400' 
+                          : 'bg-white/5 text-slate-400'
                       }`}>
                         {getEntityIcon(item)}
                       </div>
@@ -461,7 +461,7 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
                             ? 'bg-emerald-500 text-slate-950 font-black'
                             : darkMode
                             ? 'bg-white/10 hover:bg-white/20 text-white'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
+                            : 'bg-slate-900/[0.04] hover:bg-slate-900/[0.08] text-slate-800'
                         }`}
                       >
                         {isTriggered ? (

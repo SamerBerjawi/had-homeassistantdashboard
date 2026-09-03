@@ -91,7 +91,7 @@ export default function UserProfileSection({
   return (
     <div className="space-y-6 w-full animate-in fade-in duration-300 pb-24 md:pb-6">
       {/* Account & Storage Synchronization Status Card */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4 shadow-xs">
+      <div className="p-5 sm:p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-4 overflow-hidden isolate">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-linear-to-tr from-sky-500 to-indigo-600 text-white font-black text-xl flex items-center justify-center shadow-lg shadow-sky-500/20 shrink-0">
@@ -164,7 +164,7 @@ export default function UserProfileSection({
       </div>
 
       {/* Main Profile Edit Form */}
-      <form onSubmit={handleSaveProfile} className="p-5 sm:p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4 shadow-xs">
+      <form onSubmit={handleSaveProfile} className="p-5 sm:p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-4 overflow-hidden isolate">
         <div className="flex items-center justify-between border-b pb-3 border-slate-200 dark:border-white/10">
           <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Account Profile Information
@@ -236,7 +236,7 @@ export default function UserProfileSection({
       </form>
 
       {/* Wall Display / Kiosk PIN Security Card */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4 shadow-xs">
+      <div className="p-5 sm:p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-4 overflow-hidden isolate">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">

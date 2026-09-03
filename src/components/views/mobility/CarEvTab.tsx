@@ -101,7 +101,7 @@ export function CarEvTab({
   const resolvedCarLogo = resolveAssetUrl(metrics.customBrandLogo, config?.updatedAt);
 
   const cardStyle =
-    'rounded-3xl border border-slate-200/80 dark:border-white/10 backdrop-blur-sm transition-all overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ' +
+    'rounded-3xl backdrop-blur-sm transition-all overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ' +
     (darkMode
       ? 'bg-black/20 text-white'
       : 'bg-white/20 text-slate-900') +

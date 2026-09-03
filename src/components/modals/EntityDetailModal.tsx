@@ -200,42 +200,42 @@ export default function EntityDetailModal() {
         return {
           icon: Plug,
           color: 'text-emerald-400',
-          badgeBg: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300',
+          badgeBg: 'bg-emerald-500/15 text-emerald-300',
           glow: 'drop-shadow-[0_0_12px_rgba(16,185,129,0.6)]'
         };
       case 'fan':
         return {
           icon: Fan,
-          color: 'text-teal-400',
-          badgeBg: 'bg-teal-500/15 border-teal-500/30 text-teal-300',
-          glow: 'drop-shadow-[0_0_12px_rgba(45,212,191,0.6)]'
+          color: 'text-cyan-400',
+          badgeBg: 'bg-cyan-500/15 text-cyan-300',
+          glow: 'drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]'
         };
       case 'lock':
         return {
           icon: Lock,
           color: 'text-emerald-400',
-          badgeBg: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300',
+          badgeBg: 'bg-emerald-500/15 text-emerald-300',
           glow: 'drop-shadow-[0_0_12px_rgba(52,211,153,0.6)]'
         };
       case 'vacuum':
         return {
           icon: Broom,
           color: 'text-teal-400',
-          badgeBg: 'bg-teal-500/15 border-teal-500/30 text-teal-300',
+          badgeBg: 'bg-teal-500/15 text-teal-300',
           glow: 'drop-shadow-[0_0_12px_rgba(45,212,191,0.6)]'
         };
       case 'camera':
         return {
           icon: VideoCamera,
           color: 'text-blue-400',
-          badgeBg: 'bg-blue-500/15 border-blue-500/30 text-blue-300',
+          badgeBg: 'bg-blue-500/15 text-blue-300',
           glow: 'drop-shadow-[0_0_12px_rgba(59,130,246,0.6)]'
         };
       default:
         return {
           icon: Pulse,
           color: 'text-cyan-400',
-          badgeBg: 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300',
+          badgeBg: 'bg-cyan-500/15 text-cyan-300',
           glow: 'drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]'
         };
     }
@@ -287,7 +287,7 @@ export default function EntityDetailModal() {
                 closeEntityDetails();
               }
             }}
-            className="relative w-full max-w-lg max-h-[92vh] sm:max-h-[85vh] flex flex-col bg-slate-900/95 border border-white/15 rounded-t-3xl sm:rounded-3xl shadow-2xl backdrop-blur-2xl text-slate-100 overflow-hidden isolate z-10"
+            className="relative w-full max-w-lg max-h-[92vh] sm:max-h-[85vh] flex flex-col bg-slate-900/85 rounded-t-3xl sm:rounded-3xl shadow-[4px_6px_20px_rgba(0,0,0,0.35)] backdrop-blur-md text-slate-100 overflow-hidden isolate z-10"
           >
             {/* Mobile Drag Handle */}
             {isMobile && (
@@ -300,7 +300,7 @@ export default function EntityDetailModal() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
               <div className="flex items-center gap-3 min-w-0">
                 <div
-                  className={`w-10 h-10 rounded-2xl flex items-center justify-center border shrink-0 ${domainTheme.badgeBg}`}
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${domainTheme.badgeBg}`}
                 >
                   {(entity as any)?.icon || entity?.attributes?.icon ? (
                     <DynamicPhosphorIcon
@@ -335,7 +335,7 @@ export default function EntityDetailModal() {
                 <button
                   type="button"
                   onClick={() => setCustomizerOpen(true)}
-                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-sky-500/20 hover:text-sky-300 text-slate-300 flex items-center justify-center transition-all cursor-pointer border border-white/10 active:scale-95"
+                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-sky-500/20 hover:text-sky-300 text-slate-300 flex items-center justify-center transition-all cursor-pointer active:scale-95"
                   title="Customize entity name, icon & visibility"
                 >
                   <PencilSimple size={15} weight="bold" />
@@ -344,7 +344,7 @@ export default function EntityDetailModal() {
                 <button
                   type="button"
                   onClick={handleCopyEntityId}
-                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-white/10 active:scale-95"
+                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
                   title={copied ? 'Copied Entity ID!' : 'Copy Entity ID'}
                 >
                   {copied ? <Check size={15} weight="bold" className="text-emerald-400" /> : <Copy size={15} weight="duotone" />}

@@ -51,14 +51,14 @@ export default function EnergyPeriodSelector({
       {/* Left: Stream Status Badge */}
       <div className="flex items-center gap-2">
         <span
-          className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border transition-all backdrop-blur-md ${
+          className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
             isLive
               ? darkMode
-                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                ? 'bg-emerald-500/20 text-emerald-300'
+                : 'bg-emerald-500/15 text-emerald-800'
               : darkMode
-              ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-              : 'bg-amber-50 text-amber-800 border-amber-200'
+              ? 'bg-amber-500/20 text-amber-300'
+              : 'bg-amber-500/15 text-amber-800'
           }`}
         >
           <Lightning size={14} weight="fill" className={isLive ? 'text-emerald-400 animate-pulse' : 'text-amber-400'} />
@@ -70,10 +70,10 @@ export default function EnergyPeriodSelector({
       <div className="flex flex-wrap items-center gap-2">
         {/* Date Window Navigation: < Date Label > */}
         <div
-          className={`flex items-center gap-1 px-2 py-1 rounded-2xl backdrop-blur-md transition-all shadow-sm ${
+          className={`flex items-center gap-1 px-2 py-1 rounded-2xl backdrop-blur-sm transition-all shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
             darkMode
-              ? 'bg-black/40 text-white'
-              : 'bg-white/90 text-slate-900'
+              ? 'bg-black/20 text-white'
+              : 'bg-white/20 text-slate-900'
           }`}
         >
           <button
@@ -83,7 +83,7 @@ export default function EnergyPeriodSelector({
             className={`p-1 rounded-xl active:scale-95 transition-all cursor-pointer ${
               darkMode
                 ? 'text-slate-400 hover:text-white hover:bg-white/10'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
             <CaretLeft size={16} weight="bold" />
@@ -104,7 +104,7 @@ export default function EnergyPeriodSelector({
                 ? 'opacity-30 cursor-not-allowed text-slate-600'
                 : darkMode
                 ? 'text-slate-400 hover:text-white hover:bg-white/10'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
             <CaretRight size={16} weight="bold" />
@@ -113,10 +113,10 @@ export default function EnergyPeriodSelector({
 
         {/* Period Tabs: Day / Week / Month / Year */}
         <div
-          className={`flex items-center p-1 rounded-2xl backdrop-blur-md transition-all shadow-sm ${
+          className={`flex items-center p-1 rounded-2xl backdrop-blur-sm transition-all shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
             darkMode
-              ? 'bg-black/40'
-              : 'bg-white/90'
+              ? 'bg-black/20'
+              : 'bg-white/20'
           }`}
         >
           {periodOptions.map((opt) => (
@@ -143,10 +143,10 @@ export default function EnergyPeriodSelector({
           onClick={onRefresh}
           disabled={isFetchingStats}
           title="Refresh energy statistics"
-          className={`p-2 rounded-2xl text-xs font-bold transition-all shadow-sm cursor-pointer ${
+          className={`p-2 rounded-2xl text-xs font-bold transition-all shadow-[4px_6px_12px_rgba(0,0,0,0.15)] backdrop-blur-sm cursor-pointer ${
             darkMode
-              ? 'bg-black/40 hover:bg-white/10 text-slate-200 hover:text-white'
-              : 'bg-white/90 hover:bg-white text-slate-700 hover:text-slate-900'
+              ? 'bg-black/20 hover:bg-black/30 text-slate-200 hover:text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-700 hover:text-slate-900'
           }`}
         >
           <ArrowsClockwise

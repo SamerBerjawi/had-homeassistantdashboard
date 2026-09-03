@@ -869,10 +869,10 @@ export default function AreaDetailView({
               <button
                 type="button"
                 onClick={handleToggleAllFans}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 ${
                   darkMode
-                    ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
-                    : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-xs'
+                    ? 'bg-white/10 hover:bg-white/20 text-slate-300'
+                    : 'bg-white/40 hover:bg-white/60 text-slate-700 shadow-xs'
                 }`}
               >
                 <Fan size={14} weight="bold" />
@@ -1110,7 +1110,7 @@ export default function AreaDetailView({
                           isLocked
                             ? darkMode
                               ? 'bg-white/10 text-slate-300'
-                              : 'bg-slate-100 text-slate-700 border border-slate-200'
+                              : 'bg-slate-900/[0.04] text-slate-700'
                             : 'bg-amber-500 text-slate-950 font-black shadow-xs'
                         }`}
                       >
@@ -1166,7 +1166,7 @@ export default function AreaDetailView({
                           type="button"
                           onClick={() => handleCoverCommand(cover, 'open_cover')}
                           className={`h-8 px-2.5 rounded-lg text-xs font-bold cursor-pointer active:scale-95 ${
-                            darkMode ? 'bg-white/10 hover:bg-white/20 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
+                            darkMode ? 'bg-white/10 hover:bg-white/20 text-slate-200' : 'bg-slate-900/[0.04] hover:bg-slate-900/[0.08] text-slate-800'
                           }`}
                         >
                           Open
@@ -1175,7 +1175,7 @@ export default function AreaDetailView({
                           type="button"
                           onClick={() => handleCoverCommand(cover, 'close_cover')}
                           className={`h-8 px-2.5 rounded-lg text-xs font-bold cursor-pointer active:scale-95 ${
-                            darkMode ? 'bg-white/10 hover:bg-white/20 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
+                            darkMode ? 'bg-white/10 hover:bg-white/20 text-slate-200' : 'bg-slate-900/[0.04] hover:bg-slate-900/[0.08] text-slate-800'
                           }`}
                         >
                           Close
@@ -1293,7 +1293,7 @@ export default function AreaDetailView({
                           ? 'bg-teal-500/20 text-teal-700 dark:text-teal-300'
                           : darkMode
                           ? 'bg-white/10 text-slate-300'
-                          : 'bg-slate-100 text-slate-700 border border-slate-200'
+                          : 'bg-slate-900/[0.04] text-slate-700'
                       }`}>
                         {caps.isCleaning ? 'Cleaning' : 'Docked'}
                       </span>
@@ -1340,7 +1340,7 @@ export default function AreaDetailView({
                   >
                     <div 
                       onClick={() => openEntityDetails(cam.entity_id)}
-                      className="w-full h-32 rounded-2xl overflow-hidden bg-black border border-slate-200 dark:border-white/10 relative group cursor-pointer"
+                      className="w-full h-32 rounded-2xl overflow-hidden bg-black relative group cursor-pointer"
                     >
                       <HaWebRtcPlayer
                         camera={cam}

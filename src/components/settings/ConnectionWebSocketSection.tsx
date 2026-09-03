@@ -145,7 +145,7 @@ export default function ConnectionWebSocketSection({
   return (
     <div className="space-y-6 w-full animate-in fade-in duration-300 pb-24 md:pb-6">
       {/* Live Status Header */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-4 shadow-xs">
+      <div className="p-5 sm:p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-wrap items-center justify-between gap-4 overflow-hidden isolate">
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-2xl bg-sky-500/15 text-sky-500 flex items-center justify-center shrink-0 border border-sky-500/30">
             <WifiHigh size={26} weight="duotone" />
@@ -245,7 +245,7 @@ export default function ConnectionWebSocketSection({
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleStartOAuthLogin} className="p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4 shadow-xs">
+              <form onSubmit={handleStartOAuthLogin} className="p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-4 overflow-hidden isolate">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                     Home Assistant Instance URL
@@ -321,7 +321,7 @@ export default function ConnectionWebSocketSection({
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleConnectWs} className="p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4 shadow-xs">
+              <form onSubmit={handleConnectWs} className="p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-4 overflow-hidden isolate">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Home Assistant WebSocket URL</label>
                   <input
@@ -371,7 +371,7 @@ export default function ConnectionWebSocketSection({
       </div>
 
       {/* go2rtc RTSP Streaming Discovery Card */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-4 shadow-xs">
+      <div className="p-5 sm:p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-4 overflow-hidden isolate">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0">
@@ -475,7 +475,7 @@ export default function ConnectionWebSocketSection({
       </div>
 
       {/* Live WebSocket Event Log Feed */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/10 space-y-3 shadow-xs">
+      <div className="p-5 sm:p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-3 overflow-hidden isolate">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Radio size={18} weight="duotone" className="text-emerald-500 animate-pulse" />

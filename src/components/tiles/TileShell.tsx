@@ -47,8 +47,8 @@ export const TileShell: React.FC<TileShellProps> = ({
       ? 'bg-amber-500/20 text-white shadow-[0_8px_25px_rgba(0,0,0,0.5)]'
       : 'bg-amber-50/95 text-slate-950 shadow-md shadow-amber-200/40'
     : darkMode
-    ? 'bg-slate-900/70 hover:bg-slate-900/85 text-white shadow-[0_8px_25px_rgba(0,0,0,0.4)]'
-    : 'bg-white/95 hover:bg-white text-slate-900 shadow-md shadow-slate-200/80 hover:shadow-lg';
+    ? 'bg-black/20 hover:bg-black/30 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'
+    : 'bg-white/20 hover:bg-white/30 text-slate-900 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]';
 
   const customStyle: React.CSSProperties = {};
 
@@ -62,7 +62,7 @@ export const TileShell: React.FC<TileShellProps> = ({
       onContextMenu={onContextMenu}
       title={title}
       style={customStyle}
-      className={`group relative w-full h-full rounded-3xl backdrop-blur-xl transition-all duration-200 flex flex-col justify-center overflow-hidden isolate ${bgClass} ${
+      className={`group relative w-full h-full rounded-3xl backdrop-blur-sm transition-all duration-200 flex flex-col justify-center overflow-hidden isolate ${bgClass} ${
         onClick ? 'cursor-pointer active:scale-[0.985]' : ''
       } ${className}`}
     >
