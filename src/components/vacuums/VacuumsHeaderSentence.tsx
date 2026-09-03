@@ -47,7 +47,7 @@ export default function VacuumsHeaderSentence({
   const entityRegistry = useAutoLayoutStore((s) => s.entityRegistry);
   const devices = useAutoLayoutStore((s) => s.devices);
 
-  const vacuumEntities = domainGroups['vacuum'] || [];
+  const vacuumEntities = (domainGroups['vacuum'] || []).filter((v) => !v.hidden && !v.disabled_by);
 
   const { vacuums, summary } = useMemo(() => {
     return discoverVacuumDevices(

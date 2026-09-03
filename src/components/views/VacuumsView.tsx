@@ -34,7 +34,7 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
 
   const [activeSubTab, setActiveSubTab] = useState<VacuumSubTab>('controls');
 
-  const vacuumEntities = domainGroups['vacuum'] || [];
+  const vacuumEntities = (domainGroups['vacuum'] || []).filter((v) => !v.hidden && !v.disabled_by);
 
   // Discover and aggregate companion entities and maps strictly related to the vacuum device
   const { vacuums } = useMemo(() => {

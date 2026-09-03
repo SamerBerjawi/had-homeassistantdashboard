@@ -63,10 +63,10 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
   const [webRtcCapabilities, setWebRtcCapabilities] = useState<Record<string, boolean>>({});
   const [go2RtcCameras, setGo2RtcCameras] = useState<ResolvedEntity[]>([]);
 
-  // Filter raw cameras to only real surveillance cameras
+  // Filter raw cameras to only real surveillance cameras (excluding hidden & disabled)
   const rawCameras: ResolvedEntity[] = useMemo(() => {
     const all = domainGroups['camera'] || [];
-    return all.filter(isSurveillanceCamera);
+    return all.filter((c) => isSurveillanceCamera(c) && !c.hidden && !c.disabled_by);
   }, [domainGroups]);
 
   // Query go2rtc directly for configured RTSP streams
@@ -159,13 +159,14 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
     openDoors,
     openWindows
   } = useMemo(() => {
-    const allBinary: ResolvedEntity[] = domainGroups['binary_sensor'] || [];
-    const alarms: ResolvedEntity[] = domainGroups['alarm_control_panel'] || [];
-    const locks: ResolvedEntity[] = domainGroups['lock'] || [];
+    const isVisible = (e: ResolvedEntity) => !e.hidden && !e.disabled_by;
+    const allBinary: ResolvedEntity[] = (domainGroups['binary_sensor'] || []).filter(isVisible);
+    const alarms: ResolvedEntity[] = (domainGroups['alarm_control_panel'] || []).filter(isVisible);
+    const locks: ResolvedEntity[] = (domainGroups['lock'] || []).filter(isVisible);
     const users: ResolvedEntity[] = [
       ...(domainGroups['person'] || []),
       ...(domainGroups['device_tracker'] || [])
-    ];
+    ].filter(isVisible);
 
     const {
       doorSensors: doors,

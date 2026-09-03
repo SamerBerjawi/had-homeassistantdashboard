@@ -90,14 +90,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     userEntities, lightEntities, switchEntities, fanEntities, mediaEntities, vacuumEntities, weatherEntities,
     homeUsers, onLights, onSwitches, activeFans, activeVacuums, openDoors, openWindows, activeMotion, activeLeaks, activeSmoke
   } = useMemo(() => {
-    const allBinary: ResolvedEntity[] = domainGroups['binary_sensor'] || [];
-    const userEntitiesLocal = [...(domainGroups['person'] || []), ...(domainGroups['device_tracker'] || [])];
-    const lightEntitiesLocal = domainGroups['light'] || [];
-    const switchEntitiesLocal = domainGroups['switch'] || [];
-    const fanEntitiesLocal = domainGroups['fan'] || [];
-    const mediaEntitiesLocal = domainGroups['media_player'] || [];
-    const vacuumEntitiesLocal = domainGroups['vacuum'] || [];
-    const weatherEntitiesLocal = domainGroups['weather'] || [];
+    const isVisible = (e: ResolvedEntity) => !e.hidden && !e.disabled_by;
+    const allBinary: ResolvedEntity[] = (domainGroups['binary_sensor'] || []).filter(isVisible);
+    const userEntitiesLocal = [...(domainGroups['person'] || []), ...(domainGroups['device_tracker'] || [])].filter(isVisible);
+    const lightEntitiesLocal = (domainGroups['light'] || []).filter(isVisible);
+    const switchEntitiesLocal = (domainGroups['switch'] || []).filter(isVisible);
+    const fanEntitiesLocal = (domainGroups['fan'] || []).filter(isVisible);
+    const mediaEntitiesLocal = (domainGroups['media_player'] || []).filter(isVisible);
+    const vacuumEntitiesLocal = (domainGroups['vacuum'] || []).filter(isVisible);
+    const weatherEntitiesLocal = (domainGroups['weather'] || []).filter(isVisible);
 
     const {
       doorSensors: doors,

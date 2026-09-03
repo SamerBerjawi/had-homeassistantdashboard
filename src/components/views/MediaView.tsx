@@ -54,7 +54,7 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
     }> = [];
 
     for (const area of areasDataList) {
-      const playingInArea = (area.entities.mediaPlayers || []).filter((m) => m.state === 'playing');
+      const playingInArea = (area.entities.mediaPlayers || []).filter((m) => m.state === 'playing' && !m.hidden && !m.disabled_by);
       for (const player of playingInArea) {
         list.push({
           media: player,
@@ -74,7 +74,7 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
         const areasWithMedia = floor.areas
           .map((area) => ({
             ...area,
-            mediaPlayers: area.entities.mediaPlayers || []
+            mediaPlayers: (area.entities.mediaPlayers || []).filter((m) => !m.hidden && !m.disabled_by)
           }))
           .filter((area) => area.mediaPlayers.length > 0);
 

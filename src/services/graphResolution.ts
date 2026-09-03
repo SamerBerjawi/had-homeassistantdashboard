@@ -214,23 +214,11 @@ export function resolveHAGraph(
       criticalBatteryCount++;
     }
 
-    if (domain === 'light' && liveState.state === 'on') {
-      totalLightsOn++;
-    }
-
-    if (powerWatts > 0) {
-      totalPowerWatts += powerWatts;
-    }
-
-    if (
-      (domain === 'binary_sensor' && (liveState.attributes.device_class === 'door' || liveState.attributes.device_class === 'window') && liveState.state === 'on') ||
-      (domain === 'lock' && liveState.state === 'unlocked')
-    ) {
-      securityAlertsCount++;
-    }
-
     const customOverride = options.entityOverrides?.[entityId];
-    const isExplicitlyHidden = customOverride?.hidden !== undefined ? customOverride.hidden : Boolean(regEntry?.hidden_by);
+    const isExplicitlyHidden = customOverride?.hidden !== undefined 
+      ? customOverride.hidden 
+      : Boolean(regEntry?.hidden_by || regEntry?.disabled_by);
+    const isDisabled = Boolean(regEntry?.disabled_by);
     const finalFriendlyName = customOverride?.customName || friendlyName;
 
     const resolved: ResolvedEntity = {
@@ -263,6 +251,26 @@ export function resolveHAGraph(
     // Filter diagnostics from standard views unless option is enabled
     if (isDiag && !options.includeDiagnostics) {
       continue;
+    }
+
+    // Hidden or disabled entities must NOT count towards metrics, areas, badges, or domain groups!
+    if (isExplicitlyHidden || isDisabled) {
+      continue;
+    }
+
+    if (domain === 'light' && liveState.state === 'on') {
+      totalLightsOn++;
+    }
+
+    if (powerWatts > 0) {
+      totalPowerWatts += powerWatts;
+    }
+
+    if (
+      (domain === 'binary_sensor' && (liveState.attributes.device_class === 'door' || liveState.attributes.device_class === 'window') && liveState.state === 'on') ||
+      (domain === 'lock' && liveState.state === 'unlocked')
+    ) {
+      securityAlertsCount++;
     }
 
     if (assignedAreaId) {
@@ -466,10 +474,11 @@ export function resolveHAGraph(
     areasMap[a.area_id] = a;
   }
 
-  // Build global domainGroups
+  // Build global domainGroups (excluding hidden & disabled entities)
   const domainGroups: Record<string, ResolvedEntity[]> = {};
   for (const ent of Object.values(resolvedEntities)) {
     if (ent.isDiagnostic && !options.includeDiagnostics) continue;
+    if (ent.hidden || ent.disabled_by) continue;
     if (!domainGroups[ent.domain]) {
       domainGroups[ent.domain] = [];
     }

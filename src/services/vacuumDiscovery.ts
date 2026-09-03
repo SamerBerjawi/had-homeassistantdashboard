@@ -34,7 +34,9 @@ export function discoverVacuumDevices(
   const allResolvedList = Object.values(resolvedEntities);
   const allStateList = Object.values(states);
 
-  const vacuums: VacuumDeviceData[] = (vacuumEntities || []).map((vac) => {
+  const vacuums: VacuumDeviceData[] = (vacuumEntities || [])
+    .filter((vac) => !vac.hidden && !vac.disabled_by)
+    .map((vac) => {
     const rawState = String(vac.state || 'docked').toLowerCase();
     const entityId = vac.entity_id;
     const deviceId = vac.device_id || entityRegistry.find((e) => e.entity_id === entityId)?.device_id;
@@ -106,6 +108,8 @@ export function discoverVacuumDevices(
     const companionStates = allStateList.filter((s) => {
       if (!s || !s.entity_id) return false;
       const reg = entityRegistry.find((r) => r.entity_id === s.entity_id);
+      const isHidden = reg?.hidden_by || reg?.disabled_by || resolvedEntities[s.entity_id]?.hidden || resolvedEntities[s.entity_id]?.disabled_by;
+      if (isHidden) return false;
       if (deviceId && reg?.device_id === deviceId) return true;
       return s.entity_id.includes(cleanPrefix) || s.entity_id.includes(basePrefix);
     });
@@ -185,11 +189,14 @@ export function discoverVacuumDevices(
     // Find all map camera / image companion entities strictly related to this device
     const mapCompanions = allStateList.filter((s) => {
       if (!s || !s.entity_id) return false;
+      const reg = entityRegistry.find((r) => r.entity_id === s.entity_id);
+      const isHidden = reg?.hidden_by || reg?.disabled_by || resolvedEntities[s.entity_id]?.hidden || resolvedEntities[s.entity_id]?.disabled_by;
+      if (isHidden) return false;
+
       const id = s.entity_id.toLowerCase();
       const isMapType = id.startsWith('camera.') || id.startsWith('image.');
       if (!isMapType) return false;
 
-      const reg = entityRegistry.find((r) => r.entity_id === s.entity_id);
       const matchesDevice = Boolean(deviceId && reg?.device_id === deviceId);
       const matchesPrefix = id.includes(cleanPrefix) || id.includes(basePrefix);
 

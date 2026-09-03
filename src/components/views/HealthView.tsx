@@ -31,7 +31,7 @@ export default function HealthView({ darkMode = true }: ViewProps) {
   const { config } = useUserConfig();
   const { isEditMode } = useEditMode();
 
-  const sensorEntities = domainGroups['sensor'] || [];
+  const sensorEntities = (domainGroups['sensor'] || []).filter((s) => !s.hidden && !s.disabled_by);
 
   const healthSensors = useMemo(() => {
     return sensorEntities.filter((s) => {
