@@ -10,7 +10,8 @@
  *  - Cross-tab BroadcastChannel and custom event dispatching
  */
 
-import { getStoredHAAuth } from './haAuth';
+import { getStoredHAAuth, getActiveHAToken } from './haAuth';
+import { getStoredAuthConfig } from './authStorage';
 
 export type SyncConnectionState = 'connected' | 'connecting' | 'reconnecting' | 'disconnected';
 
@@ -137,13 +138,16 @@ class ConfigSyncService {
     this.setStatus(this.retryCount === 0 ? 'connecting' : 'reconnecting');
 
     try {
+      const token = getActiveHAToken();
       const auth = getStoredHAAuth();
+      const storedConfig = getStoredAuthConfig();
+      const serverUrl = auth?.server_url || storedConfig?.httpUrl || storedConfig?.serverUrl;
       const params = new URLSearchParams();
-      if (auth?.access_token) {
-        params.set('token', auth.access_token);
+      if (token) {
+        params.set('token', token);
       }
-      if (auth?.server_url) {
-        params.set('haUrl', auth.server_url);
+      if (serverUrl) {
+        params.set('haUrl', serverUrl);
       }
 
       const streamUrl = `/api/config/stream${params.toString() ? `?${params.toString()}` : ''}`;

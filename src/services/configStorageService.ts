@@ -14,7 +14,8 @@ import {
 } from '../types/userConfig';
 import { AuthState } from '../types/auth';
 import { haWebSocketService } from './haWebSocket';
-import { getStoredHAAuth } from './haAuth';
+import { getStoredHAAuth, getActiveHAToken } from './haAuth';
+import { getStoredAuthConfig } from './authStorage';
 
 const STORAGE_KEY_CONFIG = 'had_dashboard_config';
 const STORAGE_KEY_SERVER_VERSION = 'had_last_server_version';
@@ -38,12 +39,15 @@ export function getAuthHeaders(): Record<string, string> {
     'Accept': 'application/json'
   };
   if (typeof window !== 'undefined') {
-    const auth = getStoredHAAuth();
-    if (auth?.access_token) {
-      headers['Authorization'] = `Bearer ${auth.access_token}`;
+    const token = getActiveHAToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
-    if (auth?.server_url) {
-      headers['X-HA-URL'] = auth.server_url;
+    const auth = getStoredHAAuth();
+    const storedConfig = getStoredAuthConfig();
+    const serverUrl = auth?.server_url || storedConfig?.httpUrl || storedConfig?.serverUrl;
+    if (serverUrl) {
+      headers['X-HA-URL'] = serverUrl;
     }
   }
   return headers;
@@ -51,111 +55,141 @@ export function getAuthHeaders(): Record<string, string> {
 
 /**
  * Deep merge utility for configuration objects
+ * Safe against missing/partial/empty base objects
  */
 export function mergeConfig(
-  base: UserDashboardConfig,
+  base?: UserDashboardConfig | Partial<UserDashboardConfig> | null,
   partial?: Partial<UserDashboardConfig> | null
 ): UserDashboardConfig {
-  if (!partial) return { ...base };
+  const safeBase: UserDashboardConfig = base && typeof base === 'object'
+    ? {
+        ...DEFAULT_USER_CONFIG,
+        ...base,
+        theme: { ...DEFAULT_USER_CONFIG.theme, ...(base.theme || {}) },
+        mobility: {
+          car: { ...DEFAULT_USER_CONFIG.mobility.car, ...(base.mobility?.car || {}) },
+          bike: { ...DEFAULT_USER_CONFIG.mobility.bike, ...(base.mobility?.bike || {}) }
+        },
+        cameras: { ...DEFAULT_USER_CONFIG.cameras, ...(base.cameras || {}) },
+        network: { ...DEFAULT_USER_CONFIG.network, ...(base.network || {}) },
+        energy: { ...DEFAULT_USER_CONFIG.energy, ...(base.energy || {}) }
+      }
+    : DEFAULT_USER_CONFIG;
+
+  if (!partial) return safeBase;
 
   return {
-    ...base,
+    ...safeBase,
     ...partial,
-    version: partial.version || base.version,
+    version: partial.version || safeBase.version || 1,
     updatedAt: partial.updatedAt || new Date().toISOString(),
     theme: {
-      ...base.theme,
+      ...safeBase.theme,
       ...(partial.theme || {})
     },
     mobility: {
       car: {
-        ...base.mobility.car,
+        ...safeBase.mobility.car,
         ...(partial.mobility?.car || {})
       },
       bike: {
-        ...base.mobility.bike,
+        ...safeBase.mobility.bike,
         ...(partial.mobility?.bike || {})
       }
     },
     rooms: {
       floorOrder: Array.isArray(partial.rooms?.floorOrder)
         ? [...partial.rooms.floorOrder]
-        : base.rooms.floorOrder,
+        : Array.isArray(safeBase.rooms?.floorOrder)
+        ? [...safeBase.rooms.floorOrder]
+        : [],
       hiddenFloors: Array.isArray(partial.rooms?.hiddenFloors)
         ? [...partial.rooms.hiddenFloors]
-        : base.rooms.hiddenFloors,
+        : Array.isArray(safeBase.rooms?.hiddenFloors)
+        ? [...safeBase.rooms.hiddenFloors]
+        : [],
       areaOrder: Array.isArray(partial.rooms?.areaOrder)
         ? [...partial.rooms.areaOrder]
-        : base.rooms.areaOrder,
+        : Array.isArray(safeBase.rooms?.areaOrder)
+        ? [...safeBase.rooms.areaOrder]
+        : [],
       hiddenAreas: Array.isArray(partial.rooms?.hiddenAreas)
         ? [...partial.rooms.hiddenAreas]
-        : base.rooms.hiddenAreas,
+        : Array.isArray(safeBase.rooms?.hiddenAreas)
+        ? [...safeBase.rooms.hiddenAreas]
+        : [],
       favoriteAreas: Array.isArray(partial.rooms?.favoriteAreas)
         ? [...partial.rooms.favoriteAreas]
-        : base.rooms.favoriteAreas,
+        : Array.isArray(safeBase.rooms?.favoriteAreas)
+        ? [...safeBase.rooms.favoriteAreas]
+        : [],
       areaSortOrder: Array.isArray(partial.rooms?.areaSortOrder)
         ? [...partial.rooms.areaSortOrder]
-        : base.rooms.areaSortOrder,
+        : Array.isArray(safeBase.rooms?.areaSortOrder)
+        ? [...safeBase.rooms.areaSortOrder]
+        : [],
       areaOverrides: {
-        ...(base.rooms.areaOverrides || {}),
+        ...(safeBase.rooms?.areaOverrides || {}),
         ...(partial.rooms?.areaOverrides || {})
       }
     },
     entities: {
       hiddenEntityIds: Array.isArray(partial.entities?.hiddenEntityIds)
         ? [...partial.entities.hiddenEntityIds]
-        : base.entities.hiddenEntityIds,
+        : Array.isArray(safeBase.entities?.hiddenEntityIds)
+        ? [...safeBase.entities.hiddenEntityIds]
+        : [],
       nameOverrides: {
-        ...(base.entities.nameOverrides || {}),
+        ...(safeBase.entities?.nameOverrides || {}),
         ...(partial.entities?.nameOverrides || {})
       },
       iconOverrides: {
-        ...(base.entities.iconOverrides || {}),
+        ...(safeBase.entities?.iconOverrides || {}),
         ...(partial.entities?.iconOverrides || {})
       },
       customizations: {
-        ...(base.entities.customizations || {}),
+        ...(safeBase.entities?.customizations || {}),
         ...(partial.entities?.customizations || {})
       }
     },
     cameras: {
-      ...base.cameras,
+      ...safeBase.cameras,
       ...(partial.cameras || {}),
       customStreamEntities: {
-        ...(base.cameras.customStreamEntities || {}),
+        ...(safeBase.cameras?.customStreamEntities || {}),
         ...(partial.cameras?.customStreamEntities || {})
       }
     },
     network: {
-      ...base.network,
+      ...safeBase.network,
       ...(partial.network || {})
     },
     energy: {
-      ...base.energy,
+      ...safeBase.energy,
       ...(partial.energy || {})
     },
     preferences: {
-      ...(base.preferences || {}),
+      ...(safeBase.preferences || {}),
       ...(partial.preferences || {})
     },
     profile: {
-      ...(base.profile || {}),
+      ...(safeBase.profile || {}),
       ...(partial.profile || {})
     },
     areas: {
-      ...(base.areas || {}),
+      ...(safeBase.areas || {}),
       ...(partial.areas || {})
     },
     floors: {
-      ...(base.floors || {}),
+      ...(safeBase.floors || {}),
       ...(partial.floors || {})
     },
     canvas: {
-      ...(base.canvas || {}),
+      ...(safeBase.canvas || {}),
       ...(partial.canvas || {})
     },
     layoutOverrides: {
-      ...(base.layoutOverrides || {}),
+      ...(safeBase.layoutOverrides || {}),
       ...(partial.layoutOverrides || {})
     }
   };
@@ -362,8 +396,22 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
     return this.localFallback.loadConfig();
   }
 
+  public getCachedConfig(): UserDashboardConfig | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          return mergeConfig(DEFAULT_USER_CONFIG, parsed);
+        }
+      }
+    } catch {}
+    return null;
+  }
+
   public async saveConfig(partial: Partial<UserDashboardConfig>): Promise<UserDashboardConfig> {
-    const current = await this.loadConfig();
+    const current = this.getCachedConfig() || DEFAULT_USER_CONFIG;
     let updated = mergeConfig(current, {
       ...partial,
       updatedAt: new Date().toISOString()

@@ -9,6 +9,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { 
   UserDashboardConfig, 
+  DeepPartial,
   ConfigContextType, 
   StorageDriverType, 
   DEFAULT_USER_CONFIG,
@@ -41,6 +42,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const activeDriverRef = useRef<IConfigStorageDriver>(new LocalStorageDriver());
   const pendingSaveTimeoutRef = useRef<any>(null);
+  const latestConfigRef = useRef<UserDashboardConfig>(DEFAULT_USER_CONFIG);
 
   // Initialize and load configuration when AuthState changes or initializes
   useEffect(() => {
@@ -64,6 +66,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       try {
         const loaded = await driver.loadConfig();
         if (isMounted && loaded) {
+          latestConfigRef.current = loaded;
           setConfig(loaded);
           setLastSaved(loaded.updatedAt);
           applyToSubsystems(loaded);
@@ -105,6 +108,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // 3. Listen to local/cross-tab broadcast updates
     const handleLocalUpdated = (e: any) => {
       if (e?.detail && isMounted) {
+        latestConfigRef.current = e.detail;
         setConfig(e.detail);
         setLastSaved(e.detail.updatedAt);
         applyToSubsystems(e.detail);
@@ -161,18 +165,21 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Update Config (Debounced Remote Persistence)
   const updateConfig = useCallback(async (
     partialOrUpdater:
+      | DeepPartial<UserDashboardConfig>
       | Partial<UserDashboardConfig>
-      | ((prev: UserDashboardConfig) => Partial<UserDashboardConfig>)
+      | ((prev: UserDashboardConfig) => DeepPartial<UserDashboardConfig> | Partial<UserDashboardConfig>)
   ): Promise<UserDashboardConfig> => {
-    let nextPartial: Partial<UserDashboardConfig>;
+    const currentBase = latestConfigRef.current;
+    let nextPartial: any;
 
     if (typeof partialOrUpdater === 'function') {
-      nextPartial = partialOrUpdater(config);
+      nextPartial = partialOrUpdater(currentBase);
     } else {
       nextPartial = partialOrUpdater;
     }
 
-    const merged = mergeConfig(config, nextPartial);
+    const merged = mergeConfig(currentBase, nextPartial);
+    latestConfigRef.current = merged;
     // Optimistic UI state update
     setConfig(merged);
     try {
@@ -181,7 +188,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsSaving(true);
 
     // Accumulate granular delta for debounced save
-    pendingDeltaRef.current = mergeConfig(pendingDeltaRef.current as any, nextPartial);
+    pendingDeltaRef.current = mergeConfig(pendingDeltaRef.current, nextPartial);
 
     if (pendingSaveTimeoutRef.current) {
       clearTimeout(pendingSaveTimeoutRef.current);
@@ -192,8 +199,10 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const deltaToSave = { ...pendingDeltaRef.current };
         pendingDeltaRef.current = {};
         try {
-          // Pass the true delta to saveConfig so conflict resolution merges field-by-field
+          // Pass the delta to saveConfig so optimistic locking & remote persistence succeed
           const saved = await activeDriverRef.current.saveConfig(deltaToSave);
+          latestConfigRef.current = saved;
+          setConfig(saved);
           setLastSaved(saved.updatedAt);
           setIsSaving(false);
           resolve(saved);
@@ -204,7 +213,32 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       }, 300);
     });
-  }, [config]);
+  }, []);
+
+  // Immediate Force Flush of Any Pending Debounced Config Save
+  const flushPendingSave = useCallback(async (): Promise<UserDashboardConfig> => {
+    if (pendingSaveTimeoutRef.current) {
+      clearTimeout(pendingSaveTimeoutRef.current);
+      pendingSaveTimeoutRef.current = null;
+    }
+    const deltaToSave = { ...pendingDeltaRef.current };
+    pendingDeltaRef.current = {};
+
+    const targetPayload = Object.keys(deltaToSave).length > 0 ? deltaToSave : latestConfigRef.current;
+    setIsSaving(true);
+    try {
+      const saved = await activeDriverRef.current.saveConfig(targetPayload);
+      latestConfigRef.current = saved;
+      setConfig(saved);
+      setLastSaved(saved.updatedAt);
+      setIsSaving(false);
+      return saved;
+    } catch (err) {
+      console.error('[ConfigProvider] Failed to flush save config:', err);
+      setIsSaving(false);
+      return latestConfigRef.current;
+    }
+  }, []);
 
   // Upload Custom Vehicle PNGs or Brand Logos
   const uploadVehicleAsset = useCallback(async (fileOrDataUrl: File | string, key: string): Promise<string> => {
@@ -224,19 +258,31 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Auto-save asset URL into configuration schema based on key using updater pattern
       if (key === 'car_image') {
         await updateConfig((prev) => ({
-          mobility: { ...prev.mobility, car: { ...prev.mobility.car, vehicleImageUrl: assetUrl } }
+          mobility: {
+            ...(prev.mobility || {}),
+            car: { ...(prev.mobility?.car || {}), vehicleImageUrl: assetUrl }
+          }
         }));
       } else if (key === 'car_logo') {
         await updateConfig((prev) => ({
-          mobility: { ...prev.mobility, car: { ...prev.mobility.car, brandLogoUrl: assetUrl } }
+          mobility: {
+            ...(prev.mobility || {}),
+            car: { ...(prev.mobility?.car || {}), brandLogoUrl: assetUrl }
+          }
         }));
       } else if (key === 'bike_image') {
         await updateConfig((prev) => ({
-          mobility: { ...prev.mobility, bike: { ...prev.mobility.bike, bikeImageUrl: assetUrl } }
+          mobility: {
+            ...(prev.mobility || {}),
+            bike: { ...(prev.mobility?.bike || {}), bikeImageUrl: assetUrl }
+          }
         }));
       } else if (key === 'bike_logo') {
         await updateConfig((prev) => ({
-          mobility: { ...prev.mobility, bike: { ...prev.mobility.bike, brandLogoUrl: assetUrl } }
+          mobility: {
+            ...(prev.mobility || {}),
+            bike: { ...(prev.mobility?.bike || {}), brandLogoUrl: assetUrl }
+          }
         }));
       }
 
@@ -299,6 +345,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     syncStatus,
     lastSuccessfulSync,
     updateConfig,
+    flushPendingSave,
     uploadVehicleAsset,
     resetConfig,
     exportConfigJson,

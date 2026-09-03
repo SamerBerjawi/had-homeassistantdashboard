@@ -22,7 +22,7 @@ export interface UserDashboardConfig {
       customName?: string;
       brandLogoUrl?: string;
       vehicleImageUrl?: string;
-      targetSocDefault: number;
+      targetSocDefault?: number;
       batteryCapacityKwh?: number;
     };
     bike: {
@@ -117,9 +117,19 @@ export interface UserDashboardConfig {
   }>;
 }
 
+export type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends (infer U)[]
+    ? T[P]
+    : T[P] extends readonly (infer U)[]
+    ? T[P]
+    : T[P] extends object
+    ? DeepPartial<T[P]>
+    : T[P];
+};
+
 export interface IConfigStorageDriver {
   loadConfig(): Promise<UserDashboardConfig>;
-  saveConfig(config: Partial<UserDashboardConfig>): Promise<UserDashboardConfig>;
+  saveConfig(config: DeepPartial<UserDashboardConfig> | Partial<UserDashboardConfig>): Promise<UserDashboardConfig>;
   uploadAsset?(fileOrDataUrl: File | string, key: string): Promise<string>;
 }
 
@@ -137,9 +147,11 @@ export interface ConfigContextType {
   lastSuccessfulSync: string | null;
   updateConfig: (
     partialOrUpdater:
+      | DeepPartial<UserDashboardConfig>
       | Partial<UserDashboardConfig>
-      | ((prev: UserDashboardConfig) => Partial<UserDashboardConfig>)
+      | ((prev: UserDashboardConfig) => DeepPartial<UserDashboardConfig> | Partial<UserDashboardConfig>)
   ) => Promise<UserDashboardConfig>;
+  flushPendingSave: () => Promise<UserDashboardConfig>;
   uploadVehicleAsset: (fileOrDataUrl: File | string, key: string) => Promise<string>;
   resetConfig: () => Promise<UserDashboardConfig>;
   exportConfigJson: () => string;

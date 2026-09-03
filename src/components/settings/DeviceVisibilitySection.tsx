@@ -136,7 +136,7 @@ export default function DeviceVisibilitySection({
   addToast,
   addLog
 }: DeviceVisibilitySectionProps) {
-  const { config, updateConfig } = useUserConfig();
+  const { config, updateConfig, flushPendingSave } = useUserConfig();
   const { setEntityHidden, bulkSetEntitiesHidden } = useAutoLayoutStore();
 
   // Master set of hidden entity IDs combining remote config hiddenEntityIds, customizations, and store
@@ -2039,10 +2039,23 @@ export default function DeviceVisibilitySection({
               <button type="button" onClick={() => setEditingFloor(null)} className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-white/10">Cancel</button>
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   updateFloor(editingFloor.floor_id, { icon: editingFloor.icon, color: editingFloor.color });
+                  await updateConfig(prev => ({
+                    ...prev,
+                    floors: {
+                      ...(prev.floors || {}),
+                      [editingFloor.floor_id]: {
+                        ...(prev.floors?.[editingFloor.floor_id] || {}),
+                        icon: editingFloor.icon,
+                        color: editingFloor.color,
+                        name: editingFloor.name
+                      }
+                    }
+                  }));
+                  await flushPendingSave();
                   setEditingFloor(null);
-                  addToast?.({ type: 'success', title: 'Floor Saved', message: `Updated ${editingFloor.name}` });
+                  addToast?.({ type: 'success', title: 'Floor Saved', message: `Updated ${editingFloor.name} and synced to NAS.` });
                 }}
                 className="px-4 py-2 text-xs font-bold rounded-xl bg-sky-500 text-white"
               >
@@ -2095,10 +2108,39 @@ export default function DeviceVisibilitySection({
               <button type="button" onClick={() => setEditingArea(null)} className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-white/10">Cancel</button>
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   updateArea(editingArea.area_id, { icon: editingArea.icon, color: editingArea.color });
+                  await updateConfig(prev => ({
+                    ...prev,
+                    rooms: {
+                      ...(prev.rooms || {}),
+                      areaOverrides: {
+                        ...(prev.rooms?.areaOverrides || {}),
+                        [editingArea.area_id]: {
+                          ...(prev.rooms?.areaOverrides?.[editingArea.area_id] || {}),
+                          icon: editingArea.icon,
+                          customIcon: editingArea.icon,
+                          color: editingArea.color,
+                          customColor: editingArea.color,
+                          name: editingArea.name
+                        }
+                      }
+                    },
+                    areas: {
+                      ...(prev.areas || {}),
+                      [editingArea.area_id]: {
+                        ...(prev.areas?.[editingArea.area_id] || {}),
+                        icon: editingArea.icon,
+                        customIcon: editingArea.icon,
+                        color: editingArea.color,
+                        customColor: editingArea.color,
+                        name: editingArea.name
+                      }
+                    }
+                  }));
+                  await flushPendingSave();
                   setEditingArea(null);
-                  addToast?.({ type: 'success', title: 'Area Saved', message: `Updated ${editingArea.name}` });
+                  addToast?.({ type: 'success', title: 'Area Saved', message: `Updated ${editingArea.name} and synced to NAS.` });
                 }}
                 className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-500 text-white"
               >

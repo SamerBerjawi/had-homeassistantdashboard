@@ -36,6 +36,7 @@ export default function PinLockModal({
             setTimeout(() => setPin(''), 600);
           } else {
             setPin('');
+            onClose();
           }
         } else if (mode === 'set_pin') {
           onSetPin(next);
@@ -43,6 +44,7 @@ export default function PinLockModal({
           setTimeout(() => {
             setPin('');
             setSuccessMessage('');
+            onClose();
           }, 800);
         } else if (mode === 'remove_pin') {
           const success = onUnlock(next);
@@ -52,6 +54,7 @@ export default function PinLockModal({
             setTimeout(() => {
               setPin('');
               setSuccessMessage('');
+              onClose();
             }, 800);
           } else {
             setError(true);

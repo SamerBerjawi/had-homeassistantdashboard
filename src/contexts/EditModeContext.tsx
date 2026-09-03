@@ -44,15 +44,24 @@ const SIZE_CYCLE: Array<[2 | 4 | 6 | 8 | 12, 1 | 2 | 3 | 4]> = [
 
 export const EditModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
-  const { config, updateConfig } = useUserConfig();
+  const { config, updateConfig, flushPendingSave } = useUserConfig();
 
   const toggleEditMode = useCallback(() => {
-    setIsEditMode(prev => !prev);
-  }, []);
+    setIsEditMode(prev => {
+      const next = !prev;
+      if (!next) {
+        flushPendingSave().catch((e) => console.error('[EditMode] Failed to flush save on exit:', e));
+      }
+      return next;
+    });
+  }, [flushPendingSave]);
 
   const setEditMode = useCallback((enabled: boolean) => {
     setIsEditMode(enabled);
-  }, []);
+    if (!enabled) {
+      flushPendingSave().catch((e) => console.error('[EditMode] Failed to flush save on exit:', e));
+    }
+  }, [flushPendingSave]);
 
   // Check if entity is hidden in master config or auto-layout store
   const isEntityHidden = useCallback((entityId: string): boolean => {

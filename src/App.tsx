@@ -115,7 +115,7 @@ function getTabFromUrl(): TabKey {
 }
 
 export default function App() {
-  const { config, updateConfig, isLoading: isConfigLoading, syncStatus, lastSuccessfulSync } = useUserConfig();
+  const { config, updateConfig, flushPendingSave, isLoading: isConfigLoading, syncStatus, lastSuccessfulSync } = useUserConfig();
   const { isEditMode, setEditMode } = useEditMode();
 
   // Theme Mode State: 'auto' (system OS) | 'dark' (OLED) | 'light' (Daylight)
@@ -761,7 +761,20 @@ export default function App() {
 
             <button
               type="button"
-              onClick={() => setEditMode(false)}
+              onClick={async () => {
+                setEditMode(false);
+                await flushPendingSave();
+                setToasts((prev) => [
+                  ...prev,
+                  {
+                    id: String(Date.now()),
+                    title: 'Layout Saved',
+                    message: 'Dashboard layout saved to NAS and synced across devices',
+                    type: 'success',
+                    duration: 3000
+                  }
+                ]);
+              }}
               className="px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 active:bg-sky-600 text-white font-black text-xs shadow-md shadow-sky-500/30 transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0"
               title="Save & Exit Dashboard Edit Mode"
             >

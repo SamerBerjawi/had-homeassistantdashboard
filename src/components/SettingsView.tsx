@@ -156,6 +156,7 @@ export default function SettingsView({
   const { 
     config,
     updateConfig,
+    flushPendingSave,
     driverType, 
     driverName, 
     isSyncingRemote, 
@@ -174,7 +175,7 @@ export default function SettingsView({
     email: config?.profile?.email || DEFAULT_PROFILE_DATA.email,
     role: (config?.profile?.role as any) || DEFAULT_PROFILE_DATA.role,
     avatarInitials: config?.profile?.avatar || DEFAULT_PROFILE_DATA.avatarInitials,
-    homeName: DEFAULT_PROFILE_DATA.homeName
+    homeName: 'My Smart Home'
   }));
 
   const [profileSavedNotice, setProfileSavedNotice] = useState(false);
@@ -190,6 +191,7 @@ export default function SettingsView({
         avatar: profileData.avatarInitials
       }
     }));
+    await flushPendingSave();
     setProfileSavedNotice(true);
     addLog('info', `Updated user profile for ${profileData.displayName}`);
     addToast?.({
@@ -277,6 +279,7 @@ export default function SettingsView({
         currencySymbol
       }
     }));
+    await flushPendingSave();
 
     addToast?.({
       type: 'success',

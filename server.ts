@@ -1157,7 +1157,12 @@ Return ONLY a single valid JSON object strictly formatted as follows (no markdow
   // Vite middleware for development vs static build in production
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        watch: {
+          ignored: ['**/data/**', '**/data/assets/**', '**/data/config/**']
+        }
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);

@@ -145,7 +145,7 @@ function generateSpeedTimeseries(currentSpeed: number): Array<{ date: Date; spee
 
 export function useMobilityData() {
   const { states, resolvedZones, isLiveMode } = useAutoLayoutStore();
-  const { config, updateConfig, uploadVehicleAsset } = useUserConfig();
+  const { config, updateConfig, flushPendingSave, uploadVehicleAsset } = useUserConfig();
 
   const effectiveCarImage = config.mobility?.car?.vehicleImageUrl;
   const effectiveCarLogo = config.mobility?.car?.brandLogoUrl;
@@ -775,30 +775,31 @@ export function useMobilityData() {
         ...prev,
         mobility: {
           car: {
-            ...prev.mobility.car,
+            ...(prev.mobility?.car || {}),
             ...(settings.car || {})
           },
           bike: {
-            ...prev.mobility.bike,
+            ...(prev.mobility?.bike || {}),
             ...(settings.bike || {})
           }
         }
       }));
+      await flushPendingSave();
     } catch (e) {
       console.error('Failed to save vehicle settings', e);
       throw e;
     }
-  }, [updateConfig]);
+  }, [updateConfig, flushPendingSave]);
 
-  const resetCustomAssets = useCallback((targetType: 'car' | 'bike' | 'all' = 'all') => {
+  const resetCustomAssets = useCallback(async (targetType: 'car' | 'bike' | 'all' = 'all') => {
     try {
       if (targetType === 'car' || targetType === 'all') {
-        updateConfig((prev) => ({
+        await updateConfig((prev) => ({
           ...prev,
           mobility: {
-            ...prev.mobility,
+            ...(prev.mobility || {}),
             car: {
-              ...prev.mobility.car,
+              ...(prev.mobility?.car || {}),
               vehicleImageUrl: undefined,
               brandLogoUrl: undefined
             }
@@ -806,22 +807,23 @@ export function useMobilityData() {
         }));
       }
       if (targetType === 'bike' || targetType === 'all') {
-        updateConfig((prev) => ({
+        await updateConfig((prev) => ({
           ...prev,
           mobility: {
-            ...prev.mobility,
+            ...(prev.mobility || {}),
             bike: {
-              ...prev.mobility.bike,
+              ...(prev.mobility?.bike || {}),
               bikeImageUrl: undefined,
               brandLogoUrl: undefined
             }
           }
         }));
       }
+      await flushPendingSave();
     } catch (e) {
       console.error('Failed to clear asset', e);
     }
-  }, [updateConfig]);
+  }, [updateConfig, flushPendingSave]);
 
   return {
     carMetrics,
