@@ -6,11 +6,37 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import dns from 'node:dns';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
+import { Agent as UndiciAgent, fetch as undiciFetch } from 'undici';
 
 dotenv.config();
+
+// Ensure Node resolver favors IPv4 in dual-stack and Docker bridge network environments
+if (typeof dns.setDefaultResultOrder === 'function') {
+  try {
+    dns.setDefaultResultOrder('ipv4first');
+  } catch {
+    // Ignore if not supported
+  }
+}
+
+// Undici dispatcher configured to prioritize IPv4 lookup and avoid IPv6 connection stalls in Docker/Cloudflare
+const haDispatcher = new UndiciAgent({
+  connect: {
+    autoSelectFamily: false,
+    lookup: (hostname, opts, cb) => {
+      dns.lookup(hostname, { ...opts, family: 4 }, (err, address, family) => {
+        if (err) {
+          return dns.lookup(hostname, opts, cb);
+        }
+        cb(null, address, family);
+      });
+    }
+  }
+});
 
 let aiClient: GoogleGenAI | null = null;
 let quotaBackoffUntil = 0;
@@ -391,7 +417,27 @@ async function startServer() {
   // -------------------------------------------------------------
   const tokenValidationCache = new Map<string, { valid: boolean; expiresAt: number }>();
 
-  async function verifyHAToken(token: string, clientHaUrl?: string): Promise<boolean> {
+  function resolveTargetHaBase(clientHaUrl?: string): string {
+    let haBase = (
+      process.env.HASS_URL ||
+      process.env.HA_URL ||
+      process.env.HOME_ASSISTANT_URL ||
+      process.env.HOMEASSISTANT_URL ||
+      clientHaUrl ||
+      'http://homeassistant.local:8123'
+    ).trim();
+
+    if (!haBase.startsWith('http://') && !haBase.startsWith('https://')) {
+      haBase = `https://${haBase}`;
+    }
+
+    return haBase
+      .replace(/\/+$/, '')
+      .replace(/\/api\/websocket\/?$/, '')
+      .replace(/\/api\/?$/, '');
+  }
+
+  async function verifyHAToken(token: string, clientHaUrl?: string, forwardedAuthHeader?: string): Promise<boolean> {
     if (!token) return false;
 
     // Fast-path: allow test tokens in non-production test harnesses
@@ -404,41 +450,53 @@ async function startServer() {
       return cached.valid;
     }
 
-    const targetHaUrl = (clientHaUrl || process.env.HOMEASSISTANT_URL || process.env.HA_URL || 'http://homeassistant.local:8123')
-      .replace(/\/+$/, '')
-      .replace(/\/api\/websocket\/?$/, '');
+    const haBase = resolveTargetHaBase(clientHaUrl);
+    const targetUrl = `${haBase}/api/`;
+    const authHeader = forwardedAuthHeader || `Bearer ${token}`;
 
     try {
-      const response = await fetch(`${targetHaUrl}/api/`, {
+      const haRes = await undiciFetch(targetUrl, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
         },
-        signal: AbortSignal.timeout(4000)
+        dispatcher: haDispatcher,
+        signal: AbortSignal.timeout(5000)
       });
 
-      const isValid = response.ok;
+      // Home Assistant returns 200 OK on GET /api/ when token is valid
+      const isValid = haRes.status === 200;
+
       tokenValidationCache.set(token, {
         valid: isValid,
         expiresAt: Date.now() + (isValid ? 10 * 60 * 1000 : 30 * 1000)
       });
+
+      if (!isValid) {
+        console.warn(`[Auth Middleware] Token validation rejected by Home Assistant (HTTP ${haRes.status}) at ${targetUrl}`);
+      }
+
       return isValid;
-    } catch (err: any) {
-      console.warn('[Auth Middleware] Could not reach Home Assistant for token validation:', err.message);
+    } catch (error: any) {
+      console.error('[Auth Middleware] Could not reach Home Assistant for token validation: fetch failed');
+      console.error('[Auth Middleware] Target URL:', targetUrl);
+      console.error('[Auth Middleware] Error Cause:', (error as any)?.cause);
+      console.error('[Auth Middleware] Full Error:', error);
       return false;
     }
   }
 
   async function requireHAAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
     let token = '';
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.slice(7).trim();
+    const rawAuthHeader = req.headers.authorization;
+    if (rawAuthHeader && rawAuthHeader.startsWith('Bearer ')) {
+      token = rawAuthHeader.slice(7).trim();
     } else if (req.query.token && typeof req.query.token === 'string') {
       token = req.query.token.trim();
     }
 
-    const haUrl = (req.headers['x-ha-url'] as string) || (req.query.haUrl as string);
+    const clientHaUrl = (req.headers['x-ha-url'] as string) || (req.query.haUrl as string) || '';
 
     if (!token) {
       return res.status(401).json({
@@ -447,7 +505,11 @@ async function startServer() {
       });
     }
 
-    const isValid = await verifyHAToken(token, haUrl);
+    const authHeader = rawAuthHeader && rawAuthHeader.startsWith('Bearer ')
+      ? rawAuthHeader
+      : `Bearer ${token}`;
+
+    const isValid = await verifyHAToken(token, clientHaUrl, authHeader);
     if (!isValid) {
       return res.status(401).json({
         success: false,
@@ -769,9 +831,10 @@ async function startServer() {
     // 3. Environment variable overrides (if container has them set)
     if (process.env.GO2RTC_URL) addCandidate(process.env.GO2RTC_URL);
     if (process.env.HOMZ_GO2RTC_URL) addCandidate(process.env.HOMZ_GO2RTC_URL);
-    if (process.env.HASS_URL) {
+    const envHaUrl = process.env.HASS_URL || process.env.HA_URL || process.env.HOME_ASSISTANT_URL || process.env.HOMEASSISTANT_URL;
+    if (envHaUrl) {
       try {
-        const u = new URL(process.env.HASS_URL);
+        const u = new URL(envHaUrl.startsWith('http') ? envHaUrl : `https://${envHaUrl}`);
         if (u.hostname) addCandidate(`http://${u.hostname}:1984`);
       } catch { /* ignore */ }
     }

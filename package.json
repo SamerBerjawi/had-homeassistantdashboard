@@ -55,6 +55,7 @@
     "recharts": "^3.10.1",
     "tailwind-merge": "^3.6.0",
     "three": "^0.185.1",
+    "undici": "^8.10.1",
     "vite": "^6.2.3",
     "zustand": "^5.0.15"
   },
