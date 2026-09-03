@@ -30,6 +30,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { extractHANotifications, formatTimeAgo } from '../../services/notificationsService';
 import { HANotificationItem, NotificationCategory } from '../../types/notifications';
 import { haWebSocketService } from '../../services/haWebSocket';
+import { useAlertStore } from '../../store/useAlertStore';
 import NotificationRichContent from './NotificationRichContent';
 
 interface NotificationDrawerProps {
@@ -38,7 +39,7 @@ interface NotificationDrawerProps {
   darkMode?: boolean;
 }
 
-type TabType = 'all' | 'updates' | 'repairs' | 'notifications' | 'sensors';
+type TabType = 'all' | 'updates' | 'restarts' | 'repairs' | 'notifications' | 'alerts';
 
 export default function NotificationDrawer({
   isOpen,
@@ -73,6 +74,8 @@ export default function NotificationDrawer({
     clearSkippedUpdate: s.clearSkippedUpdate
   })));
 
+  const alertStoreAlerts = useAlertStore(s => s.alerts);
+
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoadingIds, setActionLoadingIds] = useState<Record<string, boolean>>({});
@@ -91,20 +94,20 @@ export default function NotificationDrawer({
       updateEntityState,
       installUpdate,
       skipUpdate,
-      clearSkippedUpdate
+      clearSkippedUpdate,
+      storeAlerts: alertStoreAlerts
     });
-  }, [domainGroups, states, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate]);
-
-
+  }, [domainGroups, states, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate, alertStoreAlerts]);
 
   // Counts by category
   const counts = useMemo(() => {
     return {
       all: allNotifications.length,
       updates: allNotifications.filter(n => n.category === 'update').length,
+      restarts: allNotifications.filter(n => n.category === 'restart').length,
       repairs: allNotifications.filter(n => n.category === 'repair').length,
       notifications: allNotifications.filter(n => n.category === 'persistent_notification').length,
-      sensors: allNotifications.filter(n => n.category === 'hazard' || n.category === 'battery' || n.category === 'security').length
+      alerts: allNotifications.filter(n => n.category === 'alert' || n.category === 'security' || n.category === 'appliance' || n.category === 'hazard' || n.category === 'battery').length
     };
   }, [allNotifications]);
 
@@ -113,9 +116,10 @@ export default function NotificationDrawer({
     return allNotifications.filter(item => {
       // Tab filter
       if (activeTab === 'updates' && item.category !== 'update') return false;
+      if (activeTab === 'restarts' && item.category !== 'restart') return false;
       if (activeTab === 'repairs' && item.category !== 'repair') return false;
       if (activeTab === 'notifications' && item.category !== 'persistent_notification') return false;
-      if (activeTab === 'sensors' && item.category !== 'hazard' && item.category !== 'battery' && item.category !== 'security') return false;
+      if (activeTab === 'alerts' && (item.category === 'update' || item.category === 'restart' || item.category === 'repair' || item.category === 'persistent_notification')) return false;
 
       // Search query filter
       if (searchQuery.trim()) {
@@ -133,11 +137,12 @@ export default function NotificationDrawer({
 
   // Batch Dismiss All
   const handleDismissAll = async () => {
+    // Only dismiss persistent notifications, repairs, and alerts — NOT software updates
     const dismissableIds = allNotifications
-      .filter(n => n.dismissable)
+      .filter(n => n.dismissable && n.category !== 'update')
       .map(n => n.id);
     
-    // Call dismiss services for persistent notifications & issues
+    // Call dismiss services for persistent notifications, issues & alerts
     for (const notif of allNotifications) {
       if (notif.category === 'persistent_notification' && notif.entity_id) {
         await callHAService('persistent_notification', 'dismiss', { notification_id: notif.id }).catch(() => {});
@@ -145,9 +150,12 @@ export default function NotificationDrawer({
       } else if (notif.category === 'repair' && notif.issueId) {
         await callHAService('repairs', 'ignore_issue', { issue_id: notif.issueId }).catch(() => {});
         if (updateEntityState) updateEntityState(notif.entity_id || '', 'ignored');
+      } else if (notif.category === 'alert' && notif.entity_id) {
+        await callHAService('alert', 'acknowledge', { entity_id: notif.entity_id }).catch(() => {});
       }
     }
 
+    await useAlertStore.getState().clearAllAlerts().catch(() => {});
     clearAllNotifications(dismissableIds);
   };
 
@@ -223,11 +231,35 @@ export default function NotificationDrawer({
           badgeBg: 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/40',
           label: 'Smoke/Fire Hazard'
         };
+      case 'restart':
+        return {
+          icon: <ArrowsClockwise size={20} weight="bold" className="text-amber-400" />,
+          badgeBg: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+          label: 'Restart Required'
+        };
       case 'battery':
         return {
           icon: <BatteryLow size={20} weight="duotone" className="text-amber-500" />,
           badgeBg: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
           label: 'Low Battery'
+        };
+      case 'alert':
+        return {
+          icon: <Warning size={20} weight="duotone" className="text-amber-500" />,
+          badgeBg: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
+          label: 'HA Alert'
+        };
+      case 'security':
+        return {
+          icon: <ShieldWarning size={20} weight="duotone" className="text-indigo-500" />,
+          badgeBg: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
+          label: 'Security'
+        };
+      case 'appliance':
+        return {
+          icon: <Sparkle size={20} weight="duotone" className="text-emerald-500" />,
+          badgeBg: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+          label: 'Appliance'
         };
       case 'persistent_notification':
       default:
@@ -243,96 +275,106 @@ export default function NotificationDrawer({
     <DetailsRightDrawer
       isOpen={isOpen}
       onClose={onClose}
-      title="Notifications & Alerts"
-      subtitle={`${counts.all} active item${counts.all === 1 ? '' : 's'} from Home Assistant`}
-      icon={<Bell size={22} weight="duotone" className="text-sky-500" />}
+      title="Notifications"
+      subtitle={`${counts.all} active item${counts.all === 1 ? '' : 's'}`}
+      icon={<Bell size={20} weight="duotone" className="text-sky-400" />}
       darkMode={darkMode}
     >
-      <div className="space-y-4 pb-24 sm:pb-6">
+      <div className="space-y-3.5 pb-24 sm:pb-6">
         
-        {/* Top Summary Bento Grid (Clean & Borderless) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <div 
-            onClick={() => setActiveTab('repairs')}
-            className={`p-3 rounded-2xl transition-all cursor-pointer ${
-              activeTab === 'repairs'
-                ? 'bg-amber-500/20 text-amber-300'
-                : darkMode ? 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-            }`}
-          >
-            <div className="flex items-center justify-between text-xs font-medium">
-              <span className="opacity-70">Issues</span>
-              <Warning size={15} weight="duotone" className="text-amber-400" />
-            </div>
-            <div className="text-xl font-black mt-1">
-              {counts.repairs}
-            </div>
+        {/* Streamlined Controls Bar: Dynamic Filter Tabs + Quick Actions */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          {/* Filter Pills with Counts */}
+          <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 touch-scroll-container">
+            {[
+              { id: 'all', label: 'All', count: counts.all },
+              { id: 'updates', label: 'Updates', count: counts.updates },
+              ...(counts.restarts > 0 ? [{ id: 'restarts', label: 'Restarts', count: counts.restarts }] : []),
+              ...(counts.repairs > 0 ? [{ id: 'repairs', label: 'Issues', count: counts.repairs }] : []),
+              ...(counts.notifications > 0 ? [{ id: 'notifications', label: 'Messages', count: counts.notifications }] : []),
+              ...(counts.alerts > 0 ? [{ id: 'alerts', label: 'Alerts', count: counts.alerts }] : [])
+            ].map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id as TabType)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                    isActive
+                      ? 'bg-sky-500 text-white shadow-xs'
+                      : darkMode
+                        ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-white'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    isActive ? 'bg-white/20 text-white' : darkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-200 text-slate-700'
+                  }`}>
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
-          <div 
-            onClick={() => setActiveTab('notifications')}
-            className={`p-3 rounded-2xl transition-all cursor-pointer ${
-              activeTab === 'notifications'
-                ? 'bg-indigo-500/20 text-indigo-300'
-                : darkMode ? 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-            }`}
-          >
-            <div className="flex items-center justify-between text-xs font-medium">
-              <span className="opacity-70">Messages</span>
-              <Info size={15} weight="duotone" className="text-indigo-400" />
-            </div>
-            <div className="text-xl font-black mt-1">
-              {counts.notifications}
-            </div>
-          </div>
+          {/* Quick Actions (Update All, Refresh, Clear All) */}
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+            {counts.updates > 0 && (
+              <button
+                type="button"
+                onClick={handleUpdateAll}
+                disabled={isUpdatingAll}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                title="Install all updates"
+              >
+                <DownloadSimple size={13} weight="bold" className={isUpdatingAll ? 'animate-bounce' : ''} />
+                <span>{isUpdatingAll ? 'Updating...' : `Update (${counts.updates})`}</span>
+              </button>
+            )}
 
-          <div 
-            onClick={() => setActiveTab('updates')}
-            className={`p-3 rounded-2xl transition-all cursor-pointer ${
-              activeTab === 'updates'
-                ? 'bg-sky-500/20 text-sky-300'
-                : darkMode ? 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-            }`}
-          >
-            <div className="flex items-center justify-between text-xs font-medium">
-              <span className="opacity-70">Updates</span>
-              <DownloadSimple size={15} weight="duotone" className="text-sky-400" />
-            </div>
-            <div className="text-xl font-black mt-1">
-              {counts.updates}
-            </div>
-          </div>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              className={`p-1.5 rounded-xl transition-all cursor-pointer ${
+                darkMode ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+              }`}
+              title="Refresh States & Notifications"
+            >
+              <ArrowsClockwise size={15} className={isRefreshing ? 'animate-spin text-sky-400' : ''} />
+            </button>
 
-          <div 
-            onClick={() => setActiveTab('sensors')}
-            className={`p-3 rounded-2xl transition-all cursor-pointer ${
-              activeTab === 'sensors'
-                ? 'bg-rose-500/20 text-rose-300'
-                : darkMode ? 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-            }`}
-          >
-            <div className="flex items-center justify-between text-xs font-medium">
-              <span className="opacity-70">Sensors</span>
-              <ShieldWarning size={15} weight="duotone" className="text-rose-400" />
-            </div>
-            <div className="text-xl font-black mt-1">
-              {counts.sensors}
-            </div>
+            {counts.all > 0 && (
+              <button
+                type="button"
+                onClick={handleDismissAll}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  darkMode
+                    ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-rose-400'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-rose-600'
+                }`}
+                title="Dismiss all"
+              >
+                <Trash size={13} />
+                <span>Clear All</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Action Bar (Refresh + Search + Clear All - Borderless) */}
-        <div className="flex items-center justify-between gap-2 pt-0.5">
-          <div className="relative flex-1">
-            <MagnifyingGlass size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        {/* Compact Search Bar (Shown if more than 2 items or search active) */}
+        {(counts.all > 2 || searchQuery.length > 0) && (
+          <div className="relative w-full">
+            <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search notifications, updates..."
-              className={`w-full pl-9.5 pr-4 py-2.5 rounded-xl text-xs transition-all focus:outline-hidden ${
+              placeholder="Search notifications..."
+              className={`w-full pl-8.5 pr-8 py-1.5 rounded-xl text-xs transition-all focus:outline-hidden ${
                 darkMode
-                  ? 'bg-white/[0.05] text-white placeholder-slate-500 focus:bg-white/[0.08]'
+                  ? 'bg-white/[0.04] text-white placeholder-slate-500 focus:bg-white/[0.07]'
                   : 'bg-slate-100 text-slate-900 placeholder-slate-400 focus:bg-slate-200/70'
               }`}
             />
@@ -340,91 +382,13 @@ export default function NotificationDrawer({
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
               >
-                <X size={14} />
+                <X size={13} />
               </button>
             )}
           </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            {counts.updates > 0 && (
-              <button
-                type="button"
-                onClick={handleUpdateAll}
-                disabled={isUpdatingAll}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Trigger all pending updates in Home Assistant"
-              >
-                <DownloadSimple size={15} weight="bold" className={isUpdatingAll ? 'animate-bounce' : ''} />
-                <span>{isUpdatingAll ? 'Updating...' : `Update All (${counts.updates})`}</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={handleRefresh}
-              className={`p-2.5 rounded-xl transition-all cursor-pointer ${
-                darkMode
-                  ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-300'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-              }`}
-              title="Refresh States & Notifications"
-            >
-              <ArrowsClockwise size={16} className={isRefreshing ? 'animate-spin text-sky-500' : ''} />
-            </button>
-
-            {counts.all > 0 && (
-              <button
-                type="button"
-                onClick={handleDismissAll}
-                className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  darkMode
-                    ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-300 hover:text-rose-300'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-rose-700'
-                }`}
-                title="Dismiss all dismissable notifications"
-              >
-                <Trash size={15} />
-                <span className="hidden sm:inline">Clear All</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Tab Filters Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 touch-scroll-container">
-          {[
-            { id: 'all', label: 'All', count: counts.all },
-            { id: 'repairs', label: 'Issues', count: counts.repairs },
-            { id: 'notifications', label: 'Messages', count: counts.notifications },
-            { id: 'updates', label: 'Updates', count: counts.updates },
-            { id: 'sensors', label: 'Sensors', count: counts.sensors }
-          ].map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as TabType)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                  isActive
-                    ? 'bg-sky-500 text-white shadow-xs'
-                    : darkMode
-                      ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-white'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                  isActive ? 'bg-white/20 text-white' : darkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-200 text-slate-700'
-                }`}>
-                  {tab.count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        )}
 
         {/* Notifications List (Clean, Borderless Grouped Items) */}
         <div className="space-y-2.5">
@@ -443,9 +407,11 @@ export default function NotificationDrawer({
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-1">
                   {searchQuery
                     ? 'No notifications matching your search filter.'
-                    : activeTab === 'all'
-                      ? 'No active updates, alerts, or notifications. Your home assistant is fully up-to-date and running smoothly.'
-                      : `No items found under ${activeTab}.`}
+                    : activeTab === 'updates'
+                      ? 'All software and integrations are fully up to date.'
+                      : activeTab === 'all'
+                        ? 'No active updates, alerts, or notifications. Your home assistant is fully up-to-date and running smoothly.'
+                        : `No items found under ${activeTab}.`}
                 </p>
               </div>
             </div>
@@ -569,6 +535,7 @@ export default function NotificationDrawer({
                         const isLoading = actionLoadingIds[act.id];
                         const isPrimary = act.variant === 'primary';
                         const isDanger = act.variant === 'danger';
+                        const isRestartAction = act.id.startsWith('restart_');
 
                         return (
                           <button
@@ -577,21 +544,27 @@ export default function NotificationDrawer({
                             disabled={isLoading || isProgress}
                             onClick={() => runAction(act.id, act.onClick)}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                              isPrimary
-                                ? 'bg-sky-500 hover:bg-sky-400 text-white shadow-xs active:scale-95'
-                                : isDanger
-                                  ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 active:scale-95'
-                                  : darkMode
-                                    ? 'bg-white/10 hover:bg-white/15 text-slate-200 active:scale-95'
-                                    : 'bg-slate-200 hover:bg-slate-300 text-slate-700 active:scale-95'
+                              isRestartAction
+                                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-xs active:scale-95'
+                                : isPrimary
+                                  ? 'bg-sky-500 hover:bg-sky-400 text-white shadow-xs active:scale-95'
+                                  : isDanger
+                                    ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 active:scale-95'
+                                    : darkMode
+                                      ? 'bg-white/10 hover:bg-white/15 text-slate-200 active:scale-95'
+                                      : 'bg-slate-200 hover:bg-slate-300 text-slate-700 active:scale-95'
                             }`}
                           >
                             {isLoading ? (
                               <ArrowsClockwise size={13} className="animate-spin" />
+                            ) : isRestartAction ? (
+                              <ArrowsClockwise size={13} weight="bold" />
                             ) : act.id === 'install' ? (
                               <DownloadSimple size={13} weight="bold" />
                             ) : act.id === 'skip' ? (
                               <SkipForward size={13} weight="bold" />
+                            ) : act.id.startsWith('ack_') ? (
+                              <Check size={13} weight="bold" />
                             ) : act.id === 'release_notes' || act.id === 'learn_more' ? (
                               <ArrowSquareOut size={13} weight="bold" />
                             ) : null}

@@ -3,7 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type NotificationCategory = 'update' | 'persistent_notification' | 'repair' | 'hazard' | 'security' | 'battery';
+export type NotificationCategory = 
+  | 'update' 
+  | 'restart'
+  | 'persistent_notification' 
+  | 'repair' 
+  | 'alert'
+  | 'hazard' 
+  | 'security' 
+  | 'battery'
+  | 'appliance';
 
 export type NotificationSeverity = 'info' | 'warning' | 'error' | 'critical' | 'update';
 

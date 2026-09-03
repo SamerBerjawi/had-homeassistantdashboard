@@ -25,6 +25,7 @@ import { AnimatedThemeToggler } from './ui/animated-theme-toggler';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { useShallow } from 'zustand/react/shallow';
 import { extractHANotifications } from '../services/notificationsService';
+import { useAlertStore } from '../store/useAlertStore';
 
 import { PAGE_THEMES } from '../config/pageThemes';
 
@@ -69,6 +70,8 @@ export default function Sidebar({
     clearSkippedUpdate: s.clearSkippedUpdate
   })));
 
+  const alertStoreAlerts = useAlertStore(s => s.alerts);
+
   const notifications = useMemo(() => {
     return extractHANotifications({
       domainGroups,
@@ -81,9 +84,10 @@ export default function Sidebar({
       updateEntityState,
       installUpdate,
       skipUpdate,
-      clearSkippedUpdate
+      clearSkippedUpdate,
+      storeAlerts: alertStoreAlerts
     });
-  }, [domainGroups, states, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate]);
+  }, [domainGroups, states, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate, alertStoreAlerts]);
 
   const totalNotifications = notifications.length;
 

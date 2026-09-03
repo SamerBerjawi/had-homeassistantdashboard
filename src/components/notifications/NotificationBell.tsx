@@ -64,15 +64,16 @@ export default function NotificationBell({
       updateEntityState,
       installUpdate,
       skipUpdate,
-      clearSkippedUpdate
+      clearSkippedUpdate,
+      storeAlerts: alertStoreAlerts
     });
-  }, [domainGroups, states, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate]);
+  }, [domainGroups, states, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate, alertStoreAlerts]);
 
-  // Combined count from HA extract and real-time alert store
-  const totalCount = Math.max(notifications.length, alertStoreAlerts.length);
+  // Combined count from HA notifications, updates, repairs, sensors and alert store
+  const totalCount = notifications.length;
 
-  const hasCritical = notifications.some(n => n.severity === 'critical') || alertStoreAlerts.some(a => a.severity === 'critical');
-  const hasWarning = notifications.some(n => n.severity === 'warning' || n.severity === 'error') || alertStoreAlerts.some(a => a.severity === 'warning');
+  const hasCritical = notifications.some(n => n.severity === 'critical');
+  const hasWarning = notifications.some(n => n.severity === 'warning' || n.severity === 'error');
   const hasUpdates = notifications.some(n => n.category === 'update' && !n.skippedVersion);
   const updatesCount = notifications.filter(n => n.category === 'update' && !n.skippedVersion).length;
 

@@ -275,7 +275,20 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   selectedAlarmEntityId: typeof window !== 'undefined' ? localStorage.getItem('ha_selected_alarm_id') : null,
   nativeNotifications: [],
   nativeRepairs: [],
-  dismissedNotificationIds: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('ha_dismissed_notifications') || '[]') : [],
+  dismissedNotificationIds: typeof window !== 'undefined' 
+    ? (() => {
+        try {
+          const raw = JSON.parse(localStorage.getItem('ha_dismissed_notifications') || '[]');
+          const cleaned = Array.isArray(raw) ? raw.filter((id: any) => typeof id === 'string' && !id.startsWith('update.') && !id.startsWith('hacs_')) : [];
+          if (Array.isArray(raw) && raw.length !== cleaned.length) {
+            localStorage.setItem('ha_dismissed_notifications', JSON.stringify(cleaned));
+          }
+          return cleaned;
+        } catch {
+          return [];
+        }
+      })()
+    : [],
   showDiagnosticEntities: false,
   searchQuery: '',
   entityCustomizations: {},

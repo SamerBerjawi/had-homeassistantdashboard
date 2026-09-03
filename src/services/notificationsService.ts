@@ -15,6 +15,8 @@ import {
 import { ResolvedEntity, HAState } from '../types';
 import { safeOpenExternalUrl } from '../lib/utils';
 import { isLeakSensor } from '../lib/entityClassifiers';
+import { useAlertStore, AlertItem } from '../store/useAlertStore';
+import { alertService } from './alertService';
 
 export interface ExtractNotificationsParams {
   domainGroups: Record<string, ResolvedEntity[]>;
@@ -29,6 +31,7 @@ export interface ExtractNotificationsParams {
   installUpdate?: (entityId: string) => Promise<void>;
   skipUpdate?: (entityId: string) => Promise<void>;
   clearSkippedUpdate?: (entityId: string) => Promise<void>;
+  storeAlerts?: AlertItem[];
 }
 
 
@@ -76,7 +79,8 @@ export function extractHANotifications({
   updateEntityState,
   installUpdate,
   skipUpdate,
-  clearSkippedUpdate
+  clearSkippedUpdate,
+  storeAlerts
 }: ExtractNotificationsParams): HANotificationItem[] {
 
   const items: HANotificationItem[] = [];
@@ -84,25 +88,49 @@ export function extractHANotifications({
   const seenIds = new Set<string>();
 
   // 1. SOFTWARE & FIRMWARE UPDATES (`update.*`)
-  // domainGroups['update'] already contains all resolved update entities from the graph — no need to re-scan states.
-  const seenUpdates = new Set<string>();
+  // Ingest from domainGroups['update'] and all states with entity_id starting with 'update.'
+  const allUpdateEntitiesMap = new Map<string, { entity_id: string; name: string; state: string; attributes: Record<string, any> }>();
   for (const ent of (domainGroups['update'] || [])) {
-    if (seenUpdates.has(ent.entity_id)) continue;
-    seenUpdates.add(ent.entity_id);
+    allUpdateEntitiesMap.set(ent.entity_id, {
+      entity_id: ent.entity_id,
+      name: ent.name || ent.entity_id,
+      state: ent.state,
+      attributes: ent.attributes || {}
+    });
+  }
+  for (const s of Object.values(states)) {
+    if (s?.entity_id?.startsWith('update.') && !allUpdateEntitiesMap.has(s.entity_id)) {
+      allUpdateEntitiesMap.set(s.entity_id, {
+        entity_id: s.entity_id,
+        name: s.attributes?.friendly_name || s.attributes?.title || s.entity_id,
+        state: s.state,
+        attributes: s.attributes || {}
+      });
+    }
+  }
 
-
-    const isDismissed = dismissedSet.has(ent.entity_id);
-    if (isDismissed) continue;
-
+  for (const ent of allUpdateEntitiesMap.values()) {
     const liveState = states[ent.entity_id] || { state: ent.state, attributes: ent.attributes };
     const attrs = liveState.attributes || {};
-    const hasUpdateAvailable = liveState.state === 'on' || (attrs.latest_version && attrs.latest_version !== attrs.installed_version);
+
+    const isStateOn = liveState.state === 'on' || liveState.state === 'true';
+    const hasVersionMismatch = Boolean(attrs.latest_version) && 
+      (attrs.latest_version !== attrs.installed_version);
+    const isStateVersion = liveState.state && 
+      liveState.state !== 'off' && 
+      liveState.state !== 'unavailable' && 
+      liveState.state !== 'unknown' && 
+      liveState.state !== 'idle' &&
+      Boolean(attrs.installed_version) &&
+      liveState.state !== attrs.installed_version;
     const inProgress = Boolean(attrs.in_progress) || liveState.state === 'installing';
     const isSkipped = Boolean(attrs.skipped_version);
 
-    if (hasUpdateAvailable || inProgress || isSkipped) {
+    const hasUpdateAvailable = isStateOn || hasVersionMismatch || isStateVersion || inProgress || isSkipped;
+
+    if (hasUpdateAvailable) {
       const installedVer = attrs.installed_version || '1.0.0';
-      const latestVer = attrs.latest_version || '1.0.1';
+      const latestVer = attrs.latest_version || (isStateVersion ? liveState.state : '1.0.1');
       const title = attrs.title || attrs.friendly_name || ent.name;
       const releaseSummary = attrs.release_summary || '';
       const releaseUrl = attrs.release_url;
@@ -127,7 +155,7 @@ export function extractHANotifications({
         skippedVersion: attrs.skipped_version || null,
         autoUpdate: Boolean(attrs.auto_update),
         createdAt: attrs.release_date || (liveState as HAState).last_updated || new Date().toISOString(),
-        dismissable: true,
+        dismissable: false,
 
         actions: [
           ...(inProgress ? [] : isSkipped ? [
@@ -189,10 +217,86 @@ export function extractHANotifications({
               }
             }
           ] : [])
-        ],
-        onDismiss: () => {
-          dismissNotification(ent.entity_id);
-        }
+        ]
+      });
+    }
+  }
+
+  // Also check HACS (Home Assistant Community Store) updates via sensor.hacs
+  const hacsSensor = states['sensor.hacs'];
+  if (hacsSensor && (Number(hacsSensor.state) > 0 || (Array.isArray(hacsSensor.attributes?.repositories) && hacsSensor.attributes.repositories.length > 0))) {
+    const repos = Array.isArray(hacsSensor.attributes?.repositories) ? hacsSensor.attributes.repositories : [];
+    for (const repo of repos) {
+      const repoId = `hacs_update_${repo.name || repo.display_name || Math.random().toString(36).substring(7)}`;
+      if (seenIds.has(repoId)) continue;
+      seenIds.add(repoId);
+
+      const repoTitle = repo.display_name || repo.name || 'HACS Integration';
+      const installedVer = repo.installed_version || 'Installed';
+      const latestVer = repo.available_version || 'Latest';
+      const releaseSummary = repo.description || `HACS update available for ${repoTitle}`;
+
+      items.push({
+        id: repoId,
+        entity_id: 'sensor.hacs',
+        category: 'update',
+        severity: 'update',
+        title: `HACS: ${repoTitle}`,
+        message: releaseSummary,
+        installedVersion: installedVer,
+        latestVersion: latestVer,
+        releaseSummary,
+        createdAt: hacsSensor.last_updated || new Date().toISOString(),
+        dismissable: false,
+        actions: [
+          ...(repo.name && repo.name.includes('/') ? [
+            {
+              id: `hacs_notes_${repo.name}`,
+              label: 'View Repository',
+              variant: 'ghost' as const,
+              onClick: () => {
+                safeOpenExternalUrl(`https://github.com/${repo.name}`);
+              }
+            }
+          ] : [])
+        ]
+      });
+    }
+  }
+
+  // Also check Home Assistant Core updater binary sensor (binary_sensor.updater)
+  const updaterSensor = states['binary_sensor.updater'];
+  if (updaterSensor && (updaterSensor.state === 'on' || updaterSensor.state === 'true')) {
+    const updaterId = 'ha_updater_binary_sensor';
+    if (!seenIds.has(updaterId)) {
+      seenIds.add(updaterId);
+      const attrs = updaterSensor.attributes || {};
+      const latestVer = attrs.newest_version || 'Latest';
+      const releaseNotes = attrs.release_notes;
+
+      items.push({
+        id: updaterId,
+        entity_id: 'binary_sensor.updater',
+        category: 'update',
+        severity: 'update',
+        title: 'Home Assistant Core Update Available',
+        message: releaseNotes || `Home Assistant ${latestVer} is ready to install.`,
+        latestVersion: latestVer,
+        releaseUrl: releaseNotes,
+        createdAt: updaterSensor.last_updated || new Date().toISOString(),
+        dismissable: false,
+        actions: [
+          ...(releaseNotes ? [
+            {
+              id: 'ha_updater_notes',
+              label: 'Release Notes',
+              variant: 'ghost' as const,
+              onClick: () => {
+                safeOpenExternalUrl(releaseNotes);
+              }
+            }
+          ] : [])
+        ]
       });
     }
   }
@@ -209,17 +313,33 @@ export function extractHANotifications({
     const title = notif.title || 'Home Assistant Notification';
     const message = notif.message || 'Notification received from Home Assistant.';
     const createdAt = notif.created_at || new Date().toISOString();
+    const isRestartNotif = title.toLowerCase().includes('restart') || 
+      message.toLowerCase().includes('restart') || 
+      title.toLowerCase().includes('reboot') || 
+      message.toLowerCase().includes('reboot');
 
     items.push({
       id: notifId,
       entity_id: `persistent_notification.${notifId}`,
-      category: 'persistent_notification',
-      severity: 'info',
+      category: isRestartNotif ? 'restart' : 'persistent_notification',
+      severity: isRestartNotif ? 'warning' : 'info',
       title,
       message,
       createdAt,
       dismissable: true,
       actions: [
+        ...(isRestartNotif ? [
+          {
+            id: `restart_${notifId}`,
+            label: 'Restart Now',
+            variant: 'primary' as const,
+            onClick: async () => {
+              await callHAService('homeassistant', 'restart', {}).catch(() => {});
+              await callHAService('persistent_notification', 'dismiss', { notification_id: notif.notification_id }).catch(() => {});
+              dismissNotification(notifId);
+            }
+          }
+        ] : []),
         {
           id: 'dismiss',
           label: 'Dismiss',
@@ -252,18 +372,35 @@ export function extractHANotifications({
     const message = notif.attributes.message || 'System notification received.';
     const image = notif.attributes.data?.image || notif.attributes.image || notif.attributes.entity_picture || notif.attributes.image_url;
     const createdAt = notif.attributes.created_at || notif.last_updated;
+    const isRestartNotif = title.toLowerCase().includes('restart') || 
+      message.toLowerCase().includes('restart') || 
+      title.toLowerCase().includes('reboot') || 
+      message.toLowerCase().includes('reboot');
 
     items.push({
       id: notifId,
       entity_id: notif.entity_id,
-      category: 'persistent_notification',
-      severity: 'info',
+      category: isRestartNotif ? 'restart' : 'persistent_notification',
+      severity: isRestartNotif ? 'warning' : 'info',
       title,
       message,
       image,
       createdAt,
       dismissable: true,
       actions: [
+        ...(isRestartNotif ? [
+          {
+            id: `restart_${notifId}`,
+            label: 'Restart Now',
+            variant: 'primary' as const,
+            onClick: async () => {
+              await callHAService('homeassistant', 'restart', {}).catch(() => {});
+              await callHAService('persistent_notification', 'dismiss', { notification_id: notifId }).catch(() => {});
+              dismissNotification(notifId);
+              dismissNotification(notif.entity_id);
+            }
+          }
+        ] : []),
         {
           id: 'dismiss',
           label: 'Dismiss',
@@ -369,7 +506,7 @@ export function extractHANotifications({
     items.push({
       id: issueId,
       entity_id: `repair.${rep.domain}_${rep.issue_id}`,
-      category: 'repair',
+      category: isRestartIssue ? 'restart' : 'repair',
       severity,
       title,
       message,
@@ -482,7 +619,7 @@ export function extractHANotifications({
     items.push({
       id: issueId,
       entity_id: rep.entity_id,
-      category: 'repair',
+      category: isRestartIssue ? 'restart' : 'repair',
       severity,
       title,
       message,
@@ -499,6 +636,89 @@ export function extractHANotifications({
         if (updateEntityState) {
           updateEntityState(rep.entity_id, 'ignored');
         }
+      }
+    });
+  }
+
+  // 3.5 DEDICATED RESTART / REBOOT SENSORS & SYSTEM CHECKS
+  for (const s of Object.values(states)) {
+    if (!s || !s.entity_id) continue;
+    const eid = s.entity_id.toLowerCase();
+    const attrs = s.attributes || {};
+    const devClass = String(attrs.device_class || '').toLowerCase();
+    const friendlyName = attrs.friendly_name || s.entity_id;
+    const lowerName = friendlyName.toLowerCase();
+
+    const isRestartSensor = 
+      (eid.startsWith('binary_sensor.') || eid.startsWith('sensor.')) &&
+      (devClass === 'restart' || 
+       devClass === 'reboot' ||
+       eid.includes('restart_required') || 
+       eid.includes('reboot_required') ||
+       lowerName.includes('restart required') || 
+       lowerName.includes('reboot required') ||
+       Boolean(attrs.restart_required) ||
+       Boolean(attrs.reboot_required));
+
+    if (!isRestartSensor) continue;
+
+    const isTriggered = 
+      s.state === 'on' || 
+      s.state === 'problem' || 
+      s.state === 'restart_required' || 
+      s.state === 'reboot_required' ||
+      s.state === 'true';
+
+    if (!isTriggered) continue;
+    if (seenIds.has(s.entity_id) || dismissedSet.has(s.entity_id)) continue;
+    seenIds.add(s.entity_id);
+
+    const isReboot = eid.includes('reboot') || lowerName.includes('reboot');
+    items.push({
+      id: s.entity_id,
+      entity_id: s.entity_id,
+      category: 'restart',
+      severity: 'warning',
+      title: isReboot ? `Reboot Required: ${friendlyName}` : `Restart Required: ${friendlyName}`,
+      message: attrs.message || `${friendlyName} indicates a system restart is required to apply configuration changes or update packages.`,
+      createdAt: s.last_updated || new Date().toISOString(),
+      dismissable: true,
+      actions: [
+        {
+          id: `restart_${s.entity_id}`,
+          label: isReboot ? 'Reboot Now' : 'Restart Now',
+          variant: 'primary' as const,
+          onClick: async () => {
+            dismissNotification(s.entity_id);
+            if (isReboot) {
+              await callHAService('hassio', 'host_reboot', {}).catch(async () => {
+                await callHAService('homeassistant', 'restart', {}).catch(() => {});
+              });
+            } else {
+              await callHAService('homeassistant', 'restart', {}).catch(() => {});
+            }
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ha_log_message', {
+                detail: {
+                  type: 'info',
+                  msg: 'Home Assistant restart triggered...',
+                  details: { entity_id: s.entity_id }
+                }
+              }));
+            }
+          }
+        },
+        {
+          id: `dismiss_${s.entity_id}`,
+          label: 'Later',
+          variant: 'ghost' as const,
+          onClick: () => {
+            dismissNotification(s.entity_id);
+          }
+        }
+      ],
+      onDismiss: () => {
+        dismissNotification(s.entity_id);
       }
     });
   }
@@ -570,18 +790,155 @@ export function extractHANotifications({
     });
   }
 
-  // 5. SORT ORDER UNDER "ALL":
-  // 1. Issues (repair)
-  // 2. Messages (persistent_notification)
-  // 3. Updates (update)
-  // 4. Sensors (hazard, security, battery)
+  // Problem & Tamper binary sensors
+  const problemSensors = binarySensors.filter(
+    b => (b.attributes.device_class === 'problem' || b.attributes.device_class === 'tamper') &&
+         (b.state === 'on' || b.state === 'problem' || b.state === 'tampered')
+  );
+  for (const prob of problemSensors) {
+    const notifId = `alert_prob_${prob.entity_id}`;
+    if (seenIds.has(notifId) || dismissedSet.has(notifId)) continue;
+    seenIds.add(notifId);
+
+    const isTamper = prob.attributes.device_class === 'tamper';
+    items.push({
+      id: notifId,
+      entity_id: prob.entity_id,
+      category: isTamper ? 'security' : 'repair',
+      severity: 'warning',
+      title: `${isTamper ? 'Tamper Detected' : 'Device Problem'}: ${prob.name}`,
+      message: `${prob.name} reported a ${isTamper ? 'tamper alert' : 'hardware problem'} in ${prob.area?.name || 'Home'}.`,
+      areaName: prob.area?.name,
+      createdAt: prob.attributes.last_triggered || new Date().toISOString(),
+      dismissable: true,
+      onDismiss: () => {
+        dismissNotification(notifId);
+      }
+    });
+  }
+
+  // 5. HOME ASSISTANT NATIVE ALERTS (`alert.*` integration)
+  const alertEntities = Object.values(states).filter(
+    s => s.entity_id.startsWith('alert.') && s.state === 'on'
+  );
+
+  for (const ent of alertEntities) {
+    if (seenIds.has(ent.entity_id) || dismissedSet.has(ent.entity_id)) continue;
+    seenIds.add(ent.entity_id);
+
+    const attrs = ent.attributes || {};
+    const title = attrs.title || attrs.friendly_name || ent.entity_id.replace('alert.', '').replace(/_/g, ' ');
+    const message = attrs.message || 'Home Assistant alert is actively triggering.';
+    const severityRaw = (attrs.severity || 'warning').toLowerCase();
+    const severity: NotificationSeverity = 
+      severityRaw === 'critical' ? 'critical' :
+      severityRaw === 'error' ? 'error' : 'warning';
+
+    items.push({
+      id: ent.entity_id,
+      entity_id: ent.entity_id,
+      category: 'alert',
+      severity,
+      title,
+      message,
+      createdAt: attrs.last_triggered || ent.last_updated || new Date().toISOString(),
+      dismissable: true,
+      actions: [
+        {
+          id: `ack_${ent.entity_id}`,
+          label: 'Acknowledge',
+          variant: 'primary' as const,
+          onClick: async () => {
+            await callHAService('alert', 'acknowledge', { entity_id: ent.entity_id }, { entity_id: ent.entity_id }).catch(() => {});
+            dismissNotification(ent.entity_id);
+            if (updateEntityState) {
+              updateEntityState(ent.entity_id, 'off', { acknowledged: true });
+            }
+          }
+        },
+        {
+          id: `dismiss_${ent.entity_id}`,
+          label: 'Dismiss',
+          variant: 'ghost' as const,
+          onClick: () => {
+            dismissNotification(ent.entity_id);
+          }
+        }
+      ],
+      onDismiss: async () => {
+        await callHAService('alert', 'acknowledge', { entity_id: ent.entity_id }, { entity_id: ent.entity_id }).catch(() => {});
+        dismissNotification(ent.entity_id);
+      }
+    });
+  }
+
+  // 6. REAL-TIME ALERTS & DISPATCHES FROM ALERT STORE
+  const effectiveStoreAlerts = storeAlerts || (typeof useAlertStore !== 'undefined' ? useAlertStore.getState().alerts : []);
+  for (const alert of effectiveStoreAlerts) {
+    const alertId = alert.id;
+    const haNotifId = alert.haNotificationId;
+    if (seenIds.has(alertId) || (haNotifId && seenIds.has(haNotifId)) || (haNotifId && seenIds.has(`persistent_notification.${haNotifId}`))) continue;
+    if (dismissedSet.has(alertId) || (haNotifId && dismissedSet.has(haNotifId))) continue;
+    seenIds.add(alertId);
+    if (haNotifId) seenIds.add(haNotifId);
+
+    const severity: NotificationSeverity = 
+      alert.severity === 'critical' ? 'critical' :
+      alert.severity === 'warning' ? 'warning' : 'info';
+
+    const category: NotificationCategory = 
+      alert.category === 'persistent_notification' ? 'persistent_notification' :
+      alert.category === 'hazard' ? 'hazard' :
+      alert.category === 'security' ? 'security' :
+      alert.category === 'appliance' ? 'appliance' :
+      alert.category === 'update' ? 'update' : 'alert';
+
+    items.push({
+      id: alertId,
+      entity_id: alert.entityId,
+      category,
+      severity,
+      title: alert.title,
+      message: alert.message,
+      areaName: alert.areaName,
+      createdAt: alert.timestamp ? new Date(alert.timestamp).toISOString() : new Date().toISOString(),
+      dismissable: true,
+      actions: [
+        {
+          id: `dismiss_${alertId}`,
+          label: 'Dismiss',
+          variant: 'secondary' as const,
+          onClick: async () => {
+            await alertService.dismissAlert(alertId, alert.haNotificationId).catch(() => {});
+            dismissNotification(alertId);
+          }
+        }
+      ],
+      onDismiss: async () => {
+        await alertService.dismissAlert(alertId, alert.haNotificationId).catch(() => {});
+        dismissNotification(alertId);
+      }
+    });
+  }
+
+  // 7. SORT ORDER UNDER "ALL":
+  // 1. Hazard / Emergency
+  // 2. Issues / Repairs
+  // 3. Alerts
+  // 4. Messages (Persistent Notifications)
+  // 5. Software Updates
+  // 6. Security & Appliances
+  // 7. Battery
   const categoryRank: Record<NotificationCategory, number> = {
-    repair: 1,
-    persistent_notification: 2,
-    update: 3,
-    hazard: 4,
-    security: 4,
-    battery: 4
+    hazard: 1,
+    restart: 2,
+    repair: 3,
+    alert: 4,
+    persistent_notification: 5,
+    update: 6,
+    security: 7,
+    appliance: 8,
+    battery: 9
   };
 
   const severityScore: Record<NotificationSeverity, number> = {
@@ -593,6 +950,10 @@ export function extractHANotifications({
   };
 
   return items.sort((a, b) => {
+    // Critical first regardless of category
+    if (a.severity === 'critical' && b.severity !== 'critical') return -1;
+    if (b.severity === 'critical' && a.severity !== 'critical') return 1;
+
     const rankA = categoryRank[a.category] ?? 99;
     const rankB = categoryRank[b.category] ?? 99;
     if (rankA !== rankB) {

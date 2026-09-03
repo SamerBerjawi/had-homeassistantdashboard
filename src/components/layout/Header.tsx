@@ -17,6 +17,7 @@ import {
 } from '@phosphor-icons/react';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import { useAlertStore } from '../../store/useAlertStore';
+import NotificationBell from '../notifications/NotificationBell';
 
 interface HeaderProps {
   pageTitle: string;
@@ -51,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
   onManualRefresh,
   onOpenAlerts
 }) => {
-  const { alerts, toggleDrawer } = useAlertStore();
+  const { toggleDrawer } = useAlertStore();
 
   const handleBellClick = () => {
     if (onOpenAlerts) {
@@ -60,18 +61,6 @@ export const Header: React.FC<HeaderProps> = ({
       toggleDrawer();
     }
   };
-
-  // Compute unread alert counts
-  const totalAlerts = alerts.length;
-  const hasCritical = alerts.some((a) => a.severity === 'critical');
-  const hasWarning = alerts.some((a) => a.severity === 'warning');
-
-  // Badge styling based on highest severity
-  const bellBadgeStyle = hasCritical
-    ? 'bg-rose-500 text-white animate-bounce ring-2 ring-rose-400/60 shadow-rose-500/50'
-    : hasWarning
-    ? 'bg-amber-500 text-white animate-pulse ring-2 ring-amber-400/60 shadow-amber-500/40'
-    : 'bg-sky-500 text-white ring-2 ring-sky-400/60 shadow-sky-500/40';
 
   return (
     <header className="mb-6 flex flex-col gap-3 pb-1 w-full select-none">
@@ -165,40 +154,11 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Notification Bell with Dynamic Unread Counter Badge */}
-          <button
-            type="button"
+          {/* Notification Center Trigger */}
+          <NotificationBell
+            darkMode={darkMode}
             onClick={handleBellClick}
-            className={`relative p-2 rounded-xl border transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center ${
-              totalAlerts > 0
-                ? hasCritical
-                  ? 'bg-rose-500/15 border-rose-500/40 text-rose-400 shadow-sm shadow-rose-500/20'
-                  : hasWarning
-                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-400 shadow-sm shadow-amber-500/20'
-                  : 'bg-sky-500/15 border-sky-500/40 text-sky-400 shadow-sm shadow-sky-500/20'
-                : darkMode
-                ? 'bg-slate-900/80 hover:bg-slate-800 border-white/10 text-slate-400 hover:text-slate-200 shadow-xs'
-                : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900 shadow-xs'
-            }`}
-            title={`${totalAlerts} Active Notification${totalAlerts === 1 ? '' : 's'}`}
-          >
-            {hasCritical ? (
-              <Flame size={18} weight="fill" className="text-rose-400 animate-pulse" />
-            ) : hasWarning ? (
-              <Warning size={18} weight="fill" className="text-amber-400" />
-            ) : (
-              <Bell size={18} weight={totalAlerts > 0 ? 'duotone' : 'regular'} />
-            )}
-
-            {/* Live Count Pill Badge */}
-            {totalAlerts > 0 && (
-              <span
-                className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black flex items-center justify-center shadow-md ${bellBadgeStyle}`}
-              >
-                {totalAlerts > 99 ? '99+' : totalAlerts}
-              </span>
-            )}
-          </button>
+          />
         </div>
       </div>
     </header>

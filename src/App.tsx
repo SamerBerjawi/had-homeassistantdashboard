@@ -29,7 +29,6 @@ import { haWebSocketService } from './services/haWebSocket';
 import { alertService } from './services/alertService';
 import { useAlertStore } from './store/useAlertStore';
 import ToastContainer from './components/alerts/ToastContainer';
-import AlertDrawer from './components/alerts/AlertDrawer';
 import CriticalAlertModal from './components/alerts/CriticalAlertModal';
 
 const SETTINGS_SECTIONS_META: Record<string, { title: string; subtitle: string; icon: React.ComponentType<any>; color: string }> = {
@@ -277,6 +276,16 @@ export default function App() {
   const [isWeatherDrawerOpen, setIsWeatherDrawerOpen] = useState<boolean>(false);
   const { isDrawerOpen: isAlertDrawerOpen, setDrawerOpen: setAlertDrawerOpen } = useAlertStore();
 
+  const isNotificationOpen = isNotificationDrawerOpen || isAlertDrawerOpen;
+  const handleOpenNotifications = () => {
+    setIsNotificationDrawerOpen(true);
+    setAlertDrawerOpen(true);
+  };
+  const handleCloseNotifications = () => {
+    setIsNotificationDrawerOpen(false);
+    setAlertDrawerOpen(false);
+  };
+
   // Authentication Context
   const { authState, enterDemoMode, isInitializing: isAuthInitializing } = useAuth();
 
@@ -482,7 +491,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         darkMode={darkMode}
         toggleDarkMode={handleToggleDarkMode}
-        onOpenNotifications={() => setAlertDrawerOpen(true)}
+        onOpenNotifications={handleOpenNotifications}
       />
 
 
@@ -586,7 +595,7 @@ export default function App() {
                 {/* Notification Center Trigger */}
                 <NotificationBell
                   darkMode={darkMode}
-                  onClick={() => setAlertDrawerOpen(true)}
+                  onClick={handleOpenNotifications}
                 />
               </div>
             </div>
@@ -688,16 +697,10 @@ export default function App() {
         </main>
       </div>
 
-      {/* Global Event & Alert Center Drawer */}
-      <AlertDrawer
-        isOpen={isAlertDrawerOpen}
-        onClose={() => setAlertDrawerOpen(false)}
-      />
-
-      {/* Global Notification Drawer */}
+      {/* Global Notification & Alert Center Drawer */}
       <NotificationDrawer
-        isOpen={isNotificationDrawerOpen}
-        onClose={() => setIsNotificationDrawerOpen(false)}
+        isOpen={isNotificationOpen}
+        onClose={handleCloseNotifications}
         darkMode={darkMode}
       />
 
