@@ -206,10 +206,10 @@ export default function Sidebar({
                 <Icon 
                   size={20} 
                   weight="duotone" 
-                  className={`shrink-0 transition-transform duration-200 ${
+                  className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${itemTheme.color} ${
                     isActive 
-                      ? itemTheme.color 
-                      : darkMode ? 'text-slate-400 group-hover:text-white' : 'text-slate-500 group-hover:text-slate-900'
+                      ? 'opacity-100 drop-shadow-xs' 
+                      : 'opacity-85 group-hover:opacity-100'
                   }`} 
                 />
 
@@ -412,7 +412,9 @@ export default function Sidebar({
                   <ItemIcon 
                     size={20} 
                     weight="duotone" 
-                    className={isActive ? itemTheme.color : (darkMode ? 'text-slate-400' : 'text-slate-500')} 
+                    className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${itemTheme.color} ${
+                      isActive ? 'opacity-100 scale-105' : 'opacity-85 group-hover:opacity-100'
+                    }`} 
                   />
                   <div className="min-w-0">
                     <div className="text-xs font-bold truncate">{item.label}</div>
@@ -493,7 +495,13 @@ export default function Sidebar({
                     : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Icon size={22} weight="duotone" className={isActive ? itemTheme.color : ''} />
+              <Icon 
+                size={22} 
+                weight="duotone" 
+                className={`transition-transform duration-200 ${itemTheme.color} ${
+                  isActive ? 'opacity-100 scale-110' : 'opacity-85'
+                }`} 
+              />
             </button>
           );
         })}
