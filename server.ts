@@ -427,7 +427,12 @@ async function startServer() {
       'http://homeassistant.local:8123'
     ).trim();
 
-    if (!haBase.startsWith('http://') && !haBase.startsWith('https://')) {
+    // Convert ws:// to http:// and wss:// to https://
+    if (haBase.startsWith('ws://')) {
+      haBase = `http://${haBase.slice(5)}`;
+    } else if (haBase.startsWith('wss://')) {
+      haBase = `https://${haBase.slice(6)}`;
+    } else if (!haBase.startsWith('http://') && !haBase.startsWith('https://')) {
       haBase = `https://${haBase}`;
     }
 
@@ -834,7 +839,9 @@ async function startServer() {
     const envHaUrl = process.env.HASS_URL || process.env.HA_URL || process.env.HOME_ASSISTANT_URL || process.env.HOMEASSISTANT_URL;
     if (envHaUrl) {
       try {
-        const u = new URL(envHaUrl.startsWith('http') ? envHaUrl : `https://${envHaUrl}`);
+        const u = new URL(envHaUrl.replace(/^ws:\/\//i, 'http://').replace(/^wss:\/\//i, 'https://').startsWith('http')
+          ? envHaUrl.replace(/^ws:\/\//i, 'http://').replace(/^wss:\/\//i, 'https://')
+          : `https://${envHaUrl}`);
         if (u.hostname) addCandidate(`http://${u.hostname}:1984`);
       } catch { /* ignore */ }
     }

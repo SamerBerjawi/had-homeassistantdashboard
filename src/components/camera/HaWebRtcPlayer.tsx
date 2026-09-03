@@ -85,6 +85,7 @@ export default function HaWebRtcPlayer({
   const rawEntityPic = (camera as any)?.attributes?.entity_picture;
   const rtspUrl = (camera as any)?.attributes?.rtsp_url;
   const isRtsp = (camera as any)?.attributes?.is_rtsp_stream || (camera as any)?.attributes?.stream_source === 'go2rtc';
+  const go2rtcStream = (camera as any)?.attributes?.go2rtc_stream;
 
   const snapshotFallbackUrl = rawEntityPic
     ? resolveHAImageUrl(rawEntityPic, serverUrl)
@@ -123,6 +124,7 @@ export default function HaWebRtcPlayer({
     muted,
     enableIntercom: isIntercomActive,
     serverUrl,
+    streamName: go2rtcStream,
     preferProtocol,
     codecMode,
     previewIntervalMs,
@@ -186,7 +188,7 @@ export default function HaWebRtcPlayer({
     });
   };
 
-  const isVideoActive = (protocol === 'webrtc' || protocol === 'hls') && status === 'connected';
+  const isVideoActive = (protocol === 'webrtc' || protocol === 'mse' || protocol === 'hls') && status === 'connected';
 
   // =========================================================================
   // PREVIEW MODE RENDER (Lightweight Periodic Snapshot Tile)
@@ -257,8 +259,13 @@ export default function HaWebRtcPlayer({
         muted={isAudioMuted}
         onPlaying={() => setIsVideoPlaying(true)}
         onLoadedData={() => setIsVideoPlaying(true)}
+        onTimeUpdate={() => {
+          if (!isVideoPlaying && videoRef.current && videoRef.current.videoWidth > 0) {
+            setIsVideoPlaying(true);
+          }
+        }}
         className={`w-full h-full object-cover z-10 transition-opacity duration-300 ${
-          isVideoActive ? 'opacity-100' : 'opacity-0 absolute pointer-events-none'
+          isVideoActive && isVideoPlaying ? 'opacity-100' : 'opacity-0 absolute pointer-events-none'
         }`}
       />
 
@@ -273,8 +280,8 @@ export default function HaWebRtcPlayer({
         />
       )}
 
-      {/* Fallback Snapshot / Background Preview when video is not active */}
-      {!isVideoActive && (
+      {/* Fallback Snapshot / Background Preview when video is not active or still decoding first frames */}
+      {(!isVideoActive || !isVideoPlaying) && (
         <div className="absolute inset-0 w-full h-full z-0">
           {(snapshotFallbackUrl || snapshotUrl) && !isSnapshotFailed ? (
             <>
@@ -302,6 +309,15 @@ export default function HaWebRtcPlayer({
 
       {/* Top Left Protocol & Connection Badge */}
       <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
+        {protocol === 'mse' && status === 'connected' && (
+          <div className="px-2.5 py-1 rounded-xl bg-black/60 backdrop-blur-md text-white border border-cyan-500/30 text-[11px] font-semibold flex items-center gap-1.5 shadow-md">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="text-cyan-400 font-bold">MSE Live</span>
+            <span className="text-white/40">•</span>
+            <span className="text-slate-300">H.265 / H.264 (~300ms)</span>
+          </div>
+        )}
+
         {protocol === 'webrtc' && status === 'connected' && (
           <div className="px-2.5 py-1 rounded-xl bg-black/60 backdrop-blur-md text-white border border-emerald-500/30 text-[11px] font-semibold flex items-center gap-1.5 shadow-md">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

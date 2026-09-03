@@ -52,7 +52,13 @@ export default function CameraStreamModal({
 }: CameraStreamModalProps) {
   const { domainGroups, serverUrl } = useAutoLayoutStore();
   const [isMicActive, setIsMicActive] = useState(false);
-  const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [isAudioMuted, setIsAudioMuted] = useState(true);
+  const [protocolPref, setProtocolPref] = useState<'auto' | 'mse' | 'webrtc' | 'hls' | 'mjpeg'>(() => {
+    if (camera?.attributes?.is_rtsp_stream || camera?.attributes?.stream_source === 'go2rtc' || camera?.entity_id?.startsWith('go2rtc.')) {
+      return 'mse';
+    }
+    return 'auto';
+  });
   const [isSnapshotting, setIsSnapshotting] = useState(false);
   const [activePanDirection, setActivePanDirection] = useState<string | null>(null);
   const [isSirenActive, setIsSirenActive] = useState(false);
@@ -176,6 +182,22 @@ export default function CameraStreamModal({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Stream Protocol Selector (WebRTC / HLS / MJPEG) */}
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900/40 border border-cyan-500/30 text-[10px] font-bold">
+              <span className="text-cyan-400 px-1 hidden sm:inline">Stream:</span>
+              <select
+                value={protocolPref}
+                onChange={(e) => setProtocolPref(e.target.value as any)}
+                className="bg-transparent text-white font-mono text-[10px] outline-none cursor-pointer"
+              >
+                <option value="mse" className="bg-slate-900 text-cyan-300">MSE Live (H.265/H.264)</option>
+                <option value="auto" className="bg-slate-900 text-white">Auto</option>
+                <option value="webrtc" className="bg-slate-900 text-emerald-300">WebRTC</option>
+                <option value="hls" className="bg-slate-900 text-amber-300">HLS Stream</option>
+                <option value="mjpeg" className="bg-slate-900 text-purple-300">MJPEG Live</option>
+              </select>
+            </div>
+
             {/* Codec Mode Selector for RTSP cameras */}
             {(camera.attributes?.is_rtsp_stream || camera.attributes?.stream_source === 'go2rtc' || camera.entity_id?.startsWith('go2rtc.')) && (
               <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900/40 border border-amber-500/30 text-[10px] font-bold">
@@ -209,6 +231,7 @@ export default function CameraStreamModal({
           <HaWebRtcPlayer
             camera={camera}
             mode="live"
+            preferProtocol={protocolPref}
             codecMode={codecMode}
             darkMode={darkMode}
             isIntercomActive={isMicActive}

@@ -27,6 +27,7 @@ import {
   CameraCodecMode
 } from '../services/haCameraService';
 import { useCameraWebRtc } from './useCameraWebRtc';
+import { useCameraMse } from './useCameraMse';
 import { getActiveHAToken } from '../services/haAuth';
 import { streamConcurrencyManager } from '../services/streamConcurrencyManager';
 
@@ -34,12 +35,12 @@ export const WEBRTC_TIMEOUT_MS = 4000;
 export const HLS_SETUP_TIMEOUT_MS = 6000;
 export const PREVIEW_REFRESH_INTERVAL_MS = 4000;
 
-export type StreamProtocol = 'webrtc' | 'hls' | 'mjpeg' | 'snapshot' | 'demo' | 'none';
+export type StreamProtocol = 'mse' | 'webrtc' | 'hls' | 'mjpeg' | 'snapshot' | 'demo' | 'none';
 export type StreamStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'fallback' | 'failed' | 'paused' | 'demo';
 export type StreamMode = 'preview' | 'live';
 
-// In-memory session tier memory (remembers successful tier per entity for the active session)
-const sessionTierMemory = new Map<string, 1 | 2 | 3>();
+// In-memory session tier memory (remembers successful tier per entity for the active session: 0=MSE, 1=WebRTC, 2=HLS, 3=MJPEG)
+const sessionTierMemory = new Map<string, 0 | 1 | 2 | 3>();
 
 /**
  * Resets the in-memory tier memory for an entity or all entities, forcing Tier 1 on next live stream open.
@@ -59,7 +60,8 @@ export interface UseCameraStreamOptions {
   muted?: boolean;
   enableIntercom?: boolean;
   serverUrl?: string;
-  preferProtocol?: 'auto' | 'webrtc' | 'hls' | 'mjpeg';
+  streamName?: string;
+  preferProtocol?: 'auto' | 'mse' | 'webrtc' | 'hls' | 'mjpeg';
   codecMode?: CameraCodecMode;
   previewIntervalMs?: number;
   elementRef?: React.RefObject<HTMLElement | null>;
@@ -97,6 +99,7 @@ export function useCameraStream(
     muted = true,
     enableIntercom = false,
     serverUrl,
+    streamName,
     preferProtocol = 'auto',
     codecMode,
     previewIntervalMs = PREVIEW_REFRESH_INTERVAL_MS,
@@ -115,17 +118,20 @@ export function useCameraStream(
   const [isAudioMuted, setIsAudioMuted] = useState(muted);
   const [hasNegotiationSlot, setHasNegotiationSlot] = useState(false);
 
-  // Derive initial tier from session memory or preferences
-  const getInitialTier = useCallback((): 1 | 2 | 3 | 4 => {
+  // Derive initial tier from session memory or preferences: 0 = MSE, 1 = WebRTC, 2 = HLS, 3 = MJPEG, 4 = Snapshot
+  const getInitialTier = useCallback((): 0 | 1 | 2 | 3 | 4 => {
+    if (preferProtocol === 'mse') return 0;
+    if (preferProtocol === 'webrtc') return 1;
     if (preferProtocol === 'hls') return 2;
     if (preferProtocol === 'mjpeg') return 3;
     const remembered = sessionTierMemory.get(entityId);
-    if (remembered) return remembered;
-    return 1;
+    if (remembered !== undefined) return remembered as any;
+    // Default to MSE (Tier 0) for ALL camera entities (both camera.* and go2rtc.*)
+    return 0;
   }, [entityId, preferProtocol]);
 
-  // Active protocol state: 1 = WebRTC, 2 = HLS, 3 = MJPEG, 4 = Snapshot fallback
-  const [activeTier, setActiveTier] = useState<1 | 2 | 3 | 4>(getInitialTier);
+  // Active protocol state: 0 = MSE, 1 = WebRTC, 2 = HLS, 3 = MJPEG, 4 = Snapshot fallback
+  const [activeTier, setActiveTier] = useState<0 | 1 | 2 | 3 | 4>(getInitialTier);
   const [protocol, setProtocol] = useState<StreamProtocol>(mode === 'preview' ? 'snapshot' : 'none');
   const [status, setStatus] = useState<StreamStatus>('connecting');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -136,6 +142,19 @@ export function useCameraStream(
     return getHACameraSnapshotUrl(entityId, serverUrl);
   });
   const [retryCounter, setRetryCounter] = useState(0);
+
+  // Sync activeTier dynamically if preferProtocol changes
+  useEffect(() => {
+    if (preferProtocol === 'mse') {
+      setActiveTier(0);
+    } else if (preferProtocol === 'webrtc') {
+      setActiveTier(1);
+    } else if (preferProtocol === 'hls') {
+      setActiveTier(2);
+    } else if (preferProtocol === 'mjpeg') {
+      setActiveTier(3);
+    }
+  }, [preferProtocol]);
 
   const isStreamActive = enabled && isVisible && isTabActive && !isPaused;
   const effectiveCodecMode = codecMode || getCameraCodecPreference(entityId);
@@ -242,6 +261,48 @@ export function useCameraStream(
   }, [mode, entityId, isStreamActive, activeTier, retryCounter, releaseConcurrencySlot]);
 
   // -------------------------------------------------------------
+  // LIVE MODE - TIER 0: go2rtc MSE (Media Source Extensions)
+  // -------------------------------------------------------------
+  const isMseEligible =
+    mode === 'live' &&
+    isStreamActive &&
+    activeTier === 0 &&
+    preferProtocol !== 'hls' &&
+    preferProtocol !== 'mjpeg';
+
+  const mse = useCameraMse(entityId, {
+    enabled: isMseEligible,
+    serverUrl,
+    streamName,
+    muted: isAudioMuted,
+    videoRef,
+    onConnected: () => {
+      setProtocol('mse');
+      setStatus('connected');
+      setErrorMessage(null);
+      setIsCodecMismatch(false);
+      sessionTierMemory.set(entityId, 0);
+      releaseConcurrencySlot();
+      onStreamReady?.('mse');
+    },
+    onError: (err) => {
+      console.warn(`[useCameraStream] MSE failed for ${entityId}: ${err}, stepping to next tier`);
+      if (preferProtocol === 'mse') {
+        setActiveTier(2);
+      } else {
+        setActiveTier(1);
+      }
+    }
+  });
+
+  useEffect(() => {
+    if (activeTier === 0 && mse.status === 'connected') {
+      setProtocol('mse');
+      setStatus('connected');
+    }
+  }, [activeTier, mse.status]);
+
+  // -------------------------------------------------------------
   // LIVE MODE - TIER 1: WebRTC
   // -------------------------------------------------------------
   const isWebRtcEligible =
@@ -279,18 +340,51 @@ export function useCameraStream(
     }
   });
 
-  // Attach WebRTC stream to HTMLVideoElement when available
+  // Attach WebRTC stream to HTMLVideoElement when available and monitor for black screen
   useEffect(() => {
-    if (mode === 'live' && activeTier === 1 && webrtc.stream && videoRef.current) {
-      if (videoRef.current.srcObject !== webrtc.stream) {
-        videoRef.current.srcObject = webrtc.stream;
-      }
-      videoRef.current.play().catch(() => {});
-      setProtocol('webrtc');
-      setStatus('connected');
-      sessionTierMemory.set(entityId, 1);
+    if (mode !== 'live' || activeTier !== 1 || !webrtc.stream || !videoRef.current) {
+      return;
     }
-  }, [mode, activeTier, webrtc.stream, entityId]);
+
+    const video = videoRef.current;
+    if (video.srcObject !== webrtc.stream) {
+      video.srcObject = webrtc.stream;
+    }
+
+    // Ensure muted is true initially to satisfy browser autoplay policy
+    video.muted = isAudioMuted;
+    video.play().catch(async (err) => {
+      // If browser blocked unmuted autoplay, mute and retry immediately
+      if (err?.name === 'NotAllowedError' && !video.muted) {
+        video.muted = true;
+        setIsAudioMuted(true);
+        await video.play().catch(() => {});
+      }
+    });
+
+    setProtocol('webrtc');
+    setStatus('connected');
+
+    // Black-frame / codec-incompatibility watchdog:
+    // If after 3.5s the video element has not decoded any visual frames (videoWidth === 0 or readyState < 2),
+    // WebRTC connection succeeded on network but browser decoder cannot render the stream (e.g. H.265).
+    // Automatically step down to Tier 2 (HLS) or Tier 3 (MJPEG).
+    const frameCheckTimer = setTimeout(() => {
+      if (!video) return;
+      const isBlank = video.videoWidth === 0 || video.videoHeight === 0 || video.readyState < 2;
+      if (isBlank) {
+        console.warn(`[useCameraStream] WebRTC connected but no video frames rendered after 3.5s for ${entityId}. Triggering automatic fallback to HLS/MJPEG.`);
+        setIsCodecMismatch(true);
+        setActiveTier(2);
+      } else {
+        sessionTierMemory.set(entityId, 1);
+      }
+    }, 3500);
+
+    return () => {
+      clearTimeout(frameCheckTimer);
+    };
+  }, [mode, activeTier, webrtc.stream, entityId, isAudioMuted]);
 
   // -------------------------------------------------------------
   // LIVE MODE - TIER 2: HLS Stream
