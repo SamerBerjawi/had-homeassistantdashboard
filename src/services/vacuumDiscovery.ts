@@ -35,7 +35,7 @@ export function discoverVacuumDevices(
   const allStateList = Object.values(states);
 
   const vacuums: VacuumDeviceData[] = (vacuumEntities || [])
-    .filter((vac) => !vac.hidden && !vac.disabled_by)
+    .filter((vac) => !vac.disabled_by)
     .map((vac) => {
     const rawState = String(vac.state || 'docked').toLowerCase();
     const entityId = vac.entity_id;
@@ -108,8 +108,8 @@ export function discoverVacuumDevices(
     const companionStates = allStateList.filter((s) => {
       if (!s || !s.entity_id) return false;
       const reg = entityRegistry.find((r) => r.entity_id === s.entity_id);
-      const isHidden = reg?.hidden_by || reg?.disabled_by || resolvedEntities[s.entity_id]?.hidden || resolvedEntities[s.entity_id]?.disabled_by;
-      if (isHidden) return false;
+      const isDisabled = Boolean(reg?.disabled_by || resolvedEntities[s.entity_id]?.disabled_by);
+      if (isDisabled) return false;
       if (deviceId && reg?.device_id === deviceId) return true;
       return s.entity_id.includes(cleanPrefix) || s.entity_id.includes(basePrefix);
     });
@@ -190,8 +190,8 @@ export function discoverVacuumDevices(
     const mapCompanions = allStateList.filter((s) => {
       if (!s || !s.entity_id) return false;
       const reg = entityRegistry.find((r) => r.entity_id === s.entity_id);
-      const isHidden = reg?.hidden_by || reg?.disabled_by || resolvedEntities[s.entity_id]?.hidden || resolvedEntities[s.entity_id]?.disabled_by;
-      if (isHidden) return false;
+      const isDisabled = Boolean(reg?.disabled_by || resolvedEntities[s.entity_id]?.disabled_by);
+      if (isDisabled) return false;
 
       const id = s.entity_id.toLowerCase();
       const isMapType = id.startsWith('camera.') || id.startsWith('image.');

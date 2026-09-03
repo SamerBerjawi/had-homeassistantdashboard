@@ -135,9 +135,9 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
     return map;
   }, [rawAreas]);
 
-  // Extract automations & scenes (excluding hidden & disabled)
-  const automationEntities = (domainGroups['automation'] || []).filter((a) => !a.hidden && !a.disabled_by);
-  const sceneEntities = (domainGroups['scene'] || []).filter((s) => !s.hidden && !s.disabled_by);
+  // Extract automations & scenes (excluding disabled)
+  const automationEntities = (domainGroups['automation'] || []).filter((a) => !a.disabled_by);
+  const sceneEntities = (domainGroups['scene'] || []).filter((s) => !s.disabled_by);
   const allEntities = useMemo(() => [...automationEntities, ...sceneEntities], [automationEntities, sceneEntities]);
 
   // Unique areas

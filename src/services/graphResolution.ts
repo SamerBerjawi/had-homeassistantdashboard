@@ -474,19 +474,22 @@ export function resolveHAGraph(
     areasMap[a.area_id] = a;
   }
 
-  // Build global domainGroups (excluding hidden & disabled entities)
+  // Build global domainGroups (retains all active entities, so purpose-specific views like vacuums, network, host can use them)
   const domainGroups: Record<string, ResolvedEntity[]> = {};
   for (const ent of Object.values(resolvedEntities)) {
     if (ent.isDiagnostic && !options.includeDiagnostics) continue;
-    if (ent.hidden || ent.disabled_by) continue;
+    if (ent.disabled_by) continue;
     if (!domainGroups[ent.domain]) {
       domainGroups[ent.domain] = [];
     }
     domainGroups[ent.domain].push(ent);
   }
 
+  // Filter helper for Overview & Alarm summary metrics (hidden entities are excluded here)
+  const isOverviewVisible = (e: ResolvedEntity) => !e.hidden && !e.disabled_by;
+
   // Contact Sensors & Openings Classification (Doors, Windows, and Other Contacts)
-  const allBinary = domainGroups['binary_sensor'] || [];
+  const allBinary = (domainGroups['binary_sensor'] || []).filter(isOverviewVisible);
   const {
     doorSensors,
     windowSensors,
@@ -496,10 +499,9 @@ export function resolveHAGraph(
 
   const openDoorsWindows = [...doorSensors, ...windowSensors, ...otherContactSensors].filter(e => e.state === 'on');
   const activeMotionSensors = motionSensors.filter(e => e.state === 'on');
-  const alarmPanel = domainGroups['alarm_control_panel']?.[0];
-  const locks = domainGroups['lock'] || [];
-  const cameras = domainGroups['camera'] || [];
-
+  const alarmPanel = (domainGroups['alarm_control_panel'] || []).find(isOverviewVisible);
+  const locks = (domainGroups['lock'] || []).filter(isOverviewVisible);
+  const cameras = (domainGroups['camera'] || []).filter(isOverviewVisible);
 
   const securityOverview: SecurityOverviewState = {
     alarmPanel,
@@ -509,16 +511,16 @@ export function resolveHAGraph(
     cameras
   };
 
-  // Build overviewSummary
-  const personEntities = [...(domainGroups['person'] || []), ...(domainGroups['device_tracker'] || [])];
+  // Build overviewSummary (strictly excludes hidden entities from badges and summary counts)
+  const personEntities = [...(domainGroups['person'] || []), ...(domainGroups['device_tracker'] || [])].filter(isOverviewVisible);
   const peopleHome = personEntities.length > 0 ? personEntities.filter(p => p.state === 'home').length : 0;
   const peopleAway = personEntities.filter(p => p.state === 'not_home' || p.state === 'away').length;
   const totalPeople = personEntities.length;
 
-  const totalLightsList = domainGroups['light'] || [];
+  const totalLightsList = (domainGroups['light'] || []).filter(isOverviewVisible);
   const totalLightsCount = totalLightsList.length;
 
-  const fanEntities = domainGroups['fan'] || [];
+  const fanEntities = (domainGroups['fan'] || []).filter(isOverviewVisible);
   const fansOnCount = fanEntities.filter(f => f.state === 'on').length;
   const totalFansCount = fanEntities.length;
 
@@ -528,12 +530,12 @@ export function resolveHAGraph(
   const windowsOpenCount = windowSensors.filter(e => e.state === 'on').length;
   const totalWindowsCount = windowSensors.length;
 
-  const activeMediaPlayers = domainGroups['media_player'] || [];
+  const activeMediaPlayers = (domainGroups['media_player'] || []).filter(isOverviewVisible);
   const activeMediaCount = activeMediaPlayers.filter(m => m.state === 'playing').length;
   const totalMediaCount = activeMediaPlayers.length;
 
-  const activeClimatesCount = (domainGroups['climate'] || []).filter(c => c.state !== 'off' && c.state !== 'unavailable').length;
-  const activeSwitchesCount = (domainGroups['switch'] || []).filter(s => s.state === 'on').length;
+  const activeClimatesCount = (domainGroups['climate'] || []).filter(isOverviewVisible).filter(c => c.state !== 'off' && c.state !== 'unavailable').length;
+  const activeSwitchesCount = (domainGroups['switch'] || []).filter(isOverviewVisible).filter(s => s.state === 'on').length;
   const currentAlarmState = alarmPanel?.state || 'disarmed';
 
   const overviewSummary: OverviewSummaryState = {

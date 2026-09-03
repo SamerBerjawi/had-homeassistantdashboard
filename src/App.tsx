@@ -234,6 +234,9 @@ export default function App() {
     if (tab === 'rooms') {
       useAutoLayoutStore.getState().setSelectedAreaId(null);
     }
+    if (tab === 'settings') {
+      useAutoLayoutStore.getState().setSelectedSettingsSection(null);
+    }
     const validTab = VALID_TABS.includes(tab as TabKey) ? tab : 'overview';
     setActiveTabState(validTab);
     const targetPath = `/${validTab}`;
@@ -246,6 +249,12 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       const currentTab = getTabFromUrl();
+      if (currentTab === 'rooms') {
+        useAutoLayoutStore.getState().setSelectedAreaId(null);
+      }
+      if (currentTab === 'settings') {
+        useAutoLayoutStore.getState().setSelectedSettingsSection(null);
+      }
       setActiveTabState(currentTab);
     };
 
