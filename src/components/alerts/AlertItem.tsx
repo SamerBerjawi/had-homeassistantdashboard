@@ -63,27 +63,27 @@ export const AlertItem: React.FC<AlertItemProps> = ({ alert, onDismiss }) => {
 
   return (
     <div
-      className={`p-4 rounded-2xl border backdrop-blur-md transition-all duration-200 flex flex-col gap-2.5 ${styles.cardBg}`}
+      className={`p-2.5 sm:p-3 rounded-xl border backdrop-blur-md transition-all duration-200 flex flex-col gap-1.5 ${styles.cardBg}`}
     >
       {/* Top Meta Header: Severity Icon + Title + Time + Dismiss Action */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="p-2 rounded-xl bg-slate-900/60 dark:bg-black/50 border border-white/10 shrink-0">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="p-1.5 rounded-lg bg-slate-900/60 dark:bg-black/50 border border-white/10 shrink-0">
             {styles.icon}
           </div>
           <div className="min-w-0">
-            <h4 className="text-sm font-bold text-white truncate leading-snug">
+            <h4 className="text-xs sm:text-[13px] font-bold text-white truncate leading-snug">
               {alert.title}
             </h4>
-            <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
+            <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-slate-400">
               <span className="flex items-center gap-1">
-                <Clock size={12} weight="regular" />
+                <Clock size={11} weight="regular" />
                 <span>{formatRelativeTime(alert.timestamp)}</span>
               </span>
               {alert.areaName && (
                 <span className="flex items-center gap-1 text-slate-400">
                   <span>•</span>
-                  <MapPin size={12} weight="fill" className="text-indigo-400" />
+                  <MapPin size={11} weight="fill" className="text-indigo-400" />
                   <span className="truncate max-w-[120px]">{alert.areaName}</span>
                 </span>
               )}
@@ -95,30 +95,30 @@ export const AlertItem: React.FC<AlertItemProps> = ({ alert, onDismiss }) => {
         <button
           type="button"
           onClick={() => onDismiss(alert.id, alert.haNotificationId)}
-          className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all cursor-pointer shrink-0"
+          className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all cursor-pointer shrink-0"
           title="Dismiss from dashboard and Home Assistant"
         >
-          <X size={15} weight="bold" />
+          <X size={13} weight="bold" />
         </button>
       </div>
 
       {/* Message Body */}
       {alert.message && (
-        <p className="text-xs text-slate-300 leading-relaxed break-words pl-11">
+        <p className="text-[11px] text-slate-300 leading-snug break-words pl-8.5">
           {alert.message}
         </p>
       )}
 
       {/* Category / Source Tag */}
-      <div className="pl-11 flex items-center justify-between pt-1">
+      <div className="pl-8.5 flex items-center justify-between pt-0.5">
         <span
-          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${styles.badge}`}
+          className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded border ${styles.badge}`}
         >
           {alert.category.replace('_', ' ')}
         </span>
 
         {alert.haNotificationId && (
-          <span className="text-[10px] font-mono text-slate-500">
+          <span className="text-[9px] font-mono text-slate-500">
             HA: {alert.haNotificationId}
           </span>
         )}

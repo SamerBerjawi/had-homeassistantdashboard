@@ -21,6 +21,7 @@ import {
 } from '@phosphor-icons/react';
 import { useAlertStore, AlertItem as AlertItemType, AlertSeverity } from '../../store/useAlertStore';
 import AlertItem from './AlertItem';
+import { AnimatedList } from '../ui/animated-list';
 
 interface AlertDrawerProps {
   isOpen: boolean;
@@ -192,13 +193,15 @@ export const AlertDrawer: React.FC<AlertDrawerProps> = ({ isOpen, onClose }) => 
                   </div>
                 </div>
               ) : (
-                filteredAlerts.map((alert) => (
-                  <AlertItem
-                    key={alert.id}
-                    alert={alert}
-                    onDismiss={(id, haId) => dismissAlert(id, haId)}
-                  />
-                ))
+                <AnimatedList delay={70} className="w-full gap-3">
+                  {filteredAlerts.map((alert) => (
+                    <AlertItem
+                      key={alert.id}
+                      alert={alert}
+                      onDismiss={(id, haId) => dismissAlert(id, haId)}
+                    />
+                  ))}
+                </AnimatedList>
               )}
             </div>
 

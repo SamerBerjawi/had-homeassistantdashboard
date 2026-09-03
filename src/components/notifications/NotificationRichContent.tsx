@@ -168,7 +168,7 @@ export default function NotificationRichContent({
 
       {/* Main Cleaned Body Text */}
       {cleanText ? (
-        <div className={`text-xs leading-relaxed break-words whitespace-pre-wrap ${
+        <div className={`${compact ? 'text-[11px] leading-snug line-clamp-3 hover:line-clamp-none' : 'text-xs leading-relaxed'} break-words whitespace-pre-wrap ${
           darkMode ? 'text-slate-300' : 'text-slate-700'
         }`}>
           {formatInlineText(cleanText)}
@@ -177,17 +177,17 @@ export default function NotificationRichContent({
 
       {/* Embedded Images */}
       {images.length > 0 && (
-        <div className={`pt-1.5 grid gap-2.5 ${images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <div className={`pt-1 grid gap-2 ${images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
           {images.map((img, idx) => (
             <div
               key={`img-${idx}`}
-              className="rounded-2xl overflow-hidden flex items-center justify-center bg-transparent"
+              className="rounded-xl overflow-hidden flex items-center justify-center bg-transparent"
             >
               <img
                 src={img.src}
                 alt={img.alt || 'Notification image'}
                 loading="lazy"
-                className="w-full h-auto max-h-72 object-contain rounded-2xl"
+                className={`w-full h-auto ${compact ? 'max-h-36' : 'max-h-72'} object-cover rounded-xl`}
                 onError={(e) => {
                   const target = e.currentTarget;
                   target.style.display = 'none';

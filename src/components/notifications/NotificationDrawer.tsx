@@ -32,6 +32,7 @@ import { HANotificationItem, NotificationCategory } from '../../types/notificati
 import { haWebSocketService } from '../../services/haWebSocket';
 import { useAlertStore } from '../../store/useAlertStore';
 import NotificationRichContent from './NotificationRichContent';
+import { AnimatedList } from '../ui/animated-list';
 
 interface NotificationDrawerProps {
   isOpen: boolean;
@@ -208,65 +209,65 @@ export default function NotificationDrawer({
     switch (item.category) {
       case 'update':
         return {
-          icon: <DownloadSimple size={20} weight="duotone" className="text-sky-500" />,
+          icon: <DownloadSimple size={16} weight="duotone" className="text-sky-500" />,
           badgeBg: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30',
-          label: 'Software Update'
+          label: 'Update'
         };
       case 'repair':
         return {
-          icon: <Warning size={20} weight="duotone" className="text-amber-500" />,
+          icon: <Warning size={16} weight="duotone" className="text-amber-500" />,
           badgeBg: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
-          label: 'System Repair'
+          label: 'Repair'
         };
       case 'hazard':
         if (item.sensorType === 'leak') {
           return {
-            icon: <Drop size={20} weight="duotone" className="text-rose-500 animate-pulse" />,
+            icon: <Drop size={16} weight="duotone" className="text-rose-500 animate-pulse" />,
             badgeBg: 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/40',
-            label: 'Water Leak'
+            label: 'Leak'
           };
         }
         return {
-          icon: <Flame size={20} weight="duotone" className="text-rose-500 animate-pulse" />,
+          icon: <Flame size={16} weight="duotone" className="text-rose-500 animate-pulse" />,
           badgeBg: 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/40',
-          label: 'Smoke/Fire Hazard'
+          label: 'Hazard'
         };
       case 'restart':
         return {
-          icon: <ArrowsClockwise size={20} weight="bold" className="text-amber-400" />,
+          icon: <ArrowsClockwise size={16} weight="bold" className="text-amber-400" />,
           badgeBg: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-          label: 'Restart Required'
+          label: 'Restart'
         };
       case 'battery':
         return {
-          icon: <BatteryLow size={20} weight="duotone" className="text-amber-500" />,
+          icon: <BatteryLow size={16} weight="duotone" className="text-amber-500" />,
           badgeBg: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
-          label: 'Low Battery'
+          label: 'Battery'
         };
       case 'alert':
         return {
-          icon: <Warning size={20} weight="duotone" className="text-amber-500" />,
+          icon: <Warning size={16} weight="duotone" className="text-amber-500" />,
           badgeBg: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
-          label: 'HA Alert'
+          label: 'Alert'
         };
       case 'security':
         return {
-          icon: <ShieldWarning size={20} weight="duotone" className="text-indigo-500" />,
+          icon: <ShieldWarning size={16} weight="duotone" className="text-indigo-500" />,
           badgeBg: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
           label: 'Security'
         };
       case 'appliance':
         return {
-          icon: <Sparkle size={20} weight="duotone" className="text-emerald-500" />,
+          icon: <Sparkle size={16} weight="duotone" className="text-emerald-500" />,
           badgeBg: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
           label: 'Appliance'
         };
       case 'persistent_notification':
       default:
         return {
-          icon: <Info size={20} weight="duotone" className="text-indigo-500" />,
+          icon: <Info size={16} weight="duotone" className="text-indigo-500" />,
           badgeBg: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
-          label: 'Notification'
+          label: 'Message'
         };
     }
   };
@@ -289,10 +290,10 @@ export default function NotificationDrawer({
             {[
               { id: 'all', label: 'All', count: counts.all },
               { id: 'updates', label: 'Updates', count: counts.updates },
+              { id: 'alerts', label: 'Alerts', count: counts.alerts },
               ...(counts.restarts > 0 ? [{ id: 'restarts', label: 'Restarts', count: counts.restarts }] : []),
               ...(counts.repairs > 0 ? [{ id: 'repairs', label: 'Issues', count: counts.repairs }] : []),
-              ...(counts.notifications > 0 ? [{ id: 'notifications', label: 'Messages', count: counts.notifications }] : []),
-              ...(counts.alerts > 0 ? [{ id: 'alerts', label: 'Alerts', count: counts.alerts }] : [])
+              ...(counts.notifications > 0 ? [{ id: 'notifications', label: 'Messages', count: counts.notifications }] : [])
             ].map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -409,176 +410,203 @@ export default function NotificationDrawer({
                     ? 'No notifications matching your search filter.'
                     : activeTab === 'updates'
                       ? 'All software and integrations are fully up to date.'
-                      : activeTab === 'all'
-                        ? 'No active updates, alerts, or notifications. Your home assistant is fully up-to-date and running smoothly.'
-                        : `No items found under ${activeTab}.`}
+                      : activeTab === 'alerts'
+                        ? 'No active hazard, security, or system alerts.'
+                        : activeTab === 'all'
+                          ? 'No active updates, alerts, or notifications. Your home assistant is fully up-to-date and running smoothly.'
+                          : `No items found under ${activeTab}.`}
                 </p>
               </div>
             </div>
           ) : (
-            filteredNotifications.map((item) => {
-              const visuals = getCategoryVisuals(item);
-              const isProgress = item.inProgress;
+            <AnimatedList delay={50} className="w-full gap-2">
+              {filteredNotifications.map((item) => {
+                const visuals = getCategoryVisuals(item);
+                const isProgress = item.inProgress;
 
-              return (
-                <div
-                  key={item.id}
-                  className={`p-4 rounded-2xl transition-all duration-200 flex flex-col justify-between gap-2.5 group ${
-                    darkMode
-                      ? 'bg-white/[0.035] hover:bg-white/[0.06] text-white'
-                      : 'bg-slate-50/90 hover:bg-slate-100/90 text-slate-900 shadow-xs'
-                  }`}
-                >
-                  {/* Card Header: Icon + Category Badge + Time Ago + Dismiss */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-xl bg-white/10 dark:bg-white/5 flex items-center justify-center shrink-0">
-                        {visuals.icon}
-                      </div>
+                // Split actions into primary (header action) and secondary (footer actions)
+                const primaryAction = item.actions?.find(a => 
+                  a.variant === 'primary' || 
+                  a.id === 'install' || 
+                  a.id.startsWith('restart_') || 
+                  a.id.startsWith('ack_') || 
+                  a.id === 'unskip'
+                );
+                const secondaryActions = (item.actions || []).filter(a => a !== primaryAction);
 
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${visuals.badgeBg.replace(/border[^\s]*/g, '')}`}>
+                const renderActionButton = (act: HANotificationAction, isPrimaryInHeader: boolean) => {
+                  const isLoading = actionLoadingIds[act.id];
+                  const isPrimary = act.variant === 'primary' || act.id === 'install' || act.id.startsWith('restart_') || act.id.startsWith('ack_');
+                  const isDanger = act.variant === 'danger';
+                  const isRestartAction = act.id.startsWith('restart_');
+
+                  return (
+                    <button
+                      key={act.id}
+                      type="button"
+                      disabled={isLoading || isProgress}
+                      onClick={() => runAction(act.id, act.onClick)}
+                      className={`flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                        isPrimaryInHeader
+                          ? isRestartAction
+                            ? 'px-2 py-0.5 rounded-md text-[11px] font-black bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-xs active:scale-95'
+                            : isPrimary
+                              ? 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-sky-500 hover:bg-sky-400 text-white shadow-xs active:scale-95'
+                              : 'px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white/10 hover:bg-white/15 text-slate-200 active:scale-95'
+                          : isDanger
+                            ? 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 active:scale-95'
+                            : darkMode
+                              ? 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white active:scale-95'
+                              : 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 active:scale-95'
+                      }`}
+                    >
+                      {isLoading ? (
+                        <ArrowsClockwise size={11} className="animate-spin" />
+                      ) : isRestartAction ? (
+                        <ArrowsClockwise size={11} weight="bold" />
+                      ) : act.id === 'install' ? (
+                        <DownloadSimple size={11} weight="bold" />
+                      ) : act.id === 'skip' ? (
+                        <SkipForward size={11} weight="bold" />
+                      ) : act.id.startsWith('ack_') ? (
+                        <Check size={11} weight="bold" />
+                      ) : act.id === 'release_notes' || act.id === 'learn_more' ? (
+                        <ArrowSquareOut size={11} weight="bold" />
+                      ) : null}
+                      <span>{act.label}</span>
+                    </button>
+                  );
+                };
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`p-2.5 rounded-xl transition-all duration-200 flex flex-col justify-between gap-1.5 group ${
+                      darkMode
+                        ? 'bg-white/[0.03] hover:bg-white/[0.055] text-white border border-white/[0.04]'
+                        : 'bg-slate-50/90 hover:bg-slate-100/90 text-slate-900 border border-slate-200/60 shadow-xs'
+                    }`}
+                  >
+                    {/* Row 1: Icon + Title + Category Badge + Primary Action + Time + Dismiss */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className="w-6.5 h-6.5 rounded-lg bg-white/10 dark:bg-white/5 flex items-center justify-center shrink-0">
+                          {visuals.icon}
+                        </div>
+
+                        <div className="min-w-0 flex-1 flex items-center gap-1.5 flex-wrap">
+                          <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white truncate">
+                            {item.title}
+                          </h4>
+
+                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded shrink-0 ${visuals.badgeBg.replace(/border[^\s]*/g, '')}`}>
                             {visuals.label}
                           </span>
 
                           {item.areaName && (
-                            <span className="flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                              <HouseLine size={12} />
+                            <span className="flex items-center gap-0.5 text-[9px] font-medium text-slate-500 dark:text-slate-400 shrink-0">
+                              <HouseLine size={10} />
                               {item.areaName}
                             </span>
                           )}
-
-                          {item.createdAt && (
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                              {formatTimeAgo(item.createdAt)}
-                            </span>
-                          )}
                         </div>
+                      </div>
 
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-1 leading-snug">
-                          {item.title}
-                        </h4>
+                      {/* Right: Primary Action + Time Ago + Dismiss */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {primaryAction && renderActionButton(primaryAction, true)}
+
+                        {item.createdAt && (
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap hidden sm:inline">
+                            {formatTimeAgo(item.createdAt)}
+                          </span>
+                        )}
+
+                        {item.dismissable && item.onDismiss && (
+                          <button
+                            type="button"
+                            onClick={() => item.onDismiss && item.onDismiss()}
+                            className="text-slate-400 hover:text-slate-200 dark:hover:text-white p-0.5 rounded-md hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                            title="Dismiss"
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
                       </div>
                     </div>
 
-                    {/* Single Dismiss Button */}
-                    {item.dismissable && item.onDismiss && (
-                      <button
-                        type="button"
-                        onClick={() => item.onDismiss && item.onDismiss()}
-                        className="text-slate-400 hover:text-slate-200 dark:hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer shrink-0"
-                        title="Dismiss"
-                      >
-                        <X size={15} />
-                      </button>
-                    )}
-                  </div>
+                    {/* Row 2: Details / Message / Versions + Secondary Actions */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap text-[11px]">
+                      {/* Left: Message or Version tags */}
+                      <div className="min-w-0 flex-1">
+                        {/* Software Update Version Badge */}
+                        {item.category === 'update' && (
+                          <div className="flex items-center gap-1.5 flex-wrap font-semibold">
+                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 font-mono text-[10px] text-slate-600 dark:text-slate-300">
+                              <span>{item.installedVersion || 'Current'}</span>
+                              <span className="text-slate-400">➔</span>
+                              <span className="font-bold text-sky-600 dark:text-sky-400">{item.latestVersion || 'New'}</span>
+                            </div>
 
-                  {/* Message / Description Body with Markdown & Embedded Image Support */}
-                  {item.message ? (
-                    <div className="pl-10.5">
-                      <NotificationRichContent 
-                        content={item.message} 
-                        imageUrl={item.image} 
-                        darkMode={darkMode} 
-                      />
-                    </div>
-                  ) : null}
+                            {item.skippedVersion && (
+                              <span className="text-[9px] text-amber-500 font-bold px-1.5 py-0.2 rounded bg-amber-500/10">
+                                Skipped
+                              </span>
+                            )}
 
-                  {/* Software Update Version Badge */}
-                  {item.category === 'update' && (
-                    <div className="pl-10.5 flex items-center gap-2 flex-wrap text-xs font-semibold">
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-white/5">
-                        <span className="text-slate-400">Current:</span>
-                        <span className="font-mono text-slate-700 dark:text-slate-300">{item.installedVersion || 'Installed'}</span>
+                            {item.createdAt && (
+                              <span className="text-[9px] text-slate-400 dark:text-slate-500 sm:hidden">
+                                • {formatTimeAgo(item.createdAt)}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Message / Description Body */}
+                        {item.message ? (
+                          <div className={item.category === 'update' ? 'pt-1' : ''}>
+                            <NotificationRichContent 
+                              content={item.message} 
+                              imageUrl={item.image} 
+                              darkMode={darkMode} 
+                              compact={true}
+                            />
+                          </div>
+                        ) : null}
+
+                        {/* In Progress Visual Bar */}
+                        {isProgress && (
+                          <div className="space-y-1 pt-1">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-sky-500">
+                              <span className="flex items-center gap-1">
+                                <ArrowsClockwise size={11} className="animate-spin" />
+                                Installing update...
+                              </span>
+                              <span>{item.updatePercentage ? `${item.updatePercentage}%` : 'In Progress'}</span>
+                            </div>
+                            <div className="w-full h-1 rounded-full bg-sky-500/20 overflow-hidden">
+                              <div 
+                                className="h-full bg-sky-500 rounded-full animate-pulse transition-all duration-300"
+                                style={{ width: item.updatePercentage ? `${item.updatePercentage}%` : '70%' }}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      <span className="text-slate-400">➔</span>
-
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-500/15 text-sky-700 dark:text-sky-300">
-                        <span>Latest:</span>
-                        <span className="font-mono font-bold">{item.latestVersion || 'New'}</span>
-                      </div>
-
-                      {item.skippedVersion && (
-                        <span className="text-[10px] text-amber-500 font-bold px-2 py-0.5 rounded-md bg-amber-500/10">
-                          Skipped
-                        </span>
+                      {/* Right: Secondary Actions (Skip, Release Notes, etc.) */}
+                      {secondaryActions.length > 0 && (
+                        <div className="flex items-center gap-1.5 shrink-0 ml-auto pt-0.5">
+                          {secondaryActions.map(act => renderActionButton(act, false))}
+                        </div>
                       )}
                     </div>
-                  )}
-
-                  {/* Update In Progress Visual Bar */}
-                  {isProgress && (
-                    <div className="pl-10.5 space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px] font-bold text-sky-500">
-                        <span className="flex items-center gap-1.5">
-                          <ArrowsClockwise size={13} className="animate-spin" />
-                          Installing update...
-                        </span>
-                        <span>{item.updatePercentage ? `${item.updatePercentage}%` : 'In Progress'}</span>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full bg-sky-500/20 overflow-hidden">
-                        <div 
-                          className="h-full bg-sky-500 rounded-full animate-pulse transition-all duration-300"
-                          style={{ width: item.updatePercentage ? `${item.updatePercentage}%` : '70%' }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Actions Footer Bar */}
-                  {item.actions && item.actions.length > 0 && (
-                    <div className="pl-10.5 flex items-center gap-2 flex-wrap pt-0.5">
-                      {item.actions.map((act) => {
-                        const isLoading = actionLoadingIds[act.id];
-                        const isPrimary = act.variant === 'primary';
-                        const isDanger = act.variant === 'danger';
-                        const isRestartAction = act.id.startsWith('restart_');
-
-                        return (
-                          <button
-                            key={act.id}
-                            type="button"
-                            disabled={isLoading || isProgress}
-                            onClick={() => runAction(act.id, act.onClick)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                              isRestartAction
-                                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-xs active:scale-95'
-                                : isPrimary
-                                  ? 'bg-sky-500 hover:bg-sky-400 text-white shadow-xs active:scale-95'
-                                  : isDanger
-                                    ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 active:scale-95'
-                                    : darkMode
-                                      ? 'bg-white/10 hover:bg-white/15 text-slate-200 active:scale-95'
-                                      : 'bg-slate-200 hover:bg-slate-300 text-slate-700 active:scale-95'
-                            }`}
-                          >
-                            {isLoading ? (
-                              <ArrowsClockwise size={13} className="animate-spin" />
-                            ) : isRestartAction ? (
-                              <ArrowsClockwise size={13} weight="bold" />
-                            ) : act.id === 'install' ? (
-                              <DownloadSimple size={13} weight="bold" />
-                            ) : act.id === 'skip' ? (
-                              <SkipForward size={13} weight="bold" />
-                            ) : act.id.startsWith('ack_') ? (
-                              <Check size={13} weight="bold" />
-                            ) : act.id === 'release_notes' || act.id === 'learn_more' ? (
-                              <ArrowSquareOut size={13} weight="bold" />
-                            ) : null}
-                            <span>{act.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
+                  </div>
+                );
+              })}
+            </AnimatedList>
+        )}
+      </div>
 
       </div>
     </DetailsRightDrawer>
