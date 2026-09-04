@@ -98,19 +98,14 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
           darkMode={darkMode}
         />
 
-        <div className="flex items-center gap-2 ml-auto">
-          {hasActiveCleaning ? (
+        {hasActiveCleaning && (
+          <div className="flex items-center gap-2 ml-auto">
             <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>Cleaning Active</span>
             </div>
-          ) : (
-            <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-teal-500/30 bg-teal-500/10 text-teal-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
-              <span>Fleet Docked ({vacuums.length} {vacuums.length === 1 ? 'Robot' : 'Robots'})</span>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Animated Sub-View Content */}

@@ -32,7 +32,6 @@ import { HealthOnboardingEmptyState } from './health/HealthOnboardingEmptyState'
 import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 import { BentoGrid } from '../ui/BentoGrid';
 import { BentoCard } from '../ui/BentoCard';
-import { AnimatedBadge } from '../ui/AnimatedBadge';
 import ViewLoadingState from '../ui/ViewLoadingState';
 
 interface HealthViewProps {
@@ -133,44 +132,25 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
 
   return (
     <div className="w-full flex-1 flex flex-col gap-5 sm:gap-6 animate-fadeIn pb-24 md:pb-8">
-      {/* Top Header Command Strip */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
-        {/* Left: View Identity & Device Selector */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF2D55] to-[#AF52DE] text-white flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(255,45,85,0.35)]">
-            <Heartbeat size={22} weight="fill" />
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900 dark:text-white">
-                Health &amp; Vitals
-              </h1>
-
-              {isPreviewDemo ? (
-                <button
-                  type="button"
-                  onClick={() => setIsPreviewDemo(false)}
-                  className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 flex items-center gap-1 hover:bg-amber-500/30 transition-all cursor-pointer shadow-xs"
-                  title="Click to exit demo mode"
-                >
-                  <Sparkle size={12} weight="fill" />
-                  <span>Demo Mode</span>
-                </button>
-              ) : (
-                <AnimatedBadge variant="coral">
-                  {totalSensorsFound} {totalSensorsFound === 1 ? 'Sensor' : 'Sensors'}
-                </AnimatedBadge>
-              )}
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Apple Health biometric signals &amp; historical recorder analytics
-            </p>
-          </div>
+      {/* Top Header Controls (Device Picker & Time-Range Filter) */}
+      <div className="flex items-center justify-between gap-3 flex-wrap pb-1">
+        {/* Left: Device Selector & Demo Mode Pill */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {isPreviewDemo && (
+            <button
+              type="button"
+              onClick={() => setIsPreviewDemo(false)}
+              className="px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-400 flex items-center gap-1.5 hover:bg-amber-500/30 transition-all cursor-pointer shadow-xs"
+              title="Click to exit demo mode"
+            >
+              <Sparkle size={13} weight="fill" />
+              <span>Demo Mode</span>
+            </button>
+          )}
 
           {/* Multi-Device Picker Pill (if >1 device found) */}
           {devices.length > 1 && (
-            <div className="relative inline-flex items-center gap-1 px-3 py-1.5 rounded-2xl text-xs font-bold bg-white/20 dark:bg-black/20 text-slate-800 dark:text-slate-200 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
+            <div className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold bg-white/20 dark:bg-black/20 text-slate-800 dark:text-slate-200 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
               <DeviceMobile size={15} weight="duotone" className="text-[#FF2D55]" />
               <select
                 value={selectedDeviceId}

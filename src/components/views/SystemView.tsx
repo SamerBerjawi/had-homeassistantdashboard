@@ -46,11 +46,6 @@ export default function SystemView({ darkMode = true }: SystemViewProps) {
           onChange={(tab) => setActiveSubTab(tab as SystemSubTab)}
           darkMode={darkMode}
         />
-
-        <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 ml-auto">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span>System Healthy</span>
-        </div>
       </div>
 
       {/* Animated Sub-View Content */}

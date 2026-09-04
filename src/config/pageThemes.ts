@@ -61,7 +61,7 @@ export const PAGE_THEMES: Record<string, PageThemeConfig> = {
   energy: {
     id: 'energy',
     title: 'Energy & Power',
-    subtitle: 'Monitor whole-home power draw, solar generation, battery storage, and historical grid energy.',
+    subtitle: '',
     icon: Lightning,
     color: 'text-amber-500 dark:text-amber-400',
     accentHex: '#f59e0b',
@@ -75,7 +75,7 @@ export const PAGE_THEMES: Record<string, PageThemeConfig> = {
   security: {
     id: 'security',
     title: 'Security & Safety',
-    subtitle: 'Keep your home safe with entry alarms, perimeter locks, motion zones, and surveillance feeds.',
+    subtitle: '',
     icon: ShieldCheck,
     color: 'text-emerald-500 dark:text-emerald-400',
     accentHex: '#10b981',
@@ -103,7 +103,7 @@ export const PAGE_THEMES: Record<string, PageThemeConfig> = {
   system: {
     id: 'system',
     title: 'System & Diagnostics',
-    subtitle: 'Inspect Home Assistant server health, hardware resource usage, integration latency, and telemetry logs.',
+    subtitle: '',
     icon: HardDrives,
     color: 'text-cyan-600 dark:text-cyan-400',
     accentHex: '#06b6d4',
@@ -117,7 +117,7 @@ export const PAGE_THEMES: Record<string, PageThemeConfig> = {
   network: {
     id: 'network',
     title: 'Network & Connectivity',
-    subtitle: 'Track connected IoT devices, gateway connectivity, signal strengths, and bandwidth distribution.',
+    subtitle: '',
     icon: ShareNetwork,
     color: 'text-sky-600 dark:text-sky-400',
     accentHex: '#0ea5e9',
@@ -145,7 +145,7 @@ export const PAGE_THEMES: Record<string, PageThemeConfig> = {
   health: {
     id: 'health',
     title: 'Health & Vitals',
-    subtitle: 'Track Apple Health activity rings, vital signs, cardiovascular metrics, and body composition.',
+    subtitle: '',
     icon: Heartbeat,
     color: 'text-rose-500 dark:text-rose-400',
     accentHex: '#f43f5e',
@@ -173,7 +173,7 @@ export const PAGE_THEMES: Record<string, PageThemeConfig> = {
   automations: {
     id: 'automations',
     title: 'Automations & Scenes',
-    subtitle: 'Manage home automations, custom routines, scene triggers, and smart execution schedules.',
+    subtitle: '',
     icon: GitFork,
     color: 'text-violet-500 dark:text-violet-400',
     accentHex: '#8b5cf6',
@@ -187,7 +187,7 @@ export const PAGE_THEMES: Record<string, PageThemeConfig> = {
   settings: {
     id: 'settings',
     title: 'Settings & Setup',
-    subtitle: 'Customize dashboard preferences, room layouts, entity mappings, and theme modes.',
+    subtitle: '',
     icon: GearSix,
     color: 'text-slate-500 dark:text-slate-400',
     accentHex: '#94a3b8',

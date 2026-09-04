@@ -11,8 +11,7 @@ import {
   CaretLeft,
   CaretRight,
   ArrowsClockwise,
-  CalendarBlank,
-  Lightning
+  CalendarBlank
 } from '@phosphor-icons/react';
 import { EnergyHistoryPeriod } from '../../services/haEnergyStatistics';
 
@@ -47,24 +46,7 @@ export default function EnergyPeriodSelector({
   ];
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 pb-1">
-      {/* Left: Stream Status Badge */}
-      <div className="flex items-center gap-2">
-        <span
-          className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
-            isLive
-              ? darkMode
-                ? 'bg-emerald-500/20 text-emerald-300'
-                : 'bg-emerald-500/15 text-emerald-800'
-              : darkMode
-              ? 'bg-amber-500/20 text-amber-300'
-              : 'bg-amber-500/15 text-amber-800'
-          }`}
-        >
-          <Lightning size={14} weight="fill" className={isLive ? 'text-emerald-400 animate-pulse' : 'text-amber-400'} />
-          <span>{isLive ? 'Live Energy Feed' : 'Historical Data'}</span>
-        </span>
-      </div>
+    <div className="flex flex-wrap items-center justify-end gap-3 pb-1">
 
       {/* Right: Date Navigation, Period Tabs & Refresh */}
       <div className="flex flex-wrap items-center gap-2">
