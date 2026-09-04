@@ -170,7 +170,7 @@ export default function VacuumCard({ vacuum, darkMode = true, showMap = false }:
 
   return (
     <div
-      className={`relative p-5 sm:p-6 rounded-3xl backdrop-blur-sm transition-all duration-300 flex flex-col justify-between gap-5 overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+      className={`relative p-5 sm:p-6 rounded-3xl backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 flex flex-col justify-between gap-5 overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
         darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
       }`}
     >

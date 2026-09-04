@@ -50,8 +50,8 @@ export const BentoCard: React.FC<BentoCardProps> = ({
   }[rowSpan];
 
   const themeClasses = darkMode
-    ? 'bg-black/20 hover:bg-black/30 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'
-    : 'bg-white/20 hover:bg-white/30 text-slate-900 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]';
+    ? 'bg-black/20 hover:bg-black/30 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-white/5'
+    : 'bg-white/20 hover:bg-white/30 text-slate-900 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-slate-200/50';
 
   return (
     <motion.div
@@ -59,7 +59,7 @@ export const BentoCard: React.FC<BentoCardProps> = ({
       transition={{ duration: 0.2, ease: 'easeOut' }}
       onClick={onClick}
       onContextMenu={onContextMenu}
-      className={`relative rounded-3xl backdrop-blur-sm p-4 overflow-hidden isolate ${themeClasses} ${colSpanClasses} ${rowSpanClasses} ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`relative rounded-3xl backdrop-blur-xl p-4 overflow-hidden isolate ${themeClasses} ${colSpanClasses} ${rowSpanClasses} ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       {hasBorderBeam && (
         <BorderBeam

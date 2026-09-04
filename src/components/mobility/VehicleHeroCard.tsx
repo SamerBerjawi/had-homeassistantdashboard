@@ -156,10 +156,15 @@ export function VehicleHeroCard({
         darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
       }`}
     >
-      {/* Background Ambient Lighting Gradient */}
+      {/* Background Ambient Lighting Gradient with corner containment */}
       <div
-        className={`absolute -top-24 -left-20 -right-20 h-72 bg-gradient-to-b ${ambientGlow} blur-3xl pointer-events-none opacity-50 transition-all duration-700`}
-      />
+        className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
+        style={{ clipPath: 'inset(0 round 24px)', WebkitClipPath: 'inset(0 round 24px)' }}
+      >
+        <div
+          className={`absolute -top-24 -left-20 -right-20 h-72 bg-gradient-to-b ${ambientGlow} blur-3xl opacity-50 transition-all duration-700`}
+        />
+      </div>
 
       {/* Top Header: Vehicle Title & Status Pill (No Subtitle) */}
       <div className="relative z-10 flex items-center justify-between gap-4">
@@ -325,7 +330,7 @@ export function VehicleHeroCard({
                 12V Aux
               </span>
               <span className={`font-mono text-[10px] font-bold ${
-                metrics.battery12V > 12 ? 'text-emerald-500' : 'text-amber-500'
+                Number(metrics.battery12V) > 12 ? 'text-emerald-500' : 'text-amber-500'
               }`}>
                 {formatDecimal(metrics.battery12V)}V
               </span>

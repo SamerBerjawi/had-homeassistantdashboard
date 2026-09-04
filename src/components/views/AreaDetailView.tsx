@@ -775,8 +775,8 @@ export default function AreaDetailView({
         </div>
       )}
 
-      {/* Top Floating Filter Bar (No grey box) */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 py-1 sm:static sm:mx-0 sm:px-0 sm:py-0 backdrop-blur-md">
+      {/* Top Floating Filter Bar */}
+      <div className="flex items-center">
         <AdaptiveSectionTabs
           tabs={domainTabs}
           activeTab={activeDomainTab}

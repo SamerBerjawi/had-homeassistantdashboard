@@ -190,10 +190,15 @@ export function BikeTab({
                 : 'bg-white/20 text-slate-900'
             }`}
           >
-            {/* Ambient Background Gradient */}
+            {/* Ambient Background Gradient with corner containment */}
             <div
-              className={`absolute -top-24 -left-20 -right-20 h-72 bg-gradient-to-b ${ambientGlow} blur-3xl pointer-events-none opacity-50 transition-all duration-700`}
-            />
+              className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
+              style={{ clipPath: 'inset(0 round 24px)', WebkitClipPath: 'inset(0 round 24px)' }}
+            >
+              <div
+                className={`absolute -top-24 -left-20 -right-20 h-72 bg-gradient-to-b ${ambientGlow} blur-3xl opacity-50 transition-all duration-700`}
+              />
+            </div>
 
             {/* Header: Brand Logo / Bike Name & Dynamic Status Pill */}
             <div className="relative z-10 flex items-center justify-between gap-3">
@@ -284,7 +289,7 @@ export function BikeTab({
                 <div className="flex justify-center my-auto py-1">
                   <LiquidWaveBattery
                     soc={metrics.batteryPercent}
-                    isCharging={metrics.isCharging}
+                    isCharging={false}
                     powerKw={0}
                     darkMode={darkMode}
                   />
@@ -294,12 +299,12 @@ export function BikeTab({
                 <div className="mt-2 space-y-0.5 text-center sm:text-left">
                   <div className="flex items-baseline justify-center sm:justify-start gap-1">
                     <span className={`text-xl sm:text-2xl font-black tracking-tight font-mono ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                      {formatDecimal(metrics.estimatedRangeKm)}
+                      {formatDecimal(metrics.remainingRangeKm)}
                     </span>
                     <span className="text-[10px] sm:text-xs font-bold text-cyan-500">km range</span>
                   </div>
                   <span className={`text-[10px] font-mono block ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                    {metrics.isCharging ? 'Charging Active' : 'Battery Optimal'}
+                    Battery Optimal
                   </span>
                 </div>
               </div>

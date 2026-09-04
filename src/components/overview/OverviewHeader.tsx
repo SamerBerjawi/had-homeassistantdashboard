@@ -299,6 +299,20 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     activeLeaks.length > 0 ||
     activeSmoke.length > 0;
 
+  const tileBaseClass = (isActive: boolean, activeColorClass: string, isAlert: boolean = false) => {
+    return `col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-xl border transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+      isAlert
+        ? darkMode
+          ? 'bg-rose-950/60 text-white border-rose-500/30'
+          : 'bg-rose-100 text-rose-950 border-rose-200'
+        : isActive
+        ? activeColorClass
+        : darkMode
+        ? 'bg-black/20 hover:bg-black/30 text-white border-white/5'
+        : 'bg-white/20 hover:bg-white/30 text-slate-900 border-slate-200/50'
+    }`;
+  };
+
   return (
     <section aria-label="House Telemetry and Fast Controls" className="space-y-4 mb-6">
       {/* ============================================================= */}
@@ -526,16 +540,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       {/* 2. BENTO TILES GRID (BORDERLESS 4-COLS MOBILE / ADAPTIVE)    */}
       {/* ============================================================= */}
       <div className="grid grid-cols-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
-        
-        {/* 2.1 WEATHER TILE */}
+                {/* 2.1 WEATHER TILE */}
         <div
           onClick={() => setDrawerOpen('weather')}
-          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
-            darkMode
-              ? 'bg-black/20 hover:bg-black/30 text-white'
-              : 'bg-white/20 hover:bg-white/30 text-slate-900'
-          }`}
+          className={tileBaseClass(false, '')}
         >
           <div className="flex items-center justify-between relative z-10">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-xs">
@@ -569,12 +577,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.2 PERSONS / FAMILY PRESENCE */}
         <div
           onClick={() => openUsersDrawer()}
-          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
-            darkMode
-              ? 'bg-black/20 hover:bg-black/30 text-white'
-              : 'bg-white/20 hover:bg-white/30 text-slate-900'
-          }`}
+          className={tileBaseClass(false, '')}
         >
           <div className="flex items-center justify-between relative z-10">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-xs">
@@ -614,14 +617,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.3 LIGHTS */}
         <div
           onClick={() => setDrawerOpen('lights')}
-          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
-            onLights.length > 0
-              ? 'bg-amber-500/20 text-slate-900 dark:text-white'
-              : darkMode
-              ? 'bg-black/20 hover:bg-black/30 text-white'
-              : 'bg-white/20 hover:bg-white/30 text-slate-900'
-          }`}
+          className={tileBaseClass(
+            onLights.length > 0,
+            darkMode ? 'bg-amber-500/20 text-white border-amber-500/30' : 'bg-amber-500/20 text-slate-900 border-amber-300/60'
+          )}
         >
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
@@ -640,7 +639,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                   ? 'bg-amber-500/25 text-amber-700 dark:text-amber-300 hover:bg-amber-500/40'
                   : 'bg-white/80 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/15'
               }`}
-              title={onLights.length > 0 ? 'Turn all off' : 'Turn on lights'}
+              title={onLights.length > 0 ? 'Turn all off' : 'Turn lights on'}
             >
               <Power size={13} weight="bold" />
             </button>
@@ -665,14 +664,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.4 SWITCHES */}
         <div
           onClick={() => setDrawerOpen('switches')}
-          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
-            onSwitches.length > 0
-              ? 'bg-emerald-500/20 text-slate-900 dark:text-white'
-              : darkMode
-              ? 'bg-black/20 hover:bg-black/30 text-white'
-              : 'bg-white/20 hover:bg-white/30 text-slate-900'
-          }`}
+          className={tileBaseClass(
+            onSwitches.length > 0,
+            darkMode ? 'bg-emerald-500/20 text-white border-emerald-500/30' : 'bg-emerald-500/20 text-slate-900 border-emerald-300/60'
+          )}
         >
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
@@ -717,14 +712,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {vacuumEntities.length > 0 && (
           <div
             onClick={() => setDrawerOpen('vacuums')}
-            style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-            className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
-              isVacuumCleaning
-                ? 'bg-teal-500/20 text-slate-900 dark:text-white'
-                : darkMode
-                ? 'bg-black/20 hover:bg-black/30 text-white'
-                : 'bg-white/20 hover:bg-white/30 text-slate-900'
-            }`}
+            className={tileBaseClass(
+              isVacuumCleaning,
+              darkMode ? 'bg-teal-500/20 text-white border-teal-500/30' : 'bg-teal-500/20 text-slate-900 border-teal-300/60'
+            )}
           >
             <div className="flex items-center justify-between relative z-10">
               <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
@@ -775,14 +766,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.6 FANS */}
         <div
           onClick={() => setDrawerOpen('fans')}
-          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
-            activeFans.length > 0
-              ? 'bg-cyan-500/20 text-slate-900 dark:text-white'
-              : darkMode
-              ? 'bg-black/20 hover:bg-black/30 text-white'
-              : 'bg-white/20 hover:bg-white/30 text-slate-900'
-          }`}
+          className={tileBaseClass(
+            activeFans.length > 0,
+            darkMode ? 'bg-cyan-500/20 text-white border-cyan-500/30' : 'bg-cyan-500/20 text-slate-900 border-cyan-300/60'
+          )}
         >
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
@@ -826,14 +813,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.7 AUDIO & MEDIA */}
         <div
           onClick={() => setDrawerOpen('media')}
-          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
-            isPlayingMedia
-              ? 'bg-purple-500/20 text-slate-900 dark:text-white'
-              : darkMode
-              ? 'bg-black/20 hover:bg-black/30 text-white'
-              : 'bg-white/20 hover:bg-white/30 text-slate-900'
-          }`}
+          className={tileBaseClass(
+            isPlayingMedia,
+            darkMode ? 'bg-purple-500/20 text-white border-purple-500/30' : 'bg-purple-500/20 text-slate-900 border-purple-300/60'
+          )}
         >
           <div className="flex items-center justify-between relative z-10">
             <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-2xl overflow-hidden shadow-xs">
@@ -880,14 +863,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.8 ALARM & SECURITY */}
         <div
           onClick={() => setDrawerOpen('alarm')}
-          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
-            isAlarmArmed
-              ? 'bg-emerald-500/20 text-slate-900 dark:text-white'
-              : darkMode
-              ? 'bg-black/20 hover:bg-black/30 text-white'
-              : 'bg-white/20 hover:bg-white/30 text-slate-900'
-          }`}
+          className={tileBaseClass(
+            isAlarmArmed,
+            darkMode ? 'bg-emerald-500/20 text-white border-emerald-500/30' : 'bg-emerald-500/20 text-slate-900 border-emerald-300/60'
+          )}
         >
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${alarmDetails.bg} ${alarmDetails.text}`}>
@@ -926,14 +905,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.9 ENTRY DOORS (SUBTLE ALERT) */}
         <div
           onClick={openDoorsDrawer}
-          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
-            openDoors.length > 0
-              ? 'bg-amber-500/20 text-slate-900 dark:text-white'
-              : darkMode
-              ? 'bg-black/20 hover:bg-black/30 text-white'
-              : 'bg-white/20 hover:bg-white/30 text-slate-900'
-          }`}
+          className={tileBaseClass(
+            openDoors.length > 0,
+            darkMode ? 'bg-amber-500/20 text-white border-amber-500/30' : 'bg-amber-500/20 text-slate-900 border-amber-300/60'
+          )}
         >
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
@@ -974,14 +949,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.10 WINDOWS (SUBTLE ALERT) */}
         <div
           onClick={openWindowsDrawer}
-          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
-            openWindows.length > 0
-              ? 'bg-amber-500/20 text-slate-900 dark:text-white'
-              : darkMode
-              ? 'bg-black/20 hover:bg-black/30 text-white'
-              : 'bg-white/20 hover:bg-white/30 text-slate-900'
-          }`}
+          className={tileBaseClass(
+            openWindows.length > 0,
+            darkMode ? 'bg-amber-500/20 text-white border-amber-500/30' : 'bg-amber-500/20 text-slate-900 border-amber-300/60'
+          )}
         >
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
@@ -1022,14 +993,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.11 MOTION */}
         <div
           onClick={() => openSensorsDrawer('motion')}
-          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
-            activeMotion.length > 0
-              ? 'bg-amber-500/20 text-slate-900 dark:text-white'
-              : darkMode
-              ? 'bg-black/20 hover:bg-black/30 text-white'
-              : 'bg-white/20 hover:bg-white/30 text-slate-900'
-          }`}
+          className={tileBaseClass(
+            activeMotion.length > 0,
+            darkMode ? 'bg-amber-500/20 text-white border-amber-500/30' : 'bg-amber-500/20 text-slate-900 border-amber-300/60'
+          )}
         >
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
@@ -1068,14 +1035,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.12 WATER LEAKAGE (SUBTLE ALERT) */}
         <div
           onClick={() => openSensorsDrawer('leak')}
-          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          className={tileBaseClass(
+            activeLeaks.length > 0,
+            darkMode ? 'bg-rose-500/20 text-white border-rose-500/30' : 'bg-rose-500/20 text-rose-950 border-rose-300/60',
             activeLeaks.length > 0
-              ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300'
-              : darkMode
-              ? 'bg-black/20 hover:bg-black/30 text-white'
-              : 'bg-white/20 hover:bg-white/30 text-slate-900'
-          }`}
+          )}
         >
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
@@ -1116,14 +1080,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         {/* 2.13 SMOKE & FIRE (SUBTLE ALERT) */}
         <div
           onClick={() => openSensorsDrawer('smoke')}
-          style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)' }}
-          className={`col-span-2 sm:col-span-1 group relative h-36 rounded-3xl backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden isolate transform-gpu p-3.5 sm:p-4 ${
+          className={tileBaseClass(
+            activeSmoke.length > 0,
+            darkMode ? 'bg-rose-500/20 text-white border-rose-500/30' : 'bg-rose-500/20 text-rose-950 border-rose-300/60',
             activeSmoke.length > 0
-              ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300'
-              : darkMode
-              ? 'bg-black/20 hover:bg-black/30 text-white'
-              : 'bg-white/20 hover:bg-white/30 text-slate-900'
-          }`}
+          )}
         >
           <div className="flex items-center justify-between relative z-10">
             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${

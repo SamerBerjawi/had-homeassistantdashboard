@@ -116,7 +116,12 @@ export function ChargingControlCard({
     >
       {/* Ambient background aura when actively charging */}
       {isInProgress && (
-        <div className="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none animate-pulse" />
+        <div
+          className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
+          style={{ clipPath: 'inset(0 round 24px)', WebkitClipPath: 'inset(0 round 24px)' }}
+        >
+          <div className="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-emerald-500/15 blur-3xl animate-pulse" />
+        </div>
       )}
 
       {/* Card Header: Title & EV Plug / State Badges */}

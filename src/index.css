@@ -112,8 +112,6 @@ button, a, input, select, textarea, [role="button"], [tabindex] {
     -webkit-backdrop-filter: blur(4px);
     border: none;
     border-radius: 24px;
-    clip-path: inset(0 round 24px);
-    -webkit-clip-path: inset(0 round 24px);
     box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
     isolation: isolate;
@@ -124,8 +122,6 @@ button, a, input, select, textarea, [role="button"], [tabindex] {
     -webkit-backdrop-filter: blur(4px);
     border: none;
     border-radius: 24px;
-    clip-path: inset(0 round 24px);
-    -webkit-clip-path: inset(0 round 24px);
     box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
     isolation: isolate;
@@ -137,8 +133,6 @@ button, a, input, select, textarea, [role="button"], [tabindex] {
     -webkit-backdrop-filter: blur(4px);
     border: none;
     border-radius: 24px;
-    clip-path: inset(0 round 24px);
-    -webkit-clip-path: inset(0 round 24px);
     box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
     isolation: isolate;
@@ -149,23 +143,8 @@ button, a, input, select, textarea, [role="button"], [tabindex] {
     -webkit-backdrop-filter: blur(4px);
     border: none;
     border-radius: 24px;
-    clip-path: inset(0 round 24px);
-    -webkit-clip-path: inset(0 round 24px);
     box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
-    isolation: isolate;
-  }
-
-  /* Universal prevention of child background, gradient, and blur bleed outside rounded borders */
-  [class*="overflow-hidden"][class*="rounded-3xl"] {
-    clip-path: inset(0 round 24px);
-    -webkit-clip-path: inset(0 round 24px);
-    isolation: isolate;
-  }
-
-  [class*="overflow-hidden"][class*="rounded-2xl"] {
-    clip-path: inset(0 round 16px);
-    -webkit-clip-path: inset(0 round 16px);
     isolation: isolate;
   }
 

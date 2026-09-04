@@ -108,10 +108,7 @@ export default function MediaHierarchyPlayerCard({
   return (
     <div
       onClick={() => onOpenDetail(media)}
-      style={{
-        clipPath: 'inset(0 round 1.5rem)',
-      }}
-      className={`group relative flex flex-col justify-between p-4 rounded-3xl backdrop-blur-sm transition-all duration-200 cursor-pointer overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+      className={`group relative flex flex-col justify-between p-4 rounded-3xl backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-200 cursor-pointer overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
         isPlaying
           ? darkMode
             ? 'bg-purple-950/60 text-white'

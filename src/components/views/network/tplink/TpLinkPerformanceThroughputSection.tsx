@@ -41,10 +41,10 @@ export const TpLinkPerformanceThroughputSection: React.FC<TpLinkPerformanceThrou
   darkMode = true
 }) => {
   const cardStyle =
-    'rounded-3xl backdrop-blur-sm transition-all overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] p-4 sm:p-5 ' +
+    'rounded-3xl backdrop-blur-xl transition-all overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] p-4 sm:p-5 border ' +
     (darkMode
-      ? 'bg-black/20 text-white'
-      : 'bg-white/20 text-slate-900');
+      ? 'bg-black/20 text-white border-white/5'
+      : 'bg-white/20 text-slate-900 border-slate-200/50');
 
   // CPU threshold colors (~60/85)
   const cpuUsageColor =

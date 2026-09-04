@@ -124,24 +124,24 @@ export default function AreaTile({
     <div
       {...tileLongPressHandlers}
       style={{
-        clipPath: 'inset(0 round 1.5rem)',
         touchAction: 'pan-y',
         ...tileLongPressHandlers.style
       }}
-      className={`group relative flex flex-col justify-between rounded-3xl p-4 sm:p-5 backdrop-blur-sm transition-all duration-300 cursor-pointer overflow-hidden isolate ${
+      className={`group relative flex flex-col justify-between rounded-3xl p-4 sm:p-5 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 cursor-pointer overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
         isHazardActive
           ? darkMode
-            ? 'bg-rose-950/60 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'
-            : 'bg-rose-100 text-rose-950 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'
+            ? 'bg-rose-950/60 text-white'
+            : 'bg-rose-100 text-rose-950'
           : darkMode
-          ? 'bg-black/20 hover:bg-black/30 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'
-          : 'bg-white/20 hover:bg-white/30 text-slate-900 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'
+          ? 'bg-black/20 hover:bg-black/30 text-white'
+          : 'bg-white/20 hover:bg-white/30 text-slate-900'
       }`}
     >
       {/* Background ambient room picture with corner-bleed protection */}
       {area.picture && (
         <div
           className="absolute inset-0 z-0 opacity-10 dark:opacity-15 group-hover:opacity-20 transition-opacity duration-500 overflow-hidden pointer-events-none rounded-3xl"
+          style={{ clipPath: 'inset(0 round 24px)', WebkitClipPath: 'inset(0 round 24px)' }}
         >
           <img
             src={area.picture}
@@ -152,8 +152,11 @@ export default function AreaTile({
         </div>
       )}
 
-      {/* Top Ambient Highlight Glow with strict containment */}
-      <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+      {/* Top Ambient Highlight Glow with strict containment to eliminate corner bleed */}
+      <div
+        className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
+        style={{ clipPath: 'inset(0 round 24px)', WebkitClipPath: 'inset(0 round 24px)' }}
+      >
         {isLightActive && (
           <div
             style={{ backgroundColor: customAccentColor ? `${customAccentColor}18` : undefined }}

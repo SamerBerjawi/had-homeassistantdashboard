@@ -52,10 +52,10 @@ export default function EnergyPeriodSelector({
       <div className="flex flex-wrap items-center gap-2">
         {/* Date Window Navigation: < Date Label > */}
         <div
-          className={`flex items-center gap-1 px-2 py-1 rounded-2xl backdrop-blur-sm transition-all shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+          className={`flex items-center gap-1 px-2 py-1 rounded-2xl backdrop-blur-xl border transition-all shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
             darkMode
-              ? 'bg-black/20 text-white'
-              : 'bg-white/20 text-slate-900'
+              ? 'bg-black/20 text-white border-white/5'
+              : 'bg-white/20 text-slate-900 border-slate-200/50'
           }`}
         >
           <button
@@ -95,10 +95,10 @@ export default function EnergyPeriodSelector({
 
         {/* Period Tabs: Day / Week / Month / Year */}
         <div
-          className={`flex items-center p-1 rounded-2xl backdrop-blur-sm transition-all shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+          className={`flex items-center p-1 rounded-2xl backdrop-blur-xl border transition-all shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
             darkMode
-              ? 'bg-black/20'
-              : 'bg-white/20'
+              ? 'bg-black/20 border-white/5'
+              : 'bg-white/20 border-slate-200/50'
           }`}
         >
           {periodOptions.map((opt) => (
@@ -125,10 +125,10 @@ export default function EnergyPeriodSelector({
           onClick={onRefresh}
           disabled={isFetchingStats}
           title="Refresh energy statistics"
-          className={`p-2 rounded-2xl text-xs font-bold transition-all shadow-[4px_6px_12px_rgba(0,0,0,0.15)] backdrop-blur-sm cursor-pointer ${
+          className={`p-2 rounded-2xl text-xs font-bold transition-all shadow-[4px_6px_12px_rgba(0,0,0,0.15)] backdrop-blur-xl border cursor-pointer ${
             darkMode
-              ? 'bg-black/20 hover:bg-black/30 text-slate-200 hover:text-white'
-              : 'bg-white/20 hover:bg-white/30 text-slate-700 hover:text-slate-900'
+              ? 'bg-black/20 hover:bg-black/30 text-slate-200 hover:text-white border-white/5'
+              : 'bg-white/20 hover:bg-white/30 text-slate-700 hover:text-slate-900 border-slate-200/50'
           }`}
         >
           <ArrowsClockwise

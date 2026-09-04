@@ -62,8 +62,8 @@ export default function MobilityView({ darkMode = true }: MobilityViewProps) {
           {/* Top Asset Switcher ("Electric Car" & "Electric Bike") */}
           {hasBikeConfigured ? (
             <div
-              className={`p-1 rounded-2xl flex items-center gap-1 backdrop-blur-sm transition-all shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
-                darkMode ? 'bg-black/20' : 'bg-white/20'
+              className={`p-1 rounded-2xl flex items-center gap-1 backdrop-blur-xl border transition-all shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+                darkMode ? 'bg-black/20 border-white/5' : 'bg-white/20 border-slate-200/50'
               }`}
             >
               <button
@@ -127,7 +127,9 @@ export default function MobilityView({ darkMode = true }: MobilityViewProps) {
             onClick={() => setCustomizerOpen(true)}
             aria-label="Customize vehicle specs and photos"
             title="Customize"
-            className="p-2 rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-[4px_6px_12px_rgba(0,0,0,0.15)] bg-white/20 hover:bg-white/30 dark:bg-black/20 dark:hover:bg-black/30 backdrop-blur-sm text-cyan-600 dark:text-cyan-400"
+            className={`p-2 rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-[4px_6px_12px_rgba(0,0,0,0.15)] backdrop-blur-xl border text-cyan-600 dark:text-cyan-400 ${
+              darkMode ? 'bg-black/20 hover:bg-black/30 border-white/5' : 'bg-white/20 hover:bg-white/30 border-slate-200/50'
+            }`}
           >
             <Sliders size={18} weight="bold" />
           </button>

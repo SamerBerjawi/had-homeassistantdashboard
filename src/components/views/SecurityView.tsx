@@ -301,7 +301,7 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
   return (
     <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-24 md:pb-8">
       {/* Top Floating Filter Bar */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 py-1 sm:static sm:mx-0 sm:px-0 sm:py-0 backdrop-blur-md">
+      <div className="flex items-center">
         <AdaptiveSectionTabs
           tabs={securityTabs}
           activeTab={activeFilter}

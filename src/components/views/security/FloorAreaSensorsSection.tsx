@@ -184,7 +184,7 @@ export default function FloorAreaSensorsSection({
 
         {/* Quick Search */}
         <div
-          className={`relative flex items-center px-3 py-1.5 rounded-2xl text-xs sm:ml-auto backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+          className={`relative flex items-center px-3 py-1.5 rounded-2xl text-xs sm:ml-auto backdrop-blur-xl border border-slate-200/50 dark:border-white/5 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
             darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
           }`}
         >
