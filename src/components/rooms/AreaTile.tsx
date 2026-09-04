@@ -152,21 +152,17 @@ export default function AreaTile({
         </div>
       )}
 
-      {/* Top Ambient Highlight Glow with strict containment to eliminate corner bleed */}
-      <div
-        className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
-        style={{ clipPath: 'inset(0 round 24px)', WebkitClipPath: 'inset(0 round 24px)' }}
-      >
-        {isLightActive && (
-          <div
-            style={{ backgroundColor: customAccentColor ? `${customAccentColor}18` : undefined }}
-            className={`absolute -top-8 -right-8 w-24 h-24 rounded-full ${customAccentColor ? '' : 'bg-amber-500/15'} blur-xl pointer-events-none`}
-          />
-        )}
-        {isMotionActive && !isLightActive && (
-          <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-emerald-500/15 blur-xl pointer-events-none" />
-        )}
-      </div>
+      {/* Top Ambient Highlight Glow rendered via seamless radial gradient */}
+      {(isLightActive || isMotionActive) && (
+        <div
+          className="absolute inset-0 rounded-3xl pointer-events-none transition-opacity duration-300"
+          style={{
+            backgroundImage: isLightActive
+              ? `radial-gradient(circle 100px at 95% 5%, ${customAccentColor ? `${customAccentColor}22` : 'rgba(245, 158, 11, 0.16)'} 0%, transparent 70%)`
+              : `radial-gradient(circle 100px at 95% 5%, rgba(16, 185, 129, 0.16) 0%, transparent 70%)`,
+          }}
+        />
+      )}
 
       <div className="relative z-10 flex flex-col gap-3">
         {/* Card Header: Clean unboxed icon + Room Name + Active Status Indicator */}

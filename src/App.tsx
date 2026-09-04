@@ -23,6 +23,7 @@ import FullScreenLoadingPage from './components/ui/FullScreenLoadingPage';
 import { hasConfiguredHACredentials } from './store/useAutoLayoutStore';
 
 import { PAGE_THEMES } from './config/pageThemes';
+import AmbientBackground from './components/common/AmbientBackground';
 import DynamicPhosphorIcon from './components/ui/DynamicPhosphorIcon';
 import { useRoomsData } from './hooks/useRoomsData';
 import { haWebSocketService } from './services/haWebSocket';
@@ -489,17 +490,10 @@ export default function App() {
       }`}>
       {/* Ambient background decoration with distinct page accent glows */}
       {backgroundStyle === 'glow' && (
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden transition-opacity duration-700 ease-in-out">
-          {/* Primary Top-Right Accent Bloom */}
-          <div className={`absolute -top-24 right-0 sm:right-1/6 w-[450px] sm:w-[620px] h-[450px] sm:h-[620px] rounded-full blur-[100px] sm:blur-[140px] opacity-16 dark:opacity-28 transform-gpu transition-all duration-1000 ${currentTheme.glow1
-            }`} />
-          {/* Secondary Bottom-Left Accent Bloom */}
-          <div className={`absolute -bottom-24 left-0 sm:left-1/6 w-[400px] sm:w-[550px] h-[400px] sm:h-[550px] rounded-full blur-[100px] sm:blur-[140px] opacity-14 dark:opacity-24 transform-gpu transition-all duration-1000 ${currentTheme.glow2
-            }`} />
-          {/* Tertiary Center Accent Radiance */}
-          <div className={`absolute top-1/3 left-1/3 w-[300px] sm:w-[450px] h-[300px] sm:h-[450px] rounded-full blur-[90px] sm:blur-[120px] opacity-10 dark:opacity-18 transform-gpu transition-all duration-1000 ${currentTheme.glow3 || currentTheme.glow1
-            }`} />
-        </div>
+        <AmbientBackground
+          theme={currentTheme}
+          darkMode={darkMode}
+        />
       )}
 
       {/* Modern Glassmorphic Nav Sidebar */}

@@ -117,11 +117,11 @@ export function ChargingControlCard({
       {/* Ambient background aura when actively charging */}
       {isInProgress && (
         <div
-          className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
-          style={{ clipPath: 'inset(0 round 24px)', WebkitClipPath: 'inset(0 round 24px)' }}
-        >
-          <div className="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-emerald-500/15 blur-3xl animate-pulse" />
-        </div>
+          className="absolute inset-0 rounded-3xl pointer-events-none transition-opacity duration-700 animate-pulse"
+          style={{
+            backgroundImage: 'radial-gradient(circle 220px at 90% 10%, rgba(16, 185, 129, 0.15) 0%, transparent 70%)',
+          }}
+        />
       )}
 
       {/* Card Header: Title & EV Plug / State Badges */}

@@ -30,9 +30,12 @@ export const BatteryChargingVisual: React.FC<BatteryChargingVisualProps> = ({
       {/* Background Ambient Aura */}
       {isCharging && (
         <motion.div
-          animate={{ opacity: [0.2, 0.45, 0.2], scale: [0.95, 1.05, 0.95] }}
+          animate={{ opacity: [0.25, 0.5, 0.25], scale: [0.95, 1.05, 0.95] }}
           transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute inset-0 bg-emerald-500/20 blur-3xl pointer-events-none"
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: 'radial-gradient(circle at center, rgba(16, 185, 129, 0.25) 0%, transparent 75%)'
+          }}
         />
       )}
 

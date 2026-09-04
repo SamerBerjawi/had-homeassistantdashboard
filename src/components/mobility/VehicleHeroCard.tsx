@@ -156,15 +156,17 @@ export function VehicleHeroCard({
         darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
       }`}
     >
-      {/* Background Ambient Lighting Gradient with corner containment */}
+      {/* Background Ambient Lighting Gradient */}
       <div
-        className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
-        style={{ clipPath: 'inset(0 round 24px)', WebkitClipPath: 'inset(0 round 24px)' }}
-      >
-        <div
-          className={`absolute -top-24 -left-20 -right-20 h-72 bg-gradient-to-b ${ambientGlow} blur-3xl opacity-50 transition-all duration-700`}
-        />
-      </div>
+        className="absolute inset-0 rounded-3xl pointer-events-none transition-opacity duration-700"
+        style={{
+          backgroundImage: isCharging
+            ? 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(16, 185, 129, 0.20) 0%, rgba(20, 184, 166, 0.08) 50%, transparent 80%)'
+            : isDriving
+            ? 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(6, 182, 212, 0.20) 0%, rgba(59, 130, 246, 0.08) 50%, transparent 80%)'
+            : 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.06) 50%, transparent 80%)',
+        }}
+      />
 
       {/* Top Header: Vehicle Title & Status Pill (No Subtitle) */}
       <div className="relative z-10 flex items-center justify-between gap-4">
@@ -225,8 +227,10 @@ export function VehicleHeroCard({
       <div className="relative my-3 sm:my-4 flex flex-col items-center justify-center z-10">
         {/* Underbody Ambient Glow */}
         <div
-          className="absolute bottom-2 w-3/4 sm:w-2/3 h-12 rounded-full blur-2xl opacity-40 pointer-events-none transition-all duration-700"
-          style={{ backgroundColor: groundGlowColor }}
+          className="absolute bottom-2 w-3/4 sm:w-2/3 h-12 rounded-full pointer-events-none transition-all duration-700"
+          style={{
+            background: `radial-gradient(ellipse at center, ${groundGlowColor}66 0%, ${groundGlowColor}22 50%, transparent 80%)`
+          }}
         />
 
         {/* Vehicle Render */}

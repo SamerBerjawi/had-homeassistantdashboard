@@ -85,7 +85,12 @@ export function UnlockConfirmModal({
           className="relative w-full max-w-sm rounded-3xl p-6 bg-slate-900/95 border border-white/15 text-white shadow-2xl overflow-hidden"
         >
           {/* Subtle Ambient Red/Amber Glow */}
-          <div className="absolute -top-16 -left-16 w-40 h-40 rounded-full bg-amber-500/20 blur-3xl pointer-events-none" />
+          <div
+            className="absolute inset-0 pointer-events-none rounded-3xl"
+            style={{
+              backgroundImage: 'radial-gradient(circle 140px at 0% 0%, rgba(245, 158, 11, 0.20) 0%, transparent 70%)'
+            }}
+          />
 
           {/* Close button */}
           <button

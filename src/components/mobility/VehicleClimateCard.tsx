@@ -98,7 +98,12 @@ export function VehicleClimateCard({
     >
       {/* Background glow when climate active */}
       {metrics.remoteClimateActive && (
-        <div className="absolute -left-20 -top-20 w-72 h-72 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none animate-pulse" />
+        <div
+          className="absolute inset-0 rounded-3xl pointer-events-none transition-opacity duration-700 animate-pulse"
+          style={{
+            backgroundImage: 'radial-gradient(circle 220px at 10% 10%, rgba(6, 182, 212, 0.15) 0%, transparent 70%)',
+          }}
+        />
       )}
 
       {/* Card Header */}

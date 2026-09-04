@@ -52,9 +52,10 @@ export function ClimateConfirmModal({
         >
           {/* Subtle Ambient Glow */}
           <div
-            className={`absolute -top-16 -left-16 w-40 h-40 rounded-full blur-3xl pointer-events-none ${
-              isActive ? 'bg-rose-500/20' : 'bg-cyan-500/20'
-            }`}
+            className="absolute inset-0 pointer-events-none rounded-3xl"
+            style={{
+              backgroundImage: `radial-gradient(circle 140px at 0% 0%, ${isActive ? 'rgba(244, 63, 94, 0.20)' : 'rgba(6, 182, 212, 0.20)'} 0%, transparent 70%)`
+            }}
           />
 
           {/* Close button */}

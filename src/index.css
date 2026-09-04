@@ -38,6 +38,9 @@
   --chart-scale-04: oklch(0.68 0.02 106);
   --chart-scale-05: oklch(0.55 0.025 106);
   --chart-scale-pattern-color: oklch(0.96 0.005 106);
+  --border: rgba(0, 0, 0, 0.08);
+  --foreground: #0f172a;
+  --muted-foreground: #64748b;
 }
 
 html, body {
@@ -384,6 +387,9 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
   --chart-scale-04: oklch(0.68 0.02 106);
   --chart-scale-05: oklch(0.55 0.025 106);
   --chart-scale-pattern-color: oklch(0.96 0.005 106);
+  --border: rgba(0, 0, 0, 0.08);
+  --foreground: #0f172a;
+  --muted-foreground: #64748b;
   --color-1: oklch(66.2% 0.225 25.9);
   --color-2: oklch(60.4% 0.26 302);
   --color-3: oklch(69.6% 0.165 251);
@@ -416,6 +422,9 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
   --chart-scale-04: oklch(0.58 0.06 270);
   --chart-scale-05: oklch(0.68 0.07 270);
   --chart-scale-pattern-color: oklch(0.145 0 0);
+  --border: rgba(255, 255, 255, 0.1);
+  --foreground: #f8fafc;
+  --muted-foreground: #94a3b8;
   --color-1: oklch(66.2% 0.225 25.9);
   --color-2: oklch(60.4% 0.26 302);
   --color-3: oklch(69.6% 0.165 251);
@@ -424,6 +433,9 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
 }
 
 @theme inline {
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);

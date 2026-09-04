@@ -71,11 +71,15 @@ export default function EnergyDistributionCard({
           : 'bg-white/20 text-slate-900'
       }`}
     >
-      {/* Ambient background glow with strict containment */}
-      <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
-        <div className="absolute top-0 right-1/4 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-      </div>
+      {/* Ambient background glow rendered via smooth radial gradients (eliminates GPU blur box clipping) */}
+      <div
+        className="absolute inset-0 rounded-3xl pointer-events-none transition-opacity duration-500"
+        style={{
+          backgroundImage: darkMode
+            ? 'radial-gradient(circle 220px at 75% 20%, rgba(245, 158, 11, 0.08) 0%, transparent 70%), radial-gradient(circle 220px at 25% 85%, rgba(16, 185, 129, 0.08) 0%, transparent 70%)'
+            : 'radial-gradient(circle 220px at 75% 20%, rgba(245, 158, 11, 0.06) 0%, transparent 70%), radial-gradient(circle 220px at 25% 85%, rgba(16, 185, 129, 0.06) 0%, transparent 70%)',
+        }}
+      />
 
       {/* Card Header & Live/Period Toggle */}
       <div className="flex items-center justify-between gap-3 mb-2 z-10">
