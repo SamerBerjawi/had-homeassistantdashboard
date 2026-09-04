@@ -162,7 +162,7 @@ export default function RoomsHeaderSentence({
                   : 'bg-amber-50/90 border-amber-300 text-amber-900'
               }`}
             >
-              <Lightbulb size={14} weight="fill" className="text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)]" />
+              <Lightbulb size={14} weight="fill" className="text-amber-600 dark:text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)]" />
               <span>{activeLightsCount} {activeLightsCount === 1 ? 'light' : 'lights'} on</span>
             </span>
             <span>,</span>
@@ -259,7 +259,7 @@ export default function RoomsHeaderSentence({
                     : 'bg-amber-100/90 border-amber-400 text-amber-950'
                 }`}
               >
-                <Door size={14} weight="bold" className="text-amber-400" />
+                <Door size={14} weight="bold" className="text-amber-700 dark:text-amber-400" />
                 <span>{openDoorsCount} {openDoorsCount === 1 ? 'door' : 'doors'} open</span>
               </span>
             )}
@@ -308,7 +308,7 @@ export default function RoomsHeaderSentence({
                   : 'bg-amber-100/90 border-amber-400 text-amber-950'
               }`}
             >
-              <LockOpen size={14} weight="bold" className="text-amber-400" />
+              <LockOpen size={14} weight="bold" className="text-amber-700 dark:text-amber-400" />
               <span>{unlockedLocksCount} unlocked</span>
             </span>
             <span>,</span>
@@ -421,7 +421,7 @@ export default function RoomsHeaderSentence({
                 : 'bg-amber-50/90 border-amber-300 text-amber-900'
             }`}
           >
-            <Lightbulb size={14} weight="fill" className="text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)]" />
+            <Lightbulb size={14} weight="fill" className="text-amber-600 dark:text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)]" />
             <span>{totalLightsOn} {totalLightsOn === 1 ? 'light' : 'lights'} on</span>
           </span>
           <span>across the house,</span>
@@ -455,7 +455,7 @@ export default function RoomsHeaderSentence({
                   : 'bg-amber-100/90 border-amber-400 text-amber-950'
               }`}
             >
-              <Door size={14} weight="bold" className="text-amber-400" />
+              <Door size={14} weight="bold" className="text-amber-700 dark:text-amber-400" />
               <span>{totalDoorsOpen} {totalDoorsOpen === 1 ? 'door' : 'doors'} open</span>
             </span>
           )}
@@ -538,8 +538,10 @@ export default function RoomsHeaderSentence({
                 : activeVacuum.status === 'returning'
                   ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
                   : activeVacuum.status === 'paused'
+                  ? darkMode
                     ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                    : 'bg-teal-500/20 border-teal-500/40 text-teal-300 animate-pulse'
+                    : 'bg-amber-100/90 border-amber-400 text-amber-950'
+                  : 'bg-teal-500/20 border-teal-500/40 text-teal-300 animate-pulse'
             }`}
           >
             {activeVacuum.status === 'error' ? (
@@ -547,7 +549,7 @@ export default function RoomsHeaderSentence({
             ) : activeVacuum.status === 'returning' ? (
               <ArrowArcLeft size={14} weight="bold" className="text-cyan-400" />
             ) : activeVacuum.status === 'paused' ? (
-              <Pause size={14} weight="bold" className="text-amber-400" />
+              <Pause size={14} weight="bold" className="text-amber-700 dark:text-amber-400" />
             ) : (
               <Broom size={14} weight="fill" className="text-teal-400" />
             )}

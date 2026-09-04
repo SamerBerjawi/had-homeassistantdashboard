@@ -391,7 +391,7 @@ export default function AreaTile({
                 title={`${activeLightsCount}/${totalLightsCount} lights on. Click to toggle, right-click/long-press for details.`}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
                   isLightActive
-                    ? 'bg-amber-500/25 hover:bg-amber-500/35 border-amber-500/40 text-amber-300 shadow-sm shadow-amber-500/20'
+                    ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/40 text-amber-800 dark:bg-amber-500/25 dark:hover:bg-amber-500/35 dark:border-amber-500/40 dark:text-amber-300 shadow-sm shadow-amber-500/10 dark:shadow-amber-500/20'
                     : darkMode
                     ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-slate-200'
                     : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
@@ -418,7 +418,7 @@ export default function AreaTile({
                 title={`${activeSwitchesCount}/${entities.switches.length} switches active. Click to toggle, right-click/long-press for details.`}
                 className={`p-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
                   activeSwitchesCount > 0
-                    ? 'bg-indigo-500/25 hover:bg-indigo-500/35 border-indigo-500/40 text-indigo-300 shadow-sm shadow-indigo-500/20'
+                    ? 'bg-indigo-500/15 hover:bg-indigo-500/25 border-indigo-500/40 text-indigo-800 dark:bg-indigo-500/25 dark:hover:bg-indigo-500/35 dark:border-indigo-500/40 dark:text-indigo-300 shadow-sm shadow-indigo-500/10 dark:shadow-indigo-500/20'
                     : darkMode
                     ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-slate-200'
                     : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
@@ -444,7 +444,7 @@ export default function AreaTile({
                 title={`${activeFansCount}/${entities.fans.length} fans active. Click to toggle, right-click for details.`}
                 className={`flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
                   activeFansCount > 0
-                    ? 'bg-teal-500/25 hover:bg-teal-500/35 border-teal-500/40 text-teal-300 shadow-sm shadow-teal-500/20'
+                    ? 'bg-teal-500/15 hover:bg-teal-500/25 border-teal-500/40 text-teal-800 dark:bg-teal-500/25 dark:hover:bg-teal-500/35 dark:border-teal-500/40 dark:text-teal-300 shadow-sm shadow-teal-500/10 dark:shadow-teal-500/20'
                     : darkMode
                     ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-slate-200'
                     : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
@@ -475,8 +475,8 @@ export default function AreaTile({
                 title={isLockUnlocked ? `${unlockedLocksCount} unlocked. Click to lock, right-click for details.` : 'All locked. Click to unlock.'}
                 className={`p-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
                   isLockUnlocked
-                    ? 'bg-amber-500/25 hover:bg-amber-500/35 border-amber-500/40 text-amber-300 shadow-sm shadow-amber-500/20'
-                    : 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/35 text-emerald-300'
+                    ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/40 text-amber-800 dark:bg-amber-500/25 dark:hover:bg-amber-500/35 dark:border-amber-500/40 dark:text-amber-300 shadow-sm shadow-amber-500/10 dark:shadow-amber-500/20'
+                    : 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/30 text-emerald-800 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 dark:border-emerald-500/35 dark:text-emerald-300'
                 }`}
               >
                 {isLockUnlocked ? (
@@ -503,7 +503,7 @@ export default function AreaTile({
                 title={isMediaActive ? 'Pause Music (Right-click for controls)' : 'Play Music (Right-click for controls)'}
                 className={`p-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
                   isMediaActive
-                    ? 'bg-cyan-500/25 hover:bg-cyan-500/35 border-cyan-500/40 text-cyan-300 shadow-sm shadow-cyan-500/20'
+                    ? 'bg-cyan-500/15 hover:bg-cyan-500/25 border-cyan-500/40 text-cyan-800 dark:bg-cyan-500/25 dark:hover:bg-cyan-500/35 dark:border-cyan-500/40 dark:text-cyan-300 shadow-sm shadow-cyan-500/10 dark:shadow-cyan-500/20'
                     : darkMode
                     ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-slate-200'
                     : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'

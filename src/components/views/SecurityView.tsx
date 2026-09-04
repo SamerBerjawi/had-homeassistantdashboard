@@ -223,7 +223,7 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
               label: 'Locks',
               icon: Lock,
               badge: unlockedCount > 0 ? `${unlockedCount} unlocked` : undefined,
-              badgeColor: unlockedCount > 0 ? 'bg-amber-500/20 text-amber-300 font-bold' : undefined
+              badgeColor: unlockedCount > 0 ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 dark:bg-amber-500/20 font-bold' : undefined
             }
           ]
         : []),
@@ -234,7 +234,7 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
               label: 'Openings',
               icon: Door,
               badge: openCount > 0 ? `${openCount} open` : undefined,
-              badgeColor: openCount > 0 ? 'bg-amber-500/20 text-amber-300 font-bold' : undefined
+              badgeColor: openCount > 0 ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 dark:bg-amber-500/20 font-bold' : undefined
             }
           ]
         : []),
@@ -245,7 +245,7 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
               label: 'Motion',
               icon: PersonSimpleWalk,
               badge: motionCount > 0 ? `${motionCount}` : undefined,
-              badgeColor: motionCount > 0 ? 'bg-emerald-500/20 text-emerald-300 font-bold' : undefined
+              badgeColor: motionCount > 0 ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 dark:bg-emerald-500/20 font-bold' : undefined
             }
           ]
         : []),

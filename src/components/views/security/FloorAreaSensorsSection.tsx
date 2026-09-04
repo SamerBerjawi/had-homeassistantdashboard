@@ -270,8 +270,8 @@ export default function FloorAreaSensorsSection({
                       <span
                         className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold flex items-center gap-1 border ${
                           unlockedLocksList.length > 0
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                            : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                            ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30 dark:border-amber-500/40 dark:bg-amber-500/20'
+                            : 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border-emerald-500/30 dark:bg-emerald-500/20'
                         }`}
                       >
                         {unlockedLocksList.length > 0 ? <LockOpen size={12} weight="bold" /> : <Lock size={12} weight="bold" />}
@@ -279,19 +279,19 @@ export default function FloorAreaSensorsSection({
                       </span>
                     )}
                     {totalOpenOpenings > 0 && (
-                      <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold flex items-center gap-1 border bg-amber-500/20 text-amber-300 border-amber-500/40">
+                      <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold flex items-center gap-1 border bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30 dark:border-amber-500/40 dark:bg-amber-500/20">
                         <DoorOpen size={12} weight="bold" />
                         <span>{totalOpenOpenings} Open</span>
                       </span>
                     )}
                     {activeMotionList.length > 0 && (
-                      <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold flex items-center gap-1 border bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse">
+                      <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold flex items-center gap-1 border bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30 dark:border-emerald-500/40 dark:bg-emerald-500/20 animate-pulse">
                         <PersonSimpleWalk size={12} weight="bold" />
                         <span>Motion</span>
                       </span>
                     )}
                     {activeHazardsList.length > 0 && (
-                      <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold flex items-center gap-1 border bg-rose-500/25 text-rose-300 border-rose-500/50 animate-pulse">
+                      <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold flex items-center gap-1 border bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30 dark:border-rose-500/50 dark:bg-rose-500/25 animate-pulse">
                         <Flame size={12} weight="fill" />
                         <span>Hazard</span>
                       </span>

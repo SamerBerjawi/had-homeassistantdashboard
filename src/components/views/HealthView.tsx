@@ -45,7 +45,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
           <button
             type="button"
             onClick={() => setIsPreviewDemo(false)}
-            className="px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-400 flex items-center gap-1.5 hover:bg-amber-500/30 transition-all cursor-pointer shadow-xs"
+            className="px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 dark:bg-amber-500/20 border border-amber-500/30 dark:border-amber-500/40 flex items-center gap-1.5 hover:bg-amber-500/25 dark:hover:bg-amber-500/30 transition-all cursor-pointer shadow-xs"
             title="Click to exit demo mode"
           >
             <Sparkle size={13} weight="fill" />

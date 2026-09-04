@@ -234,8 +234,8 @@ export default function NotificationDrawer({
         };
       case 'restart':
         return {
-          icon: <ArrowsClockwise size={16} weight="bold" className="text-amber-400" />,
-          badgeBg: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+          icon: <ArrowsClockwise size={16} weight="bold" className="text-amber-500 dark:text-amber-400" />,
+          badgeBg: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
           label: 'Restart'
         };
       case 'battery':
