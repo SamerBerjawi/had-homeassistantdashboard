@@ -26,6 +26,7 @@ import {
   buildMetricSummary,
   generateDemoTimeseries,
 } from '../services/haHealthStatistics';
+import { haWebSocketService } from '../services/haWebSocket';
 
 export function useHealthData() {
   const rawStates = useAutoLayoutStore((s) => s.rawStates);
@@ -120,7 +121,7 @@ export function useHealthData() {
     for (const [keyStr] of Object.entries(HEALTH_METRIC_DEFINITIONS)) {
       const key = keyStr as HealthMetricKey;
       const stateObj = metricsMap[key];
-      const history = historyMap[key] || generateDemoTimeseries(key, timeRange);
+      const history = historyMap[key] || (haWebSocketService.isDemo() ? generateDemoTimeseries(key, timeRange) : []);
       map[key] = buildMetricSummary(key, stateObj, history);
     }
 
@@ -129,13 +130,14 @@ export function useHealthData() {
 
   // Compute Apple Watch activity rings data (Move, Exercise, Stand/Steps)
   const activityRingsData = useMemo(() => {
+    const isDemo = haWebSocketService.isDemo();
     const moveSummary = summaries['activeEnergy'];
     const exerciseSummary = summaries['exerciseTime'];
     const stepsSummary = summaries['healthSteps'];
 
-    const moveVal = moveSummary?.currentValue ?? (moveSummary?.totalSum || 380);
-    const exerciseVal = exerciseSummary?.currentValue ?? (exerciseSummary?.totalSum || 24);
-    const stepsVal = stepsSummary?.currentValue ?? (stepsSummary?.totalSum || 6840);
+    const moveVal = moveSummary?.currentValue ?? (moveSummary?.totalSum || (isDemo ? 380 : 0));
+    const exerciseVal = exerciseSummary?.currentValue ?? (exerciseSummary?.totalSum || (isDemo ? 24 : 0));
+    const stepsVal = stepsSummary?.currentValue ?? (stepsSummary?.totalSum || (isDemo ? 6840 : 0));
 
     return {
       move: {

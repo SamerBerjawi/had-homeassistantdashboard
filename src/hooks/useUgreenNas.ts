@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
+import { haWebSocketService } from '../services/haWebSocket';
 import {
   UgreenNasMetrics,
   NasIdentity,
@@ -402,6 +403,11 @@ export function useUgreenNas() {
 
   const fetchHistory = useCallback(async () => {
     setIsLoadingHistory(true);
+    if (!haWebSocketService.isDemo()) {
+      setHistoryData([]);
+      setIsLoadingHistory(false);
+      return;
+    }
     const points = generateSyntheticNasTimeseries(
       hours,
       metrics.throughput.netDownloadRaw || 42.8,

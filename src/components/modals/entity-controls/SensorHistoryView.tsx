@@ -315,10 +315,15 @@ export default function SensorHistoryView({ entity }: SensorHistoryViewProps) {
       }
 
       if (!isCancelled) {
-        if (isBinaryOrStatusSensor) {
-          setStateEvents(generateSyntheticStateEvents(timeRange, rawState));
+        if (haWebSocketService.isDemo()) {
+          if (isBinaryOrStatusSensor) {
+            setStateEvents(generateSyntheticStateEvents(timeRange, rawState));
+          } else {
+            setNumericHistory(generateSyntheticNumericHistory(timeRange, !isNaN(numValue) ? numValue : 22));
+          }
         } else {
-          setNumericHistory(generateSyntheticNumericHistory(timeRange, !isNaN(numValue) ? numValue : 22));
+          setStateEvents([]);
+          setNumericHistory([]);
         }
         setIsLoading(false);
       }
@@ -665,6 +670,10 @@ export default function SensorHistoryView({ entity }: SensorHistoryViewProps) {
               <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 font-mono">
                 <ArrowsClockwise size={16} weight="bold" className="animate-spin mr-2" />
                 Loading History Curve...
+              </div>
+            ) : numericHistory.length === 0 ? (
+              <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 font-mono">
+                No historical records available for this period.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">

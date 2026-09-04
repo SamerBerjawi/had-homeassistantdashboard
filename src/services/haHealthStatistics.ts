@@ -348,10 +348,12 @@ export async function fetchHealthStatistics(
   const entries = Object.entries(entityIdMap) as [HealthMetricKey, string][];
   const validEntries = entries.filter(([_, id]) => Boolean(id));
 
-  // If not live mode or no entities registered, return demo traces
+  // If not live mode or no entities registered, return demo traces only in demo mode
   if (!isLiveMode || validEntries.length === 0) {
     for (const [key] of Object.entries(HEALTH_METRIC_DEFINITIONS)) {
-      result[key] = generateDemoTimeseries(key as HealthMetricKey, range);
+      result[key] = haWebSocketService.isDemo()
+        ? generateDemoTimeseries(key as HealthMetricKey, range)
+        : [];
     }
     return result as Record<HealthMetricKey, HealthTimeseriesPoint[]>;
   }
@@ -402,10 +404,12 @@ export async function fetchHealthStatistics(
     console.warn('[HA Health Stats] Failed to query recorder statistics:', err);
   }
 
-  // Populate any missing metric keys with fallback traces
+  // Populate any missing metric keys with fallback traces ONLY in demo mode
   for (const [key] of Object.entries(HEALTH_METRIC_DEFINITIONS)) {
     if (!result[key] || result[key].length === 0) {
-      result[key] = generateDemoTimeseries(key as HealthMetricKey, range);
+      result[key] = haWebSocketService.isDemo()
+        ? generateDemoTimeseries(key as HealthMetricKey, range)
+        : [];
     }
   }
 

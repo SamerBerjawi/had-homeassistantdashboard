@@ -18,6 +18,8 @@ import { CarEvMetrics } from '../../types/mobility';
 import { LineChart } from '../charts/line-chart';
 import { Line } from '../charts/line';
 import { formatDecimal } from '../../utils/numberFormat';
+import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import { haWebSocketService } from '../../services/haWebSocket';
 
 interface VehicleTelemetryMapProps {
   metrics: CarEvMetrics;
@@ -29,17 +31,30 @@ export function VehicleTelemetryMap({
   darkMode = true
 }: VehicleTelemetryMapProps) {
   const [zoomDelta, setZoomDelta] = useState<number>(0.007);
-  const lat = metrics.gps?.latitude || 37.7749;
-  const lon = metrics.gps?.longitude || -122.4194;
+
+  const resolvedZones = useAutoLayoutStore((s) => s.resolvedZones);
+  const homeZone = resolvedZones?.find(
+    (z) => z.entity_id === 'zone.home' || z.name?.toLowerCase() === 'home'
+  );
+  const isDemo = haWebSocketService.isDemo();
+  const fallbackLat = homeZone?.latitude ?? (isDemo ? 37.7749 : undefined);
+  const fallbackLon = homeZone?.longitude ?? (isDemo ? -122.4194 : undefined);
+  const lat = metrics.gps?.latitude ?? fallbackLat;
+  const lon = metrics.gps?.longitude ?? fallbackLon;
+  const hasGps = lat !== undefined && lon !== undefined;
 
   const delta = Math.max(0.002, Math.min(0.04, zoomDelta));
-  const latMin = lat - delta * 0.7;
-  const latMax = lat + delta * 0.7;
-  const lonMin = lon - delta;
-  const lonMax = lon + delta;
+  const latMin = (lat ?? 0) - delta * 0.7;
+  const latMax = (lat ?? 0) + delta * 0.7;
+  const lonMin = (lon ?? 0) - delta;
+  const lonMax = (lon ?? 0) + delta;
 
-  const osmEmbedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lonMin}%2C${latMin}%2C${lonMax}%2C${latMax}&layer=mapnik&marker=${lat}%2C${lon}`;
-  const osmDirectUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`;
+  const osmEmbedUrl = hasGps
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${lonMin}%2C${latMin}%2C${lonMax}%2C${latMax}&layer=mapnik&marker=${lat}%2C${lon}`
+    : '';
+  const osmDirectUrl = hasGps
+    ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`
+    : '';
 
   const handleZoomIn = () => setZoomDelta((prev) => Math.max(0.002, prev * 0.6));
   const handleZoomOut = () => setZoomDelta((prev) => Math.min(0.04, prev * 1.5));
@@ -49,7 +64,7 @@ export function VehicleTelemetryMap({
   // 24-hour speed data statistics
   const speedHistory = metrics.speedTimeseries || [];
   const peakSpeed = useMemo(() => {
-    if (!speedHistory.length) return metrics.speed || 0;
+    if (!speedHistory.length) return metrics.speed;
     return Math.max(...speedHistory.map((p) => p.speed));
   }, [speedHistory, metrics.speed]);
 
@@ -93,77 +108,87 @@ export function VehicleTelemetryMap({
       </div>
 
       {/* Interactive Mini-Map Frame with HUD */}
-      <div className="relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md group">
-        <iframe
-          title="Vehicle Location Map"
-          src={osmEmbedUrl}
-          style={
-            darkMode
-              ? {
-                  filter: 'invert(90%) hue-rotate(180deg) brightness(88%) contrast(98%)',
-                }
-              : {}
-          }
-          className="w-full h-full border-0 pointer-events-auto opacity-95 transition-opacity"
-          loading="lazy"
-        />
+      {hasGps && lat !== undefined && lon !== undefined ? (
+        <div className="relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md group">
+          <iframe
+            title="Vehicle Location Map"
+            src={osmEmbedUrl}
+            style={
+              darkMode
+                ? {
+                    filter: 'invert(90%) hue-rotate(180deg) brightness(88%) contrast(98%)',
+                  }
+                : {}
+            }
+            className="w-full h-full border-0 pointer-events-auto opacity-95 transition-opacity"
+            loading="lazy"
+          />
 
-        {/* Map Top HUD */}
-        <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none gap-2 z-10">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950/85 backdrop-blur-md text-white text-[11px] font-bold shadow-lg pointer-events-auto">
-            <Globe size={13} weight="duotone" className="text-emerald-400 shrink-0" />
-            <span className="font-mono text-[10px]">
-              {lat.toFixed(4)}°, {lon.toFixed(4)}°
-            </span>
+          {/* Map Top HUD */}
+          <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none gap-2 z-10">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950/85 backdrop-blur-md text-white text-[11px] font-bold shadow-lg pointer-events-auto">
+              <Globe size={13} weight="duotone" className="text-emerald-400 shrink-0" />
+              <span className="font-mono text-[10px]">
+                {lat.toFixed(4)}°, {lon.toFixed(4)}°
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1 pointer-events-auto">
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                aria-label="Zoom In"
+                className="w-7 h-7 rounded-lg bg-slate-950/85 hover:bg-slate-900 text-white flex items-center justify-center transition-colors cursor-pointer shadow-md"
+              >
+                <MagnifyingGlassPlus size={13} weight="bold" />
+              </button>
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                aria-label="Zoom Out"
+                className="w-7 h-7 rounded-lg bg-slate-950/85 hover:bg-slate-900 text-white flex items-center justify-center transition-colors cursor-pointer shadow-md"
+              >
+                <MagnifyingGlassMinus size={13} weight="bold" />
+              </button>
+              <a
+                href={osmDirectUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-7 px-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase transition-colors shadow-md"
+              >
+                <span>Map</span>
+                <NavigationArrow size={10} weight="bold" />
+              </a>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1 pointer-events-auto">
-            <button
-              type="button"
-              onClick={handleZoomIn}
-              aria-label="Zoom In"
-              className="w-7 h-7 rounded-lg bg-slate-950/85 hover:bg-slate-900 text-white flex items-center justify-center transition-colors cursor-pointer shadow-md"
-            >
-              <MagnifyingGlassPlus size={13} weight="bold" />
-            </button>
-            <button
-              type="button"
-              onClick={handleZoomOut}
-              aria-label="Zoom Out"
-              className="w-7 h-7 rounded-lg bg-slate-950/85 hover:bg-slate-900 text-white flex items-center justify-center transition-colors cursor-pointer shadow-md"
-            >
-              <MagnifyingGlassMinus size={13} weight="bold" />
-            </button>
-            <a
-              href={osmDirectUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="h-7 px-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase transition-colors shadow-md"
-            >
-              <span>Map</span>
-              <NavigationArrow size={10} weight="bold" />
-            </a>
+          {/* Target Pinpoint Center Radar */}
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
+            <div className="relative flex items-center justify-center">
+              <span className="absolute w-12 h-12 rounded-full bg-cyan-500/30 animate-ping" />
+              <span className="absolute w-8 h-8 rounded-full bg-cyan-500/20 animate-pulse" />
+              <div className="relative w-8 h-8 rounded-full bg-cyan-500 border-2 border-white shadow-xl flex items-center justify-center text-slate-950">
+                <Car size={16} weight="bold" />
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Target Pinpoint Center Radar */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
-          <div className="relative flex items-center justify-center">
-            <span className="absolute w-12 h-12 rounded-full bg-cyan-500/30 animate-ping" />
-            <span className="absolute w-8 h-8 rounded-full bg-cyan-500/20 animate-pulse" />
-            <div className="relative w-8 h-8 rounded-full bg-cyan-500 border-2 border-white shadow-xl flex items-center justify-center text-slate-950">
-              <Car size={16} weight="bold" />
+          {/* Bottom map footer */}
+          <div className="absolute bottom-2.5 left-2.5 z-10 pointer-events-none">
+            <div className="px-2 py-0.5 rounded-lg bg-slate-950/85 backdrop-blur-md text-[9px] font-mono text-slate-300">
+              {metrics.lastRefreshed}
             </div>
           </div>
         </div>
-
-        {/* Bottom map footer */}
-        <div className="absolute bottom-2.5 left-2.5 z-10 pointer-events-none">
-          <div className="px-2 py-0.5 rounded-lg bg-slate-950/85 backdrop-blur-md text-[9px] font-mono text-slate-300">
-            {metrics.lastRefreshed}
-          </div>
+      ) : (
+        <div className={`relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md flex flex-col items-center justify-center p-6 text-center border ${
+          darkMode ? 'bg-black/40 border-white/10 text-slate-400' : 'bg-slate-100/60 border-slate-200 text-slate-500'
+        }`}>
+          <Globe size={32} weight="duotone" className="mb-2 opacity-60 text-slate-400" />
+          <span className="text-xs font-bold">GPS Coordinates Unavailable</span>
+          <span className="text-[11px] opacity-75 mt-1">No GPS telemetry received from vehicle or Home zone.</span>
         </div>
-      </div>
+      )}
 
       {/* 24-Hour Speed History Line Chart */}
       <div
@@ -178,29 +203,35 @@ export function VehicleTelemetryMap({
           </span>
           <div className="flex items-center gap-2 text-[11px] font-mono">
             <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-              Peak: <strong className={darkMode ? 'text-white' : 'text-slate-900'}>{formatDecimal(peakSpeed)}</strong> {metrics.speedUnit}
+              Peak: <strong className={darkMode ? 'text-white' : 'text-slate-900'}>{peakSpeed !== undefined ? formatDecimal(peakSpeed) : '--'}</strong> {metrics.speedUnit}
             </span>
             <span className="text-slate-400">•</span>
             <span className={`font-bold ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-              Live: {formatDecimal(metrics.speed)} {metrics.speedUnit}
+              Live: {metrics.speed !== undefined ? formatDecimal(metrics.speed) : '--'} {metrics.speedUnit}
             </span>
           </div>
         </div>
 
         {/* Chart Area */}
-        <div className="w-full h-40 relative pt-1">
-          <LineChart
-            data={speedHistory}
-            xDataKey="date"
-            className="w-full h-full"
-            margin={{ top: 8, right: 8, bottom: 20, left: 8 }}
-          >
-            <Line
-              dataKey="speed"
-              stroke={darkMode ? '#06B6D4' : '#0284C7'}
-              strokeWidth={2.5}
-            />
-          </LineChart>
+        <div className="w-full h-40 relative pt-1 flex items-center justify-center">
+          {speedHistory.length > 0 ? (
+            <LineChart
+              data={speedHistory}
+              xDataKey="date"
+              className="w-full h-full"
+              margin={{ top: 8, right: 8, bottom: 20, left: 8 }}
+            >
+              <Line
+                dataKey="speed"
+                stroke={darkMode ? '#06B6D4' : '#0284C7'}
+                strokeWidth={2.5}
+              />
+            </LineChart>
+          ) : (
+            <div className={`text-xs font-mono ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+              No speed history recorded
+            </div>
+          )}
         </div>
 
         {/* Time labels below chart */}

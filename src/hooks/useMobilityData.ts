@@ -21,6 +21,16 @@ function parseNum(val: unknown, fallback = 0): number {
   return fallback;
 }
 
+function parseNumOptional(val: unknown): number | undefined {
+  if (typeof val === 'number') return isNaN(val) ? undefined : val;
+  if (typeof val === 'string') {
+    const clean = val.replace(/[^0-9.-]/g, '');
+    const parsed = parseFloat(clean);
+    return isNaN(parsed) ? undefined : parsed;
+  }
+  return undefined;
+}
+
 function findEntity(
   states: Record<string, any>,
   domain: string,
@@ -458,9 +468,24 @@ export function useMobilityData() {
       '_otaschedule'
     ]);
 
-    // Parse GPS
-    let latitude = 37.7749;
-    let longitude = -122.4194;
+    const oilEntity = findEntity(states, 'sensor', [
+      'sensor.fordpass_wf0tk1em3pma07438_oil',
+      'fordpass_wf0tk1em3pma07438_oil',
+      '_oil',
+      'oil_life'
+    ]);
+
+    const isDemo = haWebSocketService.isDemo();
+
+    // Parse GPS - derive baseline from zone.home (fall back to SF only in demo mode)
+    const homeZone = resolvedZones.find((z) => z.entity_id === 'zone.home' || z.name.toLowerCase() === 'home');
+    let latitude = homeZone?.latitude ?? 0;
+    let longitude = homeZone?.longitude ?? 0;
+    if (isDemo && latitude === 0 && longitude === 0) {
+      latitude = 37.7749;
+      longitude = -122.4194;
+    }
+
     if (gpsSensor?.attributes?.latitude && gpsSensor?.attributes?.longitude) {
       latitude = Number(gpsSensor.attributes.latitude);
       longitude = Number(gpsSensor.attributes.longitude);
@@ -477,16 +502,16 @@ export function useMobilityData() {
 
     const { zoneName, isAtHome } = resolveZone(latitude, longitude, trackerEntity?.state || gpsSensor?.state, resolvedZones);
 
-    const soc = parseNum(socEntity?.state, 84);
-    const speed = parseNum(speedEntity?.state, 0);
-    const isMoving = speed > 0;
-    const gear = String(gearEntity?.state || (isMoving ? 'D' : 'P')).toUpperCase();
-    const isCharging = (chargingEntity?.state || 'Charging').toLowerCase().includes('charge') || chargingEntity?.state === 'on';
+    const soc = parseNumOptional(socEntity?.state) ?? (isDemo ? 84 : undefined);
+    const speed = parseNumOptional(speedEntity?.state) ?? (isDemo ? 0 : undefined);
+    const isMoving = (speed ?? 0) > 0;
+    const gear = String(gearEntity?.state || (isDemo ? (isMoving ? 'D' : 'P') : 'P')).toUpperCase();
+    const isCharging = (chargingEntity?.state || (isDemo ? 'Charging' : '')).toLowerCase().includes('charge') || chargingEntity?.state === 'on';
     const isPluggedIn = plugEntity ? (
       plugEntity.state === 'on' || 
       String(plugEntity.state).toLowerCase().includes('connect') ||
       String(plugEntity.state).toLowerCase().includes('plugged')
-    ) : true;
+    ) : (isDemo ? true : false);
 
     // Accurate lock state resolution
     let doorsLocked = true;
@@ -525,15 +550,15 @@ export function useMobilityData() {
     // Tire Pressure attributes or individual entities
     const tpAttrs = tirePressureSensor?.attributes || {};
     const tpUnit = tpAttrs.unit_of_measurement || tpFrontLeftEntity?.attributes?.unit_of_measurement || 'bar';
-    const tpFrontLeft = tpAttrs.FrontLeft || tpAttrs.front_left || tpAttrs.frontLeft || tpAttrs.FL || (tpFrontLeftEntity ? parseNum(tpFrontLeftEntity.state, 2.6) : 2.6);
-    const tpFrontRight = tpAttrs.FrontRight || tpAttrs.front_right || tpAttrs.frontRight || tpAttrs.FR || (tpFrontRightEntity ? parseNum(tpFrontRightEntity.state, 2.6) : 2.6);
-    const tpRearLeft = tpAttrs.RearLeft || tpAttrs.rear_left || tpAttrs.rearLeft || tpAttrs.RL || (tpRearLeftEntity ? parseNum(tpRearLeftEntity.state, 2.5) : 2.5);
-    const tpRearRight = tpAttrs.RearRight || tpAttrs.rear_right || tpAttrs.rearRight || tpAttrs.RR || (tpRearRightEntity ? parseNum(tpRearRightEntity.state, 2.5) : 2.5);
-    const tpStatus = tirePressureSensor?.state || (tpFrontLeftEntity ? 'Normal (All Systems OK)' : 'Normal (All Systems OK)');
+    const tpFrontLeft = tpAttrs.FrontLeft || tpAttrs.front_left || tpAttrs.frontLeft || tpAttrs.FL || (tpFrontLeftEntity ? parseNum(tpFrontLeftEntity.state, 2.6) : (isDemo ? 2.6 : '--'));
+    const tpFrontRight = tpAttrs.FrontRight || tpAttrs.front_right || tpAttrs.frontRight || tpAttrs.FR || (tpFrontRightEntity ? parseNum(tpFrontRightEntity.state, 2.6) : (isDemo ? 2.6 : '--'));
+    const tpRearLeft = tpAttrs.RearLeft || tpAttrs.rear_left || tpAttrs.rearLeft || tpAttrs.RL || (tpRearLeftEntity ? parseNum(tpRearLeftEntity.state, 2.5) : (isDemo ? 2.5 : '--'));
+    const tpRearRight = tpAttrs.RearRight || tpAttrs.rear_right || tpAttrs.rearRight || tpAttrs.RR || (tpRearRightEntity ? parseNum(tpRearRightEntity.state, 2.5) : (isDemo ? 2.5 : '--'));
+    const tpStatus = tirePressureSensor?.state || (tpFrontLeftEntity ? 'Normal (All Systems OK)' : (isDemo ? 'Normal (All Systems OK)' : 'Unavailable'));
 
     const chargeLogUnit = chargeLogEntity?.attributes?.unit_of_measurement || 'kWh';
-    let lastChargingLog = String(chargeLogEntity?.state || '+34.2 kWh added • 2h 15m @ 11.4 kW AC');
-    if (!isNaN(parseFloat(lastChargingLog)) && !lastChargingLog.toLowerCase().includes('kwh') && !lastChargingLog.toLowerCase().includes('wh')) {
+    let lastChargingLog: string | undefined = chargeLogEntity?.state ? String(chargeLogEntity.state) : (isDemo ? '+34.2 kWh added • 2h 15m @ 11.4 kW AC' : undefined);
+    if (lastChargingLog && !isNaN(parseFloat(lastChargingLog)) && !lastChargingLog.toLowerCase().includes('kwh') && !lastChargingLog.toLowerCase().includes('wh')) {
       lastChargingLog = `${lastChargingLog} ${chargeLogUnit}`;
     }
 
@@ -545,16 +570,16 @@ export function useMobilityData() {
       customVehicleImage: effectiveCarImage,
 
       soc,
-      battery12V: battery12VEntity?.state || '14.2V',
+      battery12V: battery12VEntity?.state || (isDemo ? '14.2V' : undefined),
       battery12VUnit: battery12VEntity?.attributes?.unit_of_measurement || 'V',
-      range: Math.round(parseNum(rangeEntity?.state, 214)),
+      range: parseNumOptional(rangeEntity?.state) !== undefined ? Math.round(parseNumOptional(rangeEntity?.state)!) : (isDemo ? 214 : undefined),
       rangeUnit: rangeEntity?.attributes?.unit_of_measurement || 'km',
       chargingState: chargingEntity?.state || (isCharging ? 'Charging' : isPluggedIn ? 'Connected' : 'Disconnected'),
-      chargingPowerKW: parseNum(powerEntity?.state, isCharging ? 11.4 : 0),
+      chargingPowerKW: parseNumOptional(powerEntity?.state) ?? (isDemo ? (isCharging ? 11.4 : 0) : undefined),
       isPluggedIn,
       targetSoc: `${targetSocParsed}%`,
       targetSocPercent: targetSocParsed,
-      lastTripEnergy: parseNum(energyConsumedEntity?.state, 18.6),
+      lastTripEnergy: parseNumOptional(energyConsumedEntity?.state) ?? (isDemo ? 18.6 : undefined),
       lastTripEnergyUnit: energyConsumedEntity?.attributes?.unit_of_measurement || 'kWh',
       lastChargingLog,
       lastChargingLogUnit: chargeLogUnit,
@@ -565,19 +590,19 @@ export function useMobilityData() {
       speed,
       speedUnit: speedEntity?.attributes?.unit_of_measurement || 'km/h',
       gearPosition: gear,
-      odometer: parseNum(odoEntity?.state, 24850),
+      odometer: parseNumOptional(odoEntity?.state) ?? (isDemo ? 24850 : undefined),
       odometerUnit: odoEntity?.attributes?.unit_of_measurement || 'km',
-      cabinTemp: parseNum(cabinTempEntity?.state || climateEntity?.attributes?.current_temperature, 21.5),
+      cabinTemp: parseNumOptional(cabinTempEntity?.state || climateEntity?.attributes?.current_temperature) ?? (isDemo ? 21.5 : undefined),
       cabinTempUnit: cabinTempEntity?.attributes?.unit_of_measurement || '°C',
-      outdoorTemp: parseNum(outdoorTempEntity?.state, 14.0),
-      targetCabinTemp: parseNum(climateEntity?.attributes?.temperature, 21.0),
+      outdoorTemp: parseNumOptional(outdoorTempEntity?.state) ?? (isDemo ? 14.0 : undefined),
+      targetCabinTemp: parseNumOptional(climateEntity?.attributes?.temperature) ?? (isDemo ? 21.0 : undefined),
       climateHvacMode: climateEntity?.state || (remoteClimateActive ? 'heat' : 'off'),
       defrostActive: defrostSwitch ? defrostSwitch.state === 'on' : false,
       rearDefrostActive: false,
       seatHeatingDriver: 0,
       seatHeatingPassenger: 0,
       remoteClimateActive,
-      remoteClimateTimeRemaining: parseNum(countdownEntity?.state, remoteClimateActive ? 15 : 0),
+      remoteClimateTimeRemaining: parseNumOptional(countdownEntity?.state) ?? (remoteClimateActive ? 15 : undefined),
       hasClimate: Boolean(climateEntity || remoteClimateSwitch),
       chargePortOpen: chargePortEntity ? (chargePortEntity.state === 'open' || chargePortEntity.state === 'unlocked' || chargePortEntity.state === 'on') : false,
 
@@ -599,23 +624,23 @@ export function useMobilityData() {
       hasTirePressure: Boolean(tirePressureSensor || tpFrontLeftEntity),
 
       deepSleep: false,
-      oilLifePercent: 94,
+      oilLifePercent: parseNumOptional(oilEntity?.state) ?? (isDemo ? 94 : undefined),
 
       softwareUpdates: {
-        autoUpdatesEnabled: autoUpdatesSwitch ? autoUpdatesSwitch.state === 'on' : true,
-        firmwareHistory: String(firmwareHistorySensor?.state || 'Ford Power-Up 6.8.0 Installed (Success)'),
-        firmwareStatus: String(firmwareStatusSensor?.state || 'Up to date (No pending OTA)'),
-        lastFirmwareUpdate: String(lastFirmwareSensor?.state || '2 weeks ago (v6.8.0)'),
-        otaReadiness: String(otaReadinessSensor?.state || 'Ready (Battery & Cellular OK)'),
-        nextOtaCheck: String(otaScheduleSensor?.state || 'Tonight @ 02:00 AM')
+        autoUpdatesEnabled: autoUpdatesSwitch ? autoUpdatesSwitch.state === 'on' : (isDemo ? true : false),
+        firmwareHistory: String(firmwareHistorySensor?.state || (isDemo ? 'Ford Power-Up 6.8.0 Installed (Success)' : 'Unavailable')),
+        firmwareStatus: String(firmwareStatusSensor?.state || (isDemo ? 'Up to date (No pending OTA)' : 'Unavailable')),
+        lastFirmwareUpdate: String(lastFirmwareSensor?.state || (isDemo ? '2 weeks ago (v6.8.0)' : 'Unavailable')),
+        otaReadiness: String(otaReadinessSensor?.state || (isDemo ? 'Ready (Battery & Cellular OK)' : 'Unavailable')),
+        nextOtaCheck: String(otaScheduleSensor?.state || (isDemo ? 'Tonight @ 02:00 AM' : 'Unavailable'))
       },
 
       gps: { latitude, longitude },
       locationZone: zoneName,
       isAtHome,
-      lastRefreshed: lastRefreshEntity?.state || 'Just now',
+      lastRefreshed: lastRefreshEntity?.state || (isDemo ? 'Just now' : 'Unavailable'),
 
-      speedTimeseries: generateSpeedTimeseries(speed),
+      speedTimeseries: isDemo ? generateSpeedTimeseries(speed ?? 0) : [],
 
       controls: {
         lockDoorButtonId: 'button.fordpass_wf0tk1em3pma07438_doorlock',
@@ -642,6 +667,10 @@ export function useMobilityData() {
   // Resolving Smart E-Bike Metrics (Cowboy / Dark Avenger E-Bike)
   // -------------------------------------------------------------
   const bikeMetrics: BikeMetrics = useMemo(() => {
+    const isDemo = haWebSocketService.isDemo();
+    const homeZone = resolvedZones.find(
+      (z) => z.entity_id === 'zone.home' || z.name.toLowerCase() === 'home'
+    );
     const battEntity = findEntity(states, 'sensor', ['sensor.cowboy_battery', 'dark_avenger_remaining_battery', 'dark_avenger_battery', 'ebike_battery', 'bike_battery']);
     const pcbEntity = findEntity(states, 'sensor', ['sensor.cowboy_pcb_battery', 'dark_avenger_remaining_battery_internal_pcb', 'internal_pcb_battery', 'bike_tracker_battery']);
     const rangeEntity = findEntity(states, 'sensor', ['sensor.cowboy_range', 'dark_avenger_remaining_range', 'bike_range', 'remaining_range']);
@@ -658,19 +687,27 @@ export function useMobilityData() {
     const lastSeenEntity = findEntity(states, 'sensor', ['sensor.cowboy_last_seen', 'dark_avenger_last_seen', 'bike_last_seen']);
     const speedLimitEntity = findEntity(states, 'sensor', ['sensor.cowboy_speed_limit', 'dark_avenger_speed_limit', 'bike_speed_limit']);
 
-    const lastTripTitle = findEntity(states, 'sensor', ['cowboy_last_trip_title', 'dark_avenger_last_trip_title'])?.state || 'Downtown Scenic & Marina Loop';
-    const lastTripDist = parseNum(findEntity(states, 'sensor', ['cowboy_last_trip_distance', 'dark_avenger_last_trip_distance'])?.state, 12.4);
-    const lastTripDuration = parseNum(findEntity(states, 'sensor', ['cowboy_last_trip_duration', 'dark_avenger_last_trip_duration'])?.state, 34);
-    const lastTripCo2 = parseNum(findEntity(states, 'sensor', ['cowboy_last_trip_co2', 'dark_avenger_last_trip_co2_saved'])?.state, 2.15);
-    const lastTripCal = parseNum(findEntity(states, 'sensor', ['cowboy_last_trip_calories', 'dark_avenger_last_trip_calories'])?.state, 410);
-    const lastTripEnded = findEntity(states, 'sensor', ['cowboy_last_trip_ended', 'dark_avenger_last_trip_ended'])?.state || 'Today, 08:35 AM';
-    const lastTripRideMode = findEntity(states, 'sensor', ['cowboy_ride_mode', 'dark_avenger_last_ride_mode'])?.state || 'Turbo Boost';
+    const lastTripTitle = findEntity(states, 'sensor', ['cowboy_last_trip_title', 'dark_avenger_last_trip_title'])?.state;
+    const lastTripDistSensor = findEntity(states, 'sensor', ['cowboy_last_trip_distance', 'dark_avenger_last_trip_distance']);
+    const lastTripDurationSensor = findEntity(states, 'sensor', ['cowboy_last_trip_duration', 'dark_avenger_last_trip_duration']);
+    const lastTripCo2Sensor = findEntity(states, 'sensor', ['cowboy_last_trip_co2', 'dark_avenger_last_trip_co2_saved']);
+    const lastTripCalSensor = findEntity(states, 'sensor', ['cowboy_last_trip_calories', 'dark_avenger_last_trip_calories']);
+    const lastTripEnded = findEntity(states, 'sensor', ['cowboy_last_trip_ended', 'dark_avenger_last_trip_ended'])?.state;
+    const lastTripRideMode = findEntity(states, 'sensor', ['cowboy_ride_mode', 'dark_avenger_last_ride_mode'])?.state;
+
+    const hasBikeLastTrip = Boolean(
+      lastTripTitle || lastTripDistSensor || lastTripEnded
+    );
 
     const gpsTracker = findEntity(states, 'device_tracker', ['cowboy', 'dark_avenger', 'ebike_tracker', 'bike_tracker'])
       || findEntity(states, 'sensor', ['cowboy_gps', 'dark_avenger_gps', 'bike_gps']);
 
-    let latitude = 37.7785;
-    let longitude = -122.4142;
+    let latitude = homeZone?.latitude ?? 0;
+    let longitude = homeZone?.longitude ?? 0;
+    if (isDemo && latitude === 0 && longitude === 0) {
+      latitude = 37.7785;
+      longitude = -122.4142;
+    }
     if (gpsTracker?.attributes?.latitude && gpsTracker?.attributes?.longitude) {
       latitude = Number(gpsTracker.attributes.latitude);
       longitude = Number(gpsTracker.attributes.longitude);
@@ -686,37 +723,37 @@ export function useMobilityData() {
 
     const isLocked = lockEntity ? (
       lockEntity.state === 'locked' || lockEntity.state === 'on'
-    ) : true;
+    ) : (isDemo ? true : false);
 
     const base: BikeMetrics = {
       customBrandLogo: effectiveBikeLogo,
       customBikeImage: effectiveBikeImage,
 
-      batteryPercent: parseNum(battEntity?.state, 78),
-      internalPcbBattery: parseNum(pcbEntity?.state, 98),
-      remainingRangeKm: parseNum(rangeEntity?.state, 64),
-      batteryHealthPercent: parseNum(healthEntity?.state, 97),
-      mileageKm: parseNum(mileageEntity?.state, 1540),
-      distanceTodayKm: parseNum(distanceTodayEntity?.state, 12.4),
-      totalTimeDrivenHours: parseNum(timeDrivenEntity?.state, 64.2),
-      totalSavedCo2Kg: parseNum(co2Entity?.state, 192.8),
+      batteryPercent: parseNumOptional(battEntity?.state) ?? (isDemo ? 78 : undefined),
+      internalPcbBattery: parseNumOptional(pcbEntity?.state) ?? (isDemo ? 98 : undefined),
+      remainingRangeKm: parseNumOptional(rangeEntity?.state) ?? (isDemo ? 64 : undefined),
+      batteryHealthPercent: parseNumOptional(healthEntity?.state) ?? (isDemo ? 97 : undefined),
+      mileageKm: parseNumOptional(mileageEntity?.state) ?? (isDemo ? 1540 : undefined),
+      distanceTodayKm: parseNumOptional(distanceTodayEntity?.state) ?? (isDemo ? 12.4 : undefined),
+      totalTimeDrivenHours: parseNumOptional(timeDrivenEntity?.state) ?? (isDemo ? 64.2 : undefined),
+      totalSavedCo2Kg: parseNumOptional(co2Entity?.state) ?? (isDemo ? 192.8 : undefined),
 
       isLocked,
       isStolen: stolenEntity ? stolenEntity.state === 'on' : false,
       isCrashed: crashedEntity ? crashedEntity.state === 'on' : false,
       autoLockStatus: autoLockEntity?.state || (isLocked ? 'Armed & Auto-Locked' : 'Unlocked & Ready'),
-      lastSeen: lastSeenEntity?.state || 'Connected (BLE + GPS)',
-      speedLimitKmh: parseNum(speedLimitEntity?.state, 25),
+      lastSeen: lastSeenEntity?.state || (isDemo ? 'Connected (BLE + GPS)' : 'Unavailable'),
+      speedLimitKmh: parseNumOptional(speedLimitEntity?.state) ?? (isDemo ? 25 : undefined),
 
-      lastTrip: {
-        title: String(lastTripTitle),
-        distanceKm: lastTripDist,
-        durationMinutes: lastTripDuration,
-        co2SavedKg: lastTripCo2,
-        caloriesBurned: lastTripCal,
-        endedAt: String(lastTripEnded),
-        rideMode: String(lastTripRideMode)
-      },
+      lastTrip: (hasBikeLastTrip || isDemo) ? {
+        title: String(lastTripTitle || (isDemo ? 'Downtown Scenic & Marina Loop' : 'Recent Trip')),
+        distanceKm: parseNumOptional(lastTripDistSensor?.state) ?? (isDemo ? 12.4 : undefined),
+        durationMinutes: parseNumOptional(lastTripDurationSensor?.state) ?? (isDemo ? 34 : undefined),
+        co2SavedKg: parseNumOptional(lastTripCo2Sensor?.state) ?? (isDemo ? 2.15 : undefined),
+        caloriesBurned: parseNumOptional(lastTripCalSensor?.state) ?? (isDemo ? 410 : undefined),
+        endedAt: String(lastTripEnded || (isDemo ? 'Today, 08:35 AM' : '')),
+        rideMode: String(lastTripRideMode || (isDemo ? 'Turbo Boost' : 'Standard'))
+      } : undefined,
 
       gps: { latitude, longitude },
       locationZone: zoneName,

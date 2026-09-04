@@ -17,6 +17,7 @@ import {
 import { ResolvedEntity } from '../../../types';
 import DetailsRightDrawer from '../DetailsRightDrawer';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { haWebSocketService } from '../../../services/haWebSocket';
 import PersonAvatar from '../../ui/PersonAvatar';
 
 interface UsersPresenceModalProps {
@@ -89,14 +90,27 @@ export default function UsersPresenceModal({
   const location = matchedZone ? `In ${matchedZone.name} Zone` : activePerson?.attributes?.location || (isHome ? 'At Home' : activePerson?.state === 'not_home' ? 'Away from Home' : activePerson?.state || 'Unknown');
 
   // OpenStreetMap Coordinates
-  const lat = typeof activePerson?.attributes?.latitude === 'number' 
+  const homeZone = resolvedZones.find(
+    (z) => z.entity_id === 'zone.home' || z.name?.toLowerCase() === 'home'
+  );
+  const isDemo = haWebSocketService.isDemo();
+  const personLat = typeof activePerson?.attributes?.latitude === 'number' 
     ? activePerson.attributes.latitude 
-    : (matchedZone?.latitude || 37.7749);
-  const lon = typeof activePerson?.attributes?.longitude === 'number' 
+    : undefined;
+  const personLon = typeof activePerson?.attributes?.longitude === 'number' 
     ? activePerson.attributes.longitude 
-    : (matchedZone?.longitude || -122.4194);
-  const osmEmbedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.008}%2C${lat - 0.005}%2C${lon + 0.008}%2C${lat + 0.005}&layer=mapnik&marker=${lat}%2C${lon}`;
-  const osmDirectUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`;
+    : undefined;
+
+  const lat = personLat ?? matchedZone?.latitude ?? homeZone?.latitude ?? (isDemo ? 37.7749 : undefined);
+  const lon = personLon ?? matchedZone?.longitude ?? homeZone?.longitude ?? (isDemo ? -122.4194 : undefined);
+  const hasGps = lat !== undefined && lon !== undefined;
+
+  const osmEmbedUrl = hasGps
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.008}%2C${lat - 0.005}%2C${lon + 0.008}%2C${lat + 0.005}&layer=mapnik&marker=${lat}%2C${lon}`
+    : '';
+  const osmDirectUrl = hasGps
+    ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`
+    : '';
 
   return (
     <DetailsRightDrawer
@@ -274,44 +288,56 @@ export default function UsersPresenceModal({
                   <Globe size={16} weight="duotone" className="text-emerald-600 dark:text-emerald-400" />
                   <span>OpenStreetMap Live Position</span>
                 </div>
-                <a
-                  href={osmDirectUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline transition-colors flex items-center gap-1"
-                >
-                  <span>Open Map</span>
-                  <NavigationArrow size={12} weight="bold" />
-                </a>
+                {hasGps && (
+                  <a
+                    href={osmDirectUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline transition-colors flex items-center gap-1"
+                  >
+                    <span>Open Map</span>
+                    <NavigationArrow size={12} weight="bold" />
+                  </a>
+                )}
               </div>
 
               {/* Embedded OSM Map */}
-              <div className={`relative w-full h-44 rounded-2xl overflow-hidden shadow-inner ${
-                darkMode ? 'bg-[#0B0F19]' : 'bg-slate-100'
-              }`}>
-                <iframe
-                  title={`OpenStreetMap location for ${activePerson.name}`}
-                  src={osmEmbedUrl}
-                  style={darkMode ? { filter: 'invert(90%) hue-rotate(180deg) brightness(90%) contrast(95%)' } : {}}
-                  className="w-full h-full border-0 pointer-events-auto transition-all opacity-95 hover:opacity-100"
-                  loading="lazy"
-                />
+              {hasGps && lat !== undefined && lon !== undefined ? (
+                <div className={`relative w-full h-44 rounded-2xl overflow-hidden shadow-inner ${
+                  darkMode ? 'bg-[#0B0F19]' : 'bg-slate-100'
+                }`}>
+                  <iframe
+                    title={`OpenStreetMap location for ${activePerson.name}`}
+                    src={osmEmbedUrl}
+                    style={darkMode ? { filter: 'invert(90%) hue-rotate(180deg) brightness(90%) contrast(95%)' } : {}}
+                    className="w-full h-full border-0 pointer-events-auto transition-all opacity-95 hover:opacity-100"
+                    loading="lazy"
+                  />
 
-                {/* Center Pin Marker */}
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <div className="relative flex items-center justify-center">
-                    <span className="absolute w-8 h-8 rounded-full bg-emerald-500/40 animate-ping" />
-                    <div className="w-5 h-5 rounded-full bg-emerald-500 shadow-xl flex items-center justify-center text-slate-950">
-                      <MapPin size={12} weight="bold" />
+                  {/* Center Pin Marker */}
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <div className="relative flex items-center justify-center">
+                      <span className="absolute w-8 h-8 rounded-full bg-emerald-500/40 animate-ping" />
+                      <div className="w-5 h-5 rounded-full bg-emerald-500 shadow-xl flex items-center justify-center text-slate-950">
+                        <MapPin size={12} weight="bold" />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* GPS Coordinates Badge Overlay */}
-                <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-xl bg-slate-900/80 text-white dark:bg-black/80 backdrop-blur-md text-[10px] font-mono shadow-md">
-                  {lat.toFixed(4)}° N, {lon.toFixed(4)}° W
+                  {/* GPS Coordinates Badge Overlay */}
+                  <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-xl bg-slate-900/80 text-white dark:bg-black/80 backdrop-blur-md text-[10px] font-mono shadow-md">
+                    {lat.toFixed(4)}° N, {lon.toFixed(4)}° W
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className={`w-full h-32 rounded-2xl flex flex-col items-center justify-center p-4 text-center border ${
+                  darkMode ? 'bg-black/20 border-white/5 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-500'
+                }`}>
+                  <Globe size={28} weight="duotone" className="mb-1.5 opacity-60 text-slate-400" />
+                  <span className="text-xs font-bold">Location Coordinates Unavailable</span>
+                  <span className="text-[10px] opacity-75 mt-0.5">No GPS location reported for this person or zone.</span>
+                </div>
+              )}
             </div>
 
           </div>

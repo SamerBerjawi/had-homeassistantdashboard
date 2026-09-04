@@ -397,30 +397,34 @@ export function useSystemMetrics() {
         setHistoryData(points);
       } else {
         setHistoryData(
-          generateSyntheticHistory(
-            hours,
-            metrics.cpuUsage || 10,
-            metrics.cpuTemp || 74,
-            metrics.memoryUsagePercent || 73.4,
-            metrics.diskUsagePercent || 20.2,
-            metrics.load1m || 1.09,
-            metrics.load5m || 1.21,
-            metrics.load15m || 1.26
-          )
+          haWebSocketService.isDemo()
+            ? generateSyntheticHistory(
+                hours,
+                metrics.cpuUsage || 10,
+                metrics.cpuTemp || 74,
+                metrics.memoryUsagePercent || 73.4,
+                metrics.diskUsagePercent || 20.2,
+                metrics.load1m || 1.09,
+                metrics.load5m || 1.21,
+                metrics.load15m || 1.26
+              )
+            : []
         );
       }
     } catch {
       setHistoryData(
-        generateSyntheticHistory(
-          hours,
-          metrics.cpuUsage || 10,
-          metrics.cpuTemp || 74,
-          metrics.memoryUsagePercent || 73.4,
-          metrics.diskUsagePercent || 20.2,
-          metrics.load1m || 1.09,
-          metrics.load5m || 1.21,
-          metrics.load15m || 1.26
-        )
+        haWebSocketService.isDemo()
+          ? generateSyntheticHistory(
+              hours,
+              metrics.cpuUsage || 10,
+              metrics.cpuTemp || 74,
+              metrics.memoryUsagePercent || 73.4,
+              metrics.diskUsagePercent || 20.2,
+              metrics.load1m || 1.09,
+              metrics.load5m || 1.21,
+              metrics.load15m || 1.26
+            )
+          : []
       );
     } finally {
       setIsLoadingHistory(false);

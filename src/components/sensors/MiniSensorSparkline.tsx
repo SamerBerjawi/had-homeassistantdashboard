@@ -9,6 +9,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { fetchLiveEntityHistory } from '../../services/haHistoryService';
+import { haWebSocketService } from '../../services/haWebSocket';
 
 interface MiniSensorSparklineProps {
   entityId: string;
@@ -95,15 +96,19 @@ export default function MiniSensorSparkline({
         console.warn('[MiniSensorSparkline] History fetch error:', err);
       }
 
-      // Fallback for demo / preview non-live mode
+      // Fallback for demo mode only
       if (!isCancelled) {
-        const synthetic: number[] = [];
-        const count = 16;
-        for (let i = 0; i < count; i++) {
-          const wave = Math.sin(i * 0.45) * 0.8 + Math.cos(i * 0.3) * 0.4;
-          synthetic.push(Number((baseVal + wave).toFixed(1)));
+        if (haWebSocketService.isDemo()) {
+          const synthetic: number[] = [];
+          const count = 16;
+          for (let i = 0; i < count; i++) {
+            const wave = Math.sin(i * 0.45) * 0.8 + Math.cos(i * 0.3) * 0.4;
+            synthetic.push(Number((baseVal + wave).toFixed(1)));
+          }
+          setDataPoints(synthetic);
+        } else {
+          setDataPoints([]);
         }
-        setDataPoints(synthetic);
       }
     }
 

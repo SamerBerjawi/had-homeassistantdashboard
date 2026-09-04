@@ -208,7 +208,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                 onChange={handleImageUpload}
               />
               {robotImage ? (
-                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/30 dark:bg-black/40 border border-slate-200/50 dark:border-white/10 shadow-xs overflow-hidden flex items-center justify-center">
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex items-center justify-center">
                   <img
                     src={robotImage}
                     alt="Robot Vacuum"
