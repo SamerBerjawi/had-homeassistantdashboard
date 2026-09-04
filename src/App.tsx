@@ -153,6 +153,10 @@ export default function App() {
     const nextMode = nextDark ? 'dark' : 'light';
     setThemeMode(nextMode);
     setDarkMode(nextDark);
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', nextDark ? '#020617' : '#f8fafc');
+    }
     if (nextDark) {
       document.documentElement.classList.add('dark');
     } else {
@@ -179,6 +183,10 @@ export default function App() {
         isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       }
       setDarkMode(isDark);
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+      if (metaThemeColor) {
+        metaThemeColor.setAttribute('content', isDark ? '#020617' : '#f8fafc');
+      }
       if (isDark) {
         document.documentElement.classList.add('dark');
       } else {
@@ -477,7 +485,7 @@ export default function App() {
   }
 
   return (
-    <div className={`fixed inset-0 flex h-full w-full overflow-hidden font-sans select-none ${darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
+    <div className={`fixed inset-0 flex w-full overflow-hidden font-sans select-none ${darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
       }`}>
       {/* Ambient background decoration with distinct page accent glows */}
       {backgroundStyle === 'glow' && (
@@ -505,7 +513,7 @@ export default function App() {
 
 
       {/* Main Dynamic Viewport Container */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative z-10">
+      <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden relative z-10">
         {/* Persistent Demo Mode Status Banner */}
         <DemoBanner />
 

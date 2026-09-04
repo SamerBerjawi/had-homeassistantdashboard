@@ -50,7 +50,6 @@ html, body {
   overscroll-behavior: none;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
-  background-color: #020617;
 }
 
 #root {
@@ -60,20 +59,13 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+}
+
+html.dark, body.dark, html.dark #root {
   background-color: #020617;
 }
 
-@supports (-webkit-touch-callout: none) {
-  html, body, #root {
-    min-height: -webkit-fill-available;
-  }
-}
-
-html.dark, body.dark {
-  background-color: #020617;
-}
-
-html:not(.dark), body:not(.dark) {
+html:not(.dark), body:not(.dark), html:not(.dark) #root {
   background-color: #f8fafc;
 }
 
