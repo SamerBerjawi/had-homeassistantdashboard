@@ -13,7 +13,8 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         manifestFilename: 'manifest.json',
         devOptions: {
-          enabled: true,
+          enabled: process.env.SW_DEV === 'true',
+          suppressWarnings: true,
         },
         includeAssets: [
           'manifest.json',
@@ -129,7 +130,7 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {
-        ignored: ['**/data/**', '**/data/assets/**', '**/data/config/**']
+        ignored: ['**/dev-dist/**', '**/data/**', '**/data/assets/**', '**/data/config/**']
       },
     },
     build: {
