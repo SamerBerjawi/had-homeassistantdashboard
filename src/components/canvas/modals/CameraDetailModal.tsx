@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { Camera, Microphone, MicrophoneSlash, DownloadSimple, Broadcast } from '@phosphor-icons/react';
 import CardModalContainer from './CardModalContainer';
-import HaWebRtcPlayer from '../../camera/HaWebRtcPlayer';
+import CameraFeed from '../../camera/CameraFeed';
 import CameraNoSignalPlaceholder from '../../ui/CameraNoSignalPlaceholder';
 
 interface CameraDetailModalProps {
@@ -45,10 +45,9 @@ export default function CameraDetailModal({
         {/* Fullscreen Camera Stream Frame */}
         <div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-black border border-white/15 shadow-2xl">
           {entityId ? (
-            <HaWebRtcPlayer
+            <CameraFeed
               camera={{ entity_id: entityId, name: cameraName }}
               mode="live"
-              isIntercomActive={isMicActive}
               showControls={true}
             />
           ) : snapshotUrl ? (

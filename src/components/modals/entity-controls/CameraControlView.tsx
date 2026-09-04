@@ -20,7 +20,7 @@ import {
 import { HAEntity, ResolvedEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { formatRelativeTime } from '../../../lib/utils';
-import HaWebRtcPlayer from '../../views/security/HaWebRtcPlayer';
+import CameraFeed from '../../camera/CameraFeed';
 import {
   detectCameraCapabilities,
   CameraCapabilities
@@ -91,12 +91,11 @@ export default function CameraControlView({ entity }: CameraControlViewProps) {
     <div ref={containerRef} className="space-y-4">
       {/* 1. HERO LIVE WEBRTC VIDEO STREAM CARD */}
       <div className="relative rounded-3xl overflow-hidden bg-black border border-white/10 shadow-2xl aspect-video max-h-[360px] flex items-center justify-center isolate">
-        <HaWebRtcPlayer
+        <CameraFeed
           camera={resolvedCamera}
           mode="live"
-          codecMode={codecMode}
-          isIntercomActive={isMicActive}
           muted={isAudioMuted}
+          showControls={true}
         />
 
         {/* Live Status Overlay Pill */}

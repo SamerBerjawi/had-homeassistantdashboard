@@ -24,7 +24,7 @@ import {
   ShieldWarning
 } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
-import HaWebRtcPlayer from './HaWebRtcPlayer';
+import CameraFeed from '../../camera/CameraFeed';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { 
   getCameraMotionStatus, 
@@ -226,15 +226,12 @@ export default function CameraStreamModal({
           </div>
         </div>
 
-        {/* Video Canvas Container powered by HaWebRtcPlayer */}
+        {/* Video Canvas Container powered by CameraFeed */}
         <div className="relative w-full aspect-video bg-black overflow-hidden flex items-center justify-center">
-          <HaWebRtcPlayer
+          <CameraFeed
             camera={camera}
             mode="live"
-            preferProtocol={protocolPref}
-            codecMode={codecMode}
             darkMode={darkMode}
-            isIntercomActive={isMicActive}
             muted={isAudioMuted}
             showControls={true}
           />

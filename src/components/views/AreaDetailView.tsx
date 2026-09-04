@@ -60,7 +60,7 @@ import { detectLightCapabilities } from '../../services/lightClassification';
 import { detectLockCapabilities } from '../../services/lockClassification';
 import { detectVacuumCapabilities } from '../../services/vacuumClassification';
 import { detectSensorCapabilities } from '../../services/sensorClassification';
-import HaWebRtcPlayer from '../camera/HaWebRtcPlayer';
+import CameraFeed from '../camera/CameraFeed';
 
 interface AreaDetailViewProps {
   area: AreaData;
@@ -1342,7 +1342,7 @@ export default function AreaDetailView({
                       onClick={() => openEntityDetails(cam.entity_id)}
                       className="w-full h-32 rounded-2xl overflow-hidden bg-black relative group cursor-pointer"
                     >
-                      <HaWebRtcPlayer
+                      <CameraFeed
                         camera={cam}
                         mode="preview"
                         darkMode={darkMode}

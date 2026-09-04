@@ -8,7 +8,7 @@ import { Camera, Broadcast } from '@phosphor-icons/react';
 import { CardConfig } from '../../../types/canvas';
 import { HAEntity, ResolvedEntity } from '../../../types';
 import CameraNoSignalPlaceholder from '../../ui/CameraNoSignalPlaceholder';
-import HaWebRtcPlayer from '../../camera/HaWebRtcPlayer';
+import CameraFeed from '../../camera/CameraFeed';
 
 interface CameraCardProps {
   config: CardConfig;
@@ -32,7 +32,7 @@ export default function CameraCard({
       {/* Live Stream or Snapshot Background */}
       {entity ? (
         <div className="absolute inset-0 w-full h-full">
-          <HaWebRtcPlayer
+          <CameraFeed
             camera={entity as ResolvedEntity}
             mode="preview"
             showControls={false}

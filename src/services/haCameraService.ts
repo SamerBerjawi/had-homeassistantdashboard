@@ -28,6 +28,15 @@ export interface HlsStreamResult {
   hlsUrl: string;
 }
 
+export interface CameraEntitySettings {
+  cameraStreamEngine: 'auto' | 'go2rtc' | 'ha' | 'snapshot';
+  cameraWebrtcUrl?: string; // template URL with {entity_id} and {entity_object_id}
+  cameraGo2rtcMode?: 'auto' | 'webrtc' | 'mse';
+  cameraRefreshMode?: 'interval' | 'motion';
+  cameraRefreshInterval?: number; // seconds, min 2, default 10
+  cameraMotionSensor?: string; // binary_sensor entity id
+}
+
 /**
  * Fetch ICE server and WebRTC client configuration from Home Assistant.
  * Falls back to Google public STUN servers if unsupported by the backend.
@@ -59,6 +68,53 @@ export async function getCameraWebRtcConfig(entityId: string): Promise<RTCConfig
   }
 
   return { iceServers: defaultIceServers };
+}
+
+/**
+ * Query camera frontend streaming capabilities from Home Assistant (`camera/capabilities`).
+ * Returns an array of supported stream types (e.g. ['web_rtc', 'hls']) or null.
+ */
+export async function getCameraCapabilities(entityId: string): Promise<string[] | null> {
+  if (haWebSocketService.isDemo() || haWebSocketService.getStatus() !== 'connected') {
+    return ['web_rtc', 'hls'];
+  }
+
+  try {
+    const res = await haWebSocketService.sendRequest<{ frontend_stream_types: string[] }>(
+      'camera/capabilities',
+      { entity_id: entityId }
+    );
+    if (res?.frontend_stream_types && Array.isArray(res.frontend_stream_types)) {
+      return res.frontend_stream_types;
+    }
+  } catch (err) {
+    console.debug('[haCameraService] camera/capabilities not supported or error:', err);
+  }
+
+  return null;
+}
+
+/**
+ * Request a short-lived signed path for a media or camera proxy resource (`auth/sign_path`).
+ */
+export async function signCameraPath(path: string, expiresIn: number = 30): Promise<string | null> {
+  if (haWebSocketService.isDemo() || haWebSocketService.getStatus() !== 'connected') {
+    return null;
+  }
+
+  try {
+    const res = await haWebSocketService.sendRequest<{ path: string }>(
+      'auth/sign_path',
+      { path, expires_in: expiresIn }
+    );
+    if (res?.path && typeof res.path === 'string') {
+      return res.path;
+    }
+  } catch (err) {
+    console.debug('[haCameraService] auth/sign_path error:', err);
+  }
+
+  return null;
 }
 
 /**
@@ -191,6 +247,52 @@ export function setCameraCodecPreference(entityId: string, mode: CameraCodecMode
     }
   } catch {
     // ignore
+  }
+}
+
+/**
+ * Retrieves per-camera streaming settings from local storage.
+ */
+export function getCameraSettings(entityId: string): CameraEntitySettings {
+  const defaultSettings: CameraEntitySettings = {
+    cameraStreamEngine: 'auto',
+    cameraGo2rtcMode: 'auto',
+    cameraRefreshMode: 'interval',
+    cameraRefreshInterval: 10
+  };
+
+  if (typeof window === 'undefined' || !entityId) return defaultSettings;
+
+  try {
+    const raw = localStorage.getItem(`homz_camera_settings_${entityId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...defaultSettings, ...parsed };
+    }
+  } catch {
+    // ignore
+  }
+
+  return defaultSettings;
+}
+
+/**
+ * Saves per-camera streaming settings to local storage and dispatches a notification event.
+ */
+export function saveCameraSettings(entityId: string, settings: Partial<CameraEntitySettings>): void {
+  if (typeof window === 'undefined' || !entityId) return;
+
+  try {
+    const current = getCameraSettings(entityId);
+    const updated = { ...current, ...settings };
+    localStorage.setItem(`homz_camera_settings_${entityId}`, JSON.stringify(updated));
+    window.dispatchEvent(
+      new CustomEvent('homz_camera_settings_changed', {
+        detail: { entityId, settings: updated }
+      })
+    );
+  } catch (err) {
+    console.error('[haCameraService] saveCameraSettings error:', err);
   }
 }
 

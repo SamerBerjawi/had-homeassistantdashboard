@@ -14,7 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
 import CameraStreamModal from './CameraStreamModal';
-import HaWebRtcPlayer from './HaWebRtcPlayer';
+import CameraFeed from '../../camera/CameraFeed';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { getCameraMotionStatus, captureAndDownloadSnapshot } from '../../../services/cameraIntegrationService';
 import CameraNoSignalPlaceholder from '../../ui/CameraNoSignalPlaceholder';
@@ -201,7 +201,7 @@ export default function CameraFeedSection({
               >
                 {/* Video Stream Frame with Native HA WebRTC (go2rtc-backed) engine */}
                 <div className="relative w-full aspect-video bg-black overflow-hidden">
-                  <HaWebRtcPlayer
+                  <CameraFeed
                     camera={camera}
                     mode="preview"
                     darkMode={darkMode}
