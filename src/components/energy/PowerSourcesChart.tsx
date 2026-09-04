@@ -34,6 +34,7 @@ export interface PowerSourcesChartProps {
   hasGrid?: boolean;
   hasBattery?: boolean;
   darkMode?: boolean;
+  className?: string;
 }
 
 interface PowerDataPoint {
@@ -56,7 +57,8 @@ export default function PowerSourcesChart({
   hasSolar = true,
   hasGrid = true,
   hasBattery = true,
-  darkMode = true
+  darkMode = true,
+  className = ''
 }: PowerSourcesChartProps) {
   // Visibility toggles for each flow series
   const [showSolar, setShowSolar] = useState(true);
@@ -185,6 +187,79 @@ export default function PowerSourcesChart({
     };
   }, [buckets]);
 
+  // Dynamically calculate Y-axis domain and nice step ticks based on active flow series
+  // Eliminates hardcoded clamp/bounds (e.g. fixed -2kW to 6kW) and cleanly hugs real telemetry
+  const { yDomain, yTicks } = useMemo(() => {
+    if (chartData.length === 0) {
+      return { yDomain: [0, 2] as [number, number], yTicks: [0, 1, 2] };
+    }
+
+    let maxPositive = 0;
+    let minNegative = 0;
+
+    for (const p of chartData) {
+      const posStack =
+        (hasSolar && showSolar ? p.solar : 0) +
+        (hasGrid && showGrid ? p.gridImport : 0) +
+        (hasBattery && showBattery ? p.batteryDischarge : 0);
+      const posVal = Math.max(posStack, showHome ? p.homeConsumption : 0);
+      if (posVal > maxPositive) maxPositive = posVal;
+
+      const negStack =
+        (hasBattery && showBattery ? p.batteryChargeNegative : 0) +
+        (hasGrid && showGrid ? p.gridExportNegative : 0);
+      if (negStack < minNegative) minNegative = negStack;
+    }
+
+    // Include realtime telemetry if visible
+    if (realtime) {
+      if (hasSolar && showSolar && realtime.solarPowerKW > maxPositive) {
+        maxPositive = realtime.solarPowerKW;
+      }
+      if (showHome && realtime.homeConsumptionKW > maxPositive) {
+        maxPositive = realtime.homeConsumptionKW;
+      }
+      const liveGridExport = realtime.gridExportPowerKW > 0 ? -realtime.gridExportPowerKW : 0;
+      const liveBatteryCharge = realtime.batteryChargePowerKW > 0 ? -realtime.batteryChargePowerKW : 0;
+      const liveNeg =
+        (hasGrid && showGrid ? liveGridExport : 0) +
+        (hasBattery && showBattery ? liveBatteryCharge : 0);
+      if (liveNeg < minNegative) {
+        minNegative = liveNeg;
+      }
+    }
+
+    const hasNegative = minNegative < -0.05;
+    // Add 10% headroom
+    const rawMax = Math.max(0.5, maxPositive * 1.1);
+    const rawMin = hasNegative ? minNegative * 1.1 : 0;
+
+    const span = rawMax - rawMin;
+
+    // Pick nice step based on data span
+    let step = 1;
+    if (span <= 0.8) step = 0.2;
+    else if (span <= 1.5) step = 0.25;
+    else if (span <= 3) step = 0.5;
+    else if (span <= 7) step = 1;
+    else if (span <= 14) step = 2;
+    else step = Math.ceil(span / 6 / 5) * 5;
+
+    const yMax = Number((Math.ceil(rawMax / step) * step).toFixed(2));
+    const yMin = hasNegative ? Number((Math.floor(rawMin / step) * step).toFixed(2)) : 0;
+
+    const count = Math.max(1, Math.round((yMax - yMin) / step));
+    const ticks: number[] = [];
+    for (let i = 0; i <= count; i++) {
+      ticks.push(Number((yMin + i * step).toFixed(2)));
+    }
+
+    return {
+      yDomain: [yMin, yMax] as [number, number],
+      yTicks: ticks
+    };
+  }, [chartData, hasSolar, showSolar, hasGrid, showGrid, hasBattery, showBattery, showHome, realtime]);
+
   // Real-time instantaneous badge calculations
   const liveGrid = realtime
     ? Number((realtime.gridImportPowerKW - realtime.gridExportPowerKW).toFixed(2))
@@ -278,11 +353,11 @@ export default function PowerSourcesChart({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+      className={`w-full h-full rounded-3xl p-5 sm:p-6 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
         darkMode
           ? 'bg-black/20 text-white'
           : 'bg-white/20 text-slate-900'
-      }`}
+      } ${className}`}
     >
       {/* Dynamic Multi-Color Ambient Background Glows with strict containment */}
       <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
@@ -454,8 +529,8 @@ export default function PowerSourcesChart({
         )}
       </div>
 
-      {/* Main Recharts Composed Stacked Chart Area - Extended height for clear detail visibility */}
-      <div className="w-full h-80 sm:h-96 lg:h-[430px] relative z-10">
+      {/* Main Recharts Composed Stacked Chart Area - Flexibly fills full card height */}
+      <div className="w-full flex-1 min-h-[340px] relative z-10">
         {chartData.length === 0 ? (
           <div className="w-full h-full flex items-center justify-center text-xs text-slate-500 font-medium">
             No telemetry recorded for this period
@@ -539,7 +614,9 @@ export default function PowerSourcesChart({
 
               <YAxis
                 unit=" kW"
-                domain={['auto', (dataMax: number) => Math.ceil(dataMax * 1.12)]}
+                domain={yDomain}
+                ticks={yTicks}
+                tickFormatter={(val: number) => (val % 1 === 0 ? val.toString() : val.toFixed(1))}
                 tick={{ fill: darkMode ? '#94a3b8' : '#64748b', fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}

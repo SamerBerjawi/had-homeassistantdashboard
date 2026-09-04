@@ -25,6 +25,7 @@ interface EnergyDistributionCardProps {
   hasGas: boolean;
   hasWater: boolean;
   darkMode?: boolean;
+  className?: string;
 }
 
 export default function EnergyDistributionCard({
@@ -35,7 +36,8 @@ export default function EnergyDistributionCard({
   hasBattery,
   hasGas,
   hasWater,
-  darkMode = true
+  darkMode = true,
+  className = ''
 }: EnergyDistributionCardProps) {
   const [viewMode, setViewMode] = useState<'period' | 'live'>('period');
 
@@ -65,11 +67,11 @@ export default function EnergyDistributionCard({
 
   return (
     <div
-      className={`w-full rounded-3xl p-4 sm:p-6 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 relative overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-col justify-between ${
+      className={`w-full h-full rounded-3xl p-4 sm:p-6 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 relative overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-col justify-between ${
         darkMode
           ? 'bg-black/20 text-white'
           : 'bg-white/20 text-slate-900'
-      }`}
+      } ${className}`}
     >
       {/* Ambient background glow rendered via smooth radial gradients (eliminates GPU blur box clipping) */}
       <div
@@ -140,10 +142,10 @@ export default function EnergyDistributionCard({
       </div>
 
       {/* Interactive SVG Flow Diagram */}
-      <div className="relative w-full h-[220px] sm:h-[250px] flex items-center justify-center select-none my-auto">
+      <div className="relative w-full flex-1 min-h-[260px] flex items-center justify-center select-none my-auto py-2">
         <svg
           viewBox="65 15 400 280"
-          className="w-full h-full max-h-[260px] overflow-visible"
+          className="w-full h-full max-h-[320px] overflow-visible"
         >
           <defs>
             <style>

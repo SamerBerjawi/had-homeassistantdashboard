@@ -15,7 +15,7 @@ import {
   WaterUsageGraphCard,
   DevicesEnergyGraphCard,
   EnergySourcesTableCard,
-  EnergyGaugesCard,
+  EnergyHeroCards,
   EnergyUnconfiguredState
 } from '../energy';
 import { ArrowsClockwise, WarningCircle } from '@phosphor-icons/react';
@@ -64,8 +64,9 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
     return (
       <div className="w-full flex-1 flex flex-col items-center justify-center py-16 px-4">
         <div
-          className={`p-6 rounded-3xl border max-w-md w-full text-center space-y-4 ${darkMode ? 'bg-rose-500/10 border-rose-500/30 text-white' : 'bg-rose-50 border-rose-200 text-slate-900'
-            }`}
+          className={`p-6 rounded-3xl border max-w-md w-full text-center space-y-4 ${
+            darkMode ? 'bg-rose-500/10 border-rose-500/30 text-white' : 'bg-rose-50 border-rose-200 text-slate-900'
+          }`}
         >
           <WarningCircle size={36} className="text-rose-500 mx-auto" />
           <h3 className="text-base font-extrabold">Failed to Load Energy Statistics</h3>
@@ -97,8 +98,10 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
     hasDevices
   } = model;
 
+  const hasAuxiliary = hasGas || hasWater;
+
   return (
-    <div className="w-full flex-1 flex flex-col space-y-5 sm:space-y-6 pb-12">
+    <div className="w-full flex-1 flex flex-col space-y-5 sm:space-y-6 pb-12 animate-fadeIn">
       {/* ───────────────────────────────────────────────────────────── */}
       {/* TOP CONTROL TOOLBAR: Period Navigation & Live Status          */}
       {/* ───────────────────────────────────────────────────────────── */}
@@ -115,12 +118,27 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
       />
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* ROW 1: ENERGY DISTRIBUTION (FLOW DIAGRAM) & EFFICIENCY GAUGES */}
+      {/* HERO METRICS CARD: REDESIGNED AUTARKY & SELF-CONSUMPTION      */}
+      {/* + 3 COMPACT HUAWEI FUSION SOLAR IMPACT TILES                  */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
-        {/* Energy Distribution Flow Diagram */}
-        <div className="lg:col-span-7 flex flex-col">
+      <EnergyHeroCards
+        selfSufficiencyPercentage={totals.selfSufficiencyPercentage}
+        selfConsumptionPercentage={totals.selfConsumptionPercentage}
+        hasSolar={hasSolar}
+        hasBattery={hasBattery}
+        solarYieldKWh={totals.solar}
+        solarConsumedKWh={totals.solarToHome}
+        darkMode={darkMode}
+      />
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* ROW 1: ENERGY DISTRIBUTION (1/3) & POWER SOURCES (2/3)         */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
+        {/* Left 1/3 (4 cols): Energy Distribution Card */}
+        <div className="lg:col-span-4 flex flex-col h-full">
           <EnergyDistributionCard
+            className="h-full flex-1"
             totals={totals}
             realtime={realtime}
             hasSolar={hasSolar}
@@ -132,41 +150,29 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
           />
         </div>
 
-        {/* Energy Autarky & Efficiency Gauges */}
-        <div className="lg:col-span-5 flex flex-col">
-          <EnergyGaugesCard
-            selfSufficiencyPercentage={totals.selfSufficiencyPercentage}
-            selfConsumptionPercentage={totals.selfConsumptionPercentage}
+        {/* Right 2/3 (8 cols): Continuous Power Sources Timeline Chart */}
+        <div className="lg:col-span-8 flex flex-col h-full">
+          <PowerSourcesLineChartCard
+            className="h-full flex-1"
+            buckets={model.powerBuckets || model.buckets}
+            realtime={realtime}
             hasSolar={hasSolar}
+            hasGrid={hasGrid}
             hasBattery={hasBattery}
-            solarYieldKWh={totals.solar}
-            solarConsumedKWh={totals.solarToHome}
             darkMode={darkMode}
           />
         </div>
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* ROW 2: POWER SOURCES CONTINUOUS FLOWS (bklit/line-chart)      */}
+      {/* ROW 2: PRODUCTION & GRID (1/2) & DEVICES & TARIFF (1/2)        */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="w-full">
-        <PowerSourcesLineChartCard
-          buckets={model.powerBuckets || model.buckets}
-          realtime={realtime}
-          hasSolar={hasSolar}
-          hasGrid={hasGrid}
-          hasBattery={hasBattery}
-          darkMode={darkMode}
-        />
-      </div>
-
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* ROW 3: ENERGY USAGE & SOLAR PRODUCTION BAR CHARTS             */}
-      {/* ───────────────────────────────────────────────────────────── */}
-      <div className={`grid grid-cols-1 ${hasSolar ? 'lg:grid-cols-2' : 'grid-cols-1'} gap-5 sm:gap-6`}>
-        {/* Stacked Bar Consumption Graph */}
-        <div className="w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
+        {/* Left Column (Half Width / 6 cols): Production and Grid */}
+        <div className="lg:col-span-6 flex flex-col gap-5 sm:gap-6 h-full justify-between">
+          {/* Stacked Bar Consumption Graph */}
           <EnergyUsageGraphCard
+            className="flex-1 h-full"
             buckets={buckets}
             totalConsumption={totals.homeConsumption}
             hasSolar={hasSolar}
@@ -174,41 +180,36 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
             hasGrid={hasGrid}
             darkMode={darkMode}
           />
-        </div>
 
-        {/* Solar Production & Forecast Graph (if configured) */}
-        {hasSolar && (
-          <div className="w-full">
+          {/* Solar Production & Forecast Bar Graph */}
+          {hasSolar && (
             <SolarProductionGraphCard
+              className="flex-1 h-full"
               buckets={buckets}
               totalSolar={totals.solar}
               forecastTotal={totals.solarForecastTotal}
               darkMode={darkMode}
             />
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* ROW 4: MONITORED DEVICES (bklit/ring-chart) & FINANCIAL TABLE */}
-      {/* ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
-        {/* Device Consumption (Nested Concentric Rings with @bklit/ring-chart) */}
-        {hasDevices && (
-          <div className="lg:col-span-6 flex flex-col">
+        {/* Right Column (Half Width / 6 cols): Devices and Tariff */}
+        <div className="lg:col-span-6 flex flex-col gap-5 sm:gap-6 h-full justify-between">
+          {/* Device Consumption Nested Concentric Rings */}
+          {hasDevices && (
             <DevicesEnergyGraphCard
+              className="flex-1 h-full"
               devices={devices}
               untrackedKwh={untrackedKwh}
               untrackedPercentage={untrackedPercentage}
               totalHomeConsumption={totals.homeConsumption}
               darkMode={darkMode}
             />
-          </div>
-        )}
+          )}
 
-        {/* Cost & Compensation Summary Table */}
-        <div className={`${hasDevices ? 'lg:col-span-6' : 'lg:col-span-12'} flex flex-col`}>
+          {/* Cost & Tariff Summary Table */}
           <EnergySourcesTableCard
+            className="flex-1 h-full"
             financials={financials}
             darkMode={darkMode}
           />
@@ -216,9 +217,9 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* ROW 5: GAS & WATER USAGE (Only if configured)                 */}
+      {/* ROW 3: GAS & WATER USAGE (If Configured)                      */}
       {/* ───────────────────────────────────────────────────────────── */}
-      {(hasGas || hasWater) && (
+      {hasAuxiliary && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
           {hasGas && (
             <GasUsageGraphCard
@@ -241,3 +242,4 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
     </div>
   );
 }
+

@@ -26,6 +26,7 @@ interface DevicesEnergyGraphCardProps {
   untrackedPercentage: number;
   totalHomeConsumption: number;
   darkMode?: boolean;
+  className?: string;
 }
 
 const RING_COLORS_DARK = [
@@ -71,7 +72,8 @@ export default function DevicesEnergyGraphCard({
   untrackedKwh = 0,
   untrackedPercentage = 0,
   totalHomeConsumption = 0,
-  darkMode = true
+  darkMode = true,
+  className = ''
 }: DevicesEnergyGraphCardProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
@@ -96,11 +98,11 @@ export default function DevicesEnergyGraphCard({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+      className={`w-full h-full rounded-3xl p-5 sm:p-6 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
         darkMode
           ? 'bg-black/20 text-white'
           : 'bg-white/20 text-slate-900'
-      }`}
+      } ${className}`}
     >
       {/* Ambient Glow rendered via smooth radial gradient */}
       <div

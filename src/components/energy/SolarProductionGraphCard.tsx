@@ -12,13 +12,15 @@ interface SolarProductionGraphCardProps {
   totalSolar: number;
   forecastTotal?: number | null;
   darkMode?: boolean;
+  className?: string;
 }
 
 export default function SolarProductionGraphCard({
   buckets = [],
   totalSolar = 0,
   forecastTotal,
-  darkMode = true
+  darkMode = true,
+  className = ''
 }: SolarProductionGraphCardProps) {
   const [hoveredBucket, setHoveredBucket] = useState<TransformedEnergyBucket | null>(null);
 
@@ -32,10 +34,10 @@ export default function SolarProductionGraphCard({
 
   return (
     <div
-      className={`w-full rounded-3xl p-5 sm:p-6 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${darkMode
+      className={`w-full h-full rounded-3xl p-5 sm:p-6 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 relative flex flex-col justify-between overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${darkMode
         ? 'bg-black/20 text-white'
         : 'bg-white/20 text-slate-900'
-        }`}
+        } ${className}`}
     >
       {/* Header with Title and Total Badge */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
@@ -87,7 +89,7 @@ export default function SolarProductionGraphCard({
       )}
 
       {/* Bar Chart Area with Y-Axis and X-Axis */}
-      <div className="relative w-full h-56 sm:h-64 pt-1 pb-2 flex flex-col justify-between">
+      <div className="relative w-full flex-1 min-h-[200px] sm:min-h-[230px] pt-1 pb-2 flex flex-col justify-between">
         {buckets.length === 0 ? (
           <div className="w-full h-full flex items-center justify-center text-xs text-slate-500 font-medium">
             No solar production recorded for this period

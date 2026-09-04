@@ -299,11 +299,9 @@ export default function FloorAreaSensorsSection({
                   </div>
                 </div>
 
-                {/* 2-Column Mobile Grid accommodating 2 tiles per row on mobile, scaling to 2/3/4 on larger screens */}
+                {/* 2-Column Mobile Grid accommodating 2 tiles per row on mobile, scaling to 3 and 4 on larger screens */}
                 <div
-                  className={`grid grid-cols-2 sm:grid-cols-2 ${
-                    activeCategory === 'all' ? 'lg:grid-cols-2' : 'md:grid-cols-3 lg:grid-cols-4'
-                  } gap-2.5 sm:gap-3 items-stretch`}
+                  className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 items-stretch"
                 >
                   {entitiesToRender.map((ent) => {
                     const isLock = ent.domain === 'lock';

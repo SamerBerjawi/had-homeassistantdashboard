@@ -25,14 +25,16 @@ import { ResolvedEntity } from '../../types';
 import { haWebSocketService } from '../../services/haWebSocket';
 import { fetchGo2RtcStreams, detectGo2RtcRtspStreams } from '../../services/go2rtcService';
 
-import SecurityBadgesBar, { SecurityFilterTab } from './security/SecurityBadgesBar';
+import { SecurityFilterTab } from './security/SecurityBadgesBar';
 import AlarmPanelSection from './security/AlarmPanelSection';
 import FloorAreaSensorsSection from './security/FloorAreaSensorsSection';
 import CameraFeedSection from './security/CameraFeedSection';
+import PerimeterAttentionCard from './security/PerimeterAttentionCard';
 import AlarmKeypadModal from '../overview/modals/AlarmKeypadModal';
 import ViewEmptyState from '../ui/ViewEmptyState';
 import ViewLoadingState from '../ui/ViewLoadingState';
 import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
+import PersonAvatar from '../ui/PersonAvatar';
 
 interface SecurityViewProps {
   darkMode?: boolean;
@@ -300,45 +302,77 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
 
   return (
     <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-24 md:pb-8">
-      {/* Top Floating Filter Bar */}
-      <div className="flex items-center">
+      {/* Top Floating Filter Bar & Occupants Presence */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <AdaptiveSectionTabs
           tabs={securityTabs}
           activeTab={activeFilter}
           onChange={(tab) => setActiveFilter(tab as SecurityFilterTab)}
           darkMode={darkMode}
         />
+
+        {userEntities.length > 0 && (
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-900/[0.04] dark:bg-white/5 border border-slate-900/[0.08] dark:border-white/10 backdrop-blur-md shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Occupants:</span>
+            <div className="flex items-center -space-x-1.5">
+              {userEntities.slice(0, 5).map((user) => {
+                const isHome = user.state === 'home';
+                const name = user.name || user.attributes?.friendly_name || 'Person';
+                return (
+                  <PersonAvatar
+                    key={user.entity_id}
+                    name={name}
+                    entity_picture={user.attributes?.entity_picture}
+                    isHome={isHome}
+                    size="xs"
+                    showPresenceDot={true}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Glanceable Security Status Bar */}
-      <SecurityBadgesBar
-        darkMode={darkMode}
-        activeFilter={activeFilter}
-        onSelectFilter={setActiveFilter}
-        alarmEntity={activeAlarm}
-        lockEntities={lockEntities}
-        doorSensors={doorSensors}
-        windowSensors={windowSensors}
-        motionSensors={motionSensors}
-        leakSensors={leakSensors}
-        smokeSensors={smokeSensors}
-        cameraEntities={cameraEntities}
-        userEntities={userEntities}
-        onOpenKeypadModal={() => setIsKeypadModalOpen(true)}
-      />
-
-      {/* 1. ALL VIEW: 2-Column Responsive Layout */}
+      {/* 1. ALL VIEW: Executive Command Center Layout */}
       {activeFilter === 'all' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column (7 cols): Alarm Panel + Floor/Area Sensor Breakdown */}
-          <div className="lg:col-span-7 flex flex-col gap-6">
-            <AlarmPanelSection
-              darkMode={darkMode}
-              alarmEntities={alarmEntities}
-              openDoors={openDoors}
-              openWindows={openWindows}
-            />
+        <div className="flex flex-col gap-6">
+          {/* Executive Bento: Alarm & Perimeter Attention on Left, Surveillance on Right */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left Column (7 cols): Alarm Panel + Instant Perimeter Attention */}
+            <div className="lg:col-span-7 flex flex-col gap-5">
+              <AlarmPanelSection
+                darkMode={darkMode}
+                alarmEntities={alarmEntities}
+                openDoors={openDoors}
+                openWindows={openWindows}
+              />
 
+              <PerimeterAttentionCard
+                darkMode={darkMode}
+                openDoors={openDoors}
+                openWindows={openWindows}
+                unlockedLocks={lockEntities.filter((l) => l.state === 'unlocked' || l.state === 'open')}
+                activeHazards={[...leakSensors, ...smokeSensors].filter(
+                  (h) => h.state === 'on' || h.state === 'detected' || h.state === 'wet'
+                )}
+                totalLocksCount={lockEntities.length}
+                totalContactsCount={doorSensors.length + windowSensors.length}
+              />
+            </div>
+
+            {/* Right Column (5 cols): Camera Feeds */}
+            <div className="lg:col-span-5 flex flex-col gap-6 sticky top-4">
+              <CameraFeedSection
+                darkMode={darkMode}
+                cameraEntities={cameraEntities}
+                columns={1}
+              />
+            </div>
+          </div>
+
+          {/* Zone & Perimeter Sensors Matrix (Full Width) */}
+          <div className="pt-2">
             <FloorAreaSensorsSection
               darkMode={darkMode}
               lockEntities={lockEntities}
@@ -351,15 +385,6 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
               resolvedAreas={resolvedAreas}
               activeCategory="all"
               onSelectCategory={(cat) => setActiveFilter(cat)}
-            />
-          </div>
-
-          {/* Right Column (5 cols): Camera Feeds */}
-          <div className="lg:col-span-5 flex flex-col gap-6 sticky top-4">
-            <CameraFeedSection
-              darkMode={darkMode}
-              cameraEntities={cameraEntities}
-              columns={1}
             />
           </div>
         </div>

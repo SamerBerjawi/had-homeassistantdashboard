@@ -15,3 +15,5 @@ export { default as DevicesEnergyGraphCard } from './DevicesEnergyGraphCard';
 export { default as EnergySourcesTableCard } from './EnergySourcesTableCard';
 export { default as EnergyGaugesCard } from './EnergyGaugesCard';
 export { default as EnergyUnconfiguredState } from './EnergyUnconfiguredState';
+export { default as HuaweiSolarImpactTiles } from './HuaweiSolarImpactTiles';
+export { default as EnergyHeroCards } from './EnergyHeroCards';

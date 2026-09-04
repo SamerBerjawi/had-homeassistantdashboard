@@ -663,6 +663,27 @@ export const MOCK_ENTITY_REGISTRY: HAEntityRegistryEntry[] = [
     unit_of_measurement: 'kW'
   },
   {
+    entity_id: 'sensor.energy_information_lifetime_equivalent_tree_planted',
+    name: 'Lifetime Equivalent Trees Planted',
+    area_id: null,
+    device_id: 'dev_solaredge_inverter',
+    unit_of_measurement: 'trees'
+  },
+  {
+    entity_id: 'sensor.energy_information_lifetime_co2_emission_reduction',
+    name: 'Lifetime CO2 Emission Reduction',
+    area_id: null,
+    device_id: 'dev_solaredge_inverter',
+    unit_of_measurement: 'kg'
+  },
+  {
+    entity_id: 'sensor.energy_information_lifetime_standard_coal_saved',
+    name: 'Lifetime Standard Coal Saved',
+    area_id: null,
+    device_id: 'dev_solaredge_inverter',
+    unit_of_measurement: 'kg'
+  },
+  {
     entity_id: 'sensor.tesla_powerwall_battery_level',
     name: 'Powerwall 3 Storage Level',
     area_id: null, // Inherited match via dev_tesla_powerwall
@@ -1633,6 +1654,33 @@ export const MOCK_STATES: Record<string, HAState> = {
     attributes: {
       friendly_name: 'Electricity Maps',
       unit_of_measurement: 'gCO2eq/kWh'
+    }
+  },
+  'sensor.energy_information_lifetime_equivalent_tree_planted': {
+    entity_id: 'sensor.energy_information_lifetime_equivalent_tree_planted',
+    state: '48.2',
+    attributes: {
+      friendly_name: 'Lifetime Equivalent Trees Planted',
+      unit_of_measurement: 'trees',
+      icon: 'mdi:tree'
+    }
+  },
+  'sensor.energy_information_lifetime_co2_emission_reduction': {
+    entity_id: 'sensor.energy_information_lifetime_co2_emission_reduction',
+    state: '1428.6',
+    attributes: {
+      friendly_name: 'Lifetime CO2 Emission Reduction',
+      unit_of_measurement: 'kg',
+      icon: 'mdi:molecule-co2'
+    }
+  },
+  'sensor.energy_information_lifetime_standard_coal_saved': {
+    entity_id: 'sensor.energy_information_lifetime_standard_coal_saved',
+    state: '573.4',
+    attributes: {
+      friendly_name: 'Lifetime Standard Coal Saved',
+      unit_of_measurement: 'kg',
+      icon: 'mdi:fire'
     }
   },
   'sensor.total_current_day_energy': {
