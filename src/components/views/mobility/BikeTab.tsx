@@ -184,7 +184,7 @@ export function BikeTab({
         {/* ========================================================================= */}
         <div className="lg:col-span-4 h-full flex flex-col">
           <div
-            className={`w-full h-full rounded-3xl p-3.5 sm:p-7 overflow-hidden isolate backdrop-blur-sm transition-all flex flex-col justify-between relative shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+            className={`w-full h-full rounded-3xl p-3.5 sm:p-7 overflow-hidden isolate backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all flex flex-col justify-between relative shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
               darkMode
                 ? 'bg-black/20 text-white'
                 : 'bg-white/20 text-slate-900'
@@ -219,28 +219,27 @@ export function BikeTab({
                       ? 'bg-rose-500/15 text-rose-300'
                       : 'bg-rose-100 text-rose-900'
                     : darkMode
-                    ? 'bg-amber-500/15 text-amber-300'
-                    : 'bg-amber-100 text-amber-900'
+                    ? 'bg-emerald-500/15 text-emerald-300'
+                    : 'bg-emerald-100 text-emerald-900'
                 }`}
               >
                 <span
-                  className={`w-2 h-2 rounded-full ${
-                    metrics.isLocked ? 'bg-rose-400' : 'bg-emerald-400 animate-pulse'
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    metrics.isLocked ? 'bg-rose-500' : 'bg-emerald-400 animate-pulse'
                   }`}
                 />
-                <span>{metrics.isLocked ? 'Locked' : 'Ready to Ride'}</span>
+                <span>{metrics.isLocked ? 'Armed & Locked' : 'Ready to Ride'}</span>
               </div>
             </div>
 
-            {/* Bike Stage Canvas: Clearly below the bike name and logo */}
+            {/* E-Bike Illustration Canvas */}
             <div className="relative my-3 sm:my-4 flex flex-col items-center justify-center z-10">
-              {/* Underbody Glow */}
+              {/* Ground Glow */}
               <div
-                className="absolute bottom-2 w-3/4 sm:w-2/3 h-10 rounded-full blur-2xl opacity-40 pointer-events-none transition-all duration-700"
+                className="absolute bottom-2 w-3/4 sm:w-2/3 h-12 rounded-full blur-2xl opacity-40 pointer-events-none transition-all duration-700"
                 style={{ backgroundColor: groundGlowColor }}
               />
 
-              {/* Bike Render */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -251,100 +250,57 @@ export function BikeTab({
                   <img
                     src={resolvedBikeImage}
                     alt={bikeName}
-                    className="max-h-52 sm:max-h-60 w-auto object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.35)] dark:drop-shadow-[0_25px_35px_rgba(0,0,0,0.7)] select-none transition-transform duration-500 group-hover:scale-[1.02]"
+                    className="max-h-56 sm:max-h-64 w-auto object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.35)] dark:drop-shadow-[0_25px_35px_rgba(0,0,0,0.7)] select-none transition-transform duration-500 group-hover:scale-[1.02]"
                     onError={() => setImageError(true)}
                   />
                 ) : (
-                  /* Stealth E-Bike Vector */
-                  <div className="w-[300px] sm:w-[380px] max-w-full h-[150px] sm:h-[180px] flex items-center justify-center">
-                    <svg viewBox="0 0 380 180" className="w-full h-full drop-shadow-md">
-                      <defs>
-                        <linearGradient id="bikeFrameGradDark2" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor={darkMode ? '#334155' : '#64748B'} />
-                          <stop offset="50%" stopColor={darkMode ? '#1E293B' : '#334155'} />
-                          <stop offset="100%" stopColor={darkMode ? '#0F172A' : '#1E293B'} />
-                        </linearGradient>
-                      </defs>
-                      <ellipse cx="190" cy="160" rx="150" ry="10" fill="#000000" opacity={darkMode ? 0.6 : 0.25} />
-                      <g transform="translate(85, 120)">
-                        <circle cx="0" cy="0" r="42" fill="none" stroke={darkMode ? '#1E293B' : '#334155'} strokeWidth="6" />
-                        <circle cx="0" cy="0" r="38" fill="none" stroke={darkMode ? '#0F172A' : '#1E293B'} strokeWidth="2" />
-                        <circle cx="0" cy="0" r="10" fill="#F59E0B" opacity="0.8" />
-                        <circle cx="0" cy="0" r="4" fill="#FFFFFF" />
-                      </g>
-                      <g transform="translate(295, 120)">
-                        <circle cx="0" cy="0" r="42" fill="none" stroke={darkMode ? '#1E293B' : '#334155'} strokeWidth="6" />
-                        <circle cx="0" cy="0" r="38" fill="none" stroke={darkMode ? '#0F172A' : '#1E293B'} strokeWidth="2" />
-                        <circle cx="0" cy="0" r="8" fill="#334155" />
-                        <circle cx="0" cy="0" r="4" fill="#FFFFFF" />
-                      </g>
-                      <line x1="85" y1="120" x2="165" y2="120" stroke="url(#bikeFrameGradDark2)" strokeWidth="8" strokeLinecap="round" />
-                      <line x1="85" y1="120" x2="145" y2="65" stroke="url(#bikeFrameGradDark2)" strokeWidth="6" strokeLinecap="round" />
-                      <line x1="165" y1="120" x2="140" y2="50" stroke="url(#bikeFrameGradDark2)" strokeWidth="8" strokeLinecap="round" />
-                      <line x1="165" y1="120" x2="260" y2="60" stroke="#0F172A" strokeWidth="16" strokeLinecap="round" />
-                      <line x1="170" y1="116" x2="255" y2="64" stroke="#F59E0B" strokeWidth="3" strokeLinecap="round" opacity="0.9" />
-                      <line x1="145" y1="65" x2="260" y2="60" stroke="url(#bikeFrameGradDark2)" strokeWidth="7" strokeLinecap="round" />
-                      <line x1="260" y1="60" x2="295" y2="120" stroke="url(#bikeFrameGradDark2)" strokeWidth="7" strokeLinecap="round" />
-                      <line x1="260" y1="60" x2="255" y2="40" stroke="#475569" strokeWidth="6" strokeLinecap="round" />
-                      <path d="M 245 38 Q 260 35 275 42" stroke="#F59E0B" strokeWidth="5" fill="none" strokeLinecap="round" />
-                      <path d="M 125 46 C 135 44, 155 44, 160 48" stroke="#334155" strokeWidth="6" fill="none" strokeLinecap="round" />
-                      <circle cx="270" cy="50" r="4" fill="#38BDF8" className="animate-pulse" />
+                  /* Fallback E-Bike Minimalist Vector */
+                  <div className="w-[300px] sm:w-[380px] max-w-full h-[140px] sm:h-[175px] flex items-center justify-center">
+                    <svg viewBox="0 0 400 200" className="w-full h-full drop-shadow-md" fill="none">
+                      <circle cx="80" cy="140" r="45" stroke="#38BDF8" strokeWidth="4" />
+                      <circle cx="320" cy="140" r="45" stroke="#38BDF8" strokeWidth="4" />
+                      <path d="M 80 140 L 160 140 L 220 70 L 130 70 Z" stroke={darkMode ? '#94A3B8' : '#475569'} strokeWidth="5" strokeLinejoin="round" />
+                      <path d="M 160 140 L 230 140 L 320 140" stroke={darkMode ? '#94A3B8' : '#475569'} strokeWidth="5" />
+                      <path d="M 220 70 L 320 140" stroke={darkMode ? '#94A3B8' : '#475569'} strokeWidth="5" />
+                      <path d="M 130 70 L 120 45 L 145 45" stroke="#38BDF8" strokeWidth="4" strokeLinecap="round" />
+                      <path d="M 230 70 L 235 50 L 215 50" stroke="#F59E0B" strokeWidth="4" strokeLinecap="round" />
+                      <rect x="145" y="95" width="55" height="22" rx="4" fill="#06B6D4" opacity="0.8" />
                     </svg>
                   </div>
                 )}
               </motion.div>
             </div>
 
-            {/* Bento Cockpit: Left 40% Battery Card + Right 60% Stack of 3 Tiles */}
+            {/* HERO BENTO COCKPIT: Left 40% Battery + Right 60% Vertically Stacked 3 Tiles */}
             <div className="relative z-20 grid grid-cols-12 gap-2.5 sm:gap-3 mb-4 items-stretch">
-              {/* Left Column (40% width / col-span-5) */}
+              {/* Left Column (40% width / col-span-5): Battery Gauge */}
               <div
-                className={`col-span-5 p-3 sm:p-4 rounded-2xl transition-all flex flex-col justify-between shadow-sm ${
+                className={`col-span-5 p-3 sm:p-4 rounded-2xl transition-all flex flex-col justify-between group backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
                   darkMode
-                    ? 'bg-slate-900/80 text-white shadow-black/20'
-                    : 'bg-slate-100/90 text-slate-900 shadow-slate-200/60'
+                    ? 'bg-black/20 text-white'
+                    : 'bg-white/20 text-slate-900'
                 }`}
               >
                 <div className="flex justify-center my-auto py-1">
                   <LiquidWaveBattery
                     soc={metrics.batteryPercent}
-                    isCharging={false}
+                    isCharging={metrics.isCharging}
+                    powerKw={0}
                     darkMode={darkMode}
                   />
                 </div>
 
-                <div className="mt-2 space-y-1 text-center sm:text-left">
+                {/* Range remaining */}
+                <div className="mt-2 space-y-0.5 text-center sm:text-left">
                   <div className="flex items-baseline justify-center sm:justify-start gap-1">
-                    <span
-                      className={`text-xl sm:text-3xl font-black tracking-tight font-mono ${
-                        darkMode ? 'text-white' : 'text-slate-900'
-                      }`}
-                    >
-                      <NumberTicker value={Math.round(metrics.remainingRangeKm)} />
+                    <span className={`text-xl sm:text-2xl font-black tracking-tight font-mono ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                      {formatDecimal(metrics.estimatedRangeKm)}
                     </span>
-                    <span
-                      className={`text-[10px] sm:text-xs font-bold font-mono ${
-                        darkMode ? 'text-emerald-400' : 'text-emerald-600'
-                      }`}
-                    >
-                      km
-                    </span>
+                    <span className="text-[10px] sm:text-xs font-bold text-cyan-500">km range</span>
                   </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[10px] sm:text-[11px] font-mono font-semibold pt-1 border-t border-slate-200/50 dark:border-white/10 gap-0.5">
-                    <span
-                      className={
-                        darkMode
-                          ? 'text-emerald-400 font-bold'
-                          : 'text-emerald-700 font-bold'
-                      }
-                    >
-                      Health: {formatDecimal(metrics.batteryHealthPercent)}%
-                    </span>
-                    <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}>
-                      PCB: {formatDecimal(metrics.internalPcbBattery)}%
-                    </span>
-                  </div>
+                  <span className={`text-[10px] font-mono block ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {metrics.isCharging ? 'Charging Active' : 'Battery Optimal'}
+                  </span>
                 </div>
               </div>
 
@@ -352,10 +308,10 @@ export function BikeTab({
               <div className="col-span-7 flex flex-col justify-between gap-2 sm:gap-2.5">
                 {/* Tile 1: Total Distance / Odometer */}
                 <div
-                  className={`flex-1 p-2.5 sm:p-3 rounded-2xl transition-all flex items-center gap-2 sm:gap-3 shadow-sm ${
+                  className={`flex-1 p-2.5 sm:p-3 rounded-2xl transition-all flex items-center gap-2 sm:gap-3 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
                     darkMode
-                      ? 'bg-slate-900/80 text-white shadow-black/20'
-                      : 'bg-slate-100/90 text-slate-900 shadow-slate-200/60'
+                      ? 'bg-black/20 text-white'
+                      : 'bg-white/20 text-slate-900'
                   }`}
                 >
                   <div
@@ -386,10 +342,10 @@ export function BikeTab({
 
                 {/* Tile 2: Today's Ride Activity */}
                 <div
-                  className={`flex-1 p-2.5 sm:p-3 rounded-2xl transition-all flex items-center gap-2 sm:gap-3 shadow-sm ${
+                  className={`flex-1 p-2.5 sm:p-3 rounded-2xl transition-all flex items-center gap-2 sm:gap-3 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
                     darkMode
-                      ? 'bg-slate-900/80 text-white shadow-black/20'
-                      : 'bg-slate-100/90 text-slate-900 shadow-slate-200/60'
+                      ? 'bg-black/20 text-white'
+                      : 'bg-white/20 text-slate-900'
                   }`}
                 >
                   <div
@@ -420,7 +376,7 @@ export function BikeTab({
 
                 {/* Tile 3: Security & Motor State */}
                 <div
-                  className={`flex-1 p-2.5 sm:p-3 rounded-2xl transition-all flex items-center gap-2 sm:gap-3 shadow-sm ${
+                  className={`flex-1 p-2.5 sm:p-3 rounded-2xl transition-all flex items-center gap-2 sm:gap-3 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
                     metrics.isLocked
                       ? darkMode
                         ? 'bg-rose-500/15 text-rose-300'
@@ -578,7 +534,7 @@ export function BikeTab({
         {/* ========================================================================= */}
         <div className="lg:col-span-4 h-full flex flex-col">
           <div
-            className={`w-full h-full rounded-3xl p-3.5 sm:p-7 backdrop-blur-sm transition-all relative overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-col justify-between gap-5 ${
+            className={`w-full h-full rounded-3xl p-3.5 sm:p-7 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all relative overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-col justify-between gap-5 ${
               darkMode
                 ? 'bg-black/20 text-white'
                 : 'bg-white/20 text-slate-900'
@@ -640,21 +596,23 @@ export function BikeTab({
               {/* Live Output Rate Pill */}
               <div
                 className={`mt-1 flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold font-mono shadow-xs ${
-                  darkMode ? 'bg-white/5 text-white' : 'bg-slate-100 text-slate-900'
+                  darkMode ? 'bg-white/10 text-white' : 'bg-black/5 text-slate-900'
                 }`}
               >
                 <span className={darkMode ? 'text-emerald-400 font-bold' : 'text-emerald-700 font-bold'}>
                   {formatDecimal(metrics.remainingRangeKm)} km Remaining Range
                 </span>
                 <span className="text-slate-400">•</span>
-                <span>{formatDecimal(metrics.totalTimeDrivenHours)}h Total Ride</span>
+                <span className={darkMode ? 'text-cyan-400 font-bold' : 'text-cyan-700 font-bold'}>
+                  {formatDecimal(metrics.batteryHealthPercent)}% Health
+                </span>
               </div>
             </div>
 
             {/* Daily Distance Goal Progress */}
             <div
-              className={`p-4 rounded-2xl space-y-3 shadow-xs ${
-                darkMode ? 'bg-white/5 text-white' : 'bg-slate-100/90 text-slate-900'
+              className={`p-4 rounded-2xl space-y-3 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+                darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
               }`}
             >
               <div className="flex items-center justify-between text-xs font-bold">
@@ -684,8 +642,8 @@ export function BikeTab({
             <div className="grid grid-cols-2 gap-2.5">
               {/* CO2 Saved */}
               <div
-                className={`p-3 rounded-2xl flex items-center gap-2.5 shadow-xs ${
-                  darkMode ? 'bg-white/5 text-white' : 'bg-slate-100/90 text-slate-900'
+                className={`p-3 rounded-2xl flex items-center gap-2.5 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+                  darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
                 }`}
               >
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
@@ -703,8 +661,8 @@ export function BikeTab({
 
               {/* Calories Burned */}
               <div
-                className={`p-3 rounded-2xl flex items-center gap-2.5 shadow-xs ${
-                  darkMode ? 'bg-white/5 text-white' : 'bg-slate-100/90 text-slate-900'
+                className={`p-3 rounded-2xl flex items-center gap-2.5 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+                  darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
                 }`}
               >
                 <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
@@ -728,7 +686,7 @@ export function BikeTab({
         {/* ========================================================================= */}
         <div className="lg:col-span-4 h-full flex flex-col">
           <div
-            className={`w-full h-full rounded-3xl p-3.5 sm:p-7 backdrop-blur-sm transition-all relative overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-col justify-between gap-5 ${
+            className={`w-full h-full rounded-3xl p-3.5 sm:p-7 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all relative overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-col justify-between gap-5 ${
               darkMode
                 ? 'bg-black/20 text-white'
                 : 'bg-white/20 text-slate-900'
@@ -840,8 +798,8 @@ export function BikeTab({
 
             {/* Hardware Diagnostics */}
             <div
-              className={`p-4 rounded-2xl space-y-3 shadow-xs ${
-                darkMode ? 'bg-white/5 text-white' : 'bg-slate-100/90 text-slate-900'
+              className={`p-4 rounded-2xl space-y-3 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+                darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
               }`}
             >
               <div className="flex items-center justify-between text-xs font-bold">
@@ -857,19 +815,19 @@ export function BikeTab({
 
               {/* 4 Status Chips */}
               <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
-                <div className={`p-2.5 rounded-xl flex items-center justify-between ${darkMode ? 'bg-slate-950/50' : 'bg-white'}`}>
+                <div className={`p-2.5 rounded-xl flex items-center justify-between ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
                   <span className="text-slate-500 font-bold uppercase text-[9px]">Auto-Lock</span>
                   <span className="font-bold">{metrics.autoLockStatus.split(' ')[0]}</span>
                 </div>
-                <div className={`p-2.5 rounded-xl flex items-center justify-between ${darkMode ? 'bg-slate-950/50' : 'bg-white'}`}>
+                <div className={`p-2.5 rounded-xl flex items-center justify-between ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
                   <span className="text-slate-500 font-bold uppercase text-[9px]">Speed Limit</span>
                   <span className="font-bold">{formatDecimal(metrics.speedLimitKmh)} km/h</span>
                 </div>
-                <div className={`p-2.5 rounded-xl flex items-center justify-between ${darkMode ? 'bg-slate-950/50' : 'bg-white'}`}>
+                <div className={`p-2.5 rounded-xl flex items-center justify-between ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
                   <span className="text-slate-500 font-bold uppercase text-[9px]">Internal PCB</span>
                   <span className="font-bold">{formatDecimal(metrics.internalPcbBattery)}%</span>
                 </div>
-                <div className={`p-2.5 rounded-xl flex items-center justify-between ${darkMode ? 'bg-slate-950/50' : 'bg-white'}`}>
+                <div className={`p-2.5 rounded-xl flex items-center justify-between ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
                   <span className="text-slate-500 font-bold uppercase text-[9px]">Crash Sensor</span>
                   <span className="font-bold text-emerald-500">Armed</span>
                 </div>

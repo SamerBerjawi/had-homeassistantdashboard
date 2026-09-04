@@ -55,10 +55,8 @@ export function VehicleTelemetryMap({
 
   return (
     <div
-      className={`w-full h-full rounded-3xl p-3.5 sm:p-7 backdrop-blur-2xl transition-all relative overflow-hidden flex flex-col justify-between gap-5 ${
-        darkMode
-          ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
-          : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80'
+      className={`w-full h-full rounded-3xl p-3.5 sm:p-7 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all relative overflow-hidden flex flex-col justify-between gap-5 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+        darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
       }`}
     >
       {/* Header */}
@@ -169,8 +167,8 @@ export function VehicleTelemetryMap({
 
       {/* 24-Hour Speed History Line Chart */}
       <div
-        className={`p-4 rounded-2xl space-y-2 shadow-xs ${
-          darkMode ? 'bg-white/5 text-white' : 'bg-slate-100/90 text-slate-900'
+        className={`p-4 rounded-2xl space-y-2 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+          darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
         }`}
       >
         <div className="flex items-center justify-between text-xs font-bold">
@@ -217,8 +215,8 @@ export function VehicleTelemetryMap({
 
       {/* 4-Corner Chassis Tire Pressure (TPMS) Visualization */}
       <div
-        className={`p-4 rounded-2xl space-y-3 shadow-xs ${
-          darkMode ? 'bg-white/5 text-white' : 'bg-slate-100/90 text-slate-900'
+        className={`p-4 rounded-2xl space-y-3 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+          darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
         }`}
       >
         <div className="flex items-center justify-between text-xs font-bold">
@@ -235,7 +233,7 @@ export function VehicleTelemetryMap({
         {/* 4-Wheel Visual Layout */}
         <div className="grid grid-cols-2 gap-2">
           {/* Front Left */}
-          <div className={`p-2.5 rounded-xl flex items-center justify-between shadow-xs ${darkMode ? 'bg-slate-950/50' : 'bg-white'}`}>
+          <div className={`p-2.5 rounded-xl flex items-center justify-between shadow-xs ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
             <div className="text-[10px] text-slate-500 font-bold uppercase">Front Left</div>
             <div className={`font-mono text-xs font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               {formatDecimal(tpms.frontLeft)} <span className="text-[10px] text-slate-400 font-normal">{tpms.unit}</span>
@@ -243,7 +241,7 @@ export function VehicleTelemetryMap({
           </div>
 
           {/* Front Right */}
-          <div className={`p-2.5 rounded-xl flex items-center justify-between shadow-xs ${darkMode ? 'bg-slate-950/50' : 'bg-white'}`}>
+          <div className={`p-2.5 rounded-xl flex items-center justify-between shadow-xs ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
             <div className="text-[10px] text-slate-500 font-bold uppercase">Front Right</div>
             <div className={`font-mono text-xs font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               {formatDecimal(tpms.frontRight)} <span className="text-[10px] text-slate-400 font-normal">{tpms.unit}</span>
@@ -251,7 +249,7 @@ export function VehicleTelemetryMap({
           </div>
 
           {/* Rear Left */}
-          <div className={`p-2.5 rounded-xl flex items-center justify-between shadow-xs ${darkMode ? 'bg-slate-950/50' : 'bg-white'}`}>
+          <div className={`p-2.5 rounded-xl flex items-center justify-between shadow-xs ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
             <div className="text-[10px] text-slate-500 font-bold uppercase">Rear Left</div>
             <div className={`font-mono text-xs font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               {formatDecimal(tpms.rearLeft)} <span className="text-[10px] text-slate-400 font-normal">{tpms.unit}</span>
@@ -259,7 +257,7 @@ export function VehicleTelemetryMap({
           </div>
 
           {/* Rear Right */}
-          <div className={`p-2.5 rounded-xl flex items-center justify-between shadow-xs ${darkMode ? 'bg-slate-950/50' : 'bg-white'}`}>
+          <div className={`p-2.5 rounded-xl flex items-center justify-between shadow-xs ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
             <div className="text-[10px] text-slate-500 font-bold uppercase">Rear Right</div>
             <div className={`font-mono text-xs font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               {formatDecimal(tpms.rearRight)} <span className="text-[10px] text-slate-400 font-normal">{tpms.unit}</span>

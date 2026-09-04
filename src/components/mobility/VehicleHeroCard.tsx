@@ -152,10 +152,8 @@ export function VehicleHeroCard({
 
   return (
     <div
-      className={`w-full h-full rounded-3xl p-3.5 sm:p-7 overflow-hidden isolate backdrop-blur-2xl transition-all flex flex-col justify-between relative ${
-        darkMode
-          ? 'bg-slate-900/70 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)]'
-          : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80'
+      className={`w-full h-full rounded-3xl p-3.5 sm:p-7 overflow-hidden isolate backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all flex flex-col justify-between relative shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+        darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
       }`}
     >
       {/* Background Ambient Lighting Gradient */}
@@ -292,10 +290,10 @@ export function VehicleHeroCard({
         {/* Left Column (40% width / col-span-5): Battery, Range, Charging, 12V */}
         <div
           onClick={() => onSelectTab?.('charging')}
-          className={`col-span-5 p-3 sm:p-4 rounded-2xl transition-all cursor-pointer flex flex-col justify-between group shadow-sm ${
+          className={`col-span-5 p-3 sm:p-4 rounded-2xl transition-all cursor-pointer flex flex-col justify-between group backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
             darkMode
-              ? 'bg-slate-900/80 hover:bg-slate-800/90 text-white shadow-black/20'
-              : 'bg-slate-100/90 hover:bg-slate-200/90 text-slate-900 shadow-slate-200/60'
+              ? 'bg-black/20 hover:bg-black/30 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
         >
           {/* Top: Liquid Wave in Rounded Rectangle */}
@@ -308,45 +306,40 @@ export function VehicleHeroCard({
             />
           </div>
 
-          {/* Bottom: Range + Charging Speed + 12V */}
-          <div className="mt-2 space-y-1 text-center sm:text-left">
-            <div className="flex items-baseline justify-center sm:justify-start gap-1">
-              <span
-                className={`text-xl sm:text-3xl font-black tracking-tight font-mono ${
-                  darkMode ? 'text-white' : 'text-slate-900'
-                }`}
-              >
-                <NumberTicker value={Math.round(metrics.range)} />
+          {/* Bottom Telemetry Metrics */}
+          <div className="space-y-1 sm:space-y-1.5 pt-1 border-t border-white/5">
+            {/* Range */}
+            <div className="flex items-baseline justify-between">
+              <span className={`text-[10px] font-semibold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Range
               </span>
-              <span
-                className={`text-[10px] sm:text-xs font-bold font-mono ${
-                  darkMode ? 'text-emerald-400' : 'text-emerald-600'
-                }`}
-              >
-                {metrics.rangeUnit}
+              <span className={`font-mono text-sm sm:text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                {formatDecimal(metrics.range)} {metrics.rangeUnit}
               </span>
             </div>
 
-            {/* Charging throughput & 12V state */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[10px] sm:text-[11px] font-mono font-semibold pt-1 border-t border-slate-200/50 dark:border-white/10 gap-0.5">
-              <span
-                className={
-                  metrics.chargingPowerKW > 0
-                    ? darkMode
-                      ? 'text-emerald-400 font-bold'
-                      : 'text-emerald-700 font-bold'
-                    : darkMode
-                    ? 'text-slate-400'
-                    : 'text-slate-500'
-                }
-              >
-                {metrics.chargingPowerKW > 0
-                  ? `${formatDecimal(metrics.chargingPowerKW)} kW`
-                  : 'Standby'}
+            {/* 12V Battery Health */}
+            <div className="flex items-center justify-between text-[11px]">
+              <span className={`text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <BatteryMedium size={12} weight="bold" className="text-emerald-500" />
+                12V Aux
               </span>
+              <span className={`font-mono text-[10px] font-bold ${
+                metrics.battery12V > 12 ? 'text-emerald-500' : 'text-amber-500'
+              }`}>
+                {formatDecimal(metrics.battery12V)}V
+              </span>
+            </div>
 
-              <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}>
-                12V: {formatDecimal(metrics.battery12V)}
+            {/* Charging State Pill */}
+            <div className="flex items-center justify-between text-[11px]">
+              <span className={`text-[10px] font-semibold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Status
+              </span>
+              <span className={`font-mono text-[10px] font-bold truncate max-w-[85px] ${
+                isCharging ? 'text-emerald-400 font-black' : isPluggedIn ? 'text-sky-400' : darkMode ? 'text-slate-400' : 'text-slate-600'
+              }`}>
+                {isCharging ? 'Active' : isPluggedIn ? 'Plugged' : 'Standby'}
               </span>
             </div>
           </div>
@@ -357,10 +350,10 @@ export function VehicleHeroCard({
           {/* Tile 1: Odometer */}
           <div
             onClick={() => onSelectTab?.('telemetry')}
-            className={`flex-1 p-2.5 sm:p-3 rounded-2xl transition-all cursor-pointer flex items-center gap-2 sm:gap-3 group shadow-sm ${
+            className={`flex-1 p-2.5 sm:p-3 rounded-2xl transition-all cursor-pointer flex items-center gap-2 sm:gap-3 group backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
               darkMode
-                ? 'bg-slate-900/80 hover:bg-slate-800/90 text-white shadow-black/20'
-                : 'bg-slate-100/90 hover:bg-slate-200/90 text-slate-900 shadow-slate-200/60'
+                ? 'bg-black/20 hover:bg-black/30 text-white'
+                : 'bg-white/20 hover:bg-white/30 text-slate-900'
             }`}
           >
             <div
@@ -392,10 +385,10 @@ export function VehicleHeroCard({
           {/* Tile 2: Cabin Temperature */}
           <div
             onClick={() => onSelectTab?.('telemetry')}
-            className={`flex-1 p-2.5 sm:p-3 rounded-2xl transition-all cursor-pointer flex items-center gap-2 sm:gap-3 group shadow-sm ${
+            className={`flex-1 p-2.5 sm:p-3 rounded-2xl transition-all cursor-pointer flex items-center gap-2 sm:gap-3 group backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
               darkMode
-                ? 'bg-slate-900/80 hover:bg-slate-800/90 text-white shadow-black/20'
-                : 'bg-slate-100/90 hover:bg-slate-200/90 text-slate-900 shadow-slate-200/60'
+                ? 'bg-black/20 hover:bg-black/30 text-white'
+                : 'bg-white/20 hover:bg-white/30 text-slate-900'
             }`}
           >
             <div
@@ -427,14 +420,14 @@ export function VehicleHeroCard({
           {/* Tile 3: Software OTA Update */}
           <div
             onClick={() => onSelectTab?.('telemetry')}
-            className={`flex-1 p-2.5 sm:p-3 rounded-2xl transition-all cursor-pointer flex items-center gap-2 sm:gap-3 group shadow-sm ${
+            className={`flex-1 p-2.5 sm:p-3 rounded-2xl transition-all cursor-pointer flex items-center gap-2 sm:gap-3 group backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
               isOtaAvailable
                 ? darkMode
                   ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300'
                   : 'bg-amber-100 hover:bg-amber-200 text-amber-900'
                 : darkMode
-                ? 'bg-slate-900/80 hover:bg-slate-800/90 text-white shadow-black/20'
-                : 'bg-slate-100/90 hover:bg-slate-200/90 text-slate-900 shadow-slate-200/60'
+                ? 'bg-black/20 hover:bg-black/30 text-white'
+                : 'bg-white/20 hover:bg-white/30 text-slate-900'
             }`}
           >
             <div
@@ -530,8 +523,8 @@ export function VehicleHeroCard({
                   ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.25)]'
                   : 'bg-rose-100 hover:bg-rose-200 text-rose-900'
                 : darkMode
-                ? 'bg-white/5 hover:bg-white/10 text-slate-200'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                ? 'bg-black/20 hover:bg-black/30 text-slate-200'
+                : 'bg-white/20 hover:bg-white/30 text-slate-800'
             }`}
           >
             <div
@@ -604,8 +597,8 @@ export function VehicleHeroCard({
             title="Flash hazard lights & chirp horn"
             className={`w-full h-full min-h-[76px] sm:min-h-[82px] py-2.5 px-1 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm ${
               darkMode
-                ? 'bg-white/5 hover:bg-white/10 text-slate-200'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                ? 'bg-black/20 hover:bg-black/30 text-slate-200'
+                : 'bg-white/20 hover:bg-white/30 text-slate-800'
             }`}
           >
             <div

@@ -110,10 +110,8 @@ export function ChargingControlCard({
 
   return (
     <div
-      className={`w-full h-full rounded-3xl p-3.5 sm:p-7 backdrop-blur-2xl transition-all relative overflow-hidden flex flex-col justify-between gap-5 ${
-        darkMode
-          ? 'bg-slate-900/70 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]'
-          : 'bg-white/95 text-slate-900 shadow-xl shadow-slate-200/80'
+      className={`w-full h-full rounded-3xl p-3.5 sm:p-7 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all relative overflow-hidden flex flex-col justify-between gap-5 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+        darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
       }`}
     >
       {/* Ambient background aura when actively charging */}
@@ -235,8 +233,8 @@ export function ChargingControlCard({
 
         {/* Live Power Rate Pill */}
         <div
-          className={`mt-1 flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold font-mono shadow-xs ${
-            darkMode ? 'bg-white/5 text-white' : 'bg-slate-100 text-slate-900'
+          className={`mt-1 flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold font-mono backdrop-blur-sm shadow-xs ${
+            darkMode ? 'bg-white/10 text-white' : 'bg-black/5 text-slate-900'
           }`}
         >
           <Lightning
@@ -264,8 +262,8 @@ export function ChargingControlCard({
 
       {/* Interactive Target SoC Slider (No harsh borders) */}
       <div
-        className={`p-4 rounded-2xl space-y-3 relative z-10 shadow-xs ${
-          darkMode ? 'bg-white/5 text-white' : 'bg-slate-100/90 text-slate-900'
+        className={`p-4 rounded-2xl space-y-3 relative z-10 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
+          darkMode ? 'bg-black/20 text-white' : 'bg-white/20 text-slate-900'
         }`}
       >
         <div className="flex items-center justify-between text-xs font-bold">
@@ -309,8 +307,8 @@ export function ChargingControlCard({
                     ? 'bg-cyan-500/20 text-cyan-300'
                     : 'bg-cyan-600 text-white'
                   : darkMode
-                  ? 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white'
-                  : 'bg-white hover:bg-slate-200 text-slate-700'
+                  ? 'bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white'
+                  : 'bg-black/5 hover:bg-black/10 text-slate-700'
               }`}
             >
               {preset.label}
@@ -336,8 +334,8 @@ export function ChargingControlCard({
                 ? 'bg-emerald-500/15 text-emerald-400 cursor-default opacity-80'
                 : 'bg-emerald-100 text-emerald-800 cursor-default'
               : darkMode
-              ? 'bg-white/5 text-slate-500 cursor-not-allowed'
-              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              ? 'bg-black/20 text-slate-500 cursor-not-allowed'
+              : 'bg-white/20 text-slate-400 cursor-not-allowed'
           }`}
         >
           <Lightning size={16} weight={isInProgress ? 'fill' : 'bold'} />
@@ -367,8 +365,8 @@ export function ChargingControlCard({
                 ? 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 cursor-pointer'
                 : 'bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer'
               : darkMode
-              ? 'bg-white/5 text-slate-500 cursor-not-allowed'
-              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              ? 'bg-black/20 text-slate-500 cursor-not-allowed'
+              : 'bg-white/20 text-slate-400 cursor-not-allowed'
           }`}
         >
           {isInProgress ? (
