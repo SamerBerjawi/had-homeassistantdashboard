@@ -10,6 +10,7 @@
   "background_color": "#020617",
   "theme_color": "#020617",
   "categories": ["smart home", "utilities", "lifestyle"],
+  "id": "homz-smart-home-pwa",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",

@@ -27,6 +27,9 @@ export default defineConfig(() => {
         workbox: {
           maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MiB to cache full app shell and icon bundle
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
+          skipWaiting: true,
+          clientsClaim: true,
+          cleanupOutdatedCaches: true,
           // Explicitly exclude API, WebSocket, auth, camera streams, and WebRTC from Workbox navigation & runtime caching
           navigateFallbackDenylist: [
             /^\/api/,
@@ -76,13 +79,19 @@ export default defineConfig(() => {
               handler: 'NetworkOnly',
             },
             {
-              // 4. External web fonts
-              urlPattern: ({ url }) =>
-                url.origin === 'https://fonts.googleapis.com' ||
-                url.origin === 'https://fonts.gstatic.com',
+              // 4. External web font stylesheets
+              urlPattern: /^https:\/\/fonts\.googleapis\.com\//,
               handler: 'StaleWhileRevalidate',
               options: {
-                cacheName: 'google-fonts',
+                cacheName: 'google-fonts-stylesheets',
+              },
+            },
+            {
+              // 5. External web font binaries
+              urlPattern: /^https:\/\/fonts\.gstatic\.com\//,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'google-fonts-webfonts',
                 expiration: {
                   maxEntries: 20,
                   maxAgeSeconds: 60 * 60 * 24 * 365,
@@ -90,7 +99,7 @@ export default defineConfig(() => {
               },
             },
             {
-              // 5. Static app images
+              // 6. Static app images
               urlPattern: ({ request, url }) =>
                 request.destination === 'image' &&
                 !url.pathname.includes('/camera_proxy') &&

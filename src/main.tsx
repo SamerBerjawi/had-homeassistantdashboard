@@ -10,6 +10,14 @@ import { EditModeProvider } from './contexts/EditModeContext';
 
 // Register service worker for installable PWA and offline caching support
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
+
   registerSW({ immediate: true });
 }
 
