@@ -203,10 +203,6 @@ export default function AreaTile({
               <h3 className={`text-base font-bold truncate leading-snug ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                 {area.name}
               </h3>
-              {/* Floor name subtitle */}
-              <p className="text-[11px] text-slate-400 dark:text-slate-400 truncate leading-none mt-0.5">
-                {area.floorName || (area.floorId ? `Floor ${area.floorId}` : '')}
-              </p>
             </div>
           </div>
 
@@ -222,8 +218,8 @@ export default function AreaTile({
         </div>
 
         {/* Environmental & Contextual Sensor Badges (Pills) */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {/* Always Visible: Temperature & Humidity Pill */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Temperature & Humidity (Unboxed) */}
           {(sensors.temperature !== undefined || sensors.humidity !== undefined) && (
             <button
               type="button"
@@ -232,11 +228,7 @@ export default function AreaTile({
                 if (primaryTempId) openEntityDetails(primaryTempId);
               }}
               title="Click to view temperature & humidity history"
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold backdrop-blur-md cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-xs ${
-                darkMode
-                  ? 'bg-white/[0.04] text-slate-200 hover:bg-white/[0.08]'
-                  : 'bg-slate-900/[0.03] text-slate-800 hover:bg-slate-900/[0.06]'
-              }`}
+              className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer hover:opacity-80 transition-opacity"
             >
               {sensors.temperature !== undefined && (
                 <span className="flex items-center gap-0.5">
