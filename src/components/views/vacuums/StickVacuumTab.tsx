@@ -160,7 +160,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
                   <img
                     src={stickImage}
                     alt="Stick Vacuum"
-                    className="w-full h-full object-contain p-1 transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-xs">
                     <button
