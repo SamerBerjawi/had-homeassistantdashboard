@@ -125,6 +125,8 @@ export default function AreaTile({
       {...tileLongPressHandlers}
       style={{
         clipPath: 'inset(0 round 1.5rem)',
+        touchAction: 'pan-y',
+        ...tileLongPressHandlers.style
       }}
       className={`group relative flex flex-col justify-between rounded-3xl p-4 sm:p-5 backdrop-blur-sm transition-all duration-300 cursor-pointer overflow-hidden isolate ${
         isHazardActive

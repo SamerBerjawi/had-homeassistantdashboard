@@ -47,7 +47,7 @@ export function MobilityTabBar({
   ];
 
   return (
-    <div className="fixed bottom-4 inset-x-3 sm:inset-x-6 z-40 lg:hidden pointer-events-none flex justify-center pb-[env(safe-area-inset-bottom,0px)]">
+    <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden pointer-events-none flex justify-center pb-[max(1rem,env(safe-area-inset-bottom,0px))] px-3">
       <nav
         aria-label="Vehicle Dashboard Navigation"
         className={`pointer-events-auto flex items-center justify-between gap-1 p-1.5 rounded-full shadow-2xl backdrop-blur-2xl max-w-sm w-full transition-all ${

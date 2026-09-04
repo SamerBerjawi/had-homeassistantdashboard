@@ -2,17 +2,25 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * Custom hook for long-press & touchmove collision protection.
- * Cancels long-press when user scrolls (> 10px move) and prevents
- * interactive child elements (buttons, inputs) from triggering parent click.
+ * Custom hook for unified pointer-based press, tap, and long-press handling.
+ *
+ * Features:
+ * - Clear tap-vs-scroll distinction: tracks touch movement and cancels pending
+ *   taps/actions if the finger moves beyond a threshold (~10px) during a scroll gesture.
+ * - Suppresses trailing synthetic click events following a scroll or long-press.
+ * - Standardized on Pointer Events (onPointerDown, onPointerMove, onPointerUp, onPointerCancel)
+ *   to avoid duplicate event firing across hybrid touch/mouse devices.
+ * - Allows child interactive controls (buttons, inputs, sliders, links) to function natively
+ *   without triggering parent tile handlers.
+ * - Zero artificial tap latency: quick taps fire immediately on pointerup.
  */
 
 import { useCallback, useRef } from 'react';
 
 export interface UseLongPressOptions {
   threshold?: number;
-  onLongPress: (e: React.TouchEvent | React.MouseEvent) => void;
-  onClick?: (e: React.MouseEvent | React.TouchEvent) => void;
+  onLongPress?: (e: React.PointerEvent | React.MouseEvent | React.TouchEvent) => void;
+  onClick?: (e: React.PointerEvent | React.MouseEvent | React.TouchEvent) => void;
   cancelOnMove?: boolean;
   moveThreshold?: number;
 }
@@ -25,7 +33,7 @@ const isInteractiveElement = (target: EventTarget | null): boolean => {
 };
 
 export function useLongPress({
-  threshold = 500,
+  threshold = 450,
   onLongPress,
   onClick,
   cancelOnMove = true,
@@ -33,8 +41,12 @@ export function useLongPress({
 }: UseLongPressOptions) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressRef = useRef(false);
+  const isScrolledRef = useRef(false);
+  const hasFiredActionRef = useRef(false);
   const startCoordsRef = useRef<{ x: number; y: number } | null>(null);
+  const startTimeRef = useRef<number>(0);
   const targetRef = useRef<EventTarget | null>(null);
+  const scrollResetTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const triggerHaptic = useCallback(() => {
     try {
@@ -46,78 +58,133 @@ export function useLongPress({
     }
   }, []);
 
-  const start = useCallback(
-    (e: React.TouchEvent | React.MouseEvent) => {
-      targetRef.current = e.target;
-      isLongPressRef.current = false;
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      // Only process primary pointer button (left click or touch/stylus primary contact)
+      if (e.button !== 0) return;
 
       if (isInteractiveElement(e.target)) {
         return;
       }
 
-      if ('touches' in e && e.touches.length > 0) {
-        startCoordsRef.current = {
-          x: e.touches[0].clientX,
-          y: e.touches[0].clientY
-        };
-      } else if ('clientX' in e) {
-        startCoordsRef.current = {
-          x: e.clientX,
-          y: e.clientY
-        };
+      if (scrollResetTimerRef.current) {
+        clearTimeout(scrollResetTimerRef.current);
+        scrollResetTimerRef.current = null;
       }
 
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
+      targetRef.current = e.target;
+      isLongPressRef.current = false;
+      isScrolledRef.current = false;
+      hasFiredActionRef.current = false;
+      startCoordsRef.current = { x: e.clientX, y: e.clientY };
+      startTimeRef.current = Date.now();
 
-      timerRef.current = setTimeout(() => {
-        isLongPressRef.current = true;
-        triggerHaptic();
-        onLongPress(e);
-      }, threshold);
+      clearTimer();
+
+      if (onLongPress) {
+        timerRef.current = setTimeout(() => {
+          // If the user already scrolled, do not fire long press
+          if (isScrolledRef.current) return;
+          isLongPressRef.current = true;
+          triggerHaptic();
+          onLongPress(e);
+        }, threshold);
+      }
     },
-    [threshold, onLongPress, triggerHaptic]
+    [threshold, onLongPress, triggerHaptic, clearTimer]
   );
 
-  const move = useCallback(
-    (e: React.TouchEvent | React.MouseEvent) => {
-      if (!cancelOnMove || !startCoordsRef.current || !timerRef.current) return;
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!cancelOnMove || !startCoordsRef.current || isScrolledRef.current) return;
 
-      let currentX = 0;
-      let currentY = 0;
+      const deltaX = Math.abs(e.clientX - startCoordsRef.current.x);
+      const deltaY = Math.abs(e.clientY - startCoordsRef.current.y);
 
-      if ('touches' in e && e.touches.length > 0) {
-        currentX = e.touches[0].clientX;
-        currentY = e.touches[0].clientY;
-      } else if ('clientX' in e) {
-        currentX = e.clientX;
-        currentY = e.clientY;
-      }
-
-      const deltaX = Math.abs(currentX - startCoordsRef.current.x);
-      const deltaY = Math.abs(currentY - startCoordsRef.current.y);
-
+      // If finger/cursor moved beyond the movement threshold, mark as a scroll gesture
       if (deltaX > moveThreshold || deltaY > moveThreshold) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
+        isScrolledRef.current = true;
+        clearTimer();
       }
     },
-    [cancelOnMove, moveThreshold]
+    [cancelOnMove, moveThreshold, clearTimer]
   );
 
-  const clear = useCallback(
-    (e: React.TouchEvent | React.MouseEvent, shouldTriggerClick = true) => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      clearTimer();
 
       const wasInteractive = isInteractiveElement(targetRef.current) || isInteractiveElement(e.target);
+      const wasScrolled = isScrolledRef.current;
+      const wasLongPress = isLongPressRef.current;
+
       startCoordsRef.current = null;
       targetRef.current = null;
 
-      if (shouldTriggerClick && !isLongPressRef.current && !wasInteractive && onClick) {
+      // If gesture was a scroll or long-press, do NOT trigger tap/click
+      if (wasScrolled || wasLongPress) {
+        // Keep isScrolledRef = true for a brief duration (250ms) to swallow any trailing synthetic click event
+        if (wasScrolled) {
+          if (scrollResetTimerRef.current) clearTimeout(scrollResetTimerRef.current);
+          scrollResetTimerRef.current = setTimeout(() => {
+            isScrolledRef.current = false;
+            scrollResetTimerRef.current = null;
+          }, 250);
+        }
+        return;
+      }
+
+      // Valid quick tap!
+      if (!wasInteractive && onClick) {
+        hasFiredActionRef.current = true;
+        onClick(e);
+
+        // Reset hasFiredAction after standard synthetic click dispatch window
+        setTimeout(() => {
+          hasFiredActionRef.current = false;
+        }, 300);
+      }
+    },
+    [onClick, clearTimer]
+  );
+
+  const handlePointerCancel = useCallback(() => {
+    clearTimer();
+    isScrolledRef.current = true;
+    startCoordsRef.current = null;
+    targetRef.current = null;
+
+    if (scrollResetTimerRef.current) clearTimeout(scrollResetTimerRef.current);
+    scrollResetTimerRef.current = setTimeout(() => {
+      isScrolledRef.current = false;
+      scrollResetTimerRef.current = null;
+    }, 250);
+  }, [clearTimer]);
+
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      // Prevent click if this was a scroll gesture or long-press
+      if (isScrolledRef.current || isLongPressRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
+      // If pointerup already triggered onClick, swallow duplicate synthetic click
+      if (hasFiredActionRef.current) {
+        e.preventDefault();
+        return;
+      }
+
+      // Fallback for keyboard navigation (Enter/Space on focused elements)
+      if (!isInteractiveElement(e.target) && onClick) {
         onClick(e);
       }
     },
@@ -131,29 +198,39 @@ export function useLongPress({
       }
       e.preventDefault();
       e.stopPropagation();
-      triggerHaptic();
-      onLongPress(e);
+      if (onLongPress) {
+        triggerHaptic();
+        onLongPress(e);
+      }
     },
     [onLongPress, triggerHaptic]
   );
 
   return {
-    onTouchStart: start,
-    onTouchMove: move,
-    onTouchEnd: (e: React.TouchEvent) => clear(e, true),
-    onTouchCancel: (e: React.TouchEvent) => clear(e, false),
-    onMouseDown: (e: React.MouseEvent) => {
-      if (e.button === 0) {
-        start(e);
-      }
-    },
-    onMouseMove: move,
-    onMouseUp: (e: React.MouseEvent) => {
-      if (e.button === 0) {
-        clear(e, true);
-      }
-    },
-    onMouseLeave: (e: React.MouseEvent) => clear(e, false),
-    onContextMenu: handleContextMenu
+    onPointerDown: handlePointerDown,
+    onPointerMove: handlePointerMove,
+    onPointerUp: handlePointerUp,
+    onPointerCancel: handlePointerCancel,
+    onClick: handleClick,
+    onContextMenu: handleContextMenu,
+    style: { touchAction: 'pan-y' as const }
   };
+}
+
+/**
+ * Convenience hook for simple buttons and cards that need tap-vs-scroll
+ * gesture distinction without long-press behavior.
+ */
+export function usePress({
+  onClick,
+  moveThreshold = 10
+}: {
+  onClick?: (e: React.PointerEvent | React.MouseEvent | React.TouchEvent) => void;
+  moveThreshold?: number;
+}) {
+  return useLongPress({
+    onClick,
+    moveThreshold,
+    threshold: 999999
+  });
 }

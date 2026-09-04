@@ -358,10 +358,10 @@ export default function Sidebar({
       {showMoreMenu && (
         <div 
           id="sidebar-more-menu"
-          className={`md:hidden fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto rounded-3xl p-4 shadow-[4px_6px_16px_rgba(0,0,0,0.25)] z-50 animate-fadeIn backdrop-blur-sm ${
+          className={`md:hidden fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto rounded-3xl p-4 shadow-[4px_6px_16px_rgba(0,0,0,0.25)] z-50 animate-fadeIn backdrop-blur-md ${
             darkMode 
-              ? 'bg-black/40 text-white' 
-              : 'bg-white/40 text-slate-900'
+              ? 'bg-slate-900/90 border border-white/10 text-white' 
+              : 'bg-white/90 border border-slate-200/80 text-slate-900'
           }`}
         >
           {/* Sheet Header */}
@@ -468,26 +468,27 @@ export default function Sidebar({
       {/* MOBILE BOTTOM NAVIGATION */}
       <nav 
         id="sidebar-mobile" 
-        className={`md:hidden fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto h-16 rounded-[26px] z-50 px-3 flex items-center justify-around transition-all shadow-[4px_6px_16px_rgba(0,0,0,0.2)] ${
+        className={`md:hidden fixed bottom-0 left-0 right-0 z-50 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] px-3 sm:px-6 transition-all border-t shadow-[0_-4px_20px_rgba(0,0,0,0.2)] ${
           darkMode 
-            ? 'bg-black/40 backdrop-blur-sm text-white' 
-            : 'bg-white/40 backdrop-blur-sm text-slate-900'
+            ? 'bg-slate-950/80 backdrop-blur-xl border-white/10 text-white' 
+            : 'bg-white/80 backdrop-blur-xl border-slate-200/80 text-slate-900'
         }`}
       >
-        {mobilePrimaryItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          const itemTheme = PAGE_THEMES[item.id] || PAGE_THEMES['overview'];
-          return (
-            <button
-              key={item.id}
-              id={`btn-nav-mobile-${item.id}`}
-              onClick={() => setActiveTab(item.id)}
-              title={item.label}
-              className={`w-11 h-11 rounded-2xl relative transition-all duration-200 cursor-pointer flex items-center justify-center ${
-                isActive 
-                  ? darkMode
-                    ? itemTheme.activeSidebarDark + ' scale-105' 
+        <div className="w-full max-w-lg mx-auto flex items-center justify-around">
+          {mobilePrimaryItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            const itemTheme = PAGE_THEMES[item.id] || PAGE_THEMES['overview'];
+            return (
+              <button
+                key={item.id}
+                id={`btn-nav-mobile-${item.id}`}
+                onClick={() => setActiveTab(item.id)}
+                title={item.label}
+                className={`w-11 h-11 rounded-2xl relative transition-all duration-200 cursor-pointer flex items-center justify-center ${
+                  isActive 
+                    ? darkMode
+                      ? itemTheme.activeSidebarDark + ' scale-105' 
                     : itemTheme.activeSidebarLight + ' scale-105'
                   : darkMode
                     ? 'text-slate-400 hover:text-white'
@@ -525,6 +526,7 @@ export default function Sidebar({
             <span className="absolute bottom-1.5 w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
           )}
         </button>
+        </div>
       </nav>
     </>
   );

@@ -193,7 +193,10 @@ export const GridTile: React.FC<GridTileProps> = ({
         opacity: isDragging ? 0.6 : undefined,
         ...style
       }
-    : (style || {});
+    : {
+        touchAction: 'pan-y',
+        ...style
+      };
 
   return (
     <div

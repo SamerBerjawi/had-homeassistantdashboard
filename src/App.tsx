@@ -477,7 +477,7 @@ export default function App() {
   }
 
   return (
-    <div className={`fixed inset-0 flex h-full h-[100dvh] min-h-screen min-h-[100dvh] w-full overflow-hidden font-sans select-none ${darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
+    <div className={`fixed inset-0 flex h-full w-full overflow-hidden font-sans select-none ${darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
       }`}>
       {/* Ambient background decoration with distinct page accent glows */}
       {backgroundStyle === 'glow' && (
