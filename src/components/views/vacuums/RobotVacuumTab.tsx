@@ -142,7 +142,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
       {/* ========================================================================= */}
       {/* COLUMN 1: Controls & Cockpit (Hero, Battery, Action Dock, Speeds)        */}
       {/* ========================================================================= */}
-      <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-4">
+      <div className="lg:col-span-4 xl:col-span-4 flex flex-col gap-4">
         <div className="relative p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] overflow-hidden">
           {/* Ambient Glow with corner containment */}
           <div
@@ -150,15 +150,14 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
             style={{ clipPath: 'inset(0 round 24px)', WebkitClipPath: 'inset(0 round 24px)' }}
           >
             <div
-              className={`absolute -top-16 -left-16 w-56 h-56 rounded-full blur-3xl opacity-25 transition-all duration-700 ${
-                isCleaning
+              className={`absolute -top-16 -left-16 w-56 h-56 rounded-full blur-3xl opacity-25 transition-all duration-700 ${isCleaning
                   ? 'bg-emerald-500'
                   : isReturning
-                  ? 'bg-cyan-500'
-                  : isError
-                  ? 'bg-rose-500'
-                  : 'bg-amber-500'
-              }`}
+                    ? 'bg-cyan-500'
+                    : isError
+                      ? 'bg-rose-500'
+                      : 'bg-amber-500'
+                }`}
             />
           </div>
 
@@ -177,24 +176,22 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
               {/* Live State Badge */}
               <div className="inline-flex items-center">
                 <div
-                  className={`px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 border shadow-xs ${
-                    isCleaning
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 border shadow-xs ${isCleaning
                       ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 animate-pulse'
                       : isReturning
-                      ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500/40'
-                      : isError
-                      ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/40'
-                      : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-                  }`}
+                        ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500/40'
+                        : isError
+                          ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/40'
+                          : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                    }`}
                 >
                   <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isCleaning
+                    className={`w-1.5 h-1.5 rounded-full ${isCleaning
                         ? 'bg-emerald-500 animate-ping'
                         : isError
-                        ? 'bg-rose-500'
-                        : 'bg-amber-500'
-                    }`}
+                          ? 'bg-rose-500'
+                          : 'bg-amber-500'
+                      }`}
                   />
                   <span className="capitalize">{activeVacuum?.statusText || 'Docked'}</span>
                 </div>
@@ -258,11 +255,10 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                   key={vac.entityId}
                   type="button"
                   onClick={() => setSelectedVacuumId(vac.entityId)}
-                  className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    vac.entityId === selectedVacuumId
+                  className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${vac.entityId === selectedVacuumId
                       ? 'bg-sky-500 text-slate-950 shadow-xs'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                    }`}
                 >
                   {vac.name}
                 </button>
@@ -274,11 +270,10 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
           <div className="relative z-10 p-4 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xs transition-all ${
-                  activeVacuum?.batteryCharging
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xs transition-all ${activeVacuum?.batteryCharging
                     ? 'bg-amber-500/20 text-amber-500'
                     : 'bg-cyan-500/20 text-cyan-500'
-                }`}
+                  }`}
               >
                 {activeVacuum?.batteryCharging ? (
                   <BatteryCharging size={26} weight="duotone" className="animate-pulse" />
@@ -301,13 +296,12 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
             <div className="w-16 flex flex-col gap-1 items-end">
               <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    (activeVacuum?.batteryLevel || 100) > 50
+                  className={`h-full rounded-full transition-all duration-500 ${(activeVacuum?.batteryLevel || 100) > 50
                       ? 'bg-emerald-500'
                       : (activeVacuum?.batteryLevel || 100) > 20
-                      ? 'bg-amber-500'
-                      : 'bg-rose-500'
-                  }`}
+                        ? 'bg-amber-500'
+                        : 'bg-rose-500'
+                    }`}
                   style={{ width: `${activeVacuum?.batteryLevel || 100}%` }}
                 />
               </div>
@@ -324,11 +318,10 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
               type="button"
               onClick={() => handleVacuumService(isCleaning ? 'pause' : 'start')}
               disabled={isOperating !== null}
-              className={`py-3 px-2 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 ${
-                isCleaning
+              className={`py-3 px-2 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 ${isCleaning
                   ? 'bg-amber-500 text-slate-950 font-black'
                   : 'bg-sky-500 hover:bg-sky-400 text-slate-950 font-black'
-              }`}
+                }`}
             >
               {isCleaning ? <Pause size={18} weight="fill" /> : <Play size={18} weight="fill" />}
               <span className="text-[10px] font-black">{isCleaning ? 'Pause' : 'Clean'}</span>
@@ -339,11 +332,10 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
               type="button"
               onClick={() => handleVacuumService('return_to_base')}
               disabled={isOperating !== null || isDocked}
-              className={`py-3 px-2 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 ${
-                isDocked
+              className={`py-3 px-2 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 ${isDocked
                   ? 'bg-white/10 dark:bg-white/5 text-slate-400 cursor-not-allowed'
                   : 'bg-white/20 dark:bg-white/10 hover:bg-white/30 text-slate-900 dark:text-white'
-              }`}
+                }`}
             >
               <ArrowArcLeft size={18} weight="bold" />
               <span className="text-[10px] font-bold">Dock</span>
@@ -392,11 +384,10 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                     key={spd}
                     type="button"
                     onClick={() => setFanSpeed(spd)}
-                    className={`py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                      isSelected
+                    className={`py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${isSelected
                         ? 'bg-sky-500 text-slate-950 font-black shadow-xs'
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
+                      }`}
                   >
                     {spd}
                   </button>
@@ -441,7 +432,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
       {/* ========================================================================= */}
       {/* COLUMN 2: Live Multi-Floor Cleaning Map                                   */}
       {/* ========================================================================= */}
-      <div className="lg:col-span-4 xl:col-span-6 flex flex-col gap-3">
+      <div className="lg:col-span-4 xl:col-span-4 flex flex-col gap-4">
         <div className="relative p-3 sm:p-4 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-3 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] overflow-hidden">
           {/* Ambient Glow */}
           <div
@@ -484,11 +475,10 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                     key={mapItem.id}
                     type="button"
                     onClick={() => setSelectedMapId(mapItem.id)}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                      isMapActive
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${isMapActive
                         ? 'bg-sky-500 text-slate-950 font-black shadow-xs'
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
+                      }`}
                   >
                     {mapItem.name}
                   </button>
@@ -565,7 +555,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
       {/* ========================================================================= */}
       {/* COLUMN 3: Maintenance, Consumables & Station Tanks                        */}
       {/* ========================================================================= */}
-      <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-4">
+      <div className="lg:col-span-4 xl:col-span-4 flex flex-col gap-4">
         <div className="relative p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] overflow-hidden">
           {/* Ambient Glow */}
           <div
