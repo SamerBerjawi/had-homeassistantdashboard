@@ -25,6 +25,7 @@ export interface AlertToast {
   severity: AlertSeverity;
   category?: AlertCategory;
   icon?: string;
+  iconType?: string;
   entityId?: string;
   areaName?: string;
   durationMs?: number; // 0 = persistent (no auto-dismiss), default = 5000ms

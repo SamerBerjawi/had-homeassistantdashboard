@@ -10,10 +10,10 @@ import { cn } from "@/lib/utils"
 
 export function AnimatedListItem({ children }: { children: React.ReactNode }) {
   const animations: MotionProps = {
-    initial: { scale: 0, opacity: 0 },
-    animate: { scale: 1, opacity: 1, originY: 0 },
-    exit: { scale: 0, opacity: 0 },
-    transition: { type: "spring", stiffness: 350, damping: 40 },
+    initial: { scale: 0.9, opacity: 0, y: -12 },
+    animate: { scale: 1, opacity: 1, y: 0, originY: 0 },
+    exit: { scale: 0.9, opacity: 0, transition: { duration: 0.2 } },
+    transition: { type: "spring", stiffness: 400, damping: 32 },
   }
 
   return (
@@ -31,36 +31,29 @@ export interface AnimatedListProps extends ComponentPropsWithoutRef<"div"> {
 
 export const AnimatedList = React.memo(
   ({ children, className, delay = 80, reverse = false, ...props }: AnimatedListProps) => {
-    const [index, setIndex] = useState(0)
     const childrenArray = useMemo(
       () => React.Children.toArray(children),
       [children]
     )
+    const [shownCount, setShownCount] = useState<number>(() => childrenArray.length)
 
     useEffect(() => {
-      setIndex(0)
+      if (shownCount < childrenArray.length) {
+        const timeout = setTimeout(() => {
+          setShownCount((prev) => Math.min(prev + 1, childrenArray.length))
+        }, delay)
+        return () => clearTimeout(timeout)
+      }
+    }, [shownCount, childrenArray.length, delay])
+
+    useEffect(() => {
+      setShownCount((prev) => Math.min(prev, childrenArray.length))
     }, [childrenArray.length])
 
-    useEffect(() => {
-      let timeout: ReturnType<typeof setTimeout> | null = null
-
-      if (index < childrenArray.length - 1) {
-        timeout = setTimeout(() => {
-          setIndex((prevIndex) => prevIndex + 1)
-        }, delay)
-      }
-
-      return () => {
-        if (timeout !== null) {
-          clearTimeout(timeout)
-        }
-      }
-    }, [index, delay, childrenArray.length])
-
     const itemsToShow = useMemo(() => {
-      const sliced = childrenArray.slice(0, index + 1)
+      const sliced = childrenArray.slice(0, shownCount)
       return reverse ? sliced.reverse() : sliced
-    }, [index, childrenArray, reverse])
+    }, [shownCount, childrenArray, reverse])
 
     return (
       <div

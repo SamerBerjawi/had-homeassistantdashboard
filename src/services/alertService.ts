@@ -162,26 +162,26 @@ export class AlertService {
       debounceTimestamps.set(entityId, Date.now());
 
       let sensorType: 'smoke' | 'gas' | 'co' | 'moisture' | 'safety' | 'alarm' | 'hazard' = 'hazard';
-      let hazardTitle = '⚠️ CRITICAL ALERT';
+      let hazardTitle = 'CRITICAL ALERT';
 
       if (deviceClass === 'smoke') {
         sensorType = 'smoke';
-        hazardTitle = '🔥 SMOKE DETECTED';
+        hazardTitle = 'SMOKE DETECTED';
       } else if (deviceClass === 'gas') {
         sensorType = 'gas';
-        hazardTitle = '⚠️ GAS LEAK DETECTED';
+        hazardTitle = 'GAS LEAK DETECTED';
       } else if (deviceClass === 'carbon_monoxide' || deviceClass === 'co') {
         sensorType = 'co';
-        hazardTitle = '☣️ CARBON MONOXIDE DETECTED';
+        hazardTitle = 'CARBON MONOXIDE DETECTED';
       } else if (deviceClass === 'moisture') {
         sensorType = 'moisture';
-        hazardTitle = '💧 WATER LEAK DETECTED';
+        hazardTitle = 'WATER LEAK DETECTED';
       } else if (deviceClass === 'safety') {
         sensorType = 'safety';
-        hazardTitle = '🚨 SAFETY HAZARD TRIGGERED';
+        hazardTitle = 'SAFETY HAZARD TRIGGERED';
       } else if (isAlarmTriggered) {
         sensorType = 'alarm';
-        hazardTitle = '🚨 INTRUSION ALARM TRIGGERED';
+        hazardTitle = 'INTRUSION ALARM TRIGGERED';
       }
 
       const alertMessage = areaName 
@@ -214,20 +214,22 @@ export class AlertService {
     if (entityId.startsWith('lock.')) {
       if (oldStateStr === 'locked' && newStateStr === 'unlocked') {
         useAlertStore.getState().addToast({
-          title: `🔓 ${friendlyName} Unlocked`,
+          title: `${friendlyName} Unlocked`,
           message: areaName ? `Unlocked in ${areaName}` : 'Door lock opened',
           severity: 'warning',
           category: 'security',
+          iconType: 'lock_open',
           entityId,
           areaName,
           durationMs: 5000
         });
       } else if (oldStateStr === 'unlocked' && newStateStr === 'locked') {
         useAlertStore.getState().addToast({
-          title: `🔒 ${friendlyName} Locked`,
+          title: `${friendlyName} Locked`,
           message: areaName ? `Secured in ${areaName}` : 'Door lock engaged',
           severity: 'info',
           category: 'security',
+          iconType: 'lock',
           entityId,
           areaName,
           durationMs: 4000
@@ -242,12 +244,13 @@ export class AlertService {
       (deviceClass === 'door' || deviceClass === 'garage_door' || deviceClass === 'window' || deviceClass === 'opening')
     ) {
       if (oldStateStr === 'off' && newStateStr === 'on') {
-        const iconPrefix = deviceClass === 'window' ? '🪟' : deviceClass === 'garage_door' ? '🚗' : '🚪';
+        const iconType = deviceClass === 'window' ? 'window' : deviceClass === 'garage_door' ? 'garage' : 'door';
         useAlertStore.getState().addToast({
-          title: `${iconPrefix} ${friendlyName} Opened`,
+          title: `${friendlyName} Opened`,
           message: areaName ? `Located in ${areaName}` : 'Entry contact opened',
           severity: 'info',
           category: 'security',
+          iconType,
           entityId,
           areaName,
           durationMs: 4500
@@ -260,10 +263,11 @@ export class AlertService {
     if (entityId.startsWith('cover.') && (deviceClass === 'garage' || entityId.includes('garage') || friendlyName.toLowerCase().includes('garage'))) {
       if (oldStateStr === 'closed' && newStateStr === 'open') {
         useAlertStore.getState().addToast({
-          title: `🚗 ${friendlyName} Opened`,
+          title: `${friendlyName} Opened`,
           message: areaName ? `Garage door opened in ${areaName}` : 'Cover is fully open',
           severity: 'warning',
           category: 'security',
+          iconType: 'garage',
           entityId,
           areaName,
           durationMs: 5000
@@ -291,10 +295,11 @@ export class AlertService {
 
       if (wasRunning && isNowDone) {
         useAlertStore.getState().addToast({
-          title: `🧺 ${friendlyName} Finished`,
+          title: `${friendlyName} Finished`,
           message: areaName ? `Cycle complete in ${areaName}. Ready to unload.` : 'Cycle finished.',
           severity: 'info',
           category: 'appliance',
+          iconType: 'appliance',
           entityId,
           areaName,
           durationMs: 6000
