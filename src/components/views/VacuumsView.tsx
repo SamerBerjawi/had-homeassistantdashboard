@@ -9,20 +9,20 @@
 
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Broom, MapTrifold, SlidersHorizontal } from '@phosphor-icons/react';
+import { Broom, Robot } from '@phosphor-icons/react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { discoverVacuumDevices } from '../../services/vacuumDiscovery';
-import VacuumCard from '../vacuums/VacuumCard';
-import VacuumMapView from '../vacuums/VacuumMapView';
 import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 import ViewEmptyState from '../ui/ViewEmptyState';
 import ViewLoadingState from '../ui/ViewLoadingState';
+import RobotVacuumTab from './vacuums/RobotVacuumTab';
+import StickVacuumTab from './vacuums/StickVacuumTab';
 
 interface ViewProps {
   darkMode?: boolean;
 }
 
-type VacuumSubTab = 'controls' | 'maps';
+type VacuumSubTab = 'robot' | 'stick';
 
 export default function VacuumsView({ darkMode = true }: ViewProps) {
   const isLoading = useAutoLayoutStore((s) => s.isLoading);
@@ -32,7 +32,7 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
   const entityRegistry = useAutoLayoutStore((s) => s.entityRegistry);
   const devices = useAutoLayoutStore((s) => s.devices);
 
-  const [activeSubTab, setActiveSubTab] = useState<VacuumSubTab>('controls');
+  const [activeSubTab, setActiveSubTab] = useState<VacuumSubTab>('robot');
 
   const vacuumEntities = (domainGroups['vacuum'] || []).filter((v) => !v.disabled_by);
 
@@ -51,14 +51,14 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
 
   const vacuumTabs: SectionTabItem[] = [
     {
-      id: 'controls',
-      label: 'Controls & Fleet',
-      icon: SlidersHorizontal
+      id: 'robot',
+      label: 'Robot Vacuum',
+      icon: Robot
     },
     {
-      id: 'maps',
-      label: 'Cleaning Maps',
-      icon: MapTrifold
+      id: 'stick',
+      label: 'Stick Vacuum',
+      icon: Broom
     }
   ];
 
@@ -69,21 +69,6 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
         subtitle="Discovering robotic cleaners, mop stations, multi-floor maps, and dock sensors"
         darkMode={darkMode}
       />
-    );
-  }
-
-  if (vacuums.length === 0) {
-    return (
-      <div className="w-full flex-1 flex flex-col items-center justify-center pb-24 md:pb-8">
-        <ViewEmptyState
-          icon={Broom}
-          title="No Vacuum Cleaners Configured"
-          badgeText="Cleaning Subsystem"
-          description="Connect robotic vacuums, mop stations, and cordless stick vacuums in Home Assistant to monitor cleaning status, multi-floor maps, dock telemetry, and battery levels."
-          configPath="Settings → Devices & Services → Add Integration"
-          darkMode={darkMode}
-        />
-      </div>
     );
   }
 
@@ -98,7 +83,7 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
           darkMode={darkMode}
         />
 
-        {hasActiveCleaning && (
+        {hasActiveCleaning && activeSubTab === 'robot' && (
           <div className="flex items-center gap-2 ml-auto">
             <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -110,33 +95,40 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
 
       {/* Animated Sub-View Content */}
       <AnimatePresence mode="wait">
-        {activeSubTab === 'controls' ? (
+        {activeSubTab === 'robot' ? (
           <motion.div
-            key="controls"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="w-full flex flex-col gap-6"
-          >
-            {/* Bento Grid of Robot Vacuum Cards (Focused on Controls, Speeds & Telemetry) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
-              {vacuums.map((vac) => (
-                <VacuumCard key={vac.entityId} vacuum={vac} darkMode={darkMode} showMap={false} />
-              ))}
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="maps"
+            key="robot"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
             className="w-full"
           >
-            {/* Dedicated Interactive Multi-Floor Map View */}
-            <VacuumMapView vacuums={vacuums} darkMode={darkMode} />
+            {vacuums.length > 0 ? (
+              <RobotVacuumTab vacuums={vacuums} darkMode={darkMode} />
+            ) : (
+              <div className="w-full flex-1 flex flex-col items-center justify-center py-16">
+                <ViewEmptyState
+                  icon={Robot}
+                  title="No Robot Vacuums Configured"
+                  badgeText="Dreame & Robot Cleaners"
+                  description="Connect your Dreame or robotic vacuum cleaner in Home Assistant to monitor live telemetry, multi-floor cleaning maps, consumable wear, and dock controls."
+                  configPath="Settings → Devices & Services → Dreame Vacuum"
+                  darkMode={darkMode}
+                />
+              </div>
+            )}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="stick"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="w-full"
+          >
+            <StickVacuumTab darkMode={darkMode} />
           </motion.div>
         )}
       </AnimatePresence>

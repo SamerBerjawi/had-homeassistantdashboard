@@ -284,6 +284,22 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             bike: { ...(prev.mobility?.bike || {}), brandLogoUrl: assetUrl }
           }
         }));
+      } else if (key === 'robot_vacuum_image') {
+        await updateConfig((prev) => ({
+          vacuums: {
+            ...(prev.vacuums || {}),
+            robotImageUrl: assetUrl,
+            robot: { ...(prev.vacuums?.robot || {}), imageUrl: assetUrl }
+          }
+        }));
+      } else if (key === 'stick_vacuum_image') {
+        await updateConfig((prev) => ({
+          vacuums: {
+            ...(prev.vacuums || {}),
+            stickImageUrl: assetUrl,
+            stick: { ...(prev.vacuums?.stick || {}), imageUrl: assetUrl }
+          }
+        }));
       }
 
       setIsSaving(false);

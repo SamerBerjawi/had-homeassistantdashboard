@@ -31,6 +31,18 @@ export interface UserDashboardConfig {
       bikeImageUrl?: string;
     };
   };
+  vacuums?: {
+    robotImageUrl?: string;
+    stickImageUrl?: string;
+    robot?: {
+      imageUrl?: string;
+      customName?: string;
+    };
+    stick?: {
+      imageUrl?: string;
+      customName?: string;
+    };
+  };
   rooms: {
     floorOrder: string[];
     hiddenFloors: string[];

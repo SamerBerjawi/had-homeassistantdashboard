@@ -245,14 +245,14 @@ export default function VacuumMapView({ vacuums, darkMode = true }: VacuumMapVie
       </div>
 
       {/* Main Expansive Canvas Container */}
-      <div className="relative w-full h-[520px] sm:h-[65vh] min-h-[460px] rounded-3xl overflow-hidden bg-slate-950 border border-white/10 flex items-center justify-center isolate select-none shadow-2xl">
+      <div className="relative w-full h-[520px] sm:h-[65vh] min-h-[460px] rounded-3xl overflow-hidden backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/10 flex items-center justify-center isolate select-none shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
         {/* Map Rendering or Live Fallback */}
         {resolvedMapUrl && !imgLoadFailed ? (
           <img
             src={resolvedMapUrl}
             alt={activeMap?.name || 'Cleaning Map'}
             onError={() => setImgLoadFailed(true)}
-            className="w-full h-full object-contain bg-slate-950 p-2 sm:p-4 transition-all duration-300"
+            className="w-full h-full object-contain p-2 sm:p-4 transition-all duration-300"
           />
         ) : isMapLoading ? (
           <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
