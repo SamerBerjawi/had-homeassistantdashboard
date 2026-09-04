@@ -8,7 +8,8 @@ interface AmbientBackgroundProps {
 
 /**
  * Builds mathematically seamless CSS radial gradient blooms.
- * Eliminates rasterization tile clipping and box artifacts caused by high-radius Gaussian blur filters.
+ * Matches the exact positioning, Gaussian falloff curve, and rich vibrance
+ * of the original blur effect while eliminating rasterization tile clipping and box artifacts.
  */
 function buildGradientString(theme: PageThemeConfig, darkMode: boolean): string {
   const primary = theme.glowGradients?.primary || theme.accentHex || '#38bdf8';
@@ -17,15 +18,21 @@ function buildGradientString(theme: PageThemeConfig, darkMode: boolean): string 
 
   if (darkMode) {
     return [
-      `radial-gradient(circle min(75vw, 850px) at 92% 8%, ${primary}34 0%, ${primary}12 42%, transparent 75%)`,
-      `radial-gradient(circle min(70vw, 750px) at 8% 92%, ${secondary}2a 0%, ${secondary}0e 42%, transparent 75%)`,
-      `radial-gradient(circle min(55vw, 600px) at 50% 45%, ${tertiary}1c 0%, ${tertiary}06 35%, transparent 70%)`
+      // Primary Top-Right Accent Bloom: 650px
+      `radial-gradient(circle min(55vw, 650px) at 68% 10%, ${primary}48 0%, ${primary}3e 24%, ${primary}20 48%, ${primary}08 72%, transparent 100%)`,
+      // Secondary Bottom-Left Accent Bloom: 550px
+      `radial-gradient(circle min(48vw, 550px) at 22% 88%, ${secondary}3e 0%, ${secondary}32 24%, ${secondary}18 48%, ${secondary}06 72%, transparent 100%)`,
+      // Tertiary Center Radiance: 450px
+      `radial-gradient(circle min(38vw, 450px) at 40% 42%, ${tertiary}2c 0%, ${tertiary}20 24%, ${tertiary}0e 48%, ${tertiary}03 72%, transparent 100%)`
     ].join(', ');
   } else {
     return [
-      `radial-gradient(circle min(75vw, 850px) at 92% 8%, ${primary}1c 0%, ${primary}08 42%, transparent 75%)`,
-      `radial-gradient(circle min(70vw, 750px) at 8% 92%, ${secondary}16 0%, ${secondary}05 42%, transparent 75%)`,
-      `radial-gradient(circle min(55vw, 600px) at 50% 45%, ${tertiary}0f 0%, ${tertiary}03 35%, transparent 70%)`
+      // Primary Top-Right Accent Bloom: 650px
+      `radial-gradient(circle min(55vw, 650px) at 68% 10%, ${primary}2a 0%, ${primary}22 24%, ${primary}12 48%, ${primary}05 72%, transparent 100%)`,
+      // Secondary Bottom-Left Accent Bloom: 550px
+      `radial-gradient(circle min(48vw, 550px) at 22% 88%, ${secondary}22 0%, ${secondary}1a 24%, ${secondary}0e 48%, ${secondary}03 72%, transparent 100%)`,
+      // Tertiary Center Radiance: 450px
+      `radial-gradient(circle min(38vw, 450px) at 40% 42%, ${tertiary}18 0%, ${tertiary}12 24%, ${tertiary}08 48%, ${tertiary}02 72%, transparent 100%)`
     ].join(', ');
   }
 }
@@ -61,7 +68,7 @@ export default function AmbientBackground({ theme, darkMode }: AmbientBackground
         return (
           <div
             key={layer.id}
-            className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+            className={`absolute inset-0 transform-gpu will-change-[opacity] transition-opacity duration-700 ease-in-out ${
               isTop ? 'opacity-100' : 'opacity-0'
             }`}
             style={{
