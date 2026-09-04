@@ -16,6 +16,7 @@ import { ResolvedEntity, HAState } from '../types';
 import { safeOpenExternalUrl } from '../lib/utils';
 import { isLeakSensor } from '../lib/entityClassifiers';
 import { useAlertStore, AlertItem } from '../store/useAlertStore';
+import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { alertService } from './alertService';
 
 export interface ExtractNotificationsParams {
@@ -126,6 +127,11 @@ export function extractHANotifications({
     const inProgress = Boolean(attrs.in_progress) || liveState.state === 'installing';
     const isSkipped = Boolean(attrs.skipped_version);
 
+    // If this skipped update was dismissed/cleaned by the user, don't show it in the notifications list
+    if (isSkipped && dismissedSet.has(ent.entity_id)) {
+      continue;
+    }
+
     const hasUpdateAvailable = isStateOn || hasVersionMismatch || isStateVersion || inProgress || isSkipped;
 
     if (hasUpdateAvailable) {
@@ -155,7 +161,10 @@ export function extractHANotifications({
         skippedVersion: attrs.skipped_version || null,
         autoUpdate: Boolean(attrs.auto_update),
         createdAt: attrs.release_date || (liveState as HAState).last_updated || new Date().toISOString(),
-        dismissable: false,
+        dismissable: isSkipped,
+        onDismiss: isSkipped ? () => {
+          dismissNotification(ent.entity_id);
+        } : undefined,
 
         actions: [
           ...(inProgress ? [] : isSkipped ? [
@@ -172,6 +181,7 @@ export function extractHANotifications({
                     updateEntityState(ent.entity_id, 'on', { skipped_version: null });
                   }
                 }
+                useAutoLayoutStore.getState().restoreNotification(ent.entity_id);
               }
             }
           ] : [

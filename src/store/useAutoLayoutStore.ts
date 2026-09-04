@@ -126,6 +126,7 @@ export interface AutoLayoutStoreState {
   nativeRepairs: HANativeRepairIssue[];
   dismissedNotificationIds: string[];
   dismissNotification: (id: string) => void;
+  restoreNotification: (id: string) => void;
   clearAllNotifications: (ids: string[]) => void;
   installUpdate: (entityId: string) => Promise<void>;
   skipUpdate: (entityId: string) => Promise<void>;
@@ -1107,6 +1108,18 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   dismissNotification: (id: string) => {
     set(prev => {
       const nextIds = Array.from(new Set([...prev.dismissedNotificationIds, id]));
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('ha_dismissed_notifications', JSON.stringify(nextIds));
+        } catch {}
+      }
+      return { dismissedNotificationIds: nextIds };
+    });
+  },
+
+  restoreNotification: (id: string) => {
+    set(prev => {
+      const nextIds = prev.dismissedNotificationIds.filter(item => item !== id);
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem('ha_dismissed_notifications', JSON.stringify(nextIds));

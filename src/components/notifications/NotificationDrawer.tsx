@@ -22,7 +22,9 @@ import {
   X,
   MagnifyingGlass,
   Check,
-  HouseLine
+  HouseLine,
+  ArrowUUpLeft,
+  Broom
 } from '@phosphor-icons/react';
 import DetailsRightDrawer from '../overview/DetailsRightDrawer';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
@@ -136,11 +138,22 @@ export default function NotificationDrawer({
     });
   }, [allNotifications, activeTab, searchQuery]);
 
+  // Skipped updates
+  const skippedUpdates = useMemo(() => {
+    return allNotifications.filter(n => n.category === 'update' && n.skippedVersion);
+  }, [allNotifications]);
+
+  // Clean only skipped updates
+  const handleDismissSkippedUpdates = () => {
+    const skippedIds = skippedUpdates.map(n => n.id);
+    clearAllNotifications(skippedIds);
+  };
+
   // Batch Dismiss All
   const handleDismissAll = async () => {
-    // Only dismiss persistent notifications, repairs, and alerts — NOT software updates
+    // Dismiss all dismissable items (including skipped updates and alerts)
     const dismissableIds = allNotifications
-      .filter(n => n.dismissable && n.category !== 'update')
+      .filter(n => n.dismissable)
       .map(n => n.id);
 
     // Call dismiss services for persistent notifications, issues & alerts
@@ -318,8 +331,23 @@ export default function NotificationDrawer({
             })}
           </div>
 
-          {/* Quick Actions (Update All, Refresh, Clear All) */}
+          {/* Quick Actions (Clean Skipped, Update All, Refresh, Clear All) */}
           <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+            {skippedUpdates.length > 0 && (
+              <button
+                type="button"
+                onClick={handleDismissSkippedUpdates}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 ${darkMode
+                    ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30'
+                    : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300'
+                  }`}
+                title="Clean all skipped updates from notifications"
+              >
+                <Broom size={13} weight="bold" />
+                <span>Clean Skipped ({skippedUpdates.length})</span>
+              </button>
+            )}
+
             {counts.updates > 0 && (
               <button
                 type="button"
@@ -336,7 +364,9 @@ export default function NotificationDrawer({
             <button
               type="button"
               onClick={handleRefresh}
-              className={`p-1.5 rounded-xl transition-all cursor-pointer ${darkMode ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+              className={`p-1.5 rounded-xl border transition-all cursor-pointer ${darkMode
+                  ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-white border-transparent'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200/80'
                 }`}
               title="Refresh States & Notifications"
             >
@@ -347,11 +377,11 @@ export default function NotificationDrawer({
               <button
                 type="button"
                 onClick={handleDismissAll}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${darkMode
-                    ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-rose-400'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-rose-600'
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${darkMode
+                    ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-rose-400 border-transparent'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-rose-600 border-slate-200/80'
                   }`}
-                title="Dismiss all"
+                title="Dismiss all notifications"
               >
                 <Trash size={13} />
                 <span>Clear All</span>
@@ -430,9 +460,10 @@ export default function NotificationDrawer({
 
                 const renderActionButton = (act: HANotificationAction, isPrimaryInHeader: boolean) => {
                   const isLoading = actionLoadingIds[act.id];
-                  const isPrimary = act.variant === 'primary' || act.id === 'install' || act.id.startsWith('restart_') || act.id.startsWith('ack_');
-                  const isDanger = act.variant === 'danger';
+                  const isUnskip = act.id === 'unskip';
                   const isRestartAction = act.id.startsWith('restart_');
+                  const isPrimary = act.variant === 'primary' || act.id === 'install' || isRestartAction || act.id.startsWith('ack_');
+                  const isDanger = act.variant === 'danger';
 
                   return (
                     <button
@@ -443,14 +474,22 @@ export default function NotificationDrawer({
                       className={`flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${isPrimaryInHeader
                           ? isRestartAction
                             ? 'px-2 py-0.5 rounded-md text-[11px] font-black bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-xs active:scale-95'
-                            : isPrimary
-                              ? 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-sky-500 hover:bg-sky-400 text-white shadow-xs active:scale-95'
-                              : 'px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white/10 hover:bg-white/15 text-slate-200 active:scale-95'
+                            : isUnskip
+                              ? darkMode
+                                ? 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 shadow-xs active:scale-95'
+                                : 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-sky-100 hover:bg-sky-200 text-sky-900 border border-sky-300 shadow-xs active:scale-95'
+                              : isPrimary
+                                ? 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-sky-500 hover:bg-sky-400 text-white shadow-xs active:scale-95'
+                                : darkMode
+                                  ? 'px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white/10 hover:bg-white/15 text-slate-200 border border-white/10 active:scale-95'
+                                  : 'px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-300 active:scale-95'
                           : isDanger
-                            ? 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 active:scale-95'
+                            ? darkMode
+                              ? 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 active:scale-95'
+                              : 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 active:scale-95'
                             : darkMode
-                              ? 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white active:scale-95'
-                              : 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 active:scale-95'
+                              ? 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/5 active:scale-95'
+                              : 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 active:scale-95'
                         }`}
                     >
                       {isLoading ? (
@@ -461,6 +500,8 @@ export default function NotificationDrawer({
                         <DownloadSimple size={11} weight="bold" />
                       ) : act.id === 'skip' ? (
                         <SkipForward size={11} weight="bold" />
+                      ) : isUnskip ? (
+                        <ArrowUUpLeft size={11} weight="bold" />
                       ) : act.id.startsWith('ack_') ? (
                         <Check size={11} weight="bold" />
                       ) : act.id === 'release_notes' || act.id === 'learn_more' ? (
@@ -476,13 +517,13 @@ export default function NotificationDrawer({
                     key={item.id}
                     className={`p-2.5 rounded-xl transition-all duration-200 flex flex-col justify-between gap-1.5 group ${darkMode
                         ? 'bg-white/[0.03] hover:bg-white/[0.055] text-white border border-white/[0.04]'
-                        : 'bg-slate-50/90 hover:bg-slate-100/90 text-slate-900 border border-slate-200/60 shadow-xs'
+                        : 'bg-white hover:bg-slate-50/90 text-slate-900 border border-slate-200 shadow-xs'
                       }`}
                   >
                     {/* Row 1: Icon + Title + Category Badge + Primary Action + Time + Dismiss */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <div className="w-6.5 h-6.5 rounded-lg bg-white/10 dark:bg-white/5 flex items-center justify-center shrink-0">
+                        <div className="w-6.5 h-6.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-transparent flex items-center justify-center shrink-0">
                           {visuals.icon}
                         </div>
 
@@ -518,8 +559,8 @@ export default function NotificationDrawer({
                           <button
                             type="button"
                             onClick={() => item.onDismiss && item.onDismiss()}
-                            className="text-slate-400 hover:text-slate-200 dark:hover:text-white p-0.5 rounded-md hover:bg-white/10 transition-colors cursor-pointer shrink-0"
-                            title="Dismiss"
+                            className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-md hover:bg-slate-200/70 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                            title="Dismiss notification"
                           >
                             <X size={13} />
                           </button>
@@ -534,14 +575,14 @@ export default function NotificationDrawer({
                         {/* Software Update Version Badge */}
                         {item.category === 'update' && (
                           <div className="flex items-center gap-1.5 flex-wrap font-semibold">
-                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 font-mono text-[10px] text-slate-600 dark:text-slate-300">
+                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/5 font-mono text-[10px] text-slate-700 dark:text-slate-300">
                               <span>{item.installedVersion || 'Current'}</span>
                               <span className="text-slate-400">➔</span>
-                              <span className="font-bold text-sky-600 dark:text-sky-400">{item.latestVersion || 'New'}</span>
+                              <span className="font-bold text-sky-700 dark:text-sky-400">{item.latestVersion || 'New'}</span>
                             </div>
 
                             {item.skippedVersion && (
-                              <span className="text-[9px] text-amber-500 font-bold px-1.5 py-0.2 rounded bg-amber-500/10">
+                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-300/80 dark:border-amber-500/20">
                                 Skipped
                               </span>
                             )}
