@@ -55,7 +55,10 @@ export default function Sidebar({
     updateEntityState,
     installUpdate,
     skipUpdate,
-    clearSkippedUpdate
+    clearSkippedUpdate,
+    isLiveMode,
+    connectionStatus,
+    haCoreVersion
   } = useAutoLayoutStore(useShallow(s => ({
     domainGroups: s.domainGroups,
     states: s.states,
@@ -67,7 +70,10 @@ export default function Sidebar({
     updateEntityState: s.updateEntityState,
     installUpdate: s.installUpdate,
     skipUpdate: s.skipUpdate,
-    clearSkippedUpdate: s.clearSkippedUpdate
+    clearSkippedUpdate: s.clearSkippedUpdate,
+    isLiveMode: s.isLiveMode,
+    connectionStatus: s.connectionStatus,
+    haCoreVersion: s.haCoreVersion
   })));
 
   const alertStoreAlerts = useAlertStore(s => s.alerts);
@@ -90,6 +96,52 @@ export default function Sidebar({
   }, [domainGroups, states, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate, alertStoreAlerts]);
 
   const totalNotifications = notifications.length;
+
+  const telemetry = useMemo(() => {
+    if (!isLiveMode) {
+      return {
+        label: 'HA Demo Mode',
+        version: haCoreVersion ? `v${haCoreVersion}` : 'v2026.8',
+        dotColor: 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]',
+        pulse: false,
+        tooltip: 'Home Assistant Simulation (Demo Mode)'
+      };
+    }
+    if (connectionStatus === 'connected') {
+      return {
+        label: 'HA Core Live',
+        version: haCoreVersion ? `v${haCoreVersion}` : 'Live',
+        dotColor: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]',
+        pulse: true,
+        tooltip: `Home Assistant Online ${haCoreVersion ? `(v${haCoreVersion})` : ''}`
+      };
+    }
+    if (connectionStatus === 'connecting') {
+      return {
+        label: 'Connecting...',
+        version: '...',
+        dotColor: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]',
+        pulse: true,
+        tooltip: 'Connecting to Home Assistant WebSocket...'
+      };
+    }
+    if (connectionStatus === 'auth_failed') {
+      return {
+        label: 'Auth Error',
+        version: 'Error',
+        dotColor: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]',
+        pulse: false,
+        tooltip: 'Home Assistant Session Expired / Invalid Token'
+      };
+    }
+    return {
+      label: 'HA Offline',
+      version: 'Offline',
+      dotColor: 'bg-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.5)]',
+      pulse: false,
+      tooltip: 'Home Assistant Disconnected'
+    };
+  }, [isLiveMode, connectionStatus, haCoreVersion]);
 
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
@@ -294,18 +346,25 @@ export default function Sidebar({
 
           {/* Telemetry Status Bar */}
           {!isCollapsed ? (
-            <div className={`px-2.5 py-2 rounded-xl flex items-center justify-between shadow-xs ${
-              darkMode ? 'bg-white/5 text-white' : 'bg-slate-100/90 text-slate-900'
-            }`}>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                <span className={`text-[11px] font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-800'}`}>HA Core Live</span>
+            <div 
+              title={telemetry.tooltip}
+              className={`px-2.5 py-2 rounded-xl flex items-center justify-between shadow-xs transition-colors ${
+                darkMode ? 'bg-white/5 text-white' : 'bg-slate-100/90 text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${telemetry.dotColor} ${telemetry.pulse ? 'animate-pulse' : ''}`} />
+                <span className={`text-[11px] font-semibold truncate ${darkMode ? 'text-slate-300' : 'text-slate-800'}`}>
+                  {telemetry.label}
+                </span>
               </div>
-              <span className={`text-[10px] font-mono ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>v2026.8</span>
+              <span className={`text-[10px] font-mono shrink-0 ml-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                {telemetry.version}
+              </span>
             </div>
           ) : (
-            <div className="flex justify-center" title="Home Assistant Online">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+            <div className="flex justify-center" title={telemetry.tooltip}>
+              <span className={`w-2.5 h-2.5 rounded-full ${telemetry.dotColor} ${telemetry.pulse ? 'animate-pulse' : ''}`} />
             </div>
           )}
 

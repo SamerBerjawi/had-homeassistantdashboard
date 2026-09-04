@@ -50,6 +50,7 @@ export interface AutoLayoutStoreState {
   authType: 'oauth' | 'llat' | 'demo';
   connectionStatus: HAConnectionStatus;
   connectionError: string | null;
+  haCoreVersion: string | null;
   isLoading: boolean;
   error: string | null;
 
@@ -297,6 +298,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   entityCustomizations: {},
 
   authType: 'demo',
+  haCoreVersion: getCachedLiveMode() ? (haWebSocketService.getVersion() || null) : '2026.8.0',
 
   init: async () => {
     haWebSocketService.init({
@@ -307,6 +309,11 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           isLoading: status === 'connecting',
           error: errorMsg || null
         });
+      },
+      onVersionLoaded: (version: string) => {
+        if (version) {
+          set({ haCoreVersion: version });
+        }
       },
       onAuthInvalid: async () => {
         const stored = getStoredAuthConfig();
@@ -351,7 +358,9 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         return null;
       },
       onRegistriesLoaded: (payload) => {
+        const detectedVersion = payload.haVersion || payload.states?.['update.home_assistant_core_update']?.attributes?.installed_version || payload.states?.['update.home_assistant_core']?.attributes?.installed_version || get().haCoreVersion;
         set({
+          haCoreVersion: detectedVersion || get().haCoreVersion || null,
           areas: payload.areas,
           devices: payload.devices,
           entityRegistry: payload.entityRegistry,
@@ -565,6 +574,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       rawLabels: [...MOCK_LABELS],
       states: { ...MOCK_STATES },
       rawStates: { ...MOCK_STATES },
+      haCoreVersion: '2026.8.0',
       connectionStatus: 'connected',
       connectionError: null
     });

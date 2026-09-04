@@ -153,7 +153,7 @@ export class AlertService {
     // =========================================================================
     // 2. Critical Hazards (Smoke, Gas, CO, Moisture/Water Leak, Safety, Alarm)
     // =========================================================================
-    const sensorPayload = { entity_id: entityId, attributes: attrs, name: friendlyName };
+    const sensorPayload = { entity_id: entityId, attributes: newState.attributes || {}, name: friendlyName };
 
     // Rain and weather sensors must NEVER trigger emergency water leak hazard alerts
     if (isRainOrWeatherSensor(sensorPayload)) {

@@ -70,6 +70,10 @@ export function mergeConfig(
           car: { ...DEFAULT_USER_CONFIG.mobility.car, ...(base.mobility?.car || {}) },
           bike: { ...DEFAULT_USER_CONFIG.mobility.bike, ...(base.mobility?.bike || {}) }
         },
+        vacuums: {
+          ...DEFAULT_USER_CONFIG.vacuums,
+          ...(base.vacuums || {})
+        },
         cameras: { ...DEFAULT_USER_CONFIG.cameras, ...(base.cameras || {}) },
         network: { ...DEFAULT_USER_CONFIG.network, ...(base.network || {}) },
         energy: { ...DEFAULT_USER_CONFIG.energy, ...(base.energy || {}) }
@@ -95,6 +99,18 @@ export function mergeConfig(
       bike: {
         ...safeBase.mobility.bike,
         ...(partial.mobility?.bike || {})
+      }
+    },
+    vacuums: {
+      ...(safeBase.vacuums || {}),
+      ...(partial.vacuums || {}),
+      robot: {
+        ...(safeBase.vacuums?.robot || {}),
+        ...(partial.vacuums?.robot || {})
+      },
+      stick: {
+        ...(safeBase.vacuums?.stick || {}),
+        ...(partial.vacuums?.stick || {})
       }
     },
     rooms: {

@@ -34,6 +34,7 @@ interface BackupRestoreSectionProps {
   setSnapshotNameInput: (name: string) => void;
   handleRestoreSnapshot: (snap: LocalSnapshot) => void;
   handleDeleteSnapshot: (id: string) => void;
+  handleExportSnapshot?: (snap: LocalSnapshot) => void;
   handleExportFullBackup: () => void;
   handleImportFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -50,6 +51,7 @@ export default function BackupRestoreSection({
   setSnapshotNameInput,
   handleRestoreSnapshot,
   handleDeleteSnapshot,
+  handleExportSnapshot,
   handleExportFullBackup,
   handleImportFile,
   fileInputRef,
@@ -165,6 +167,16 @@ export default function BackupRestoreSection({
                   >
                     Restore
                   </button>
+                  {handleExportSnapshot && (
+                    <button
+                      type="button"
+                      onClick={() => handleExportSnapshot(snap)}
+                      className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-500 hover:text-sky-600 dark:bg-white/5 dark:hover:bg-sky-500/20 dark:text-slate-400 dark:hover:text-sky-400 border border-slate-200 dark:border-white/10 flex items-center justify-center cursor-pointer transition-colors"
+                      title="Download snapshot as JSON"
+                    >
+                      <DownloadSimple size={14} weight="bold" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleDeleteSnapshot(snap.id)}

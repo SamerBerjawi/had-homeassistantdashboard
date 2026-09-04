@@ -111,7 +111,8 @@ export default function SettingsView({
     reassignEntityArea,
     callHAService,
     selectedSettingsSection,
-    setSelectedSettingsSection
+    setSelectedSettingsSection,
+    applyConfigCustomizations
   } = useAutoLayoutStore(useShallow(s => ({
     serverUrl: s.serverUrl,
     haToken: s.haToken,
@@ -138,12 +139,14 @@ export default function SettingsView({
     reassignEntityArea: s.reassignEntityArea,
     callHAService: s.callHAService,
     selectedSettingsSection: s.selectedSettingsSection,
-    setSelectedSettingsSection: s.setSelectedSettingsSection
+    setSelectedSettingsSection: s.setSelectedSettingsSection,
+    applyConfigCustomizations: s.applyConfigCustomizations
   })));
 
   const {
     profiles,
     activeProfileId,
+    setActiveProfileId,
     pinCode,
     setPinCode,
     weatherBackdrop,
@@ -306,25 +309,214 @@ export default function SettingsView({
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleCreateSnapshot = () => {
-    const name = snapshotNameInput.trim() || `Snapshot ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    const backupObj = {
-      version: '2026.8',
-      createdAt: new Date().toISOString(),
-      profiles,
+  // 1. Build comprehensive backup archive covering every domain
+  const buildFullBackupObject = () => {
+    return {
+      system: 'HOMZ Smart Dashboard',
+      version: '2.0.0',
+      exportedAt: new Date().toISOString(),
+
+      // Canvas Layouts, Cards, Active Profile, Kiosk Pin, Weather Backdrop
+      canvasProfiles: profiles,
       activeProfileId,
+      pinCode,
+      weatherBackdrop,
+
+      // Full Unified Dashboard Configuration (Mobility, Vacuums, Cameras, Network, Energy, Overrides)
+      dashboardConfig: {
+        ...config,
+        theme: {
+          ...config.theme,
+          themeMode,
+          mode: themeMode,
+          backgroundStyle: effectiveBackgroundStyle,
+          weatherBackdrop
+        },
+        preferences: {
+          ...(config.preferences || {}),
+          backgroundStyle: effectiveBackgroundStyle,
+          tempUnit,
+          clockFormat,
+          energyTariff,
+          currencySymbol,
+          weatherBackdrop
+        },
+        profile: {
+          name: profileData.displayName,
+          email: profileData.email,
+          role: profileData.role,
+          avatar: profileData.avatarInitials
+        }
+      },
+
+      // Live Entity Customizations
+      entityCustomizations: useAutoLayoutStore.getState().entityCustomizations || {},
+
+      // Live Entities & Rooms
       entities,
       rooms,
-      profileData,
-      settings: {
+
+      // User Profile & System Preferences
+      userProfile: profileData,
+      preferences: {
         backgroundStyle: effectiveBackgroundStyle,
         tempUnit,
         clockFormat,
         energyTariff,
         currencySymbol,
-        weatherBackdrop
+        weatherBackdrop,
+        themeMode,
+        darkMode
       }
     };
+  };
+
+  // 2. Comprehensive Restore Engine (Shared by file import & local snapshots)
+  const performComprehensiveRestore = async (parsed: any, sourceName: string) => {
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error('Invalid backup data');
+    }
+
+    const restoredParts: string[] = [];
+
+    // A. Restore Canvas Profiles, Cards, Active Profile, Pin, and Backdrop
+    const canvasData = parsed.canvasProfiles || parsed.profiles || parsed.canvas?.profiles || (parsed.id && parsed.layout ? { [parsed.id]: parsed } : null);
+    if (canvasData && typeof canvasData === 'object' && Object.keys(canvasData).length > 0) {
+      const targetActiveId = parsed.activeProfileId || parsed.canvas?.activeProfileId;
+      importProfilesJson(JSON.stringify(canvasData), targetActiveId);
+      restoredParts.push('Canvas layouts & cards');
+    }
+
+    const incomingPin = parsed.pinCode !== undefined ? parsed.pinCode : parsed.canvas?.pinCode;
+    if (typeof incomingPin === 'string') {
+      setPinCode(incomingPin);
+    }
+
+    const incomingBackdrop = parsed.weatherBackdrop || parsed.canvas?.weatherBackdrop || parsed.preferences?.weatherBackdrop;
+    if (incomingBackdrop && typeof incomingBackdrop === 'string') {
+      setWeatherBackdrop(incomingBackdrop as any);
+    }
+
+    // B. Restore System Preferences & Appearance
+    const prefs = parsed.preferences || parsed.settings || parsed.dashboardConfig?.preferences;
+    if (prefs && typeof prefs === 'object') {
+      if (prefs.tempUnit === 'C' || prefs.tempUnit === 'F') {
+        setTempUnit(prefs.tempUnit);
+      }
+      if (prefs.clockFormat === '24h' || prefs.clockFormat === '12h') {
+        setClockFormat(prefs.clockFormat);
+      }
+      if (typeof prefs.energyTariff === 'number') {
+        setEnergyTariff(prefs.energyTariff);
+      }
+      if (typeof prefs.currencySymbol === 'string' && prefs.currencySymbol) {
+        setCurrencySymbol(prefs.currencySymbol);
+      }
+      if (prefs.backgroundStyle === 'glow' || prefs.backgroundStyle === 'flat') {
+        setInternalBgStyle(prefs.backgroundStyle);
+        setBackgroundStyle?.(prefs.backgroundStyle);
+      }
+      if (prefs.themeMode && (prefs.themeMode === 'auto' || prefs.themeMode === 'dark' || prefs.themeMode === 'light')) {
+        setThemeMode?.(prefs.themeMode);
+      }
+      if (typeof prefs.darkMode === 'boolean' && prefs.darkMode !== darkMode) {
+        toggleDarkMode(prefs.darkMode);
+      }
+      restoredParts.push('Preferences & theme');
+    }
+
+    // C. Restore User Profile
+    const profile = parsed.userProfile || parsed.profileData || parsed.dashboardConfig?.profile;
+    if (profile && typeof profile === 'object') {
+      const updatedProf: UserProfileData = {
+        displayName: profile.displayName || profile.name || profileData.displayName,
+        email: profile.email || profileData.email,
+        role: (profile.role as any) || profileData.role,
+        avatarInitials: profile.avatarInitials || profile.avatar || profileData.avatarInitials,
+        homeName: profile.homeName || profileData.homeName
+      };
+      setProfileData(updatedProf);
+      restoredParts.push('User profile');
+    }
+
+    // D. Restore Full Unified Dashboard Configuration (Vehicles, Vacuums, Cameras, Network, Energy, Area/Floor overrides)
+    const incomingConfig = parsed.dashboardConfig || (parsed.mobility || parsed.cameras || parsed.vacuums ? parsed : null);
+    if (incomingConfig && typeof incomingConfig === 'object') {
+      try {
+        await updateConfig((prev) => ({
+          ...prev,
+          ...incomingConfig,
+          theme: {
+            ...prev.theme,
+            ...(incomingConfig.theme || {}),
+            backgroundStyle: prefs?.backgroundStyle || incomingConfig.theme?.backgroundStyle || prev.theme?.backgroundStyle
+          },
+          mobility: {
+            car: { ...(prev.mobility?.car || {}), ...(incomingConfig.mobility?.car || {}) },
+            bike: { ...(prev.mobility?.bike || {}), ...(incomingConfig.mobility?.bike || {}) }
+          },
+          vacuums: {
+            ...(prev.vacuums || {}),
+            ...(incomingConfig.vacuums || {}),
+            robot: { ...(prev.vacuums?.robot || {}), ...(incomingConfig.vacuums?.robot || {}) },
+            stick: { ...(prev.vacuums?.stick || {}), ...(incomingConfig.vacuums?.stick || {}) }
+          },
+          cameras: {
+            ...(prev.cameras || {}),
+            ...(incomingConfig.cameras || {})
+          },
+          rooms: {
+            ...(prev.rooms || {}),
+            ...(incomingConfig.rooms || {})
+          },
+          entities: {
+            ...(prev.entities || {}),
+            ...(incomingConfig.entities || {})
+          },
+          preferences: {
+            ...(prev.preferences || {}),
+            ...(incomingConfig.preferences || {}),
+            ...(prefs || {})
+          }
+        }));
+        await flushPendingSave();
+        applyConfigCustomizations(incomingConfig);
+        restoredParts.push('Mobility, cameras, vacuums & rooms');
+      } catch (cfgErr) {
+        console.warn('Failed to sync incoming dashboard config:', cfgErr);
+      }
+    }
+
+    // E. Restore Entity Customizations directly into useAutoLayoutStore
+    const entityCustoms = parsed.entityCustomizations || parsed.dashboardConfig?.entities?.customizations;
+    if (entityCustoms && typeof entityCustoms === 'object') {
+      useAutoLayoutStore.setState(s => ({
+        entityCustomizations: {
+          ...s.entityCustomizations,
+          ...entityCustoms
+        }
+      }));
+      useAutoLayoutStore.getState().recomputeGraph();
+    }
+
+    // F. Restore Entities & Rooms lists if present in backup
+    if (Array.isArray(parsed.entities) && parsed.entities.length > 0) {
+      setEntities(parsed.entities);
+    }
+    if (Array.isArray(parsed.rooms) && parsed.rooms.length > 0) {
+      setRooms(parsed.rooms);
+    }
+
+    addToast?.({
+      type: 'success',
+      title: 'Restoration Complete',
+      message: `Restored ${restoredParts.length > 0 ? restoredParts.join(', ') : 'all configuration'} from "${sourceName}".`
+    });
+  };
+
+  const handleCreateSnapshot = () => {
+    const name = snapshotNameInput.trim() || `Snapshot ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const fullBackup = buildFullBackupObject();
 
     const newSnap: LocalSnapshot = {
       id: `snap_${Date.now()}`,
@@ -332,7 +524,7 @@ export default function SettingsView({
       timestamp: new Date().toLocaleString(),
       cardCount: Object.values(profiles).reduce((acc, p) => acc + (p.layout?.length || 0), 0),
       profileCount: Object.keys(profiles).length,
-      data: JSON.stringify(backupObj)
+      data: JSON.stringify(fullBackup)
     };
 
     const updated = [newSnap, ...snapshots];
@@ -342,25 +534,14 @@ export default function SettingsView({
     addToast?.({
       type: 'success',
       title: 'Snapshot Saved',
-      message: `Snapshot "${name}" saved to local storage.`
+      message: `Comprehensive snapshot "${name}" saved to local storage.`
     });
   };
 
-  const handleRestoreSnapshot = (snap: LocalSnapshot) => {
+  const handleRestoreSnapshot = async (snap: LocalSnapshot) => {
     try {
       const parsed = JSON.parse(snap.data);
-      if (parsed.canvasProfiles) {
-        importProfilesJson(JSON.stringify(parsed.canvasProfiles));
-      }
-      if (parsed.entities) setEntities(parsed.entities);
-      if (parsed.rooms) setRooms(parsed.rooms);
-      if (parsed.profileData) setProfileData(parsed.profileData);
-      
-      addToast?.({
-        type: 'success',
-        title: 'Snapshot Restored',
-        message: `Restored layout and configuration from "${snap.name}".`
-      });
+      await performComprehensiveRestore(parsed, snap.name);
     } catch (err) {
       addToast?.({
         type: 'warning',
@@ -376,27 +557,33 @@ export default function SettingsView({
     localStorage.setItem('homz_saved_snapshots_v1', JSON.stringify(updated));
   };
 
-  const handleExportFullBackup = () => {
-    const fullBackup = {
-      system: 'HOMZ Smart Dashboard',
-      version: '2026.8.0',
-      exportedAt: new Date().toISOString(),
-      canvasProfiles: profiles,
-      activeProfileId,
-      entities,
-      rooms,
-      userProfile: profileData,
-      preferences: {
-        backgroundStyle: effectiveBackgroundStyle,
-        tempUnit,
-        clockFormat,
-        energyTariff,
-        currencySymbol,
-        weatherBackdrop,
-        darkMode
-      }
-    };
+  const handleExportSnapshot = (snap: LocalSnapshot) => {
+    try {
+      const blob = new Blob([snap.data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `homz-snapshot-${snap.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      addToast?.({
+        type: 'info',
+        title: 'Snapshot Exported',
+        message: `Snapshot "${snap.name}" downloaded as JSON archive.`
+      });
+    } catch (err) {
+      addToast?.({
+        type: 'warning',
+        title: 'Export Failed',
+        message: 'Could not export snapshot file.'
+      });
+    }
+  };
 
+  const handleExportFullBackup = () => {
+    const fullBackup = buildFullBackupObject();
     const blob = new Blob([JSON.stringify(fullBackup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -410,7 +597,7 @@ export default function SettingsView({
     addToast?.({
       type: 'info',
       title: 'Backup Downloaded',
-      message: 'Full dashboard backup JSON file exported.'
+      message: 'Full comprehensive dashboard backup JSON file exported.'
     });
   };
 
@@ -418,32 +605,23 @@ export default function SettingsView({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const fileName = file.name;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       try {
         const text = ev.target?.result as string;
         const parsed = JSON.parse(text);
-
-        if (parsed.canvasProfiles) {
-          importProfilesJson(JSON.stringify(parsed.canvasProfiles));
-        } else if (parsed.profiles) {
-          importProfilesJson(JSON.stringify(parsed.profiles));
-        }
-        if (parsed.entities) setEntities(parsed.entities);
-        if (parsed.rooms) setRooms(parsed.rooms);
-        if (parsed.userProfile) setProfileData(parsed.userProfile);
-
-        addToast?.({
-          type: 'success',
-          title: 'Backup Restored',
-          message: 'Dashboard profiles, layout, and settings imported.'
-        });
+        await performComprehensiveRestore(parsed, fileName);
       } catch (err) {
         addToast?.({
           type: 'warning',
           title: 'Import Error',
           message: 'Invalid JSON backup file format.'
         });
+      } finally {
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
     };
     reader.readAsText(file);
@@ -452,6 +630,12 @@ export default function SettingsView({
   const handleFactoryReset = async () => {
     await resetDashboardConfig();
     resetToDefaults();
+    setTempUnit('C');
+    setClockFormat('24h');
+    setEnergyTariff(0.28);
+    setCurrencySymbol('€');
+    setInternalBgStyle('glow');
+    setBackgroundStyle?.('glow');
     setShowResetConfirm(false);
     addToast?.({
       type: 'warning',
@@ -754,6 +938,7 @@ export default function SettingsView({
               setSnapshotNameInput={setSnapshotNameInput}
               handleRestoreSnapshot={handleRestoreSnapshot}
               handleDeleteSnapshot={handleDeleteSnapshot}
+              handleExportSnapshot={handleExportSnapshot}
               handleExportFullBackup={handleExportFullBackup}
               handleImportFile={handleImportFile}
               fileInputRef={fileInputRef}

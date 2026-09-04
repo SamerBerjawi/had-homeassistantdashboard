@@ -109,7 +109,7 @@ interface CanvasStoreState {
 
   // JSON Export/Import
   exportProfilesJson: () => string;
-  importProfilesJson: (jsonStr: string) => boolean;
+  importProfilesJson: (jsonStr: string, activeId?: string) => boolean;
 }
 
 export const useCanvasStore = create<CanvasStoreState>((set, get) => {
@@ -470,18 +470,41 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => {
       return JSON.stringify(profiles, null, 2);
     },
 
-    importProfilesJson: (jsonStr: string) => {
+    importProfilesJson: (jsonStr: string, activeId?: string) => {
       try {
         const parsed = JSON.parse(jsonStr);
-        if (typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length > 0) {
-          const firstId = Object.keys(parsed)[0];
-          saveToStorage(parsed, firstId);
-          set({
-            profiles: parsed,
-            activeProfileId: firstId,
-            isEditMode: false
-          });
-          return true;
+        if (typeof parsed === 'object' && parsed !== null) {
+          // Unwrap if nested in backup wrapper or canvas object
+          const rawProfiles = parsed.canvasProfiles || parsed.profiles || parsed.canvas?.profiles || (parsed.id && parsed.layout ? { [parsed.id]: parsed } : null) || parsed;
+          
+          if (typeof rawProfiles === 'object' && rawProfiles !== null && Object.keys(rawProfiles).length > 0) {
+            const targetActiveId = activeId || parsed.activeProfileId || parsed.canvas?.activeProfileId || (rawProfiles[get().activeProfileId] ? get().activeProfileId : Object.keys(rawProfiles)[0]);
+            
+            saveToStorage(rawProfiles, targetActiveId);
+            
+            const updates: Partial<CanvasStoreState> = {
+              profiles: rawProfiles,
+              activeProfileId: targetActiveId,
+              isEditMode: false
+            };
+
+            // Restore pinCode if present
+            const incomingPin = parsed.pinCode !== undefined ? parsed.pinCode : parsed.canvas?.pinCode;
+            if (typeof incomingPin === 'string') {
+              try { localStorage.setItem(PIN_STORAGE_KEY, incomingPin); } catch {}
+              updates.pinCode = incomingPin;
+            }
+
+            // Restore weatherBackdrop if present
+            const backdrop = parsed.weatherBackdrop || parsed.canvas?.weatherBackdrop || parsed.preferences?.weatherBackdrop;
+            if (backdrop && typeof backdrop === 'string') {
+              try { localStorage.setItem(BACKDROP_STORAGE_KEY, backdrop); } catch {}
+              updates.weatherBackdrop = backdrop as WeatherBackdropType;
+            }
+
+            set(updates as any);
+            return true;
+          }
         }
       } catch (err) {
         console.error('Failed to import profile JSON:', err);

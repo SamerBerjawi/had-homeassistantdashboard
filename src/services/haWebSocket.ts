@@ -36,7 +36,9 @@ export interface HAWebSocketCallbacks {
     states: Record<string, HAState>;
     nativeNotifications?: HANativePersistentNotification[];
     nativeRepairs?: HANativeRepairIssue[];
+    haVersion?: string;
   }) => void;
+  onVersionLoaded?: (version: string) => void;
   onNativeNotificationsLoaded?: (notifications: HANativePersistentNotification[], repairs: HANativeRepairIssue[]) => void;
   onStateChanged: (entityId: string, newState: HAState) => void;
   onStatesBatchUpdated?: (statesList: HAState[]) => void;
@@ -84,6 +86,7 @@ class HAWebSocketClient {
   private networkListenersAttached = false;
   private pollTimer: any = null;
   private visibilityHandler: (() => void) | null = null;
+  private haVersion: string | null = null;
 
   constructor() {
     this.attachNetworkLifecycleListeners();
@@ -210,8 +213,14 @@ class HAWebSocketClient {
     this.currentToken = token;
   }
 
+  public getVersion(): string | null {
+    return this.haVersion;
+  }
+
   public loadDemoRegistries() {
+    this.haVersion = '2026.8.0';
     this.emitStatus('connected');
+    this.callbacks?.onVersionLoaded?.('2026.8.0');
     this.callbacks?.onLogMessage('info', 'Loaded Home Assistant Registries from Auto-Layout Graph Ingestion Engine (Demo/Simulated Mode)');
     this.callbacks?.onRegistriesLoaded({
       areas: [...MOCK_AREAS],
@@ -219,6 +228,7 @@ class HAWebSocketClient {
       entityRegistry: [...MOCK_ENTITY_REGISTRY],
       floors: [...MOCK_FLOORS],
       states: { ...MOCK_STATES },
+      haVersion: '2026.8.0',
       nativeNotifications: [
         {
           notification_id: 'apple_tv_disc_1',
@@ -415,7 +425,12 @@ class HAWebSocketClient {
     if (msg.type === 'auth_ok') {
       this.reconnectAttempts = 0;
       this.emitStatus('connected');
-      this.callbacks?.onLogMessage('info', `Authentication successful! Home Assistant version: ${msg.ha_version || '2026.x'}`);
+      const liveVersion = msg.ha_version ? String(msg.ha_version) : null;
+      if (liveVersion) {
+        this.haVersion = liveVersion;
+        this.callbacks?.onVersionLoaded?.(liveVersion);
+      }
+      this.callbacks?.onLogMessage('info', `Authentication successful! Home Assistant version: ${liveVersion || '2026.x'}`);
       this.fetchAllRegistries();
       return;
     }
@@ -580,7 +595,7 @@ class HAWebSocketClient {
     try {
       this.callbacks?.onLogMessage('info', 'Querying Home Assistant Area, Device, Entity, Floor, Label registries, native persistent notifications, and repairs...');
       
-      const [areas, devices, entityRegistry, floors, labels, statesList, nativeNotifications, repairsRes] = await Promise.all([
+      const [areas, devices, entityRegistry, floors, labels, statesList, nativeNotifications, repairsRes, haConfig] = await Promise.all([
         this.sendRequest<HAArea[]>('config/area_registry/list').catch(() => []),
         this.sendRequest<HADevice[]>('config/device_registry/list').catch(() => []),
         this.sendRequest<HAEntityRegistryEntry[]>('config/entity_registry/list').catch(() => []),
@@ -588,8 +603,14 @@ class HAWebSocketClient {
         this.sendRequest<HALabel[]>('config/label_registry/list').catch(() => []),
         this.sendRequest<HAState[]>('get_states').catch(() => []),
         this.sendRequest<HANativePersistentNotification[]>('persistent_notification/get').catch(() => []),
-        this.sendRequest<{ issues?: HANativeRepairIssue[] }>('repairs/list_issues').catch(() => ({ issues: [] }))
+        this.sendRequest<{ issues?: HANativeRepairIssue[] }>('repairs/list_issues').catch(() => ({ issues: [] })),
+        this.sendRequest<any>('get_config').catch(() => null)
       ]);
+
+      if (haConfig?.version) {
+        this.haVersion = String(haConfig.version);
+        this.callbacks?.onVersionLoaded?.(this.haVersion);
+      }
 
       const statesMap: Record<string, HAState> = {};
       for (const s of statesList) {
@@ -606,7 +627,8 @@ class HAWebSocketClient {
         labels,
         states: statesMap,
         nativeNotifications: Array.isArray(nativeNotifications) ? nativeNotifications : [],
-        nativeRepairs
+        nativeRepairs,
+        haVersion: this.haVersion || undefined
       });
       try {
         alertService.syncNativePersistentNotifications(Array.isArray(nativeNotifications) ? nativeNotifications : []);
