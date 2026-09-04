@@ -12,6 +12,7 @@ import { HANativePersistentNotification } from '../types/notifications';
 import { useAlertStore } from '../store/useAlertStore';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { haWebSocketService } from './haWebSocket';
+import { isLeakSensor, isRainOrWeatherSensor } from '../lib/entityClassifiers';
 
 // State transition history tracking to avoid duplicate alerts
 const previousStateCache = new Map<string, { state: string; timestamp: number }>();
@@ -150,9 +151,26 @@ export class AlertService {
     }
 
     // =========================================================================
-    // 2. Critical Hazards (Smoke, Gas, CO, Moisture, Safety, Alarm)
+    // 2. Critical Hazards (Smoke, Gas, CO, Moisture/Water Leak, Safety, Alarm)
     // =========================================================================
-    const isCriticalSensor = CRITICAL_DEVICE_CLASSES.has(deviceClass);
+    const sensorPayload = { entity_id: entityId, attributes: attrs, name: friendlyName };
+
+    // Rain and weather sensors must NEVER trigger emergency water leak hazard alerts
+    if (isRainOrWeatherSensor(sensorPayload)) {
+      // If a rain sensor was previously in an active critical alert, auto-acknowledge it
+      const activeCritical = useAlertStore.getState().criticalAlert;
+      if (activeCritical && activeCritical.entityId === entityId) {
+        useAlertStore.getState().acknowledgeCriticalAlert();
+      }
+      return;
+    }
+
+    const isMoisture = deviceClass === 'moisture';
+    const isWaterLeak = isMoisture ? isLeakSensor(sensorPayload) : isLeakSensor(sensorPayload);
+    const isCriticalSensor = isMoisture 
+      ? isWaterLeak 
+      : (CRITICAL_DEVICE_CLASSES.has(deviceClass) || isWaterLeak);
+
     const isAlarmTriggered = entityId.startsWith('alarm_control_panel.') && newStateStr === 'triggered';
 
     if ((isCriticalSensor && (newStateStr === 'on' || newStateStr === 'problem')) || isAlarmTriggered) {
@@ -173,7 +191,7 @@ export class AlertService {
       } else if (deviceClass === 'carbon_monoxide' || deviceClass === 'co') {
         sensorType = 'co';
         hazardTitle = 'CARBON MONOXIDE DETECTED';
-      } else if (deviceClass === 'moisture') {
+      } else if (isMoisture || isWaterLeak) {
         sensorType = 'moisture';
         hazardTitle = 'WATER LEAK DETECTED';
       } else if (deviceClass === 'safety') {

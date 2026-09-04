@@ -7,7 +7,7 @@
  * Overrides the kiosk UI until explicitly acknowledged by user.
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Flame,
@@ -21,6 +21,7 @@ import {
 } from '@phosphor-icons/react';
 import { useAlertStore } from '../../store/useAlertStore';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import { isRainOrWeatherSensor } from '../../lib/entityClassifiers';
 
 interface CriticalAlertModalProps {
   onNavigateArea?: (areaId: string) => void;
@@ -30,9 +31,23 @@ export const CriticalAlertModal: React.FC<CriticalAlertModalProps> = ({ onNaviga
   const { criticalAlert, acknowledgeCriticalAlert } = useAlertStore();
   const resolvedEntities = useAutoLayoutStore((s) => s.resolvedEntities);
 
+  const targetEntity = criticalAlert?.entityId ? resolvedEntities[criticalAlert.entityId] : null;
+
+  // Rain and weather sensors must never lock the kiosk in emergency modal mode
+  useEffect(() => {
+    if (criticalAlert) {
+      if (isRainOrWeatherSensor({ 
+        entity_id: criticalAlert.entityId, 
+        name: `${criticalAlert.title} ${criticalAlert.message}`,
+        attributes: targetEntity?.attributes 
+      })) {
+        acknowledgeCriticalAlert();
+      }
+    }
+  }, [criticalAlert, targetEntity, acknowledgeCriticalAlert]);
+
   if (!criticalAlert) return null;
 
-  const targetEntity = criticalAlert.entityId ? resolvedEntities[criticalAlert.entityId] : null;
   const areaId = targetEntity?.area_id;
 
   const getHazardMeta = (sensorType: string) => {
@@ -40,42 +55,42 @@ export const CriticalAlertModal: React.FC<CriticalAlertModalProps> = ({ onNaviga
       case 'smoke':
         return {
           icon: <Flame size={48} weight="fill" className="text-rose-400" />,
-          title: '🔥 SMOKE DETECTED',
+          title: 'SMOKE DETECTED',
           glowColor: 'rgba(244, 63, 94, 0.45)',
           bgColor: 'from-rose-950/90 to-slate-950/95'
         };
       case 'gas':
         return {
           icon: <Warning size={48} weight="fill" className="text-amber-400" />,
-          title: '⚠️ COMBUSTIBLE GAS DETECTED',
+          title: 'COMBUSTIBLE GAS DETECTED',
           glowColor: 'rgba(245, 158, 11, 0.45)',
           bgColor: 'from-amber-950/90 to-slate-950/95'
         };
       case 'co':
         return {
           icon: <ShieldWarning size={48} weight="fill" className="text-amber-400" />,
-          title: '☣️ CARBON MONOXIDE ALERT',
+          title: 'CARBON MONOXIDE ALERT',
           glowColor: 'rgba(234, 88, 12, 0.45)',
           bgColor: 'from-orange-950/90 to-slate-950/95'
         };
       case 'moisture':
         return {
           icon: <Drop size={48} weight="fill" className="text-cyan-400" />,
-          title: '💧 WATER LEAK DETECTED',
+          title: 'WATER LEAK DETECTED',
           glowColor: 'rgba(6, 182, 212, 0.45)',
           bgColor: 'from-cyan-950/90 to-slate-950/95'
         };
       case 'alarm':
         return {
           icon: <Siren size={48} weight="fill" className="text-rose-400" />,
-          title: '🚨 INTRUSION ALARM TRIGGERED',
+          title: 'INTRUSION ALARM TRIGGERED',
           glowColor: 'rgba(244, 63, 94, 0.5)',
           bgColor: 'from-rose-950/90 to-slate-950/95'
         };
       default:
         return {
           icon: <ShieldWarning size={48} weight="fill" className="text-rose-400" />,
-          title: '🚨 SAFETY HAZARD DETECTED',
+          title: 'SAFETY HAZARD DETECTED',
           glowColor: 'rgba(244, 63, 94, 0.45)',
           bgColor: 'from-rose-950/90 to-slate-950/95'
         };

@@ -39,6 +39,7 @@ export function isRainOrWeatherSensor(e: { attributes?: Record<string, any>; ent
   const dc = (e.attributes?.device_class || '').toLowerCase();
   const id = e.entity_id.toLowerCase();
   const name = (e.attributes?.friendly_name || (e as any).name || '').toLowerCase();
+  const attr = String(e.attributes?.attribution || '').toLowerCase();
 
   return (
     dc === 'precipitation' ||
@@ -50,6 +51,12 @@ export function isRainOrWeatherSensor(e: { attributes?: Record<string, any>; ent
     name.includes('precip') ||
     id.includes('weather') ||
     name.includes('weather') ||
+    id.includes('forecast') ||
+    name.includes('forecast') ||
+    id.includes('meteo') ||
+    name.includes('meteo') ||
+    attr.includes('weather') ||
+    attr.includes('rain') ||
     id.includes('soil') ||
     name.includes('soil') ||
     id.includes('plant') ||

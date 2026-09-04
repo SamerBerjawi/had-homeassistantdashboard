@@ -62,6 +62,7 @@ import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import IconPickerField from '../ui/IconPickerField';
 import EntityCustomizerModal from '../modals/EntityCustomizerModal';
 import { detectSensorCapabilities } from '../../services/sensorClassification';
+import { isRainOrWeatherSensor } from '../../lib/entityClassifiers';
 
 interface DeviceVisibilitySectionProps {
   darkMode: boolean;
@@ -204,6 +205,9 @@ export default function DeviceVisibilitySection({
     }
     if (rawClass === 'smoke' || rawClass === 'gas' || rawClass === 'carbon_monoxide' || rawClass === 'safety' || rawClass === 'tamper' || rawClass === 'problem' || eid.includes('smoke') || eid.includes('gas') || eid.includes('co_') || eid.includes('fire') || eid.includes('tamper')) {
       return 'safety';
+    }
+    if (isRainOrWeatherSensor(entity)) {
+      return 'other_binary';
     }
     if (rawClass === 'moisture' || eid.includes('leak') || fn.includes('leak') || eid.includes('moisture') || eid.includes('flood') || fn.includes('water')) {
       return 'moisture';

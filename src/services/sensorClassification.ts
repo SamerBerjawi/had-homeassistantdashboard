@@ -4,6 +4,7 @@
  */
 
 import { HAEntity, ResolvedEntity } from '../types';
+import { isRainOrWeatherSensor } from '../lib/entityClassifiers';
 
 export type SensorKind =
   | 'temperature'
@@ -120,6 +121,8 @@ export function detectSensorCapabilities(
     kind = 'presence';
   } else if (rawClass === 'smoke' || eid.includes('smoke')) {
     kind = 'smoke';
+  } else if (isRainOrWeatherSensor({ entity_id: entity.entity_id, attributes: attrs, name: friendlyName })) {
+    kind = 'generic_binary';
   } else if (rawClass === 'moisture' || eid.includes('leak') || eid.includes('moisture') || fn.includes('water')) {
     kind = 'moisture';
   } else if (rawClass === 'gas' || eid.includes('gas')) {
