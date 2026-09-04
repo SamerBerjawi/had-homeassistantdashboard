@@ -193,12 +193,19 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
           )}
         </div>
 
-        {/* Right Column (Half Width / 6 cols): Devices and Tariff */}
-        <div className="lg:col-span-6 flex flex-col gap-5 sm:gap-6 h-full justify-between">
-          {/* Device Consumption Nested Concentric Rings */}
+        {/* Right Column (Half Width / 6 cols): Cost & Tariff (top, fixed height) + Monitored Devices (bottom, fills rest) */}
+        <div className="lg:col-span-6 flex flex-col gap-5 sm:gap-6 h-full">
+          {/* Cost & Tariff Summary Table (Fixed / Minimum height needed) */}
+          <EnergySourcesTableCard
+            className="shrink-0"
+            financials={financials}
+            darkMode={darkMode}
+          />
+
+          {/* Device Consumption Nested Concentric Rings (Fills remaining height to align with Solar Production at bottom) */}
           {hasDevices && (
             <DevicesEnergyGraphCard
-              className="flex-1 h-full"
+              className="flex-1 h-full min-h-0"
               devices={devices}
               untrackedKwh={untrackedKwh}
               untrackedPercentage={untrackedPercentage}
@@ -206,13 +213,6 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
               darkMode={darkMode}
             />
           )}
-
-          {/* Cost & Tariff Summary Table */}
-          <EnergySourcesTableCard
-            className="flex-1 h-full"
-            financials={financials}
-            darkMode={darkMode}
-          />
         </div>
       </div>
 

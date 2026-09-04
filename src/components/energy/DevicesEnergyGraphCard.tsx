@@ -148,7 +148,7 @@ export default function DevicesEnergyGraphCard({
       </div>
 
       {/* Main Content Area: Ring Chart on Left/Top, Detailed List on Right/Bottom */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center my-auto py-2 z-10">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center my-auto flex-1 py-2 z-10">
         {/* Ring Chart Column */}
         <div className="md:col-span-5 flex items-center justify-center relative min-h-[220px]">
           <div className="w-[220px] h-[220px] relative flex items-center justify-center">
@@ -186,7 +186,7 @@ export default function DevicesEnergyGraphCard({
         </div>
 
         {/* Device Breakdown List Column */}
-        <div className="md:col-span-7 space-y-2.5">
+        <div className="md:col-span-7 space-y-2.5 overflow-y-auto max-h-[420px] pr-1">
           {devices.map((device, idx) => {
             const isRingItem = idx < 5;
             const color = isRingItem ? (device.color || ringPalette[idx % ringPalette.length]) : (darkMode ? '#64748b' : '#94a3b8');
