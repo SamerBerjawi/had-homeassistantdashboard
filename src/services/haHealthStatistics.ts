@@ -295,8 +295,11 @@ export function buildMetricSummary(
   const currentVal = rawCurrent !== null ? rawCurrent : (history.length > 0 ? history[history.length - 1].value : null);
 
   const values = history.map((p) => p.value).filter((v) => !isNaN(v));
-  const min = values.length > 0 ? Math.min(...values) : undefined;
-  const max = values.length > 0 ? Math.max(...values) : undefined;
+  const rawMin = values.length > 0 ? Math.min(...values) : undefined;
+  const rawMax = values.length > 0 ? Math.max(...values) : undefined;
+  const decPower = Math.pow(10, Math.min(def.decimals, 1));
+  const min = rawMin !== undefined ? (def.decimals === 0 ? Math.round(rawMin) : Math.round(rawMin * decPower) / decPower) : undefined;
+  const max = rawMax !== undefined ? (def.decimals === 0 ? Math.round(rawMax) : Math.round(rawMax * decPower) / decPower) : undefined;
   const totalSum = values.length > 0 ? values.reduce((a, b) => a + b, 0) : undefined;
   const average = values.length > 0 ? Math.round((totalSum! / values.length) * 10) / 10 : undefined;
 

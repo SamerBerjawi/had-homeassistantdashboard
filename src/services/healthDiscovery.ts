@@ -38,6 +38,56 @@ function formatDeviceName(rawPrefix: string): string {
 }
 
 /**
+ * Scans all HA states to identify confirmed mobile companion app device prefixes.
+ * In Home Assistant, a mobile app integration registers companion entities such as:
+ * - sensor.<prefix>_battery_level / battery_state
+ * - sensor.<prefix>_app_version
+ * - sensor.<prefix>_storage / free_storage
+ * - sensor.<prefix>_geocoded_location
+ * - sensor.<prefix>_connection_type
+ * - sensor.<prefix>_sim_1 / sim_2 / activity
+ * - device_tracker.<prefix>
+ */
+export function getConfirmedMobileAppPrefixes(states: Record<string, HAState>): Set<string> {
+  const prefixes = new Set<string>();
+
+  const MOBILE_APP_INDICATORS = [
+    '_battery_level',
+    '_battery_state',
+    '_app_version',
+    '_storage',
+    '_free_storage',
+    '_geocoded_location',
+    '_connection_type',
+    '_sim_1',
+    '_sim_2',
+    '_activity',
+  ];
+
+  for (const entityId of Object.keys(states)) {
+    if (entityId.startsWith('device_tracker.')) {
+      const trackerPrefix = entityId.slice(15).toLowerCase();
+      // Exclude router/network trackers that are not mobile phones
+      if (trackerPrefix && !trackerPrefix.includes('router') && !trackerPrefix.includes('gateway')) {
+        prefixes.add(trackerPrefix);
+      }
+    } else if (entityId.startsWith('sensor.')) {
+      const sensorName = entityId.slice(7).toLowerCase();
+      for (const indicator of MOBILE_APP_INDICATORS) {
+        if (sensorName.endsWith(indicator)) {
+          const prefix = sensorName.slice(0, -indicator.length);
+          if (prefix) {
+            prefixes.add(prefix);
+          }
+        }
+      }
+    }
+  }
+
+  return prefixes;
+}
+
+/**
  * Checks whether an entity is excluded device telemetry
  */
 function isExcludedTelemetry(entityId: string): boolean {
@@ -52,15 +102,23 @@ function isExcludedTelemetry(entityId: string): boolean {
 
 /**
  * Given an entity_id like 'sensor.samers_iphone_health_steps', checks if it matches
- * any registered health metric suffix. If matched, returns { metricKey, devicePrefix }.
+ * any registered health metric suffix.
+ *
+ * Strictly enforces that sensors must either:
+ * 1. Explicitly contain 'health_' or 'apple_health' in the entity_id, OR
+ * 2. Belong to a verified mobile companion app device (preventing dishwashers, water meters,
+ *    automotive distance sensors, or smart plugs from false-matching).
  */
 export function matchHealthMetricSuffix(
-  entityId: string
+  entityId: string,
+  confirmedMobilePrefixes?: Set<string>
 ): { metricKey: HealthMetricKey; devicePrefix: string } | null {
   if (!entityId.startsWith('sensor.')) return null;
   if (isExcludedTelemetry(entityId)) return null;
 
   const rawWithoutDomain = entityId.slice(7); // Remove 'sensor.'
+  const lowerWithoutDomain = rawWithoutDomain.toLowerCase();
+  const hasExplicitHealthKeyword = lowerWithoutDomain.includes('health_') || lowerWithoutDomain.includes('apple_health');
 
   // 1. Check primary suffixes from registry first
   for (const [keyStr, suffix] of Object.entries(HEALTH_METRIC_SUFFIXES)) {
@@ -69,11 +127,18 @@ export function matchHealthMetricSuffix(
 
     if (rawWithoutDomain.endsWith(targetSuffix)) {
       const prefix = rawWithoutDomain.slice(0, -targetSuffix.length);
-      return { metricKey: key, devicePrefix: prefix || 'default' };
+      const cleanPrefix = (prefix || 'default').toLowerCase();
+
+      // Only match if explicit health keyword is present OR device is a confirmed mobile companion app
+      if (hasExplicitHealthKeyword || (confirmedMobilePrefixes && confirmedMobilePrefixes.has(cleanPrefix)) || cleanPrefix === 'apple_health') {
+        return { metricKey: key, devicePrefix: prefix || 'default' };
+      }
     }
 
     if (rawWithoutDomain === suffix) {
-      return { metricKey: key, devicePrefix: 'default' };
+      if (hasExplicitHealthKeyword || !confirmedMobilePrefixes || confirmedMobilePrefixes.size === 0) {
+        return { metricKey: key, devicePrefix: 'default' };
+      }
     }
   }
 
@@ -86,11 +151,19 @@ export function matchHealthMetricSuffix(
       const targetSuffix = `_${fb}`;
       if (rawWithoutDomain.endsWith(targetSuffix)) {
         const prefix = rawWithoutDomain.slice(0, -targetSuffix.length);
-        return { metricKey: key, devicePrefix: prefix || 'default' };
+        const cleanPrefix = (prefix || 'default').toLowerCase();
+
+        // Stricter check for fallbacks (e.g. 'steps', 'distance', 'floors'):
+        // Must have confirmed mobile prefix or explicit health keyword
+        if (hasExplicitHealthKeyword || (confirmedMobilePrefixes && confirmedMobilePrefixes.has(cleanPrefix))) {
+          return { metricKey: key, devicePrefix: prefix || 'default' };
+        }
       }
 
       if (rawWithoutDomain === fb) {
-        return { metricKey: key, devicePrefix: 'default' };
+        if (hasExplicitHealthKeyword) {
+          return { metricKey: key, devicePrefix: 'default' };
+        }
       }
     }
   }
@@ -99,20 +172,30 @@ export function matchHealthMetricSuffix(
 }
 
 /**
- * Discovers all devices exposing Apple Health metrics in Home Assistant
+ * Discovers all user mobile companion app devices exposing Apple Health metrics in Home Assistant.
+ * Strictly excludes any non-mobile devices (such as smart plugs, water meters, EVs, or room sensors).
  */
 export function discoverHealthDevices(
   states: Record<string, HAState>
 ): DiscoveredHealthDevice[] {
+  const confirmedMobilePrefixes = getConfirmedMobileAppPrefixes(states);
   const devicesMap = new Map<string, DiscoveredHealthDevice>();
 
   for (const [entityId, stateObj] of Object.entries(states)) {
     if (!stateObj || typeof entityId !== 'string') continue;
 
-    const match = matchHealthMetricSuffix(entityId);
+    const match = matchHealthMetricSuffix(entityId, confirmedMobilePrefixes);
     if (!match) continue;
 
     const { metricKey, devicePrefix } = match;
+    const lowerPrefix = devicePrefix.toLowerCase();
+
+    // Verify device is mobile companion or has explicit health sensors
+    const isMobileConfirmed = confirmedMobilePrefixes.has(lowerPrefix) || lowerPrefix.includes('iphone') || lowerPrefix.includes('watch') || lowerPrefix.includes('phone') || lowerPrefix === 'apple_health' || lowerPrefix === 'default';
+
+    if (!isMobileConfirmed && confirmedMobilePrefixes.size > 0) {
+      continue;
+    }
 
     if (!devicesMap.has(devicePrefix)) {
       devicesMap.set(devicePrefix, {

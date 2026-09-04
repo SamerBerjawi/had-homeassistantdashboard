@@ -42,19 +42,49 @@ export function useHealthData() {
     return discoverHealthDevices(currentStates);
   }, [currentStates]);
 
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
-  const [timeRange, setTimeRange] = useState<HealthTimeRange>('today');
+  const [selectedDeviceId, setSelectedDeviceIdState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ha_health_selected_device') || '';
+    }
+    return '';
+  });
+
+  const setSelectedDeviceId = useCallback((id: string) => {
+    setSelectedDeviceIdState(id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ha_health_selected_device', id);
+    }
+  }, []);
+
+  const [timeRange, setTimeRangeState] = useState<HealthTimeRange>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ha_health_selected_time_range');
+      if (saved === 'today' || saved === 'week' || saved === 'month' || saved === 'year') {
+        return saved as HealthTimeRange;
+      }
+    }
+    return 'week';
+  });
+
+  const setTimeRange = useCallback((range: HealthTimeRange) => {
+    setTimeRangeState(range);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ha_health_selected_time_range', range);
+    }
+  }, []);
   const [activeCategory, setActiveCategory] = useState<'all' | HealthCategory>('all');
   const [isPreviewDemo, setIsPreviewDemo] = useState<boolean>(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
   const [historyMap, setHistoryMap] = useState<Record<string, any>>({});
 
-  // Auto-select primary device when devices change
+  // Auto-select primary device when devices change or if invalid
   useEffect(() => {
-    if (discoveredDevices.length > 0 && !selectedDeviceId) {
-      setSelectedDeviceId(discoveredDevices[0].deviceId);
+    if (discoveredDevices.length > 0) {
+      if (!selectedDeviceId || !discoveredDevices.some((d) => d.deviceId === selectedDeviceId)) {
+        setSelectedDeviceId(discoveredDevices[0].deviceId);
+      }
     }
-  }, [discoveredDevices, selectedDeviceId]);
+  }, [discoveredDevices, selectedDeviceId, setSelectedDeviceId]);
 
   // Resolve sensors for active device
   const { activeDevice, metricsMap, totalFound } = useMemo(() => {

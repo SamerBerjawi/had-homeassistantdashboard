@@ -64,28 +64,36 @@ export const HealthMetricCard: React.FC<HealthMetricCardProps> = ({
       break;
   }
 
-  // Mini sparkline SVG path calculation
+  // Mini sparkline SVG path calculation with internal padding to prevent clipping
   const historyVals = (summary.history || []).map((h) => h.value);
   const minVal = historyVals.length > 0 ? Math.min(...historyVals) : 0;
   const maxVal = historyVals.length > 0 ? Math.max(...historyVals) : 1;
   const valRange = maxVal - minVal || 1;
 
-  const sparkWidth = 100;
-  const sparkHeight = 32;
+  const sparkWidth = 70;
+  const sparkHeight = 24;
+  const padX = 2;
+  const padY = 3;
   const sparkPoints = historyVals
     .map((v, i) => {
-      const x = (i / Math.max(1, historyVals.length - 1)) * sparkWidth;
-      const y = sparkHeight - ((v - minVal) / valRange) * (sparkHeight - 6) - 3;
+      const x = padX + (i / Math.max(1, historyVals.length - 1)) * (sparkWidth - padX * 2);
+      const y = sparkHeight - padY - ((v - minVal) / valRange) * (sparkHeight - padY * 2);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(' ');
 
+  // Format stat helper strictly limited to at most 1 decimal digit
+  const formatStatVal = (val: number | undefined): string => {
+    if (val === undefined || val === null || isNaN(val)) return '—';
+    if (def.decimals === 0) return Math.round(val).toLocaleString();
+    const cappedDecimals = Math.min(def.decimals, 1);
+    return val.toFixed(cappedDecimals);
+  };
+
   return (
     <BentoCard
       colSpan={colSpan}
-      hasBorderBeam={highlighted}
-      borderBeamColorFrom={def.accentColor}
-      borderBeamColorTo="#AF52DE"
+      hasBorderBeam={false}
       darkMode={darkMode}
       onClick={handleClick}
       onContextMenu={(e) => {
@@ -95,32 +103,22 @@ export const HealthMetricCard: React.FC<HealthMetricCardProps> = ({
       className="group relative select-none"
     >
       <div>
-        {/* Card Header: Icon, Label, Status Badge */}
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border"
-              style={{
-                backgroundColor: `${def.accentColor}18`,
-                borderColor: `${def.accentColor}35`,
-                color: def.accentColor,
-              }}
-            >
-              <DynamicPhosphorIcon
-                name={def.iconName}
-                fallback={Heartbeat}
-                size={18}
-                weight="duotone"
-              />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-xs font-bold truncate text-slate-800 dark:text-white">
-                {def.label}
-              </h3>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
-                {summary.entityId ? 'Home Assistant' : 'Demo Metric'}
-              </p>
-            </div>
+        {/* Row 1: Icon on Left, Status Badge on Right (never overlap) */}
+        <div className="flex items-center justify-between gap-2">
+          <div
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0 border"
+            style={{
+              backgroundColor: `${def.accentColor}18`,
+              borderColor: `${def.accentColor}35`,
+              color: def.accentColor,
+            }}
+          >
+            <DynamicPhosphorIcon
+              name={def.iconName}
+              fallback={Heartbeat}
+              size={17}
+              weight="duotone"
+            />
           </div>
 
           <AnimatedBadge variant={badgeVariant} showDot={summary.status !== 'unknown'}>
@@ -128,19 +126,26 @@ export const HealthMetricCard: React.FC<HealthMetricCardProps> = ({
           </AnimatedBadge>
         </div>
 
-        {/* Big Number & Unit */}
-        <div className="flex items-baseline justify-between gap-2 mt-1">
-          <div className="flex items-baseline gap-1.5">
+        {/* Row 2: Metric Name / Title (Full width, no badge crowding) */}
+        <div className="mt-2 min-w-0">
+          <h3 className="text-xs font-bold text-slate-800 dark:text-white truncate" title={def.label}>
+            {def.label}
+          </h3>
+        </div>
+
+        {/* Row 3: Big Value, Unit & Change Indicator */}
+        <div className="flex items-baseline justify-between gap-1.5 mt-1">
+          <div className="flex items-baseline gap-1.5 min-w-0">
             {summary.currentValue !== null ? (
               <NumberTicker
                 value={summary.currentValue}
-                decimalPlaces={def.decimals}
+                decimalPlaces={Math.min(def.decimals, 1)}
                 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight"
               />
             ) : (
               <span className="text-2xl font-black text-slate-400">—</span>
             )}
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0">
               {summary.unit}
             </span>
           </div>
@@ -148,14 +153,14 @@ export const HealthMetricCard: React.FC<HealthMetricCardProps> = ({
           {/* Change Delta Indicator */}
           {summary.changePercent !== undefined && summary.changePercent !== 0 && (
             <div
-              className={`flex items-center text-xs font-bold ${
+              className={`flex items-center text-[11px] font-bold shrink-0 ${
                 summary.changePercent > 0 ? 'text-emerald-400' : 'text-rose-400'
               }`}
             >
               {summary.changePercent > 0 ? (
-                <CaretUp size={14} weight="bold" />
+                <CaretUp size={13} weight="bold" />
               ) : (
-                <CaretDown size={14} weight="bold" />
+                <CaretDown size={13} weight="bold" />
               )}
               <span>{Math.abs(summary.changePercent)}%</span>
             </div>
@@ -163,33 +168,29 @@ export const HealthMetricCard: React.FC<HealthMetricCardProps> = ({
         </div>
       </div>
 
-      {/* Footer: Sparkline & Min/Max/Avg Stat Ribbon */}
-      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-3">
-        <div className="text-[10px] font-medium text-slate-400 dark:text-slate-500 space-x-2">
+      {/* Footer: Sparkline & Min/Max/Total Ribbon */}
+      <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-2 overflow-hidden">
+        <div className="min-w-0 flex-1 text-[10px] font-medium text-slate-400 dark:text-slate-500 truncate leading-tight">
           {def.chartType === 'bar' && summary.totalSum !== undefined ? (
-            <span>
-              Total: <strong className="text-slate-700 dark:text-slate-300">{summary.totalSum.toLocaleString()}</strong>
+            <span className="truncate block">
+              Total: <strong className="text-slate-700 dark:text-slate-300 font-semibold">{formatStatVal(summary.totalSum)}</strong>
             </span>
           ) : (
-            <>
+            <span className="truncate block">
               {summary.min !== undefined && (
-                <span>
-                  Min: <strong className="text-slate-700 dark:text-slate-300">{summary.min}</strong>
-                </span>
+                <>Min: <strong className="text-slate-700 dark:text-slate-300 font-semibold">{formatStatVal(summary.min)}</strong></>
               )}
               {summary.max !== undefined && (
-                <span>
-                  Max: <strong className="text-slate-700 dark:text-slate-300">{summary.max}</strong>
-                </span>
+                <> · Max: <strong className="text-slate-700 dark:text-slate-300 font-semibold">{formatStatVal(summary.max)}</strong></>
               )}
-            </>
+            </span>
           )}
         </div>
 
-        {/* Mini Sparkline */}
+        {/* Mini Sparkline (Bounded and non-clipping) */}
         {sparkPoints && (
-          <div className="shrink-0 w-24 h-7">
-            <svg viewBox={`0 0 ${sparkWidth} ${sparkHeight}`} className="w-full h-full overflow-visible">
+          <div className="shrink-0 w-14 h-5 overflow-hidden">
+            <svg viewBox={`0 0 ${sparkWidth} ${sparkHeight}`} className="w-full h-full block">
               <defs>
                 <linearGradient id={`sparkGrad-${summary.key}`} x1="0" y1="0" x2="1" y2="0">
                   <stop offset="0%" stopColor={def.accentColor} stopOpacity={0.6} />

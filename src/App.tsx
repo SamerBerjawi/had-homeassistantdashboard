@@ -581,38 +581,40 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Edit Mode Toggle */}
-                <button
-                  type="button"
-                  onClick={toggleEditMode}
-                  className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl border transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 sm:gap-2 text-xs font-bold shadow-xs ${
-                    isEditMode
-                      ? 'bg-sky-500 border-sky-400 text-white shadow-sky-500/25 ring-2 ring-sky-500/20'
-                      : darkMode
-                        ? 'bg-slate-900/80 hover:bg-slate-800 border-white/10 text-slate-300 hover:text-white'
-                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-900'
-                  }`}
-                  title={isEditMode ? 'Exit Edit Mode' : 'Enable Edit Mode'}
-                  aria-pressed={isEditMode}
-                >
-                  <PencilSimpleLine
-                    size={16}
-                    weight={isEditMode ? 'fill' : 'bold'}
-                    className={isEditMode ? 'animate-pulse text-white' : 'text-sky-400'}
-                  />
-                  <span>Edit Mode</span>
-                  <span
-                    className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out p-0.5 ${
-                      isEditMode ? 'bg-white/30' : darkMode ? 'bg-white/20' : 'bg-slate-300'
+                {/* Edit Mode Toggle (Only visible on Settings page) */}
+                {activeTab === 'settings' && (
+                  <button
+                    type="button"
+                    onClick={toggleEditMode}
+                    className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl border transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 sm:gap-2 text-xs font-bold shadow-xs ${
+                      isEditMode
+                        ? 'bg-sky-500 border-sky-400 text-white shadow-sky-500/25 ring-2 ring-sky-500/20'
+                        : darkMode
+                          ? 'bg-slate-900/80 hover:bg-slate-800 border-white/10 text-slate-300 hover:text-white'
+                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-900'
                     }`}
+                    title={isEditMode ? 'Exit Edit Mode' : 'Enable Edit Mode'}
+                    aria-pressed={isEditMode}
                   >
-                    <span
-                      className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
-                        isEditMode ? 'translate-x-3' : 'translate-x-0'
-                      }`}
+                    <PencilSimpleLine
+                      size={16}
+                      weight={isEditMode ? 'fill' : 'bold'}
+                      className={isEditMode ? 'animate-pulse text-white' : 'text-sky-400'}
                     />
-                  </span>
-                </button>
+                    <span>Edit Mode</span>
+                    <span
+                      className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out p-0.5 ${
+                        isEditMode ? 'bg-white/30' : darkMode ? 'bg-white/20' : 'bg-slate-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
+                          isEditMode ? 'translate-x-3' : 'translate-x-0'
+                        }`}
+                      />
+                    </span>
+                  </button>
+                )}
 
                 {/* Manual Refresh Button */}
                 <button

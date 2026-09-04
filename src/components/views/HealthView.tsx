@@ -1,123 +1,30 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- *
- * Apple Health & Vitals Dashboard View
- * Comprehensive health monitoring station integrating Apple Health telemetry
- * via Home Assistant companion app sensors, WebSocket recorder statistics,
- * interactive time-range filtering, and MagicUI interactive primitives.
- */
-
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React from 'react';
 import {
   Heartbeat,
   Flame,
-  Waveform,
   Scales,
-  ArrowClockwise,
-  DeviceMobile,
   Sparkle,
-  CalendarBlank,
 } from '@phosphor-icons/react';
 import { useHealthData } from '../../hooks/useHealthData';
-import { HealthTimeRange } from '../../types/health';
-import AppleActivityCard, { ActivityData } from '../kokonutui/apple-activity-card';
-import { HealthTimeseriesChart } from './health/HealthTimeseriesChart';
+import { HealthActivityRingsCompact } from './health/HealthActivityRingsCompact';
+import { HealthStatisticChart } from './health/HealthStatisticChart';
 import { HealthMetricCard } from './health/HealthMetricCard';
-import { HealthActivitySection } from './health/HealthActivitySection';
-import { HealthVitalsSection } from './health/HealthVitalsSection';
-import { HealthBodySection } from './health/HealthBodySection';
 import { HealthOnboardingEmptyState } from './health/HealthOnboardingEmptyState';
-import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
-import { BentoGrid } from '../ui/BentoGrid';
-import { BentoCard } from '../ui/BentoCard';
-import ViewLoadingState from '../ui/ViewLoadingState';
 
 interface HealthViewProps {
   darkMode?: boolean;
 }
 
-type HealthSubTab = 'overview' | 'activity' | 'vitals' | 'body';
-
 export default function HealthView({ darkMode = true }: HealthViewProps) {
   const {
-    devices,
-    activeDevice,
-    selectedDeviceId,
-    setSelectedDeviceId,
     timeRange,
-    setTimeRange,
     summaries,
     activityRingsData,
-    isLoadingHistory,
     totalSensorsFound,
     isPreviewDemo,
     setIsPreviewDemo,
     refreshHistory,
   } = useHealthData();
-
-  const [activeSubTab, setActiveSubTab] = useState<HealthSubTab>('overview');
-
-  const tabs: SectionTabItem[] = [
-    {
-      id: 'overview',
-      label: 'Overview',
-      icon: Heartbeat,
-    },
-    {
-      id: 'activity',
-      label: 'Activity',
-      icon: Flame,
-    },
-    {
-      id: 'vitals',
-      label: 'Heart & Vitals',
-      icon: Waveform,
-    },
-    {
-      id: 'body',
-      label: 'Body & Nutrition',
-      icon: Scales,
-    },
-  ];
-
-  const timeRanges: { id: HealthTimeRange; label: string }[] = [
-    { id: 'today', label: 'Today' },
-    { id: 'week', label: 'This Week' },
-    { id: 'month', label: 'This Month' },
-    { id: 'year', label: 'This Year' },
-  ];
-
-  const kokonutActivities: ActivityData[] = useMemo(() => [
-    {
-      label: "MOVE",
-      value: Math.min(100, Math.round((activityRingsData.move.current / (activityRingsData.move.goal || 1)) * 100)),
-      color: "#FF2D55",
-      size: 200,
-      current: activityRingsData.move.current,
-      target: activityRingsData.move.goal,
-      unit: activityRingsData.move.unit.toUpperCase(),
-    },
-    {
-      label: "EXERCISE",
-      value: Math.min(100, Math.round((activityRingsData.exercise.current / (activityRingsData.exercise.goal || 1)) * 100)),
-      color: "#A3F900",
-      size: 160,
-      current: activityRingsData.exercise.current,
-      target: activityRingsData.exercise.goal,
-      unit: activityRingsData.exercise.unit.toUpperCase(),
-    },
-    {
-      label: "STAND",
-      value: Math.min(100, Math.round((activityRingsData.steps.current / (activityRingsData.steps.goal || 1)) * 100)),
-      color: "#04C7DD",
-      size: 120,
-      current: activityRingsData.steps.current,
-      target: activityRingsData.steps.goal,
-      unit: activityRingsData.steps.unit.toUpperCase(),
-    },
-  ], [activityRingsData]);
 
   // If no sensors detected and demo mode is not active, render Onboarding state
   if (totalSensorsFound === 0 && !isPreviewDemo) {
@@ -131,225 +38,265 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
   }
 
   return (
-    <div className="w-full flex-1 flex flex-col gap-5 sm:gap-6 animate-fadeIn pb-24 md:pb-8">
-      {/* Top Header Controls (Device Picker & Time-Range Filter) */}
-      <div className="flex items-center justify-between gap-3 flex-wrap pb-1">
-        {/* Left: Device Selector & Demo Mode Pill */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {isPreviewDemo && (
-            <button
-              type="button"
-              onClick={() => setIsPreviewDemo(false)}
-              className="px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-400 flex items-center gap-1.5 hover:bg-amber-500/30 transition-all cursor-pointer shadow-xs"
-              title="Click to exit demo mode"
-            >
-              <Sparkle size={13} weight="fill" />
-              <span>Demo Mode</span>
-            </button>
-          )}
-
-          {/* Multi-Device Picker Pill (if >1 device found) */}
-          {devices.length > 1 && (
-            <div className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold bg-white/20 dark:bg-black/20 text-slate-800 dark:text-slate-200 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
-              <DeviceMobile size={15} weight="duotone" className="text-[#FF2D55]" />
-              <select
-                value={selectedDeviceId}
-                onChange={(e) => setSelectedDeviceId(e.target.value)}
-                className="bg-transparent border-none outline-none cursor-pointer pr-2 font-bold"
-              >
-                {devices.map((d) => (
-                  <option key={d.deviceId} value={d.deviceId} className="bg-slate-900 text-white">
-                    {d.deviceName} ({d.sensorCount})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-
-        {/* Right: Time-Range Filter & Refresh */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Time Range Selector */}
-          <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
-            <CalendarBlank size={14} weight="bold" className="text-slate-400 ml-1.5 mr-0.5 hidden sm:inline" />
-            {timeRanges.map((range) => {
-              const isSelected = timeRange === range.id;
-              return (
-                <button
-                  key={range.id}
-                  type="button"
-                  onClick={() => setTimeRange(range.id)}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-gradient-to-r from-[#FF2D55] to-[#FF5E3A] text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {range.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Refresh Action */}
+    <div className="w-full flex-1 flex flex-col gap-4 sm:gap-5 animate-fadeIn pb-16 md:pb-8">
+      {/* Optional Demo Mode Exit Banner */}
+      {isPreviewDemo && (
+        <div className="flex justify-end">
           <button
             type="button"
-            onClick={refreshHistory}
-            disabled={isLoadingHistory}
-            title="Refresh Health Telemetry"
-            className="p-2 rounded-2xl bg-white/20 hover:bg-white/30 dark:bg-black/20 dark:hover:bg-black/30 text-slate-700 dark:text-slate-300 backdrop-blur-sm transition-all cursor-pointer disabled:opacity-50 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]"
+            onClick={() => setIsPreviewDemo(false)}
+            className="px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-400 flex items-center gap-1.5 hover:bg-amber-500/30 transition-all cursor-pointer shadow-xs"
+            title="Click to exit demo mode"
           >
-            <ArrowClockwise
-              size={16}
-              weight="bold"
-              className={isLoadingHistory ? 'animate-spin text-[#FF2D55]' : ''}
-            />
+            <Sparkle size={13} weight="fill" />
+            <span>Demo Mode Active (Click to Exit)</span>
           </button>
         </div>
-      </div>
+      )}
 
-      {/* Sub-Category Navigation Tabs */}
-      <AdaptiveSectionTabs
-        tabs={tabs}
-        activeTab={activeSubTab}
-        onChange={(tab) => setActiveSubTab(tab as HealthSubTab)}
-        darkMode={darkMode}
-      />
-
-      {/* Animated Content per Tab */}
-      <AnimatePresence mode="wait">
-        {activeSubTab === 'overview' && (
-          <motion.div
-            key="overview"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-6"
-          >
-            {/* Top Row: Activity Concentric Rings Card & Key Cardiac Indicator */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              {/* Activity Rings Hero */}
-              <BentoCard
-                colSpan={6}
-                hasBorderBeam={true}
-                borderBeamColorFrom="#FF2D55"
-                borderBeamColorTo="#A1E833"
-                darkMode={darkMode}
-                className="lg:col-span-7 flex items-center justify-center p-2 sm:p-4"
-              >
-                <AppleActivityCard
-                  title="Daily Activity Progress"
-                  activities={kokonutActivities}
-                  className="w-full p-2 sm:p-4 max-w-full"
-                />
-              </BentoCard>
-
-              {/* Heart Rate & Vitals Snapshot */}
-              <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
-                {summaries['heartRate'] && (
-                  <HealthMetricCard
-                    summary={summaries['heartRate']}
-                    darkMode={darkMode}
-                    highlighted={true}
-                  />
-                )}
-                {summaries['bloodOxygen'] && (
-                  <HealthMetricCard
-                    summary={summaries['bloodOxygen']}
-                    darkMode={darkMode}
-                  />
-                )}
+      {/* ========================================================================= */}
+      {/* 3 PANORAMIC SECTIONS: Top-Aligned with no empty space in Desktop View      */}
+      {/* ========================================================================= */}
+      <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
+        {/* ======================================================================= */}
+        {/* SECTION 1: Daily Activity & Concentric Rings Hero                       */}
+        {/* ======================================================================= */}
+        <div className="lg:col-span-4 flex flex-col gap-4">
+          <div className="p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
+            {/* Card Section Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#FF2D55]/15 text-[#FF2D55] flex items-center justify-center">
+                  <Flame size={18} weight="fill" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                    Daily Activity
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Apple Health concentric rings &amp; movement
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Interactive Trend Chart Hero */}
-            <HealthTimeseriesChart
-              summaries={summaries}
-              timeRange={timeRange}
+            {/* Compact Apple Activity Rings & Statistics Side-by-Side */}
+            <HealthActivityRingsCompact
+              move={activityRingsData.move}
+              exercise={activityRingsData.exercise}
+              steps={activityRingsData.steps}
               darkMode={darkMode}
             />
 
-            {/* Favorites Bento Grid */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                  Health Favorites
-                </h3>
-                <span className="text-xs font-bold text-slate-400">
-                  Quick Biometrics
-                </span>
-              </div>
+            {/* Steps Interval Trend Chart */}
+            {summaries['healthSteps'] && (
+              <HealthStatisticChart
+                summary={summaries['healthSteps']}
+                timeRange={timeRange}
+                darkMode={darkMode}
+              />
+            )}
 
-              <BentoGrid cols={4}>
-                {summaries['healthSteps'] && (
-                  <HealthMetricCard summary={summaries['healthSteps']} darkMode={darkMode} />
-                )}
-                {summaries['activeEnergy'] && (
-                  <HealthMetricCard summary={summaries['activeEnergy']} darkMode={darkMode} />
-                )}
-                {summaries['restingHeartRate'] && (
-                  <HealthMetricCard summary={summaries['restingHeartRate']} darkMode={darkMode} />
-                )}
-                {summaries['hrv'] && (
-                  <HealthMetricCard summary={summaries['hrv']} darkMode={darkMode} />
-                )}
-                {summaries['distance'] && (
-                  <HealthMetricCard summary={summaries['distance']} darkMode={darkMode} />
-                )}
-                {summaries['flightsClimbed'] && (
-                  <HealthMetricCard summary={summaries['flightsClimbed']} darkMode={darkMode} />
-                )}
-                {summaries['respiratoryRate'] && (
-                  <HealthMetricCard summary={summaries['respiratoryRate']} darkMode={darkMode} />
-                )}
-                {summaries['weight'] && (
-                  <HealthMetricCard summary={summaries['weight']} darkMode={darkMode} />
-                )}
-              </BentoGrid>
+            {/* Key Activity Biometrics */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+              {summaries['activeEnergy'] && (
+                <HealthMetricCard
+                  summary={summaries['activeEnergy']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['exerciseTime'] && (
+                <HealthMetricCard
+                  summary={summaries['exerciseTime']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['healthSteps'] && (
+                <HealthMetricCard
+                  summary={summaries['healthSteps']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['flightsClimbed'] && (
+                <HealthMetricCard
+                  summary={summaries['flightsClimbed']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['distance'] && (
+                <HealthMetricCard
+                  summary={summaries['distance']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['activePace'] && (
+                <HealthMetricCard
+                  summary={summaries['activePace']}
+                  darkMode={darkMode}
+                />
+              )}
             </div>
-          </motion.div>
-        )}
+          </div>
+        </div>
 
-        {activeSubTab === 'activity' && (
-          <motion.div
-            key="activity"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-6"
-          >
-            <HealthActivitySection summaries={summaries} darkMode={darkMode} />
-          </motion.div>
-        )}
+        {/* ======================================================================= */}
+        {/* SECTION 2: Cardiovascular & Vitals Signals                              */}
+        {/* ======================================================================= */}
+        <div className="lg:col-span-4 flex flex-col gap-4">
+          <div className="p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
+            {/* Card Section Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-500 flex items-center justify-center">
+                  <Heartbeat size={18} weight="fill" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                    Cardiovascular &amp; Vitals
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Heart rhythm, oxygenation &amp; vitals
+                  </p>
+                </div>
+              </div>
+            </div>
 
-        {activeSubTab === 'vitals' && (
-          <motion.div
-            key="vitals"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-6"
-          >
-            <HealthVitalsSection summaries={summaries} darkMode={darkMode} />
-          </motion.div>
-        )}
+            {/* Heart Rate Interval Trend Chart */}
+            {summaries['heartRate'] && (
+              <HealthStatisticChart
+                summary={summaries['heartRate']}
+                timeRange={timeRange}
+                darkMode={darkMode}
+              />
+            )}
 
-        {activeSubTab === 'body' && (
-          <motion.div
-            key="body"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-6"
-          >
-            <HealthBodySection summaries={summaries} darkMode={darkMode} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {/* Vitals Biometrics Grid */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+              {summaries['heartRate'] && (
+                <HealthMetricCard
+                  summary={summaries['heartRate']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['bloodOxygen'] && (
+                <HealthMetricCard
+                  summary={summaries['bloodOxygen']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['restingHeartRate'] && (
+                <HealthMetricCard
+                  summary={summaries['restingHeartRate']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['hrv'] && (
+                <HealthMetricCard
+                  summary={summaries['hrv']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['respiratoryRate'] && (
+                <HealthMetricCard
+                  summary={summaries['respiratoryRate']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['walkingHeartRate'] && (
+                <HealthMetricCard
+                  summary={summaries['walkingHeartRate']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['bodyTemperature'] && (
+                <HealthMetricCard
+                  summary={summaries['bodyTemperature']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['bpSystolic'] && (
+                <HealthMetricCard
+                  summary={summaries['bpSystolic']}
+                  darkMode={darkMode}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ======================================================================= */}
+        {/* SECTION 3: Biometric Trends & Body Analytics                            */}
+        {/* ======================================================================= */}
+        <div className="lg:col-span-4 flex flex-col gap-4">
+          <div className="p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
+            {/* Card Section Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-400 flex items-center justify-center">
+                  <Scales size={18} weight="fill" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                    Trends &amp; Body
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Energy expenditure &amp; body composition
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Active Energy Interval Trend Chart */}
+            {summaries['activeEnergy'] && (
+              <HealthStatisticChart
+                summary={summaries['activeEnergy']}
+                timeRange={timeRange}
+                darkMode={darkMode}
+              />
+            )}
+
+            {/* Body & Nutrition Biometrics Grid */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+              {summaries['vo2Max'] && (
+                <HealthMetricCard
+                  summary={summaries['vo2Max']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['weight'] && (
+                <HealthMetricCard
+                  summary={summaries['weight']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['bodyFat'] && (
+                <HealthMetricCard
+                  summary={summaries['bodyFat']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['leanBodyMass'] && (
+                <HealthMetricCard
+                  summary={summaries['leanBodyMass']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['water'] && (
+                <HealthMetricCard
+                  summary={summaries['water']}
+                  darkMode={darkMode}
+                />
+              )}
+              {summaries['restingEnergy'] && (
+                <HealthMetricCard
+                  summary={summaries['restingEnergy']}
+                  darkMode={darkMode}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
