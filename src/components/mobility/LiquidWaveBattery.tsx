@@ -8,7 +8,7 @@ import { motion } from 'motion/react';
 import { Lightning } from '@phosphor-icons/react';
 
 interface LiquidWaveBatteryProps {
-  soc: number; // 0 to 100
+  soc?: number | null; // 0 to 100
   isCharging?: boolean;
   powerKw?: number;
   darkMode?: boolean;
@@ -21,13 +21,14 @@ export function LiquidWaveBattery({
   darkMode = true,
   className = ''
 }: LiquidWaveBatteryProps) {
-  const clampedSoc = Math.min(Math.max(Math.round(soc), 0), 100);
+  const hasSoc = typeof soc === 'number' && !isNaN(soc);
+  const clampedSoc = hasSoc ? Math.min(Math.max(Math.round(soc), 0), 100) : 0;
 
   // Available liquid height inside the rounded rectangle:
   // Container starts at y = 2, height = 126 (bottom at y = 128)
   const innerBottom = 128;
   const maxFluidHeight = 126;
-  const fluidHeight = (clampedSoc / 100) * maxFluidHeight;
+  const fluidHeight = hasSoc ? (clampedSoc / 100) * maxFluidHeight : 0;
   const targetY = innerBottom - fluidHeight;
 
   return (
@@ -150,7 +151,7 @@ export function LiquidWaveBattery({
                 : 'text-slate-800 drop-shadow-xs'
             }`}
           >
-            {clampedSoc}%
+            {hasSoc ? `${clampedSoc}%` : '--%'}
           </span>
         </div>
       </div>

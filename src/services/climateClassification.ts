@@ -4,6 +4,7 @@
  */
 
 import { HAEntity, ResolvedEntity } from '../types';
+import { haWebSocketService } from './haWebSocket';
 
 export interface ClimateCapabilities {
   isOn: boolean;
@@ -91,7 +92,7 @@ export function detectClimateCapabilities(
   return {
     isOn,
     currentTemp,
-    targetTemp: targetTemp ?? (isDualSetpoint ? undefined : 21.0),
+    targetTemp: targetTemp ?? (haWebSocketService.isDemo() && !isDualSetpoint ? 21.0 : undefined),
     targetTempHigh,
     targetTempLow,
     isDualSetpoint,

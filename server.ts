@@ -85,233 +85,7 @@ function getAiClient(): GoogleGenAI | null {
   return aiClient;
 }
 
-// City climate profiles for realistic fallback data when Gemini quota is exhausted
-const KNOWN_CITY_PROFILES: Record<string, {
-  name: string;
-  country: string;
-  tempC: number;
-  condition: string;
-  conditionCode: string;
-  humidity: number;
-  windSpeedKmh: number;
-  uvIndex: number;
-  aqi: number;
-  aqiStatus: string;
-  summary: string;
-}> = {
-  'san francisco': {
-    name: 'San Francisco, CA',
-    country: 'United States',
-    tempC: 19,
-    condition: 'Partly Cloudy',
-    conditionCode: 'partly-cloudy',
-    humidity: 64,
-    windSpeedKmh: 18,
-    uvIndex: 5,
-    aqi: 28,
-    aqiStatus: 'Good',
-    summary: 'Cool coastal marine breeze with pleasant afternoon sunshine. Excellent natural airflow.'
-  },
-  'new york': {
-    name: 'New York, NY',
-    country: 'United States',
-    tempC: 24,
-    condition: 'Sunny',
-    conditionCode: 'sunny',
-    humidity: 52,
-    windSpeedKmh: 14,
-    uvIndex: 6,
-    aqi: 42,
-    aqiStatus: 'Good',
-    summary: 'Warm and bright conditions with clear skies. HVAC eco-mode recommended during peak heat.'
-  },
-  'london': {
-    name: 'London',
-    country: 'United Kingdom',
-    tempC: 18,
-    condition: 'Cloudy',
-    conditionCode: 'cloudy',
-    humidity: 71,
-    windSpeedKmh: 16,
-    uvIndex: 4,
-    aqi: 22,
-    aqiStatus: 'Good',
-    summary: 'Overcast skies with mild temperatures. Ideal for balanced indoor climate retention.'
-  },
-  'tokyo': {
-    name: 'Tokyo',
-    country: 'Japan',
-    tempC: 27,
-    condition: 'Mostly Sunny',
-    conditionCode: 'sunny',
-    humidity: 68,
-    windSpeedKmh: 12,
-    uvIndex: 7,
-    aqi: 35,
-    aqiStatus: 'Good',
-    summary: 'Warm and humid daytime weather. Recommend running dehumidifier in bedroom zone.'
-  },
-  'paris': {
-    name: 'Paris',
-    country: 'France',
-    tempC: 21,
-    condition: 'Partly Cloudy',
-    conditionCode: 'partly-cloudy',
-    humidity: 58,
-    windSpeedKmh: 13,
-    uvIndex: 5,
-    aqi: 31,
-    aqiStatus: 'Good',
-    summary: 'Pleasant temperate conditions across the city with moderate humidity.'
-  },
-  'sydney': {
-    name: 'Sydney',
-    country: 'Australia',
-    tempC: 17,
-    condition: 'Sunny',
-    conditionCode: 'sunny',
-    humidity: 55,
-    windSpeedKmh: 20,
-    uvIndex: 4,
-    aqi: 18,
-    aqiStatus: 'Good',
-    summary: 'Crisp, clear skies with fresh coastal breezes. Ambient temperature optimal.'
-  },
-  'berlin': {
-    name: 'Berlin',
-    country: 'Germany',
-    tempC: 20,
-    condition: 'Partly Cloudy',
-    conditionCode: 'partly-cloudy',
-    humidity: 54,
-    windSpeedKmh: 15,
-    uvIndex: 5,
-    aqi: 26,
-    aqiStatus: 'Good',
-    summary: 'Mild and stable atmospheric conditions. Optimal for natural cross-ventilation.'
-  },
-  'toronto': {
-    name: 'Toronto, ON',
-    country: 'Canada',
-    tempC: 22,
-    condition: 'Sunny',
-    conditionCode: 'sunny',
-    humidity: 50,
-    windSpeedKmh: 17,
-    uvIndex: 6,
-    aqi: 25,
-    aqiStatus: 'Good',
-    summary: 'Clear sunny skies and comfortable ambient temperature for IoT smart home operation.'
-  }
-};
 
-function generateRealisticWeather(locationStr: string, lat?: number, lon?: number): any {
-  const norm = locationStr.toLowerCase();
-  let matchedProfile = Object.entries(KNOWN_CITY_PROFILES).find(([key]) => norm.includes(key))?.[1];
-
-  if (!matchedProfile) {
-    // Generate deterministic values based on string hash
-    let hash = 0;
-    for (let i = 0; i < locationStr.length; i++) {
-      hash = (hash << 5) - hash + locationStr.charCodeAt(i);
-      hash |= 0;
-    }
-    const absHash = Math.abs(hash);
-    const tempC = 16 + (absHash % 14); // 16C to 29C
-    const conditions = [
-      { text: 'Sunny', code: 'sunny' },
-      { text: 'Partly Cloudy', code: 'partly-cloudy' },
-      { text: 'Mostly Cloudy', code: 'cloudy' },
-      { text: 'Light Breeze', code: 'partly-cloudy' }
-    ];
-    const cond = conditions[absHash % conditions.length];
-
-    matchedProfile = {
-      name: locationStr.includes(':') ? (lat && lon ? `Coordinates (${lat.toFixed(2)}°, ${lon.toFixed(2)}°)` : locationStr) : locationStr,
-      country: 'Global Region',
-      tempC,
-      condition: cond.text,
-      conditionCode: cond.code,
-      humidity: 45 + (absHash % 35),
-      windSpeedKmh: 10 + (absHash % 15),
-      uvIndex: 3 + (absHash % 6),
-      aqi: 20 + (absHash % 30),
-      aqiStatus: 'Good',
-      summary: `Stable conditions with steady atmospheric pressure and comfortable relative humidity.`
-    };
-  }
-
-  const tempC = matchedProfile.tempC;
-  const tempF = Math.round((tempC * 9) / 5 + 32);
-  const highC = tempC + 3;
-  const lowC = tempC - 5;
-  const highF = Math.round((highC * 9) / 5 + 32);
-  const lowF = Math.round((lowC * 9) / 5 + 32);
-  const windMph = Math.round(matchedProfile.windSpeedKmh * 0.621371);
-  const feelsLikeC = tempC;
-  const feelsLikeF = tempF;
-
-  return {
-    location: matchedProfile.name,
-    country: matchedProfile.country,
-    temperatureC: tempC,
-    temperatureF: tempF,
-    condition: matchedProfile.condition,
-    conditionCode: matchedProfile.conditionCode,
-    highC,
-    lowC,
-    highF,
-    lowF,
-    humidity: matchedProfile.humidity,
-    windSpeedKmh: matchedProfile.windSpeedKmh,
-    windSpeedMph: windMph,
-    uvIndex: matchedProfile.uvIndex,
-    aqi: matchedProfile.aqi,
-    aqiStatus: matchedProfile.aqiStatus,
-    feelsLikeC,
-    feelsLikeF,
-    summary: matchedProfile.summary,
-    forecast: [
-      { 
-        day: 'Tomorrow', 
-        condition: matchedProfile.conditionCode === 'sunny' ? 'Sunny' : 'Partly Cloudy', 
-        tempC: tempC + 1, 
-        tempF: tempF + 2, 
-        highC: highC + 1, 
-        lowC: lowC + 1 
-      },
-      { 
-        day: 'Day 2', 
-        condition: 'Partly Cloudy', 
-        tempC: tempC, 
-        tempF: tempF, 
-        highC: highC, 
-        lowC: lowC 
-      },
-      { 
-        day: 'Day 3', 
-        condition: 'Mostly Sunny', 
-        tempC: tempC + 2, 
-        tempF: tempF + 3, 
-        highC: highC + 2, 
-        lowC: lowC + 1 
-      }
-    ],
-    groundingSources: [
-      { 
-        title: `Google Search Weather: ${matchedProfile.name}`, 
-        url: `https://www.google.com/search?q=weather+${encodeURIComponent(matchedProfile.name)}` 
-      },
-      { 
-        title: 'National Meteorological Observation Network', 
-        url: 'https://forecast.weather.gov' 
-      }
-    ],
-    lastUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    isGrounded: false,
-    notice: 'Real-time weather calculated from regional meteorological telemetry'
-  };
-}
 
 async function startServer() {
   const app = express();
@@ -1021,9 +795,8 @@ async function startServer() {
   // Dynamic Weather API using Google Search Grounding with Gemini 3.7 Flash
   app.post('/api/weather', weatherRateLimiter, async (req, res) => {
     // 1. Sanitize & validate inputs
-    let safeLocation = typeof req.body.location === 'string' ? req.body.location.trim().slice(0, 100) : 'San Francisco, CA';
+    let safeLocation = typeof req.body.location === 'string' ? req.body.location.trim().slice(0, 100) : '';
     safeLocation = safeLocation.replace(/[\r\n\t]/g, ' ').replace(/[<>{}[\]]/g, '');
-    if (!safeLocation) safeLocation = 'San Francisco, CA';
 
     let safeLat: number | undefined = undefined;
     let safeLon: number | undefined = undefined;
@@ -1034,8 +807,12 @@ async function startServer() {
       safeLon = req.body.lon;
     }
 
-    const targetLocation = safeLat && safeLon ? `${safeLat.toFixed(4)}, ${safeLon.toFixed(4)}` : safeLocation;
-    const cacheKey = safeLocation.toLowerCase().trim() + (safeLat && safeLon ? `_${safeLat.toFixed(2)}_${safeLon.toFixed(2)}` : '');
+    if (!safeLocation && (safeLat === undefined || safeLon === undefined)) {
+      return res.status(400).json({ error: 'LOCATION_REQUIRED', isGrounded: false, message: 'Location or geographic coordinates must be provided' });
+    }
+
+    const targetLocation = safeLat !== undefined && safeLon !== undefined ? `${safeLat.toFixed(4)}, ${safeLon.toFixed(4)}` : safeLocation;
+    const cacheKey = (safeLocation || 'coords').toLowerCase().trim() + (safeLat !== undefined && safeLon !== undefined ? `_${safeLat.toFixed(2)}_${safeLon.toFixed(2)}` : '');
 
     // 2. Check in-memory cache
     const cached = weatherCache.get(cacheKey);
@@ -1048,14 +825,14 @@ async function startServer() {
 
     // 3. Check if currently in quota backoff period or AI client unavailable
     const isQuotaLimited = quotaBackoffUntil > Date.now();
-    const ai = getAiClient();
-
-    if (isQuotaLimited || !ai) {
-      const fallbackWeather = generateRealisticWeather(safeLocation, safeLat, safeLon);
-      setWeatherCache(cacheKey, fallbackWeather);
-      return res.json(fallbackWeather);
+    if (isQuotaLimited) {
+      return res.status(429).json({ error: 'AI_QUOTA_EXHAUSTED', isGrounded: false, message: 'Gemini live grounding quota rate-limited' });
     }
 
+    const ai = getAiClient();
+    if (!ai) {
+      return res.status(503).json({ error: 'AI_NOT_CONFIGURED', isGrounded: false, message: 'Gemini API key is not configured' });
+    }
 
     try {
       const prompt = `You are a real-time weather intelligence assistant.
@@ -1116,8 +893,8 @@ Return ONLY a single valid JSON object strictly formatted as follows (no markdow
       try {
         parsedData = JSON.parse(cleanedJson);
       } catch (parseErr) {
-        console.warn('Failed to parse weather JSON from model response, generating fallback data');
-        parsedData = generateRealisticWeather(safeLocation, safeLat, safeLon);
+        console.warn('Failed to parse weather JSON from model response');
+        return res.status(502).json({ error: 'AI_PARSE_ERROR', isGrounded: false, message: 'Failed to parse weather JSON from model response' });
       }
 
       // Extract grounding sources from response candidates
@@ -1149,15 +926,12 @@ Return ONLY a single valid JSON object strictly formatted as follows (no markdow
       
       if (is429) {
         quotaBackoffUntil = Date.now() + 5 * 60 * 1000; // 5 minutes backoff
-        console.warn('[Weather API] Gemini live grounding quota rate-limited; serving smart simulated weather fallback.');
+        console.warn('[Weather API] Gemini live grounding quota rate-limited.');
+        return res.status(429).json({ error: 'AI_QUOTA_EXHAUSTED', isGrounded: false, message: 'Gemini live grounding quota rate-limited' });
       } else {
         console.warn('[Weather API] Grounding query notice:', errStr);
+        return res.status(503).json({ error: 'AI_UNAVAILABLE', isGrounded: false, message: errStr });
       }
-
-      // Provide high-fidelity realistic fallback weather
-      const fallbackWeather = generateRealisticWeather(safeLocation, safeLat, safeLon);
-      setWeatherCache(cacheKey, fallbackWeather);
-      res.json(fallbackWeather);
     }
   });
 

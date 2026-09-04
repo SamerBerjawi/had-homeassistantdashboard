@@ -11,52 +11,19 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        manifestFilename: 'manifest.json',
+        devOptions: {
+          enabled: true,
+        },
         includeAssets: [
+          'manifest.json',
           'favicon.ico',
           'favicon.svg',
           'apple-touch-icon.png',
           'icons/*.png',
           'splash/*.png',
         ],
-        manifest: {
-          name: 'HOMZ • Smart Home Dashboard',
-          short_name: 'HOMZ',
-          description: 'Automated Living Smart Home Assistant Dashboard',
-          theme_color: '#000000',
-          background_color: '#000000',
-          display: 'standalone',
-          display_override: ['window-controls-overlay', 'standalone'],
-          start_url: '/',
-          scope: '/',
-          orientation: 'any',
-          categories: ['smart home', 'utilities', 'lifestyle'],
-          icons: [
-            {
-              src: '/icons/icon-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any',
-            },
-            {
-              src: '/icons/icon-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any',
-            },
-            {
-              src: '/icons/icon-maskable-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'maskable',
-            },
-            {
-              src: '/icons/apple-touch-icon.png',
-              sizes: '180x180',
-              type: 'image/png',
-              purpose: 'any',
-            },
-          ],
-        },
+        manifest: false,
         workbox: {
           maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MiB to cache full app shell and icon bundle
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],

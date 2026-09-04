@@ -252,7 +252,7 @@ export default function VacuumMapView({ vacuums, darkMode = true }: VacuumMapVie
             src={resolvedMapUrl}
             alt={activeMap?.name || 'Cleaning Map'}
             onError={() => setImgLoadFailed(true)}
-            className="w-full h-full object-contain p-2 sm:p-4 transition-all duration-300"
+            className="w-full h-full object-contain p-0 transition-all duration-300"
           />
         ) : isMapLoading ? (
           <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">

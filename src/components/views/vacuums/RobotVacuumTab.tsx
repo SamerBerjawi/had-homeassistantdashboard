@@ -441,8 +441,8 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
       {/* ========================================================================= */}
       {/* COLUMN 2: Live Multi-Floor Cleaning Map                                   */}
       {/* ========================================================================= */}
-      <div className="lg:col-span-4 xl:col-span-6 flex flex-col gap-4">
-        <div className="relative p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] overflow-hidden">
+      <div className="lg:col-span-4 xl:col-span-6 flex flex-col gap-3">
+        <div className="relative p-3 sm:p-4 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-3 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] overflow-hidden">
           {/* Ambient Glow */}
           <div
             className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
@@ -498,16 +498,16 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
           )}
 
           {/* Map Viewer Canvas - Doubled Size */}
-          <div className="relative z-10 w-full h-[520px] sm:h-[580px] min-h-[460px] rounded-2xl overflow-hidden border border-slate-200/50 dark:border-white/10 bg-transparent flex items-center justify-center">
+          <div className="relative z-10 w-full h-[520px] sm:h-[580px] min-h-[460px] rounded-2xl overflow-hidden border border-slate-200/50 dark:border-white/10 bg-transparent flex items-center justify-center p-0">
             {resolvedMapUrl ? (
               <img
                 src={resolvedMapUrl}
                 alt={activeMap?.name || 'Cleaning Map'}
-                className="w-full h-full object-contain filter contrast-105"
+                className="w-full h-full object-contain filter contrast-105 p-0"
               />
             ) : (
               /* Fallback Styled LiDAR Map Canvas */
-              <div className="w-full h-full relative flex items-center justify-center bg-transparent p-4">
+              <div className="w-full h-full relative flex items-center justify-center bg-transparent p-0">
                 {/* Floorplan grid lines */}
                 <div
                   className="absolute inset-0 opacity-15"

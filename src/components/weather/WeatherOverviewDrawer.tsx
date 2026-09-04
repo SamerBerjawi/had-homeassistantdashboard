@@ -68,20 +68,20 @@ export default function WeatherOverviewDrawer({
   const isNight = state.toLowerCase().includes('night');
   const conditionInfo = getWeatherConditionInfo(state, isNight, 32);
 
-  const currentTemp = typeof attr.temperature === 'number' ? attr.temperature : 22.5;
+  const currentTemp = typeof attr.temperature === 'number' ? attr.temperature : (haWebSocketService.isDemo() ? 22.5 : undefined);
   const tempUnit = attr.temperature_unit || '°C';
-  const apparentTemp = typeof attr.apparent_temperature === 'number' ? attr.apparent_temperature : currentTemp - 0.7;
-  const humidity = typeof attr.humidity === 'number' ? attr.humidity : 58;
-  const pressure = typeof attr.pressure === 'number' ? attr.pressure : 1014.2;
+  const apparentTemp = typeof attr.apparent_temperature === 'number' ? attr.apparent_temperature : currentTemp;
+  const humidity = typeof attr.humidity === 'number' ? attr.humidity : (haWebSocketService.isDemo() ? 58 : undefined);
+  const pressure = typeof attr.pressure === 'number' ? attr.pressure : (haWebSocketService.isDemo() ? 1014.2 : undefined);
   const pressureUnit = attr.pressure_unit || 'hPa';
-  const windSpeed = typeof attr.wind_speed === 'number' ? attr.wind_speed : 14.2;
+  const windSpeed = typeof attr.wind_speed === 'number' ? attr.wind_speed : (haWebSocketService.isDemo() ? 14.2 : undefined);
   const windSpeedUnit = attr.wind_speed_unit || 'km/h';
-  const windBearing = typeof attr.wind_bearing === 'number' ? attr.wind_bearing : 235;
-  const visibility = typeof attr.visibility === 'number' ? attr.visibility : 10;
+  const windBearing = typeof attr.wind_bearing === 'number' ? attr.wind_bearing : (haWebSocketService.isDemo() ? 235 : undefined);
+  const visibility = typeof attr.visibility === 'number' ? attr.visibility : (haWebSocketService.isDemo() ? 10 : undefined);
   const visibilityUnit = attr.visibility_unit || 'km';
-  const uvIndex = typeof attr.uv_index === 'number' ? attr.uv_index : 5.4;
-  const cloudCoverage = typeof attr.cloud_coverage === 'number' ? attr.cloud_coverage : 42;
-  const dewPoint = typeof attr.dew_point === 'number' ? attr.dew_point : 13.2;
+  const uvIndex = typeof attr.uv_index === 'number' ? attr.uv_index : (haWebSocketService.isDemo() ? 5.4 : undefined);
+  const cloudCoverage = typeof attr.cloud_coverage === 'number' ? attr.cloud_coverage : (haWebSocketService.isDemo() ? 42 : undefined);
+  const dewPoint = typeof attr.dew_point === 'number' ? attr.dew_point : (haWebSocketService.isDemo() ? 13.2 : undefined);
 
   // Extract guaranteed upcoming daily and hourly forecasts
   const dailyForecast = getDailyForecast(activeEntity);
@@ -89,10 +89,11 @@ export default function WeatherOverviewDrawer({
 
   // Derive Daily High & Low from upcoming forecast
   const todayForecast = dailyForecast[0];
-  const todayHigh = todayForecast?.temperature ?? Math.round(currentTemp + 3);
-  const todayLow = todayForecast?.templow ?? Math.round(currentTemp - 5);
+  const todayHigh = typeof todayForecast?.temperature === 'number' ? todayForecast.temperature : (haWebSocketService.isDemo() && currentTemp !== undefined ? Math.round(currentTemp + 3) : undefined);
+  const todayLow = typeof todayForecast?.templow === 'number' ? todayForecast.templow : (haWebSocketService.isDemo() && currentTemp !== undefined ? Math.round(currentTemp - 5) : undefined);
 
-  const getUVBadge = (uv: number) => {
+  const getUVBadge = (uv?: number) => {
+    if (uv === undefined) return null;
     if (uv <= 2) return { label: 'Low', color: 'bg-emerald-500/20 text-emerald-300' };
     if (uv <= 5) return { label: 'Moderate', color: 'bg-amber-500/20 text-amber-300' };
     if (uv <= 7) return { label: 'High', color: 'bg-orange-500/20 text-orange-300' };
@@ -196,7 +197,7 @@ export default function WeatherOverviewDrawer({
               <div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter drop-shadow-xs font-mono">
-                    {Math.round(currentTemp)}
+                    {currentTemp !== undefined ? Math.round(currentTemp) : '--'}
                   </span>
                   <span className="text-2xl font-bold text-slate-700 dark:text-white/90">
                     {tempUnit}
@@ -204,17 +205,17 @@ export default function WeatherOverviewDrawer({
                 </div>
                 <p className="text-xs font-semibold text-slate-600 dark:text-white/80 mt-1 flex items-center gap-1.5">
                   <Thermometer size={14} weight="duotone" className="text-amber-500 dark:text-amber-300" />
-                  Feels like {apparentTemp.toFixed(1)}{tempUnit}
+                  {apparentTemp !== undefined ? `Feels like ${apparentTemp.toFixed(1)}${tempUnit}` : 'Feels like --'}
                 </p>
               </div>
 
               <div className="text-right p-3 rounded-2xl bg-white/80 dark:bg-black/30 backdrop-blur-md shadow-xs">
                 <div className="text-xs font-bold text-slate-800 dark:text-white">
-                  H: <span className="text-amber-600 dark:text-amber-300 font-bold">{Math.round(todayHigh)}{tempUnit}</span> • L: <span className="text-sky-600 dark:text-sky-300 font-bold">{Math.round(todayLow)}{tempUnit}</span>
+                  H: <span className="text-amber-600 dark:text-amber-300 font-bold">{todayHigh !== undefined ? `${Math.round(todayHigh)}${tempUnit}` : '--'}</span> • L: <span className="text-sky-600 dark:text-sky-300 font-bold">{todayLow !== undefined ? `${Math.round(todayLow)}${tempUnit}` : '--'}</span>
                 </div>
                 <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 flex items-center justify-end gap-1">
                   <Drop size={12} weight="duotone" className="text-blue-500 dark:text-blue-400" />
-                  {humidity}% Humidity
+                  {humidity !== undefined ? `${humidity}% Humidity` : '-- Humidity'}
                 </div>
               </div>
             </div>
@@ -282,7 +283,7 @@ export default function WeatherOverviewDrawer({
                 <Thermometer size={16} weight="duotone" className="text-amber-500 dark:text-amber-400" />
               </div>
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
-                {apparentTemp.toFixed(1)}{tempUnit}
+                {apparentTemp !== undefined ? `${apparentTemp.toFixed(1)}${tempUnit}` : '--'}
               </p>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Apparent Temp</span>
             </div>
@@ -294,9 +295,11 @@ export default function WeatherOverviewDrawer({
                 <Drop size={16} weight="duotone" className="text-blue-500 dark:text-blue-400" />
               </div>
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
-                {humidity}%
+                {humidity !== undefined ? `${humidity}%` : '--'}
               </p>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Dew pt: {dewPoint.toFixed(1)}°</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                {dewPoint !== undefined ? `Dew pt: ${dewPoint.toFixed(1)}°` : 'Dew pt: --'}
+              </span>
             </div>
 
             {/* 3. Wind Speed & Direction */}
@@ -306,11 +309,17 @@ export default function WeatherOverviewDrawer({
                 <Wind size={16} weight="duotone" className="text-teal-500 dark:text-teal-400" />
               </div>
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono flex items-center gap-1">
-                {windSpeed} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{windSpeedUnit}</span>
+                {windSpeed !== undefined ? windSpeed : '--'} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{windSpeed !== undefined ? windSpeedUnit : ''}</span>
               </p>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
-                <Compass size={11} weight="bold" style={{ transform: `rotate(${windBearing}deg)` }} />
-                {windBearing}°
+                {windBearing !== undefined ? (
+                  <>
+                    <Compass size={11} weight="bold" style={{ transform: `rotate(${windBearing}deg)` }} />
+                    {windBearing}°
+                  </>
+                ) : (
+                  'Direction: --'
+                )}
               </span>
             </div>
 
@@ -321,9 +330,11 @@ export default function WeatherOverviewDrawer({
                 <Gauge size={16} weight="duotone" className="text-purple-500 dark:text-purple-400" />
               </div>
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
-                {pressure}
+                {pressure !== undefined ? pressure : '--'}
               </p>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{pressureUnit} Barometer</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                {pressure !== undefined ? `${pressureUnit} Barometer` : 'Barometer'}
+              </span>
             </div>
 
             {/* 5. UV Index */}
@@ -333,11 +344,15 @@ export default function WeatherOverviewDrawer({
                 <SunHorizon size={16} weight="duotone" className="text-amber-500 dark:text-amber-400" />
               </div>
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
-                {uvIndex.toFixed(1)}
+                {uvIndex !== undefined ? uvIndex.toFixed(1) : '--'}
               </p>
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md w-max mt-0.5 ${uvBadge.color}`}>
-                {uvBadge.label}
-              </span>
+              {uvBadge ? (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md w-max mt-0.5 ${uvBadge.color}`}>
+                  {uvBadge.label}
+                </span>
+              ) : (
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">UV Rating</span>
+              )}
             </div>
 
             {/* 6. Cloud Coverage */}
@@ -347,7 +362,7 @@ export default function WeatherOverviewDrawer({
                 <Cloud size={16} weight="duotone" className="text-sky-500 dark:text-sky-400" />
               </div>
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
-                {cloudCoverage}%
+                {cloudCoverage !== undefined ? `${cloudCoverage}%` : '--'}
               </p>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Sky Cover</span>
             </div>
@@ -359,7 +374,7 @@ export default function WeatherOverviewDrawer({
                 <Eye size={16} weight="duotone" className="text-indigo-500 dark:text-indigo-400" />
               </div>
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
-                {visibility} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{visibilityUnit}</span>
+                {visibility !== undefined ? visibility : '--'} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{visibility !== undefined ? visibilityUnit : ''}</span>
               </p>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Clear Sight</span>
             </div>
@@ -371,7 +386,7 @@ export default function WeatherOverviewDrawer({
                 <Waves size={16} weight="duotone" className="text-cyan-500 dark:text-cyan-400" />
               </div>
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
-                {dewPoint.toFixed(1)}{tempUnit}
+                {dewPoint !== undefined ? `${dewPoint.toFixed(1)}${tempUnit}` : '--'}
               </p>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Moisture Sat.</span>
             </div>

@@ -319,7 +319,7 @@ export function VehicleHeroCard({
                 Range
               </span>
               <span className={`font-mono text-sm sm:text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                {formatDecimal(metrics.range)} {metrics.rangeUnit}
+                {metrics.range !== undefined ? `${formatDecimal(metrics.range)} ${metrics.rangeUnit || 'km'}` : '--'}
               </span>
             </div>
 
@@ -330,9 +330,9 @@ export function VehicleHeroCard({
                 12V Aux
               </span>
               <span className={`font-mono text-[10px] font-bold ${
-                Number(metrics.battery12V) > 12 ? 'text-emerald-500' : 'text-amber-500'
+                metrics.battery12V !== undefined && Number(metrics.battery12V) > 12 ? 'text-emerald-500' : 'text-amber-500'
               }`}>
-                {formatDecimal(metrics.battery12V)}V
+                {metrics.battery12V !== undefined ? `${formatDecimal(metrics.battery12V)}V` : '--'}
               </span>
             </div>
 
@@ -375,7 +375,7 @@ export function VehicleHeroCard({
                   darkMode ? 'text-white' : 'text-slate-900'
                 }`}
               >
-                {formatDecimal(metrics.odometer)} {metrics.odometerUnit}
+                {metrics.odometer !== undefined ? `${formatDecimal(metrics.odometer)} ${metrics.odometerUnit || 'km'}` : '--'}
               </span>
               <span
                 className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider truncate ${

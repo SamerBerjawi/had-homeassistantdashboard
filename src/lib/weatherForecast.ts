@@ -4,6 +4,7 @@
  */
 
 import { HAEntity, ResolvedEntity } from '../types';
+import { haWebSocketService } from '../services/haWebSocket';
 
 export interface DailyForecastItem {
   datetime: string;
@@ -121,7 +122,7 @@ export function generateFallbackHourlyForecast(
  */
 export function getDailyForecast(entity?: HAEntity | ResolvedEntity | null): DailyForecastItem[] {
   if (!entity || !entity.attributes) {
-    return generateFallbackDailyForecast(22, 'partlycloudy');
+    return haWebSocketService.isDemo() ? generateFallbackDailyForecast(22, 'partlycloudy') : [];
   }
 
   const rawForecast = entity.attributes.forecast;
@@ -129,30 +130,35 @@ export function getDailyForecast(entity?: HAEntity | ResolvedEntity | null): Dai
     return rawForecast.map((f: any, idx: number) => {
       const high = typeof f.temperature === 'number' 
         ? f.temperature 
-        : (typeof f.temperature_high === 'number' ? f.temperature_high : (typeof f.high_temperature === 'number' ? f.high_temperature : 22));
+        : (typeof f.temperature_high === 'number' ? f.temperature_high : (typeof f.high_temperature === 'number' ? f.high_temperature : undefined));
       const low = typeof f.templow === 'number' 
         ? f.templow 
-        : (typeof f.temperature_low === 'number' ? f.temperature_low : (typeof f.low_temperature === 'number' ? f.low_temperature : (typeof f.temp_low === 'number' ? f.temp_low : high - 6)));
+        : (typeof f.temperature_low === 'number' ? f.temperature_low : (typeof f.low_temperature === 'number' ? f.low_temperature : (typeof f.temp_low === 'number' ? f.temp_low : undefined)));
 
+      const fallbackTemp = typeof entity.attributes?.temperature === 'number' ? entity.attributes.temperature : 0;
       return {
         datetime: f.datetime || new Date(Date.now() + idx * 86400000).toISOString(),
         condition: f.condition || entity.state || 'partlycloudy',
-        temperature: high,
-        templow: low,
+        temperature: high !== undefined ? high : fallbackTemp,
+        templow: low !== undefined ? low : (high !== undefined ? high : fallbackTemp),
         precipitation: typeof f.precipitation === 'number' ? f.precipitation : 0,
         precipitation_probability: typeof f.precipitation_probability === 'number' ? f.precipitation_probability : (f.condition?.includes('rain') ? 60 : 0),
-        wind_speed: typeof f.wind_speed === 'number' ? f.wind_speed : 12,
-        wind_bearing: typeof f.wind_bearing === 'number' ? f.wind_bearing : 220,
-        uv_index: typeof f.uv_index === 'number' ? f.uv_index : 5,
-        humidity: typeof f.humidity === 'number' ? f.humidity : 55
+        wind_speed: typeof f.wind_speed === 'number' ? f.wind_speed : (typeof entity.attributes?.wind_speed === 'number' ? entity.attributes.wind_speed : 0),
+        wind_bearing: typeof f.wind_bearing === 'number' ? f.wind_bearing : (typeof entity.attributes?.wind_bearing === 'number' ? entity.attributes.wind_bearing : 0),
+        uv_index: typeof f.uv_index === 'number' ? f.uv_index : undefined,
+        humidity: typeof f.humidity === 'number' ? f.humidity : (typeof entity.attributes?.humidity === 'number' ? entity.attributes.humidity : undefined)
       };
     });
   }
 
-  // Fallback generation based on current entity conditions
-  const currentTemp = typeof entity.attributes.temperature === 'number' ? entity.attributes.temperature : 22;
-  const baseCond = entity.state || 'partlycloudy';
-  return generateFallbackDailyForecast(currentTemp, baseCond);
+  // Fallback generation strictly guarded in demo mode
+  if (haWebSocketService.isDemo()) {
+    const currentTemp = typeof entity.attributes.temperature === 'number' ? entity.attributes.temperature : 22;
+    const baseCond = entity.state || 'partlycloudy';
+    return generateFallbackDailyForecast(currentTemp, baseCond);
+  }
+
+  return [];
 }
 
 /**
@@ -160,7 +166,7 @@ export function getDailyForecast(entity?: HAEntity | ResolvedEntity | null): Dai
  */
 export function getHourlyForecast(entity?: HAEntity | ResolvedEntity | null): HourlyForecastItem[] {
   if (!entity || !entity.attributes) {
-    return generateFallbackHourlyForecast(22, 'partlycloudy');
+    return haWebSocketService.isDemo() ? generateFallbackHourlyForecast(22, 'partlycloudy') : [];
   }
 
   const rawHourly = entity.attributes.hourly_forecast || entity.attributes.forecast_hourly;
@@ -168,13 +174,18 @@ export function getHourlyForecast(entity?: HAEntity | ResolvedEntity | null): Ho
     return rawHourly.map((f: any) => ({
       datetime: f.datetime,
       condition: f.condition || entity.state || 'partlycloudy',
-      temperature: typeof f.temperature === 'number' ? f.temperature : 22,
+      temperature: typeof f.temperature === 'number' ? f.temperature : (typeof entity.attributes?.temperature === 'number' ? entity.attributes.temperature : 0),
       precipitation_probability: typeof f.precipitation_probability === 'number' ? f.precipitation_probability : 0,
-      wind_speed: typeof f.wind_speed === 'number' ? f.wind_speed : 12
+      wind_speed: typeof f.wind_speed === 'number' ? f.wind_speed : undefined
     }));
   }
 
-  const currentTemp = typeof entity.attributes.temperature === 'number' ? entity.attributes.temperature : 22;
-  const baseCond = entity.state || 'partlycloudy';
-  return generateFallbackHourlyForecast(currentTemp, baseCond);
+  // Fallback generation strictly guarded in demo mode
+  if (haWebSocketService.isDemo()) {
+    const currentTemp = typeof entity.attributes.temperature === 'number' ? entity.attributes.temperature : 22;
+    const baseCond = entity.state || 'partlycloudy';
+    return generateFallbackHourlyForecast(currentTemp, baseCond);
+  }
+
+  return [];
 }

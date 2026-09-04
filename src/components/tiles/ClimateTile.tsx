@@ -80,7 +80,7 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
 }) => {
   const caps = detectClimateCapabilities(entity);
   const currentTemp = caps.currentTemp;
-  const targetTemp = caps.targetTemp ?? 21;
+  const targetTemp = caps.targetTemp;
   const minTemp = caps.minTemp;
   const maxTemp = caps.maxTemp;
   const hvacModes = caps.hvacModes;
@@ -184,7 +184,7 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
         <div className="flex items-center justify-between text-xs font-semibold">
           <span className="text-slate-500 dark:text-slate-400">Target Temp</span>
           <span className="font-mono font-black text-sm sm:text-base text-slate-800 dark:text-white">
-            {targetTemp}°C
+            {targetTemp !== undefined ? `${targetTemp}°C` : '--'}
           </span>
         </div>
 
@@ -192,18 +192,22 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
         <div className="flex items-center gap-1.5 w-full">
           <button
             type="button"
+            disabled={targetTemp === undefined}
             onClick={() => onTempAdjust(entity, -0.5)}
-            className="w-8 h-8 rounded-xl bg-slate-900/[0.06] dark:bg-white/10 hover:bg-slate-900/10 dark:hover:bg-white/15 flex items-center justify-center font-bold text-sm cursor-pointer active:scale-90 shrink-0 select-none"
+            className={`w-8 h-8 rounded-xl bg-slate-900/[0.06] dark:bg-white/10 hover:bg-slate-900/10 dark:hover:bg-white/15 flex items-center justify-center font-bold text-sm select-none ${
+              targetTemp === undefined ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-90'
+            } shrink-0`}
             title="Decrease Temp"
           >
             -
           </button>
           <div className="flex-1 px-1 flex items-center">
             <DotSlider
-              value={targetTemp}
+              value={targetTemp ?? minTemp}
               min={minTemp}
               max={maxTemp}
               step={0.5}
+              disabled={targetTemp === undefined}
               activeColor="bg-amber-500"
               activeGlowColor="rgba(245, 158, 11, 0.75)"
               onChange={(val) => onTempSlider(entity, val)}
@@ -211,8 +215,11 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
           </div>
           <button
             type="button"
+            disabled={targetTemp === undefined}
             onClick={() => onTempAdjust(entity, 0.5)}
-            className={`w-8 h-8 rounded-xl text-white ${theme.stepperBtnBg} ${theme.stepperBtnHover} ${theme.stepperBtnShadow} flex items-center justify-center font-bold text-sm cursor-pointer active:scale-90 shrink-0 select-none`}
+            className={`w-8 h-8 rounded-xl text-white ${theme.stepperBtnBg} ${theme.stepperBtnHover} ${theme.stepperBtnShadow} flex items-center justify-center font-bold text-sm select-none ${
+              targetTemp === undefined ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-90'
+            } shrink-0`}
             title="Increase Temp"
           >
             +

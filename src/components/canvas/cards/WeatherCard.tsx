@@ -31,16 +31,16 @@ export default function WeatherCard({
   const conditionInfo = getWeatherConditionInfo(state, isNight, 26);
 
   const title = config.title || attr.friendly_name || entity?.entity_id || 'Weather Radar';
-  const temp = typeof attr.temperature === 'number' ? Math.round(attr.temperature) : 22;
+  const temp = typeof attr.temperature === 'number' ? Math.round(attr.temperature) : undefined;
   const tempUnit = attr.temperature_unit || '°C';
-  const humidity = typeof attr.humidity === 'number' ? attr.humidity : 58;
-  const windSpeed = typeof attr.wind_speed === 'number' ? attr.wind_speed : 14;
+  const humidity = typeof attr.humidity === 'number' ? attr.humidity : undefined;
+  const windSpeed = typeof attr.wind_speed === 'number' ? attr.wind_speed : undefined;
   const windSpeedUnit = attr.wind_speed_unit || 'km/h';
 
   const dailyForecast = getDailyForecast(entity);
   const todayForecast = dailyForecast[0];
-  const todayHigh = todayForecast?.temperature ?? (temp + 3);
-  const todayLow = todayForecast?.templow ?? (temp - 5);
+  const todayHigh = typeof todayForecast?.temperature === 'number' ? todayForecast.temperature : undefined;
+  const todayLow = typeof todayForecast?.templow === 'number' ? todayForecast.templow : undefined;
 
   return (
     <div 
@@ -72,11 +72,11 @@ export default function WeatherCard({
         {/* High / Low pill */}
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-black/40 backdrop-blur-md border border-slate-200/80 dark:border-white/15 text-[11px] font-mono text-slate-800 dark:text-slate-200 shadow-xs">
           <span className="flex items-center text-amber-600 dark:text-amber-300 font-bold">
-            <ArrowUp size={11} weight="bold" />{Math.round(todayHigh)}°
+            <ArrowUp size={11} weight="bold" />{todayHigh !== undefined ? `${Math.round(todayHigh)}°` : '--'}
           </span>
           <span className="opacity-40">|</span>
           <span className="flex items-center text-sky-600 dark:text-cyan-300 font-bold">
-            <ArrowDown size={11} weight="bold" />{Math.round(todayLow)}°
+            <ArrowDown size={11} weight="bold" />{todayLow !== undefined ? `${Math.round(todayLow)}°` : '--'}
           </span>
         </div>
       </div>
@@ -85,7 +85,7 @@ export default function WeatherCard({
       <div className="relative z-10 flex items-center justify-between my-1">
         <div className="flex items-baseline gap-1">
           <span className="text-4xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none drop-shadow-xs">
-            {temp}
+            {temp !== undefined ? temp : '--'}
           </span>
           <span className="text-xs text-slate-700 dark:text-slate-300 font-bold font-mono">{tempUnit}</span>
         </div>
@@ -116,10 +116,10 @@ export default function WeatherCard({
       {/* Bottom stats: Wind & Humidity */}
       <div className="relative z-10 flex items-center justify-between text-[10px] text-slate-700 dark:text-slate-200 pt-1.5 border-t border-slate-200/60 dark:border-white/15">
         <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-200">
-          <Wind size={13} weight="duotone" className="text-teal-600 dark:text-sky-300" /> {windSpeed} {windSpeedUnit}
+          <Wind size={13} weight="duotone" className="text-teal-600 dark:text-sky-300" /> {windSpeed !== undefined ? `${windSpeed} ${windSpeedUnit}` : '--'}
         </span>
         <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-200">
-          <Drop size={13} weight="duotone" className="text-blue-600 dark:text-cyan-300" /> {humidity}% Humidity
+          <Drop size={13} weight="duotone" className="text-blue-600 dark:text-cyan-300" /> {humidity !== undefined ? `${humidity}% Humidity` : '--'}
         </span>
       </div>
     </div>

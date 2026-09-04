@@ -9,13 +9,13 @@ export interface CarEvMetrics {
   customVehicleImage?: string;
 
   // Battery & Charging Telemetry
-  soc: number;                     // sensor.fordpass_*_soc (%)
-  battery12V: string | number;     // sensor.fordpass_*_battery
-  battery12VUnit: string;          // 'V'
-  range: number;                   // sensor.fordpass_*_elveh
-  rangeUnit: string;               // 'km' or 'mi'
+  soc?: number;                    // sensor.fordpass_*_soc (%)
+  battery12V?: string | number;    // sensor.fordpass_*_battery
+  battery12VUnit?: string;         // 'V'
+  range?: number;                  // sensor.fordpass_*_elveh
+  rangeUnit?: string;              // 'km' or 'mi'
   chargingState: string;           // sensor.fordpass_*_elvehcharging ("Charging", "Complete", "Disconnected")
-  chargingPowerKW: number;         // sensor.fordpass_*_elvehchargingpower
+  chargingPowerKW?: number;        // sensor.fordpass_*_elvehchargingpower
   isPluggedIn: boolean;            // sensor.fordpass_*_elvehplug ("Connected", "Disconnected")
   targetSoc: string;               // select.fordpass_*_elvehtargetcharge
   lastTripEnergy?: number;         // sensor.fordpass_*_lastenergyconsumed
@@ -27,14 +27,14 @@ export interface CarEvMetrics {
   ignitionOn: boolean;             // sensor.fordpass_*_ignitionstatus
   ignitionStatus: string;          // sensor.fordpass_*_ignitionstatus ("Off", "On", "RemoteStarted")
   isMoving: boolean;               // sensor.fordpass_*_speed > 0
-  speed: number;                   // sensor.fordpass_*_speed
-  speedUnit: string;               // 'km/h' or 'mph'
+  speed?: number;                  // sensor.fordpass_*_speed
+  speedUnit?: string;              // 'km/h' or 'mph'
   gearPosition: string;            // sensor.fordpass_*_gearleverposition (P, R, N, D)
-  odometer: number;                // sensor.fordpass_*_odometer
-  odometerUnit: string;            // 'km' or 'mi'
-  cabinTemp: number;               // sensor.fordpass_*_cabintemperature
-  cabinTempUnit: string;           // '°C' or '°F'
-  outdoorTemp: number;             // sensor.fordpass_*_outsidetemp
+  odometer?: number;               // sensor.fordpass_*_odometer
+  odometerUnit?: string;           // 'km' or 'mi'
+  cabinTemp?: number;              // sensor.fordpass_*_cabintemperature
+  cabinTempUnit?: string;          // '°C' or '°F'
+  outdoorTemp?: number;            // sensor.fordpass_*_outsidetemp
   targetCabinTemp?: number;        // climate.*_vehicle target temperature
   climateHvacMode?: string;        // 'off' | 'heat' | 'cool' | 'auto'
   defrostActive?: boolean;         // defrost / windshield heater
@@ -113,14 +113,15 @@ export interface BikeMetrics {
   customBikeImage?: string;
 
   // Battery & Telemetry
-  batteryPercent: number;          // sensor.dark_avenger_remaining_battery / sensor.cowboy_* (%)
-  internalPcbBattery: number;      // sensor.dark_avenger_remaining_battery_internal_pcb (%)
-  remainingRangeKm: number;        // sensor.dark_avenger_remaining_range (km)
-  batteryHealthPercent: number;    // sensor.dark_avenger_battery_health (%)
-  mileageKm: number;               // sensor.dark_avenger_mileage (km)
-  distanceTodayKm: number;         // sensor.dark_avenger_distance_today (km)
-  totalTimeDrivenHours: number;    // sensor.dark_avenger_time_driven
-  totalSavedCo2Kg: number;         // sensor.dark_avenger_saved_co2
+  batteryPercent?: number;         // sensor.dark_avenger_remaining_battery / sensor.cowboy_* (%)
+  internalPcbBattery?: number;     // sensor.dark_avenger_remaining_battery_internal_pcb (%)
+  remainingRangeKm?: number;       // sensor.dark_avenger_remaining_range (km)
+  batteryHealthPercent?: number;   // sensor.dark_avenger_battery_health (%)
+  mileageKm?: number;              // sensor.dark_avenger_mileage (km)
+  distanceTodayKm?: number;        // sensor.dark_avenger_distance_today (km)
+  totalTimeDrivenHours?: number;   // sensor.dark_avenger_time_driven
+  totalSavedCo2Kg?: number;        // sensor.dark_avenger_saved_co2
+  speedLimitKmh?: number;          // sensor.dark_avenger_speed_limit
 
   // Security & Safety
   isLocked: boolean;               // lock.cowboy_* / sensor.dark_avenger_auto_lock
@@ -128,17 +129,16 @@ export interface BikeMetrics {
   isCrashed: boolean;              // binary_sensor.dark_avenger_crashed
   autoLockStatus: string;          // sensor.dark_avenger_auto_lock
   lastSeen: string;                // sensor.dark_avenger_last_seen
-  speedLimitKmh: number;           // sensor.dark_avenger_speed_limit
 
   // Last Trip Statistics
-  lastTrip: {
-    title: string;                 // sensor.dark_avenger_last_trip_title
-    distanceKm: number;            // sensor.dark_avenger_last_trip_distance
-    durationMinutes: number;       // sensor.dark_avenger_last_trip_duration
-    co2SavedKg: number;            // sensor.dark_avenger_last_trip_co2_saved
-    caloriesBurned: number;        // sensor.dark_avenger_last_trip_calories
-    endedAt: string;               // sensor.dark_avenger_last_trip_ended
-    rideMode: string;              // sensor.dark_avenger_last_ride_mode
+  lastTrip?: {
+    title?: string;                // sensor.dark_avenger_last_trip_title
+    distanceKm?: number;           // sensor.dark_avenger_last_trip_distance
+    durationMinutes?: number;      // sensor.dark_avenger_last_trip_duration
+    co2SavedKg?: number;           // sensor.dark_avenger_last_trip_co2_saved
+    caloriesBurned?: number;       // sensor.dark_avenger_last_trip_calories
+    endedAt?: string;              // sensor.dark_avenger_last_trip_ended
+    rideMode?: string;             // sensor.dark_avenger_last_ride_mode
   };
 
   // Location & Presence
