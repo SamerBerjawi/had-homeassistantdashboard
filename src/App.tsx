@@ -511,7 +511,7 @@ export default function App() {
         {/* Persistent Demo Mode Status Banner */}
         <DemoBanner />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container p-4 pt-[max(1.25rem,calc(env(safe-area-inset-top,0px)+0.75rem))] pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:p-6 sm:pb-8 lg:p-8 lg:pb-8 flex flex-col">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container px-4 pt-[max(1.25rem,calc(env(safe-area-inset-top,0px)+0.75rem))] pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:px-6 sm:pt-[max(1.5rem,calc(env(safe-area-inset-top,0px)+1rem))] sm:pb-[calc(2rem+env(safe-area-inset-bottom,0px))] lg:px-8 lg:pt-8 lg:pb-8 flex flex-col">
           {/* Header Bar - Title & Actions Top Row, 100% Full-Width Sentence Below */}
           <header className="mb-6 flex flex-col gap-3 pb-1 w-full">
             {/* Top Row: Title on Left, Global Action Controls on Right */}
