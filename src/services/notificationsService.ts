@@ -124,11 +124,20 @@ export function extractHANotifications({
       liveState.state !== 'idle' &&
       Boolean(attrs.installed_version) &&
       liveState.state !== attrs.installed_version;
+    const latestVer = attrs.latest_version || (isStateVersion ? liveState.state : '1.0.1');
     const inProgress = Boolean(attrs.in_progress) || liveState.state === 'installing';
-    const isSkipped = Boolean(attrs.skipped_version);
+    const isSkipped = Boolean(
+      attrs.skipped_version &&
+      (attrs.skipped_version === latestVer || liveState.state === 'off')
+    );
+
+    const isSkippedDismissed = 
+      dismissedSet.has(ent.entity_id) || 
+      dismissedSet.has(`skipped_${ent.entity_id}`) ||
+      (attrs.skipped_version && dismissedSet.has(`skipped_${ent.entity_id}_${attrs.skipped_version}`));
 
     // If this skipped update was dismissed/cleaned by the user, don't show it in the notifications list
-    if (isSkipped && dismissedSet.has(ent.entity_id)) {
+    if (isSkipped && isSkippedDismissed) {
       continue;
     }
 
@@ -136,7 +145,6 @@ export function extractHANotifications({
 
     if (hasUpdateAvailable) {
       const installedVer = attrs.installed_version || '1.0.0';
-      const latestVer = attrs.latest_version || (isStateVersion ? liveState.state : '1.0.1');
       const title = attrs.title || attrs.friendly_name || ent.name;
       const releaseSummary = attrs.release_summary || '';
       const releaseUrl = attrs.release_url;
@@ -164,6 +172,10 @@ export function extractHANotifications({
         dismissable: isSkipped,
         onDismiss: isSkipped ? () => {
           dismissNotification(ent.entity_id);
+          dismissNotification(`skipped_${ent.entity_id}`);
+          if (attrs.skipped_version) {
+            dismissNotification(`skipped_${ent.entity_id}_${attrs.skipped_version}`);
+          }
         } : undefined,
 
         actions: [

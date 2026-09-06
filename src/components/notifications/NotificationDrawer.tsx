@@ -145,8 +145,15 @@ export default function NotificationDrawer({
 
   // Clean only skipped updates
   const handleDismissSkippedUpdates = () => {
-    const skippedIds = skippedUpdates.map(n => n.id);
-    clearAllNotifications(skippedIds);
+    const idsToDismiss: string[] = [];
+    for (const n of skippedUpdates) {
+      idsToDismiss.push(n.id);
+      idsToDismiss.push(`skipped_${n.id}`);
+      if (n.skippedVersion) {
+        idsToDismiss.push(`skipped_${n.id}_${n.skippedVersion}`);
+      }
+    }
+    clearAllNotifications(idsToDismiss);
   };
 
   // Batch Dismiss All

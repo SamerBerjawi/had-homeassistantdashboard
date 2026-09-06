@@ -283,10 +283,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
     ? (() => {
         try {
           const raw = JSON.parse(localStorage.getItem('ha_dismissed_notifications') || '[]');
-          const cleaned = Array.isArray(raw) ? raw.filter((id: any) => typeof id === 'string' && !id.startsWith('update.') && !id.startsWith('hacs_')) : [];
-          if (Array.isArray(raw) && raw.length !== cleaned.length) {
-            localStorage.setItem('ha_dismissed_notifications', JSON.stringify(cleaned));
-          }
+          const cleaned = Array.isArray(raw) ? raw.filter((id: any) => typeof id === 'string') : [];
           return cleaned;
         } catch {
           return [];
@@ -1129,7 +1126,9 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
 
   restoreNotification: (id: string) => {
     set(prev => {
-      const nextIds = prev.dismissedNotificationIds.filter(item => item !== id);
+      const nextIds = prev.dismissedNotificationIds.filter(
+        item => item !== id && item !== `skipped_${id}` && !item.startsWith(`skipped_${id}_`)
+      );
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem('ha_dismissed_notifications', JSON.stringify(nextIds));
