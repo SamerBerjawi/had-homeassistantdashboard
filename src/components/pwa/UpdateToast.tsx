@@ -46,7 +46,7 @@ export const UpdateToast: React.FC = () => {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -40, scale: 0.95 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="fixed top-4 right-4 z-50 max-w-sm w-[calc(100vw-2rem)] sm:w-auto"
+        className="fixed top-[max(1rem,calc(env(safe-area-inset-top,0px)+0.5rem))] right-4 z-50 max-w-sm w-[calc(100vw-2rem)] sm:w-auto"
       >
         <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/95 dark:bg-black/90 backdrop-blur-md border border-sky-500/30 text-white shadow-2xl flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">

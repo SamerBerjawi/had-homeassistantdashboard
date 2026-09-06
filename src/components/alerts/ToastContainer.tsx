@@ -296,7 +296,7 @@ export const ToastContainer: React.FC = () => {
     <aside
       aria-live="polite"
       aria-label="Alerts"
-      className="fixed top-4 right-4 sm:top-5 sm:right-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none p-2 sm:p-0"
+      className="fixed top-[max(1rem,calc(env(safe-area-inset-top,0px)+0.5rem))] right-4 sm:top-[max(1.25rem,calc(env(safe-area-inset-top,0px)+0.75rem))] sm:right-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none p-2 sm:p-0"
     >
       <AnimatedList delay={80}>
         {toasts.map((toast) => (
