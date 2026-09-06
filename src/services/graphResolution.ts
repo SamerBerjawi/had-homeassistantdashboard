@@ -91,7 +91,7 @@ export function resolveHAGraph(
   let diagnosticCount = 0;
   let totalLightsOn = 0;
   let totalPowerWatts = 0;
-  let criticalBatteryCount = 0;
+  const criticalBatteryDeviceSet = new Set<string>();
   let securityAlertsCount = 0;
 
   // Index all dedicated battery sensors from HA states to pair with devices
@@ -194,8 +194,6 @@ export function resolveHAGraph(
     } else if (typeof liveState.attributes.battery === 'string') {
       const parsed = parseFloat(liveState.attributes.battery);
       if (!isNaN(parsed)) batteryPct = parsed;
-    } else if (regEntry?.device_id && deviceBatteryMap.has(regEntry.device_id)) {
-      batteryPct = deviceBatteryMap.get(regEntry.device_id);
     } else if (domain === 'sensor' && (liveState.attributes.device_class === 'battery' || entityId.includes('battery'))) {
       const parsed = parseFloat(liveState.state);
       if (!isNaN(parsed)) batteryPct = parsed;
@@ -208,10 +206,14 @@ export function resolveHAGraph(
         const parsed = parseFloat(linkedSensor.state);
         if (!isNaN(parsed)) batteryPct = parsed;
       }
+    } else if (domain !== 'sensor' && regEntry?.device_id && deviceBatteryMap.has(regEntry.device_id)) {
+      // Sibling battery sensors paired with devices only apply to non-sensor hardware (locks, climates, binary sensors, vacuums, etc.)
+      batteryPct = deviceBatteryMap.get(regEntry.device_id);
     }
 
     if (batteryPct !== undefined && batteryPct <= 20) {
-      criticalBatteryCount++;
+      const devKey = regEntry?.device_id || entityId;
+      criticalBatteryDeviceSet.add(devKey);
     }
 
     const customOverride = options.entityOverrides?.[entityId];
@@ -375,7 +377,13 @@ export function resolveHAGraph(
         e.state === 'on'
     );
 
-    const lowBatteryCount = areaEntities.filter(e => e.batteryPct !== undefined && e.batteryPct <= 20).length;
+    const areaLowBatteryDeviceSet = new Set<string>();
+    for (const e of areaEntities) {
+      if (e.batteryPct !== undefined && e.batteryPct <= 20) {
+        areaLowBatteryDeviceSet.add(e.device_id || e.entity_id);
+      }
+    }
+    const lowBatteryCount = areaLowBatteryDeviceSet.size;
 
     const icon = area.icon || AREA_ICON_MAP[area.area_id] || 'Home';
     const bannerImage = area.picture || null;
@@ -571,7 +579,7 @@ export function resolveHAGraph(
     diagnosticEntitiesCount: diagnosticCount,
     totalLightsOn,
     totalPowerWatts: Math.round(totalPowerWatts),
-    criticalBatteryCount,
+    criticalBatteryCount: criticalBatteryDeviceSet.size,
     securityAlertsCount,
     lastResolvedAt: new Date().toISOString()
   };

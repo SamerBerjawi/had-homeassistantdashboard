@@ -14,7 +14,7 @@ import {
 
 import { ResolvedEntity, HAState } from '../types';
 import { safeOpenExternalUrl } from '../lib/utils';
-import { isLeakSensor } from '../lib/entityClassifiers';
+import { isLeakSensor, isBatteryEntity } from '../lib/entityClassifiers';
 import { useAlertStore, AlertItem } from '../store/useAlertStore';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { alertService } from './alertService';
@@ -777,27 +777,85 @@ export function extractHANotifications({
 
   // Critical Battery (<15%)
   const allResolved = Object.values(domainGroups).flat();
-  const criticalBattery = allResolved.filter(
-    e => typeof e.batteryPct === 'number' && e.batteryPct <= 15 && !dismissedSet.has(`battery_${e.entity_id}`)
-  );
-  for (const bat of criticalBattery.slice(0, 3)) {
-    const notifId = `battery_${bat.entity_id}`;
+  // Filter only entities that legitimately represent a battery or battery-operated device
+  // and deduplicate by device so each physical device produces at most ONE notification.
+  const lowBatteryDevices = new Map<string, { entity: ResolvedEntity; batteryPct: number; allEntities: ResolvedEntity[] }>();
+
+  for (const e of allResolved) {
+    if (typeof e.batteryPct !== 'number' || e.batteryPct > 15) continue;
+    if (!isBatteryEntity(e)) continue;
+
+    const deviceKey = e.device_id || e.entity_id;
+    const existing = lowBatteryDevices.get(deviceKey);
+
+    if (!existing) {
+      lowBatteryDevices.set(deviceKey, { entity: e, batteryPct: e.batteryPct, allEntities: [e] });
+    } else {
+      existing.allEntities.push(e);
+      // Prefer dedicated battery sensors or primary hardware actuators
+      const isCurrentDedicated = e.domain === 'sensor' && (e.attributes?.device_class === 'battery' || e.entity_id.includes('battery'));
+      const isExistingDedicated = existing.entity.domain === 'sensor' && (existing.entity.attributes?.device_class === 'battery' || existing.entity.entity_id.includes('battery'));
+
+      if (isCurrentDedicated && !isExistingDedicated) {
+        existing.entity = e;
+        existing.batteryPct = e.batteryPct;
+      }
+    }
+  }
+
+  // Sort lowest battery first and take top 3
+  const sortedLowBattery = Array.from(lowBatteryDevices.entries())
+    .sort((a, b) => a[1].batteryPct - b[1].batteryPct);
+
+  for (const [deviceKey, { entity: bat, batteryPct, allEntities }] of sortedLowBattery) {
+    const notifId = `battery_${deviceKey}`;
+
+    // Skip if dismissed under any related identifier
+    const isDismissed =
+      dismissedSet.has(notifId) ||
+      dismissedSet.has(`battery_${bat.entity_id}`) ||
+      (bat.device_id && dismissedSet.has(`battery_${bat.device_id}`)) ||
+      allEntities.some(ent => dismissedSet.has(`battery_${ent.entity_id}`));
+
+    if (isDismissed) continue;
+
+    const deviceName = bat.device?.name_by_user || bat.device?.name;
+    let displayName = bat.name;
+    const lowerName = (bat.name || '').toLowerCase().trim();
+
+    if ((lowerName === 'battery' || lowerName === 'battery level' || lowerName === 'level') && deviceName) {
+      displayName = deviceName;
+    } else if (deviceName && !lowerName.includes(deviceName.toLowerCase())) {
+      displayName = `${deviceName} (${bat.name})`;
+    }
+
     items.push({
       id: notifId,
       entity_id: bat.entity_id,
       category: 'battery',
       severity: 'warning',
-      title: `${bat.name} (${bat.batteryPct}%)`,
-      message: `Device battery is critically low at ${bat.batteryPct}%. Please replace or charge soon.`,
+      title: `${displayName} (${batteryPct}%)`,
+      message: `${deviceName || displayName} battery is critically low at ${batteryPct}%. Please replace or charge soon.`,
       areaName: bat.area?.name,
-      batteryLevel: bat.batteryPct,
+      batteryLevel: batteryPct,
       sensorType: 'battery',
       createdAt: new Date().toISOString(),
       dismissable: true,
       onDismiss: () => {
         dismissNotification(notifId);
+        dismissNotification(`battery_${bat.entity_id}`);
+        if (bat.device_id) {
+          dismissNotification(`battery_${bat.device_id}`);
+        }
+        for (const ent of allEntities) {
+          dismissNotification(`battery_${ent.entity_id}`);
+        }
       }
     });
+
+    if (items.filter(i => i.category === 'battery').length >= 3) {
+      break;
+    }
   }
 
   // Problem & Tamper binary sensors

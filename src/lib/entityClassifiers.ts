@@ -130,6 +130,35 @@ export function isOtherContactSensor(e: { attributes?: Record<string, any>; enti
   );
 }
 
+/**
+ * Determines whether an entity is eligible to represent a battery level or battery notification.
+ * If the entity is a sensor, it must strictly be a battery class/named sensor.
+ * Auxiliary sensors like mileage, speed, time driven, CO2, temperature, etc. are rejected.
+ */
+export function isBatteryEntity(e: { attributes?: Record<string, any>; entity_id: string; domain?: string; name?: string }): boolean {
+  const domain = e.domain || e.entity_id.split('.')[0];
+  const dc = (e.attributes?.device_class || '').toLowerCase();
+  const eid = e.entity_id.toLowerCase();
+  const name = (e.name || e.attributes?.friendly_name || '').toLowerCase();
+  const uom = (e.attributes?.unit_of_measurement || '').toLowerCase();
+
+  // If domain is sensor, it MUST specifically be a battery sensor entity
+  if (domain === 'sensor') {
+    return (
+      dc === 'battery' ||
+      eid.endsWith('_battery') ||
+      eid.endsWith('_battery_level') ||
+      eid.includes('battery') ||
+      name.includes('battery') ||
+      (uom === '%' && (eid.includes('batt') || name.includes('batt')))
+    );
+  }
+
+  // Non-sensor entities (lock, climate, binary_sensor, vacuum, cover, fan, device_tracker, etc.)
+  // legitimately represent physical hardware devices that can have a battery.
+  return true;
+}
+
 export interface ClassifiedBinarySensors {
   doorSensors: ResolvedEntity[];
   windowSensors: ResolvedEntity[];
