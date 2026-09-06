@@ -69,11 +69,10 @@ export interface UserDashboardConfig {
     customizations?: Record<string, { customName?: string; name?: string; customIcon?: string; icon?: string; hidden?: boolean }>;
   };
   cameras: {
-    defaultStreamType: 'webrtc' | 'hls' | 'mjpeg';
+    defaultStreamType: 'auto' | 'live' | 'snapshot';
     mutedByDefault: boolean;
     autoPlayPreferences?: boolean;
     aspectRatio?: '16:9' | '4:3' | '1:1' | 'cover';
-    customStreamEntities: Record<string, string>;
   };
   network: {
     adguardTimelineDefault: '24H' | '7D' | '30D' | '90D';
@@ -93,7 +92,6 @@ export interface UserDashboardConfig {
     currencySymbol?: string;
     glassBlurLevel?: 'subtle' | 'balanced' | 'deep' | 'ultra';
     specularHighlight?: boolean;
-    go2rtcUrl?: string;
     selectedWeatherEntityId?: string | null;
     selectedAlarmEntityId?: string | null;
     dismissedNotificationIds?: string[];
@@ -214,11 +212,10 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
     customizations: {}
   },
   cameras: {
-    defaultStreamType: 'webrtc',
+    defaultStreamType: 'auto',
     mutedByDefault: true,
     autoPlayPreferences: true,
-    aspectRatio: '16:9',
-    customStreamEntities: {}
+    aspectRatio: '16:9'
   },
   network: {
     adguardTimelineDefault: '24H',
@@ -238,7 +235,6 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
     currencySymbol: '€',
     glassBlurLevel: 'deep',
     specularHighlight: true,
-    go2rtcUrl: '',
     selectedWeatherEntityId: null,
     selectedAlarmEntityId: null,
     dismissedNotificationIds: []

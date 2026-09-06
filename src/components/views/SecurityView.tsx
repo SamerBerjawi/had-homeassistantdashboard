@@ -22,8 +22,6 @@ import {
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { classifyBinarySensors, isSurveillanceCamera } from '../../lib/entityClassifiers';
 import { ResolvedEntity } from '../../types';
-import { haWebSocketService } from '../../services/haWebSocket';
-import { fetchGo2RtcStreams, detectGo2RtcRtspStreams } from '../../services/go2rtcService';
 
 import { SecurityFilterTab } from './security/SecurityBadgesBar';
 import AlarmPanelSection from './security/AlarmPanelSection';
@@ -47,104 +45,25 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
     selectedAlarmEntityId, 
     updateEntityState,
     resolvedFloors,
-    resolvedAreas,
-    serverUrl
+    resolvedAreas
   } = useAutoLayoutStore(
     useShallow((s) => ({
       domainGroups: s.domainGroups,
       selectedAlarmEntityId: s.selectedAlarmEntityId,
       updateEntityState: s.updateEntityState,
       resolvedFloors: s.resolvedFloors,
-      resolvedAreas: s.resolvedAreas,
-      serverUrl: s.serverUrl
+      resolvedAreas: s.resolvedAreas
     }))
   );
 
   const [activeFilter, setActiveFilter] = useState<SecurityFilterTab>('all');
   const [isKeypadModalOpen, setIsKeypadModalOpen] = useState<boolean>(false);
-  const [webRtcCapabilities, setWebRtcCapabilities] = useState<Record<string, boolean>>({});
-  const [go2RtcCameras, setGo2RtcCameras] = useState<ResolvedEntity[]>([]);
 
   // Filter raw cameras to only real surveillance cameras (excluding hidden & disabled)
   const rawCameras: ResolvedEntity[] = useMemo(() => {
     const all = domainGroups['camera'] || [];
     return all.filter((c) => isSurveillanceCamera(c) && !c.hidden && !c.disabled_by);
   }, [domainGroups]);
-
-  // Query go2rtc directly for configured RTSP streams
-  useEffect(() => {
-    let isCancelled = false;
-
-    async function queryGo2Rtc() {
-      try {
-        const streams = await fetchGo2RtcStreams(serverUrl);
-        if (!isCancelled && streams && Object.keys(streams).length > 0) {
-          const detected = detectGo2RtcRtspStreams(streams, rawCameras, serverUrl);
-          setGo2RtcCameras(detected);
-        }
-      } catch (err) {
-        console.warn('[SecurityView] Failed to query go2rtc streams:', err);
-      }
-    }
-
-    queryGo2Rtc();
-    const timer = setInterval(queryGo2Rtc, 20000);
-
-    const handleUpdate = () => queryGo2Rtc();
-    if (typeof window !== 'undefined') {
-      window.addEventListener('storage', handleUpdate);
-      window.addEventListener('go2rtc_updated', handleUpdate);
-    }
-
-    return () => {
-      isCancelled = true;
-      clearInterval(timer);
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('storage', handleUpdate);
-        window.removeEventListener('go2rtc_updated', handleUpdate);
-      }
-    };
-  }, [serverUrl, rawCameras]);
-
-  const allCameras: ResolvedEntity[] = useMemo(() => {
-    if (go2RtcCameras.length > 0) return go2RtcCameras;
-    return rawCameras.filter(
-      (c) => c.attributes?.stream_source === 'go2rtc' || c.entity_id.startsWith('go2rtc.')
-    );
-  }, [rawCameras, go2RtcCameras]);
-
-  // Query camera capabilities via WebSocket
-  useEffect(() => {
-    if (haWebSocketService.isDemo() || haWebSocketService.getStatus() !== 'connected') {
-      return;
-    }
-
-    allCameras.forEach((cam) => {
-      if (webRtcCapabilities[cam.entity_id] !== undefined) return;
-
-      if (cam.attributes?.stream_source === 'go2rtc' || cam.entity_id.startsWith('go2rtc.')) {
-        setWebRtcCapabilities((prev) => ({ ...prev, [cam.entity_id]: true }));
-        return;
-      }
-
-      haWebSocketService
-        .sendRequest<{ frontend_stream_types?: string[] }>('camera/capabilities', {
-          entity_id: cam.entity_id
-        })
-        .then((res) => {
-          const supportsWebRtc =
-            Array.isArray(res?.frontend_stream_types) && res.frontend_stream_types.includes('web_rtc');
-          setWebRtcCapabilities((prev) => ({ ...prev, [cam.entity_id]: supportsWebRtc }));
-        })
-        .catch(() => {
-          const supportsWebRtc =
-            cam.attributes?.frontend_stream_types?.includes('web_rtc') ||
-            cam.attributes?.stream_type === 'webrtc' ||
-            (cam as any).platform === 'go2rtc';
-          setWebRtcCapabilities((prev) => ({ ...prev, [cam.entity_id]: !!supportsWebRtc }));
-        });
-    });
-  }, [allCameras, webRtcCapabilities]);
 
   // Classify all security domain entities
   const {
@@ -185,7 +104,7 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
       alarmEntities: alarms,
       activeAlarm: activeAlarmEntity,
       lockEntities: locks,
-      cameraEntities: allCameras,
+      cameraEntities: rawCameras,
       userEntities: users,
       doorSensors: doors,
       windowSensors: windows,
@@ -195,7 +114,7 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
       openDoors: doors.filter((d) => d.state === 'on'),
       openWindows: windows.filter((w) => w.state === 'on')
     };
-  }, [domainGroups, selectedAlarmEntityId, allCameras]);
+  }, [domainGroups, selectedAlarmEntityId, rawCameras]);
 
   const totalSecurityEntities =
     alarmEntities.length +

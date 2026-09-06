@@ -168,7 +168,7 @@ export default function CameraFeedSection({
         }`}>
           <CameraNoSignalPlaceholder
             title="No Cameras Connected"
-            subtitle="Configure camera entities in Home Assistant or go2rtc to view live surveillance feeds."
+            subtitle="Configure camera entities in Home Assistant to view surveillance feeds."
             iconSize={36}
             className="bg-transparent"
           />
@@ -199,7 +199,7 @@ export default function CameraFeedSection({
                     : 'bg-white/20 hover:bg-white/30 text-slate-900'
                 }`}
               >
-                {/* Video Stream Frame with Native HA WebRTC (go2rtc-backed) engine */}
+                {/* Camera Feed Viewport */}
                 <div className="relative w-full aspect-video bg-black overflow-hidden">
                   <CameraFeed
                     camera={camera}
@@ -253,11 +253,6 @@ export default function CameraFeedSection({
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="text-sm font-bold tracking-tight">{name}</h4>
-                      {(camera.attributes?.is_rtsp_stream || camera.attributes?.stream_source === 'go2rtc') && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 uppercase tracking-wider">
-                          RTSP
-                        </span>
-                      )}
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       {camera.attributes?.model_name || 'Encrypted Video Stream'}

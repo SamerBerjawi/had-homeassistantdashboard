@@ -4,15 +4,13 @@
  *
  * Camera Integration Service:
  * - Real-time motion sensor detection and status formatting
- * - Home Assistant PTZ (Pan/Tilt/Zoom) service execution (ONVIF, Tapo, Reolink, Amcrest, Core Camera)
- * - go2rtc direct PTZ API integration
+ * - Home Assistant PTZ (Pan/Tilt/Zoom) service execution (ONVIF, Tapo, Reolink, Core Camera)
  * - Camera deterrent siren / spotlight control
  * - High-resolution snapshot capture and download
  */
 
 import { ResolvedEntity } from '../types';
 import { haWebSocketService } from './haWebSocket';
-import { getGo2RtcBaseUrls } from './go2rtcService';
 
 export interface CameraMotionStatus {
   sensorEntity: ResolvedEntity | null;
@@ -57,7 +55,6 @@ export function getCameraMotionStatus(
 
   const cameraSlug = camera.entity_id
     .replace(/^camera\./, '')
-    .replace(/^go2rtc\./, '')
     .toLowerCase();
 
   const binarySensors = entityList.filter(e => e.domain === 'binary_sensor');
@@ -130,21 +127,18 @@ export function getCameraMotionStatus(
 }
 
 /**
- * Dispatches real PTZ movement commands to the camera via Home Assistant or go2rtc.
+ * Dispatches PTZ movement commands to the camera via Home Assistant native services.
  */
 export async function executeCameraPtz(
   camera: ResolvedEntity,
   direction: PtzDirection,
-  serverUrl?: string,
+  _serverUrl?: string,
   speed: number = 0.5
 ): Promise<{ success: boolean; serviceUsed: string; error?: string }> {
   const isLiveMode = !haWebSocketService.isDemo() && haWebSocketService.getStatus() === 'connected';
   const entityId = camera.entity_id;
-  const isGo2RtcDirect = camera.attributes?.stream_source === 'go2rtc' || entityId.startsWith('go2rtc.');
-  const streamName = camera.attributes?.go2rtc_stream || entityId.replace(/^go2rtc\./, '').replace(/^camera\./, '');
 
-  // 1. Try Home Assistant Native Services for HA Camera Entities
-  if (isLiveMode && !isGo2RtcDirect && entityId.startsWith('camera.')) {
+  if (isLiveMode && entityId.startsWith('camera.')) {
     // Try ONVIF PTZ service
     try {
       const onvifData: Record<string, any> = {
@@ -201,35 +195,6 @@ export async function executeCameraPtz(
     }
   }
 
-  // 2. Try go2rtc direct PTZ API
-  try {
-    const { httpUrl } = getGo2RtcBaseUrls(serverUrl);
-    let ptzQuery = `src=${encodeURIComponent(streamName)}`;
-    if (direction === 'left' || direction === 'right') ptzQuery += `&pan=${direction}`;
-    if (direction === 'up' || direction === 'down') ptzQuery += `&tilt=${direction}`;
-    if (direction === 'zoom_in') ptzQuery += `&zoom=in`;
-    if (direction === 'zoom_out') ptzQuery += `&zoom=out`;
-
-    // Try direct fetch
-    const ptzEndpoint = `${httpUrl}/api/ptz?${ptzQuery}`;
-    const res = await fetch(ptzEndpoint, { method: 'GET', signal: AbortSignal.timeout(2000) });
-    if (res.ok) {
-      return { success: true, serviceUsed: 'go2rtc.ptz' };
-    }
-  } catch {
-    // Try backend proxy for go2rtc PTZ
-    try {
-      const { httpUrl } = getGo2RtcBaseUrls(serverUrl);
-      const proxyUrl = `/api/go2rtc/ptz?url=${encodeURIComponent(httpUrl)}&src=${encodeURIComponent(streamName)}&dir=${direction}`;
-      const proxyRes = await fetch(proxyUrl, { method: 'GET', signal: AbortSignal.timeout(2500) });
-      if (proxyRes.ok) {
-        return { success: true, serviceUsed: 'go2rtc.ptz (proxy)' };
-      }
-    } catch {
-      // Ignore
-    }
-  }
-
   return {
     success: true,
     serviceUsed: 'camera.ptz (simulated action)'
@@ -255,7 +220,6 @@ export async function toggleCameraSiren(
 
   const cameraSlug = camera.entity_id
     .replace(/^camera\./, '')
-    .replace(/^go2rtc\./, '')
     .toLowerCase();
 
   // Find related siren entity
@@ -285,17 +249,16 @@ export async function toggleCameraSiren(
 }
 
 /**
- * Captures high-resolution snapshot from video or go2rtc frame endpoint and triggers file download.
+ * Captures high-resolution snapshot from video frame and triggers file download.
  */
 export async function captureAndDownloadSnapshot(
   videoElement: HTMLVideoElement | null,
   camera: ResolvedEntity,
-  serverUrl?: string
+  _serverUrl?: string
 ): Promise<boolean> {
   const cameraSlug = (camera.name || camera.entity_id).replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
   const filename = `snapshot_${cameraSlug}_${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`;
 
-  // 1. If active video element is playing, extract directly from video frame
   if (videoElement && videoElement.videoWidth > 0 && videoElement.videoHeight > 0) {
     try {
       const canvas = document.createElement('canvas');
@@ -320,29 +283,6 @@ export async function captureAndDownloadSnapshot(
     } catch (err) {
       console.warn('[Camera] Failed to extract snapshot from video frame:', err);
     }
-  }
-
-  // 2. Fetch snapshot from go2rtc frame endpoint
-  const streamName = camera.attributes?.go2rtc_stream || camera.entity_id.replace(/^go2rtc\./, '').replace(/^camera\./, '');
-  const { httpUrl } = getGo2RtcBaseUrls(serverUrl);
-  const frameUrl = `${httpUrl}/api/frame.jpeg?src=${encodeURIComponent(streamName)}`;
-
-  try {
-    const res = await fetch(frameUrl);
-    if (res.ok) {
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      return true;
-    }
-  } catch (err) {
-    console.warn('[Camera] Failed to fetch frame from go2rtc:', err);
   }
 
   return false;

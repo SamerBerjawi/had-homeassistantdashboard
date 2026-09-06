@@ -335,7 +335,7 @@ export default function DeviceVisibilitySection({
     if (categoryFilter === 'cover') return domain === 'cover';
     if (categoryFilter === 'lock') return domain === 'lock';
     if (categoryFilter === 'media_player') return domain === 'media_player';
-    if (categoryFilter === 'camera') return domain === 'camera' || entity.entity_id.startsWith('go2rtc.');
+    if (categoryFilter === 'camera') return domain === 'camera';
     if (categoryFilter === 'vacuum') return domain === 'vacuum';
 
     if (categoryFilter === 'binary_sensor') {
@@ -354,7 +354,7 @@ export default function DeviceVisibilitySection({
       return ![
         'light', 'switch', 'climate', 'fan', 'cover', 'lock',
         'media_player', 'camera', 'vacuum', 'binary_sensor', 'sensor'
-      ].includes(domain) && !entity.entity_id.startsWith('go2rtc.');
+      ].includes(domain);
     }
 
     return true;
@@ -813,8 +813,8 @@ export default function DeviceVisibilitySection({
                     ? allResolvedList.filter(e => ![
                         'light', 'switch', 'climate', 'fan', 'cover', 'lock',
                         'media_player', 'camera', 'vacuum', 'binary_sensor', 'sensor'
-                      ].includes(e.domain) && !e.entity_id.startsWith('go2rtc.'))
-                    : allResolvedList.filter(e => e.domain === cat.id || (cat.id === 'camera' && e.entity_id.startsWith('go2rtc.')));
+                      ].includes(e.domain))
+                    : allResolvedList.filter(e => e.domain === cat.id);
 
                 const count = catEntities.length;
                 if (count === 0 && cat.id !== 'all') return null;

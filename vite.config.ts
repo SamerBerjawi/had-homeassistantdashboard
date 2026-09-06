@@ -31,15 +31,13 @@ export default defineConfig(() => {
           skipWaiting: true,
           clientsClaim: true,
           cleanupOutdatedCaches: true,
-          // Explicitly exclude API, WebSocket, auth, camera streams, and WebRTC from Workbox navigation & runtime caching
+          // Explicitly exclude API, WebSocket, auth, and media assets from Workbox navigation & runtime caching
           navigateFallbackDenylist: [
             /^\/api/,
             /^\/data\/assets/,
             /^\/auth/,
             /^\/manifest\.json/,
             /^\/websocket/,
-            /^\/webrtc/,
-            /^\/go2rtc/,
             /^\/media\//,
           ],
           runtimeCaching: [
@@ -74,9 +72,7 @@ export default defineConfig(() => {
               urlPattern: ({ url }) =>
                 url.pathname.startsWith('/api') ||
                 url.pathname.startsWith('/auth') ||
-                url.pathname.startsWith('/websocket') ||
-                url.pathname.startsWith('/webrtc') ||
-                url.pathname.startsWith('/go2rtc'),
+                url.pathname.startsWith('/websocket'),
               handler: 'NetworkOnly',
             },
             {
@@ -153,7 +149,6 @@ export default defineConfig(() => {
             ],
             'vendor-zustand': ['zustand'],
             'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
-            'vendor-hls': ['hls.js'],
           },
         },
       },

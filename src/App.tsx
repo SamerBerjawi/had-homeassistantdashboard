@@ -57,7 +57,7 @@ const SETTINGS_SECTIONS_META: Record<string, { title: string; subtitle: string; 
   },
   connection_websocket: {
     title: 'Connection & Home Assistant',
-    subtitle: 'WebSocket server credentials, connection status, and go2rtc streams.',
+    subtitle: 'WebSocket server credentials and connection status.',
     icon: WifiHigh,
     color: 'text-indigo-400'
   },

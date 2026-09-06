@@ -170,11 +170,7 @@ export function mergeConfig(
     },
     cameras: {
       ...safeBase.cameras,
-      ...(partial.cameras || {}),
-      customStreamEntities: {
-        ...(safeBase.cameras?.customStreamEntities || {}),
-        ...(partial.cameras?.customStreamEntities || {})
-      }
+      ...(partial.cameras || {})
     },
     network: {
       ...safeBase.network,

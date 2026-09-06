@@ -61,8 +61,6 @@ interface SettingsHubProps {
   devicesCount: number;
   snapshotsCount: number;
   logsCount: number;
-  go2rtcSuccess?: boolean;
-  go2rtcStreamsCount?: number;
   authType: 'oauth' | 'llat' | 'demo';
 }
 
@@ -85,8 +83,6 @@ export default function SettingsHub({
   devicesCount,
   snapshotsCount,
   logsCount,
-  go2rtcSuccess,
-  go2rtcStreamsCount,
   authType
 }: SettingsHubProps) {
 
@@ -153,7 +149,7 @@ export default function SettingsHub({
       metrics: [
         { label: 'Status', value: isLiveMode ? 'Connected' : 'Demo' },
         { label: 'Auth', value: authType === 'oauth' ? 'OAuth' : authType === 'llat' ? 'Token' : 'Demo' },
-        { label: 'Cameras', value: go2rtcSuccess ? `${go2rtcStreamsCount || 0}` : 'Auto' }
+        { label: 'Entities', value: `${totalEntitiesCount}` }
       ]
     },
     {

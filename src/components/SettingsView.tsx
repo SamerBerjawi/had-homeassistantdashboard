@@ -14,7 +14,6 @@ import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useCanvasStore } from '../store/useCanvasStore';
 import { WeatherBackdropType } from '../types/canvas';
-import { getGo2RtcBaseUrls, testGo2RtcConnection } from '../services/go2rtcService';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserConfig } from '../contexts/ConfigContext';
 
@@ -665,104 +664,6 @@ export default function SettingsView({
   const [pingLatency, setPingLatency] = useState<number | null>(12);
   const [logFilter, setLogFilter] = useState<'all' | 'service_call' | 'state_changed' | 'info' | 'error'>('all');
 
-  const [go2RtcUrlInput, setGo2RtcUrlInput] = useState(() => {
-    return config?.preferences?.go2rtcUrl || getGo2RtcBaseUrls(storeServerUrl).httpUrl;
-  });
-  const [go2RtcStatus, setGo2RtcStatus] = useState<{
-    tested: boolean;
-    loading: boolean;
-    success?: boolean;
-    streamsCount?: number;
-    streamNames?: string[];
-    latencyMs?: number | null;
-    error?: string;
-  }>({ tested: false, loading: false });
-
-  // Auto-probe go2rtc health on mount
-  useEffect(() => {
-    let isCancelled = false;
-    const probe = async () => {
-      const url = go2RtcUrlInput.trim();
-      const res = await testGo2RtcConnection(url);
-      if (!isCancelled) {
-        setGo2RtcStatus({
-          tested: true,
-          loading: false,
-          success: res.success,
-          streamsCount: res.streamsCount,
-          streamNames: res.streamNames,
-          latencyMs: res.latencyMs,
-          error: res.error
-        });
-      }
-    };
-    probe();
-    return () => {
-      isCancelled = true;
-    };
-  }, [go2RtcUrlInput]);
-
-  const handleTestGo2Rtc = async () => {
-    setGo2RtcStatus({ tested: true, loading: true });
-    addLog('service_call', `Probing go2rtc streaming endpoint at ${go2RtcUrlInput}`);
-    const res = await testGo2RtcConnection(go2RtcUrlInput.trim());
-    setGo2RtcStatus({
-      tested: true,
-      loading: false,
-      success: res.success,
-      streamsCount: res.streamsCount,
-      streamNames: res.streamNames,
-      latencyMs: res.latencyMs,
-      error: res.error
-    });
-    if (res.success) {
-      const clean = go2RtcUrlInput.trim();
-      if (clean) {
-        await updateConfig((prev) => ({
-          ...prev,
-          preferences: {
-            ...(prev.preferences || {}),
-            go2rtcUrl: clean
-          }
-        }));
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('go2rtc_updated'));
-        }
-      }
-      addToast?.({
-        type: 'success',
-        title: 'go2rtc Online',
-        message: `Discovered ${res.streamsCount} stream(s) (${res.latencyMs}ms): ${res.streamNames.join(', ') || 'None'}`
-      });
-      addLog('info', `go2rtc online: found ${res.streamsCount} stream(s) (${res.latencyMs}ms) [${res.streamNames.join(', ')}]`);
-    } else {
-      addToast?.({
-        type: 'warning',
-        title: 'go2rtc Not Responding',
-        message: res.error || 'Could not connect to go2rtc on specified port.'
-      });
-      addLog('error', `go2rtc connection error: ${res.error}`);
-    }
-  };
-
-  const handleSaveGo2RtcUrl = () => {
-    const clean = go2RtcUrlInput.trim();
-    if (typeof window !== 'undefined') {
-      if (clean) {
-        localStorage.setItem('homz_go2rtc_url', clean);
-      } else {
-        localStorage.removeItem('homz_go2rtc_url');
-      }
-      window.dispatchEvent(new CustomEvent('go2rtc_updated'));
-    }
-    addToast?.({
-      type: 'success',
-      title: 'go2rtc Endpoint Saved',
-      message: clean ? `Updated go2rtc URL to ${clean}` : 'Reset go2rtc URL to automatic detection.'
-    });
-    handleTestGo2Rtc();
-  };
-
   const handleStartOAuthLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!haHttpUrlInput.trim()) return;
@@ -839,8 +740,6 @@ export default function SettingsView({
               devicesCount={Object.keys(rawDevices || {}).length || 18}
               snapshotsCount={snapshots.length}
               logsCount={logs.length}
-              go2rtcSuccess={go2RtcStatus.success}
-              go2rtcStreamsCount={go2RtcStatus.streamsCount}
               authType={authType}
             />
           </motion.div>
@@ -982,11 +881,6 @@ export default function SettingsView({
               isPinging={isPinging}
               pingLatency={pingLatency}
               handleTestLatency={handleTestLatency}
-              go2RtcUrlInput={go2RtcUrlInput}
-              setGo2RtcUrlInput={setGo2RtcUrlInput}
-              go2RtcStatus={go2RtcStatus}
-              handleTestGo2Rtc={handleTestGo2Rtc}
-              handleSaveGo2RtcUrl={handleSaveGo2RtcUrl}
               logs={logs}
               setLogs={setLogs}
               logFilter={logFilter}
