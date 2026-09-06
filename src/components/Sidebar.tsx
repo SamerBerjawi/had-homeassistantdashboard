@@ -199,17 +199,17 @@ export default function Sidebar({
           <div 
             onClick={() => setActiveTab('overview')}
             className="flex items-center gap-3 cursor-pointer group"
-            title="Homz Dashboard"
+            title="HAD - Home Assistant Dashboard"
           >
-            <div className={`w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center shadow-md transition-all shrink-0 group-hover:scale-105 ${
-              darkMode ? 'bg-white/10 border border-white/15 text-sky-400' : 'bg-sky-500/10 border border-sky-500/20 text-sky-600'
+            <div className={`w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center shadow-md transition-all shrink-0 group-hover:scale-105 overflow-hidden ${
+              darkMode ? 'bg-white/10 border border-white/15' : 'bg-sky-500/10 border border-sky-500/20'
             }`}>
-              <Sparkle size={22} weight="duotone" className="group-hover:rotate-12 transition-transform" />
+              <img src="/app-icon.png" alt="HAD" className="w-8 h-8 rounded-lg object-contain" />
             </div>
             {!isCollapsed && (
               <div className="min-w-0">
-                <h2 className={`text-sm font-black tracking-tight leading-none ${darkMode ? 'text-white' : 'text-slate-900'}`}>HOMZ</h2>
-                <p className={`text-[10px] font-semibold tracking-wider uppercase mt-0.5 ${darkMode ? 'text-sky-400' : 'text-sky-600'}`}>Automated Living</p>
+                <h2 className={`text-sm font-black tracking-tight leading-none ${darkMode ? 'text-white' : 'text-slate-900'}`}>HAD</h2>
+                <p className={`text-[10px] font-semibold tracking-wider uppercase mt-0.5 ${darkMode ? 'text-sky-400' : 'text-sky-600'}`}>Home Assistant</p>
               </div>
             )}
           </div>

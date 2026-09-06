@@ -1,6 +1,6 @@
 {
-  "name": "Homz IoT Dashboard",
-  "description": "A premium glassmorphic smart home IoT dashboard with automatic dashboard generation from Home Assistant Area, Device, Entity, and Floor registries, microgrid energy analytics, battery health diagnostics, device maintenance tracking, and real-time weather.",
+  "name": "HAD - Home Assistant Dashboard",
+  "description": "A premium glassmorphic smart home IoT dashboard for Home Assistant with automatic layout generation, entity control, energy analytics, and real-time monitoring.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -1,4 +1,4 @@
-# 🏠 HOMZ - Smart Home Assistant Dashboard
+# 🏠 HAD - Home Assistant Dashboard
 
 A futuristic, high-performance Smart Home dashboard interface built with React, Vite, TypeScript, Tailwind CSS, Visx charts, Three.js 3D visualizers, and an integrated Node.js Express server.
 

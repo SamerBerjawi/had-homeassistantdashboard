@@ -1,7 +1,7 @@
 {
-  "name": "HOMZ • Smart Home Dashboard",
-  "short_name": "HOMZ",
-  "description": "Smart home dashboard for monitoring and controlling your connected home.",
+  "name": "HAD - Home Assistant Dashboard",
+  "short_name": "HAD",
+  "description": "HAD - Modern smart home dashboard for monitoring and controlling Home Assistant.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,7 +10,7 @@
   "background_color": "#020617",
   "theme_color": "#020617",
   "categories": ["smart home", "utilities", "lifestyle"],
-  "id": "homz-smart-home-pwa",
+  "id": "had-homeassistantdashboard",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -39,6 +39,11 @@
     {
       "src": "/favicon-32x32.png",
       "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
       "type": "image/png"
     }
   ]

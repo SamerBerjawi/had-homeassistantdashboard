@@ -55,15 +55,15 @@ export default function FullScreenLoadingPage({
       {/* Top Branding Header */}
       <div className="w-full flex items-center justify-center pt-2 relative z-10">
         <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-xs">
-          <div className="w-7 h-7 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30">
-            <HouseLine size={18} weight="duotone" />
+          <div className="w-7 h-7 rounded-xl overflow-hidden flex items-center justify-center border border-white/15">
+            <img src="/app-icon.png" alt="HAD" className="w-full h-full object-contain" />
           </div>
           <span className="text-sm font-black tracking-widest text-slate-200 uppercase">
-            HOMZ
+            HAD
           </span>
           <span className="text-slate-600 font-bold">•</span>
           <span className="text-xs font-semibold text-slate-400">
-            Smart Home Dashboard
+            Home Assistant Dashboard
           </span>
         </div>
       </div>

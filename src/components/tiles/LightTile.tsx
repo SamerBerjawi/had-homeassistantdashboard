@@ -63,13 +63,20 @@ const LightTileComponent: React.FC<LightTileProps> = ({
     />
   );
 
+  const hasCustomColor = isOn && caps.supportsColor && Boolean(caps.displayColor);
+  const iconGlowClass = isOn
+    ? hasCustomColor
+      ? 'drop-shadow-[0_0_5px_rgba(0,0,0,0.15)]'
+      : 'text-amber-500 dark:text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.3)]'
+    : 'text-slate-400';
+
   if (caps.supportsBrightness && onBrightnessChange) {
     return (
       <TileShell
         darkMode={darkMode}
         isActive={isOn}
         accentColor="#FBBF24"
-        activeBorderColor=""
+        activeBorderColor={darkMode ? 'border-amber-400/20' : 'border-amber-500/20'}
         onClick={onClick || onContextMenu || onIconClick}
         onContextMenu={(e) => {
           e.preventDefault();
@@ -90,7 +97,7 @@ const LightTileComponent: React.FC<LightTileProps> = ({
                   onToggle(entity);
                 }}
                 title="Toggle Power"
-                className="shrink-0 flex items-center justify-center min-w-[28px] min-h-[28px] rounded-xl hover:bg-white/10 dark:hover:bg-white/10 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+                className="shrink-0 flex items-center justify-center min-w-[28px] min-h-[28px] rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
               >
                 {entity.icon ? (
                   <DynamicPhosphorIcon
@@ -98,14 +105,14 @@ const LightTileComponent: React.FC<LightTileProps> = ({
                     size={22}
                     weight={isOn ? 'fill' : 'duotone'}
                     style={{ color: isOn && caps.supportsColor ? caps.displayColor : undefined }}
-                    className={isOn ? 'text-amber-400 dark:text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.95)]' : 'text-slate-400'}
+                    className={iconGlowClass}
                   />
                 ) : (
                   <Lightbulb
                     size={22}
                     weight={isOn ? 'fill' : 'duotone'}
                     style={{ color: isOn && caps.supportsColor ? caps.displayColor : undefined }}
-                    className={isOn ? 'text-amber-400 dark:text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.95)]' : 'text-slate-400'}
+                    className={iconGlowClass}
                   />
                 )}
               </button>
@@ -147,8 +154,9 @@ const LightTileComponent: React.FC<LightTileProps> = ({
               min={0}
               max={100}
               step={1}
-              activeColor="bg-amber-400"
-              activeGlowColor="rgba(251, 191, 36, 0.85)"
+              activeColor="bg-amber-400 dark:bg-amber-400"
+              activeGlowColor="rgba(251, 191, 36, 0.25)"
+              inactiveColor={darkMode ? 'bg-white/15' : 'bg-slate-300/80'}
               onChange={(val) => onBrightnessChange(entity, val)}
             />
           </div>
@@ -164,7 +172,7 @@ const LightTileComponent: React.FC<LightTileProps> = ({
       subtitle={subtitle}
       isActive={isOn}
       accentColor="#FBBF24"
-      activeBorderColor=""
+      activeBorderColor={darkMode ? 'border-amber-400/20' : 'border-amber-500/20'}
       onIconClick={() => onToggle(entity)}
       icon={
         entity.icon ? (
@@ -172,13 +180,15 @@ const LightTileComponent: React.FC<LightTileProps> = ({
             name={entity.icon}
             size={22}
             weight={isOn ? 'fill' : 'duotone'}
-            className={isOn ? 'text-amber-400 dark:text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.95)]' : 'text-slate-400'}
+            style={{ color: isOn && caps.supportsColor ? caps.displayColor : undefined }}
+            className={iconGlowClass}
           />
         ) : (
           <Lightbulb
             size={22}
             weight={isOn ? 'fill' : 'duotone'}
-            className={isOn ? 'text-amber-400 dark:text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.95)]' : 'text-slate-400'}
+            style={{ color: isOn && caps.supportsColor ? caps.displayColor : undefined }}
+            className={iconGlowClass}
           />
         )
       }

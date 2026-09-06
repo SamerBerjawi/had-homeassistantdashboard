@@ -291,7 +291,7 @@ export default function App() {
   useEffect(() => {
     const theme = PAGE_THEMES[activeTab];
     const label = theme?.title || (activeTab.charAt(0).toUpperCase() + activeTab.slice(1));
-    document.title = `HOMZ • ${label}`;
+    document.title = activeTab === 'overview' ? 'HAD - Home Assistant Dashboard' : `HAD • ${label}`;
   }, [activeTab]);
 
   const [toasts, setToasts] = useState<ToastNotification[]>([]);

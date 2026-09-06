@@ -311,7 +311,7 @@ export default function SettingsView({
   // 1. Build comprehensive backup archive covering every domain
   const buildFullBackupObject = () => {
     return {
-      system: 'HOMZ Smart Dashboard',
+      system: 'HAD - Home Assistant Dashboard',
       version: '2.0.0',
       exportedAt: new Date().toISOString(),
 
@@ -562,7 +562,7 @@ export default function SettingsView({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `homz-snapshot-${snap.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = `had-snapshot-${snap.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -587,7 +587,7 @@ export default function SettingsView({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `homz-dashboard-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `had-dashboard-backup-${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

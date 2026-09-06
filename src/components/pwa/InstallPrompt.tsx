@@ -117,12 +117,12 @@ export const InstallPrompt: React.FC = () => {
         >
           <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/90 dark:bg-black/85 backdrop-blur-md border border-sky-500/30 dark:border-white/15 text-white shadow-2xl shadow-sky-500/10 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-sky-400 to-indigo-600 flex items-center justify-center shrink-0 shadow-md">
-                <Sparkle size={20} weight="fill" className="text-white" />
+              <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-md border border-white/15">
+                <img src="/app-icon.png" alt="HAD" className="w-full h-full object-contain" />
               </div>
               <div className="min-w-0">
                 <h4 className="text-xs font-black tracking-tight text-white flex items-center gap-1.5 truncate">
-                  <span>Install HOMZ App</span>
+                  <span>Install HAD App</span>
                   <span className="px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-400 text-[9px] font-mono font-bold">PWA</span>
                 </h4>
                 <p className="text-[11px] text-slate-400 truncate">
@@ -169,12 +169,12 @@ export const InstallPrompt: React.FC = () => {
           <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/95 dark:bg-black/90 backdrop-blur-md border border-sky-500/30 dark:border-white/15 text-white shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-linear-to-br from-sky-400 to-indigo-600 flex items-center justify-center shrink-0 shadow-md">
-                  <Sparkle size={18} weight="fill" className="text-white" />
+                <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-md border border-white/15">
+                  <img src="/app-icon.png" alt="HAD" className="w-full h-full object-contain" />
                 </div>
                 <div>
                   <h4 className="text-xs font-black tracking-tight text-white">
-                    Add HOMZ to Home Screen
+                    Add HAD to Home Screen
                   </h4>
                   <p className="text-[11px] text-slate-400">
                     Fast native launch without Safari bars

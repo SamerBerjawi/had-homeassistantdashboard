@@ -20,7 +20,11 @@ export default defineConfig(() => {
           'manifest.json',
           'favicon.ico',
           'favicon.svg',
+          'favicon-32x32.png',
+          'favicon-16x16.png',
           'apple-touch-icon.png',
+          'app-icon.png',
+          'icon.png',
           'icons/*.png',
           'splash/*.png',
         ],
@@ -57,7 +61,7 @@ export default defineConfig(() => {
                 url.pathname.startsWith('/local/'),
               handler: 'StaleWhileRevalidate',
               options: {
-                cacheName: 'homz-synced-assets',
+                cacheName: 'had-synced-assets',
                 expiration: {
                   maxEntries: 200,
                   maxAgeSeconds: 60 * 60 * 24 * 30, // 30 Days
@@ -104,7 +108,7 @@ export default defineConfig(() => {
                 !url.pathname.startsWith('/api'),
               handler: 'StaleWhileRevalidate',
               options: {
-                cacheName: 'homz-static-images',
+                cacheName: 'had-static-images',
                 expiration: {
                   maxEntries: 100,
                   maxAgeSeconds: 60 * 60 * 24 * 30,

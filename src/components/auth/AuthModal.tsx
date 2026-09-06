@@ -117,13 +117,13 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
 
           {/* Header Brand */}
           <div className="flex items-center gap-3.5 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-sky-500/30 text-white shrink-0">
-              <HouseLine size={28} weight="fill" />
+            <div className="w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center shadow-lg shadow-sky-500/20 border border-white/20 shrink-0">
+              <img src="/app-icon.png" alt="HAD" className="w-full h-full object-contain" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                  HOMZ Security Gate
+                  HAD Security Gate
                 </h2>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-sky-500/20 text-sky-300 border border-sky-500/30">
                   Auth Subsystem
