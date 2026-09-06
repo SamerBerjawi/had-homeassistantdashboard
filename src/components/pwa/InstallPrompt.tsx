@@ -117,9 +117,7 @@ export const InstallPrompt: React.FC = () => {
         >
           <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/90 dark:bg-black/85 backdrop-blur-md border border-sky-500/30 dark:border-white/15 text-white shadow-2xl shadow-sky-500/10 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-md border border-white/15">
-                <img src="/app-icon.png" alt="HAD" className="w-full h-full object-contain" />
-              </div>
+              <img src="/app-icon.png" alt="HAD" className="w-10 h-10 shrink-0 object-contain" />
               <div className="min-w-0">
                 <h4 className="text-xs font-black tracking-tight text-white flex items-center gap-1.5 truncate">
                   <span>Install HAD App</span>
@@ -169,9 +167,7 @@ export const InstallPrompt: React.FC = () => {
           <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/95 dark:bg-black/90 backdrop-blur-md border border-sky-500/30 dark:border-white/15 text-white shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-md border border-white/15">
-                  <img src="/app-icon.png" alt="HAD" className="w-full h-full object-contain" />
-                </div>
+                <img src="/app-icon.png" alt="HAD" className="w-9 h-9 shrink-0 object-contain" />
                 <div>
                   <h4 className="text-xs font-black tracking-tight text-white">
                     Add HAD to Home Screen

@@ -117,9 +117,7 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
 
           {/* Header Brand */}
           <div className="flex items-center gap-3.5 mb-6">
-            <div className="w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center shadow-lg shadow-sky-500/20 border border-white/20 shrink-0">
-              <img src="/app-icon.png" alt="HAD" className="w-full h-full object-contain" />
-            </div>
+            <img src="/app-icon.png" alt="HAD" className="w-12 h-12 shrink-0 object-contain shadow-lg shadow-sky-500/20" />
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">

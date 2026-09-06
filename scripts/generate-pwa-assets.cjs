@@ -15,9 +15,10 @@ const splashDir = path.join(publicDir, 'splash');
 
 // Candidate source image paths
 const sourceCandidates = [
-  path.join(publicDir, 'app-icon.png'),
-  '/Users/samerberjawi/.gemini/antigravity-ide/brain/a4ae9ad5-7f5b-44cf-8f5a-7a1636482957/.user_uploaded/media_1788726790610.jpg',
-  path.join(rootDir, 'media_1788726790610.jpg')
+  path.join(publicDir, 'app-icon-source.png'),
+  '/Users/samerberjawi/.gemini/antigravity-ide/brain/a4ae9ad5-7f5b-44cf-8f5a-7a1636482957/.user_uploaded/media_1788728770110.png',
+  '/Users/samerberjawi/.gemini/antigravity-ide/brain/a4ae9ad5-7f5b-44cf-8f5a-7a1636482957/had_ultra_minimal_1788728257407.jpg',
+  path.join(publicDir, 'app-icon.png')
 ];
 
 let sourceImgPath = sourceCandidates.find(p => fs.existsSync(p));
@@ -77,13 +78,14 @@ async function run() {
 
   // 2. Generate Favicons (16x16, 32x32, 48x48) & ICO
   console.log('Generating Favicons...');
-  const fav16 = await sharp(masterBuffer).resize(16, 16).sharpen({ sigma: 0.8 }).png().toBuffer();
-  const fav32 = await sharp(masterBuffer).resize(32, 32).sharpen({ sigma: 0.6 }).png().toBuffer();
-  const fav48 = await sharp(masterBuffer).resize(48, 48).sharpen({ sigma: 0.5 }).png().toBuffer();
-  const fav64 = await sharp(masterBuffer).resize(64, 64).png().toBuffer();
+  const fav16 = await sharp(masterBuffer).resize(16, 16, { kernel: sharp.kernel.lanczos3 }).sharpen({ sigma: 0.8 }).png().toBuffer();
+  const fav32 = await sharp(masterBuffer).resize(32, 32, { kernel: sharp.kernel.lanczos3 }).sharpen({ sigma: 0.6 }).png().toBuffer();
+  const fav48 = await sharp(masterBuffer).resize(48, 48, { kernel: sharp.kernel.lanczos3 }).sharpen({ sigma: 0.5 }).png().toBuffer();
+  const fav512 = await sharp(masterBuffer).resize(512, 512, { kernel: sharp.kernel.lanczos3 }).png({ quality: 100 }).toBuffer();
 
   fs.writeFileSync(path.join(publicDir, 'favicon-16x16.png'), fav16);
   fs.writeFileSync(path.join(publicDir, 'favicon-32x32.png'), fav32);
+  fs.writeFileSync(path.join(publicDir, 'favicon-48x48.png'), fav48);
 
   // Favicon.ico multi-resolution
   const icoBuffer = createIco([
@@ -93,9 +95,9 @@ async function run() {
   ]);
   fs.writeFileSync(path.join(publicDir, 'favicon.ico'), icoBuffer);
 
-  // Favicon.svg embedding base64 high-resolution image
-  const svgFavicon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <image width="64" height="64" href="data:image/png;base64,${fav64.toString('base64')}" />
+  // Favicon.svg embedding high-resolution 512x512 image for Retina/SVG tab displays
+  const svgFavicon = `<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <image width="512" height="512" href="data:image/png;base64,${fav512.toString('base64')}" />
 </svg>`;
   fs.writeFileSync(path.join(publicDir, 'favicon.svg'), svgFavicon.trim());
 

@@ -55,9 +55,7 @@ export default function FullScreenLoadingPage({
       {/* Top Branding Header */}
       <div className="w-full flex items-center justify-center pt-2 relative z-10">
         <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-xs">
-          <div className="w-7 h-7 rounded-xl overflow-hidden flex items-center justify-center border border-white/15">
-            <img src="/app-icon.png" alt="HAD" className="w-full h-full object-contain" />
-          </div>
+          <img src="/app-icon.png" alt="HAD" className="w-7 h-7 rounded-lg object-contain shadow-xs" />
           <span className="text-sm font-black tracking-widest text-slate-200 uppercase">
             HAD
           </span>

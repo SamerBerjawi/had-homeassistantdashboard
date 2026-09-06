@@ -201,11 +201,11 @@ export default function Sidebar({
             className="flex items-center gap-3 cursor-pointer group"
             title="HAD - Home Assistant Dashboard"
           >
-            <div className={`w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center shadow-md transition-all shrink-0 group-hover:scale-105 overflow-hidden ${
-              darkMode ? 'bg-white/10 border border-white/15' : 'bg-sky-500/10 border border-sky-500/20'
-            }`}>
-              <img src="/app-icon.png" alt="HAD" className="w-8 h-8 rounded-lg object-contain" />
-            </div>
+            <img 
+              src="/app-icon.png" 
+              alt="HAD" 
+              className="w-10 h-10 shrink-0 transition-transform group-hover:scale-105 object-contain" 
+            />
             {!isCollapsed && (
               <div className="min-w-0">
                 <h2 className={`text-sm font-black tracking-tight leading-none ${darkMode ? 'text-white' : 'text-slate-900'}`}>HAD</h2>
