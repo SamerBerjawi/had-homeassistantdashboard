@@ -147,16 +147,17 @@ const LightTileComponent: React.FC<LightTileProps> = ({
             </div>
           </div>
 
-          {/* Dotted Brightness Slider */}
+          {/* Capsule Brightness Slider */}
           <div className="w-full pt-0.5" onClick={(e) => e.stopPropagation()}>
             <DotSlider
               value={isOn ? brightness : 0}
               min={0}
               max={100}
               step={1}
-              activeColor="bg-amber-400 dark:bg-amber-400"
-              activeGlowColor="rgba(251, 191, 36, 0.25)"
-              inactiveColor={darkMode ? 'bg-white/15' : 'bg-slate-300/80'}
+              activeColor={hasCustomColor ? '' : 'bg-amber-400 dark:bg-amber-400'}
+              activeStyle={hasCustomColor ? { backgroundColor: caps.displayColor } : undefined}
+              activeGlowColor={hasCustomColor ? `${caps.displayColor}44` : 'rgba(251, 191, 36, 0.25)'}
+              inactiveColor={darkMode ? 'bg-white/10' : 'bg-slate-300/60'}
               onChange={(val) => onBrightnessChange(entity, val)}
             />
           </div>

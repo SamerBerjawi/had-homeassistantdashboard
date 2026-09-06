@@ -245,13 +245,13 @@ const SensorTileComponent: React.FC<SensorTileProps> = ({
                 activeGlowColor={
                   isBattery
                     ? pctVal < 20
-                      ? 'rgba(244, 63, 94, 0.75)'
+                      ? 'rgba(244, 63, 94, 0.4)'
                       : pctVal < 50
-                      ? 'rgba(251, 191, 36, 0.75)'
-                      : 'rgba(52, 211, 153, 0.75)'
-                    : 'rgba(251, 191, 36, 0.75)'
+                      ? 'rgba(251, 191, 36, 0.35)'
+                      : 'rgba(52, 211, 153, 0.35)'
+                    : 'rgba(251, 191, 36, 0.3)'
                 }
-                dotSizeClass="max-w-[7px] sm:max-w-[8px]"
+                inactiveColor={darkMode ? 'bg-white/10' : 'bg-slate-300/60'}
               />
             </div>
             <span className="font-mono font-bold text-xs shrink-0 text-slate-700 dark:text-slate-200">

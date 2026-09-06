@@ -2,9 +2,10 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * DotSlider Component:
- * Modern LED dot-matrix bead slider and gauge indicator.
- * Displays a sleek row of glowing dots that dynamically adapts to container width and screen size.
+ * DotSlider Component (Bento Capsule Slider)
+ * Modern hi-fi tactile capsule slider and level gauge.
+ * Features an integrated recessed glass track with curated, rounded pill segments,
+ * luminous leading indicator, smooth touch/mouse scrubbing, and adaptive sizing.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -16,6 +17,7 @@ export interface DotSliderProps {
   step?: number;
   totalDots?: number;
   activeColor?: string;
+  activeStyle?: React.CSSProperties;
   activeGlowColor?: string;
   inactiveColor?: string;
   onChange?: (val: number) => void;
@@ -30,16 +32,17 @@ export const DotSlider: React.FC<DotSliderProps> = ({
   max = 100,
   step = 1,
   totalDots,
-  activeColor = 'bg-amber-400',
+  activeColor = 'bg-amber-400 dark:bg-amber-400',
+  activeStyle,
   activeGlowColor = 'rgba(251, 191, 36, 0.3)',
-  inactiveColor = 'bg-slate-300/80 dark:bg-white/15',
+  inactiveColor = 'bg-slate-300/60 dark:bg-white/10',
   onChange,
   disabled = false,
   className = '',
-  dotSizeClass = 'max-w-[8px] sm:max-w-[9px]'
+  dotSizeClass
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState<number>(160);
+  const [containerWidth, setContainerWidth] = useState<number>(180);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -71,8 +74,10 @@ export const DotSlider: React.FC<DotSliderProps> = ({
     };
   }, []);
 
-  // Compute optimal number of dots based on measured container width (approx 1 dot per 11px)
-  const computedDots = totalDots ?? Math.max(8, Math.min(24, Math.floor((containerWidth - 4) / 11)));
+  // Curated segment count: smaller, sleek pills
+  const computedDots =
+    totalDots ??
+    (containerWidth < 130 ? 10 : containerWidth < 200 ? 12 : containerWidth < 300 ? 14 : 16);
 
   const safeMin = Number(min);
   const safeMax = Number(max) > safeMin ? Number(max) : safeMin + 1;
@@ -85,28 +90,44 @@ export const DotSlider: React.FC<DotSliderProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative flex items-center justify-between w-full select-none py-1 overflow-hidden ${
+      className={`relative flex items-center w-full select-none py-1 ${
         isInteractive ? 'cursor-pointer group' : ''
       } ${className}`}
     >
-      {/* Visual Responsive Dot Row */}
-      <div className="flex items-center justify-between w-full gap-[3px] sm:gap-1 pointer-events-none overflow-hidden">
+      {/* Capsule Pill Row */}
+      <div
+        className="flex items-center justify-between w-full h-1.5 sm:h-2 gap-1 sm:gap-1.5 pointer-events-none"
+      >
         {Array.from({ length: computedDots }).map((_, idx) => {
           const isActive = idx < activeDotsCount;
+          const isLeading = idx === activeDotsCount - 1 && isActive;
+
           return (
             <span
               key={idx}
               style={
-                isActive && activeGlowColor
+                isActive
                   ? {
-                      boxShadow: `0 0 6px ${activeGlowColor}`
+                      ...activeStyle,
+                      boxShadow:
+                        isLeading && activeGlowColor
+                          ? `0 0 6px ${activeGlowColor}`
+                          : activeGlowColor
+                          ? `0 0 2px ${activeGlowColor}`
+                          : undefined
                     }
                   : undefined
               }
-              className={`aspect-square flex-1 min-w-[3px] rounded-full shrink-0 transition-all duration-150 transform-gpu ${dotSizeClass} ${
+              className={`h-full flex-1 rounded-full transition-all duration-200 transform-gpu ${
+                dotSizeClass ? dotSizeClass : 'max-w-[12px] sm:max-w-[14px]'
+              } ${
                 isActive
-                  ? `${activeColor} scale-100`
-                  : `${inactiveColor} scale-90 opacity-75`
+                  ? `${activeColor} ${
+                      isLeading
+                        ? 'brightness-110 scale-y-110'
+                        : 'opacity-90'
+                    }`
+                  : `${inactiveColor} opacity-70`
               }`}
             />
           );

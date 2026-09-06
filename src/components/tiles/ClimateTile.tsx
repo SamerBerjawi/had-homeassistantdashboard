@@ -209,7 +209,8 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
               step={0.5}
               disabled={targetTemp === undefined}
               activeColor="bg-amber-500"
-              activeGlowColor="rgba(245, 158, 11, 0.75)"
+              activeGlowColor="rgba(245, 158, 11, 0.35)"
+              inactiveColor={darkMode ? 'bg-white/10' : 'bg-slate-300/60'}
               onChange={(val) => onTempSlider(entity, val)}
             />
           </div>
