@@ -175,6 +175,8 @@ export function VehicleHeroCard({
             <img
               src={resolvedCarLogo}
               alt="Brand Logo"
+              loading="lazy"
+              decoding="async"
               className="h-7 sm:h-8 max-w-[110px] object-contain drop-shadow-sm"
               onError={() => setLogoError(true)}
             />
@@ -244,6 +246,8 @@ export function VehicleHeroCard({
             <img
               src={resolvedCarImage}
               alt={vehicleName}
+              loading="lazy"
+              decoding="async"
               className="max-h-56 sm:max-h-64 w-auto object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.35)] dark:drop-shadow-[0_25px_35px_rgba(0,0,0,0.7)] select-none transition-transform duration-500 group-hover:scale-[1.02]"
               onError={() => setImageError(true)}
             />

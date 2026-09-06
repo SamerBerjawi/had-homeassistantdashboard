@@ -41,7 +41,7 @@ interface SensorTileProps {
   onContextMenu?: () => void;
 }
 
-export const SensorTile: React.FC<SensorTileProps> = ({
+const SensorTileComponent: React.FC<SensorTileProps> = ({
   entity,
   areaName = '',
   darkMode = true,
@@ -286,4 +286,20 @@ export const SensorTile: React.FC<SensorTileProps> = ({
   );
 };
 
+function areSensorPropsEqual(prev: SensorTileProps, next: SensorTileProps): boolean {
+  if (prev.darkMode !== next.darkMode) return false;
+  if (prev.areaName !== next.areaName) return false;
+  if (prev.entity.state !== next.entity.state) return false;
+  if (prev.entity.last_changed !== next.entity.last_changed) return false;
+  if (prev.entity.last_updated !== next.entity.last_updated) return false;
+  const prevAttrs = prev.entity.attributes || {};
+  const nextAttrs = next.entity.attributes || {};
+  if (prevAttrs.unit_of_measurement !== nextAttrs.unit_of_measurement) return false;
+  if (prevAttrs.battery_level !== nextAttrs.battery_level) return false;
+  if (prevAttrs.battery !== nextAttrs.battery) return false;
+  if (prevAttrs.friendly_name !== nextAttrs.friendly_name) return false;
+  return true;
+}
+
+export const SensorTile = React.memo<SensorTileProps>(SensorTileComponent, areSensorPropsEqual);
 export default SensorTile;

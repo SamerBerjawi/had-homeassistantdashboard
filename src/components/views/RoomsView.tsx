@@ -16,7 +16,7 @@ import {
 } from '@phosphor-icons/react';
 import { useRoomsData } from '../../hooks/useRoomsData';
 import AreaTile from '../rooms/AreaTile';
-import AreaDetailView from './AreaDetailView';
+const AreaDetailView = React.lazy(() => import('./AreaDetailView'));
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import ViewEmptyState from '../ui/ViewEmptyState';
@@ -105,17 +105,19 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
   // If user drilled down into a specific room, render AreaDetailView
   if (selectedArea) {
     return (
-      <AreaDetailView
-        area={selectedArea}
-        darkMode={darkMode}
-        onBack={() => setSelectedAreaId(null)}
-        onToggleLights={toggleAreaLights}
-        onToggleLocks={toggleAreaLocks}
-        onToggleEntityLock={toggleEntityLock}
-        onTurnOffAll={turnOffAllAreaEntities}
-        callHAService={callHAService}
-        updateEntityState={updateEntityState}
-      />
+      <React.Suspense fallback={<ViewLoadingState title="Loading Living Area..." />}>
+        <AreaDetailView
+          area={selectedArea}
+          darkMode={darkMode}
+          onBack={() => setSelectedAreaId(null)}
+          onToggleLights={toggleAreaLights}
+          onToggleLocks={toggleAreaLocks}
+          onToggleEntityLock={toggleEntityLock}
+          onTurnOffAll={turnOffAllAreaEntities}
+          callHAService={callHAService}
+          updateEntityState={updateEntityState}
+        />
+      </React.Suspense>
     );
   }
 

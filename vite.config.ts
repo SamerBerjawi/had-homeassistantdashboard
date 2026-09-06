@@ -153,6 +153,7 @@ export default defineConfig(() => {
             ],
             'vendor-zustand': ['zustand'],
             'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+            'vendor-hls': ['hls.js'],
           },
         },
       },

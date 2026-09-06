@@ -25,7 +25,7 @@ interface SwitchTileProps {
   onContextMenu?: () => void;
 }
 
-export const SwitchTile: React.FC<SwitchTileProps> = ({
+const SwitchTileComponent: React.FC<SwitchTileProps> = ({
   entity,
   areaName = '',
   darkMode = true,
@@ -110,4 +110,21 @@ export const SwitchTile: React.FC<SwitchTileProps> = ({
   );
 };
 
+function areSwitchPropsEqual(prev: SwitchTileProps, next: SwitchTileProps): boolean {
+  if (prev.darkMode !== next.darkMode) return false;
+  if (prev.areaName !== next.areaName) return false;
+  if (prev.entity.state !== next.entity.state) return false;
+  if (prev.entity.last_changed !== next.entity.last_changed) return false;
+  if (prev.entity.last_updated !== next.entity.last_updated) return false;
+  const prevAttrs = prev.entity.attributes || {};
+  const nextAttrs = next.entity.attributes || {};
+  if (prevAttrs.current_power_w !== nextAttrs.current_power_w) return false;
+  if (prevAttrs.power !== nextAttrs.power) return false;
+  if (prevAttrs.battery_level !== nextAttrs.battery_level) return false;
+  if (prevAttrs.battery !== nextAttrs.battery) return false;
+  if (prevAttrs.friendly_name !== nextAttrs.friendly_name) return false;
+  return true;
+}
+
+export const SwitchTile = React.memo<SwitchTileProps>(SwitchTileComponent, areSwitchPropsEqual);
 export default SwitchTile;

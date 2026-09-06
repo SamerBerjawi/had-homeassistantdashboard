@@ -8,7 +8,7 @@
  * automatic companion battery sensor pairing & deduplication, and Phosphor battery icons.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Lightbulb,
   Plug,
@@ -586,14 +586,14 @@ export default function AreaDetailView({
     }
   };
 
-  const handleToggleLight = (light: ResolvedEntity) => {
+  const handleToggleLight = useCallback((light: ResolvedEntity) => {
     const isCurrentlyOn = light.state === 'on';
     const nextState = isCurrentlyOn ? 'off' : 'on';
     updateEntityState(light.entity_id, nextState);
     callHAService('light', isCurrentlyOn ? 'turn_off' : 'turn_on', {}, { entity_id: light.entity_id });
-  };
+  }, [updateEntityState, callHAService]);
 
-  const handleBrightnessChange = (light: ResolvedEntity, nextPct: number) => {
+  const handleBrightnessChange = useCallback((light: ResolvedEntity, nextPct: number) => {
     const brightness255 = Math.round((nextPct / 100) * 255);
     const nextState = nextPct > 0 ? 'on' : 'off';
 
@@ -607,9 +607,9 @@ export default function AreaDetailView({
     } else {
       callHAService('light', 'turn_off', {}, { entity_id: light.entity_id });
     }
-  };
+  }, [updateEntityState, callHAService]);
 
-  const handleToggleSwitch = (sw: ResolvedEntity) => {
+  const handleToggleSwitch = useCallback((sw: ResolvedEntity) => {
     const isCurrentlyOn = sw.state === 'on';
     const nextState = isCurrentlyOn ? 'off' : 'on';
 
@@ -620,15 +620,15 @@ export default function AreaDetailView({
       {},
       { entity_id: sw.entity_id }
     );
-  };
+  }, [updateEntityState, callHAService]);
 
-  const handleToggleFan = (fan: ResolvedEntity) => {
+  const handleToggleFan = useCallback((fan: ResolvedEntity) => {
     const isCurrentlyOn = fan.state === 'on';
     const nextState = isCurrentlyOn ? 'off' : 'on';
 
     updateEntityState(fan.entity_id, nextState);
     callHAService('fan', isCurrentlyOn ? 'turn_off' : 'turn_on', {}, { entity_id: fan.entity_id });
-  };
+  }, [updateEntityState, callHAService]);
 
   const handleToggleMediaPlay = (media: ResolvedEntity) => {
     const isPlaying = media.state === 'playing';
@@ -770,6 +770,8 @@ export default function AreaDetailView({
           <img
             src={area.picture || area.backgroundImageUrl}
             alt={area.name}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover blur-sm scale-105"
           />
         </div>

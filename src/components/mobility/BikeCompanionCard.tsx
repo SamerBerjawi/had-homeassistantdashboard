@@ -76,6 +76,8 @@ export function BikeCompanionCard({
             <img
               src={resolvedBikeImage}
               alt={bikeName}
+              loading="lazy"
+              decoding="async"
               className="max-h-20 w-auto object-contain drop-shadow"
               onError={() => setImageError(true)}
             />

@@ -44,7 +44,7 @@ interface AreaTileProps {
   onToggleLocks?: (areaId: string) => void;
 }
 
-export default function AreaTile({
+function AreaTileComponent({
   area,
   darkMode = true,
   onSelectArea,
@@ -146,6 +146,8 @@ export default function AreaTile({
           <img
             src={area.picture}
             alt={area.name}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover rounded-3xl"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent dark:block hidden rounded-3xl" />
@@ -542,3 +544,41 @@ export default function AreaTile({
     </div>
   );
 }
+
+function areAreaTilePropsEqual(prev: AreaTileProps, next: AreaTileProps): boolean {
+  if (prev.darkMode !== next.darkMode) return false;
+  if (prev.area.areaId !== next.area.areaId) return false;
+  if (prev.area.activeLightsCount !== next.area.activeLightsCount) return false;
+  if (prev.area.totalLightsCount !== next.area.totalLightsCount) return false;
+  if (prev.area.activeSwitchesCount !== next.area.activeSwitchesCount) return false;
+  if (prev.area.activeFansCount !== next.area.activeFansCount) return false;
+  if (prev.area.activeMediaPlayersCount !== next.area.activeMediaPlayersCount) return false;
+  if (prev.area.unlockedLocksCount !== next.area.unlockedLocksCount) return false;
+  if (prev.area.totalLocksCount !== next.area.totalLocksCount) return false;
+  if (prev.area.picture !== next.area.picture) return false;
+  if (prev.area.name !== next.area.name) return false;
+
+  // Climate
+  const pClim = prev.area.climateState;
+  const nClim = next.area.climateState;
+  if (pClim?.currentTemp !== nClim?.currentTemp) return false;
+  if (pClim?.targetTemp !== nClim?.targetTemp) return false;
+  if (pClim?.hvacMode !== nClim?.hvacMode) return false;
+
+  // Sensors
+  const pSens = prev.area.sensors;
+  const nSens = next.area.sensors;
+  if (pSens?.temperature !== nSens?.temperature) return false;
+  if (pSens?.humidity !== nSens?.humidity) return false;
+  if (pSens?.motionDetected !== nSens?.motionDetected) return false;
+  if (pSens?.presenceDetected !== nSens?.presenceDetected) return false;
+  if (pSens?.doorsOpenCount !== nSens?.doorsOpenCount) return false;
+  if (pSens?.windowsOpenCount !== nSens?.windowsOpenCount) return false;
+  if (pSens?.waterLeakDetected !== nSens?.waterLeakDetected) return false;
+  if (pSens?.smokeDetected !== nSens?.smokeDetected) return false;
+
+  return true;
+}
+
+export const AreaTile = React.memo<AreaTileProps>(AreaTileComponent, areAreaTilePropsEqual);
+export default AreaTile;
