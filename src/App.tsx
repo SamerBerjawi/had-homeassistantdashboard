@@ -9,11 +9,8 @@ import { resolvedEntityToHAEntity } from './services/graphResolution';
 import Sidebar from './components/Sidebar';
 import NotificationToast from './components/NotificationToast';
 import NotificationBell from './components/notifications/NotificationBell';
-import NotificationDrawer from './components/notifications/NotificationDrawer';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
 import { UpdateToast } from './components/pwa/UpdateToast';
-import AuthModal from './components/auth/AuthModal';
-import EntityDetailModal from './components/modals/EntityDetailModal';
 import DemoBanner from './components/auth/DemoBanner';
 import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power, ArrowsClockwise, SlidersHorizontal, Palette, User, WifiHigh, DownloadSimple, GearSix, Warning, PencilSimpleLine, CheckCircle } from '@phosphor-icons/react';
 import { useUserConfig } from './contexts/ConfigContext';
@@ -30,7 +27,14 @@ import { haWebSocketService } from './services/haWebSocket';
 import { alertService } from './services/alertService';
 import { useAlertStore } from './store/useAlertStore';
 import ToastContainer from './components/alerts/ToastContainer';
-import CriticalAlertModal from './components/alerts/CriticalAlertModal';
+import { useEntityPopup } from './contexts/EntityPopupContext';
+
+// Lazy-loaded drawers and modals (loaded on demand)
+const NotificationDrawer = lazy(() => import('./components/notifications/NotificationDrawer'));
+const WeatherOverviewDrawer = lazy(() => import('./components/weather/WeatherOverviewDrawer'));
+const AuthModal = lazy(() => import('./components/auth/AuthModal'));
+const EntityDetailModal = lazy(() => import('./components/modals/EntityDetailModal'));
+const CriticalAlertModal = lazy(() => import('./components/alerts/CriticalAlertModal'));
 
 const SETTINGS_SECTIONS_META: Record<string, { title: string; subtitle: string; icon: React.ComponentType<any>; color: string }> = {
   devices_rooms: {
@@ -83,10 +87,9 @@ const SettingsView = lazy(() => import('./components/SettingsView'));
 
 
 import WeatherHeaderSentence from './components/weather/WeatherHeaderSentence';
-import WeatherOverviewDrawer from './components/weather/WeatherOverviewDrawer';
-import RoomsHeaderSentence from './components/rooms/RoomsHeaderSentence';
-import MediaHeaderSentence from './components/media/MediaHeaderSentence';
-import VacuumsHeaderSentence from './components/vacuums/VacuumsHeaderSentence';
+const RoomsHeaderSentence = lazy(() => import('./components/rooms/RoomsHeaderSentence'));
+const MediaHeaderSentence = lazy(() => import('./components/media/MediaHeaderSentence'));
+const VacuumsHeaderSentence = lazy(() => import('./components/vacuums/VacuumsHeaderSentence'));
 
 const VALID_TABS = [
   'overview',
@@ -305,6 +308,37 @@ export default function App() {
     setIsNotificationDrawerOpen(false);
     setAlertDrawerOpen(false);
   };
+
+  // Track first open of lazy modals/drawers to preserve exit animations while avoiding eager chunk download
+  const { isOpen: isEntityPopupOpen } = useEntityPopup();
+  const criticalAlert = useAlertStore((s) => s.criticalAlert);
+  const { isAuthModalOpen } = useAuth();
+
+  const [hasOpenedNotifications, setHasOpenedNotifications] = useState(false);
+  const [hasOpenedWeather, setHasOpenedWeather] = useState(false);
+  const [hasOpenedAuth, setHasOpenedAuth] = useState(false);
+  const [hasCriticalAlert, setHasCriticalAlert] = useState(false);
+  const [hasOpenedEntityDetail, setHasOpenedEntityDetail] = useState(false);
+
+  useEffect(() => {
+    if (isNotificationOpen) setHasOpenedNotifications(true);
+  }, [isNotificationOpen]);
+
+  useEffect(() => {
+    if (isWeatherDrawerOpen) setHasOpenedWeather(true);
+  }, [isWeatherDrawerOpen]);
+
+  useEffect(() => {
+    if (isAuthModalOpen) setHasOpenedAuth(true);
+  }, [isAuthModalOpen]);
+
+  useEffect(() => {
+    if (criticalAlert) setHasCriticalAlert(true);
+  }, [criticalAlert]);
+
+  useEffect(() => {
+    if (isEntityPopupOpen) setHasOpenedEntityDetail(true);
+  }, [isEntityPopupOpen]);
 
   // Authentication Context
   const { authState, enterDemoMode, isInitializing: isAuthInitializing } = useAuth();
@@ -650,28 +684,30 @@ export default function App() {
 
             {/* Dynamic Weather / Area Telemetry Sentence (100% Full Width across Page) */}
             <div className="w-full pt-0.5">
-              {activeTab === 'overview' ? (
-                <WeatherHeaderSentence
-                  darkMode={darkMode}
-                  onOpenWeatherModal={() => setIsWeatherDrawerOpen(true)}
-                />
-              ) : activeTab === 'rooms' ? (
-                <RoomsHeaderSentence
-                  darkMode={darkMode}
-                />
-              ) : activeTab === 'media' ? (
-                <MediaHeaderSentence
-                  darkMode={darkMode}
-                />
-              ) : activeTab === 'vacuums' ? (
-                <VacuumsHeaderSentence
-                  darkMode={darkMode}
-                />
-              ) : activeTab === 'mobility' || (!currentSettingsMeta && !currentTheme.subtitle) ? null : (
-                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 max-w-full leading-relaxed">
-                  {currentSettingsMeta ? currentSettingsMeta.subtitle : currentTheme.subtitle}
-                </p>
-              )}
+              <Suspense fallback={null}>
+                {activeTab === 'overview' ? (
+                  <WeatherHeaderSentence
+                    darkMode={darkMode}
+                    onOpenWeatherModal={() => setIsWeatherDrawerOpen(true)}
+                  />
+                ) : activeTab === 'rooms' ? (
+                  <RoomsHeaderSentence
+                    darkMode={darkMode}
+                  />
+                ) : activeTab === 'media' ? (
+                  <MediaHeaderSentence
+                    darkMode={darkMode}
+                  />
+                ) : activeTab === 'vacuums' ? (
+                  <VacuumsHeaderSentence
+                    darkMode={darkMode}
+                  />
+                ) : activeTab === 'mobility' || (!currentSettingsMeta && !currentTheme.subtitle) ? null : (
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 max-w-full leading-relaxed">
+                    {currentSettingsMeta ? currentSettingsMeta.subtitle : currentTheme.subtitle}
+                  </p>
+                )}
+              </Suspense>
             </div>
           </header>
 
@@ -746,29 +782,41 @@ export default function App() {
       </div>
 
       {/* Global Notification & Alert Center Drawer */}
-      <NotificationDrawer
-        isOpen={isNotificationOpen}
-        onClose={handleCloseNotifications}
-        darkMode={darkMode}
-      />
+      {hasOpenedNotifications && (
+        <Suspense fallback={null}>
+          <NotificationDrawer
+            isOpen={isNotificationOpen}
+            onClose={handleCloseNotifications}
+            darkMode={darkMode}
+          />
+        </Suspense>
+      )}
 
       {/* Global Weather Overview Drawer */}
-      <WeatherOverviewDrawer
-        isOpen={isWeatherDrawerOpen}
-        onClose={() => setIsWeatherDrawerOpen(false)}
-        darkMode={darkMode}
-      />
+      {hasOpenedWeather && (
+        <Suspense fallback={null}>
+          <WeatherOverviewDrawer
+            isOpen={isWeatherDrawerOpen}
+            onClose={() => setIsWeatherDrawerOpen(false)}
+            darkMode={darkMode}
+          />
+        </Suspense>
+      )}
 
       {/* Real-Time Glassmorphic Toast Alerts */}
       <ToastContainer />
 
       {/* High-Visibility Emergency Hazard Critical Modal */}
-      <CriticalAlertModal
-        onNavigateArea={(areaId) => {
-          setActiveTab('rooms');
-          setSelectedAreaId(areaId);
-        }}
-      />
+      {hasCriticalAlert && (
+        <Suspense fallback={null}>
+          <CriticalAlertModal
+            onNavigateArea={(areaId) => {
+              setActiveTab('rooms');
+              setSelectedAreaId(areaId);
+            }}
+          />
+        </Suspense>
+      )}
 
       {/* Global Notifications */}
       <NotificationToast
@@ -784,10 +832,18 @@ export default function App() {
       <UpdateToast />
 
       {/* Security Auth Gatekeeper Modal */}
-      <AuthModal darkMode={darkMode} />
+      {hasOpenedAuth && (
+        <Suspense fallback={null}>
+          <AuthModal darkMode={darkMode} />
+        </Suspense>
+      )}
 
       {/* Global Entity Detail Modal & Bottom Sheet Drawer */}
-      <EntityDetailModal />
+      {hasOpenedEntityDetail && (
+        <Suspense fallback={null}>
+          <EntityDetailModal />
+        </Suspense>
+      )}
 
       {/* Global Floating "Exit Edit Mode" Banner / FAB */}
       {isEditMode && (

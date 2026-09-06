@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Users, 
   Lightbulb, 
@@ -35,17 +35,17 @@ import { getHAImageUrl } from '../../lib/utils';
 import PersonAvatar from '../ui/PersonAvatar';
 import { getWeatherConditionInfo } from '../weather/weatherIcons';
 
-// Interactive Slide-over Right Drawers
-import UsersPresenceModal from './modals/UsersPresenceModal';
-import LightsOverviewModal from './modals/LightsOverviewModal';
-import SwitchesOverviewModal from './modals/SwitchesOverviewModal';
-import FansOverviewModal from './modals/FansOverviewModal';
-import OpeningsOverviewModal from './modals/OpeningsOverviewModal';
-import AlarmKeypadModal from './modals/AlarmKeypadModal';
-import MediaOverviewDrawer from './modals/MediaOverviewDrawer';
-import SensorsOverviewDrawer from './modals/SensorsOverviewDrawer';
-import VacuumsOverviewDrawer from './modals/VacuumsOverviewDrawer';
-import WeatherOverviewDrawer from '../weather/WeatherOverviewDrawer';
+// Lazy-loaded interactive slide-over drawers (loaded on first open)
+const UsersPresenceModal = React.lazy(() => import('./modals/UsersPresenceModal'));
+const LightsOverviewModal = React.lazy(() => import('./modals/LightsOverviewModal'));
+const SwitchesOverviewModal = React.lazy(() => import('./modals/SwitchesOverviewModal'));
+const FansOverviewModal = React.lazy(() => import('./modals/FansOverviewModal'));
+const OpeningsOverviewModal = React.lazy(() => import('./modals/OpeningsOverviewModal'));
+const AlarmKeypadModal = React.lazy(() => import('./modals/AlarmKeypadModal'));
+const MediaOverviewDrawer = React.lazy(() => import('./modals/MediaOverviewDrawer'));
+const SensorsOverviewDrawer = React.lazy(() => import('./modals/SensorsOverviewDrawer'));
+const VacuumsOverviewDrawer = React.lazy(() => import('./modals/VacuumsOverviewDrawer'));
+const WeatherOverviewDrawer = React.lazy(() => import('../weather/WeatherOverviewDrawer'));
 
 interface OverviewHeaderProps {
   darkMode?: boolean;
@@ -72,6 +72,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   const [drawerOpen, setDrawerOpen] = useState<
     'users' | 'lights' | 'switches' | 'fans' | 'doors' | 'windows' | 'alarm' | 'media' | 'sensors' | 'vacuums' | 'weather' | null
   >(null);
+
+  // Track which drawers have been opened at least once to preserve exit animations
+  const [openedDrawers, setOpenedDrawers] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (drawerOpen) {
+      setOpenedDrawers((prev) => (prev[drawerOpen] ? prev : { ...prev, [drawerOpen]: true }));
+    }
+  }, [drawerOpen]);
 
   const [selectedUser, setSelectedUser] = useState<ResolvedEntity | null>(null);
   const [openingsTab, setOpeningsTab] = useState<'all' | 'doors' | 'windows' | 'other'>('all');
@@ -1127,89 +1136,111 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       {/* ============================================================= */}
       {/* 3. SLIDE-OVER RIGHT SIDEBARS                                  */}
       {/* ============================================================= */}
-      <WeatherOverviewDrawer
-        isOpen={drawerOpen === 'weather'}
-        onClose={() => setDrawerOpen(null)}
-        darkMode={darkMode}
-      />
+      <React.Suspense fallback={null}>
+        {openedDrawers['weather'] && (
+          <WeatherOverviewDrawer
+            isOpen={drawerOpen === 'weather'}
+            onClose={() => setDrawerOpen(null)}
+            darkMode={darkMode}
+          />
+        )}
 
-      <VacuumsOverviewDrawer
-        isOpen={drawerOpen === 'vacuums'}
-        onClose={() => setDrawerOpen(null)}
-        vacuums={vacuumEntities}
-        darkMode={darkMode}
-      />
+        {openedDrawers['vacuums'] && (
+          <VacuumsOverviewDrawer
+            isOpen={drawerOpen === 'vacuums'}
+            onClose={() => setDrawerOpen(null)}
+            vacuums={vacuumEntities}
+            darkMode={darkMode}
+          />
+        )}
 
-      <UsersPresenceModal
-        isOpen={drawerOpen === 'users'}
-        onClose={() => setDrawerOpen(null)}
-        users={userEntities}
-        selectedUser={selectedUser}
-        darkMode={darkMode}
-      />
+        {openedDrawers['users'] && (
+          <UsersPresenceModal
+            isOpen={drawerOpen === 'users'}
+            onClose={() => setDrawerOpen(null)}
+            users={userEntities}
+            selectedUser={selectedUser}
+            darkMode={darkMode}
+          />
+        )}
 
-      <LightsOverviewModal
-        isOpen={drawerOpen === 'lights'}
-        onClose={() => setDrawerOpen(null)}
-        lights={lightEntities}
-        onUpdateEntity={updateEntityState}
-        darkMode={darkMode}
-      />
+        {openedDrawers['lights'] && (
+          <LightsOverviewModal
+            isOpen={drawerOpen === 'lights'}
+            onClose={() => setDrawerOpen(null)}
+            lights={lightEntities}
+            onUpdateEntity={updateEntityState}
+            darkMode={darkMode}
+          />
+        )}
 
-      <SwitchesOverviewModal
-        isOpen={drawerOpen === 'switches'}
-        onClose={() => setDrawerOpen(null)}
-        switches={switchEntities}
-        onUpdateEntity={updateEntityState}
-        darkMode={darkMode}
-      />
+        {openedDrawers['switches'] && (
+          <SwitchesOverviewModal
+            isOpen={drawerOpen === 'switches'}
+            onClose={() => setDrawerOpen(null)}
+            switches={switchEntities}
+            onUpdateEntity={updateEntityState}
+            darkMode={darkMode}
+          />
+        )}
 
-      <FansOverviewModal
-        isOpen={drawerOpen === 'fans'}
-        onClose={() => setDrawerOpen(null)}
-        fans={fanEntities}
-        onUpdateEntity={updateEntityState}
-        darkMode={darkMode}
-      />
+        {openedDrawers['fans'] && (
+          <FansOverviewModal
+            isOpen={drawerOpen === 'fans'}
+            onClose={() => setDrawerOpen(null)}
+            fans={fanEntities}
+            onUpdateEntity={updateEntityState}
+            darkMode={darkMode}
+          />
+        )}
 
-      <OpeningsOverviewModal
-        isOpen={drawerOpen === 'doors' || drawerOpen === 'windows'}
-        onClose={() => setDrawerOpen(null)}
-        doorSensors={doorSensors}
-        windowSensors={windowSensors}
-        otherContactSensors={otherContactSensors}
-        initialTab={openingsTab}
-        darkMode={darkMode}
-      />
+        {(openedDrawers['doors'] || openedDrawers['windows']) && (
+          <OpeningsOverviewModal
+            isOpen={drawerOpen === 'doors' || drawerOpen === 'windows'}
+            onClose={() => setDrawerOpen(null)}
+            doorSensors={doorSensors}
+            windowSensors={windowSensors}
+            otherContactSensors={otherContactSensors}
+            initialTab={openingsTab}
+            darkMode={darkMode}
+          />
+        )}
 
-      <SensorsOverviewDrawer
-        isOpen={drawerOpen === 'sensors'}
-        onClose={() => setDrawerOpen(null)}
-        motionSensors={motionSensors}
-        leakSensors={leakSensors}
-        smokeSensors={smokeSensors}
-        initialTab={sensorsTab}
-        darkMode={darkMode}
-      />
+        {openedDrawers['sensors'] && (
+          <SensorsOverviewDrawer
+            isOpen={drawerOpen === 'sensors'}
+            onClose={() => setDrawerOpen(null)}
+            motionSensors={motionSensors}
+            leakSensors={leakSensors}
+            smokeSensors={smokeSensors}
+            initialTab={sensorsTab}
+            darkMode={darkMode}
+          />
+        )}
 
-      <AlarmKeypadModal
-        isOpen={drawerOpen === 'alarm'}
-        onClose={() => setDrawerOpen(null)}
-        alarmEntity={alarmEntity}
-        onUpdateEntity={updateEntityState}
-        darkMode={darkMode}
-      />
+        {openedDrawers['alarm'] && (
+          <AlarmKeypadModal
+            isOpen={drawerOpen === 'alarm'}
+            onClose={() => setDrawerOpen(null)}
+            alarmEntity={alarmEntity}
+            onUpdateEntity={updateEntityState}
+            darkMode={darkMode}
+          />
+        )}
 
-      <MediaOverviewDrawer
-        isOpen={drawerOpen === 'media'}
-        onClose={() => setDrawerOpen(null)}
-        mediaPlayers={mediaEntities}
-        activeEntity={activeMedia}
-        onUpdateEntity={(entityId, newState, attrs) => {
-          updateEntityState(entityId, newState, attrs);
-        }}
-        darkMode={darkMode}
-      />
+        {openedDrawers['media'] && (
+          <MediaOverviewDrawer
+            isOpen={drawerOpen === 'media'}
+            onClose={() => setDrawerOpen(null)}
+            mediaPlayers={mediaEntities}
+            activeEntity={activeMedia}
+            onUpdateEntity={(entityId, newState, attrs) => {
+              updateEntityState(entityId, newState, attrs);
+            }}
+            darkMode={darkMode}
+          />
+        )}
+      </React.Suspense>
     </section>
   );
 }

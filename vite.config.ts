@@ -152,7 +152,7 @@ export default defineConfig(() => {
               '@visx/event',
             ],
             'vendor-zustand': ['zustand'],
-            'vendor-phosphor': ['@phosphor-icons/react'],
+            'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
           },
         },
       },
