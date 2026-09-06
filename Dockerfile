@@ -1,43 +1,17 @@
-# ==========================================
-# 1. Builder Stage
-# Builds on the native host runner architecture (e.g., amd64) to avoid slow QEMU emulation
-# ==========================================
-FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
-
-WORKDIR /app
-
-# Install dependencies first (better layer caching)
-COPY package.json package-lock.json ./
-RUN npm ci
-
-# Copy all source files
-COPY . .
-
-# Build Vite frontend and bundled Express server (into /app/dist)
-RUN npm run build
-
-# ==========================================
-# 2. Production Runner Stage
-# ==========================================
-FROM node:22-alpine AS runner
+FROM node:22-alpine
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Install wget for healthcheck (included in alpine)
-RUN apk add --no-cache wget
+# Copy production dependencies and pre-built distribution from the runner
+COPY --chown=node:node node_modules ./node_modules
+COPY --chown=node:node dist ./dist
+COPY --chown=node:node package.json ./
 
-# Install only production dependencies
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
-
-# Copy built distribution artifacts from builder stage
-COPY --from=builder /app/dist ./dist
-
-# Ensure persistent data volume folder exists and set file ownership to non-root node user
-RUN mkdir -p /app/data && chown -R node:node /app
+# Prepare persistent data volume folder with proper non-root permissions
+RUN mkdir -p /app/data && chown -R node:node /app/data
 
 # Switch to non-root user for security
 USER node
@@ -51,3 +25,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 # Start production server
 CMD ["node", "dist/server.cjs"]
+

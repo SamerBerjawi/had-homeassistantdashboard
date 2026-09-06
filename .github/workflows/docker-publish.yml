@@ -23,10 +23,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 1. Native Node.js setup with runner-level npm caching (restores in seconds)
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      # 2. Build on bare-metal runner (runs in ~20 seconds with full native CPU)
+      - name: Install dependencies & build
+        run: |
+          npm ci
+          npm run build
+          npm prune --omit=dev
+
+      # 3. Docker buildx setup (QEMU only for arm64 if binary execution occurs)
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/arm64
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -51,6 +66,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=short
 
+      # 4. Ultra-fast assembly & publish (pure layer copy across architectures, no compilation or cache upload tax)
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -59,5 +75,5 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          provenance: false
+
