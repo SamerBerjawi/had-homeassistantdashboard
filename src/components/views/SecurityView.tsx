@@ -222,13 +222,15 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
   return (
     <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-24 md:pb-8">
       {/* Top Floating Filter Bar & Occupants Presence */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <AdaptiveSectionTabs
-          tabs={securityTabs}
-          activeTab={activeFilter}
-          onChange={(tab) => setActiveFilter(tab as SecurityFilterTab)}
-          darkMode={darkMode}
-        />
+      <div className="flex items-center justify-between gap-3 flex-wrap w-full max-w-full min-w-0">
+        <div className="flex-1 min-w-0 max-w-full">
+          <AdaptiveSectionTabs
+            tabs={securityTabs}
+            activeTab={activeFilter}
+            onChange={(tab) => setActiveFilter(tab as SecurityFilterTab)}
+            darkMode={darkMode}
+          />
+        </div>
 
         {userEntities.length > 0 && (
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-900/[0.04] dark:bg-white/5 border border-slate-900/[0.08] dark:border-white/10 backdrop-blur-md shadow-2xs">

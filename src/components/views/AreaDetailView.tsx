@@ -778,7 +778,7 @@ export default function AreaDetailView({
       )}
 
       {/* Top Floating Filter Bar */}
-      <div className="flex items-center">
+      <div className="w-full max-w-full min-w-0 overflow-hidden">
         <AdaptiveSectionTabs
           tabs={domainTabs}
           activeTab={activeDomainTab}

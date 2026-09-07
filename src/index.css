@@ -334,6 +334,30 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
   }
 }
 
+/* Horizontal Momentum Touch Scrolling for Tabs and Chip Bars */
+.touch-scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.touch-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Custom animated background elements */
 @keyframes pulseSlow {
   0%, 100% {

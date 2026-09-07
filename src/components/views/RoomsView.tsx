@@ -150,7 +150,7 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
     <div className="w-full flex-1 flex flex-col gap-5 animate-fadeIn pb-16">
       {/* Clean Floating Floor Filter Tabs (No grey container) */}
       {floorDataList.length > 1 && (
-        <div className="flex items-center">
+        <div className="w-full max-w-full min-w-0 overflow-hidden">
           <AdaptiveSectionTabs
             tabs={floorTabs}
             activeTab={selectedFloorId}

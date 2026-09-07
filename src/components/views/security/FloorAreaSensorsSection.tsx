@@ -172,14 +172,16 @@ export default function FloorAreaSensorsSection({
   return (
     <div className="w-full flex flex-col gap-5">
       {/* Floor & Filter Navigation */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full max-w-full min-w-0">
         {floorTabs.length > 2 && (
-          <AdaptiveSectionTabs
-            tabs={floorTabs}
-            activeTab={selectedFloorId}
-            onChange={(tab) => setSelectedFloorId(tab)}
-            darkMode={darkMode}
-          />
+          <div className="w-full sm:w-auto min-w-0 max-w-full">
+            <AdaptiveSectionTabs
+              tabs={floorTabs}
+              activeTab={selectedFloorId}
+              onChange={(tab) => setSelectedFloorId(tab)}
+              darkMode={darkMode}
+            />
+          </div>
         )}
 
         {/* Quick Search */}

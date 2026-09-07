@@ -77,6 +77,18 @@ let inFlightOAuthPromise: Promise<{ success: boolean; tokens?: HAAuthTokens; err
 let inFlightRefreshPromise: Promise<TokenRefreshResult> | null = null;
 
 /**
+ * Detect if dashboard is running in standalone PWA mode (iOS WebClip, Android PWA)
+ */
+export function isStandalonePWA(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true ||
+    document.referrer.includes('android-app://')
+  );
+}
+
+/**
  * Initiate Home Assistant OAuth authorization redirect (Sign in with HA credentials)
  */
 export function startHAOAuthFlow(serverUrl: string): void {
@@ -94,11 +106,19 @@ export function startHAOAuthFlow(serverUrl: string): void {
 
   const authUrl = `${httpUrl}/auth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}&response_type=code`;
 
-  window.location.href = authUrl;
+  // In standalone PWA mode, opening via window.open prevents WebKit from terminating the PWA webview session
+  if (isStandalonePWA()) {
+    const popup = window.open(authUrl, '_blank');
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      window.location.href = authUrl;
+    }
+  } else {
+    window.location.href = authUrl;
+  }
 }
 
 /**
- * Handle incoming OAuth redirect with authorization code
+ * Handle incoming OAuth redirect with authorization code or error parameters
  */
 export async function handleHAOAuthCallback(): Promise<{ success: boolean; tokens?: HAAuthTokens; error?: string }> {
   if (typeof window === 'undefined') return { success: false };
@@ -111,6 +131,22 @@ export async function handleHAOAuthCallback(): Promise<{ success: boolean; token
   const searchParams = new URLSearchParams(window.location.search);
   const code = searchParams.get('code');
   const state = searchParams.get('state');
+  const errorParam = searchParams.get('error');
+  const errorDescription = searchParams.get('error_description');
+
+  // Check if Home Assistant returned an explicit OAuth error (e.g. invalid_client, access_denied)
+  if (errorParam || errorDescription) {
+    clearPendingOAuthState();
+    try {
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    } catch {}
+
+    const friendlyError = errorDescription
+      ? `Home Assistant Auth Error: ${decodeURIComponent(errorDescription.replace(/\+/g, ' '))}`
+      : `Home Assistant Auth Error: ${errorParam}`;
+    return { success: false, error: friendlyError };
+  }
 
   if (!code) {
     const existingConfig = getStoredAuthConfig();
@@ -181,6 +217,19 @@ export async function handleHAOAuthCallback(): Promise<{ success: boolean; token
       };
 
       saveStoredAuthConfig(config);
+
+      // Notify any listening PWA window or parent tab of the successful token exchange
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel('had_oauth_channel');
+          bc.postMessage({ type: 'HA_OAUTH_SUCCESS', tokens, serverUrl: wsUrl });
+          bc.close();
+        }
+        if (window.opener && window.opener !== window) {
+          window.opener.postMessage({ type: 'HA_OAUTH_SUCCESS', tokens, serverUrl: wsUrl }, window.location.origin);
+          window.close();
+        }
+      } catch {}
 
       // Clean URL parameters only after token is successfully saved
       try {

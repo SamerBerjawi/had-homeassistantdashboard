@@ -284,13 +284,15 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
   return (
     <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-24 md:pb-8">
       {/* Top Floating Controls Bar */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-        <AdaptiveSectionTabs
-          tabs={filterTabs}
-          activeTab={activeTab}
-          onChange={(tab) => setActiveTab(tab as FilterTab)}
-          darkMode={darkMode}
-        />
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 w-full max-w-full min-w-0">
+        <div className="w-full lg:w-auto min-w-0 max-w-full">
+          <AdaptiveSectionTabs
+            tabs={filterTabs}
+            activeTab={activeTab}
+            onChange={(tab) => setActiveTab(tab as FilterTab)}
+            darkMode={darkMode}
+          />
+        </div>
 
         {/* Search & Area Filter */}
         <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap ml-auto">

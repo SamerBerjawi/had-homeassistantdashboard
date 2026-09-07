@@ -75,13 +75,15 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
   return (
     <div className="w-full flex-1 flex flex-col gap-6 animate-fadeIn pb-24 md:pb-8">
       {/* Top Segmented Sub-View Switcher (AdaptiveSectionTabs) */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <AdaptiveSectionTabs
-          tabs={vacuumTabs}
-          activeTab={activeSubTab}
-          onChange={(tab) => setActiveSubTab(tab as VacuumSubTab)}
-          darkMode={darkMode}
-        />
+      <div className="flex items-center justify-between flex-wrap gap-3 w-full max-w-full min-w-0">
+        <div className="flex-1 min-w-0 max-w-full">
+          <AdaptiveSectionTabs
+            tabs={vacuumTabs}
+            activeTab={activeSubTab}
+            onChange={(tab) => setActiveSubTab(tab as VacuumSubTab)}
+            darkMode={darkMode}
+          />
+        </div>
 
         {hasActiveCleaning && activeSubTab === 'robot' && (
           <div className="flex items-center gap-2 ml-auto">

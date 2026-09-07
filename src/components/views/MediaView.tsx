@@ -159,7 +159,7 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
       {/* 1. FLOOR SELECTOR TABS                                            */}
       {/* ----------------------------------------------------------------- */}
       {floorTabs.length > 2 && (
-        <div className="flex items-center">
+        <div className="w-full max-w-full min-w-0 overflow-hidden">
           <AdaptiveSectionTabs
             tabs={floorTabs}
             activeTab={selectedFloorTab}

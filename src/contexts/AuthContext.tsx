@@ -191,6 +191,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [scheduleProactiveTokenRefresh]);
 
+  // Listen for BroadcastChannel / postMessage OAuth success from external auth popup/tab
+  useEffect(() => {
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('had_oauth_channel');
+        bc.onmessage = (event) => {
+          if (event?.data?.type === 'HA_OAUTH_SUCCESS' && event.data.tokens) {
+            const tokens: AuthTokens = event.data.tokens;
+            haWebSocketService.setDemoMode(false);
+            haWebSocketService.connect(tokens.server_url, tokens.access_token);
+            scheduleProactiveTokenRefresh(tokens);
+
+            setAuthState({
+              isAuthenticated: true,
+              isDemo: false,
+              authMethod: 'oauth',
+              haUrl: tokens.server_url,
+              user: { id: 'oauth_user', name: 'Home Assistant User', isOwner: true },
+              tokens
+            });
+            setIsAuthModalOpen(false);
+            setIsLoading(false);
+            setIsInitializing(false);
+
+            fetchHAUserProfile()
+              .then((user) => setAuthState((prev) => ({ ...prev, user })))
+              .catch(() => {});
+          }
+        };
+      }
+    } catch {}
+
+    const handleWindowMessage = (event: MessageEvent) => {
+      if (event?.data?.type === 'HA_OAUTH_SUCCESS' && event.data.tokens) {
+        const tokens: AuthTokens = event.data.tokens;
+        haWebSocketService.setDemoMode(false);
+        haWebSocketService.connect(tokens.server_url, tokens.access_token);
+        scheduleProactiveTokenRefresh(tokens);
+
+        setAuthState({
+          isAuthenticated: true,
+          isDemo: false,
+          authMethod: 'oauth',
+          haUrl: tokens.server_url,
+          user: { id: 'oauth_user', name: 'Home Assistant User', isOwner: true },
+          tokens
+        });
+        setIsAuthModalOpen(false);
+        setIsLoading(false);
+        setIsInitializing(false);
+
+        fetchHAUserProfile()
+          .then((user) => setAuthState((prev) => ({ ...prev, user })))
+          .catch(() => {});
+      }
+    };
+
+    window.addEventListener('message', handleWindowMessage);
+
+    return () => {
+      if (bc) bc.close();
+      window.removeEventListener('message', handleWindowMessage);
+    };
+  }, [fetchHAUserProfile, scheduleProactiveTokenRefresh]);
+
   // Initialize Auth State on Initial Mount
   useEffect(() => {
     let isMounted = true;
@@ -199,7 +265,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       setError(null);
 
-      // 1. Check for incoming OAuth redirect (?code=...)
+      // 1. Check for incoming OAuth redirect (?code=... or ?error=...)
       try {
         const oauthResult = await handleHAOAuthCallback();
         if (oauthResult.success && oauthResult.tokens && isMounted) {
@@ -229,6 +295,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .catch(() => {});
 
           return;
+        } else if (oauthResult.error && isMounted) {
+          setError(oauthResult.error);
+          setIsAuthModalOpen(true);
         }
       } catch (err: any) {
         console.error('[AuthContext] OAuth callback error:', err);
