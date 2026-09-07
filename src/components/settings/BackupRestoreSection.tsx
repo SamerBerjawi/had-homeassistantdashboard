@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  * 
  * Backup, Snapshots & Disaster Recovery Subpage
+ * Clean, mobile-optimized, zero-bulk layout matching ThemeCustomizationSection.
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import {
   DownloadSimple,
   UploadSimple,
   Trash,
   Warning,
-  Clock,
   HardDrives,
-  CheckCircle,
+  Clock,
   FloppyDisk
 } from '@phosphor-icons/react';
 
@@ -60,46 +60,33 @@ export default function BackupRestoreSection({
   handleFactoryReset
 }: BackupRestoreSectionProps) {
   return (
-    <div className="space-y-6 w-full animate-in fade-in duration-300 pb-24 md:pb-6">
-      {/* Primary Export & Import Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div className="p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-4 flex flex-col justify-between overflow-hidden isolate">
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-sky-500/15 text-sky-500 flex items-center justify-center mb-3">
-              <DownloadSimple size={22} weight="duotone" />
-            </div>
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-              Export Full Configuration JSON
-            </h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-              Download a comprehensive backup archive containing all customized canvas profiles, cards, room structures, visibility preferences, and units.
-            </p>
-          </div>
+    <div className="w-full max-w-xl mx-auto space-y-4 sm:space-y-5 animate-in fade-in duration-200 px-1 sm:px-0">
+      {/* 1. Quick Backup & Restore Actions */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between px-0.5">
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            Configuration File Archive
+          </span>
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            Full Backup JSON
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {/* Export Button */}
           <button
             type="button"
             onClick={handleExportFullBackup}
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs shadow-md shadow-sky-500/20 transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 h-11 px-3.5 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs shadow-sm shadow-sky-500/20 transition-all cursor-pointer active:scale-98"
           >
-            <DownloadSimple size={16} weight="bold" />
-            <span>Download Backup Archive (.json)</span>
+            <DownloadSimple size={17} weight="bold" />
+            <span>Download Backup (.json)</span>
           </button>
-        </div>
 
-        <div className="p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-4 flex flex-col justify-between overflow-hidden isolate">
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/15 text-indigo-500 flex items-center justify-center mb-3">
-              <UploadSimple size={22} weight="duotone" />
-            </div>
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-              Restore from Backup File
-            </h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-              Upload an existing backup JSON file to seamlessly restore dashboard profiles, entity assignments, and settings.
-            </p>
-          </div>
-          <label className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:border-white/15 dark:text-white font-bold text-xs transition-all cursor-pointer">
-            <UploadSimple size={16} weight="bold" />
-            <span>Select Backup JSON File</span>
+          {/* Import Button */}
+          <label className="flex items-center justify-center gap-2 h-11 px-3.5 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-slate-200 font-bold text-xs shadow-xs hover:border-sky-500/50 transition-all cursor-pointer active:scale-98">
+            <UploadSimple size={17} weight="bold" className="text-sky-500" />
+            <span>Restore from File</span>
             <input
               ref={fileInputRef as any}
               type="file"
@@ -111,59 +98,62 @@ export default function BackupRestoreSection({
         </div>
       </div>
 
-      {/* Local Storage Snapshots Manager */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] space-y-4 overflow-hidden isolate">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 border-slate-200 dark:border-white/10">
-          <div>
-            <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Local Browser Snapshots ({snapshots.length})
-            </h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Create instant rollback points cached in local browser storage.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <input
-              type="text"
-              placeholder="Snapshot name..."
-              value={snapshotNameInput}
-              onChange={(e) => setSnapshotNameInput(e.target.value)}
-              className="flex-1 sm:w-60 px-3.5 py-2 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:border-sky-500 shadow-xs"
-            />
-            <button
-              type="button"
-              onClick={handleCreateSnapshot}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all cursor-pointer shrink-0 shadow-sm"
-            >
-              Take Snapshot
-            </button>
-          </div>
+      {/* 2. Local Browser Storage Snapshots */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-0.5">
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            Local Browser Snapshots
+          </span>
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            {snapshots.length} {snapshots.length === 1 ? 'Snapshot' : 'Snapshots'}
+          </span>
         </div>
 
+        {/* Snapshot Creation Row */}
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="New snapshot title..."
+            value={snapshotNameInput}
+            onChange={(e) => setSnapshotNameInput(e.target.value)}
+            className="flex-1 h-10 px-3 rounded-xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs"
+          />
+          <button
+            type="button"
+            onClick={handleCreateSnapshot}
+            disabled={!snapshotNameInput.trim()}
+            className="h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs shadow-sm shadow-indigo-600/20 transition-all cursor-pointer shrink-0"
+          >
+            Create
+          </button>
+        </div>
+
+        {/* Snapshots List */}
         {snapshots.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-400 border border-dashed border-slate-300 dark:border-white/10 rounded-2xl">
-            No local snapshots stored yet. Enter a name and click "Take Snapshot" above to create an instant rollback point.
+          <div className="p-3.5 rounded-2xl bg-white/40 dark:bg-black/20 border border-dashed border-slate-300 dark:border-white/10 text-center text-xs text-slate-400">
+            No local snapshots created yet.
           </div>
         ) : (
-          <div className="space-y-2.5 max-h-72 overflow-y-auto touch-scroll-container pr-1">
+          <div className="space-y-1.5 max-h-56 overflow-y-auto touch-scroll-container pr-0.5">
             {snapshots.map((snap) => (
               <div
                 key={snap.id}
-                className="p-3.5 rounded-2xl bg-white dark:bg-black/30 border border-slate-200 dark:border-white/10 flex items-center justify-between gap-3 shadow-xs"
+                className="p-2.5 rounded-xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-2 shadow-xs"
               >
-                <div>
-                  <h5 className="text-xs font-bold text-slate-900 dark:text-white">{snap.name}</h5>
-                  <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
-                    {snap.timestamp} • {snap.cardCount} cards • {snap.profileCount} profiles
-                  </p>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                    {snap.name}
+                  </div>
+                  <div className="text-[10px] font-mono text-slate-400 truncate">
+                    {snap.timestamp} • {snap.profileCount} profiles
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
                     onClick={() => handleRestoreSnapshot(snap)}
-                    className="px-3 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 border border-sky-400/30 text-xs font-bold cursor-pointer transition-colors"
+                    className="h-7 px-2.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 font-bold text-[11px] transition-colors cursor-pointer"
                   >
                     Restore
                   </button>
@@ -171,19 +161,19 @@ export default function BackupRestoreSection({
                     <button
                       type="button"
                       onClick={() => handleExportSnapshot(snap)}
-                      className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-500 hover:text-sky-600 dark:bg-white/5 dark:hover:bg-sky-500/20 dark:text-slate-400 dark:hover:text-sky-400 border border-slate-200 dark:border-white/10 flex items-center justify-center cursor-pointer transition-colors"
-                      title="Download snapshot as JSON"
+                      className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer transition-colors"
+                      title="Download JSON"
                     >
-                      <DownloadSimple size={14} weight="bold" />
+                      <DownloadSimple size={13} weight="bold" />
                     </button>
                   )}
                   <button
                     type="button"
                     onClick={() => handleDeleteSnapshot(snap.id)}
-                    className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 dark:bg-white/5 dark:hover:bg-rose-500/20 dark:text-slate-400 dark:hover:text-rose-400 border border-slate-200 dark:border-white/10 flex items-center justify-center cursor-pointer transition-colors"
-                    title="Delete snapshot"
+                    className="w-7 h-7 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center cursor-pointer transition-colors"
+                    title="Delete"
                   >
-                    <Trash size={14} weight="duotone" />
+                    <Trash size={13} weight="duotone" />
                   </button>
                 </div>
               </div>
@@ -192,49 +182,52 @@ export default function BackupRestoreSection({
         )}
       </div>
 
-      {/* Factory Reset Card */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-rose-500/10 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden isolate">
-        <div>
-          <h4 className="text-sm font-bold text-rose-700 dark:text-rose-300 flex items-center gap-2">
-            <Warning size={18} weight="duotone" /> Factory Reset Dashboard
-          </h4>
-          <p className="text-xs text-rose-800/80 dark:text-rose-200/70 mt-1">
-            Clear all custom profiles, canvas layouts, and room customizations, restoring standard Home Assistant default configuration.
-          </p>
+      {/* 3. Factory Reset Zone */}
+      <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Warning size={18} weight="duotone" className="text-rose-500 shrink-0" />
+          <div className="min-w-0">
+            <div className="text-xs font-bold text-rose-700 dark:text-rose-300 truncate">
+              Factory Reset Dashboard
+            </div>
+            <div className="text-[10px] text-rose-600/80 dark:text-rose-300/70 truncate">
+              Wipe custom canvas and restore defaults
+            </div>
+          </div>
         </div>
 
         <button
           type="button"
           onClick={() => setShowResetConfirm(true)}
-          className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer shrink-0"
+          className="h-8 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-xs transition-all cursor-pointer shrink-0 active:scale-98"
         >
-          Reset Defaults
+          Reset
         </button>
       </div>
 
       {/* Confirmation Modal for Reset */}
       {showResetConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 p-6 shadow-2xl space-y-4 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto border border-rose-500/30">
-              <Warning size={28} weight="duotone" />
+          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 p-5 shadow-2xl space-y-3.5 text-center">
+            <div className="w-11 h-11 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto border border-rose-500/30">
+              <Warning size={24} weight="duotone" />
             </div>
-            <h4 className="text-base font-black text-slate-900 dark:text-white">Reset Dashboard Defaults?</h4>
+            <h4 className="text-sm font-black text-slate-900 dark:text-white">Reset Dashboard Defaults?</h4>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              This will reset all custom canvas profiles, cards, and custom configurations to factory defaults.
+              This will clear all custom canvas profiles, cards, and custom configurations to factory defaults.
             </p>
-            <div className="flex justify-center gap-3 pt-2">
+            <div className="flex justify-center gap-2.5 pt-1">
               <button
                 type="button"
                 onClick={() => setShowResetConfirm(false)}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-300 text-xs font-semibold cursor-pointer"
+                className="h-9 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-300 text-xs font-semibold cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleFactoryReset}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md cursor-pointer"
+                className="h-9 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md cursor-pointer"
               >
                 Confirm Reset
               </button>

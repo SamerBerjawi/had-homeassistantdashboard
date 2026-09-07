@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export type TileLayoutMode = 'compact' | 'full' | 'hybrid';
+
 export interface UserDashboardConfig {
   version: number;
   updatedAt: string;

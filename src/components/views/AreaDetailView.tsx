@@ -621,7 +621,10 @@ export default function AreaDetailView({
       colSpan: s?.colSpan ?? defaultColSpan,
       rowSpan: s?.rowSpan ?? defaultRow,
       tabletColSpan: s?.tabletColSpan ?? defaultTabletColSpan,
-      desktopColSpan: s?.desktopColSpan ?? defaultDesktopColSpan
+      desktopColSpan: s?.desktopColSpan ?? defaultDesktopColSpan,
+      colStart: s?.colStart,
+      tabletColStart: s?.tabletColStart,
+      desktopColStart: s?.desktopColStart
     };
   };
 
@@ -935,6 +938,9 @@ export default function AreaDetailView({
                   rowSpan={span.rowSpan}
                   tabletColSpan={span.tabletColSpan}
                   desktopColSpan={span.desktopColSpan}
+                  colStart={span.colStart}
+                  tabletColStart={span.tabletColStart}
+                  desktopColStart={span.desktopColStart}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(light.entity_id)}
                 >
@@ -996,6 +1002,9 @@ export default function AreaDetailView({
                   rowSpan={span.rowSpan}
                   tabletColSpan={span.tabletColSpan}
                   desktopColSpan={span.desktopColSpan}
+                  colStart={span.colStart}
+                  tabletColStart={span.tabletColStart}
+                  desktopColStart={span.desktopColStart}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(climate.entity_id)}
                 >
@@ -1042,6 +1051,9 @@ export default function AreaDetailView({
                   rowSpan={span.rowSpan}
                   tabletColSpan={span.tabletColSpan}
                   desktopColSpan={span.desktopColSpan}
+                  colStart={span.colStart}
+                  tabletColStart={span.tabletColStart}
+                  desktopColStart={span.desktopColStart}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(fan.entity_id)}
                 >
@@ -1147,6 +1159,9 @@ export default function AreaDetailView({
                   rowSpan={span.rowSpan}
                   tabletColSpan={span.tabletColSpan}
                   desktopColSpan={span.desktopColSpan}
+                  colStart={span.colStart}
+                  tabletColStart={span.tabletColStart}
+                  desktopColStart={span.desktopColStart}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(sw.entity_id)}
                 >
@@ -1188,6 +1203,9 @@ export default function AreaDetailView({
                   rowSpan={span.rowSpan}
                   tabletColSpan={span.tabletColSpan}
                   desktopColSpan={span.desktopColSpan}
+                  colStart={span.colStart}
+                  tabletColStart={span.tabletColStart}
+                  desktopColStart={span.desktopColStart}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(lock.entity_id)}
                 >
@@ -1259,6 +1277,9 @@ export default function AreaDetailView({
                   rowSpan={span.rowSpan}
                   tabletColSpan={span.tabletColSpan}
                   desktopColSpan={span.desktopColSpan}
+                  colStart={span.colStart}
+                  tabletColStart={span.tabletColStart}
+                  desktopColStart={span.desktopColStart}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(cover.entity_id)}
                 >
@@ -1345,6 +1366,9 @@ export default function AreaDetailView({
                   rowSpan={isPlaying ? 2 : span.rowSpan}
                   tabletColSpan={isPlaying ? 6 : span.tabletColSpan}
                   desktopColSpan={isPlaying ? 6 : span.desktopColSpan}
+                  colStart={isPlaying ? 1 : span.colStart}
+                  tabletColStart={isPlaying ? 1 : span.tabletColStart}
+                  desktopColStart={isPlaying ? 1 : span.desktopColStart}
                   isUnavailable={isUnavailable}
                   onLongPress={() => setActiveMediaDrawerEntity(media)}
                 >
@@ -1385,6 +1409,9 @@ export default function AreaDetailView({
                   rowSpan={span.rowSpan}
                   tabletColSpan={span.tabletColSpan}
                   desktopColSpan={span.desktopColSpan}
+                  colStart={span.colStart}
+                  tabletColStart={span.tabletColStart}
+                  desktopColStart={span.desktopColStart}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(vac.entity_id)}
                 >
@@ -1504,6 +1531,9 @@ export default function AreaDetailView({
                       rowSpan={span.rowSpan}
                       tabletColSpan={span.tabletColSpan}
                       desktopColSpan={span.desktopColSpan}
+                      colStart={span.colStart}
+                      tabletColStart={span.tabletColStart}
+                      desktopColStart={span.desktopColStart}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(cs.entity_id)}
                     >
@@ -1540,6 +1570,9 @@ export default function AreaDetailView({
                       rowSpan={span.rowSpan}
                       tabletColSpan={span.tabletColSpan}
                       desktopColSpan={span.desktopColSpan}
+                      colStart={span.colStart}
+                      tabletColStart={span.tabletColStart}
+                      desktopColStart={span.desktopColStart}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(ms.entity_id)}
                     >
@@ -1576,6 +1609,9 @@ export default function AreaDetailView({
                       rowSpan={span.rowSpan}
                       tabletColSpan={span.tabletColSpan}
                       desktopColSpan={span.desktopColSpan}
+                      colStart={span.colStart}
+                      tabletColStart={span.tabletColStart}
+                      desktopColStart={span.desktopColStart}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(sensor.entity_id)}
                     >
@@ -1612,6 +1648,9 @@ export default function AreaDetailView({
                       rowSpan={span.rowSpan}
                       tabletColSpan={span.tabletColSpan}
                       desktopColSpan={span.desktopColSpan}
+                      colStart={span.colStart}
+                      tabletColStart={span.tabletColStart}
+                      desktopColStart={span.desktopColStart}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(hs.entity_id)}
                     >
@@ -1648,6 +1687,9 @@ export default function AreaDetailView({
                       rowSpan={span.rowSpan}
                       tabletColSpan={span.tabletColSpan}
                       desktopColSpan={span.desktopColSpan}
+                      colStart={span.colStart}
+                      tabletColStart={span.tabletColStart}
+                      desktopColStart={span.desktopColStart}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(sensor.entity_id)}
                     >
@@ -1684,6 +1726,9 @@ export default function AreaDetailView({
                       rowSpan={span.rowSpan}
                       tabletColSpan={span.tabletColSpan}
                       desktopColSpan={span.desktopColSpan}
+                      colStart={span.colStart}
+                      tabletColStart={span.tabletColStart}
+                      desktopColStart={span.desktopColStart}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(bs.entity_id)}
                     >
@@ -1720,6 +1765,9 @@ export default function AreaDetailView({
                       rowSpan={span.rowSpan}
                       tabletColSpan={span.tabletColSpan}
                       desktopColSpan={span.desktopColSpan}
+                      colStart={span.colStart}
+                      tabletColStart={span.tabletColStart}
+                      desktopColStart={span.desktopColStart}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(sensor.entity_id)}
                     >

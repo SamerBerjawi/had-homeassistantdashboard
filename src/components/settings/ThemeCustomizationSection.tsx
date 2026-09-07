@@ -135,7 +135,7 @@ export default function ThemeCustomizationSection({
             </span>
           </div>
 
-          <div className="grid grid-cols-3 p-1 rounded-2xl bg-black/5 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 gap-1">
+          <div className="grid grid-cols-3 p-1 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs gap-1">
             <button
               type="button"
               onClick={() => handleSelectTileMode('compact')}
@@ -188,7 +188,7 @@ export default function ThemeCustomizationSection({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 p-1 rounded-2xl bg-black/5 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 gap-1">
+          <div className="grid grid-cols-2 p-1 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs gap-1">
             <button
               type="button"
               onClick={() => setBackgroundStyle('glow')}
@@ -231,7 +231,7 @@ export default function ThemeCustomizationSection({
             </span>
           </div>
 
-          <div className="grid grid-cols-4 p-1 rounded-2xl bg-black/5 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 gap-1">
+          <div className="grid grid-cols-4 p-1 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs gap-1">
             {[
               { id: 'auto' as WeatherBackdropType, label: 'Auto', icon: CloudSun },
               { id: 'sunny' as WeatherBackdropType, label: 'Sunny', icon: SunHorizon },

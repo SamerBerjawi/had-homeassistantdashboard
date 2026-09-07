@@ -235,13 +235,19 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
                   isEditMode
                 });
 
+                const getAreaEntityCount = (a: (typeof floor.areas)[0]) =>
+                  (a.totalLightsCount || 0) +
+                  (a.entities?.switches?.length || 0) +
+                  (a.entities?.fans?.length || 0) +
+                  (a.entities?.mediaPlayers?.length || 0);
+
                 const sortedAreas = tileLayoutMode === 'hybrid'
                   ? sortItemsForHybrid({
                       items: sortedAreasInitial,
                       getId: (a) => a.areaId,
                       layoutOverrides: config?.layoutOverrides,
-                      isSmall: (a) => a.activeLightsCount === 0 && (a.devicesCount || a.entitiesCount || 0) <= 2,
-                      isLarge: (a) => a.activeLightsCount > 0 || (a.devicesCount || a.entitiesCount || 0) >= 4
+                      isSmall: (a) => a.activeLightsCount === 0 && getAreaEntityCount(a) <= 2,
+                      isLarge: (a) => a.activeLightsCount > 0 || getAreaEntityCount(a) >= 4
                     })
                   : sortedAreasInitial;
 
@@ -250,8 +256,8 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
                   items: sortedAreas,
                   getId: (a) => a.areaId,
                   layoutOverrides: config?.layoutOverrides,
-                  isSmall: (a) => a.activeLightsCount === 0 && (a.devicesCount || a.entitiesCount || 0) <= 2,
-                  isLarge: (a) => a.activeLightsCount > 0 || (a.devicesCount || a.entitiesCount || 0) >= 4
+                  isSmall: (a) => a.activeLightsCount === 0 && getAreaEntityCount(a) <= 2,
+                  isLarge: (a) => a.activeLightsCount > 0 || getAreaEntityCount(a) >= 4
                 });
 
                 return (
@@ -270,6 +276,9 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
                           rowSpan={span.rowSpan}
                           tabletColSpan={span.tabletColSpan}
                           desktopColSpan={span.desktopColSpan}
+                          colStart={span.colStart}
+                          tabletColStart={span.tabletColStart}
+                          desktopColStart={span.desktopColStart}
                           onClick={() => setSelectedAreaId(area.areaId)}
                         >
                           <AreaTile

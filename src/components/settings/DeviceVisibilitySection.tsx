@@ -61,6 +61,7 @@ import CustomDropdown from '../ui/CustomDropdown';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import IconPickerField from '../ui/IconPickerField';
 import EntityCustomizerModal from '../modals/EntityCustomizerModal';
+import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 import { detectSensorCapabilities } from '../../services/sensorClassification';
 import { isRainOrWeatherSensor } from '../../lib/entityClassifiers';
 
@@ -708,77 +709,57 @@ export default function DeviceVisibilitySection({
     setCollapsedDevices(dMap);
   };
 
+  const subNavTabs: SectionTabItem[] = useMemo(() => [
+    {
+      id: 'visibility',
+      label: 'Visibility',
+      icon: Eye,
+      badge: `${visibleCount}/${totalCount}`,
+      color: '#3b82f6'
+    },
+    {
+      id: 'styling',
+      label: 'Room Styling',
+      icon: PaintBrush,
+      color: '#8b5cf6'
+    },
+    {
+      id: 'labels',
+      label: 'Labels',
+      icon: Tag,
+      badge: labels.length,
+      color: '#f59e0b'
+    },
+    {
+      id: 'zones',
+      label: 'Zones',
+      icon: MapPin,
+      badge: resolvedZones.length,
+      color: '#10b981'
+    }
+  ], [visibleCount, totalCount, labels.length, resolvedZones.length]);
+
   return (
-    <div className="space-y-5 w-full animate-in fade-in duration-200 pb-24 md:pb-6">
-      {/* Top Sub-Navigation Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 rounded-3xl bg-slate-100/90 dark:bg-white/3 border border-slate-200 dark:border-white/10 backdrop-blur-md">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setActiveTab('visibility')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all cursor-pointer ${
-              activeTab === 'visibility'
-                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
-            }`}
-          >
-            <Eye size={18} weight="duotone" />
-            <span>Entity Visibility Manager</span>
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-black ${
-              activeTab === 'visibility' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
-            }`}>
-              {visibleCount} / {totalCount}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('styling')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all cursor-pointer ${
-              activeTab === 'styling'
-                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
-            }`}
-          >
-            <PaintBrush size={18} weight="duotone" />
-            <span>Room Icons & Colors</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('labels')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all cursor-pointer ${
-              activeTab === 'labels'
-                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
-            }`}
-          >
-            <Tag size={18} weight="duotone" />
-            <span>Labels ({labels.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('zones')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all cursor-pointer ${
-              activeTab === 'zones'
-                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
-            }`}
-          >
-            <MapPin size={18} weight="duotone" />
-            <span>Zones ({resolvedZones.length})</span>
-          </button>
+    <div className="space-y-4 w-full animate-in fade-in duration-200 pb-24 md:pb-6">
+      {/* Top Floating AdaptiveSectionTabs & Visibility Metrics */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 w-full">
+        <div className="min-w-0 max-w-full">
+          <AdaptiveSectionTabs
+            tabs={subNavTabs}
+            activeTab={activeTab}
+            onChange={(tab) => setActiveTab(tab as any)}
+            darkMode={darkMode}
+          />
         </div>
 
         {/* Global Visibility Summary Pill */}
-        <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs sm:text-sm self-start sm:self-auto shadow-2xs font-mono">
+        <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/60 dark:bg-black/25 border border-slate-200/80 dark:border-white/10 text-xs self-start sm:self-auto shadow-xs font-mono">
           <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
-            <Eye size={16} weight="bold" /> {visibleCount} Visible
+            <Eye size={14} weight="bold" /> {visibleCount} Visible
           </span>
           <span className="text-slate-300 dark:text-slate-700">•</span>
           <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
-            <EyeSlash size={16} weight="bold" /> {hiddenCount} Hidden
+            <EyeSlash size={14} weight="bold" /> {hiddenCount} Hidden
           </span>
         </div>
       </div>
@@ -789,7 +770,7 @@ export default function DeviceVisibilitySection({
       {activeTab === 'visibility' && (
         <div className="space-y-4">
           {/* Quick Category Filter Bar */}
-          <div className="p-3 sm:p-4 rounded-3xl bg-slate-100/90 dark:bg-white/2 border border-slate-200 dark:border-white/10 backdrop-blur-md space-y-3">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-white/60 dark:bg-black/25 border border-slate-200/80 dark:border-white/10 backdrop-blur-md shadow-xs space-y-2.5">
             <div className="flex items-center justify-between gap-2 px-1">
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <SlidersHorizontal size={14} weight="bold" className="text-sky-500" />

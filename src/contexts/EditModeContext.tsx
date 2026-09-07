@@ -38,7 +38,8 @@ const EditModeContext = createContext<EditModeContextType | undefined>(undefined
 const SIZE_CYCLE: Array<[2 | 4 | 6 | 8 | 12, 1 | 2 | 3 | 4]> = [
   [2, 1], // Compact 2x1
   [2, 2], // Square 2x2
-  [4, 2], // Wide 4x2
+  [4, 1], // Wide natural 4x1
+  [4, 2], // Wide tall 4x2
   [6, 2], // Panoramic 6x2
 ];
 
