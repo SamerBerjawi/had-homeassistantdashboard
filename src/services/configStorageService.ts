@@ -228,6 +228,10 @@ export function mergeConfig(
         : Array.isArray(safeBase.rooms?.areaSortOrder)
         ? [...safeBase.rooms.areaSortOrder]
         : [],
+      tileLayout: partial.rooms?.tileLayout || safeBase.rooms?.tileLayout || (partial.rooms?.fullWidthTiles ? 'full' : 'compact'),
+      fullWidthTiles: partial.rooms?.fullWidthTiles !== undefined
+        ? Boolean(partial.rooms.fullWidthTiles)
+        : Boolean(safeBase.rooms?.fullWidthTiles),
       areaOverrides: {
         ...(safeBase.rooms?.areaOverrides || {}),
         ...(partial.rooms?.areaOverrides || {})

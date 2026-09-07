@@ -24,7 +24,7 @@ import ViewLoadingState from '../ui/ViewLoadingState';
 import VirtualGrid from '../layout/VirtualGrid';
 import SortableGrid from '../layout/SortableGrid';
 import GridTile from '../layout/GridTile';
-import { sortTilesForBento } from '../../utils/bentoLayout';
+import { sortTilesForBento, getComputedTileSpans, sortItemsForHybrid, TileLayoutMode } from '../../utils/bentoLayout';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { useEditMode } from '../../contexts/EditModeContext';
 import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
@@ -161,7 +161,7 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
     <div className="w-full flex-1 flex flex-col gap-5 animate-fadeIn pb-16">
       {/* Clean Floating Floor Filter Tabs (No grey container) */}
       {floorDataList.length > 1 && (
-        <div className="w-full max-w-full min-w-0 overflow-hidden">
+        <div className="w-full max-w-full min-w-0">
           <AdaptiveSectionTabs
             tabs={floorTabs}
             activeTab={selectedFloorId}
@@ -226,17 +226,38 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
               {/* 2-Grid Mobile Layout for Room Tiles with SortableGrid */}
               {(() => {
                 const hiddenAreasSet = new Set(config?.rooms?.hiddenAreas || []);
-                const sortedAreas = sortTilesForBento({
+                const tileLayoutMode: TileLayoutMode = config?.rooms?.tileLayout || (config?.rooms?.fullWidthTiles ? 'full' : 'compact');
+                const sortedAreasInitial = sortTilesForBento({
                   items: floor.areas,
                   getId: (a) => a.areaId,
                   layoutOverrides: config?.layoutOverrides,
                   isEditMode
                 });
 
+                const sortedAreas = tileLayoutMode === 'hybrid'
+                  ? sortItemsForHybrid({
+                      items: sortedAreasInitial,
+                      getId: (a) => a.areaId,
+                      layoutOverrides: config?.layoutOverrides,
+                      isSmall: (a) => a.activeLightsCount === 0 && (a.devicesCount || a.entitiesCount || 0) <= 2,
+                      isLarge: (a) => a.activeLightsCount > 0 || (a.devicesCount || a.entitiesCount || 0) >= 4
+                    })
+                  : sortedAreasInitial;
+
+                const computedSpans = getComputedTileSpans({
+                  mode: tileLayoutMode,
+                  items: sortedAreas,
+                  getId: (a) => a.areaId,
+                  layoutOverrides: config?.layoutOverrides,
+                  isSmall: (a) => a.activeLightsCount === 0 && (a.devicesCount || a.entitiesCount || 0) <= 2,
+                  isLarge: (a) => a.activeLightsCount > 0 || (a.devicesCount || a.entitiesCount || 0) >= 4
+                });
+
                 return (
                   <SortableGrid items={sortedAreas.map((a) => a.areaId)}>
                     {sortedAreas.map((area) => {
                       const isGhosted = hiddenAreasSet.has(area.areaId);
+                      const span = computedSpans.get(area.areaId) || { colSpan: 2, tabletColSpan: 3, desktopColSpan: 3, rowSpan: 1 };
 
                       return (
                         <GridTile
@@ -244,9 +265,10 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
                           id={area.areaId}
                           areaId={area.areaId}
                           isGhosted={isGhosted}
-                          colSpan={2}
-                          tabletColSpan={3}
-                          desktopColSpan={3}
+                          colSpan={span.colSpan}
+                          rowSpan={span.rowSpan}
+                          tabletColSpan={span.tabletColSpan}
+                          desktopColSpan={span.desktopColSpan}
                           onClick={() => setSelectedAreaId(area.areaId)}
                         >
                           <AreaTile

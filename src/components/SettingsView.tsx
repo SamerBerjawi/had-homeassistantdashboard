@@ -16,6 +16,7 @@ import { useCanvasStore } from '../store/useCanvasStore';
 import { WeatherBackdropType } from '../types/canvas';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserConfig } from '../contexts/ConfigContext';
+import { TileLayoutMode } from '../types/userConfig';
 
 import SettingsHub, { SettingsSection } from './settings/SettingsHub';
 import UserProfileSection from './settings/UserProfileSection';
@@ -240,6 +241,38 @@ export default function SettingsView({
   const [currencySymbol, setCurrencySymbol] = useState<string>(() => {
     return config?.preferences?.currencySymbol || config?.energy?.currencySymbol || '€';
   });
+  const [fullWidthTiles, setFullWidthTilesState] = useState<boolean>(() => {
+    return Boolean(config?.rooms?.fullWidthTiles);
+  });
+  const [tileLayoutMode, setTileLayoutModeState] = useState<TileLayoutMode>(() => {
+    return config?.rooms?.tileLayout || (config?.rooms?.fullWidthTiles ? 'full' : 'compact');
+  });
+
+  const handleSetFullWidthTiles = (val: boolean) => {
+    setFullWidthTilesState(val);
+    setTileLayoutModeState(val ? 'full' : 'compact');
+    updateConfig((prev) => ({
+      ...prev,
+      rooms: {
+        ...(prev.rooms || {}),
+        tileLayout: val ? 'full' : 'compact',
+        fullWidthTiles: val
+      }
+    }));
+  };
+
+  const handleSetTileLayoutMode = (mode: TileLayoutMode) => {
+    setTileLayoutModeState(mode);
+    setFullWidthTilesState(mode === 'full');
+    updateConfig((prev) => ({
+      ...prev,
+      rooms: {
+        ...(prev.rooms || {}),
+        tileLayout: mode,
+        fullWidthTiles: mode === 'full'
+      }
+    }));
+  };
 
   useEffect(() => {
     if (config?.profile) {
@@ -258,11 +291,23 @@ export default function SettingsView({
       if (config.preferences.currencySymbol) setCurrencySymbol(config.preferences.currencySymbol);
       if (config.preferences.backgroundStyle) setInternalBgStyle(config.preferences.backgroundStyle);
     }
+    if (config?.rooms?.tileLayout) {
+      setTileLayoutModeState(config.rooms.tileLayout);
+      setFullWidthTilesState(config.rooms.tileLayout === 'full');
+    } else if (config?.rooms?.fullWidthTiles !== undefined) {
+      setFullWidthTilesState(Boolean(config.rooms.fullWidthTiles));
+      setTileLayoutModeState(config.rooms.fullWidthTiles ? 'full' : 'compact');
+    }
   }, [config]);
 
   const handleSavePreferences = async () => {
     await updateConfig((prev) => ({
       ...prev,
+      rooms: {
+        ...(prev.rooms || {}),
+        tileLayout: tileLayoutMode,
+        fullWidthTiles: tileLayoutMode === 'full'
+      },
       theme: {
         ...prev.theme,
         backgroundStyle: effectiveBackgroundStyle
@@ -784,6 +829,10 @@ export default function SettingsView({
               setBackgroundStyle={handleSetBgStyle}
               weatherBackdrop={weatherBackdrop}
               setWeatherBackdrop={setWeatherBackdrop}
+              tileLayoutMode={tileLayoutMode}
+              setTileLayoutMode={handleSetTileLayoutMode}
+              fullWidthTiles={fullWidthTiles}
+              setFullWidthTiles={handleSetFullWidthTiles}
               handleSavePreferences={handleSavePreferences}
             />
           </motion.div>

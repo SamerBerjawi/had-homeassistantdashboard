@@ -42,8 +42,8 @@ import MediaOverviewDrawer from '../overview/modals/MediaOverviewDrawer';
 import ViewEmptyState from '../ui/ViewEmptyState';
 import VirtualGrid from '../layout/VirtualGrid';
 import SortableGrid from '../layout/SortableGrid';
-import GridTile from '../layout/GridTile';
-import { sortTilesForBento } from '../../utils/bentoLayout';
+import GridTile, { GridColSpan, GridRowSpan } from '../layout/GridTile';
+import { sortTilesForBento, getComputedTileSpans, TileLayoutMode, ComputedTileSpan } from '../../utils/bentoLayout';
 import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 import { TelemetryLine } from '../common/TelemetryBadge';
 
@@ -419,6 +419,12 @@ export default function AreaDetailView({
   const { isEditMode } = useEditMode();
   const layoutOverrides = config?.layoutOverrides;
 
+  const tileLayoutMode: TileLayoutMode = config?.rooms?.tileLayout || (config?.rooms?.fullWidthTiles ? 'full' : 'compact');
+  const isFullWidth = tileLayoutMode === 'full';
+  const defaultColSpan: GridColSpan = isFullWidth ? 4 : 2;
+  const defaultTabletColSpan: GridColSpan = 3;
+  const defaultDesktopColSpan: GridColSpan = 3;
+
   const sortedLights = useMemo(() => sortTilesForBento({
     items: enrichedLights,
     getId: (l) => l.entity_id,
@@ -530,6 +536,83 @@ export default function AreaDetailView({
     layoutOverrides,
     isEditMode
   }), [generalSensors, layoutOverrides, isEditMode]);
+
+  // Computed spans per category based on active layout mode (compact, hybrid, full)
+  const lightSpans = useMemo(() => {
+    return getComputedTileSpans({
+      mode: tileLayoutMode,
+      items: sortedLights,
+      getId: (l) => l.entity_id,
+      layoutOverrides,
+      isSmall: (l) => !detectLightCapabilities(l).supportsBrightness,
+      isLarge: (l) => detectLightCapabilities(l).supportsBrightness || detectLightCapabilities(l).supportsColor
+    });
+  }, [tileLayoutMode, sortedLights, layoutOverrides]);
+
+  const climateAndFanSpans = useMemo(() => {
+    const combined = [
+      ...sortedClimates.map(c => ({ id: c.entity_id, item: c, kind: 'climate' as const })),
+      ...sortedFans.map(f => ({ id: f.entity_id, item: f, kind: 'fan' as const }))
+    ];
+    return getComputedTileSpans({
+      mode: tileLayoutMode,
+      items: combined,
+      getId: (x) => x.id,
+      layoutOverrides,
+      isSmall: (x) => x.kind === 'fan',
+      isLarge: (x) => x.kind === 'climate',
+      naturalRowSpan: (x) => x.kind === 'climate' ? 2 : 1
+    });
+  }, [tileLayoutMode, sortedClimates, sortedFans, layoutOverrides]);
+
+  const switchLockCoverSpans = useMemo(() => {
+    const combined = [
+      ...sortedSwitches.map(s => ({ id: s.entity_id, item: s, kind: 'switch' as const })),
+      ...sortedLocks.map(l => ({ id: l.entity_id, item: l, kind: 'lock' as const })),
+      ...sortedCovers.map(c => ({ id: c.entity_id, item: c, kind: 'cover' as const }))
+    ];
+    return getComputedTileSpans({
+      mode: tileLayoutMode,
+      items: combined,
+      getId: (x) => x.id,
+      layoutOverrides,
+      isSmall: (x) => x.kind === 'lock' || x.kind === 'cover' || (x.kind === 'switch' && !x.item.attributes?.current_power_w),
+      isLarge: (x) => x.kind === 'switch' && Boolean(x.item.attributes?.current_power_w)
+    });
+  }, [tileLayoutMode, sortedSwitches, sortedLocks, sortedCovers, layoutOverrides]);
+
+  const mediaVacuumSpans = useMemo(() => {
+    const combined = [
+      ...sortedMediaPlayers.map(m => ({ id: m.entity_id, item: m, kind: 'media' as const })),
+      ...sortedVacuums.map(v => ({ id: v.entity_id, item: v, kind: 'vacuum' as const }))
+    ];
+    return getComputedTileSpans({
+      mode: tileLayoutMode,
+      items: combined,
+      getId: (x) => x.id,
+      layoutOverrides,
+      isSmall: (x) => x.kind === 'vacuum',
+      isLarge: (x) => x.kind === 'media'
+    });
+  }, [tileLayoutMode, sortedMediaPlayers, sortedVacuums, layoutOverrides]);
+
+  const contactSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedContactSensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedContactSensors, layoutOverrides]);
+  const motionSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedMotionSensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedMotionSensors, layoutOverrides]);
+  const environmentalSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedEnvironmentalSensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedEnvironmentalSensors, layoutOverrides]);
+  const hazardSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedHazardSensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedHazardSensors, layoutOverrides]);
+  const energySpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedEnergySensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedEnergySensors, layoutOverrides]);
+  const batterySpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedBatterySensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedBatterySensors, layoutOverrides]);
+  const generalSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedGeneralSensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedGeneralSensors, layoutOverrides]);
+
+  const getTileSpan = (id: string, spansMap?: Map<string, ComputedTileSpan>, defaultRow: GridRowSpan = 1) => {
+    const s = spansMap?.get(id);
+    return {
+      colSpan: s?.colSpan ?? defaultColSpan,
+      rowSpan: s?.rowSpan ?? defaultRow,
+      tabletColSpan: s?.tabletColSpan ?? defaultTabletColSpan,
+      desktopColSpan: s?.desktopColSpan ?? defaultDesktopColSpan
+    };
+  };
 
   // =========================================================================
   // CONTROL ACTION HANDLERS
@@ -778,7 +861,7 @@ export default function AreaDetailView({
       )}
 
       {/* Top Floating Filter Bar */}
-      <div className="w-full max-w-full min-w-0 overflow-hidden">
+      <div className="w-full max-w-full min-w-0">
         <AdaptiveSectionTabs
           tabs={domainTabs}
           activeTab={activeDomainTab}
@@ -825,15 +908,16 @@ export default function AreaDetailView({
               const isUnavailable = light.state === 'unavailable' || light.state === 'unknown';
               const caps = detectLightCapabilities(light);
               const isDimmable = caps.supportsBrightness;
+              const span = getTileSpan(light.entity_id, lightSpans);
 
               return (
                 <GridTile
                   key={light.entity_id}
                   id={light.entity_id}
-                  colSpan={2}
-                  rowSpan={1}
-                  tabletColSpan={3}
-                  desktopColSpan={3}
+                  colSpan={span.colSpan}
+                  rowSpan={span.rowSpan}
+                  tabletColSpan={span.tabletColSpan}
+                  desktopColSpan={span.desktopColSpan}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(light.entity_id)}
                 >
@@ -886,14 +970,15 @@ export default function AreaDetailView({
           <SortableGrid items={[...sortedClimates.map((c) => c.entity_id), ...sortedFans.map((f) => f.entity_id)]}>
             {sortedClimates.map((climate) => {
               const isUnavailable = climate.state === 'unavailable' || climate.state === 'unknown';
+              const span = getTileSpan(climate.entity_id, climateAndFanSpans, 2);
               return (
                 <GridTile
                   key={climate.entity_id}
                   id={climate.entity_id}
-                  colSpan={2}
-                  rowSpan={2}
-                  tabletColSpan={3}
-                  desktopColSpan={3}
+                  colSpan={span.colSpan}
+                  rowSpan={span.rowSpan}
+                  tabletColSpan={span.tabletColSpan}
+                  desktopColSpan={span.desktopColSpan}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(climate.entity_id)}
                 >
@@ -931,14 +1016,15 @@ export default function AreaDetailView({
                 />
               );
 
+              const span = getTileSpan(fan.entity_id, climateAndFanSpans, 1);
               return (
                 <GridTile
                   key={fan.entity_id}
                   id={fan.entity_id}
-                  colSpan={2}
-                  rowSpan={1}
-                  tabletColSpan={3}
-                  desktopColSpan={3}
+                  colSpan={span.colSpan}
+                  rowSpan={span.rowSpan}
+                  tabletColSpan={span.tabletColSpan}
+                  desktopColSpan={span.desktopColSpan}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(fan.entity_id)}
                 >
@@ -1035,14 +1121,15 @@ export default function AreaDetailView({
           <SortableGrid items={[...sortedSwitches.map((s) => s.entity_id), ...sortedLocks.map((l) => l.entity_id), ...sortedCovers.map((c) => c.entity_id)]}>
             {sortedSwitches.map((sw) => {
               const isUnavailable = sw.state === 'unavailable' || sw.state === 'unknown';
+              const span = getTileSpan(sw.entity_id, switchLockCoverSpans, 1);
               return (
                 <GridTile
                   key={sw.entity_id}
                   id={sw.entity_id}
-                  colSpan={2}
-                  rowSpan={1}
-                  tabletColSpan={3}
-                  desktopColSpan={3}
+                  colSpan={span.colSpan}
+                  rowSpan={span.rowSpan}
+                  tabletColSpan={span.tabletColSpan}
+                  desktopColSpan={span.desktopColSpan}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(sw.entity_id)}
                 >
@@ -1075,14 +1162,15 @@ export default function AreaDetailView({
                 />
               );
 
+              const span = getTileSpan(lock.entity_id, switchLockCoverSpans, 1);
               return (
                 <GridTile
                   key={lock.entity_id}
                   id={lock.entity_id}
-                  colSpan={2}
-                  rowSpan={1}
-                  tabletColSpan={3}
-                  desktopColSpan={3}
+                  colSpan={span.colSpan}
+                  rowSpan={span.rowSpan}
+                  tabletColSpan={span.tabletColSpan}
+                  desktopColSpan={span.desktopColSpan}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(lock.entity_id)}
                 >
@@ -1145,14 +1233,15 @@ export default function AreaDetailView({
                 />
               );
 
+              const span = getTileSpan(cover.entity_id, switchLockCoverSpans, 1);
               return (
                 <GridTile
                   key={cover.entity_id}
                   id={cover.entity_id}
-                  colSpan={2}
-                  rowSpan={1}
-                  tabletColSpan={3}
-                  desktopColSpan={3}
+                  colSpan={span.colSpan}
+                  rowSpan={span.rowSpan}
+                  tabletColSpan={span.tabletColSpan}
+                  desktopColSpan={span.desktopColSpan}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(cover.entity_id)}
                 >
@@ -1229,15 +1318,16 @@ export default function AreaDetailView({
             {sortedMediaPlayers.map((media) => {
               const isPlaying = media.state === 'playing' || media.state === 'paused';
               const isUnavailable = media.state === 'unavailable' || media.state === 'unknown';
+              const span = getTileSpan(media.entity_id, mediaVacuumSpans, isPlaying ? 2 : 1);
 
               return (
                 <GridTile
                   key={media.entity_id}
                   id={media.entity_id}
-                  colSpan={isPlaying ? 4 : 2}
-                  rowSpan={isPlaying ? 2 : 1}
-                  tabletColSpan={isPlaying ? 6 : 3}
-                  desktopColSpan={isPlaying ? 6 : 3}
+                  colSpan={isPlaying ? 4 : span.colSpan}
+                  rowSpan={isPlaying ? 2 : span.rowSpan}
+                  tabletColSpan={isPlaying ? 6 : span.tabletColSpan}
+                  desktopColSpan={isPlaying ? 6 : span.desktopColSpan}
                   isUnavailable={isUnavailable}
                   onLongPress={() => setActiveMediaDrawerEntity(media)}
                 >
@@ -1269,14 +1359,15 @@ export default function AreaDetailView({
                 />
               );
 
+              const span = getTileSpan(vac.entity_id, mediaVacuumSpans, 1);
               return (
                 <GridTile
                   key={vac.entity_id}
                   id={vac.entity_id}
-                  colSpan={2}
-                  rowSpan={1}
-                  tabletColSpan={3}
-                  desktopColSpan={3}
+                  colSpan={span.colSpan}
+                  rowSpan={span.rowSpan}
+                  tabletColSpan={span.tabletColSpan}
+                  desktopColSpan={span.desktopColSpan}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(vac.entity_id)}
                 >
@@ -1387,14 +1478,15 @@ export default function AreaDetailView({
               <SortableGrid items={sortedContactSensors.map((cs) => cs.entity_id)}>
                 {sortedContactSensors.map((cs) => {
                   const isUnavailable = cs.state === 'unavailable' || cs.state === 'unknown';
+                  const span = getTileSpan(cs.entity_id, contactSpans);
                   return (
                     <GridTile
                       key={cs.entity_id}
                       id={cs.entity_id}
-                      colSpan={2}
-                      rowSpan={1}
-                      tabletColSpan={3}
-                      desktopColSpan={3}
+                      colSpan={span.colSpan}
+                      rowSpan={span.rowSpan}
+                      tabletColSpan={span.tabletColSpan}
+                      desktopColSpan={span.desktopColSpan}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(cs.entity_id)}
                     >
@@ -1422,14 +1514,15 @@ export default function AreaDetailView({
               <SortableGrid items={sortedMotionSensors.map((ms) => ms.entity_id)}>
                 {sortedMotionSensors.map((ms) => {
                   const isUnavailable = ms.state === 'unavailable' || ms.state === 'unknown';
+                  const span = getTileSpan(ms.entity_id, motionSpans);
                   return (
                     <GridTile
                       key={ms.entity_id}
                       id={ms.entity_id}
-                      colSpan={2}
-                      rowSpan={1}
-                      tabletColSpan={3}
-                      desktopColSpan={3}
+                      colSpan={span.colSpan}
+                      rowSpan={span.rowSpan}
+                      tabletColSpan={span.tabletColSpan}
+                      desktopColSpan={span.desktopColSpan}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(ms.entity_id)}
                     >
@@ -1457,14 +1550,15 @@ export default function AreaDetailView({
               <SortableGrid items={sortedEnvironmentalSensors.map((sensor) => sensor.entity_id)}>
                 {sortedEnvironmentalSensors.map((sensor) => {
                   const isUnavailable = sensor.state === 'unavailable' || sensor.state === 'unknown';
+                  const span = getTileSpan(sensor.entity_id, environmentalSpans);
                   return (
                     <GridTile
                       key={sensor.entity_id}
                       id={sensor.entity_id}
-                      colSpan={2}
-                      rowSpan={1}
-                      tabletColSpan={3}
-                      desktopColSpan={3}
+                      colSpan={span.colSpan}
+                      rowSpan={span.rowSpan}
+                      tabletColSpan={span.tabletColSpan}
+                      desktopColSpan={span.desktopColSpan}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(sensor.entity_id)}
                     >
@@ -1492,14 +1586,15 @@ export default function AreaDetailView({
               <SortableGrid items={sortedHazardSensors.map((hs) => hs.entity_id)}>
                 {sortedHazardSensors.map((hs) => {
                   const isUnavailable = hs.state === 'unavailable' || hs.state === 'unknown';
+                  const span = getTileSpan(hs.entity_id, hazardSpans);
                   return (
                     <GridTile
                       key={hs.entity_id}
                       id={hs.entity_id}
-                      colSpan={2}
-                      rowSpan={1}
-                      tabletColSpan={3}
-                      desktopColSpan={3}
+                      colSpan={span.colSpan}
+                      rowSpan={span.rowSpan}
+                      tabletColSpan={span.tabletColSpan}
+                      desktopColSpan={span.desktopColSpan}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(hs.entity_id)}
                     >
@@ -1527,14 +1622,15 @@ export default function AreaDetailView({
               <SortableGrid items={sortedEnergySensors.map((sensor) => sensor.entity_id)}>
                 {sortedEnergySensors.map((sensor) => {
                   const isUnavailable = sensor.state === 'unavailable' || sensor.state === 'unknown';
+                  const span = getTileSpan(sensor.entity_id, energySpans);
                   return (
                     <GridTile
                       key={sensor.entity_id}
                       id={sensor.entity_id}
-                      colSpan={2}
-                      rowSpan={1}
-                      tabletColSpan={3}
-                      desktopColSpan={3}
+                      colSpan={span.colSpan}
+                      rowSpan={span.rowSpan}
+                      tabletColSpan={span.tabletColSpan}
+                      desktopColSpan={span.desktopColSpan}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(sensor.entity_id)}
                     >
@@ -1562,14 +1658,15 @@ export default function AreaDetailView({
               <SortableGrid items={sortedBatterySensors.map((bs) => bs.entity_id)}>
                 {sortedBatterySensors.map((bs) => {
                   const isUnavailable = bs.state === 'unavailable' || bs.state === 'unknown';
+                  const span = getTileSpan(bs.entity_id, batterySpans);
                   return (
                     <GridTile
                       key={bs.entity_id}
                       id={bs.entity_id}
-                      colSpan={2}
-                      rowSpan={1}
-                      tabletColSpan={3}
-                      desktopColSpan={3}
+                      colSpan={span.colSpan}
+                      rowSpan={span.rowSpan}
+                      tabletColSpan={span.tabletColSpan}
+                      desktopColSpan={span.desktopColSpan}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(bs.entity_id)}
                     >
@@ -1597,14 +1694,15 @@ export default function AreaDetailView({
               <SortableGrid items={sortedGeneralSensors.map((sensor) => sensor.entity_id)}>
                 {sortedGeneralSensors.map((sensor) => {
                   const isUnavailable = sensor.state === 'unavailable' || sensor.state === 'unknown';
+                  const span = getTileSpan(sensor.entity_id, generalSpans);
                   return (
                     <GridTile
                       key={sensor.entity_id}
                       id={sensor.entity_id}
-                      colSpan={2}
-                      rowSpan={1}
-                      tabletColSpan={3}
-                      desktopColSpan={3}
+                      colSpan={span.colSpan}
+                      rowSpan={span.rowSpan}
+                      tabletColSpan={span.tabletColSpan}
+                      desktopColSpan={span.desktopColSpan}
                       isUnavailable={isUnavailable}
                       onLongPress={() => openEntityDetails(sensor.entity_id)}
                     >

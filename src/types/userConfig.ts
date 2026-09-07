@@ -50,6 +50,8 @@ export interface UserDashboardConfig {
     hiddenAreas: string[];
     favoriteAreas: string[];
     areaSortOrder?: string[];
+    tileLayout?: TileLayoutMode;
+    fullWidthTiles?: boolean;
     areaOverrides: Record<string, {
       customName?: string;
       name?: string;
@@ -212,6 +214,8 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
     hiddenAreas: [],
     favoriteAreas: [],
     areaSortOrder: [],
+    tileLayout: 'compact',
+    fullWidthTiles: false,
     areaOverrides: {}
   },
   entities: {

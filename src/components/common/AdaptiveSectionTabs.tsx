@@ -73,15 +73,17 @@ export const AdaptiveSectionTabs: React.FC<AdaptiveSectionTabsProps> = ({
   return (
     <div
       ref={scrollContainerRef}
-      className={`w-full max-w-full overflow-x-auto touch-scroll-x no-scrollbar py-1 px-0.5 flex items-center ${
+      className={`w-full max-w-full overflow-x-auto touch-scroll-x no-scrollbar pt-1.5 pb-4 px-2 -my-1 flex items-center ${
         hideOnDesktop ? 'lg:hidden' : ''
       }`}
       style={{ WebkitOverflowScrolling: 'touch' }}
     >
       <div
         role="tablist"
-        className={`p-1 rounded-2xl inline-flex items-center gap-1 backdrop-blur-xl border transition-all shadow-[4px_6px_12px_rgba(0,0,0,0.15)] select-none shrink-0 ${
-          darkMode ? 'bg-black/20 border-white/5' : 'bg-white/20 border-slate-200/50'
+        className={`p-1 rounded-2xl inline-flex items-center gap-1 backdrop-blur-xl border transition-all select-none shrink-0 ${
+          darkMode
+            ? 'bg-black/30 border-white/10 shadow-[0_4px_16px_-2px_rgba(0,0,0,0.5),0_2px_6px_-1px_rgba(0,0,0,0.3)]'
+            : 'bg-white/80 border-slate-200/80 shadow-[0_4px_16px_-2px_rgba(0,0,0,0.08),0_2px_6px_-1px_rgba(0,0,0,0.04)]'
         } ${className}`}
       >
         {tabs.map((tab) => {
@@ -97,6 +99,10 @@ export const AdaptiveSectionTabs: React.FC<AdaptiveSectionTabsProps> = ({
               }
             : undefined;
 
+          // In Mobile mode (< sm): only show the name of the active tab, and the icons of the rest of the tabs
+          const showLabelOnMobile = isActive || !Icon;
+          const showBadgeOnMobile = isActive;
+
           return (
             <button
               key={tab.id}
@@ -104,9 +110,17 @@ export const AdaptiveSectionTabs: React.FC<AdaptiveSectionTabsProps> = ({
               role="tab"
               aria-selected={isActive}
               type="button"
+              title={tab.label}
+              aria-label={tab.label}
               onClick={() => onChange(tab.id)}
               style={customTabStyle}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 select-none ${
+              className={`flex items-center transition-all duration-200 cursor-pointer shrink-0 select-none ${
+                isActive
+                  ? 'gap-1.5 sm:gap-2 px-3.5 py-1.5 rounded-xl text-xs'
+                  : Icon
+                  ? 'gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs'
+                  : 'gap-1.5 sm:gap-2 px-3.5 py-1.5 rounded-xl text-xs'
+              } ${
                 isActive
                   ? tab.color
                     ? 'font-black'
@@ -138,12 +152,19 @@ export const AdaptiveSectionTabs: React.FC<AdaptiveSectionTabsProps> = ({
                 </span>
               )}
 
-              <span className="whitespace-nowrap">{tab.label}</span>
+              {/* Tab Name Label: On mobile (< sm), only show name if active or if tab has no icon */}
+              <span className={`whitespace-nowrap font-bold ${
+                showLabelOnMobile ? 'inline' : 'hidden sm:inline'
+              }`}>
+                {tab.label}
+              </span>
 
-              {/* Counter / Status Badge */}
+              {/* Counter / Status Badge: On mobile (< sm), only show on active tab */}
               {tab.badge !== undefined && tab.badge !== '' && (
                 <span
                   className={`text-[10px] px-1.5 py-0.5 rounded-lg font-mono font-bold shrink-0 ${
+                    showBadgeOnMobile ? 'inline-flex' : 'hidden sm:inline-flex'
+                  } ${
                     isActive
                       ? tab.color
                         ? contrastText === '#ffffff'
