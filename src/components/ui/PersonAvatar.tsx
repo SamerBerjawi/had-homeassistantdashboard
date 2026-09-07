@@ -13,6 +13,7 @@ interface PersonAvatarProps {
   entity_picture?: string | null;
   state?: string;
   isHome?: boolean;
+  inZone?: boolean;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   showPresenceDot?: boolean;
   className?: string;

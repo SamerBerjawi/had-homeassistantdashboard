@@ -25,16 +25,20 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   registerSW({ immediate: true });
 }
 
+import RootErrorBoundary from './components/RootErrorBoundary';
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <ConfigProvider>
-        <EditModeProvider>
-          <EntityPopupProvider>
-            <App />
-          </EntityPopupProvider>
-        </EditModeProvider>
-      </ConfigProvider>
-    </AuthProvider>
+    <RootErrorBoundary>
+      <AuthProvider>
+        <ConfigProvider>
+          <EditModeProvider>
+            <EntityPopupProvider>
+              <App />
+            </EntityPopupProvider>
+          </EditModeProvider>
+        </ConfigProvider>
+      </AuthProvider>
+    </RootErrorBoundary>
   </StrictMode>,
 );

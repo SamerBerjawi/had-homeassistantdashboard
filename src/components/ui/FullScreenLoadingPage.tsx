@@ -18,6 +18,7 @@ interface FullScreenLoadingPageProps {
   connectionStatus?: string;
   connectionError?: string | null;
   onEnterDemoMode: () => void;
+  onContinue?: () => void;
   onRetry?: () => void;
   isRetrying?: boolean;
   darkMode?: boolean;
@@ -30,6 +31,7 @@ export default function FullScreenLoadingPage({
   connectionStatus = 'connecting',
   connectionError,
   onEnterDemoMode,
+  onContinue,
   onRetry,
   isRetrying = false,
   darkMode,
@@ -66,11 +68,11 @@ export default function FullScreenLoadingPage({
     }
   };
 
-  // If connection takes longer than 5 seconds, show a helpful status hint & retry button
+  // If connection takes longer than 3 seconds, show a helpful status hint & action buttons
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowDelayedHint(true);
-    }, 5000);
+    }, 3000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -203,13 +205,26 @@ export default function FullScreenLoadingPage({
             </div>
           )}
 
-          {/* Delayed Hint & Retry Action if taking longer */}
+          {/* Delayed Hint & Retry / Continue Actions if taking longer */}
           {showDelayedHint && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="pt-3 flex flex-col items-center gap-2"
+              className="pt-3 flex flex-wrap items-center justify-center gap-2.5"
             >
+              {onContinue && (
+                <button
+                  type="button"
+                  onClick={onContinue}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-sm ${
+                    isDark
+                      ? 'bg-sky-500/20 hover:bg-sky-500/30 border-sky-500/40 text-sky-200'
+                      : 'bg-sky-50 hover:bg-sky-100 border-sky-300 text-sky-800'
+                  }`}
+                >
+                  <span>Continue to Dashboard</span>
+                </button>
+              )}
               {onRetry && (
                 <button
                   type="button"

@@ -24,6 +24,9 @@ if (typeof dns.setDefaultResultOrder === 'function') {
 
 // Undici dispatcher configured to prioritize IPv4 lookup and avoid IPv6 connection stalls in Docker/Cloudflare
 const haDispatcher = new UndiciAgent({
+  keepAliveTimeout: 10000,
+  keepAliveMaxTimeout: 15000,
+  pipelining: 0,
   connect: {
     autoSelectFamily: false,
     lookup: (hostname, opts, cb) => {
@@ -437,7 +440,8 @@ async function startServer() {
         method: 'GET',
         headers: {
           'Authorization': authHeader,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'User-Agent': 'HAD-HomeAssistantDashboard/1.0'
         },
         dispatcher: haDispatcher,
         signal: AbortSignal.timeout(5000)
@@ -459,6 +463,30 @@ async function startServer() {
     } catch (error: any) {
       const now = Date.now();
       const errorCode = (error as any)?.cause?.code || error?.code || 'UNKNOWN';
+
+      // Cloudflare / proxy connection reset retry: if a pooled TLS connection was closed, retry once with a fresh connection
+      if (errorCode === 'ECONNRESET' || errorCode === 'UND_ERR_SOCKET' || errorCode === 'ETIMEDOUT') {
+        try {
+          const retryRes = await undiciFetch(targetUrl, {
+            method: 'GET',
+            headers: {
+              'Authorization': authHeader,
+              'Content-Type': 'application/json',
+              'User-Agent': 'HAD-HomeAssistantDashboard/1.0',
+              'Connection': 'close'
+            },
+            signal: AbortSignal.timeout(5000)
+          });
+          const isValid = retryRes.status === 200;
+          tokenValidationCache.set(token, {
+            valid: isValid,
+            expiresAt: Date.now() + (isValid ? 10 * 60 * 1000 : 30 * 1000)
+          });
+          return isValid;
+        } catch {
+          // Proceed to fallback logic
+        }
+      }
 
       // If token was previously verified and valid, grant a temporary grace period during network interruptions
       if (cached && cached.valid) {

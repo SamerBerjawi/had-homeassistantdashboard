@@ -15,7 +15,7 @@ import {
 } from '../types/userConfig';
 import { AuthState } from '../types/auth';
 import { haWebSocketService } from './haWebSocket';
-import { getStoredHAAuth, getActiveHAToken } from './haAuth';
+import { getStoredHAAuth, getActiveHAToken, refreshHAOAuthToken } from './haAuth';
 import { getStoredAuthConfig } from './authStorage';
 
 const STORAGE_KEY_CONFIG = 'had_dashboard_config';
@@ -52,6 +52,21 @@ export function getAuthHeaders(): Record<string, string> {
     }
   }
   return headers;
+}
+
+/**
+ * Proactively refresh token if expired before making REST calls to NAS
+ */
+export async function getAuthHeadersAsync(): Promise<Record<string, string>> {
+  if (typeof window !== 'undefined') {
+    const auth = getStoredHAAuth();
+    if (auth && auth.refresh_token && auth.expires_at && Date.now() > auth.expires_at - 60000) {
+      try {
+        await refreshHAOAuthToken(auth);
+      } catch {}
+    }
+  }
+  return getAuthHeaders();
 }
 
 /**
@@ -368,9 +383,10 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
       if (typeof fetch !== 'undefined') {
         for (let attempt = 1; attempt <= 2; attempt++) {
           try {
+            const authHeaders = await getAuthHeadersAsync();
             const response = await fetch('/api/config', {
               method: 'GET',
-              headers: getAuthHeaders(),
+              headers: authHeaders,
               signal: AbortSignal.timeout(6000) // 6s to allow sleeping NAS HDDs to spin up
             });
             if (response.ok) {
@@ -380,6 +396,13 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
                   config: data.config,
                   serverVersion: data.serverVersion !== undefined ? Number(data.serverVersion) : undefined
                 };
+              }
+            } else if (response.status === 401) {
+              // Token expired: proactively refresh and retry next attempt
+              console.warn('[RemoteStorageDriver] Access token rejected (HTTP 401) on /api/config. Refreshing token...');
+              const refreshed = await refreshHAOAuthToken();
+              if (refreshed?.access_token) {
+                continue;
               }
             } else if (response.status === 404) {
               // NAS is reachable and online, but no config file has been created yet
@@ -532,9 +555,10 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
       const maxAttempts = Math.max(1, options?.attempts ?? 3);
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
+          const authHeaders = await getAuthHeadersAsync();
           const response = await fetch('/api/config', {
             method: 'POST',
-            headers: getAuthHeaders(),
+            headers: authHeaders,
             body: JSON.stringify({
               config: updated,
               expectedVersion: this.lastKnownServerVersion ?? undefined,
@@ -554,6 +578,12 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
             }
             this.lastSavedSignature = payloadSignature;
             break;
+          } else if (response.status === 401) {
+            console.warn('[RemoteStorageDriver] Access token rejected (HTTP 401) during save. Refreshing token...');
+            const refreshed = await refreshHAOAuthToken();
+            if (refreshed?.access_token) {
+              continue; // Retry next attempt with fresh token
+            }
           } else if (response.status === 409) {
             const errData = await response.json().catch(() => ({}));
             if (errData?.materialGuard) {

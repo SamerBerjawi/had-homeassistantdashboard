@@ -449,8 +449,18 @@ export default function App() {
     }
   }, [connectionStatus, resolvedEntities]);
 
-  const isConnectingToHA = (isLiveMode || hasConfiguredHACredentials()) && connectionStatus !== 'connected' && connectionStatus !== 'auth_failed';
-  const isInitialSyncPending = isLiveMode && !hasInitialLoaded && connectionStatus !== 'auth_failed';
+  const [hasStartupTimeoutElapsed, setHasStartupTimeoutElapsed] = useState(false);
+
+  useEffect(() => {
+    // Graceful startup connection window: after 5.5s, drop full-screen blocking loader so user can interact
+    const timer = setTimeout(() => {
+      setHasStartupTimeoutElapsed(true);
+    }, 5500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const isConnectingToHA = !hasStartupTimeoutElapsed && (isLiveMode || hasConfiguredHACredentials()) && connectionStatus !== 'connected' && connectionStatus !== 'auth_failed';
+  const isInitialSyncPending = !hasStartupTimeoutElapsed && isLiveMode && !hasInitialLoaded && connectionStatus !== 'auth_failed';
   const isAppLoading = !authState.isDemo && (isConnectingToHA || isInitialSyncPending || (isAuthInitializing && hasConfiguredHACredentials()));
 
   const [loadingProgress, setLoadingProgress] = useState<number>(15);
@@ -513,6 +523,7 @@ export default function App() {
           enterDemoMode();
           useAutoLayoutStore.getState().reloadDemoData();
         }}
+        onContinue={() => setHasStartupTimeoutElapsed(true)}
         onRetry={handleManualRefresh}
         isRetrying={isManualRefreshing}
         darkMode={darkMode}
