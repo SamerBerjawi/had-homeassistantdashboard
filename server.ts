@@ -106,6 +106,13 @@ async function startServer() {
     (process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'assets') : path.join(process.cwd(), 'data', 'assets'));
   const configFilePath = path.join(configDir, 'dashboard-config.json');
 
+  const configBackupPath = path.join(configDir, 'dashboard-config.json.bak');
+  const configBackupsDir = path.join(configDir, 'backups');
+
+  // In-memory cache for fast read-through and NAS drive spin-down support
+  let cachedServerConfig: any = null;
+  let cachedServerVersion = 0;
+
   // Check and initialize persistent NAS storage folders with one-time warnings on failure
   let isConfigStorageWritable = true;
   let isAssetsStorageWritable = true;
@@ -148,9 +155,18 @@ async function startServer() {
     next();
   }, express.static(assetsDir));
 
-  // Health check endpoint
+  // Health check endpoint with storage diagnostic information
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', serverTime: new Date().toISOString() });
+    res.json({
+      status: 'ok',
+      serverTime: new Date().toISOString(),
+      storage: {
+        writable: isConfigStorageWritable,
+        serverVersion: cachedServerVersion,
+        hasConfig: fs.existsSync(configFilePath),
+        hasBackup: fs.existsSync(configBackupPath)
+      }
+    });
   });
 
   // In-process write lock queue to serialize concurrent config file writes
@@ -183,6 +199,189 @@ async function startServer() {
       return false;
     }
     return true;
+  }
+
+  // Material Data Checker: inspects if configuration has meaningful user customizations
+  // Mirroring Crystal's data loss prevention safeguards
+  function hasMaterialDashboardConfig(data: any): boolean {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+
+    // Check rooms configuration
+    if (data.rooms && typeof data.rooms === 'object') {
+      if (Array.isArray(data.rooms.floorOrder) && data.rooms.floorOrder.length > 0) return true;
+      if (Array.isArray(data.rooms.areaOrder) && data.rooms.areaOrder.length > 0) return true;
+      if (Array.isArray(data.rooms.favoriteAreas) && data.rooms.favoriteAreas.length > 0) return true;
+      if (data.rooms.areaOverrides && typeof data.rooms.areaOverrides === 'object' && Object.keys(data.rooms.areaOverrides).length > 0) return true;
+    }
+
+    // Check entity customizations
+    if (data.entities && typeof data.entities === 'object') {
+      if (Array.isArray(data.entities.hiddenEntityIds) && data.entities.hiddenEntityIds.length > 0) return true;
+      if (data.entities.nameOverrides && typeof data.entities.nameOverrides === 'object' && Object.keys(data.entities.nameOverrides).length > 0) return true;
+      if (data.entities.iconOverrides && typeof data.entities.iconOverrides === 'object' && Object.keys(data.entities.iconOverrides).length > 0) return true;
+      if (data.entities.customizations && typeof data.entities.customizations === 'object' && Object.keys(data.entities.customizations).length > 0) return true;
+    }
+
+    // Check areas / floors / labels
+    if (data.areas && typeof data.areas === 'object' && Object.keys(data.areas).length > 0) return true;
+    if (data.floors && typeof data.floors === 'object' && Object.keys(data.floors).length > 0) return true;
+    if (data.labels && typeof data.labels === 'object' && Object.keys(data.labels).length > 0) return true;
+
+    // Check mobility configuration
+    if (data.mobility && typeof data.mobility === 'object') {
+      if (data.mobility.car && (data.mobility.car.selectedCarEntityId || data.mobility.car.customVehiclePngUrl)) return true;
+      if (data.mobility.bike && (data.mobility.bike.selectedBikeEntityId || data.mobility.bike.customVehiclePngUrl)) return true;
+    }
+
+    // Check custom theme
+    if (data.theme && typeof data.theme === 'object') {
+      if (data.theme.customThemes && typeof data.theme.customThemes === 'object' && Object.keys(data.theme.customThemes).length > 0) return true;
+      if (data.theme.preset && data.theme.preset !== 'obsidian') return true;
+    }
+
+    // Check custom cameras
+    if (data.cameras && typeof data.cameras === 'object') {
+      if (Array.isArray(data.cameras.favoriteCameras) && data.cameras.favoriteCameras.length > 0) return true;
+    }
+
+    // Check preferences / profile
+    if (data.preferences && typeof data.preferences === 'object' && Object.keys(data.preferences).length > 0) return true;
+    if (data.profile && typeof data.profile === 'object' && Object.keys(data.profile).length > 0) return true;
+
+    return false;
+  }
+
+  // Database-grade atomic file persistence with fsync to guarantee flush to physical NAS media
+  async function writeConfigFileAtomic(filePath: string, dataString: string): Promise<void> {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      await fs.promises.mkdir(dir, { recursive: true });
+    }
+    const tempFile = path.join(
+      dir,
+      `.${path.basename(filePath)}.tmp.${process.pid}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+    );
+
+    // Open file descriptor, write, and fsync physical storage on NAS
+    const handle = await fs.promises.open(tempFile, 'w');
+    try {
+      await handle.writeFile(dataString, 'utf-8');
+      await handle.sync(); // fsync to ensure bytes reach physical NAS drive
+    } finally {
+      await handle.close();
+    }
+
+    // If target exists, update the primary .bak file and retain timestamped rolling backups
+    if (fs.existsSync(filePath)) {
+      try {
+        await fs.promises.copyFile(filePath, configBackupPath);
+
+        // Keep up to 5 rolling snapshots in backups/
+        if (!fs.existsSync(configBackupsDir)) {
+          await fs.promises.mkdir(configBackupsDir, { recursive: true });
+        }
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const snapshotFile = path.join(configBackupsDir, `dashboard-config-${timestamp}.json`);
+        await fs.promises.copyFile(filePath, snapshotFile);
+
+        const snapshotFiles = (await fs.promises.readdir(configBackupsDir))
+          .filter(f => f.startsWith('dashboard-config-') && f.endsWith('.json'))
+          .sort()
+          .reverse();
+        if (snapshotFiles.length > 5) {
+          for (const oldFile of snapshotFiles.slice(5)) {
+            await fs.promises.unlink(path.join(configBackupsDir, oldFile)).catch(() => {});
+          }
+        }
+      } catch (backupErr) {
+        console.warn('[NAS Config] Backup rotation notice:', backupErr);
+      }
+    }
+
+    // Atomic filesystem rename
+    await fs.promises.rename(tempFile, filePath);
+  }
+
+  // Self-healing configuration reader: reads primary file with automatic fallback to .bak and snapshots
+  async function readPersistentConfig(): Promise<{ config: any; serverVersion: number } | null> {
+    // 1. Try reading primary config file
+    if (fs.existsSync(configFilePath)) {
+      try {
+        const raw = await fs.promises.readFile(configFilePath, 'utf-8');
+        if (raw.trim().length > 0) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            const version = parsed.serverVersion !== undefined ? Number(parsed.serverVersion) : (parsed?.version || 1);
+            const conf = parsed.serverVersion !== undefined ? parsed.config : parsed;
+            cachedServerConfig = conf;
+            cachedServerVersion = version;
+            return { config: conf, serverVersion: version };
+          }
+        }
+      } catch (parseErr) {
+        console.error('[NAS Config] Corrupted primary config detected! Attempting recovery from backup:', parseErr);
+      }
+    }
+
+    // 2. Self-healing fallback: Check dashboard-config.json.bak
+    if (fs.existsSync(configBackupPath)) {
+      try {
+        const raw = await fs.promises.readFile(configBackupPath, 'utf-8');
+        if (raw.trim().length > 0) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            console.log('[NAS Config] Successfully recovered valid configuration from .bak file! Healing primary file...');
+            await writeConfigFileAtomic(configFilePath, raw);
+            const version = parsed.serverVersion !== undefined ? Number(parsed.serverVersion) : (parsed?.version || 1);
+            const conf = parsed.serverVersion !== undefined ? parsed.config : parsed;
+            cachedServerConfig = conf;
+            cachedServerVersion = version;
+            return { config: conf, serverVersion: version };
+          }
+        }
+      } catch (bakErr) {
+        console.error('[NAS Config] .bak recovery failed:', bakErr);
+      }
+    }
+
+    // 3. Fallback to newest valid snapshot in backups/
+    if (fs.existsSync(configBackupsDir)) {
+      try {
+        const snapshotFiles = (await fs.promises.readdir(configBackupsDir))
+          .filter(f => f.startsWith('dashboard-config-') && f.endsWith('.json'))
+          .sort()
+          .reverse();
+        for (const file of snapshotFiles) {
+          try {
+            const raw = await fs.promises.readFile(path.join(configBackupsDir, file), 'utf-8');
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') {
+              console.log(`[NAS Config] Recovered configuration from snapshot ${file}! Healing primary file...`);
+              await writeConfigFileAtomic(configFilePath, raw);
+              const version = parsed.serverVersion !== undefined ? Number(parsed.serverVersion) : (parsed?.version || 1);
+              const conf = parsed.serverVersion !== undefined ? parsed.config : parsed;
+              cachedServerConfig = conf;
+              cachedServerVersion = version;
+              return { config: conf, serverVersion: version };
+            }
+          } catch {}
+        }
+      } catch {}
+    }
+
+    // 4. Legacy fallback check for ./data/config.json if migrating
+    const legacyPath = path.join(path.dirname(configDir), 'config.json');
+    if (fs.existsSync(legacyPath)) {
+      try {
+        const raw = await fs.promises.readFile(legacyPath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        cachedServerConfig = parsed;
+        cachedServerVersion = 1;
+        return { config: parsed, serverVersion: 1 };
+      } catch {}
+    }
+
+    return null;
   }
 
   // -------------------------------------------------------------
@@ -380,33 +579,12 @@ async function startServer() {
     }
 
     try {
-      // Check primary file dashboard-config.json
-      if (fs.existsSync(configFilePath)) {
-        const raw = await fs.promises.readFile(configFilePath, 'utf-8');
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object' && parsed.serverVersion !== undefined) {
-          return res.json({
-            success: true,
-            config: parsed.config,
-            serverVersion: Number(parsed.serverVersion)
-          });
-        }
+      const persisted = await readPersistentConfig();
+      if (persisted) {
         return res.json({
           success: true,
-          config: parsed,
-          serverVersion: parsed?.version || 1
-        });
-      }
-
-      // Legacy fallback check for ./data/config.json if migrating
-      const legacyPath = path.join(path.dirname(configDir), 'config.json');
-      if (fs.existsSync(legacyPath)) {
-        const raw = await fs.promises.readFile(legacyPath, 'utf-8');
-        const parsed = JSON.parse(raw);
-        return res.json({
-          success: true,
-          config: parsed,
-          serverVersion: 1
+          config: persisted.config,
+          serverVersion: persisted.serverVersion
         });
       }
 
@@ -437,10 +615,13 @@ async function startServer() {
       });
     }
 
+    const allowEmpty = Boolean(body.allowEmpty);
+
     // Extract target config object and client's last-known version
     const targetConfig = (body.config && typeof body.config === 'object') ? { ...body.config } : { ...body };
     delete (targetConfig as any).expectedVersion;
     delete (targetConfig as any).serverVersion;
+    delete (targetConfig as any).allowEmpty;
 
     const clientExpectedVersion = body.expectedVersion !== undefined 
       ? Number(body.expectedVersion) 
@@ -455,25 +636,24 @@ async function startServer() {
 
     try {
       const result = await withConfigWriteLock(async () => {
-        let currentServerVersion = 0;
-        let currentConfig: any = null;
+        // Read existing config with self-healing support
+        const existing = await readPersistentConfig();
+        const currentServerVersion = existing?.serverVersion || 0;
+        const currentConfig = existing?.config || null;
 
-        if (fs.existsSync(configFilePath)) {
-          try {
-            const raw = await fs.promises.readFile(configFilePath, 'utf-8');
-            const parsed = JSON.parse(raw);
-            if (parsed && typeof parsed === 'object') {
-              if (parsed.serverVersion !== undefined) {
-                currentServerVersion = Number(parsed.serverVersion) || 1;
-                currentConfig = parsed.config;
-              } else {
-                currentServerVersion = 1;
-                currentConfig = parsed;
-              }
+        // Material Data Safeguard (Refuse empty payload overwriting material config unless allowEmpty is explicitly set)
+        if (!allowEmpty && currentConfig && hasMaterialDashboardConfig(currentConfig) && !hasMaterialDashboardConfig(targetConfig)) {
+          return {
+            conflict: true,
+            statusCode: 409,
+            payload: {
+              success: false,
+              error: 'Refusing to overwrite existing dashboard configuration with an empty or uninitialized payload',
+              materialGuard: true,
+              serverVersion: currentServerVersion,
+              config: currentConfig
             }
-          } catch (err) {
-            console.warn('[NAS Config] Could not parse existing config for version comparison:', err);
-          }
+          };
         }
 
         // Real conflict check: client's version is older than server's current version
@@ -499,18 +679,13 @@ async function startServer() {
           config: targetConfig
         };
 
-        if (!fs.existsSync(configDir)) {
-          await fs.promises.mkdir(configDir, { recursive: true });
-        }
-
-        const tempFile = path.join(
-          configDir,
-          `.dashboard-config.json.tmp.${process.pid}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
-        );
         const payloadString = JSON.stringify(diskPayload, null, 2);
 
-        await fs.promises.writeFile(tempFile, payloadString, 'utf-8');
-        await fs.promises.rename(tempFile, configFilePath);
+        // Atomic persistence with fsync and backup rotation
+        await writeConfigFileAtomic(configFilePath, payloadString);
+
+        cachedServerConfig = targetConfig;
+        cachedServerVersion = nextServerVersion;
 
         return {
           conflict: false,

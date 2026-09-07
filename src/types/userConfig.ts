@@ -138,9 +138,18 @@ export type DeepPartial<T> = {
     : T[P];
 };
 
+export interface SaveConfigOptions {
+  keepalive?: boolean;
+  allowEmpty?: boolean;
+  attempts?: number;
+}
+
 export interface IConfigStorageDriver {
   loadConfig(): Promise<UserDashboardConfig>;
-  saveConfig(config: DeepPartial<UserDashboardConfig> | Partial<UserDashboardConfig>): Promise<UserDashboardConfig>;
+  saveConfig(
+    config: DeepPartial<UserDashboardConfig> | Partial<UserDashboardConfig>,
+    options?: SaveConfigOptions
+  ): Promise<UserDashboardConfig>;
   uploadAsset?(fileOrDataUrl: File | string, key: string): Promise<string>;
 }
 

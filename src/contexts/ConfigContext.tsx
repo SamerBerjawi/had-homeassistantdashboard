@@ -18,6 +18,7 @@ import {
 import { 
   createConfigStorageDriver, 
   mergeConfig, 
+  mergeDelta,
   LocalStorageDriver,
   readFileAsDataUrl
 } from '../services/configStorageService';
@@ -187,15 +188,17 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch {}
     setIsSaving(true);
 
-    // Accumulate granular delta for debounced save
-    pendingDeltaRef.current = mergeConfig(pendingDeltaRef.current, nextPartial);
+    // Accumulate granular delta for debounced save without injecting full default object
+    pendingDeltaRef.current = mergeDelta(pendingDeltaRef.current, nextPartial);
 
     if (pendingSaveTimeoutRef.current) {
       clearTimeout(pendingSaveTimeoutRef.current);
     }
 
     return new Promise((resolve) => {
+      // 800ms debounce to prevent NAS disk thrashing and concurrency collisions
       pendingSaveTimeoutRef.current = setTimeout(async () => {
+        pendingSaveTimeoutRef.current = null;
         const deltaToSave = { ...pendingDeltaRef.current };
         pendingDeltaRef.current = {};
         try {
@@ -211,8 +214,24 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setIsSaving(false);
           resolve(merged);
         }
-      }, 300);
+      }, 800);
     });
+  }, []);
+
+  // Guarantee persistence before tab closes or reloads (keepalive: true)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleBeforeUnload = () => {
+      if (pendingSaveTimeoutRef.current && Object.keys(pendingDeltaRef.current).length > 0) {
+        clearTimeout(pendingSaveTimeoutRef.current);
+        pendingSaveTimeoutRef.current = null;
+        const deltaToSave = { ...pendingDeltaRef.current };
+        pendingDeltaRef.current = {};
+        void activeDriverRef.current.saveConfig(deltaToSave, { keepalive: true });
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
   // Immediate Force Flush of Any Pending Debounced Config Save

@@ -10,7 +10,8 @@ import {
   UserDashboardConfig,
   IConfigStorageDriver,
   StorageDriverType,
-  DEFAULT_USER_CONFIG
+  DEFAULT_USER_CONFIG,
+  SaveConfigOptions
 } from '../types/userConfig';
 import { AuthState } from '../types/auth';
 import { haWebSocketService } from './haWebSocket';
@@ -51,6 +52,74 @@ export function getAuthHeaders(): Record<string, string> {
     }
   }
   return headers;
+}
+
+/**
+ * Pure delta merge utility: merges two partial configurations without injecting default values.
+ * Used for accumulating granular user changes in pendingDeltaRef before debounced persistence.
+ */
+export function mergeDelta(
+  base: Partial<UserDashboardConfig> = {},
+  partial: Partial<UserDashboardConfig> = {}
+): Partial<UserDashboardConfig> {
+  const result: any = { ...base };
+  for (const [key, value] of Object.entries(partial)) {
+    if (value === undefined) continue;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      result[key] = {
+        ...(result[key] || {}),
+        ...value
+      };
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+/**
+ * Client-side Material Data Checker: inspects if configuration has meaningful customizations
+ * to prevent wiping out persistent NAS data with uninitialized or empty state.
+ */
+export function hasMaterialDashboardConfig(data: any): boolean {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+
+  if (data.rooms && typeof data.rooms === 'object') {
+    if (Array.isArray(data.rooms.floorOrder) && data.rooms.floorOrder.length > 0) return true;
+    if (Array.isArray(data.rooms.areaOrder) && data.rooms.areaOrder.length > 0) return true;
+    if (Array.isArray(data.rooms.favoriteAreas) && data.rooms.favoriteAreas.length > 0) return true;
+    if (data.rooms.areaOverrides && typeof data.rooms.areaOverrides === 'object' && Object.keys(data.rooms.areaOverrides).length > 0) return true;
+  }
+
+  if (data.entities && typeof data.entities === 'object') {
+    if (Array.isArray(data.entities.hiddenEntityIds) && data.entities.hiddenEntityIds.length > 0) return true;
+    if (data.entities.nameOverrides && typeof data.entities.nameOverrides === 'object' && Object.keys(data.entities.nameOverrides).length > 0) return true;
+    if (data.entities.iconOverrides && typeof data.entities.iconOverrides === 'object' && Object.keys(data.entities.iconOverrides).length > 0) return true;
+    if (data.entities.customizations && typeof data.entities.customizations === 'object' && Object.keys(data.entities.customizations).length > 0) return true;
+  }
+
+  if (data.areas && typeof data.areas === 'object' && Object.keys(data.areas).length > 0) return true;
+  if (data.floors && typeof data.floors === 'object' && Object.keys(data.floors).length > 0) return true;
+  if (data.labels && typeof data.labels === 'object' && Object.keys(data.labels).length > 0) return true;
+
+  if (data.mobility && typeof data.mobility === 'object') {
+    if (data.mobility.car && (data.mobility.car.selectedCarEntityId || data.mobility.car.customVehiclePngUrl)) return true;
+    if (data.mobility.bike && (data.mobility.bike.selectedBikeEntityId || data.mobility.bike.customVehiclePngUrl)) return true;
+  }
+
+  if (data.theme && typeof data.theme === 'object') {
+    if (data.theme.customThemes && typeof data.theme.customThemes === 'object' && Object.keys(data.theme.customThemes).length > 0) return true;
+    if (data.theme.preset && data.theme.preset !== 'obsidian') return true;
+  }
+
+  if (data.cameras && typeof data.cameras === 'object') {
+    if (Array.isArray(data.cameras.favoriteCameras) && data.cameras.favoriteCameras.length > 0) return true;
+  }
+
+  if (data.preferences && typeof data.preferences === 'object' && Object.keys(data.preferences).length > 0) return true;
+  if (data.profile && typeof data.profile === 'object' && Object.keys(data.profile).length > 0) return true;
+
+  return false;
 }
 
 /**
@@ -240,7 +309,7 @@ export class LocalStorageDriver implements IConfigStorageDriver {
     }
   }
 
-  public async saveConfig(partial: Partial<UserDashboardConfig>): Promise<UserDashboardConfig> {
+  public async saveConfig(partial: Partial<UserDashboardConfig>, _options?: SaveConfigOptions): Promise<UserDashboardConfig> {
     const current = await this.loadConfig();
     const updated = mergeConfig(current, {
       ...partial,
@@ -275,6 +344,7 @@ export class LocalStorageDriver implements IConfigStorageDriver {
 export class RemoteStorageDriver implements IConfigStorageDriver {
   private localFallback = new LocalStorageDriver();
   private lastKnownServerVersion: number | null = null;
+  private lastSavedSignature: string | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -292,26 +362,35 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
     let nasConfig: any = null;
     let nasServerVersion: number | undefined = undefined;
 
-    // Concurrently query NAS REST backend and Home Assistant WebSocket storage
+    // 1. Prioritize NAS REST backend (/api/config)
+    // Query NAS with spin-up tolerance (up to 2 attempts with 6s timeout) so sleeping drives never trigger premature browser cache fallback
     const nasFetchPromise = (async () => {
       if (typeof fetch !== 'undefined') {
-        try {
-          const response = await fetch('/api/config', {
-            method: 'GET',
-            headers: getAuthHeaders(),
-            signal: AbortSignal.timeout(2500)
-          });
-          if (response.ok) {
-            const data = await response.json();
-            if (data && data.success && data.config) {
-              return {
-                config: data.config,
-                serverVersion: data.serverVersion !== undefined ? Number(data.serverVersion) : undefined
-              };
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const response = await fetch('/api/config', {
+              method: 'GET',
+              headers: getAuthHeaders(),
+              signal: AbortSignal.timeout(6000) // 6s to allow sleeping NAS HDDs to spin up
+            });
+            if (response.ok) {
+              const data = await response.json();
+              if (data && data.success && data.config) {
+                return {
+                  config: data.config,
+                  serverVersion: data.serverVersion !== undefined ? Number(data.serverVersion) : undefined
+                };
+              }
+            } else if (response.status === 404) {
+              // NAS is reachable and online, but no config file has been created yet
+              return { isFirstRun: true };
+            }
+          } catch {
+            // If attempt 1 failed (e.g., NAS drive spin-up delay), wait 1s before retry
+            if (attempt === 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
             }
           }
-        } catch {
-          // NAS REST offline or not reachable
         }
       }
       return null;
@@ -426,105 +505,140 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
     return null;
   }
 
-  public async saveConfig(partial: Partial<UserDashboardConfig>): Promise<UserDashboardConfig> {
+  public async saveConfig(
+    partial: Partial<UserDashboardConfig>,
+    options?: SaveConfigOptions
+  ): Promise<UserDashboardConfig> {
     const current = this.getCachedConfig() || DEFAULT_USER_CONFIG;
     let updated = mergeConfig(current, {
       ...partial,
       updatedAt: new Date().toISOString()
     });
 
-    // 1. Persist to NAS REST backend (/api/config) with optimistic concurrency version check
+    // Material Data Safeguard (Client-side): Skip auto-save if incoming data is empty while current has material data
+    if (!options?.allowEmpty && hasMaterialDashboardConfig(current) && !hasMaterialDashboardConfig(updated)) {
+      console.warn('[RemoteStorageDriver] Skipping auto-save of uninitialized payload to prevent potential NAS data loss.');
+      return current;
+    }
+
+    // Signature diffing: avoid redundant network saves if config hasn't changed
+    const payloadSignature = JSON.stringify(updated);
+    if (!options?.allowEmpty && payloadSignature === this.lastSavedSignature) {
+      return updated;
+    }
+
+    // 1. Persist to NAS REST backend (/api/config) with exponential backoff retries
     if (typeof fetch !== 'undefined') {
-      try {
-        const response = await fetch('/api/config', {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            config: updated,
-            expectedVersion: this.lastKnownServerVersion ?? undefined
-          }),
-          signal: AbortSignal.timeout(4000)
-        });
-
-        if (response.status === 200) {
-          const resData = await response.json();
-          if (resData && resData.serverVersion !== undefined) {
-            this.lastKnownServerVersion = Number(resData.serverVersion);
-            try {
-              localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(this.lastKnownServerVersion));
-            } catch {}
-          }
-        } else if (response.status === 409) {
-          // Conflict detected! Another device saved concurrently
-          const errData = await response.json();
-          const serverVersion = Number(errData.serverVersion) || 1;
-          let serverConfig = errData.config;
-
-          if (!serverConfig) {
-            // Fetch authoritative remote config if not provided in error body
-            try {
-              const fetchLatest = await fetch('/api/config', {
-                method: 'GET',
-                headers: getAuthHeaders(),
-                signal: AbortSignal.timeout(2500)
-              });
-              if (fetchLatest.ok) {
-                const latestJson = await fetchLatest.json();
-                serverConfig = latestJson.config;
-              }
-            } catch {}
-          }
-
-          const baseConfig = serverConfig || current;
-
-          console.warn(
-            `[RemoteStorageDriver] Optimistic concurrency conflict (expected v${this.lastKnownServerVersion}, server is v${serverVersion}). Merging local changes onto v${serverVersion} and retrying...`
-          );
-
-          // Re-apply client's pending partial changes on top of fresh authoritative config
-          const reMerged = mergeConfig(baseConfig, {
-            ...partial,
-            updatedAt: new Date().toISOString()
+      const maxAttempts = Math.max(1, options?.attempts ?? 3);
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          const response = await fetch('/api/config', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              config: updated,
+              expectedVersion: this.lastKnownServerVersion ?? undefined,
+              ...(options?.allowEmpty ? { allowEmpty: true } : {})
+            }),
+            keepalive: Boolean(options?.keepalive),
+            signal: AbortSignal.timeout(8000) // 8s timeout to accommodate spinning NAS HDDs
           });
 
-          // Retry with the authoritative server version
-          try {
-            const retryRes = await fetch('/api/config', {
-              method: 'POST',
-              headers: getAuthHeaders(),
-              body: JSON.stringify({
-                config: reMerged,
-                expectedVersion: serverVersion
-              }),
-              signal: AbortSignal.timeout(4000)
+          if (response.status === 200) {
+            const resData = await response.json();
+            if (resData && resData.serverVersion !== undefined) {
+              this.lastKnownServerVersion = Number(resData.serverVersion);
+              try {
+                localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(this.lastKnownServerVersion));
+              } catch {}
+            }
+            this.lastSavedSignature = payloadSignature;
+            break;
+          } else if (response.status === 409) {
+            const errData = await response.json().catch(() => ({}));
+            if (errData?.materialGuard) {
+              console.warn('[RemoteStorageDriver] Server rejected empty config save due to material data safeguard.');
+              return current;
+            }
+
+            // Conflict detected! Another device saved concurrently
+            const serverVersion = Number(errData.serverVersion) || 1;
+            let serverConfig = errData.config;
+
+            if (!serverConfig) {
+              try {
+                const fetchLatest = await fetch('/api/config', {
+                  method: 'GET',
+                  headers: getAuthHeaders(),
+                  signal: AbortSignal.timeout(4000)
+                });
+                if (fetchLatest.ok) {
+                  const latestJson = await fetchLatest.json();
+                  serverConfig = latestJson.config;
+                }
+              } catch {}
+            }
+
+            const baseConfig = serverConfig || current;
+
+            console.warn(
+              `[RemoteStorageDriver] Optimistic concurrency conflict (expected v${this.lastKnownServerVersion}, server is v${serverVersion}). Merging local changes onto v${serverVersion} and retrying...`
+            );
+
+            // Re-apply client's pending partial changes on top of fresh authoritative config
+            const reMerged = mergeConfig(baseConfig, {
+              ...partial,
+              updatedAt: new Date().toISOString()
             });
 
-            if (retryRes.status === 200) {
-              const retryData = await retryRes.json();
-              if (retryData && retryData.serverVersion !== undefined) {
-                this.lastKnownServerVersion = Number(retryData.serverVersion);
+            // Retry with the authoritative server version
+            try {
+              const retryRes = await fetch('/api/config', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                  config: reMerged,
+                  expectedVersion: serverVersion,
+                  ...(options?.allowEmpty ? { allowEmpty: true } : {})
+                }),
+                keepalive: Boolean(options?.keepalive),
+                signal: AbortSignal.timeout(8000)
+              });
+
+              if (retryRes.status === 200) {
+                const retryData = await retryRes.json();
+                if (retryData && retryData.serverVersion !== undefined) {
+                  this.lastKnownServerVersion = Number(retryData.serverVersion);
+                  try {
+                    localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(this.lastKnownServerVersion));
+                  } catch {}
+                }
+                updated = reMerged;
+                this.lastSavedSignature = JSON.stringify(updated);
+              } else {
+                console.warn(
+                  '[RemoteStorageDriver] Retry save also encountered a conflict. Accepting server configuration.'
+                );
+                this.lastKnownServerVersion = serverVersion;
                 try {
-                  localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(this.lastKnownServerVersion));
+                  localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(serverVersion));
                 } catch {}
+                updated = baseConfig;
+                this.lastSavedSignature = JSON.stringify(updated);
               }
+            } catch (retryErr) {
+              console.warn('[RemoteStorageDriver] Retry request failed:', retryErr);
               updated = reMerged;
-            } else {
-              console.warn(
-                '[RemoteStorageDriver] Retry save also encountered a conflict. Accepting server configuration.'
-              );
-              this.lastKnownServerVersion = serverVersion;
-              try {
-                localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(serverVersion));
-              } catch {}
-              updated = baseConfig;
             }
-          } catch (retryErr) {
-            console.warn('[RemoteStorageDriver] Retry request failed:', retryErr);
-            updated = reMerged;
+            break;
+          }
+        } catch (restErr) {
+          console.warn(`[RemoteStorageDriver] NAS save attempt ${attempt}/${maxAttempts} notice:`, restErr);
+          if (attempt < maxAttempts) {
+            // Exponential backoff for NAS spin-up and transient network interruptions
+            await new Promise(resolve => setTimeout(resolve, attempt * 1000));
           }
         }
-      } catch (restErr) {
-        console.warn('[RemoteStorageDriver] Could not save config to /api/config:', restErr);
       }
     }
 
