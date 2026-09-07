@@ -65,13 +65,6 @@ html, body {
   overflow: hidden;
 }
 
-html.dark, body.dark, html.dark #root {
-  background-color: #020617 !important;
-}
-
-html:not(.dark), body:not(.dark), html:not(.dark) #root {
-  background-color: #f8fafc !important;
-}
 
 /* Eliminate 300ms tap delay on mobile browsers */
 button, a, input, select, textarea, [role="button"], [tabindex] {
