@@ -119,12 +119,12 @@ export default function FloorAreaSensorsSection({
   // Build Floor Tabs for AdaptiveSectionTabs
   const floorTabs: SectionTabItem[] = useMemo(() => {
     const tabs: SectionTabItem[] = [
-      { id: 'all', label: 'All Floors', icon: Stack }
+      { id: 'all', label: 'All Floors', icon: Stack, color: '#3b82f6' }
     ];
 
     if (resolvedFloors.length > 0) {
       resolvedFloors.forEach((f) => {
-        tabs.push({ id: f.floor_id, label: f.name });
+        tabs.push({ id: f.floor_id, label: f.name, color: (f as any).color || '#6366f1' });
       });
     }
 

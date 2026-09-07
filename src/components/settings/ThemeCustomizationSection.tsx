@@ -55,19 +55,19 @@ export default function ThemeCustomizationSection({
   handleSavePreferences
 }: ThemeCustomizationSectionProps) {
   const activeTileMode: TileLayoutMode =
-    tileLayoutMode || (fullWidthTiles ? 'full' : 'compact');
+    tileLayoutMode ?? (fullWidthTiles ? 'full' : 'compact');
 
   const handleSelectTileMode = (mode: TileLayoutMode) => {
-    setTileLayoutMode?.(mode);
-    setFullWidthTiles?.(mode === 'full');
+    if (setTileLayoutMode) {
+      setTileLayoutMode(mode);
+    } else if (setFullWidthTiles) {
+      setFullWidthTiles(mode === 'full');
+    }
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-3 sm:space-y-4 animate-in fade-in duration-200">
-      {/* Unified Compact Settings Container */}
-      <div className="p-3.5 sm:p-5 rounded-3xl bg-white/30 dark:bg-black/25 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-[4px_6px_12px_rgba(0,0,0,0.1)] space-y-3.5 sm:space-y-4">
-        
-        {/* 1. Theme / Appearance Mode */}
+    <div className="w-full max-w-xl mx-auto space-y-4 sm:space-y-5 animate-in fade-in duration-200 px-1 sm:px-0">
+      {/* 1. Theme / Appearance Mode */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between px-0.5">
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -78,7 +78,7 @@ export default function ThemeCustomizationSection({
             </span>
           </div>
 
-          <div className="grid grid-cols-3 p-1 rounded-2xl bg-black/5 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 gap-1">
+          <div className="grid grid-cols-3 p-1 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs gap-1">
             <button
               type="button"
               onClick={() => setThemeMode('auto')}
@@ -258,13 +258,11 @@ export default function ThemeCustomizationSection({
           </div>
         </div>
 
-      </div>
-
       {/* 5. Save Button (Sleek full-width) */}
       <button
         type="button"
         onClick={handleSavePreferences}
-        className="w-full flex items-center justify-center gap-2 h-11 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs sm:text-sm shadow-md shadow-sky-500/20 transition-all cursor-pointer active:scale-98"
+        className="w-full flex items-center justify-center gap-2 h-11 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs sm:text-sm shadow-md shadow-sky-500/20 transition-all cursor-pointer active:scale-98 mt-2"
       >
         <FloppyDisk size={17} weight="bold" />
         <span>Save Preferences</span>

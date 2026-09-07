@@ -28,17 +28,20 @@ export default function NetworkView({ darkMode = true }: NetworkViewProps) {
     {
       id: 'tplink_router',
       label: 'TP-Link Router',
-      icon: Globe
+      icon: Globe,
+      color: '#0ea5e9'
     },
     {
       id: 'adguard_home',
       label: 'AdGuard Home',
-      icon: ShieldCheck
+      icon: ShieldCheck,
+      color: '#16a34a'
     },
     {
       id: 'speed_test',
       label: 'Speed Test',
-      icon: Speedometer
+      icon: Speedometer,
+      color: '#8b5cf6'
     }
   ];
 

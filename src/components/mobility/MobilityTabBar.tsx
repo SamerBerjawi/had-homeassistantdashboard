@@ -29,20 +29,26 @@ export function MobilityTabBar({
       id: 'overview' as const,
       label: 'Vehicle Status',
       icon: Car,
-      badge: null
+      badge: null,
+      colorDark: 'text-cyan-400',
+      colorLight: 'text-cyan-600'
     },
     {
       id: 'charging' as const,
       label: 'Energy & Charge',
       icon: BatteryCharging,
       badge: socPercent !== undefined ? `${Math.round(socPercent)}%` : null,
-      badgeHighlight: isCharging
+      badgeHighlight: isCharging,
+      colorDark: 'text-emerald-400',
+      colorLight: 'text-emerald-600'
     },
     {
       id: 'telemetry' as const,
       label: 'Location & Telemetry',
       icon: NavigationArrow,
-      badge: null
+      badge: null,
+      colorDark: 'text-indigo-400',
+      colorLight: 'text-indigo-600'
     }
   ];
 
@@ -94,8 +100,8 @@ export function MobilityTabBar({
                   className={`transition-transform duration-200 ${
                     isActive
                       ? darkMode
-                        ? 'scale-110 text-cyan-400'
-                        : 'scale-110 text-cyan-700'
+                        ? `scale-110 ${tab.colorDark || 'text-cyan-400'}`
+                        : `scale-110 ${tab.colorLight || 'text-cyan-700'}`
                       : ''
                   }`}
                 />

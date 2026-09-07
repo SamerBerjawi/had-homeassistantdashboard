@@ -135,8 +135,8 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
     ).length;
 
     return [
-      { id: 'all', label: 'All Security', icon: SquaresFour },
-      ...(alarmEntities.length > 0 ? [{ id: 'alarm', label: 'Alarm', icon: ShieldCheck }] : []),
+      { id: 'all', label: 'All Security', icon: SquaresFour, color: '#3b82f6' },
+      ...(alarmEntities.length > 0 ? [{ id: 'alarm', label: 'Alarm', icon: ShieldCheck, color: '#ef4444' }] : []),
       ...(lockEntities.length > 0
         ? [
             {
@@ -144,7 +144,8 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
               label: 'Locks',
               icon: Lock,
               badge: unlockedCount > 0 ? `${unlockedCount} unlocked` : undefined,
-              badgeColor: unlockedCount > 0 ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 dark:bg-amber-500/20 font-bold' : undefined
+              badgeColor: unlockedCount > 0 ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 dark:bg-amber-500/20 font-bold' : undefined,
+              color: '#f59e0b'
             }
           ]
         : []),
@@ -155,7 +156,8 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
               label: 'Openings',
               icon: Door,
               badge: openCount > 0 ? `${openCount} open` : undefined,
-              badgeColor: openCount > 0 ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 dark:bg-amber-500/20 font-bold' : undefined
+              badgeColor: openCount > 0 ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 dark:bg-amber-500/20 font-bold' : undefined,
+              color: '#06b6d4'
             }
           ]
         : []),
@@ -166,7 +168,8 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
               label: 'Motion',
               icon: PersonSimpleWalk,
               badge: motionCount > 0 ? `${motionCount}` : undefined,
-              badgeColor: motionCount > 0 ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 dark:bg-emerald-500/20 font-bold' : undefined
+              badgeColor: motionCount > 0 ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 dark:bg-emerald-500/20 font-bold' : undefined,
+              color: '#10b981'
             }
           ]
         : []),
@@ -177,7 +180,8 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
               label: 'Hazards',
               icon: Flame,
               badge: hazardCount > 0 ? `${hazardCount}` : undefined,
-              badgeColor: hazardCount > 0 ? 'bg-rose-500/25 text-rose-300 font-bold animate-pulse' : undefined
+              badgeColor: hazardCount > 0 ? 'bg-rose-500/25 text-rose-300 font-bold animate-pulse' : undefined,
+              color: '#f43f5e'
             }
           ]
         : []),
@@ -187,7 +191,8 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
               id: 'cameras',
               label: 'Cameras',
               icon: VideoCamera,
-              badge: cameraEntities.length
+              badge: cameraEntities.length,
+              color: '#8b5cf6'
             }
           ]
         : [])

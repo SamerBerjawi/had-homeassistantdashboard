@@ -308,12 +308,12 @@ export default function NotificationDrawer({
           {/* Filter Pills with Counts */}
           <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 touch-scroll-container">
             {[
-              { id: 'all', label: 'All', count: counts.all },
-              { id: 'updates', label: 'Updates', count: counts.updates },
-              { id: 'alerts', label: 'Alerts', count: counts.alerts },
-              ...(counts.restarts > 0 ? [{ id: 'restarts', label: 'Restarts', count: counts.restarts }] : []),
-              ...(counts.repairs > 0 ? [{ id: 'repairs', label: 'Issues', count: counts.repairs }] : []),
-              ...(counts.notifications > 0 ? [{ id: 'notifications', label: 'Messages', count: counts.notifications }] : [])
+              { id: 'all', label: 'All', count: counts.all, color: '#0284c7' },
+              { id: 'updates', label: 'Updates', count: counts.updates, color: '#8b5cf6' },
+              { id: 'alerts', label: 'Alerts', count: counts.alerts, color: '#f43f5e' },
+              ...(counts.restarts > 0 ? [{ id: 'restarts', label: 'Restarts', count: counts.restarts, color: '#f59e0b' }] : []),
+              ...(counts.repairs > 0 ? [{ id: 'repairs', label: 'Issues', count: counts.repairs, color: '#ef4444' }] : []),
+              ...(counts.notifications > 0 ? [{ id: 'notifications', label: 'Messages', count: counts.notifications, color: '#06b6d4' }] : [])
             ].map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -321,8 +321,9 @@ export default function NotificationDrawer({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id as TabType)}
+                  style={isActive ? { backgroundColor: tab.color, boxShadow: `0 3px 12px ${tab.color}40` } : undefined}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${isActive
-                      ? 'bg-sky-500 text-white shadow-xs'
+                      ? 'text-white shadow-xs'
                       : darkMode
                         ? 'bg-white/[0.05] hover:bg-white/[0.09] text-slate-400 hover:text-white'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900'

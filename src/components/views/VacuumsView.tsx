@@ -53,12 +53,14 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
     {
       id: 'robot',
       label: 'Robot Vacuum',
-      icon: Robot
+      icon: Robot,
+      color: '#0284c7'
     },
     {
       id: 'stick',
       label: 'Stick Vacuum',
-      icon: Broom
+      icon: Broom,
+      color: '#d97706'
     }
   ];
 

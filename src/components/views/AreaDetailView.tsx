@@ -43,7 +43,7 @@ import ViewEmptyState from '../ui/ViewEmptyState';
 import VirtualGrid from '../layout/VirtualGrid';
 import SortableGrid from '../layout/SortableGrid';
 import GridTile, { GridColSpan, GridRowSpan } from '../layout/GridTile';
-import { sortTilesForBento, getComputedTileSpans, TileLayoutMode, ComputedTileSpan } from '../../utils/bentoLayout';
+import { sortTilesForBento, getComputedTileSpans, sortItemsForHybrid, TileLayoutMode, ComputedTileSpan } from '../../utils/bentoLayout';
 import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 import { TelemetryLine } from '../common/TelemetryBadge';
 
@@ -425,12 +425,23 @@ export default function AreaDetailView({
   const defaultTabletColSpan: GridColSpan = 3;
   const defaultDesktopColSpan: GridColSpan = 3;
 
-  const sortedLights = useMemo(() => sortTilesForBento({
-    items: enrichedLights,
-    getId: (l) => l.entity_id,
-    layoutOverrides,
-    isEditMode
-  }), [enrichedLights, layoutOverrides, isEditMode]);
+  const sortedLights = useMemo(() => {
+    const initial = sortTilesForBento({
+      items: enrichedLights,
+      getId: (l) => l.entity_id,
+      layoutOverrides,
+      isEditMode
+    });
+    return tileLayoutMode === 'hybrid'
+      ? sortItemsForHybrid({
+          items: initial,
+          getId: (l) => l.entity_id,
+          layoutOverrides,
+          isSmall: (l) => !detectLightCapabilities(l).supportsBrightness,
+          isLarge: (l) => detectLightCapabilities(l).supportsBrightness || detectLightCapabilities(l).supportsColor
+        })
+      : initial;
+  }, [enrichedLights, layoutOverrides, isEditMode, tileLayoutMode]);
 
   const sortedClimates = useMemo(() => sortTilesForBento({
     items: enrichedClimates,
@@ -790,7 +801,8 @@ export default function AreaDetailView({
       id: 'all',
       label: 'All Devices',
       icon: SquaresFour,
-      badge: totalEntityCount
+      badge: totalEntityCount,
+      color: '#3b82f6'
     },
     ...(lightsCount > 0
       ? [
@@ -799,7 +811,8 @@ export default function AreaDetailView({
             label: 'Lights',
             icon: Lightbulb,
             badge: activeLightsCount > 0 ? `${activeLightsCount} on` : lightsCount,
-            badgeColor: activeLightsCount > 0 ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold' : undefined
+            badgeColor: activeLightsCount > 0 ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold' : undefined,
+            color: '#f59e0b'
           }
         ]
       : []),
@@ -809,7 +822,8 @@ export default function AreaDetailView({
             id: 'climate',
             label: 'Climate & Air',
             icon: Thermometer,
-            badge: climateCount
+            badge: climateCount,
+            color: '#06b6d4'
           }
         ]
       : []),
@@ -819,7 +833,8 @@ export default function AreaDetailView({
             id: 'switches',
             label: 'Switches & Access',
             icon: Plug,
-            badge: switchesCount
+            badge: switchesCount,
+            color: '#8b5cf6'
           }
         ]
       : []),
@@ -829,7 +844,8 @@ export default function AreaDetailView({
             id: 'media',
             label: 'Media & Players',
             icon: SpeakerHigh,
-            badge: mediaCount
+            badge: mediaCount,
+            color: '#ec4899'
           }
         ]
       : []),
@@ -839,7 +855,8 @@ export default function AreaDetailView({
             id: 'sensors',
             label: 'Sensors & Security',
             icon: Drop,
-            badge: sensorsCount
+            badge: sensorsCount,
+            color: '#10b981'
           }
         ]
       : [])

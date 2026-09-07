@@ -27,12 +27,14 @@ export default function SystemView({ darkMode = true }: SystemViewProps) {
     {
       id: 'ha_host',
       label: 'Home Assistant Host',
-      icon: HouseLine
+      icon: HouseLine,
+      color: '#0284c7'
     },
     {
       id: 'ugreen_nas',
       label: 'UGreen NAS',
-      icon: HardDrives
+      icon: HardDrives,
+      color: '#10b981'
     }
   ];
 

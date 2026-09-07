@@ -76,7 +76,8 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
         id: 'all',
         label: 'All Floors',
         icon: SquaresFour,
-        badge: (areasDataList || []).length
+        badge: (areasDataList || []).length,
+        color: '#6366f1'
       }
     ];
 

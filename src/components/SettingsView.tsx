@@ -250,12 +250,13 @@ export default function SettingsView({
 
   const handleSetFullWidthTiles = (val: boolean) => {
     setFullWidthTilesState(val);
-    setTileLayoutModeState(val ? 'full' : 'compact');
+    const newMode: TileLayoutMode = val ? 'full' : 'compact';
+    setTileLayoutModeState(newMode);
     updateConfig((prev) => ({
       ...prev,
       rooms: {
         ...(prev.rooms || {}),
-        tileLayout: val ? 'full' : 'compact',
+        tileLayout: newMode,
         fullWidthTiles: val
       }
     }));

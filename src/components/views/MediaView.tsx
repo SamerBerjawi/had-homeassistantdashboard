@@ -103,7 +103,8 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
         label: 'All Floors',
         icon: Stack,
         badge: playingMediaList.length > 0 ? `${playingMediaList.length} playing` : undefined,
-        badgeColor: playingMediaList.length > 0 ? 'bg-purple-500/20 text-purple-300 font-bold' : undefined
+        badgeColor: playingMediaList.length > 0 ? 'bg-purple-500/20 text-purple-300 font-bold' : undefined,
+        color: '#a855f7'
       }
     ];
 
@@ -112,7 +113,8 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
         id: f.floorId,
         label: f.name,
         badge: f.activeMediaPlayers > 0 ? `${f.activeMediaPlayers}` : undefined,
-        badgeColor: f.activeMediaPlayers > 0 ? 'bg-purple-500/20 text-purple-300 font-bold' : undefined
+        badgeColor: f.activeMediaPlayers > 0 ? 'bg-purple-500/20 text-purple-300 font-bold' : undefined,
+        color: f.color || '#8b5cf6'
       });
     });
 
