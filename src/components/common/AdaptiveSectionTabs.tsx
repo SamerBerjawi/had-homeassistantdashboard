@@ -16,6 +16,20 @@ export interface SectionTabItem {
   badge?: string | number;
   badgeColor?: string;
   activeColor?: string;
+  color?: string;
+}
+
+function getContrastTextColor(hexOrColor?: string): string {
+  if (!hexOrColor) return '#020617';
+  if (hexOrColor.startsWith('#')) {
+    const hex = hexOrColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16) || 0;
+    const g = parseInt(hex.substring(2, 4), 16) || 0;
+    const b = parseInt(hex.substring(4, 6), 16) || 0;
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    return yiq >= 140 ? '#020617' : '#ffffff';
+  }
+  return '#020617';
 }
 
 export interface AdaptiveSectionTabsProps {
@@ -73,6 +87,15 @@ export const AdaptiveSectionTabs: React.FC<AdaptiveSectionTabsProps> = ({
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
+          const contrastText = getContrastTextColor(tab.color);
+
+          const customTabStyle: React.CSSProperties | undefined = isActive && tab.color
+            ? {
+                backgroundColor: tab.color,
+                color: contrastText,
+                boxShadow: `0 4px 14px ${tab.color}50`
+              }
+            : undefined;
 
           return (
             <button
@@ -82,9 +105,12 @@ export const AdaptiveSectionTabs: React.FC<AdaptiveSectionTabsProps> = ({
               aria-selected={isActive}
               type="button"
               onClick={() => onChange(tab.id)}
+              style={customTabStyle}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 select-none ${
                 isActive
-                  ? darkMode
+                  ? tab.color
+                    ? 'font-black'
+                    : darkMode
                     ? 'bg-sky-500 text-slate-950 font-black shadow-md shadow-sky-500/20'
                     : 'bg-sky-500 text-slate-950 font-black shadow-md'
                   : darkMode
@@ -94,7 +120,10 @@ export const AdaptiveSectionTabs: React.FC<AdaptiveSectionTabsProps> = ({
             >
               {/* Icon rendering */}
               {Icon && (
-                <span className="shrink-0 flex items-center justify-center">
+                <span
+                  className="shrink-0 flex items-center justify-center"
+                  style={!isActive && tab.color ? { color: tab.color } : undefined}
+                >
                   {React.isValidElement(Icon)
                     ? Icon
                     : (typeof Icon === 'function' || (typeof Icon === 'object' && Icon !== null))
@@ -102,8 +131,8 @@ export const AdaptiveSectionTabs: React.FC<AdaptiveSectionTabsProps> = ({
                         size: 16,
                         weight: isActive ? 'bold' : 'duotone',
                         className: isActive
-                          ? 'text-slate-950'
-                          : darkMode ? 'text-slate-400' : 'text-slate-600'
+                          ? ''
+                          : tab.color ? '' : (darkMode ? 'text-slate-400' : 'text-slate-600')
                       })
                     : null}
                 </span>
@@ -116,7 +145,11 @@ export const AdaptiveSectionTabs: React.FC<AdaptiveSectionTabsProps> = ({
                 <span
                   className={`text-[10px] px-1.5 py-0.5 rounded-lg font-mono font-bold shrink-0 ${
                     isActive
-                      ? darkMode
+                      ? tab.color
+                        ? contrastText === '#ffffff'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-black/20 text-black'
+                        : darkMode
                         ? 'bg-black/20 text-black'
                         : 'bg-slate-950/20 text-slate-950'
                       : darkMode

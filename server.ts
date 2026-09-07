@@ -189,6 +189,7 @@ async function startServer() {
   // Home Assistant Token Authentication & Security Gatekeeper
   // -------------------------------------------------------------
   const tokenValidationCache = new Map<string, { valid: boolean; expiresAt: number }>();
+  let lastAuthErrorLog = 0;
 
   function resolveTargetHaBase(clientHaUrl?: string): string {
     let haBase = (
@@ -257,10 +258,35 @@ async function startServer() {
 
       return isValid;
     } catch (error: any) {
-      console.error('[Auth Middleware] Could not reach Home Assistant for token validation: fetch failed');
-      console.error('[Auth Middleware] Target URL:', targetUrl);
-      console.error('[Auth Middleware] Error Cause:', (error as any)?.cause);
-      console.error('[Auth Middleware] Full Error:', error);
+      const now = Date.now();
+      const errorCode = (error as any)?.cause?.code || error?.code || 'UNKNOWN';
+
+      // If token was previously verified and valid, grant a temporary grace period during network interruptions
+      if (cached && cached.valid) {
+        tokenValidationCache.set(token, {
+          valid: true,
+          expiresAt: now + 60 * 1000 // 1 minute grace period
+        });
+        if (now - lastAuthErrorLog > 30000) {
+          lastAuthErrorLog = now;
+          console.warn(`[Auth Middleware] Home Assistant temporarily unreachable (${errorCode}) at ${targetUrl}. Using cached valid session.`);
+        }
+        return true;
+      }
+
+      // Cache the unreachable state briefly (10s) to prevent hammering the upstream endpoint
+      tokenValidationCache.set(token, {
+        valid: false,
+        expiresAt: now + 10 * 1000
+      });
+
+      if (now - lastAuthErrorLog > 30000) {
+        lastAuthErrorLog = now;
+        console.error(`[Auth Middleware] Could not reach Home Assistant for token validation at ${targetUrl} (${errorCode})`);
+        if ((error as any)?.cause) {
+          console.error('[Auth Middleware] Error Cause:', (error as any)?.cause?.message || (error as any)?.cause);
+        }
+      }
       return false;
     }
   }

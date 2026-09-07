@@ -119,6 +119,15 @@ export default function SecurityBadgesBar({
       {/* 1. OCCUPANCY PRESENCE AVATARS (AT BEGINNING) */}
       {userEntities.slice(0, 3).map((user) => {
         const isHome = user.state === 'home';
+        const rawState = (user.state || '').trim().toLowerCase();
+        const isInKnownZone = Boolean(
+          rawState &&
+          rawState !== 'home' &&
+          rawState !== 'not_home' &&
+          rawState !== 'away' &&
+          rawState !== 'unavailable' &&
+          rawState !== 'unknown'
+        );
         const firstName = (user.name || user.attributes?.friendly_name || user.entity_id).split(' ')[0];
 
         return (
@@ -129,23 +138,28 @@ export default function SecurityBadgesBar({
                 ? darkMode
                   ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
                   : 'bg-emerald-50/90 text-emerald-950 border-emerald-200/90 shadow-2xs'
+                : isInKnownZone
+                ? darkMode
+                  ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+                  : 'bg-sky-50/90 text-sky-950 border-sky-200/90 shadow-2xs'
                 : darkMode
                   ? 'bg-white/5 text-slate-400 border-white/10 opacity-75'
                   : 'bg-slate-900/[0.04] text-slate-600 border-slate-900/[0.08]'
             }`}
-            title={`${user.name || user.entity_id}: ${isHome ? 'At Home' : user.state}`}
+            title={`${user.name || user.entity_id}: ${isHome ? 'At Home' : isInKnownZone ? `In ${user.state} Zone` : user.state}`}
           >
             <PersonAvatar
               name={user.name}
               entity_picture={user.attributes?.entity_picture}
               state={user.state}
               isHome={isHome}
+              inZone={isInKnownZone}
               size="sm"
               showPresenceDot={false}
               className="w-6 h-6 shrink-0"
             />
-            <span className="whitespace-nowrap">{firstName}</span>
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isHome ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+            <span className="whitespace-nowrap">{isInKnownZone ? `${firstName} (${user.state})` : firstName}</span>
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isHome ? 'bg-emerald-500' : isInKnownZone ? 'bg-sky-500' : 'bg-slate-400'}`} />
           </div>
         );
       })}

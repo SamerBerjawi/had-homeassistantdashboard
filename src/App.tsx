@@ -515,6 +515,8 @@ export default function App() {
         }}
         onRetry={handleManualRefresh}
         isRetrying={isManualRefreshing}
+        darkMode={darkMode}
+        onToggleTheme={() => handleToggleDarkMode()}
       />
     );
   }

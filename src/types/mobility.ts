@@ -155,3 +155,90 @@ export interface BikeMetrics {
 }
 
 export type MobilityAssetType = 'car' | 'bike';
+
+/**
+ * Robust helper to verify if EV is actively charging.
+ * Handles integration edge-cases where state strings like "NotCharging", "ChargePaused",
+ * "Complete", or "Discharging" contain the substring "charge".
+ */
+export function isCarCharging(state?: string | null): boolean {
+  if (!state) return false;
+  const s = String(state).trim().toLowerCase();
+  if (
+    s === 'notcharging' ||
+    s === 'not_charging' ||
+    s === 'not charging' ||
+    s === 'discharging' ||
+    s === 'disconnected' ||
+    s === 'unplugged' ||
+    s === 'stopped' ||
+    s === 'paused' ||
+    s === 'chargepaused' ||
+    s === 'complete' ||
+    s === 'off' ||
+    s === 'false' ||
+    s === 'idle' ||
+    s === 'standby' ||
+    s === 'station_not_detected' ||
+    s.includes('not_charging') ||
+    s.includes('not charging') ||
+    s.includes('notcharging') ||
+    s.includes('discharg') ||
+    s.includes('pause') ||
+    s.includes('stop') ||
+    s.includes('complete') ||
+    s.includes('station_not_detected')
+  ) {
+    return false;
+  }
+  return (
+    s === 'charging' ||
+    s === 'in_progress' ||
+    s === 'charge_in_progress' ||
+    s === 'on' ||
+    s === 'true' ||
+    (s.includes('charging') && !s.includes('not')) ||
+    (s.includes('in_progress') && !s.includes('not'))
+  );
+}
+
+/**
+ * Robust helper to verify if EV charging cable is plugged in.
+ * Prevents false positives where "Disconnected", "unplugged", or "not_connected"
+ * contain "connect" or "plug".
+ */
+export function isCarPluggedIn(state?: string | null): boolean {
+  if (!state) return false;
+  const s = String(state).trim().toLowerCase();
+  if (
+    s === 'disconnected' ||
+    s === 'unplugged' ||
+    s === 'not_connected' ||
+    s === 'not_plugged' ||
+    s === 'not connected' ||
+    s === 'not plugged' ||
+    s === 'off' ||
+    s === 'false' ||
+    s === 'unavailable' ||
+    s === 'unknown' ||
+    s === 'station_not_detected' ||
+    s.includes('disconnect') ||
+    s.includes('unplug') ||
+    s.includes('not connected') ||
+    s.includes('not_connected') ||
+    s.includes('not plugged') ||
+    s.includes('not_plugged')
+  ) {
+    return false;
+  }
+  return (
+    s === 'connected' ||
+    s === 'plugged' ||
+    s === 'plugged_in' ||
+    s === 'on' ||
+    s === 'true' ||
+    s === 'charging' ||
+    (s.includes('connect') && !s.includes('disconnect') && !s.includes('not')) ||
+    (s.includes('plug') && !s.includes('unplug') && !s.includes('not'))
+  );
+}

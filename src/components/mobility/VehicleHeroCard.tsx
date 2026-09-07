@@ -17,7 +17,7 @@ import {
   Plug,
   BatteryMedium
 } from '@phosphor-icons/react';
-import { CarEvMetrics } from '../../types/mobility';
+import { CarEvMetrics, isCarCharging } from '../../types/mobility';
 import { resolveAssetUrl } from '../../utils/assetUrl';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { LiquidWaveBattery } from './LiquidWaveBattery';
@@ -66,7 +66,7 @@ export function VehicleHeroCard({
   const resolvedCarLogo = resolveAssetUrl(metrics.customBrandLogo, config?.updatedAt);
   const vehicleName = config.mobility?.car?.customName || 'Electric Vehicle';
 
-  const isCharging = metrics.chargingState.toLowerCase().includes('charge');
+  const isCharging = isCarCharging(metrics.chargingState);
   const isDriving = metrics.isMoving || metrics.speed > 0;
   const isPluggedIn = metrics.isPluggedIn;
   const isPortOpen = Boolean(metrics.chargePortOpen);

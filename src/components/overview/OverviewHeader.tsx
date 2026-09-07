@@ -85,6 +85,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   const [selectedUser, setSelectedUser] = useState<ResolvedEntity | null>(null);
   const [openingsTab, setOpeningsTab] = useState<'all' | 'doors' | 'windows' | 'other'>('all');
   const [sensorsTab, setSensorsTab] = useState<'all' | 'motion' | 'leak' | 'smoke'>('all');
+  const resolvedZones = useAutoLayoutStore((s) => s.resolvedZones);
 
   // alarmEntity for keypad
   const alarmEntities: ResolvedEntity[] = domainGroups['alarm_control_panel'] || [];
@@ -152,6 +153,37 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       activeSmoke: smokes.filter((s) => s.state === 'on' || s.state === 'detected' || s.state === 'smoke')
     };
   }, [domainGroups]);
+
+  // Helper to resolve person zone presence (Home, named zone, or away)
+  const getPersonZoneDetails = useCallback((user: ResolvedEntity) => {
+    const rawState = (user.state || '').trim();
+    const s = rawState.toLowerCase();
+    const isHome = s === 'home';
+    const isAway = !s || s === 'not_home' || s === 'away' || s === 'unavailable' || s === 'unknown';
+
+    if (isAway) {
+      return { isInKnownZone: false, isHome: false, zoneName: '' };
+    }
+
+    if (isHome) {
+      return { isInKnownZone: true, isHome: true, zoneName: 'Home' };
+    }
+
+    // Match against resolvedZones if available
+    const matchedZone = resolvedZones?.find(
+      (z) => z.name.toLowerCase() === s ||
+             z.entity_id.toLowerCase() === `zone.${s}` ||
+             z.entity_id.toLowerCase().replace('zone.', '') === s.replace(/\s+/g, '_')
+    );
+
+    const zoneName = matchedZone?.name || rawState;
+    return { isInKnownZone: true, isHome: false, zoneName };
+  }, [resolvedZones]);
+
+  // Users in a known zone (either Home or a specific known HA zone)
+  const activeZoneUsers = useMemo(() => {
+    return userEntities.filter((u) => getPersonZoneDetails(u).isInKnownZone);
+  }, [userEntities, getPersonZoneDetails]);
 
   // Active Weather Resolution
   const activeWeather = useMemo(() => {
@@ -295,7 +327,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   const alarmDetails = getAlarmBadgeDetails();
 
   const hasAnyActiveBadge =
-    homeUsers.length > 0 ||
+    activeZoneUsers.length > 0 ||
     onLights.length > 0 ||
     onSwitches.length > 0 ||
     activeFans.length > 0 ||
@@ -329,9 +361,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       {/* ============================================================= */}
       {hasAnyActiveBadge && (
         <div className="flex flex-wrap items-center gap-2 animate-fadeIn">
-          {/* 1.1 USERS AT HOME */}
-          {homeUsers.map((user) => {
+          {/* 1.1 USERS IN KNOWN ZONES (HOME & KNOWN ZONES) */}
+          {activeZoneUsers.map((user) => {
             const firstName = user.name.split(' ')[0];
+            const { isHome, zoneName } = getPersonZoneDetails(user);
 
             return (
               <button
@@ -339,23 +372,30 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 type="button"
                 onClick={() => openUsersDrawer(user)}
                 className={`h-8.5 pl-1 pr-2.5 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-xs select-none whitespace-nowrap shrink-0 ${
-                  darkMode
-                    ? 'bg-emerald-500/15 text-emerald-300'
-                    : 'bg-emerald-500/15 text-emerald-800'
+                  isHome
+                    ? darkMode
+                      ? 'bg-emerald-500/15 text-emerald-300'
+                      : 'bg-emerald-500/15 text-emerald-800'
+                    : darkMode
+                    ? 'bg-sky-500/15 text-sky-300'
+                    : 'bg-sky-500/15 text-sky-800'
                 }`}
-                title={`${user.name}: At Home`}
+                title={`${user.name}: ${isHome ? 'At Home' : `In ${zoneName} Zone`}`}
               >
                 <PersonAvatar
                   name={user.name}
                   entity_picture={user.attributes?.entity_picture}
                   state={user.state}
-                  isHome={true}
+                  isHome={isHome}
+                  inZone={!isHome}
                   size="sm"
                   showPresenceDot={false}
                   className="w-6 h-6 shrink-0"
                 />
-                <span className="whitespace-nowrap">{firstName}</span>
-                <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-emerald-500" />
+                <span className="whitespace-nowrap">
+                  {isHome ? firstName : `${firstName} (${zoneName})`}
+                </span>
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isHome ? 'bg-emerald-500' : 'bg-sky-500'}`} />
               </button>
             );
           })}
@@ -593,13 +633,13 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
               <Users size={20} weight="duotone" />
             </div>
             <span className="text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-              {homeUsers.length} Home
+              {homeUsers.length} Home{activeZoneUsers.length > homeUsers.length ? ` • ${activeZoneUsers.length - homeUsers.length} Zone` : ''}
             </span>
           </div>
 
           <div className="flex items-center gap-2 my-auto py-1 relative z-10">
             {userEntities.slice(0, 3).map((user) => {
-              const isHome = user.state === 'home';
+              const { isHome, isInKnownZone } = getPersonZoneDetails(user);
               return (
                 <PersonAvatar
                   key={user.entity_id}
@@ -607,6 +647,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                   entity_picture={user.attributes?.entity_picture}
                   state={user.state}
                   isHome={isHome}
+                  inZone={isInKnownZone && !isHome}
                   size="sm"
                   className="w-8 h-8 sm:w-9 sm:h-9"
                 />
@@ -617,7 +658,13 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           <div className="relative z-10">
             <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">Family Presence</div>
             <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-              <span>{homeUsers.map((u) => u.name.split(' ')[0]).join(', ') || 'No one home'}</span>
+              <span>
+                {activeZoneUsers.map((u) => {
+                  const fn = u.name.split(' ')[0];
+                  const { isHome, zoneName } = getPersonZoneDetails(u);
+                  return isHome ? fn : `${fn} (${zoneName})`;
+                }).join(', ') || 'No one home or in zone'}
+              </span>
               <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition-all" />
             </div>
           </div>

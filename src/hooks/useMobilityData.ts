@@ -8,7 +8,7 @@ import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { useUserConfig } from './useUserConfig';
 import { haWebSocketService } from '../services/haWebSocket';
 import { getAuthHeaders } from '../services/configStorageService';
-import { CarEvMetrics, BikeMetrics } from '../types/mobility';
+import { CarEvMetrics, BikeMetrics, isCarCharging, isCarPluggedIn } from '../types/mobility';
 import { HAZone } from '../types';
 
 function parseNum(val: unknown, fallback = 0): number {
@@ -506,12 +506,8 @@ export function useMobilityData() {
     const speed = parseNumOptional(speedEntity?.state) ?? (isDemo ? 0 : undefined);
     const isMoving = (speed ?? 0) > 0;
     const gear = String(gearEntity?.state || (isDemo ? (isMoving ? 'D' : 'P') : 'P')).toUpperCase();
-    const isCharging = (chargingEntity?.state || (isDemo ? 'Charging' : '')).toLowerCase().includes('charge') || chargingEntity?.state === 'on';
-    const isPluggedIn = plugEntity ? (
-      plugEntity.state === 'on' || 
-      String(plugEntity.state).toLowerCase().includes('connect') ||
-      String(plugEntity.state).toLowerCase().includes('plugged')
-    ) : (isDemo ? true : false);
+    const isCharging = chargingEntity ? isCarCharging(chargingEntity.state) : (isDemo ? true : false);
+    const isPluggedIn = plugEntity ? isCarPluggedIn(plugEntity.state) : (isDemo ? true : false);
 
     // Accurate lock state resolution
     let doorsLocked = true;

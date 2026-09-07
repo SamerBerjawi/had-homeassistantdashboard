@@ -78,18 +78,18 @@ export function LiquidWaveBattery({
               animate={{ y: targetY }}
               transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
             >
-              {/* Back Wave (Offset loop) */}
+              {/* Back Wave (Animated loop when charging, static when not) */}
               <motion.path
-                animate={{ x: [-86, 0] }}
-                transition={{ duration: 3.2, repeat: Infinity, ease: 'linear' }}
+                animate={isCharging ? { x: [-86, 0] } : { x: 0 }}
+                transition={isCharging ? { duration: 3.2, repeat: Infinity, ease: 'linear' } : { duration: 0.4 }}
                 d="M -86 0 Q -64 -7, -43 0 T 0 0 Q 21 -7, 43 0 T 86 0 Q 107 -7, 129 0 T 172 0 L 172 150 L -86 150 Z"
                 fill="url(#darkGreenBackWave)"
               />
 
-              {/* Front Wave (Darker Green) */}
+              {/* Front Wave (Animated only when charging, static at rest) */}
               <motion.path
-                animate={{ x: [0, -86] }}
-                transition={{ duration: 2.2, repeat: Infinity, ease: 'linear' }}
+                animate={isCharging ? { x: [0, -86] } : { x: 0 }}
+                transition={isCharging ? { duration: 2.2, repeat: Infinity, ease: 'linear' } : { duration: 0.4 }}
                 d="M 0 0 Q 21 -6, 43 0 T 86 0 Q 107 -6, 129 0 T 172 0 Q 193 -6, 215 0 T 258 0 L 258 150 L 0 150 Z"
                 fill="url(#darkGreenFrontWave)"
               />

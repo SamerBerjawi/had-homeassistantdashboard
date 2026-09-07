@@ -87,13 +87,24 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
         floor.name.toLowerCase().includes('garden') ||
         floor.name.toLowerCase().includes('perimeter');
       const isUpper = floor.level >= 1;
-      const Icon = isOutdoor ? Tree : isUpper ? Buildings : Stack;
+      const defaultIconComp = isOutdoor ? Tree : isUpper ? Buildings : Stack;
+      const floorIconName = floor.icon;
       const activeLights = (floor.areas || []).reduce((sum, a) => sum + (a.activeLightsCount || 0), 0);
+
+      const TabIcon = floorIconName ? (
+        <DynamicPhosphorIcon
+          name={floorIconName}
+          fallback={defaultIconComp}
+          size={16}
+          weight="bold"
+        />
+      ) : defaultIconComp;
 
       tabs.push({
         id: floor.floorId,
         label: floor.name,
-        icon: Icon,
+        icon: TabIcon,
+        color: floor.color || undefined,
         badge: activeLights > 0 ? `${activeLights} on` : (floor.areas || []).length,
         badgeColor: activeLights > 0 ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold' : undefined
       });

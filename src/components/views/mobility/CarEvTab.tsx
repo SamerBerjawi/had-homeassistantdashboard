@@ -40,7 +40,7 @@ import {
 import { Gauge } from '../../charts/gauge';
 import { LineChart } from '../../charts/line-chart';
 import { Line } from '../../charts/line';
-import { CarEvMetrics } from '../../../types/mobility';
+import { CarEvMetrics, isCarCharging } from '../../../types/mobility';
 import { MobilityMap } from './MobilityMap';
 import { MobilityAssetBadge } from './MobilityAssetBadge';
 import { resolveAssetUrl } from '../../../utils/assetUrl';
@@ -116,7 +116,7 @@ export function CarEvTab({
       ? '#06B6D4'
       : '#10B981';
 
-  const isCharging = metrics.chargingState.toLowerCase().includes('charge');
+  const isCharging = isCarCharging(metrics.chargingState);
 
   const triggerFeedback = (msg: string) => {
     setActionFeedback(msg);
