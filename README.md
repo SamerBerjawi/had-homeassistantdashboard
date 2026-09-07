@@ -18,6 +18,79 @@ A futuristic, high-performance Smart Home dashboard interface built with **React
 
 ---
 
+## 📱 Pages & Dashboard Views
+
+HAD features 12 dedicated, highly polished views designed for desktop browsers, wall-mounted tablets, and mobile devices:
+
+### 1. 🏠 Overview (`/overview`)
+- **Executive Smart Home Summary**: Real-time status at a glance with context-aware greeting and weather summary.
+- **Presence & Person Badges**: Track family members' home/away states, zones, and presence dots with high-resolution avatars.
+- **Weather & Forecast Bar**: Live current temperature, conditions, hourly forecast cards, and AI-grounded weather insights.
+- **Quick Actions & Scenes**: One-tap toggles for home scenes, lighting presets, and critical device controls.
+
+### 2. 🛋️ Rooms & Multi-Floor Navigation (`/rooms`)
+- **Multi-Floor Layout**: Group and organize areas by floor (e.g. Ground Floor, First Floor, Basement, Outdoor).
+- **Favorite & Area Sorting**: Reorder areas, pin favorites, and customize area names and icons.
+- **Area Detail View**: Deep drilldown into any room with grouped lighting brightness/color controls, thermostat dials, blinds/covers, media players, and environmental sensors.
+
+### 3. 🛡️ Security & Access (`/security`)
+- **Live Camera Streams**: High-frame-rate WebRTC and HLS live video feeds with grid layout, full-screen expansion, and PTZ controls.
+- **Perimeter & Door/Window Monitoring**: Real-time door, window, gate, and motion contact sensor telemetry.
+- **Security Badges Bar**: Immediate overview of tripped sensors, active locks, and alarm status.
+- **Alarm Control Panel**: Arm (Home, Away, Night) and Disarm your Home Assistant security system with interactive PIN pad.
+
+### 4. ❤️ Health & Vitals (`/health`)
+- **Wearables & Health Ingestion**: Ingests and visualizes fitness and vitals data from Apple Health, Garmin, Withings, and Whoop via Home Assistant companion app / integrations.
+- **Apple-Style Activity Rings**: Interactive 3-ring activity visualizer tracking **Move** (active calories), **Exercise** (active minutes), and **Stand** (hours).
+- **Vitals Telemetry**: Live cards with trend indicators for Heart Rate, Resting Heart Rate, HRV (Heart Rate Variability), SpO2 Blood Oxygen, Body Temperature, and Respiratory Rate.
+- **Body Composition Metrics**: Weight history, Body Fat Percentage, BMI, and Muscle Mass.
+- **Interactive Timeseries Charts**: Historical trend analysis with daily, weekly, and monthly views powered by Visx with moving averages.
+
+### 5. ⚡ Energy & Solar Analytics (`/energy`)
+- **Live Power Flow Diagram**: Real-time animated electrical flow between Solar panels, Home battery, Grid import/export, and Home consumption.
+- **Visx Sankey Diagrams**: Detailed distribution breakdown of generated vs. consumed kilowatt-hours.
+- **Solar Generation & Battery SoC**: Solar peak tracking, battery charge/discharge rates, and grid cost/return telemetry.
+
+### 6. 🚗 Mobility & EV Dashboard (`/mobility`)
+- **Connected Car & Electric Bike Telemetry**: Battery state-of-charge (SoC), estimated remaining range, and real-time charging status.
+- **Liquid Wave Battery Animation**: Visual charging wave animation reflecting current battery fill and state.
+- **Tire Pressure Monitoring (TPMS)**: Live PSI/Bar readings for all four vehicle tires with safety warnings.
+- **Vehicle Asset Customizer**: Upload custom PNG transparent renders of your actual car or bike model directly to the NAS.
+- **Vehicle GPS & Odometer**: Location tracking, door lock status, climate preconditioning, and mileage counters.
+
+### 7. 🧹 Vacuums & Cleaning Fleet (`/vacuums`)
+- **Robot & Stick Vacuum Fleet**: Manage robot vacuums (Roborock, Dreame, Roomba, etc.) and smart stick vacuum batteries.
+- **Command & Room Cleaning**: Start/pause cleaning cycles, trigger targeted room or zone cleaning, and return to dock.
+- **Maintenance & Consumables**: Filter life, brush wear percentages, dustbin/water tank capacity, and dock status.
+
+### 8. 🎵 Media & Multi-Room Audio (`/media`)
+- **Multi-Room Audio Matrix**: Manage Sonos, Apple AirPlay, Chromecast, and Spotify Connect speakers.
+- **Group Volume & Speaker Pairing**: Group multiple rooms for synchronized whole-home playback.
+- **Rich Artwork Visualizer**: High-resolution album art, playback progress scrubbers, source selectors, and sound profiles.
+
+### 9. 🌐 Network & Infrastructure (`/network`)
+- **Router & Gateway Telemetry**: Real-time download/upload WAN bandwidth, ping latency, and public IP monitor (UniFi, pfSense, OPNsense, OpenWrt).
+- **Access Points & Wi-Fi Mesh**: Signal quality, channel distribution, and active client load per access point.
+- **Connected Client List**: Detailed count of wired vs. wireless devices and top bandwidth consumers.
+
+### 10. ⚡ Automations & Scripts (`/automations`)
+- **Automations Manager**: Quick browser for all Home Assistant automations with last-triggered timestamps.
+- **Execution Triggers**: Manually execute automations or run scripts with one tap.
+- **Enable/Disable Toggles**: Turn automations on or off directly from the dashboard.
+
+### 11. 🖥️ System & Host Diagnostics (`/system`)
+- **Home Assistant Telemetry**: Core version, OS release, CPU utilization, memory consumption, and system uptime.
+- **Host & Disk Monitoring**: Storage usage on the NAS/host machine, container health status, and network interface throughput.
+- **Update Checker**: Displays pending Home Assistant, Add-on, or HACS component updates.
+
+### 12. ⚙️ Settings & Customization (`/settings`)
+- **Obsidian Theme Engine**: Personalize the interface with Obsidian dark/light presets and custom accent hues.
+- **Asset Manager**: Upload custom PNG vehicle renders and dashboard branding directly to NAS storage.
+- **Connection & Security**: Configure Home Assistant instance URL, long-lived access tokens, and view connection status.
+- **NAS Storage Diagnostics**: Monitor configuration versioning, manual snapshot trigger, backup restoration, and SSE real-time stream state.
+
+---
+
 ## 💾 NAS Storage Reliability Architecture (Database-Free)
 
 HAD implements **database-grade reliability directly on your NAS filesystem** without requiring a database container:
