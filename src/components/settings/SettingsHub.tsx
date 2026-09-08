@@ -90,7 +90,7 @@ export default function SettingsHub({
   const CATEGORIES = [
     {
       id: 'devices_rooms' as SettingsSection,
-      title: 'Devices & Entity Visibility',
+      title: 'Navigation & Entity Visibility',
       icon: SlidersHorizontal,
       gradient: 'from-emerald-500/15 via-teal-500/10 to-cyan-500/5',
       accentColor: 'text-emerald-500 dark:text-emerald-400',

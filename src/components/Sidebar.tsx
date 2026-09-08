@@ -28,6 +28,7 @@ import { extractHANotifications } from '../services/notificationsService';
 import { useAlertStore } from '../store/useAlertStore';
 
 import { PAGE_THEMES } from '../config/pageThemes';
+import { useUserConfig } from '../contexts/ConfigContext';
 
 interface SidebarProps {
   activeTab: string;
@@ -158,9 +159,12 @@ export default function Sidebar({
     localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
   }, [isCollapsed]);
 
+  const { config } = useUserConfig();
+  const hiddenPagesSet = useMemo(() => new Set(config?.navigation?.hiddenPages || []), [config?.navigation?.hiddenPages]);
+
   // Exact Requested Navigation Items
-  const menuItems = [
-    { id: 'overview', label: 'Overview', icon: SquaresFour },
+  const allMenuItems = useMemo(() => [
+    { id: 'overview', label: 'Overview', icon: SquaresFour, mandatory: true },
     { id: 'rooms', label: 'Rooms', icon: Armchair },
     { id: 'energy', label: 'Energy', icon: Lightning },
     { id: 'security', label: 'Security', icon: ShieldCheck },
@@ -171,14 +175,20 @@ export default function Sidebar({
     { id: 'health', label: 'Health', icon: Heartbeat },
     { id: 'vacuums', label: 'Vacuums', icon: Broom },
     { id: 'automations', label: 'Automations', icon: GitFork },
-    { id: 'settings', label: 'Settings', icon: GearSix }
-  ];
+    { id: 'settings', label: 'Settings', icon: GearSix, mandatory: true }
+  ], []);
 
-  // Mobile Primary Items (Overview, Rooms, Security, Energy) - 5th item is "More"
-  const mobilePrimaryItems = menuItems.slice(0, 4);
+  // Filtered menu items according to user visibility settings
+  const menuItems = useMemo(() => {
+    return allMenuItems.filter(item => item.mandatory || !hiddenPagesSet.has(item.id));
+  }, [allMenuItems, hiddenPagesSet]);
+
+  // Mobile Primary Items (First 4 visible items) - 5th item is "More"
+  const mobilePrimaryItems = useMemo(() => menuItems.slice(0, 4), [menuItems]);
 
   // Secondary items shown in the "More" Drawer
-  const secondaryTabs = menuItems.slice(4).map(m => m.id);
+  const secondaryItems = useMemo(() => menuItems.slice(4), [menuItems]);
+  const secondaryTabs = useMemo(() => secondaryItems.map(m => m.id), [secondaryItems]);
   const isMoreTabActive = secondaryTabs.includes(activeTab);
 
   return (
@@ -445,7 +455,7 @@ export default function Sidebar({
 
           {/* Secondary Navigation Grid */}
           <div className="grid grid-cols-2 gap-2.5 mb-3.5 max-h-64 overflow-y-auto touch-scroll-container">
-            {menuItems.slice(4).map(item => {
+            {secondaryItems.map(item => {
               const ItemIcon = item.icon;
               const isActive = activeTab === item.id;
               const itemTheme = PAGE_THEMES[item.id] || PAGE_THEMES['overview'];

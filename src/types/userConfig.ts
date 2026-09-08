@@ -88,6 +88,9 @@ export interface UserDashboardConfig {
     energyTariff?: number;
     currencySymbol?: string;
   };
+  navigation?: {
+    hiddenPages?: string[];
+  };
   preferences?: {
     backgroundStyle?: 'glow' | 'flat';
     tempUnit?: 'C' | 'F';
@@ -241,6 +244,9 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
     carbonIntensityFactor: 0.385,
     energyTariff: 0.28,
     currencySymbol: '€'
+  },
+  navigation: {
+    hiddenPages: []
   },
   preferences: {
     backgroundStyle: 'glow',

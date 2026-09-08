@@ -59,7 +59,17 @@ import {
   Square,
   WarningOctagon,
   FolderSimple,
-  Check
+  Check,
+  SidebarSimple,
+  Armchair,
+  ShieldCheck,
+  MusicNotes,
+  HardDrives,
+  ShareNetwork,
+  Car,
+  Heartbeat,
+  GitFork,
+  GearSix
 } from '@phosphor-icons/react';
 import { HAEntity, HAArea, HAFloor, HALabel, HAZone, HADevice, ResolvedEntity } from '../../types';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
@@ -101,6 +111,114 @@ const FLOOR_ICON_OPTIONS = [
 
 const AREA_ICON_OPTIONS = [
   'Armchair', 'Bed', 'CookingPot', 'Desktop', 'Bathtub', 'FilmSlate', 'Tree', 'Car', 'Books', 'DoorOpen', 'Lightbulb', 'HouseLine'
+];
+
+export interface NavigationPageMeta {
+  id: string;
+  label: string;
+  icon: React.ComponentType<any>;
+  mandatory?: boolean;
+  description: string;
+  color: string;
+}
+
+export const NAVIGATION_PAGES: NavigationPageMeta[] = [
+  {
+    id: 'overview',
+    label: 'Overview',
+    icon: SquaresFour,
+    mandatory: true,
+    description: 'Main home dashboard with quick actions, weather, and room cards.',
+    color: '#0ea5e9'
+  },
+  {
+    id: 'rooms',
+    label: 'Rooms',
+    icon: Armchair,
+    mandatory: false,
+    description: 'Per-room device control, lighting, climate, and environmental breakdown.',
+    color: '#8b5cf6'
+  },
+  {
+    id: 'energy',
+    label: 'Energy',
+    icon: Lightning,
+    mandatory: false,
+    description: 'Solar production, power grid consumption, battery storage, and energy analytics.',
+    color: '#f59e0b'
+  },
+  {
+    id: 'security',
+    label: 'Security',
+    icon: ShieldCheck,
+    mandatory: false,
+    description: 'Alarm panels, live camera feeds, door locks, and entry sensors.',
+    color: '#ef4444'
+  },
+  {
+    id: 'media',
+    label: 'Media',
+    icon: MusicNotes,
+    mandatory: false,
+    description: 'Audio players, smart speakers, media receivers, and playback controls.',
+    color: '#ec4899'
+  },
+  {
+    id: 'system',
+    label: 'System',
+    icon: HardDrives,
+    mandatory: false,
+    description: 'Host CPU/memory metrics, HA storage, and network latency telemetry.',
+    color: '#06b6d4'
+  },
+  {
+    id: 'network',
+    label: 'Network',
+    icon: ShareNetwork,
+    mandatory: false,
+    description: 'Connected network clients, router status, and throughput telemetry.',
+    color: '#3b82f6'
+  },
+  {
+    id: 'mobility',
+    label: 'Mobility',
+    icon: Car,
+    mandatory: false,
+    description: 'Electric vehicle charging, battery range, and car telemetry.',
+    color: '#10b981'
+  },
+  {
+    id: 'health',
+    label: 'Health',
+    icon: Heartbeat,
+    mandatory: false,
+    description: 'Indoor air quality, CO2, humidity, and home wellness metrics.',
+    color: '#14b8a6'
+  },
+  {
+    id: 'vacuums',
+    label: 'Vacuums',
+    icon: Broom,
+    mandatory: false,
+    description: 'Robot vacuum cleaners, docking status, and zone cleaning runs.',
+    color: '#a855f7'
+  },
+  {
+    id: 'automations',
+    label: 'Automations',
+    icon: GitFork,
+    mandatory: false,
+    description: 'Home Assistant automations, scenes, and execution triggers.',
+    color: '#f97316'
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: GearSix,
+    mandatory: true,
+    description: 'Dashboard configuration, customization, backups, and connection settings.',
+    color: '#64748b'
+  }
 ];
 
 // --- Subcategory Definitions for Binary Sensors ---
@@ -170,7 +288,7 @@ export default function DeviceVisibilitySection({
   }, [hiddenEntityIdsSet]);
 
   // Main navigation tabs
-  const [activeTab, setActiveTab] = useState<'visibility' | 'styling' | 'labels' | 'zones'>('visibility');
+  const [activeTab, setActiveTab] = useState<'pages' | 'visibility' | 'styling' | 'labels' | 'zones'>('pages');
 
   // Search & Filtering State
   const [searchQuery, setSearchQuery] = useState('');
@@ -432,6 +550,56 @@ export default function DeviceVisibilitySection({
       message: `${entityId} is now ${nextHidden ? 'hidden' : 'visible'}.`
     });
   }, [setEntityHidden, updateConfig, addToast]);
+
+  // --- Page Visibility Toggle Handlers ---
+  const handleTogglePageVisibility = useCallback((pageId: string, currentHidden: boolean) => {
+    // Overview and Settings are required system pages and cannot be hidden
+    if (pageId === 'overview' || pageId === 'settings') return;
+
+    const nextHidden = !currentHidden;
+    updateConfig(prev => {
+      const hiddenList = new Set(prev.navigation?.hiddenPages || []);
+      if (nextHidden) {
+        hiddenList.add(pageId);
+      } else {
+        hiddenList.delete(pageId);
+      }
+      return {
+        ...prev,
+        navigation: {
+          ...(prev.navigation || {}),
+          hiddenPages: Array.from(hiddenList)
+        }
+      };
+    });
+
+    flushPendingSave();
+
+    const pageMeta = NAVIGATION_PAGES.find(p => p.id === pageId);
+    const pageName = pageMeta?.label || (pageId.charAt(0).toUpperCase() + pageId.slice(1));
+
+    addToast?.({
+      type: nextHidden ? 'info' : 'success',
+      title: nextHidden ? `${pageName} Page Hidden` : `${pageName} Page Visible`,
+      message: `${pageName} has been ${nextHidden ? 'removed from' : 'restored to'} navigation.`
+    });
+  }, [updateConfig, flushPendingSave, addToast]);
+
+  const handleShowAllPages = useCallback(() => {
+    updateConfig(prev => ({
+      ...prev,
+      navigation: {
+        ...(prev.navigation || {}),
+        hiddenPages: []
+      }
+    }));
+    flushPendingSave();
+    addToast?.({
+      type: 'success',
+      title: 'All Pages Shown',
+      message: 'All optional pages are now visible in navigation.'
+    });
+  }, [updateConfig, flushPendingSave, addToast]);
 
   const handleBulkSetVisibility = useCallback((entityIds: string[], setHidden: boolean, scopeName: string, areaId?: string) => {
     if (!entityIds || entityIds.length === 0) return;
@@ -799,11 +967,23 @@ export default function DeviceVisibilitySection({
     }
   };
 
+  // Navigation Pages Metrics
+  const hiddenPagesList = useMemo(() => config?.navigation?.hiddenPages || [], [config?.navigation?.hiddenPages]);
+  const hiddenPagesSet = useMemo(() => new Set(hiddenPagesList), [hiddenPagesList]);
+  const visiblePagesCount = NAVIGATION_PAGES.length - hiddenPagesList.length;
+
   // Sub-Navigation Tabs
   const subNavTabs: SectionTabItem[] = useMemo(() => [
     {
+      id: 'pages',
+      label: 'Navigation Pages',
+      icon: SidebarSimple,
+      badge: `${visiblePagesCount}/${NAVIGATION_PAGES.length}`,
+      color: '#06b6d4'
+    },
+    {
       id: 'visibility',
-      label: 'Visibility',
+      label: 'Entities',
       icon: Eye,
       badge: `${visibleCount}/${totalCount}`,
       color: '#3b82f6'
@@ -828,7 +1008,7 @@ export default function DeviceVisibilitySection({
       badge: resolvedZones.length,
       color: '#10b981'
     }
-  ], [visibleCount, totalCount, labels.length, resolvedZones.length]);
+  ], [visiblePagesCount, visibleCount, totalCount, labels.length, resolvedZones.length]);
 
   // Helper to render an individual entity row
   const renderEntityRow = (entity: ResolvedEntity) => {
@@ -1003,28 +1183,213 @@ export default function DeviceVisibilitySection({
         </div>
 
         {/* Global Visibility Summary Card with visual progress bar */}
-        <div className="flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-white/70 dark:bg-black/30 border border-slate-200/90 dark:border-white/10 backdrop-blur-md text-xs shadow-xs font-mono self-start sm:self-auto">
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
-              <Eye size={14} weight="bold" /> {visibleCount}
+        {activeTab === 'pages' ? (
+          <div className="flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-white/70 dark:bg-black/30 border border-slate-200/90 dark:border-white/10 backdrop-blur-md text-xs shadow-xs font-mono self-start sm:self-auto">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400 font-bold">
+                <Eye size={14} weight="bold" /> {visiblePagesCount} Visible
+              </span>
+              <span className="text-slate-300 dark:text-slate-700">•</span>
+              <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
+                <EyeSlash size={14} weight="bold" /> {hiddenPagesList.length} Hidden
+              </span>
+            </div>
+
+            {/* Mini progress bar */}
+            <div className="w-16 sm:w-24 h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden shrink-0">
+              <div
+                className="h-full bg-cyan-500 transition-all duration-300 rounded-full"
+                style={{ width: `${Math.round((visiblePagesCount / NAVIGATION_PAGES.length) * 100)}%` }}
+                title={`${Math.round((visiblePagesCount / NAVIGATION_PAGES.length) * 100)}% visible`}
+              />
+            </div>
+            <span className="font-bold text-slate-700 dark:text-slate-300">
+              {Math.round((visiblePagesCount / NAVIGATION_PAGES.length) * 100)}%
             </span>
-            <span className="text-slate-300 dark:text-slate-700">•</span>
-            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
-              <EyeSlash size={14} weight="bold" /> {hiddenCount}
-            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-white/70 dark:bg-black/30 border border-slate-200/90 dark:border-white/10 backdrop-blur-md text-xs shadow-xs font-mono self-start sm:self-auto">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                <Eye size={14} weight="bold" /> {visibleCount}
+              </span>
+              <span className="text-slate-300 dark:text-slate-700">•</span>
+              <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
+                <EyeSlash size={14} weight="bold" /> {hiddenCount}
+              </span>
+            </div>
+
+            {/* Mini progress bar */}
+            <div className="w-16 sm:w-24 h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden shrink-0">
+              <div
+                className="h-full bg-emerald-500 transition-all duration-300 rounded-full"
+                style={{ width: `${visiblePercent}%` }}
+                title={`${visiblePercent}% visible`}
+              />
+            </div>
+            <span className="font-bold text-slate-700 dark:text-slate-300">{visiblePercent}%</span>
+          </div>
+        )}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* TAB 0: NAVIGATION PAGES VISIBILITY */}
+      {/* ========================================================================= */}
+      {activeTab === 'pages' && (
+        <div className="space-y-4">
+          {/* Header Banner & Quick Controls */}
+          <div className="p-4 sm:p-5 rounded-3xl bg-white/70 dark:bg-black/25 border border-slate-200/90 dark:border-white/10 backdrop-blur-md shadow-xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                    <SidebarSimple size={18} weight="bold" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white">
+                    Navigation Menu Pages
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20">
+                    {visiblePagesCount} of {NAVIGATION_PAGES.length} Visible
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
+                  Customize which pages appear in the sidebar and mobile navigation. Hidden pages are completely removed from navigation menus. Overview and Settings are required and stay permanently visible.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                <button
+                  type="button"
+                  onClick={handleShowAllPages}
+                  disabled={hiddenPagesList.length === 0}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border ${
+                    hiddenPagesList.length > 0
+                      ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/20 shadow-xs cursor-pointer'
+                      : 'bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-white/5 cursor-not-allowed opacity-60'
+                  }`}
+                >
+                  <Eye size={14} weight="bold" />
+                  <span>Show All Optional Pages</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Mini progress bar */}
-          <div className="w-16 sm:w-24 h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden shrink-0">
-            <div
-              className="h-full bg-emerald-500 transition-all duration-300 rounded-full"
-              style={{ width: `${visiblePercent}%` }}
-              title={`${visiblePercent}% visible`}
-            />
+          {/* Page Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+            {NAVIGATION_PAGES.map((page) => {
+              const isHidden = hiddenPagesSet.has(page.id);
+              const isMandatory = page.mandatory;
+              const PageIcon = page.icon;
+
+              return (
+                <div
+                  key={page.id}
+                  className={`group relative p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between ${
+                    isHidden
+                      ? 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200/60 dark:border-white/5 opacity-75 hover:opacity-100'
+                      : 'bg-white/80 dark:bg-white/[0.04] border-slate-200/90 dark:border-white/10 shadow-xs hover:shadow-md hover:border-cyan-500/30 dark:hover:border-cyan-500/30'
+                  }`}
+                >
+                  {/* Top Row: Icon + Title + Mandatory Badge / Toggle Switch */}
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-2.5">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-transform duration-200 group-hover:scale-105"
+                          style={{
+                            backgroundColor: `${page.color}15`,
+                            color: page.color,
+                            borderColor: `${page.color}30`
+                          }}
+                        >
+                          <PageIcon size={22} weight={isHidden ? 'regular' : 'bold'} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 truncate">
+                              {page.label}
+                            </h4>
+                            {isMandatory && (
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-200/70 dark:bg-white/10 text-slate-600 dark:text-slate-300 border border-slate-300/40 dark:border-white/10">
+                                <Lock size={10} weight="bold" />
+                                Required
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500">
+                            /{page.id}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Toggle Control or Lock */}
+                      <div className="shrink-0 flex items-center">
+                        {isMandatory ? (
+                          <div
+                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-500"
+                            title="Required page cannot be hidden"
+                          >
+                            <Lock size={16} weight="bold" />
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={!isHidden}
+                            aria-label={`Toggle visibility of ${page.label}`}
+                            onClick={() => handleTogglePageVisibility(page.id, isHidden)}
+                            className={`w-12 h-6.5 rounded-full p-0.5 transition-colors duration-200 flex items-center cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-cyan-500/40 ${
+                              !isHidden
+                                ? 'bg-emerald-500 dark:bg-emerald-500 shadow-sm shadow-emerald-500/20 justify-end'
+                                : 'bg-slate-300 dark:bg-slate-700 justify-start'
+                            }`}
+                          >
+                            <motion.div
+                              layout
+                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                              className="w-5.5 h-5.5 rounded-full bg-white shadow-xs flex items-center justify-center"
+                            >
+                              {!isHidden ? (
+                                <Eye size={12} weight="bold" className="text-emerald-600" />
+                              ) : (
+                                <EyeSlash size={12} weight="bold" className="text-slate-500" />
+                              )}
+                            </motion.div>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2 mb-3">
+                      {page.description}
+                    </p>
+                  </div>
+
+                  {/* Bottom Status Row */}
+                  <div className="pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px]">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          !isHidden ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                        }`}
+                      />
+                      <span className={!isHidden ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
+                        {!isHidden ? 'Visible in Navigation' : 'Hidden from Navigation'}
+                      </span>
+                    </span>
+
+                    <span className="text-slate-400 dark:text-slate-500 font-mono text-[10px]">
+                      {isMandatory ? 'Permanent' : isHidden ? 'Inactive' : 'Active'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <span className="font-bold text-slate-700 dark:text-slate-300">{visiblePercent}%</span>
         </div>
-      </div>
+      )}
 
       {/* ========================================================================= */}
       {/* TAB 1: REDESIGNED ENTITY VISIBILITY MANAGER */}

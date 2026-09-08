@@ -38,8 +38,8 @@ const CriticalAlertModal = lazy(() => import('./components/alerts/CriticalAlertM
 
 const SETTINGS_SECTIONS_META: Record<string, { title: string; subtitle: string; icon: React.ComponentType<any>; color: string }> = {
   devices_rooms: {
-    title: 'Devices & Entity Visibility',
-    subtitle: 'Manage device visibility, room assignments, and entity hierarchy.',
+    title: 'Navigation & Entity Visibility',
+    subtitle: 'Manage page navigation toggles, device visibility, room styling, and zones.',
     icon: SlidersHorizontal,
     color: 'text-emerald-400'
   },
@@ -291,6 +291,14 @@ export default function App() {
     const label = theme?.title || (activeTab.charAt(0).toUpperCase() + activeTab.slice(1));
     document.title = activeTab === 'overview' ? 'HAD - Home Assistant Dashboard' : `HAD • ${label}`;
   }, [activeTab]);
+
+  // Fallback redirect if current page is hidden by user configuration
+  useEffect(() => {
+    const hidden = config?.navigation?.hiddenPages || [];
+    if (hidden.includes(activeTab) && activeTab !== 'overview' && activeTab !== 'settings') {
+      setActiveTab('overview');
+    }
+  }, [config?.navigation?.hiddenPages, activeTab]);
 
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState<boolean>(false);
