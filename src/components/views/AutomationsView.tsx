@@ -13,6 +13,8 @@ import {
   GitFork, 
   Sparkle, 
   Play, 
+  Pause,
+  SquaresFour,
   Clock, 
   Tag as TagIcon, 
   House, 
@@ -154,11 +156,11 @@ export default function AutomationsView({ darkMode = true }: ViewProps) {
   }, [automationEntities]);
 
   const filterTabs: SectionTabItem[] = useMemo(() => [
-    { id: 'all', label: 'All Routines', badge: allEntities.length, color: '#3b82f6' },
-    { id: 'automations', label: 'Automations', badge: automationEntities.length, color: '#8b5cf6' },
-    { id: 'scenes', label: 'Scenes', badge: sceneEntities.length, color: '#ec4899' },
-    { id: 'active', label: 'Active', badge: activeCount, badgeColor: 'bg-emerald-500/20 text-emerald-300 font-bold', color: '#10b981' },
-    { id: 'disabled', label: 'Paused', badge: automationEntities.length - activeCount, color: '#64748b' }
+    { id: 'all', label: 'All Routines', icon: SquaresFour, badge: allEntities.length, color: '#3b82f6' },
+    { id: 'automations', label: 'Automations', icon: GitFork, badge: automationEntities.length, color: '#8b5cf6' },
+    { id: 'scenes', label: 'Scenes', icon: Sparkle, badge: sceneEntities.length, color: '#ec4899' },
+    { id: 'active', label: 'Active', icon: Play, badge: activeCount, badgeColor: 'bg-emerald-500/20 text-emerald-300 font-bold', color: '#10b981' },
+    { id: 'disabled', label: 'Paused', icon: Pause, badge: automationEntities.length - activeCount, color: '#64748b' }
   ], [allEntities.length, automationEntities.length, sceneEntities.length, activeCount]);
 
   // Trigger automation / scene

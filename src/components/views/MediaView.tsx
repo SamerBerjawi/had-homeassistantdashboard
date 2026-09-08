@@ -15,7 +15,8 @@ import {
   Stack,
   Buildings,
   Tree,
-  SlidersHorizontal
+  SlidersHorizontal,
+  SquaresFour
 } from '@phosphor-icons/react';
 import { useRoomsData } from '../../hooks/useRoomsData';
 import { ResolvedEntity, HAEntity } from '../../types';
@@ -101,20 +102,39 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
       {
         id: 'all',
         label: 'All Floors',
-        icon: Stack,
+        icon: SquaresFour,
         badge: playingMediaList.length > 0 ? `${playingMediaList.length} playing` : undefined,
         badgeColor: playingMediaList.length > 0 ? 'bg-purple-500/20 text-purple-300 font-bold' : undefined,
         color: '#a855f7'
       }
     ];
 
-    floorsWithMedia.forEach((f) => {
+    floorsWithMedia.forEach((floor) => {
+      const isOutdoor =
+        floor.level < 0 ||
+        floor.name.toLowerCase().includes('outdoor') ||
+        floor.name.toLowerCase().includes('garden') ||
+        floor.name.toLowerCase().includes('perimeter');
+      const isUpper = floor.level >= 1;
+      const defaultIconComp = isOutdoor ? Tree : isUpper ? Buildings : Stack;
+      const floorIconName = floor.icon;
+
+      const TabIcon = floorIconName ? (
+        <DynamicPhosphorIcon
+          name={floorIconName}
+          fallback={defaultIconComp}
+          size={16}
+          weight="bold"
+        />
+      ) : defaultIconComp;
+
       tabs.push({
-        id: f.floorId,
-        label: f.name,
-        badge: f.activeMediaPlayers > 0 ? `${f.activeMediaPlayers}` : undefined,
-        badgeColor: f.activeMediaPlayers > 0 ? 'bg-purple-500/20 text-purple-300 font-bold' : undefined,
-        color: f.color || '#8b5cf6'
+        id: floor.floorId,
+        label: floor.name,
+        icon: TabIcon,
+        badge: floor.activeMediaPlayers > 0 ? `${floor.activeMediaPlayers}` : undefined,
+        badgeColor: floor.activeMediaPlayers > 0 ? 'bg-purple-500/20 text-purple-300 font-bold' : undefined,
+        color: floor.color || '#8b5cf6'
       });
     });
 
