@@ -295,6 +295,20 @@ export function mergeConfig(
     layoutOverrides: {
       ...(safeBase.layoutOverrides || {}),
       ...(partial.layoutOverrides || {})
+    },
+    responsiveLayoutOverrides: {
+      mobile: {
+        ...(safeBase.responsiveLayoutOverrides?.mobile || {}),
+        ...(partial.responsiveLayoutOverrides?.mobile || {})
+      },
+      laptop: {
+        ...(safeBase.responsiveLayoutOverrides?.laptop || {}),
+        ...(partial.responsiveLayoutOverrides?.laptop || {})
+      },
+      desktop: {
+        ...(safeBase.responsiveLayoutOverrides?.desktop || {}),
+        ...(partial.responsiveLayoutOverrides?.desktop || {})
+      }
     }
   };
 }

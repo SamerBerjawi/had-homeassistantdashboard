@@ -36,7 +36,7 @@ interface RoomsViewProps {
 export default function RoomsView({ darkMode = true }: RoomsViewProps) {
   const isLoading = useAutoLayoutStore((s) => s.isLoading);
   const { config } = useUserConfig();
-  const { isEditMode } = useEditMode();
+  const { isEditMode, activeBreakpoint, activeLayoutOverrides } = useEditMode();
   const {
     areasDataList = [],
     floorDataList = [],
@@ -231,7 +231,8 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
                 const sortedAreasInitial = sortTilesForBento({
                   items: floor.areas,
                   getId: (a) => a.areaId,
-                  layoutOverrides: config?.layoutOverrides,
+                  layoutOverrides: activeLayoutOverrides,
+                  breakpoint: activeBreakpoint,
                   isEditMode
                 });
 
@@ -245,7 +246,7 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
                   ? sortItemsForHybrid({
                       items: sortedAreasInitial,
                       getId: (a) => a.areaId,
-                      layoutOverrides: config?.layoutOverrides,
+                      layoutOverrides: activeLayoutOverrides,
                       isSmall: (a) => a.activeLightsCount === 0 && getAreaEntityCount(a) <= 2,
                       isLarge: (a) => a.activeLightsCount > 0 || getAreaEntityCount(a) >= 4
                     })
@@ -255,7 +256,8 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
                   mode: tileLayoutMode,
                   items: sortedAreas,
                   getId: (a) => a.areaId,
-                  layoutOverrides: config?.layoutOverrides,
+                  layoutOverrides: activeLayoutOverrides,
+                  breakpoint: activeBreakpoint,
                   isSmall: (a) => a.activeLightsCount === 0 && getAreaEntityCount(a) <= 2,
                   isLarge: (a) => a.activeLightsCount > 0 || getAreaEntityCount(a) >= 4
                 });
@@ -284,6 +286,8 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
                           <AreaTile
                             area={area}
                             darkMode={darkMode}
+                            colSpan={span.colSpan}
+                            rowSpan={span.rowSpan}
                             onSelectArea={(areaId) => setSelectedAreaId(areaId)}
                             onToggleLights={toggleAreaLights}
                             onToggleSwitches={toggleAreaSwitches}

@@ -8,6 +8,7 @@
  */
 
 import { GridColSpan, GridRowSpan } from '../components/layout/GridTile';
+import { LayoutBreakpoint } from '../types/userConfig';
 
 export interface TileLayoutConfig {
   colSpan?: GridColSpan;
@@ -23,6 +24,7 @@ export interface BentoSortOptions<T> {
   layoutOverrides?: Record<string, { colSpan?: number; rowSpan?: number; order?: number }>;
   isEditMode?: boolean;
   isHidden?: (item: T) => boolean;
+  breakpoint?: LayoutBreakpoint;
 }
 
 /**
@@ -64,42 +66,54 @@ export function sortTilesForBento<T>({
 }
 
 /**
- * Calculates adaptive column and row spans for a tile based on its layout override
+ * Calculates adaptive column and row spans for a tile based on its layout override and active breakpoint
  */
 export function getTileResponsiveSpans(
   id: string,
   layoutOverrides?: Record<string, { colSpan?: number; rowSpan?: number; order?: number }>,
   defaultColSpan: GridColSpan = 2,
-  defaultRowSpan: GridRowSpan = 1
+  defaultRowSpan: GridRowSpan = 1,
+  breakpoint?: LayoutBreakpoint
 ): TileLayoutConfig {
   const override = layoutOverrides?.[id];
   const colSpan = (override?.colSpan as GridColSpan) || defaultColSpan;
   const rowSpan = (override?.rowSpan as GridRowSpan) || defaultRowSpan;
 
-  // Derive responsive spans from 12-factor virtual grid
-  // Mobile (4 cols), Tablet (6 cols), Desktop (12 cols)
+  let mobileColSpan: GridColSpan = colSpan;
   let tabletColSpan: GridColSpan = 3;
   let desktopColSpan: GridColSpan = 3;
 
-  if (colSpan === 1) {
-    tabletColSpan = 2;
-    desktopColSpan = 2;
-  } else if (colSpan === 2) {
-    tabletColSpan = 3;
-    desktopColSpan = 3;
-  } else if (colSpan === 4) {
-    tabletColSpan = 6;
-    desktopColSpan = 6;
-  } else if (colSpan === 6) {
-    tabletColSpan = 6;
-    desktopColSpan = 6;
-  } else if (colSpan >= 8) {
-    tabletColSpan = 6;
-    desktopColSpan = 12;
+  if (breakpoint === 'desktop') {
+    desktopColSpan = colSpan;
+    tabletColSpan = colSpan >= 6 ? 6 : colSpan <= 3 ? 3 : (colSpan as GridColSpan);
+    mobileColSpan = colSpan >= 6 ? 4 : 2;
+  } else if (breakpoint === 'laptop') {
+    tabletColSpan = colSpan;
+    desktopColSpan = colSpan <= 3 ? 3 : 6;
+    mobileColSpan = colSpan >= 4 ? 4 : (colSpan as GridColSpan);
+  } else {
+    // mobile breakpoint
+    mobileColSpan = colSpan;
+    if (colSpan === 1) {
+      tabletColSpan = 2;
+      desktopColSpan = 2;
+    } else if (colSpan === 2) {
+      tabletColSpan = 3;
+      desktopColSpan = 3;
+    } else if (colSpan === 4) {
+      tabletColSpan = 6;
+      desktopColSpan = 6;
+    } else if (colSpan === 6) {
+      tabletColSpan = 6;
+      desktopColSpan = 6;
+    } else if (colSpan >= 8) {
+      tabletColSpan = 6;
+      desktopColSpan = 12;
+    }
   }
 
   return {
-    colSpan,
+    colSpan: mobileColSpan,
     rowSpan,
     tabletColSpan,
     desktopColSpan,
@@ -108,10 +122,32 @@ export function getTileResponsiveSpans(
 }
 
 /**
- * Format dimensions as clean label string (e.g. "2×1", "2×2", "4×2")
+ * Total columns available in the CSS grid per breakpoint
  */
-export function formatTileSize(colSpan = 2, rowSpan = 1): string {
-  return `${colSpan}×${rowSpan}`;
+export function getBreakpointTotalColumns(breakpoint: LayoutBreakpoint = 'mobile'): number {
+  switch (breakpoint) {
+    case 'desktop':
+      return 12;
+    case 'laptop':
+      return 6;
+    case 'mobile':
+    default:
+      return 4;
+  }
+}
+
+/**
+ * Format horizontal grid size as clean column number (e.g. "1", "2", "4")
+ */
+export function formatTileHorizontalSize(colSpan = 2, _breakpoint?: LayoutBreakpoint): string {
+  return `${colSpan}`;
+}
+
+/**
+ * Format dimensions as clean column number
+ */
+export function formatTileSize(colSpan = 2, _rowSpan = 1): string {
+  return `${colSpan}`;
 }
 
 export type TileLayoutMode = 'compact' | 'full' | 'hybrid';
@@ -131,6 +167,7 @@ export interface GetComputedTileSpansOptions<T> {
   items: T[];
   getId: (item: T) => string;
   layoutOverrides?: Record<string, { colSpan?: number; rowSpan?: number; order?: number }>;
+  breakpoint?: LayoutBreakpoint;
   isSmall?: (item: T) => boolean;
   isLarge?: (item: T) => boolean;
   naturalRowSpan?: (item: T) => GridRowSpan;
@@ -215,37 +252,54 @@ function applyColumnCoordinates<T>(
     const span = result.get(id);
     if (!span) return;
 
-    // Mobile (4 virtual columns: 1 & 3 for half-width 2-col tiles, 1 for 4-col full-width)
-    let colStart = 1;
+    // Mobile (4 virtual columns: allows 1, 2, 4 col spans)
+    let colStart = mobileColTracker;
     if (span.colSpan >= 4) {
       colStart = 1;
-      mobileColTracker = 1; // Reset tracker after full-width
+      mobileColTracker = 1;
     } else {
-      colStart = mobileColTracker;
-      mobileColTracker = mobileColTracker === 1 ? 3 : 1;
+      if (mobileColTracker + span.colSpan - 1 > 4) {
+        colStart = 1;
+        mobileColTracker = 1 + span.colSpan;
+      } else {
+        colStart = mobileColTracker;
+        mobileColTracker += span.colSpan;
+      }
+      if (mobileColTracker > 4) {
+        mobileColTracker = 1;
+      }
     }
 
-    // Tablet (6 virtual columns: 1 & 4 for half-width 3-col tiles, 1 for 6-col full-width)
-    let tabletColStart = 1;
+    // Tablet (6 virtual columns)
+    let tabletColStart = tabletColTracker;
     if (span.tabletColSpan >= 6) {
       tabletColStart = 1;
       tabletColTracker = 1;
     } else {
-      tabletColStart = tabletColTracker;
-      tabletColTracker = tabletColTracker === 1 ? 4 : 1;
+      if (tabletColTracker + span.tabletColSpan - 1 > 6) {
+        tabletColStart = 1;
+        tabletColTracker = 1 + span.tabletColSpan;
+      } else {
+        tabletColStart = tabletColTracker;
+        tabletColTracker += span.tabletColSpan;
+      }
+      if (tabletColTracker > 6) tabletColTracker = 1;
     }
 
-    // Desktop (12 virtual columns: 1, 4, 7, 10 for 3-col tiles; 1 & 7 for 6-col tiles; 1 for 12-col)
-    let desktopColStart = 1;
+    // Desktop (12 virtual columns)
+    let desktopColStart = desktopColTracker;
     if (span.desktopColSpan >= 12) {
       desktopColStart = 1;
       desktopColTracker = 1;
-    } else if (span.desktopColSpan === 6) {
-      desktopColStart = desktopColTracker <= 4 ? 1 : 7;
-      desktopColTracker = desktopColStart === 1 ? 7 : 1;
     } else {
-      desktopColStart = desktopColTracker;
-      desktopColTracker = desktopColTracker === 1 ? 4 : desktopColTracker === 4 ? 7 : desktopColTracker === 7 ? 10 : 1;
+      if (desktopColTracker + span.desktopColSpan - 1 > 12) {
+        desktopColStart = 1;
+        desktopColTracker = 1 + span.desktopColSpan;
+      } else {
+        desktopColStart = desktopColTracker;
+        desktopColTracker += span.desktopColSpan;
+      }
+      if (desktopColTracker > 12) desktopColTracker = 1;
     }
 
     result.set(id, {
@@ -264,6 +318,7 @@ export function getComputedTileSpans<T>({
   items,
   getId,
   layoutOverrides = {},
+  breakpoint,
   isSmall,
   isLarge,
   naturalRowSpan,
@@ -274,16 +329,44 @@ export function getComputedTileSpans<T>({
 
   const N = items.length;
 
+  // Helper to check if an item has explicit layout dimension overrides
+  const applyExplicitOverrides = () => {
+    let hasAnyOverride = false;
+    items.forEach((item) => {
+      const id = getId(item);
+      const override = layoutOverrides[id];
+      if (override && (override.colSpan !== undefined || override.rowSpan !== undefined)) {
+        hasAnyOverride = true;
+        const responsive = getTileResponsiveSpans(
+          id,
+          layoutOverrides,
+          (override.colSpan as GridColSpan) || 2,
+          (override.rowSpan as GridRowSpan) || 1,
+          breakpoint
+        );
+        result.set(id, {
+          colSpan: responsive.colSpan as GridColSpan,
+          rowSpan: responsive.rowSpan as GridRowSpan,
+          tabletColSpan: responsive.tabletColSpan as GridColSpan,
+          desktopColSpan: responsive.desktopColSpan as GridColSpan
+        });
+      }
+    });
+    return hasAnyOverride;
+  };
+
   if (mode === 'compact') {
     items.forEach((item) => {
       const id = getId(item);
       const override = layoutOverrides[id];
+      const colSpan = (override?.colSpan as GridColSpan) || 2;
       const baseRowSpan = (override?.rowSpan as GridRowSpan) || naturalRowSpan?.(item) || 1;
+      const responsive = getTileResponsiveSpans(id, layoutOverrides, colSpan, baseRowSpan, breakpoint);
       result.set(id, {
-        colSpan: 2, // 100% compact half-width on mobile
-        rowSpan: baseRowSpan,
-        tabletColSpan: 3,
-        desktopColSpan: 3
+        colSpan: responsive.colSpan as GridColSpan,
+        rowSpan: responsive.rowSpan as GridRowSpan,
+        tabletColSpan: responsive.tabletColSpan as GridColSpan,
+        desktopColSpan: responsive.desktopColSpan as GridColSpan
       });
     });
     return applyColumnCoordinates(result, items, getId);
@@ -293,137 +376,143 @@ export function getComputedTileSpans<T>({
     items.forEach((item) => {
       const id = getId(item);
       const override = layoutOverrides[id];
+      const colSpan = (override?.colSpan as GridColSpan) || 4;
       const baseRowSpan = (override?.rowSpan as GridRowSpan) || naturalRowSpan?.(item) || 1;
+      const responsive = getTileResponsiveSpans(id, layoutOverrides, colSpan, baseRowSpan, breakpoint);
       result.set(id, {
-        colSpan: 4, // 100% full width on mobile
-        rowSpan: baseRowSpan,
-        tabletColSpan: 3,
-        desktopColSpan: 3
+        colSpan: responsive.colSpan as GridColSpan,
+        rowSpan: responsive.rowSpan as GridRowSpan,
+        tabletColSpan: responsive.tabletColSpan as GridColSpan,
+        desktopColSpan: responsive.desktopColSpan as GridColSpan
       });
     });
     return applyColumnCoordinates(result, items, getId);
   }
 
-  // mode === 'hybrid' (mobile-first smart layout, keeps desktop & tablet at standard 3-column span)
-  // 1. Single tile: full width to eliminate empty half-page void on mobile
+  // mode === 'hybrid' (mobile-first smart layout, respects explicit user overrides first)
+  // First compute smart hybrid default layout:
   if (N === 1) {
     const item = items[0];
     const id = getId(item);
     const override = layoutOverrides[id];
+    const colSpan = (override?.colSpan as GridColSpan) || 4;
     const baseRowSpan = (override?.rowSpan as GridRowSpan) || naturalRowSpan?.(item) || 1;
+    const responsive = getTileResponsiveSpans(id, layoutOverrides, colSpan, baseRowSpan, breakpoint);
     result.set(id, {
-      colSpan: 4,
-      rowSpan: baseRowSpan,
-      tabletColSpan: 3,
-      desktopColSpan: 3
+      colSpan: responsive.colSpan as GridColSpan,
+      rowSpan: responsive.rowSpan as GridRowSpan,
+      tabletColSpan: responsive.tabletColSpan as GridColSpan,
+      desktopColSpan: responsive.desktopColSpan as GridColSpan
     });
-    return applyColumnCoordinates(result, items, getId);
-  }
-
-  // 2. Two tiles: neat balanced pair of half width (2 + 2 = 4 cols on mobile)
-  if (N === 2) {
+  } else if (N === 2) {
     items.forEach((item) => {
       const id = getId(item);
-      const baseRowSpan = naturalRowSpan?.(item) || 1;
+      const override = layoutOverrides[id];
+      const colSpan = (override?.colSpan as GridColSpan) || 2;
+      const baseRowSpan = (override?.rowSpan as GridRowSpan) || naturalRowSpan?.(item) || 1;
+      const responsive = getTileResponsiveSpans(id, layoutOverrides, colSpan, baseRowSpan, breakpoint);
       result.set(id, {
-        colSpan: 2,
-        rowSpan: baseRowSpan,
-        tabletColSpan: 3,
-        desktopColSpan: 3
+        colSpan: responsive.colSpan as GridColSpan,
+        rowSpan: responsive.rowSpan as GridRowSpan,
+        tabletColSpan: responsive.tabletColSpan as GridColSpan,
+        desktopColSpan: responsive.desktopColSpan as GridColSpan
       });
     });
-    return applyColumnCoordinates(result, items, getId);
-  }
-
-  // 3. Three tiles: two half width, one full width on mobile
-  // If an explicitly large/active tile exists (e.g. Master Bedroom), it takes full width; else 3rd takes full width
-  if (N === 3) {
+  } else if (N === 3) {
     const largeIdx = isLarge ? items.findIndex(isLarge) : -1;
     const fullWidthIndex = largeIdx !== -1 ? largeIdx : 2;
 
     items.forEach((item, index) => {
       const id = getId(item);
-      const isFull = index === fullWidthIndex;
-      const colSpan: GridColSpan = isFull ? 4 : 2;
-      const tabletColSpan: GridColSpan = 3;
-      const desktopColSpan: GridColSpan = 3;
-      const rowSpan = naturalRowSpan?.(item) || 1;
-      result.set(id, { colSpan, rowSpan, tabletColSpan, desktopColSpan });
+      const override = layoutOverrides[id];
+      const defaultCol: GridColSpan = (index === fullWidthIndex) ? 4 : 2;
+      const colSpan = (override?.colSpan as GridColSpan) || defaultCol;
+      const rowSpan = (override?.rowSpan as GridRowSpan) || naturalRowSpan?.(item) || 1;
+      const responsive = getTileResponsiveSpans(id, layoutOverrides, colSpan, rowSpan, breakpoint);
+      result.set(id, {
+        colSpan: responsive.colSpan as GridColSpan,
+        rowSpan: responsive.rowSpan as GridRowSpan,
+        tabletColSpan: responsive.tabletColSpan as GridColSpan,
+        desktopColSpan: responsive.desktopColSpan as GridColSpan
+      });
     });
-    return applyColumnCoordinates(result, items, getId);
-  }
-
-  // 4. Four tiles:
-  // Check if there are 2 smaller tiles (low info) and 1 larger tile
-  if (N === 4) {
+  } else if (N === 4) {
     const smallIndices = items
       .map((item, idx) => ({ idx, isSmall: Boolean(isSmall?.(item)) }))
-      .filter(x => x.isSmall)
-      .map(x => x.idx);
+      .filter((x) => x.isSmall)
+      .map((x) => x.idx);
 
     if (smallIndices.length >= 2) {
-      // 1 tall (left, 2x2), 2 small (right, stacked 2x1), 1 full width on mobile (row 3, 4x1)
       const smallSet = new Set(smallIndices.slice(0, 2));
-      const nonSmallIndices = [0, 1, 2, 3].filter(idx => !smallSet.has(idx));
+      const nonSmallIndices = [0, 1, 2, 3].filter((idx) => !smallSet.has(idx));
       const tallIndex = nonSmallIndices[0] ?? 0;
 
       items.forEach((item, index) => {
         const id = getId(item);
-        if (index === tallIndex) {
-          result.set(id, {
-            colSpan: 2,
-            rowSpan: 2,
-            tabletColSpan: 3,
-            desktopColSpan: 3
-          });
-        } else if (smallSet.has(index)) {
-          result.set(id, {
-            colSpan: 2,
-            rowSpan: 1,
-            tabletColSpan: 3,
-            desktopColSpan: 3
-          });
-        } else {
-          result.set(id, {
-            colSpan: 4,
-            rowSpan: naturalRowSpan?.(item) || 1,
-            tabletColSpan: 3,
-            desktopColSpan: 3
-          });
-        }
-      });
-      return applyColumnCoordinates(result, items, getId);
-    }
+        const override = layoutOverrides[id];
+        let defaultCol: GridColSpan = 2;
+        let defaultRow: GridRowSpan = 1;
 
-    // Default for 4 balanced tiles: 2x2 grid
-    items.forEach((item) => {
+        if (index === tallIndex) {
+          defaultCol = 2;
+          defaultRow = 2;
+        } else if (smallSet.has(index)) {
+          defaultCol = 2;
+          defaultRow = 1;
+        } else {
+          defaultCol = 4;
+          defaultRow = naturalRowSpan?.(item) || 1;
+        }
+
+        const colSpan = (override?.colSpan as GridColSpan) || defaultCol;
+        const rowSpan = (override?.rowSpan as GridRowSpan) || defaultRow;
+        const responsive = getTileResponsiveSpans(id, layoutOverrides, colSpan, rowSpan, breakpoint);
+        result.set(id, {
+          colSpan: responsive.colSpan as GridColSpan,
+          rowSpan: responsive.rowSpan as GridRowSpan,
+          tabletColSpan: responsive.tabletColSpan as GridColSpan,
+          desktopColSpan: responsive.desktopColSpan as GridColSpan
+        });
+      });
+    } else {
+      items.forEach((item) => {
+        const id = getId(item);
+        const override = layoutOverrides[id];
+        const colSpan = (override?.colSpan as GridColSpan) || 2;
+        const baseRowSpan = (override?.rowSpan as GridRowSpan) || naturalRowSpan?.(item) || 1;
+        const responsive = getTileResponsiveSpans(id, layoutOverrides, colSpan, baseRowSpan, breakpoint);
+        result.set(id, {
+          colSpan: responsive.colSpan as GridColSpan,
+          rowSpan: responsive.rowSpan as GridRowSpan,
+          tabletColSpan: responsive.tabletColSpan as GridColSpan,
+          desktopColSpan: responsive.desktopColSpan as GridColSpan
+        });
+      });
+    }
+  } else {
+    // N >= 5 tiles
+    const isOdd = N % 2 !== 0;
+
+    items.forEach((item, index) => {
       const id = getId(item);
-      const baseRowSpan = naturalRowSpan?.(item) || 1;
+      const override = layoutOverrides[id];
+      const isLastOdd = isOdd && index === N - 1;
+      const defaultCol: GridColSpan = isLastOdd ? 4 : (naturalColSpan?.(item) || 2);
+      const colSpan = (override?.colSpan as GridColSpan) || defaultCol;
+      const rowSpan = (override?.rowSpan as GridRowSpan) || naturalRowSpan?.(item) || 1;
+      const responsive = getTileResponsiveSpans(id, layoutOverrides, colSpan, rowSpan, breakpoint);
+
       result.set(id, {
-        colSpan: 2,
-        rowSpan: baseRowSpan,
-        tabletColSpan: 3,
-        desktopColSpan: 3
+        colSpan: responsive.colSpan as GridColSpan,
+        rowSpan: responsive.rowSpan as GridRowSpan,
+        tabletColSpan: responsive.tabletColSpan as GridColSpan,
+        desktopColSpan: responsive.desktopColSpan as GridColSpan
       });
     });
-    return applyColumnCoordinates(result, items, getId);
   }
 
-  // 5. N >= 5 tiles:
-  // If odd (5, 7, 9...): pairs of half width on mobile, last odd tile expands to full width
-  // If even (6, 8, 10...): pairs of half width
-  const isOdd = N % 2 !== 0;
-
-  items.forEach((item, index) => {
-    const id = getId(item);
-    const isLastOdd = isOdd && index === N - 1;
-    const colSpan: GridColSpan = isLastOdd ? 4 : (naturalColSpan?.(item) || 2);
-    const tabletColSpan: GridColSpan = 3;
-    const desktopColSpan: GridColSpan = 3;
-    const rowSpan = naturalRowSpan?.(item) || 1;
-
-    result.set(id, { colSpan, rowSpan, tabletColSpan, desktopColSpan });
-  });
+  // Ensure any explicit user overrides take absolute precedence
+  applyExplicitOverrides();
 
   return applyColumnCoordinates(result, items, getId);
 }

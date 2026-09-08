@@ -5,6 +5,20 @@
 
 export type TileLayoutMode = 'compact' | 'full' | 'hybrid';
 
+export type LayoutBreakpoint = 'mobile' | 'laptop' | 'desktop';
+
+export interface BreakpointLayoutOverride {
+  colSpan?: 1 | 2 | 3 | 4 | 6 | 8 | 12;
+  rowSpan?: 1 | 2 | 3 | 4;
+  order?: number;
+}
+
+export type ResponsiveLayoutOverrides = {
+  mobile?: Record<string, BreakpointLayoutOverride>;
+  laptop?: Record<string, BreakpointLayoutOverride>;
+  desktop?: Record<string, BreakpointLayoutOverride>;
+};
+
 export interface UserDashboardConfig {
   version: number;
   updatedAt: string;
@@ -128,11 +142,8 @@ export interface UserDashboardConfig {
     pinCode?: string;
     weatherBackdrop?: string;
   };
-  layoutOverrides?: Record<string, {
-    colSpan?: 2 | 4 | 6 | 8 | 12;
-    rowSpan?: 1 | 2 | 3 | 4;
-    order?: number;
-  }>;
+  layoutOverrides?: Record<string, BreakpointLayoutOverride>;
+  responsiveLayoutOverrides?: ResponsiveLayoutOverrides;
 }
 
 export type DeepPartial<T> = {
@@ -275,5 +286,10 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
     pinCode: '',
     weatherBackdrop: 'auto'
   },
-  layoutOverrides: {}
+  layoutOverrides: {},
+  responsiveLayoutOverrides: {
+    mobile: {},
+    laptop: {},
+    desktop: {}
+  }
 };

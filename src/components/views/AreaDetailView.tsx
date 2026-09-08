@@ -416,8 +416,8 @@ export default function AreaDetailView({
   }, [entities]);
 
   const { config } = useUserConfig();
-  const { isEditMode } = useEditMode();
-  const layoutOverrides = config?.layoutOverrides;
+  const { isEditMode, activeBreakpoint, activeLayoutOverrides } = useEditMode();
+  const layoutOverrides = activeLayoutOverrides;
 
   const tileLayoutMode: TileLayoutMode = config?.rooms?.tileLayout || (config?.rooms?.fullWidthTiles ? 'full' : 'compact');
   const isFullWidth = tileLayoutMode === 'full';
@@ -548,17 +548,18 @@ export default function AreaDetailView({
     isEditMode
   }), [generalSensors, layoutOverrides, isEditMode]);
 
-  // Computed spans per category based on active layout mode (compact, hybrid, full)
+  // Computed spans per category based on active layout mode (compact, hybrid, full) and active breakpoint
   const lightSpans = useMemo(() => {
     return getComputedTileSpans({
       mode: tileLayoutMode,
       items: sortedLights,
       getId: (l) => l.entity_id,
       layoutOverrides,
+      breakpoint: activeBreakpoint,
       isSmall: (l) => !detectLightCapabilities(l).supportsBrightness,
       isLarge: (l) => detectLightCapabilities(l).supportsBrightness || detectLightCapabilities(l).supportsColor
     });
-  }, [tileLayoutMode, sortedLights, layoutOverrides]);
+  }, [tileLayoutMode, sortedLights, layoutOverrides, activeBreakpoint]);
 
   const climateAndFanSpans = useMemo(() => {
     const combined = [
@@ -570,11 +571,12 @@ export default function AreaDetailView({
       items: combined,
       getId: (x) => x.id,
       layoutOverrides,
+      breakpoint: activeBreakpoint,
       isSmall: (x) => x.kind === 'fan',
       isLarge: (x) => x.kind === 'climate',
       naturalRowSpan: (x) => x.kind === 'climate' ? 2 : 1
     });
-  }, [tileLayoutMode, sortedClimates, sortedFans, layoutOverrides]);
+  }, [tileLayoutMode, sortedClimates, sortedFans, layoutOverrides, activeBreakpoint]);
 
   const switchLockCoverSpans = useMemo(() => {
     const combined = [
@@ -587,10 +589,11 @@ export default function AreaDetailView({
       items: combined,
       getId: (x) => x.id,
       layoutOverrides,
+      breakpoint: activeBreakpoint,
       isSmall: (x) => x.kind === 'lock' || x.kind === 'cover' || (x.kind === 'switch' && !x.item.attributes?.current_power_w),
       isLarge: (x) => x.kind === 'switch' && Boolean(x.item.attributes?.current_power_w)
     });
-  }, [tileLayoutMode, sortedSwitches, sortedLocks, sortedCovers, layoutOverrides]);
+  }, [tileLayoutMode, sortedSwitches, sortedLocks, sortedCovers, layoutOverrides, activeBreakpoint]);
 
   const mediaVacuumSpans = useMemo(() => {
     const combined = [
@@ -602,18 +605,19 @@ export default function AreaDetailView({
       items: combined,
       getId: (x) => x.id,
       layoutOverrides,
+      breakpoint: activeBreakpoint,
       isSmall: (x) => x.kind === 'vacuum',
       isLarge: (x) => x.kind === 'media'
     });
-  }, [tileLayoutMode, sortedMediaPlayers, sortedVacuums, layoutOverrides]);
+  }, [tileLayoutMode, sortedMediaPlayers, sortedVacuums, layoutOverrides, activeBreakpoint]);
 
-  const contactSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedContactSensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedContactSensors, layoutOverrides]);
-  const motionSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedMotionSensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedMotionSensors, layoutOverrides]);
-  const environmentalSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedEnvironmentalSensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedEnvironmentalSensors, layoutOverrides]);
-  const hazardSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedHazardSensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedHazardSensors, layoutOverrides]);
-  const energySpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedEnergySensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedEnergySensors, layoutOverrides]);
-  const batterySpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedBatterySensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedBatterySensors, layoutOverrides]);
-  const generalSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedGeneralSensors, getId: (s) => s.entity_id, layoutOverrides }), [tileLayoutMode, sortedGeneralSensors, layoutOverrides]);
+  const contactSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedContactSensors, getId: (s) => s.entity_id, layoutOverrides, breakpoint: activeBreakpoint }), [tileLayoutMode, sortedContactSensors, layoutOverrides, activeBreakpoint]);
+  const motionSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedMotionSensors, getId: (s) => s.entity_id, layoutOverrides, breakpoint: activeBreakpoint }), [tileLayoutMode, sortedMotionSensors, layoutOverrides, activeBreakpoint]);
+  const environmentalSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedEnvironmentalSensors, getId: (s) => s.entity_id, layoutOverrides, breakpoint: activeBreakpoint }), [tileLayoutMode, sortedEnvironmentalSensors, layoutOverrides, activeBreakpoint]);
+  const hazardSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedHazardSensors, getId: (s) => s.entity_id, layoutOverrides, breakpoint: activeBreakpoint }), [tileLayoutMode, sortedHazardSensors, layoutOverrides, activeBreakpoint]);
+  const energySpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedEnergySensors, getId: (s) => s.entity_id, layoutOverrides, breakpoint: activeBreakpoint }), [tileLayoutMode, sortedEnergySensors, layoutOverrides, activeBreakpoint]);
+  const batterySpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedBatterySensors, getId: (s) => s.entity_id, layoutOverrides, breakpoint: activeBreakpoint }), [tileLayoutMode, sortedBatterySensors, layoutOverrides, activeBreakpoint]);
+  const generalSpans = useMemo(() => getComputedTileSpans({ mode: tileLayoutMode, items: sortedGeneralSensors, getId: (s) => s.entity_id, layoutOverrides, breakpoint: activeBreakpoint }), [tileLayoutMode, sortedGeneralSensors, layoutOverrides, activeBreakpoint]);
 
   const getTileSpan = (id: string, spansMap?: Map<string, ComputedTileSpan>, defaultRow: GridRowSpan = 1) => {
     const s = spansMap?.get(id);

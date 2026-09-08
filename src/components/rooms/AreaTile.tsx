@@ -36,6 +36,8 @@ import { useLongPress } from '../../hooks/useLongPress';
 interface AreaTileProps {
   area: AreaData;
   darkMode?: boolean;
+  colSpan?: number;
+  rowSpan?: number;
   onSelectArea: (areaId: string) => void;
   onToggleLights: (areaId: string) => void;
   onToggleSwitches: (areaId: string) => void;
@@ -47,6 +49,8 @@ interface AreaTileProps {
 function AreaTileComponent({
   area,
   darkMode = true,
+  colSpan,
+  rowSpan,
   onSelectArea,
   onToggleLights,
   onToggleSwitches,
@@ -119,6 +123,75 @@ function AreaTileComponent({
       onSelectArea(area.areaId);
     }
   });
+
+  // Render Mini 1x1 tile if active colSpan === 1
+  if (colSpan === 1) {
+    return (
+      <div
+        {...tileLongPressHandlers}
+        style={{
+          touchAction: 'pan-y',
+          ...tileLongPressHandlers.style
+        }}
+        className={`group relative flex flex-col items-center justify-center text-center rounded-3xl p-3 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 cursor-pointer overflow-hidden isolate shadow-sm min-h-[84px] ${
+          isHazardActive
+            ? darkMode
+              ? 'bg-rose-950/60 text-white'
+              : 'bg-rose-100 text-rose-950'
+            : darkMode
+            ? 'bg-black/20 hover:bg-black/30 text-white'
+            : 'bg-white/20 hover:bg-white/30 text-slate-900'
+        }`}
+      >
+        {/* Glow */}
+        {(isLightActive || isMotionActive) && (
+          <div
+            className="absolute inset-0 rounded-3xl pointer-events-none"
+            style={{
+              backgroundImage: isLightActive
+                ? `radial-gradient(circle 50px at 50% 30%, ${customAccentColor ? `${customAccentColor}33` : 'rgba(245, 158, 11, 0.25)'} 0%, transparent 70%)`
+                : `radial-gradient(circle 50px at 50% 30%, rgba(16, 185, 129, 0.25) 0%, transparent 70%)`,
+            }}
+          />
+        )}
+
+        <DynamicPhosphorIcon
+          name={area.icon || 'HouseLine'}
+          fallback={HouseLine}
+          size={20}
+          weight="duotone"
+          style={{ color: customAccentColor || undefined }}
+          className={`shrink-0 transition-transform group-hover:scale-110 mb-1 ${
+            customAccentColor
+              ? ''
+              : isHazardActive
+              ? 'text-rose-400'
+              : isLightActive
+              ? 'text-amber-400'
+              : isMotionActive
+              ? 'text-emerald-400'
+              : 'text-slate-400'
+          }`}
+        />
+
+        <h3 className={`text-[11px] font-bold truncate w-full leading-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+          {area.name}
+        </h3>
+
+        {/* Small active badge */}
+        {isLightActive ? (
+          <span className="mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 flex items-center gap-0.5">
+            <span className="w-1 h-1 rounded-full bg-amber-400" />
+            {activeLightsCount}
+          </span>
+        ) : sensors.temperature !== undefined ? (
+          <span className="mt-1 text-[10px] font-semibold text-slate-400">
+            {sensors.temperature}°C
+          </span>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div
