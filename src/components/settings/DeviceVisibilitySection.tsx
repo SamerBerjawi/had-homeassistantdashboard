@@ -2,12 +2,14 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * 
- * Devices & Entity Visibility Subpage
+ * Devices & Entity Visibility Subpage (Redesigned)
  * Features:
- * - Quick category filter pills with live count badges (Lights, Climate, Fans, Covers, Locks, Media, Cameras, Vacuums, etc.)
- * - Granular sub-category classification for Sensors & Binary Sensors (Doors, Windows, Motion, Temperature, Humidity, Energy, Battery, Safety, etc.)
- * - 1-Click "Show All" / "Hide All" for each Category and Sub-category
- * - Dual View Modes: Hierarchical Tree View & Direct Filtered List View
+ * - 4 Clear Grouping Modes: By Domain, By Area, By Device, or Flat Searchable List
+ * - Instant Search with match count indicator & 1-tap "Show All Results" / "Hide All Results"
+ * - Multi-Select with floating bulk action bar (Show Selected, Hide Selected, Select/Deselect All)
+ * - Quick Category Filter Pills with live count badges and subcategory drill-downs
+ * - Group-level bulk toggles ("Show All", "Hide All", group checkbox selection)
+ * - Responsive mobile-first Entity Rows with iOS-style toggle switches and touch-friendly targets
  * - Floor & Area Styling, Labels, and Zones management
  */
 
@@ -49,20 +51,23 @@ import {
   PersonSimpleWalk,
   Door,
   ListBullets,
-  TreeStructure,
   CheckCircle,
   ArrowsClockwise,
-  PencilSimple
+  PencilSimple,
+  X,
+  CheckSquare,
+  Square,
+  WarningOctagon,
+  FolderSimple,
+  Check
 } from '@phosphor-icons/react';
 import { HAEntity, HAArea, HAFloor, HALabel, HAZone, HADevice, ResolvedEntity } from '../../types';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { useUserConfig } from '../../contexts/ConfigContext';
-import CustomDropdown from '../ui/CustomDropdown';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import IconPickerField from '../ui/IconPickerField';
 import EntityCustomizerModal from '../modals/EntityCustomizerModal';
 import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
-import { detectSensorCapabilities } from '../../services/sensorClassification';
 import { isRainOrWeatherSensor } from '../../lib/entityClassifiers';
 
 interface DeviceVisibilitySectionProps {
@@ -122,6 +127,8 @@ export type SensorSubcategory =
   | 'network'
   | 'other_sensor';
 
+export type GroupingMode = 'domain' | 'area' | 'device' | 'flat';
+
 export default function DeviceVisibilitySection({
   darkMode,
   entities,
@@ -162,18 +169,25 @@ export default function DeviceVisibilitySection({
     return Boolean(entity.hidden);
   }, [hiddenEntityIdsSet]);
 
+  // Main navigation tabs
   const [activeTab, setActiveTab] = useState<'visibility' | 'styling' | 'labels' | 'zones'>('visibility');
+
+  // Search & Filtering State
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [binarySubcategory, setBinarySubcategory] = useState<BinarySensorSubcategory>('all');
   const [sensorSubcategory, setSensorSubcategory] = useState<SensorSubcategory>('all');
   const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'visible' | 'hidden'>('all');
-  const [viewMode, setViewMode] = useState<'tree' | 'flat'>('tree');
+  const [offlineOnlyFilter, setOfflineOnlyFilter] = useState<boolean>(false);
 
-  // Accordion expansion states
-  const [collapsedFloors, setCollapsedFloors] = useState<Record<string, boolean>>({});
-  const [collapsedAreas, setCollapsedAreas] = useState<Record<string, boolean>>({});
-  const [collapsedDevices, setCollapsedDevices] = useState<Record<string, boolean>>({});
+  // Grouping Mode
+  const [groupingMode, setGroupingMode] = useState<GroupingMode>('domain');
+
+  // Multi-Selection State
+  const [selectedEntityIds, setSelectedEntityIds] = useState<Set<string>>(new Set());
+
+  // Accordion collapsed state for groups
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   // Floor/Area/Label/Entity styling modals
   const [editingFloor, setEditingFloor] = useState<HAFloor | null>(null);
@@ -187,7 +201,7 @@ export default function DeviceVisibilitySection({
   };
 
   // --- Granular Classifier Functions ---
-  const classifyBinarySensor = (entity: ResolvedEntity): BinarySensorSubcategory => {
+  const classifyBinarySensor = useCallback((entity: ResolvedEntity): BinarySensorSubcategory => {
     const rawClass = String(entity.attributes?.device_class || '').toLowerCase();
     const eid = entity.entity_id.toLowerCase();
     const fn = (entity.name || entity.attributes?.friendly_name || '').toLowerCase();
@@ -220,9 +234,9 @@ export default function DeviceVisibilitySection({
       return 'power_binary';
     }
     return 'other_binary';
-  };
+  }, []);
 
-  const classifySensor = (entity: ResolvedEntity): SensorSubcategory => {
+  const classifySensor = useCallback((entity: ResolvedEntity): SensorSubcategory => {
     const rawClass = String(entity.attributes?.device_class || '').toLowerCase();
     const unit = String(entity.attributes?.unit_of_measurement || '');
     const eid = entity.entity_id.toLowerCase();
@@ -232,17 +246,14 @@ export default function DeviceVisibilitySection({
     if (rawClass === 'battery' || eid.includes('battery') || fn.includes('battery') || (unit === '%' && (eid.includes('batt') || fn.includes('batt')))) {
       return 'battery';
     }
-
     // 2. Temperature
     if (rawClass === 'temperature' || unit.includes('°C') || unit.includes('°F') || unit === 'K' || eid.includes('temperature') || eid.includes('_temp') || fn.includes('temp')) {
       return 'temperature';
     }
-
     // 3. Humidity
     if (rawClass === 'humidity' || (unit === '%' && (eid.includes('humidity') || fn.includes('humidity') || eid.includes('hygro')))) {
       return 'humidity';
     }
-
     // 4. Energy & Electricity
     if (
       rawClass === 'energy' ||
@@ -269,7 +280,6 @@ export default function DeviceVisibilitySection({
     ) {
       return 'energy';
     }
-
     // 5. Environmental & Air Quality
     if (
       rawClass === 'atmospheric_pressure' ||
@@ -296,7 +306,6 @@ export default function DeviceVisibilitySection({
     ) {
       return 'environmental';
     }
-
     // 6. Network & Signal
     if (
       rawClass === 'signal_strength' ||
@@ -319,16 +328,13 @@ export default function DeviceVisibilitySection({
     ) {
       return 'network';
     }
-
     return 'other_sensor';
-  };
+  }, []);
 
-  // Match Entity against Active Category & Sub-Category
-  const matchesCategory = (entity: ResolvedEntity): boolean => {
+  // Category & Sub-Category Matching
+  const matchesCategory = useCallback((entity: ResolvedEntity): boolean => {
     const domain = entity.domain;
-
     if (categoryFilter === 'all') return true;
-
     if (categoryFilter === 'light') return domain === 'light';
     if (categoryFilter === 'switch') return domain === 'switch';
     if (categoryFilter === 'climate') return domain === 'climate';
@@ -359,26 +365,40 @@ export default function DeviceVisibilitySection({
     }
 
     return true;
-  };
+  }, [categoryFilter, binarySubcategory, sensorSubcategory, classifyBinarySensor, classifySensor]);
 
-  // Combined Search & Visibility Filter
-  const matchesFilter = (entity: ResolvedEntity): boolean => {
+  // Combined Search & Filter function
+  const matchesFilter = useCallback((entity: ResolvedEntity): boolean => {
     if (!matchesCategory(entity)) return false;
     if (visibilityFilter === 'visible' && isEntityHidden(entity)) return false;
     if (visibilityFilter === 'hidden' && !isEntityHidden(entity)) return false;
+
+    // Offline / unavailable filter
+    if (offlineOnlyFilter) {
+      const s = String(entity.state || '').toLowerCase();
+      if (s !== 'unavailable' && s !== 'unknown') return false;
+    }
+
     if (!searchQuery.trim()) return true;
 
-    const q = searchQuery.toLowerCase();
-    const friendlyName = (entity.name || '').toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+    const friendlyName = (entity.name || entity.attributes?.friendly_name || '').toLowerCase();
     const entityId = entity.entity_id.toLowerCase();
+    const areaName = (entity.area?.name || '').toLowerCase();
     const devName = (entity.device?.name || entity.device?.name_by_user || '').toLowerCase();
     const devModel = (entity.device?.model || '').toLowerCase();
+    const domain = (entity.domain || '').toLowerCase();
 
-    return friendlyName.includes(q) || entityId.includes(q) || devName.includes(q) || devModel.includes(q);
-  };
+    return friendlyName.includes(q) ||
+      entityId.includes(q) ||
+      areaName.includes(q) ||
+      devName.includes(q) ||
+      devModel.includes(q) ||
+      domain.includes(q);
+  }, [matchesCategory, visibilityFilter, isEntityHidden, offlineOnlyFilter, searchQuery]);
 
   // --- Entity Visibility Toggle Handlers ---
-  const handleToggleEntityVisibility = (entityId: string, currentHidden: boolean) => {
+  const handleToggleEntityVisibility = useCallback((entityId: string, currentHidden: boolean) => {
     const nextHidden = !currentHidden;
     setEntityHidden(entityId, nextHidden);
 
@@ -411,9 +431,9 @@ export default function DeviceVisibilitySection({
       title: nextHidden ? 'Entity Hidden' : 'Entity Visible',
       message: `${entityId} is now ${nextHidden ? 'hidden' : 'visible'}.`
     });
-  };
+  }, [setEntityHidden, updateConfig, addToast]);
 
-  const handleBulkSetVisibility = (entityIds: string[], setHidden: boolean, scopeName: string, areaId?: string) => {
+  const handleBulkSetVisibility = useCallback((entityIds: string[], setHidden: boolean, scopeName: string, areaId?: string) => {
     if (!entityIds || entityIds.length === 0) return;
     bulkSetEntitiesHidden(entityIds, setHidden);
 
@@ -463,11 +483,18 @@ export default function DeviceVisibilitySection({
       title: setHidden ? `Hidden in ${scopeName}` : `Shown in ${scopeName}`,
       message: `Updated ${entityIds.length} entities to ${setHidden ? 'hidden' : 'visible'}.`
     });
-  };
+  }, [bulkSetEntitiesHidden, updateConfig, addToast]);
 
-  // --- Construct Category Metrics & List ---
+  // Master Resolved Entities List
   const allResolvedList = useMemo(() => Object.values(resolvedEntities), [resolvedEntities]);
 
+  // Global Visibility Metrics
+  const totalCount = allResolvedList.length;
+  const hiddenCount = useMemo(() => allResolvedList.filter(e => isEntityHidden(e)).length, [allResolvedList, isEntityHidden]);
+  const visibleCount = totalCount - hiddenCount;
+  const visiblePercent = totalCount > 0 ? Math.round((visibleCount / totalCount) * 100) : 100;
+
+  // Category Configuration Options
   const categoryConfigs = useMemo(() => [
     { id: 'all', label: 'All Entities', icon: SquaresFour, color: '#0ea5e9' },
     { id: 'light', label: 'Lights', icon: Lightbulb, color: '#f59e0b' },
@@ -508,19 +535,10 @@ export default function DeviceVisibilitySection({
     { id: 'other_sensor' as SensorSubcategory, label: 'Other Sensors', icon: SlidersHorizontal }
   ], []);
 
-  // Compute Active Filtered Entity Group
+  // Filtered Entities matching all filters
   const activeMatchingEntities = useMemo(() => {
     return allResolvedList.filter(matchesFilter);
-  }, [allResolvedList, categoryFilter, binarySubcategory, sensorSubcategory, visibilityFilter, searchQuery]);
-
-  const activeCategoryAllEntities = useMemo(() => {
-    return allResolvedList.filter(matchesCategory);
-  }, [allResolvedList, categoryFilter, binarySubcategory, sensorSubcategory]);
-
-  const activeCategoryTotalCount = activeCategoryAllEntities.length;
-  const activeCategoryVisibleCount = activeCategoryAllEntities.filter(e => !isEntityHidden(e)).length;
-  const activeCategoryHiddenCount = activeCategoryTotalCount - activeCategoryVisibleCount;
-  const activeCategoryEntityIds = useMemo(() => activeCategoryAllEntities.map(e => e.entity_id), [activeCategoryAllEntities]);
+  }, [allResolvedList, matchesFilter]);
 
   // Active Category Meta info
   const activeCategoryInfo = useMemo(() => {
@@ -548,167 +566,240 @@ export default function DeviceVisibilitySection({
     };
   }, [categoryFilter, binarySubcategory, sensorSubcategory, categoryConfigs, binarySubcategoryConfigs, sensorSubcategoryConfigs]);
 
-  // --- Construct Hierarchical Graph: Floor > Area > Device > Entity ---
-  const hierarchyData = useMemo(() => {
-    const deviceMap = new Map<string, HADevice>(rawDevices.map(d => [d.id, d]));
-    const areaMap = new Map<string, HAArea>(areas.map(a => [a.area_id, a]));
+  // Active category specific totals
+  const activeCategoryAllEntities = useMemo(() => {
+    return allResolvedList.filter(matchesCategory);
+  }, [allResolvedList, matchesCategory]);
 
-    const entitiesByDevice = new Map<string, ResolvedEntity[]>();
-    const entitiesByAreaStandalone = new Map<string, ResolvedEntity[]>();
-    const looseUnassignedEntities: ResolvedEntity[] = [];
+  const activeCategoryTotalCount = activeCategoryAllEntities.length;
+  const activeCategoryVisibleCount = activeCategoryAllEntities.filter(e => !isEntityHidden(e)).length;
+  const activeCategoryHiddenCount = activeCategoryTotalCount - activeCategoryVisibleCount;
+  const activeCategoryEntityIds = useMemo(() => activeCategoryAllEntities.map(e => e.entity_id), [activeCategoryAllEntities]);
 
-    allResolvedList.forEach(entity => {
-      if (entity.device_id) {
-        if (!entitiesByDevice.has(entity.device_id)) {
-          entitiesByDevice.set(entity.device_id, []);
+  // --- Grouping Data Structures ---
+  interface EntityGroup {
+    id: string;
+    title: string;
+    subtitle?: string;
+    icon?: any;
+    color?: string;
+    entities: ResolvedEntity[];
+    allEntityIds: string[];
+    visibleCount: number;
+    totalCount: number;
+  }
+
+  const groupedData: EntityGroup[] = useMemo(() => {
+    if (groupingMode === 'flat') {
+      return [];
+    }
+
+    if (groupingMode === 'domain') {
+      // Group by domain/category
+      const groupsMap = new Map<string, ResolvedEntity[]>();
+      
+      activeMatchingEntities.forEach(ent => {
+        let catId = ent.domain;
+        if (!['light', 'switch', 'climate', 'fan', 'cover', 'lock', 'media_player', 'camera', 'vacuum', 'binary_sensor', 'sensor'].includes(catId)) {
+          catId = 'other';
         }
-        entitiesByDevice.get(entity.device_id)!.push(entity);
-      } else if (entity.area_id) {
-        if (!entitiesByAreaStandalone.has(entity.area_id)) {
-          entitiesByAreaStandalone.set(entity.area_id, []);
+        if (!groupsMap.has(catId)) groupsMap.set(catId, []);
+        groupsMap.get(catId)!.push(ent);
+      });
+
+      const result: EntityGroup[] = [];
+      categoryConfigs.forEach(cfg => {
+        if (cfg.id === 'all') return;
+        const ents = groupsMap.get(cfg.id) || [];
+        if (ents.length === 0) return;
+
+        const eIds = ents.map(e => e.entity_id);
+        const visCount = ents.filter(e => !isEntityHidden(e)).length;
+
+        result.push({
+          id: cfg.id,
+          title: cfg.label,
+          icon: cfg.icon,
+          color: cfg.color,
+          entities: ents,
+          allEntityIds: eIds,
+          visibleCount: visCount,
+          totalCount: ents.length
+        });
+      });
+
+      return result;
+    }
+
+    if (groupingMode === 'area') {
+      // Group by Area
+      const areaMap = new Map<string, HAArea>(areas.map(a => [a.area_id, a]));
+      const floorMap = new Map<string, HAFloor>(floors.map(f => [f.floor_id, f]));
+      const areaGroups = new Map<string, ResolvedEntity[]>();
+      const unassigned: ResolvedEntity[] = [];
+
+      activeMatchingEntities.forEach(ent => {
+        if (ent.area_id && areaMap.has(ent.area_id)) {
+          if (!areaGroups.has(ent.area_id)) areaGroups.set(ent.area_id, []);
+          areaGroups.get(ent.area_id)!.push(ent);
+        } else {
+          unassigned.push(ent);
         }
-        entitiesByAreaStandalone.get(entity.area_id)!.push(entity);
-      } else {
-        looseUnassignedEntities.push(entity);
+      });
+
+      const result: EntityGroup[] = [];
+
+      // Add assigned areas
+      areas.forEach(area => {
+        const ents = areaGroups.get(area.area_id) || [];
+        if (ents.length === 0) return;
+
+        const floor = area.floor_id ? floorMap.get(area.floor_id) : null;
+        const eIds = ents.map(e => e.entity_id);
+        const visCount = ents.filter(e => !isEntityHidden(e)).length;
+
+        result.push({
+          id: area.area_id,
+          title: area.name,
+          subtitle: floor ? `${floor.name} (Level ${floor.level ?? 0})` : 'Unassigned Floor',
+          icon: area.icon || 'Armchair',
+          color: area.color || '#6366f1',
+          entities: ents,
+          allEntityIds: eIds,
+          visibleCount: visCount,
+          totalCount: ents.length
+        });
+      });
+
+      // Add unassigned area group
+      if (unassigned.length > 0) {
+        const eIds = unassigned.map(e => e.entity_id);
+        const visCount = unassigned.filter(e => !isEntityHidden(e)).length;
+        result.push({
+          id: 'unassigned_area',
+          title: 'Unassigned Area',
+          subtitle: 'Entities not assigned to any room',
+          icon: HouseLine,
+          color: '#64748b',
+          entities: unassigned,
+          allEntityIds: eIds,
+          visibleCount: visCount,
+          totalCount: unassigned.length
+        });
       }
-    });
 
-    const devicesByArea = new Map<string, HADevice[]>();
-    const unassignedDevices: HADevice[] = [];
+      return result;
+    }
 
-    rawDevices.forEach(device => {
-      if (device.area_id && areaMap.has(device.area_id)) {
-        if (!devicesByArea.has(device.area_id)) {
-          devicesByArea.set(device.area_id, []);
+    if (groupingMode === 'device') {
+      // Group by Device
+      const deviceMap = new Map<string, HADevice>(rawDevices.map(d => [d.id, d]));
+      const devGroups = new Map<string, ResolvedEntity[]>();
+      const standalone: ResolvedEntity[] = [];
+
+      activeMatchingEntities.forEach(ent => {
+        if (ent.device_id && deviceMap.has(ent.device_id)) {
+          if (!devGroups.has(ent.device_id)) devGroups.set(ent.device_id, []);
+          devGroups.get(ent.device_id)!.push(ent);
+        } else {
+          standalone.push(ent);
         }
-        devicesByArea.get(device.area_id)!.push(device);
-      } else {
-        unassignedDevices.push(device);
+      });
+
+      const result: EntityGroup[] = [];
+
+      rawDevices.forEach(dev => {
+        const ents = devGroups.get(dev.id) || [];
+        if (ents.length === 0) return;
+
+        const eIds = ents.map(e => e.entity_id);
+        const visCount = ents.filter(e => !isEntityHidden(e)).length;
+        const area = dev.area_id ? areas.find(a => a.area_id === dev.area_id) : null;
+
+        result.push({
+          id: dev.id,
+          title: dev.name_by_user || dev.name || 'Hardware Device',
+          subtitle: [
+            dev.manufacturer,
+            dev.model,
+            area ? `Room: ${area.name}` : null
+          ].filter(Boolean).join(' • ') || 'Integration Device',
+          icon: Cpu,
+          color: '#0ea5e9',
+          entities: ents,
+          allEntityIds: eIds,
+          visibleCount: visCount,
+          totalCount: ents.length
+        });
+      });
+
+      if (standalone.length > 0) {
+        const eIds = standalone.map(e => e.entity_id);
+        const visCount = standalone.filter(e => !isEntityHidden(e)).length;
+        result.push({
+          id: 'standalone_entities',
+          title: 'Standalone / Virtual Entities',
+          subtitle: 'Entities without associated hardware device',
+          icon: SlidersHorizontal,
+          color: '#8b5cf6',
+          entities: standalone,
+          allEntityIds: eIds,
+          visibleCount: visCount,
+          totalCount: standalone.length
+        });
       }
-    });
 
-    // Floors
-    const floorGroups: any[] = [];
-    floors.forEach(floor => {
-      const floorAreas = areas.filter(a => a.floor_id === floor.floor_id);
-      const areaList: any[] = [];
-      const floorEntityIds: string[] = [];
+      return result;
+    }
 
-      floorAreas.forEach(area => {
-        const areaDevs = devicesByArea.get(area.area_id) || [];
-        const standaloneEnts = entitiesByAreaStandalone.get(area.area_id) || [];
-        const areaEntityIds: string[] = [];
+    return [];
+  }, [groupingMode, activeMatchingEntities, categoryConfigs, areas, floors, rawDevices, isEntityHidden]);
 
-        const devNodes = areaDevs.map(device => {
-          const ents = entitiesByDevice.get(device.id) || [];
-          ents.forEach(e => {
-            areaEntityIds.push(e.entity_id);
-            floorEntityIds.push(e.entity_id);
-          });
-          return { device, entities: ents };
-        });
-
-        standaloneEnts.forEach(e => {
-          areaEntityIds.push(e.entity_id);
-          floorEntityIds.push(e.entity_id);
-        });
-
-        areaList.push({
-          area,
-          devices: devNodes,
-          standaloneEntities: standaloneEnts,
-          allEntityIds: areaEntityIds
-        });
-      });
-
-      floorGroups.push({
-        floor,
-        areas: areaList,
-        allEntityIds: floorEntityIds
-      });
-    });
-
-    // Unassigned Floor Areas
-    const unassignedFloorAreas = areas.filter(a => !a.floor_id);
-    const unassignedFloorAreaList: any[] = [];
-    const unassignedFloorEntityIds: string[] = [];
-
-    unassignedFloorAreas.forEach(area => {
-      const areaDevs = devicesByArea.get(area.area_id) || [];
-      const standaloneEnts = entitiesByAreaStandalone.get(area.area_id) || [];
-      const areaEntityIds: string[] = [];
-
-      const devNodes = areaDevs.map(device => {
-        const ents = entitiesByDevice.get(device.id) || [];
-        ents.forEach(e => {
-          areaEntityIds.push(e.entity_id);
-          unassignedFloorEntityIds.push(e.entity_id);
-        });
-        return { device, entities: ents };
-      });
-
-      standaloneEnts.forEach(e => {
-        areaEntityIds.push(e.entity_id);
-        unassignedFloorEntityIds.push(e.entity_id);
-      });
-
-      unassignedFloorAreaList.push({
-        area,
-        devices: devNodes,
-        standaloneEntities: standaloneEnts,
-        allEntityIds: areaEntityIds
-      });
-    });
-
-    // Unassigned Devices
-    const unassignedAreaDevNodes = unassignedDevices.map(device => {
-      const ents = entitiesByDevice.get(device.id) || [];
-      return { device, entities: ents };
-    });
-
-    const unassignedAreaAllEntityIds = [
-      ...unassignedAreaDevNodes.flatMap(d => d.entities.map(e => e.entity_id)),
-      ...looseUnassignedEntities.map(e => e.entity_id)
-    ];
-
-    return {
-      floorGroups,
-      unassignedFloorAreaList,
-      unassignedFloorEntityIds,
-      unassignedAreaDevNodes,
-      looseUnassignedEntities,
-      unassignedAreaAllEntityIds,
-      totalEntitiesCount: allResolvedList.length,
-      allEntityIds: allResolvedList.map(e => e.entity_id)
-    };
-  }, [floors, areas, rawDevices, allResolvedList]);
-
-  // Visibility metrics
-  const totalCount = allResolvedList.length;
-  const hiddenCount = allResolvedList.filter(e => isEntityHidden(e)).length;
-  const visibleCount = totalCount - hiddenCount;
-
-  // Toggle Collapse All / Expand All
+  // Global expand/collapse toggle
   const [allCollapsed, setAllCollapsed] = useState(false);
   const handleToggleExpandCollapseAll = () => {
-    const nextState = !allCollapsed;
-    setAllCollapsed(nextState);
-
-    const fMap: Record<string, boolean> = {};
-    floors.forEach(f => { fMap[f.floor_id] = nextState; });
-    fMap['unassigned_floor'] = nextState;
-    fMap['unassigned_devices'] = nextState;
-    setCollapsedFloors(fMap);
-
-    const aMap: Record<string, boolean> = {};
-    areas.forEach(a => { aMap[a.area_id] = nextState; });
-    setCollapsedAreas(aMap);
-
-    const dMap: Record<string, boolean> = {};
-    rawDevices.forEach(d => { dMap[d.id] = nextState; });
-    setCollapsedDevices(dMap);
+    const next = !allCollapsed;
+    setAllCollapsed(next);
+    const map: Record<string, boolean> = {};
+    groupedData.forEach(g => {
+      map[g.id] = next;
+    });
+    setCollapsedGroups(map);
   };
 
+  // --- Multi-Select Handlers ---
+  const toggleSelectEntity = (entityId: string) => {
+    setSelectedEntityIds(prev => {
+      const next = new Set(prev);
+      if (next.has(entityId)) {
+        next.delete(entityId);
+      } else {
+        next.add(entityId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectGroup = (groupEntityIds: string[], select: boolean) => {
+    setSelectedEntityIds(prev => {
+      const next = new Set(prev);
+      groupEntityIds.forEach(id => {
+        if (select) next.add(id);
+        else next.delete(id);
+      });
+      return next;
+    });
+  };
+
+  const handleSelectAllFiltered = (select: boolean) => {
+    if (select) {
+      setSelectedEntityIds(new Set(activeMatchingEntities.map(e => e.entity_id)));
+    } else {
+      setSelectedEntityIds(new Set());
+    }
+  };
+
+  // Sub-Navigation Tabs
   const subNavTabs: SectionTabItem[] = useMemo(() => [
     {
       id: 'visibility',
@@ -739,10 +830,169 @@ export default function DeviceVisibilitySection({
     }
   ], [visibleCount, totalCount, labels.length, resolvedZones.length]);
 
+  // Helper to render an individual entity row
+  const renderEntityRow = (entity: ResolvedEntity) => {
+    const isHidden = isEntityHidden(entity);
+    const isSelected = selectedEntityIds.has(entity.entity_id);
+    const domain = entity.domain;
+    const isOnline = entity.state !== 'unavailable' && entity.state !== 'unknown';
+    const isActive = entity.state === 'on' || entity.state === 'open' || entity.state === 'unlocked' || entity.state === 'playing';
+
+    // Find area & device
+    const areaObj = entity.area_id ? areas.find(a => a.area_id === entity.area_id) : null;
+    const devObj = entity.device_id ? rawDevices.find(d => d.id === entity.device_id) : null;
+
+    // Determine domain color
+    const catCfg = categoryConfigs.find(c => c.id === domain) || categoryConfigs[categoryConfigs.length - 1];
+    const domainColor = catCfg.color || '#64748b';
+
+    return (
+      <div
+        key={entity.entity_id}
+        className={`group relative rounded-2xl p-2.5 sm:p-3.5 transition-all duration-200 border ${
+          isSelected
+            ? 'bg-sky-500/10 dark:bg-sky-500/15 border-sky-500/50 shadow-sm'
+            : isHidden
+              ? 'bg-slate-100/50 dark:bg-white/2 border-dashed border-slate-300/80 dark:border-white/5 opacity-65'
+              : 'bg-white dark:bg-white/5 border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-xs'
+        }`}
+      >
+        <div className="flex flex-col gap-1.5">
+          {/* Top Row: Checkbox + Icon + Name/ID + Actions (Pencil & Toggle) */}
+          <div className="flex items-center justify-between gap-2 sm:gap-3 min-w-0">
+            {/* Left: Checkbox + Icon + Name & Entity ID */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              {/* Multi-Select Checkbox */}
+              <button
+                type="button"
+                onClick={() => toggleSelectEntity(entity.entity_id)}
+                className="p-1 rounded-lg text-slate-400 hover:text-sky-500 transition-colors shrink-0 cursor-pointer"
+                title={isSelected ? 'Deselect entity' : 'Select for bulk action'}
+              >
+                {isSelected ? (
+                  <CheckSquare size={20} weight="fill" className="text-sky-500" />
+                ) : (
+                  <Square size={20} className="text-slate-300 dark:text-slate-600 hover:text-slate-400" />
+                )}
+              </button>
+
+              {/* Entity Icon with domain badge */}
+              <div
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 border relative"
+                style={{
+                  backgroundColor: `${domainColor}15`,
+                  borderColor: `${domainColor}35`,
+                  color: domainColor
+                }}
+              >
+                <DynamicPhosphorIcon name={entity.icon} size={18} weight="duotone" />
+                {/* Online/Offline status dot */}
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 ${
+                    !isOnline
+                      ? 'bg-rose-500'
+                      : isActive
+                        ? 'bg-emerald-500'
+                        : 'bg-slate-400'
+                  }`}
+                  title={`Status: ${entity.state}`}
+                />
+              </div>
+
+              {/* Entity Name & ID */}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                    {entity.name || entity.attributes?.friendly_name || entity.entity_id}
+                  </span>
+                  {!isOnline && (
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">
+                      Offline
+                    </span>
+                  )}
+                </div>
+                <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400 truncate block mt-0.5">
+                  {entity.entity_id}
+                </span>
+              </div>
+            </div>
+
+            {/* Right: Actions (Customize button + iOS Toggle Switch) */}
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+              {/* Quick Customize Modal trigger */}
+              <button
+                type="button"
+                onClick={() => setCustomizingEntity(entity)}
+                className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-500/15 transition-all cursor-pointer"
+                title="Customize Name, Icon & Area"
+              >
+                <PencilSimple size={16} weight="bold" />
+              </button>
+
+              {/* iOS-Style Toggle Switch */}
+              <div className="flex items-center gap-1.5">
+                <span className="hidden md:inline text-xs font-bold text-slate-600 dark:text-slate-300">
+                  {!isHidden ? 'Visible' : 'Hidden'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={!isHidden}
+                  onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none shadow-xs ${
+                    !isHidden ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
+                  }`}
+                  title={!isHidden ? 'Click to hide entity' : 'Click to make entity visible'}
+                >
+                  <span
+                    className={`pointer-events-none inline-flex items-center justify-center h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out text-[10px] ${
+                      !isHidden ? 'translate-x-5 text-emerald-600' : 'translate-x-0 text-slate-400'
+                    }`}
+                  >
+                    {!isHidden ? <Eye size={11} weight="bold" /> : <EyeSlash size={11} weight="bold" />}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Row: Area Badge, Device, State Pills (aligned under text) */}
+          {(areaObj || devObj || entity.state) && (
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[11px] pl-[46px] sm:pl-[52px]">
+              {areaObj && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGroupingMode('area');
+                    setSearchQuery(areaObj.name);
+                  }}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors cursor-pointer"
+                >
+                  <HouseLine size={12} weight="duotone" />
+                  <span>{areaObj.name}</span>
+                </button>
+              )}
+
+              {devObj && (
+                <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 font-medium truncate max-w-[140px] sm:max-w-none">
+                  {devObj.name}
+                </span>
+              )}
+
+              <span className="text-slate-400 font-mono">
+                State: <strong className="text-slate-700 dark:text-slate-200">{entity.state}</strong>
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-4 w-full animate-in fade-in duration-200 pb-24 md:pb-6">
+    <div className="space-y-4 w-full animate-in fade-in duration-200 pb-28 md:pb-8">
       {/* Top Floating AdaptiveSectionTabs & Visibility Metrics */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
         <div className="min-w-0 max-w-full">
           <AdaptiveSectionTabs
             tabs={subNavTabs}
@@ -752,42 +1002,53 @@ export default function DeviceVisibilitySection({
           />
         </div>
 
-        {/* Global Visibility Summary Pill */}
-        <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/60 dark:bg-black/25 border border-slate-200/80 dark:border-white/10 text-xs self-start sm:self-auto shadow-xs font-mono">
-          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
-            <Eye size={14} weight="bold" /> {visibleCount} Visible
-          </span>
-          <span className="text-slate-300 dark:text-slate-700">•</span>
-          <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
-            <EyeSlash size={14} weight="bold" /> {hiddenCount} Hidden
-          </span>
+        {/* Global Visibility Summary Card with visual progress bar */}
+        <div className="flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-white/70 dark:bg-black/30 border border-slate-200/90 dark:border-white/10 backdrop-blur-md text-xs shadow-xs font-mono self-start sm:self-auto">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+              <Eye size={14} weight="bold" /> {visibleCount}
+            </span>
+            <span className="text-slate-300 dark:text-slate-700">•</span>
+            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
+              <EyeSlash size={14} weight="bold" /> {hiddenCount}
+            </span>
+          </div>
+
+          {/* Mini progress bar */}
+          <div className="w-16 sm:w-24 h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden shrink-0">
+            <div
+              className="h-full bg-emerald-500 transition-all duration-300 rounded-full"
+              style={{ width: `${visiblePercent}%` }}
+              title={`${visiblePercent}% visible`}
+            />
+          </div>
+          <span className="font-bold text-slate-700 dark:text-slate-300">{visiblePercent}%</span>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* TAB 1: ENTITY VISIBILITY MANAGER */}
+      {/* TAB 1: REDESIGNED ENTITY VISIBILITY MANAGER */}
       {/* ========================================================================= */}
       {activeTab === 'visibility' && (
         <div className="space-y-4">
           {/* Quick Category Filter Bar */}
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-white/60 dark:bg-black/25 border border-slate-200/80 dark:border-white/10 backdrop-blur-md shadow-xs space-y-2.5">
+          <div className="p-3 sm:p-4 rounded-3xl bg-white/70 dark:bg-black/25 border border-slate-200/90 dark:border-white/10 backdrop-blur-md shadow-xs space-y-3">
             <div className="flex items-center justify-between gap-2 px-1">
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <SlidersHorizontal size={14} weight="bold" className="text-sky-500" />
-                <span>Quick Category Filters</span>
+                <span>Categories</span>
               </span>
               <span className="text-xs text-slate-400 font-mono">
-                {allResolvedList.length} Total Registered Entities
+                {allResolvedList.length} Total Registered
               </span>
             </div>
 
             {/* Scrollable Category Filter Chips */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1.5 touch-scroll-x custom-scrollbar">
               {categoryConfigs.map(cat => {
                 const isSelected = categoryFilter === cat.id;
                 const IconComponent = cat.icon;
                 
-                // Count in category
                 const catEntities = cat.id === 'all'
                   ? allResolvedList
                   : cat.id === 'other'
@@ -799,7 +1060,6 @@ export default function DeviceVisibilitySection({
 
                 const count = catEntities.length;
                 if (count === 0 && cat.id !== 'all') return null;
-
                 const catVisible = catEntities.filter(e => !isEntityHidden(e)).length;
 
                 return (
@@ -811,7 +1071,7 @@ export default function DeviceVisibilitySection({
                       if (cat.id === 'binary_sensor') setBinarySubcategory('all');
                       if (cat.id === 'sensor') setSensorSubcategory('all');
                     }}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 border ${
+                    className={`flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 border ${
                       isSelected
                         ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-md scale-102 border-transparent'
                         : 'bg-white/80 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10'
@@ -823,7 +1083,7 @@ export default function DeviceVisibilitySection({
                       style={{ color: isSelected ? undefined : cat.color }}
                     />
                     <span>{cat.label}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono font-bold ${
                       isSelected
                         ? 'bg-white/20 dark:bg-black/20 text-white dark:text-black'
                         : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400'
@@ -837,14 +1097,14 @@ export default function DeviceVisibilitySection({
 
             {/* Granular Sub-Category Filter Bar for Binary Sensors */}
             {categoryFilter === 'binary_sensor' && (
-              <div className="pt-2 border-t border-slate-200/80 dark:border-white/5 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="pt-2.5 border-t border-slate-200/80 dark:border-white/5 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
                 <div className="flex items-center justify-between px-1">
                   <span className="text-[11px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
                     <DoorOpen size={14} weight="bold" />
                     <span>Binary Sensor Sub-Classifications</span>
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 touch-scroll-x custom-scrollbar">
                   {binarySubcategoryConfigs.map(sub => {
                     const isSubSelected = binarySubcategory === sub.id;
                     const SubIcon = sub.icon;
@@ -883,14 +1143,14 @@ export default function DeviceVisibilitySection({
 
             {/* Granular Sub-Category Filter Bar for Numerical Sensors */}
             {categoryFilter === 'sensor' && (
-              <div className="pt-2 border-t border-slate-200/80 dark:border-white/5 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="pt-2.5 border-t border-slate-200/80 dark:border-white/5 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
                 <div className="flex items-center justify-between px-1">
                   <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
                     <Gauge size={14} weight="bold" />
-                    <span>Sensor Sub-Classifications (Environmental, Energy, Battery, etc.)</span>
+                    <span>Sensor Sub-Classifications</span>
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 touch-scroll-x custom-scrollbar">
                   {sensorSubcategoryConfigs.map(sub => {
                     const isSubSelected = sensorSubcategory === sub.id;
                     const SubIcon = sub.icon;
@@ -928,913 +1188,454 @@ export default function DeviceVisibilitySection({
             )}
           </div>
 
-          {/* Active Category Action Banner & Search Controls */}
+          {/* Search, Filter & Grouping Controls Bar */}
           <div className="p-4 sm:p-5 rounded-3xl bg-slate-50/90 dark:bg-white/2 border border-slate-200 dark:border-white/10 backdrop-blur-md space-y-4 shadow-xs">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              {/* Left: Category Title & Live Stats */}
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center border shadow-xs shrink-0"
-                  style={{
-                    backgroundColor: `${activeCategoryInfo.color}1a`,
-                    borderColor: `${activeCategoryInfo.color}40`,
-                    color: activeCategoryInfo.color
-                  }}
-                >
-                  <activeCategoryInfo.icon size={24} weight="duotone" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                      {activeCategoryInfo.title}
-                    </h3>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300">
-                      {activeCategoryTotalCount} Entities
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{activeCategoryVisibleCount} Visible</span>
-                    <span className="mx-1.5">•</span>
-                    <span className="text-amber-600 dark:text-amber-400 font-bold">{activeCategoryHiddenCount} Hidden</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Right: Show All / Hide All for Active Category */}
-              <div className="flex flex-wrap items-center gap-2">
-                {/* 1-Tap Show All in Category */}
-                <button
-                  type="button"
-                  onClick={() => handleBulkSetVisibility(activeCategoryEntityIds, false, activeCategoryInfo.title)}
-                  disabled={activeCategoryTotalCount === 0 || activeCategoryHiddenCount === 0}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer border shadow-xs ${
-                    activeCategoryHiddenCount > 0
-                      ? 'bg-emerald-500 hover:bg-emerald-400 text-white border-emerald-400 shadow-emerald-500/20 active:scale-95'
-                      : 'bg-emerald-500/10 text-emerald-600/50 dark:text-emerald-400/40 border-emerald-500/15 cursor-not-allowed'
-                  }`}
-                  title={`Show all ${activeCategoryTotalCount} ${activeCategoryInfo.title}`}
-                >
-                  <Eye size={16} weight="bold" />
-                  <span>Show All {activeCategoryInfo.title} ({activeCategoryTotalCount})</span>
-                </button>
-
-                {/* 1-Tap Hide All in Category */}
-                <button
-                  type="button"
-                  onClick={() => handleBulkSetVisibility(activeCategoryEntityIds, true, activeCategoryInfo.title)}
-                  disabled={activeCategoryTotalCount === 0 || activeCategoryVisibleCount === 0}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer border shadow-xs ${
-                    activeCategoryVisibleCount > 0
-                      ? 'bg-amber-500 hover:bg-amber-400 text-white border-amber-400 shadow-amber-500/20 active:scale-95'
-                      : 'bg-amber-500/10 text-amber-600/50 dark:text-amber-400/40 border-amber-500/15 cursor-not-allowed'
-                  }`}
-                  title={`Hide all ${activeCategoryTotalCount} ${activeCategoryInfo.title}`}
-                >
-                  <EyeSlash size={16} weight="bold" />
-                  <span>Hide All {activeCategoryInfo.title}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Filter Bar Row (Search, Visibility, Tree/Flat view) */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-200/80 dark:border-white/5">
-              {/* Search input */}
-              <div className="relative flex-1 max-w-md w-full">
+            {/* Top Row: Search Input + Visibility Segmented Control */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Search input with clear button */}
+              <div className="relative flex-1 w-full">
                 <MagnifyingGlass size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder={`Search ${activeCategoryInfo.title.toLowerCase()}...`}
+                  placeholder="Search by name, entity_id, room, device, domain..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 rounded-2xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:border-sky-500 shadow-xs"
+                  className="w-full pl-9 pr-9 py-2.5 rounded-2xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-sky-500 shadow-xs"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+                  >
+                    <X size={14} weight="bold" />
+                  </button>
+                )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Visibility Status Filter */}
-                <div className="w-36">
-                  <CustomDropdown
-                    value={visibilityFilter}
-                    onChange={(val) => setVisibilityFilter(val as any)}
-                    options={[
-                      { value: 'all', label: 'All Status' },
-                      { value: 'visible', label: 'Visible Only' },
-                      { value: 'hidden', label: 'Hidden Only' }
-                    ]}
-                    size="sm"
-                  />
-                </div>
+              {/* Segmented Visibility Filter (All / Visible / Hidden) */}
+              <div className="flex items-center p-1 rounded-2xl bg-slate-200/80 dark:bg-white/10 border border-slate-300/80 dark:border-white/10 shrink-0">
+                {(['all', 'visible', 'hidden'] as const).map(mode => {
+                  const isSel = visibilityFilter === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setVisibilityFilter(mode)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer ${
+                        isSel
+                          ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  );
+                })}
+              </div>
 
-                {/* View Mode Toggle: Tree vs Direct List */}
-                <div className="flex items-center p-1 rounded-xl bg-slate-200/80 dark:bg-white/10 border border-slate-300 dark:border-white/10">
+              {/* Offline / Unavailable filter pill */}
+              <button
+                type="button"
+                onClick={() => setOfflineOnlyFilter(prev => !prev)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold border transition-all cursor-pointer shrink-0 ${
+                  offlineOnlyFilter
+                    ? 'bg-rose-500 text-white border-rose-400 shadow-sm'
+                    : 'bg-white dark:bg-white/5 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10'
+                }`}
+                title="Filter to entities currently offline or unavailable"
+              >
+                <WarningOctagon size={15} weight={offlineOnlyFilter ? 'fill' : 'duotone'} />
+                <span>Offline Only</span>
+              </button>
+            </div>
+
+            {/* Bottom Row: Grouping Selector + Category Bulk Actions */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-slate-200/80 dark:border-white/5">
+              {/* Grouping Mode Switcher */}
+              <div className="flex items-center gap-2 flex-wrap max-w-full">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider shrink-0">Group By:</span>
+                <div className="flex items-center p-1 rounded-2xl bg-slate-200/80 dark:bg-white/10 border border-slate-300/80 dark:border-white/10 overflow-x-auto touch-scroll-x custom-scrollbar max-w-full">
                   <button
                     type="button"
-                    onClick={() => setViewMode('tree')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      viewMode === 'tree'
-                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
+                    onClick={() => setGroupingMode('domain')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      groupingMode === 'domain'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
-                    title="View organized in Floors > Areas > Devices"
                   >
-                    <TreeStructure size={14} weight="bold" />
-                    <span>Tree View</span>
+                    <FolderSimple size={14} weight="bold" />
+                    <span>Domain</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setViewMode('flat')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      viewMode === 'flat'
-                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
+                    onClick={() => setGroupingMode('area')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      groupingMode === 'area'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
-                    title="View as a direct flat entity list"
+                  >
+                    <HouseLine size={14} weight="bold" />
+                    <span>Room / Area</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setGroupingMode('device')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      groupingMode === 'device'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Cpu size={14} weight="bold" />
+                    <span>Device</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setGroupingMode('flat')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      groupingMode === 'flat'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
                   >
                     <ListBullets size={14} weight="bold" />
-                    <span>Direct List</span>
+                    <span>Flat List</span>
                   </button>
                 </div>
 
-                {viewMode === 'tree' && (
+                {groupingMode !== 'flat' && (
                   <button
                     type="button"
                     onClick={handleToggleExpandCollapseAll}
-                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/15 border border-slate-200 dark:border-white/15 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/15 border border-slate-200 dark:border-white/15 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
                   >
                     {allCollapsed ? 'Expand All' : 'Collapse All'}
                   </button>
                 )}
               </div>
+
+              {/* Category Bulk Toggles / Search Result Bulk Toggles */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {searchQuery.trim() ? (
+                  // Search specific bulk actions
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleBulkSetVisibility(activeMatchingEntities.map(e => e.entity_id), false, `Search "${searchQuery}"`)}
+                      disabled={activeMatchingEntities.length === 0}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-white border border-emerald-400 shadow-xs cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Eye size={14} weight="bold" />
+                      <span>Show All Matches ({activeMatchingEntities.length})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleBulkSetVisibility(activeMatchingEntities.map(e => e.entity_id), true, `Search "${searchQuery}"`)}
+                      disabled={activeMatchingEntities.length === 0}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-white border border-amber-400 shadow-xs cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <EyeSlash size={14} weight="bold" />
+                      <span>Hide All Matches</span>
+                    </button>
+                  </>
+                ) : (
+                  // Category specific bulk actions
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleBulkSetVisibility(activeCategoryEntityIds, false, activeCategoryInfo.title)}
+                      disabled={activeCategoryTotalCount === 0 || activeCategoryHiddenCount === 0}
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border shadow-xs ${
+                        activeCategoryHiddenCount > 0
+                          ? 'bg-emerald-500 hover:bg-emerald-400 text-white border-emerald-400 active:scale-95'
+                          : 'bg-emerald-500/10 text-emerald-600/50 dark:text-emerald-400/40 border-emerald-500/15 cursor-not-allowed'
+                      }`}
+                      title={`Show all ${activeCategoryTotalCount} ${activeCategoryInfo.title}`}
+                    >
+                      <Eye size={14} weight="bold" />
+                      <span>Show All {activeCategoryInfo.title}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleBulkSetVisibility(activeCategoryEntityIds, true, activeCategoryInfo.title)}
+                      disabled={activeCategoryTotalCount === 0 || activeCategoryVisibleCount === 0}
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border shadow-xs ${
+                        activeCategoryVisibleCount > 0
+                          ? 'bg-amber-500 hover:bg-amber-400 text-white border-amber-400 active:scale-95'
+                          : 'bg-amber-500/10 text-amber-600/50 dark:text-amber-400/40 border-amber-500/15 cursor-not-allowed'
+                      }`}
+                      title={`Hide all ${activeCategoryTotalCount} ${activeCategoryInfo.title}`}
+                    >
+                      <EyeSlash size={14} weight="bold" />
+                      <span>Hide All {activeCategoryInfo.title}</span>
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* ========================================================================= */}
-          {/* VIEW MODE 1: DIRECT FLAT LIST */}
-          {/* ========================================================================= */}
-          {viewMode === 'flat' && (
-            <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/2 p-4 sm:p-5 space-y-3 shadow-xs">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
-                <span>Matching Entities ({activeMatchingEntities.length})</span>
-                <span>Actions</span>
-              </div>
-
-              {activeMatchingEntities.length === 0 ? (
-                <div className="p-8 text-center text-sm text-slate-400 italic rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
-                  No entities found matching "{searchQuery || activeCategoryInfo.title}".
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {activeMatchingEntities.map(entity => {
-                    const isHidden = isEntityHidden(entity);
-                    const domain = entity.domain;
-                    const isOn = entity.state === 'on' || entity.state === 'open' || entity.state === 'unlocked' || entity.state === 'playing';
-
-                    // Area and device names
-                    const areaObj = entity.area_id ? areas.find(a => a.area_id === entity.area_id) : null;
-                    const devObj = entity.device_id ? rawDevices.find(d => d.id === entity.device_id) : null;
-
-                    return (
-                      <div
-                        key={entity.entity_id}
-                        className={`p-3.5 rounded-2xl flex items-center justify-between gap-3 border transition-all ${
-                          isHidden
-                            ? 'bg-slate-100/40 dark:bg-white/1 border-dashed border-slate-300 dark:border-white/5 opacity-60'
-                            : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 shadow-xs'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isOn ? 'bg-sky-500 shadow-xs' : 'bg-slate-400'}`} />
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
-                                {entity.name}
-                              </span>
-                              <span className="text-xs font-mono text-slate-500 dark:text-slate-400 truncate">
-                                ({entity.entity_id})
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-2 mt-1 flex-wrap text-xs">
-                              {areaObj && (
-                                <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-500/20">
-                                  {areaObj.name}
-                                </span>
-                              )}
-                              {devObj && (
-                                <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 font-medium">
-                                  {devObj.name}
-                                </span>
-                              )}
-                              <span className="text-slate-400 font-mono">
-                                State: <strong className="text-slate-700 dark:text-slate-200">{entity.state}</strong>
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Show / Hide Toggle Button */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
-                          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 border ${
-                            !isHidden
-                              ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 shadow-2xs'
-                              : 'bg-slate-200 hover:bg-slate-300 text-slate-600 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-400 border-slate-300 dark:border-white/10'
-                          }`}
-                        >
-                          {!isHidden ? <Eye size={16} weight="bold" /> : <EyeSlash size={16} weight="bold" />}
-                          <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+          {/* Search matches notice if searching */}
+          {searchQuery.trim() && (
+            <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-300 text-xs">
+              <span className="flex items-center gap-2">
+                <MagnifyingGlass size={15} weight="bold" />
+                <span>Found <strong>{activeMatchingEntities.length}</strong> entities matching "<strong>{searchQuery}</strong>"</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
+              >
+                Clear Search
+              </button>
             </div>
           )}
 
           {/* ========================================================================= */}
-          {/* VIEW MODE 2: HIERARCHICAL TREE RENDERING */}
+          {/* ENTITY LISTINGS: GROUPED OR FLAT */}
           {/* ========================================================================= */}
-          {viewMode === 'tree' && (
-            <div className="space-y-4">
-              {/* 1. FLOORS WITH NESTED AREAS */}
-              {hierarchyData.floorGroups.map(({ floor, areas: floorAreas, allEntityIds: floorEntityIds }) => {
-                const isFloorCollapsed = collapsedFloors[floor.floor_id];
-                
-                // Filter down to active category & search filter
-                const matchingFloorEntityIds = floorEntityIds.filter(id => {
-                  const ent = resolvedEntities[id];
-                  return ent && matchesFilter(ent);
-                });
-
-                // If filter is active and floor has 0 matches, omit from view
-                if (matchingFloorEntityIds.length === 0 && (categoryFilter !== 'all' || searchQuery || visibilityFilter !== 'all')) {
-                  return null;
-                }
-
-                const floorVisibleCount = matchingFloorEntityIds.filter(id => !isEntityHidden(resolvedEntities[id])).length;
-                const floorTotalCount = matchingFloorEntityIds.length;
+          {activeMatchingEntities.length === 0 ? (
+            <div className="p-12 text-center rounded-3xl border border-dashed border-slate-300 dark:border-white/10 bg-white/40 dark:bg-white/1 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-400 flex items-center justify-center mx-auto">
+                <MagnifyingGlass size={24} weight="duotone" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                No entities found
+              </h4>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                No entities match your current filters and search query. Try clearing the search or switching the category filter.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setCategoryFilter('all');
+                  setVisibilityFilter('all');
+                  setOfflineOnlyFilter(false);
+                }}
+                className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold shadow-xs hover:bg-sky-400 transition-colors cursor-pointer"
+              >
+                Reset All Filters
+              </button>
+            </div>
+          ) : groupingMode === 'flat' ? (
+            // Flat List Rendering
+            <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/2 p-3 sm:p-4 space-y-2.5 shadow-xs">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider px-2 py-1">
+                <span>All Matching Entities ({activeMatchingEntities.length})</span>
+                <button
+                  type="button"
+                  onClick={() => handleSelectAllFiltered(selectedEntityIds.size !== activeMatchingEntities.length)}
+                  className="text-sky-600 dark:text-sky-400 hover:underline font-semibold cursor-pointer"
+                >
+                  {selectedEntityIds.size === activeMatchingEntities.length ? 'Deselect All' : 'Select All'}
+                </button>
+              </div>
+              <div className="space-y-2">
+                {activeMatchingEntities.map(entity => renderEntityRow(entity))}
+              </div>
+            </div>
+          ) : (
+            // Grouped Accordion Cards (Domain, Area, Device)
+            <div className="space-y-3.5">
+              {groupedData.map(group => {
+                const isCollapsed = Boolean(collapsedGroups[group.id]);
+                const IconComponent = group.icon;
+                const isAllSelected = group.allEntityIds.length > 0 && group.allEntityIds.every(id => selectedEntityIds.has(id));
+                const isPartiallySelected = !isAllSelected && group.allEntityIds.some(id => selectedEntityIds.has(id));
 
                 return (
                   <div
-                    key={floor.floor_id}
-                    className="rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/2 overflow-hidden shadow-xs transition-all"
+                    key={group.id}
+                    className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/2 overflow-hidden shadow-xs transition-all"
                   >
-                    {/* Floor Header Bar */}
-                    <div className="p-4 sm:p-5 bg-slate-100/90 dark:bg-white/5 border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
-                      <div
-                        onClick={() => setCollapsedFloors(prev => ({ ...prev, [floor.floor_id]: !prev[floor.floor_id] }))}
-                        className="flex items-center gap-3 cursor-pointer select-none group"
-                      >
-                        <button type="button" className="text-slate-400 group-hover:text-slate-700 dark:group-hover:text-white transition-transform">
-                          {isFloorCollapsed ? <CaretRight size={20} weight="bold" /> : <CaretDown size={20} weight="bold" />}
-                        </button>
+                    {/* Group Header Card */}
+                    <div className="p-3 sm:p-4 bg-slate-100/80 dark:bg-white/4 border-b border-slate-200/80 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+                      {/* Top Row / Left Side: Checkbox + Chevron + Icon + Title + (Mobile Count Badge) */}
+                      <div className="flex items-center justify-between gap-2 min-w-0 w-full sm:w-auto sm:flex-1">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                          {/* Group Multi-Select Checkbox */}
+                          <button
+                            type="button"
+                            onClick={() => handleSelectGroup(group.allEntityIds, !isAllSelected)}
+                            className="p-1 rounded-lg text-slate-400 hover:text-sky-500 transition-colors shrink-0 cursor-pointer"
+                            title={isAllSelected ? 'Deselect entire group' : 'Select entire group'}
+                          >
+                            {isAllSelected ? (
+                              <CheckSquare size={20} weight="fill" className="text-sky-500" />
+                            ) : isPartiallySelected ? (
+                              <CheckSquare size={20} weight="duotone" className="text-sky-500 opacity-70" />
+                            ) : (
+                              <Square size={20} className="text-slate-300 dark:text-slate-600 hover:text-slate-400" />
+                            )}
+                          </button>
 
-                        <div
-                          className="w-11 h-11 rounded-2xl flex items-center justify-center border shadow-xs shrink-0"
-                          style={{
-                            backgroundColor: `${floor.color || '#0ea5e9'}1a`,
-                            borderColor: `${floor.color || '#0ea5e9'}40`,
-                            color: floor.color || '#0ea5e9'
-                          }}
-                        >
-                          {renderIconByName(floor.icon || 'Stairs', 22)}
-                        </div>
+                          {/* Chevron + Icon + Title */}
+                          <div
+                            onClick={() => setCollapsedGroups(prev => ({ ...prev, [group.id]: !prev[group.id] }))}
+                            className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none min-w-0 flex-1 group"
+                          >
+                            <button type="button" className="text-slate-400 group-hover:text-slate-700 dark:group-hover:text-white transition-transform shrink-0">
+                              {isCollapsed ? <CaretRight size={18} weight="bold" /> : <CaretDown size={18} weight="bold" />}
+                            </button>
 
-                        <div>
-                          <div className="flex items-center gap-2.5">
-                            <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-white group-hover:text-sky-500 transition-colors">
-                              {floor.name}
-                            </h4>
-                            <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-lg bg-slate-200/80 dark:bg-white/10 text-slate-700 dark:text-slate-300">
-                              Level {floor.level ?? 0}
-                            </span>
+                            <div
+                              className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center border shadow-2xs shrink-0"
+                              style={{
+                                backgroundColor: `${group.color || '#0ea5e9'}15`,
+                                borderColor: `${group.color || '#0ea5e9'}35`,
+                                color: group.color || '#0ea5e9'
+                              }}
+                            >
+                              {typeof IconComponent === 'function' ? (
+                                <IconComponent size={18} weight="duotone" />
+                              ) : (
+                                renderIconByName(IconComponent, 18)
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white group-hover:text-sky-500 transition-colors truncate">
+                                {group.title}
+                              </h4>
+                              {group.subtitle && (
+                                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate block">
+                                  {group.subtitle}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-                            {floorAreas.length} Areas • {floorVisibleCount} of {floorTotalCount} visible
-                          </span>
                         </div>
-                      </div>
 
-                      {/* Floor Bulk Actions */}
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs sm:text-sm font-mono font-bold px-3 py-1.5 rounded-xl border ${
-                          floorVisibleCount === floorTotalCount
+                        {/* Count Badge on Mobile */}
+                        <span className={`sm:hidden text-xs font-mono font-bold px-2.5 py-1 rounded-xl border shrink-0 ${
+                          group.visibleCount === group.totalCount
                             ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                            : floorVisibleCount === 0
+                            : group.visibleCount === 0
                               ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
                               : 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30'
                         }`}>
-                          {floorVisibleCount} / {floorTotalCount}
+                          {group.visibleCount} / {group.totalCount}
+                        </span>
+                      </div>
+
+                      {/* Right Side / Bottom Row: Desktop Count Badge + 1-Tap Show All / Hide All */}
+                      <div className="flex items-center gap-2 shrink-0 justify-end sm:justify-start pl-[52px] sm:pl-0 w-full sm:w-auto">
+                        {/* Desktop Count Badge */}
+                        <span className={`hidden sm:inline-block text-xs font-mono font-bold px-2.5 py-1 rounded-xl border ${
+                          group.visibleCount === group.totalCount
+                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                            : group.visibleCount === 0
+                              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                              : 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30'
+                        }`}>
+                          {group.visibleCount} / {group.totalCount}
                         </span>
 
                         <button
                           type="button"
-                          onClick={() => handleBulkSetVisibility(matchingFloorEntityIds, false, floor.name)}
-                          className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-white/10 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400 border border-slate-200 dark:border-white/10 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-2xs"
+                          onClick={() => handleBulkSetVisibility(group.allEntityIds, false, group.title)}
+                          disabled={group.visibleCount === group.totalCount}
+                          className="flex-1 sm:flex-initial text-center px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-xl bg-white dark:bg-white/10 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400 border border-slate-200 dark:border-white/10 text-xs font-bold transition-all cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Show All
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => handleBulkSetVisibility(matchingFloorEntityIds, true, floor.name)}
-                          className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-white/10 hover:bg-amber-50 text-slate-700 hover:text-amber-600 dark:text-slate-200 dark:hover:text-amber-400 border border-slate-200 dark:border-white/10 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-2xs"
+                          onClick={() => handleBulkSetVisibility(group.allEntityIds, true, group.title)}
+                          disabled={group.visibleCount === 0}
+                          className="flex-1 sm:flex-initial text-center px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-xl bg-white dark:bg-white/10 hover:bg-amber-50 text-slate-700 hover:text-amber-600 dark:text-slate-200 dark:hover:text-amber-400 border border-slate-200 dark:border-white/10 text-xs font-bold transition-all cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Hide All
                         </button>
                       </div>
                     </div>
 
-                    {/* Areas within Floor */}
-                    {!isFloorCollapsed && (
-                      <div className="p-4 sm:p-5 space-y-4">
-                        {floorAreas.map(({ area, devices: areaDevs, standaloneEntities, allEntityIds: areaEntityIds }) => {
-                          const isAreaCollapsed = collapsedAreas[area.area_id];
-                          const matchingAreaEntityIds = areaEntityIds.filter(id => {
-                            const ent = resolvedEntities[id];
-                            return ent && matchesFilter(ent);
-                          });
-
-                          if (matchingAreaEntityIds.length === 0 && (categoryFilter !== 'all' || searchQuery || visibilityFilter !== 'all')) {
-                            return null;
-                          }
-
-                          const areaVisibleCount = matchingAreaEntityIds.filter(id => !isEntityHidden(resolvedEntities[id])).length;
-                          const areaTotalCount = matchingAreaEntityIds.length;
-
-                          return (
-                            <div
-                              key={area.area_id}
-                              className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/3 overflow-hidden shadow-xs"
-                            >
-                              {/* Area Header */}
-                              <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-white/4 border-b border-slate-200/80 dark:border-white/5 flex flex-wrap items-center justify-between gap-3">
-                                <div
-                                  onClick={() => setCollapsedAreas(prev => ({ ...prev, [area.area_id]: !prev[area.area_id] }))}
-                                  className="flex items-center gap-3 cursor-pointer select-none group"
-                                >
-                                  <button type="button" className="text-slate-400 group-hover:text-slate-700 dark:group-hover:text-white">
-                                    {isAreaCollapsed ? <CaretRight size={18} weight="bold" /> : <CaretDown size={18} weight="bold" />}
-                                  </button>
-
-                                  <div
-                                    className="w-9 h-9 rounded-xl flex items-center justify-center border shadow-2xs shrink-0"
-                                    style={{
-                                      backgroundColor: `${area.color || '#6366f1'}1a`,
-                                      borderColor: `${area.color || '#6366f1'}40`,
-                                      color: area.color || '#6366f1'
-                                    }}
-                                  >
-                                    {renderIconByName(area.icon || 'Armchair', 18)}
-                                  </div>
-
-                                  <div>
-                                    <h5 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-indigo-500 transition-colors">
-                                      {area.name}
-                                    </h5>
-                                    <span className="text-xs text-slate-500 font-medium">
-                                      {areaVisibleCount} of {areaTotalCount} visible
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleBulkSetVisibility(matchingAreaEntityIds, false, area.name, area.area_id)}
-                                    className="px-3 py-1 rounded-lg bg-white dark:bg-white/10 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400 border border-slate-200 dark:border-white/10 text-xs font-bold transition-all cursor-pointer"
-                                  >
-                                    Show Area
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleBulkSetVisibility(matchingAreaEntityIds, true, area.name, area.area_id)}
-                                    className="px-3 py-1 rounded-lg bg-white dark:bg-white/10 hover:bg-amber-50 text-slate-700 hover:text-amber-600 dark:text-slate-200 dark:hover:text-amber-400 border border-slate-200 dark:border-white/10 text-xs font-bold transition-all cursor-pointer"
-                                  >
-                                    Hide Area
-                                  </button>
-                                </div>
-                              </div>
-
-                              {/* Devices within Area */}
-                              {!isAreaCollapsed && (
-                                <div className="p-3 sm:p-4 space-y-3">
-                                  {areaDevs.map(({ device, entities: devEntities }) => {
-                                    const isDevCollapsed = collapsedDevices[device.id];
-                                    const filteredDevEntities = devEntities.filter(matchesFilter);
-
-                                    if (devEntities.length > 0 && filteredDevEntities.length === 0 && (categoryFilter !== 'all' || searchQuery || visibilityFilter !== 'all')) {
-                                      return null;
-                                    }
-
-                                    const devEntityIds = filteredDevEntities.map(e => e.entity_id);
-                                    const devVisibleCount = filteredDevEntities.filter(e => !isEntityHidden(e)).length;
-                                    const devTotalCount = filteredDevEntities.length;
-
-                                    return (
-                                      <div
-                                        key={device.id}
-                                        className="rounded-2xl border border-slate-200/80 dark:border-white/5 bg-slate-50/80 dark:bg-white/2 overflow-hidden"
-                                      >
-                                        <div className="p-3 bg-slate-100/70 dark:bg-white/3 flex items-center justify-between gap-3">
-                                          <div
-                                            onClick={() => setCollapsedDevices(prev => ({ ...prev, [device.id]: !prev[device.id] }))}
-                                            className="flex items-center gap-2.5 cursor-pointer min-w-0"
-                                          >
-                                            <button type="button" className="text-slate-400">
-                                              {isDevCollapsed ? <CaretRight size={16} /> : <CaretDown size={16} />}
-                                            </button>
-                                            <Cpu size={18} weight="duotone" className="text-slate-500 shrink-0" />
-                                            <div className="min-w-0">
-                                              <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate block">
-                                                {device.name_by_user || device.name || 'Hardware Device'}
-                                              </span>
-                                              <span className="text-xs font-mono text-slate-500 dark:text-slate-400 truncate block">
-                                                {device.manufacturer ? `${device.manufacturer} • ` : ''}{device.model || device.id}
-                                              </span>
-                                            </div>
-                                          </div>
-
-                                          <div className="flex items-center gap-2 shrink-0">
-                                            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-white dark:bg-white/10 text-slate-600 dark:text-slate-300">
-                                              {devVisibleCount} / {devTotalCount}
-                                            </span>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleBulkSetVisibility(devEntityIds, false, device.name || 'Device')}
-                                              className="px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-600 dark:bg-white/10 dark:hover:bg-emerald-500/20 dark:text-slate-300 text-xs font-bold cursor-pointer transition-colors"
-                                            >
-                                              Show
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleBulkSetVisibility(devEntityIds, true, device.name || 'Device')}
-                                              className="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-600 dark:bg-white/10 dark:hover:bg-amber-500/20 dark:text-slate-300 text-xs font-bold cursor-pointer transition-colors"
-                                            >
-                                              Hide
-                                            </button>
-                                          </div>
-                                        </div>
-
-                                        {/* Entities inside Device */}
-                                        {!isDevCollapsed && (
-                                          <div className="p-2.5 sm:p-3 space-y-2">
-                                            {filteredDevEntities.map(entity => {
-                                              const isHidden = isEntityHidden(entity);
-                                              const domain = entity.domain;
-                                              const isOn = entity.state === 'on' || entity.state === 'open' || entity.state === 'unlocked' || entity.state === 'playing';
-
-                                              return (
-                                                <div
-                                                  key={entity.entity_id}
-                                                  className={`p-3 rounded-xl flex items-center justify-between gap-3 border transition-all ${
-                                                    isHidden
-                                                      ? 'bg-slate-100/40 dark:bg-white/1 border-dashed border-slate-300 dark:border-white/5 opacity-60'
-                                                      : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 shadow-xs'
-                                                  }`}
-                                                >
-                                                  <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="w-8 h-8 rounded-xl bg-slate-200/60 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-300">
-                                                      <DynamicPhosphorIcon name={entity.icon} size={18} weight="duotone" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                      <div className="flex items-center gap-2 flex-wrap">
-                                                        <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
-                                                          {entity.name}
-                                                        </span>
-                                                        <span className="text-xs font-mono text-slate-500 dark:text-slate-400 truncate">
-                                                          ({entity.entity_id})
-                                                        </span>
-                                                      </div>
-                                                      <div className="flex items-center gap-2.5 mt-1">
-                                                        <span className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">
-                                                          {domain}
-                                                        </span>
-                                                        <span className="text-xs font-mono text-slate-600 dark:text-slate-300 font-semibold">
-                                                          State: {entity.state}
-                                                        </span>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-
-                                                  <div className="flex items-center gap-2 shrink-0">
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => setCustomizingEntity(entity)}
-                                                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-sky-50 dark:hover:bg-sky-500/20 text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-all cursor-pointer shadow-2xs"
-                                                      title="Customize entity name, icon & visibility"
-                                                    >
-                                                      <PencilSimple size={15} weight="bold" />
-                                                      <span className="hidden sm:inline">Customize</span>
-                                                    </button>
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
-                                                      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 border ${
-                                                        !isHidden
-                                                          ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 shadow-2xs'
-                                                          : 'bg-slate-200 hover:bg-slate-300 text-slate-600 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-400 border-slate-300 dark:border-white/10'
-                                                      }`}
-                                                    >
-                                                      {!isHidden ? <Eye size={16} weight="bold" /> : <EyeSlash size={16} weight="bold" />}
-                                                      <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
-                                                    </button>
-                                                  </div>
-                                                </div>
-                                              );
-                                            })}
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-
-                                  {/* Standalone Loose Entities in Area */}
-                                  {standaloneEntities.filter(matchesFilter).length > 0 && (
-                                    <div className="rounded-2xl border border-slate-200/80 dark:border-white/5 bg-slate-50/50 dark:bg-black/15 p-3 space-y-2.5">
-                                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                                        Area Direct Entities
-                                      </span>
-                                      <div className="space-y-2">
-                                        {standaloneEntities.filter(matchesFilter).map(entity => {
-                                          const isHidden = isEntityHidden(entity);
-                                          return (
-                                            <div
-                                              key={entity.entity_id}
-                                              className={`p-3 rounded-xl flex items-center justify-between gap-3 border transition-all ${
-                                                isHidden
-                                                  ? 'bg-slate-100/40 dark:bg-white/1 border-dashed border-slate-300 dark:border-white/5 opacity-60'
-                                                  : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 shadow-xs'
-                                              }`}
-                                            >
-                                              <div className="flex items-center gap-2.5 min-w-0">
-                                                <div className="w-8 h-8 rounded-xl bg-slate-200/60 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-300">
-                                                  <DynamicPhosphorIcon name={entity.icon} size={18} weight="duotone" />
-                                                </div>
-                                                <div className="min-w-0">
-                                                  <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate block">
-                                                    {entity.name}
-                                                  </span>
-                                                  <span className="text-xs font-mono text-slate-500 truncate block mt-0.5">
-                                                    {entity.entity_id}
-                                                  </span>
-                                                </div>
-                                              </div>
-                                              <div className="flex items-center gap-2 shrink-0">
-                                                <button
-                                                  type="button"
-                                                  onClick={() => setCustomizingEntity(entity)}
-                                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-sky-50 dark:hover:bg-sky-500/20 text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-all cursor-pointer shadow-2xs"
-                                                  title="Customize entity name, icon & visibility"
-                                                >
-                                                  <PencilSimple size={15} weight="bold" />
-                                                  <span className="hidden sm:inline">Customize</span>
-                                                </button>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
-                                                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 border ${
-                                                    !isHidden
-                                                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                                                      : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400 border-slate-300 dark:border-white/10'
-                                                  }`}
-                                                >
-                                                  {!isHidden ? <Eye size={16} weight="bold" /> : <EyeSlash size={16} weight="bold" />}
-                                                  <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
-                                                </button>
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                    {/* Entities inside Group */}
+                    {!isCollapsed && (
+                      <div className="p-3 sm:p-4 space-y-2">
+                        {group.entities.map(entity => renderEntityRow(entity))}
                       </div>
                     )}
                   </div>
                 );
               })}
-
-              {/* 2. GENERAL / UNASSIGNED FLOOR AREAS */}
-              {hierarchyData.unassignedFloorAreaList.length > 0 && (
-                <div className="rounded-3xl border border-dashed border-slate-300 dark:border-white/15 bg-slate-50/30 dark:bg-white/1 overflow-hidden shadow-xs">
-                  <div className="p-4 sm:p-5 bg-slate-100/70 dark:bg-white/4 border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
-                    <div
-                      onClick={() => setCollapsedFloors(prev => ({ ...prev, unassigned_floor: !prev.unassigned_floor }))}
-                      className="flex items-center gap-3 cursor-pointer select-none group"
-                    >
-                      <button type="button" className="text-slate-400 group-hover:text-slate-700 dark:group-hover:text-white">
-                        {collapsedFloors['unassigned_floor'] ? <CaretRight size={20} weight="bold" /> : <CaretDown size={20} weight="bold" />}
-                      </button>
-                      <HouseLine size={24} weight="duotone" className="text-slate-400" />
-                      <div>
-                        <h4 className="text-base sm:text-lg font-black text-slate-800 dark:text-slate-200">
-                          Unassigned Floor Areas ({hierarchyData.unassignedFloorAreaList.length})
-                        </h4>
-                        <span className="text-xs text-slate-500 font-medium">
-                          Areas without an assigned Floor
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleBulkSetVisibility(hierarchyData.unassignedFloorEntityIds.filter(id => matchesFilter(resolvedEntities[id])), false, 'Unassigned Floor Areas')}
-                        className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-white/10 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer shadow-2xs"
-                      >
-                        Show All
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleBulkSetVisibility(hierarchyData.unassignedFloorEntityIds.filter(id => matchesFilter(resolvedEntities[id])), true, 'Unassigned Floor Areas')}
-                        className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-white/10 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer shadow-2xs"
-                      >
-                        Hide All
-                      </button>
-                    </div>
-                  </div>
-
-                  {!collapsedFloors['unassigned_floor'] && (
-                    <div className="p-4 space-y-3">
-                      {hierarchyData.unassignedFloorAreaList.map(({ area, devices: areaDevs, standaloneEntities, allEntityIds: areaEntityIds }) => {
-                        const isAreaCollapsed = collapsedAreas[area.area_id];
-                        const matchingAreaEntityIds = areaEntityIds.filter(id => {
-                          const ent = resolvedEntities[id];
-                          return ent && matchesFilter(ent);
-                        });
-
-                        if (matchingAreaEntityIds.length === 0 && (categoryFilter !== 'all' || searchQuery || visibilityFilter !== 'all')) {
-                          return null;
-                        }
-
-                        return (
-                          <div key={area.area_id} className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/3 overflow-hidden">
-                            <div className="p-3.5 bg-slate-50 dark:bg-white/4 flex items-center justify-between">
-                              <div
-                                onClick={() => setCollapsedAreas(prev => ({ ...prev, [area.area_id]: !prev[area.area_id] }))}
-                                className="flex items-center gap-2.5 cursor-pointer"
-                              >
-                                {isAreaCollapsed ? <CaretRight size={16} /> : <CaretDown size={16} />}
-                                {renderIconByName(area.icon, 18)}
-                                <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">{area.name}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleBulkSetVisibility(matchingAreaEntityIds, false, area.name)}
-                                  className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/10 text-xs font-bold cursor-pointer"
-                                >
-                                  Show
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleBulkSetVisibility(matchingAreaEntityIds, true, area.name)}
-                                  className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/10 text-xs font-bold cursor-pointer"
-                                >
-                                  Hide
-                                </button>
-                              </div>
-                            </div>
-
-                            {!isAreaCollapsed && (
-                              <div className="p-3.5 space-y-2.5">
-                                {areaDevs.map(({ device, entities: devEntities }) => {
-                                  const filteredDevEntities = devEntities.filter(matchesFilter);
-                                  if (filteredDevEntities.length === 0) return null;
-
-                                  return (
-                                    <div key={device.id} className="p-3 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 space-y-2">
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{device.name || 'Device'}</span>
-                                        <div className="flex gap-1.5">
-                                          <button
-                                            type="button"
-                                            onClick={() => handleBulkSetVisibility(filteredDevEntities.map(e => e.entity_id), false, device.name || 'Device')}
-                                            className="text-xs font-bold text-emerald-600"
-                                          >
-                                            Show
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => handleBulkSetVisibility(filteredDevEntities.map(e => e.entity_id), true, device.name || 'Device')}
-                                            className="text-xs font-bold text-amber-600"
-                                          >
-                                            Hide
-                                          </button>
-                                        </div>
-                                      </div>
-                                      {filteredDevEntities.map(entity => (
-                                        <div key={entity.entity_id} className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-white/5 text-sm">
-                                          <span className="font-semibold truncate">{entity.name}</span>
-                                          <button
-                                            type="button"
-                                            onClick={() => handleToggleEntityVisibility(entity.entity_id, isEntityHidden(entity))}
-                                            className="text-xs font-bold px-2.5 py-1 rounded-lg border"
-                                          >
-                                            {isEntityHidden(entity) ? 'Hidden' : 'Visible'}
-                                          </button>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* 3. UNASSIGNED DEVICES & LOOSE ENTITIES (NO AREA) */}
-              {(hierarchyData.unassignedAreaDevNodes.length > 0 || hierarchyData.looseUnassignedEntities.length > 0) && (
-                <div className="rounded-3xl border border-dashed border-amber-300 dark:border-amber-500/20 bg-amber-50/20 dark:bg-amber-950/10 overflow-hidden shadow-xs">
-                  <div className="p-4 sm:p-5 bg-amber-500/10 border-b border-amber-500/20 flex flex-wrap items-center justify-between gap-3">
-                    <div
-                      onClick={() => setCollapsedFloors(prev => ({ ...prev, unassigned_devices: !prev.unassigned_devices }))}
-                      className="flex items-center gap-3 cursor-pointer select-none group"
-                    >
-                      <button type="button" className="text-amber-600 dark:text-amber-400">
-                        {collapsedFloors['unassigned_devices'] ? <CaretRight size={20} weight="bold" /> : <CaretDown size={20} weight="bold" />}
-                      </button>
-                      <Cpu size={24} weight="duotone" className="text-amber-500" />
-                      <div>
-                        <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                          Unassigned Devices & Loose Entities ({hierarchyData.unassignedAreaAllEntityIds.length})
-                        </h4>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                          Devices & entities without an assigned Area
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleBulkSetVisibility(hierarchyData.unassignedAreaAllEntityIds.filter(id => matchesFilter(resolvedEntities[id])), false, 'Unassigned Devices')}
-                        className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-white/10 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer shadow-2xs"
-                      >
-                        Show All
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleBulkSetVisibility(hierarchyData.unassignedAreaAllEntityIds.filter(id => matchesFilter(resolvedEntities[id])), true, 'Unassigned Devices')}
-                        className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-white/10 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer shadow-2xs"
-                      >
-                        Hide All
-                      </button>
-                    </div>
-                  </div>
-
-                  {!collapsedFloors['unassigned_devices'] && (
-                    <div className="p-4 space-y-3">
-                      {hierarchyData.unassignedAreaDevNodes.map(({ device, entities: devEntities }) => {
-                        const filteredDevEntities = devEntities.filter(matchesFilter);
-                        if (devEntities.length > 0 && filteredDevEntities.length === 0 && (categoryFilter !== 'all' || searchQuery || visibilityFilter !== 'all')) {
-                          return null;
-                        }
-
-                        return (
-                          <div key={device.id} className="p-3.5 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-2.5">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">{device.name || 'IoT Device'}</span>
-                                <span className="text-xs font-mono text-slate-500 block">{device.model || device.id}</span>
-                              </div>
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleBulkSetVisibility(filteredDevEntities.map(e => e.entity_id), false, device.name || 'Device')}
-                                  className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-xs font-bold cursor-pointer"
-                                >
-                                  Show
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleBulkSetVisibility(filteredDevEntities.map(e => e.entity_id), true, device.name || 'Device')}
-                                  className="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400 text-xs font-bold cursor-pointer"
-                                >
-                                  Hide
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2 pt-1">
-                              {filteredDevEntities.map(entity => {
-                                const isHidden = isEntityHidden(entity);
-                                return (
-                                  <div
-                                    key={entity.entity_id}
-                                    className={`p-3 rounded-xl flex items-center justify-between gap-3 border transition-all ${
-                                      isHidden
-                                        ? 'bg-slate-100/40 dark:bg-white/1 border-dashed border-slate-300 dark:border-white/5 opacity-60'
-                                        : 'bg-slate-50 dark:bg-black/30 border-slate-200 dark:border-white/10'
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-2.5 min-w-0">
-                                      <div className="w-8 h-8 rounded-xl bg-slate-200/60 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-300">
-                                        <DynamicPhosphorIcon name={entity.icon} size={18} weight="duotone" />
-                                      </div>
-                                      <div className="min-w-0">
-                                        <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate block">{entity.name}</span>
-                                        <span className="text-xs font-mono text-slate-500 truncate block mt-0.5">{entity.entity_id}</span>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      <button
-                                        type="button"
-                                        onClick={() => setCustomizingEntity(entity)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-sky-50 dark:hover:bg-sky-500/20 text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-all cursor-pointer shadow-2xs"
-                                        title="Customize entity name, icon & visibility"
-                                      >
-                                        <PencilSimple size={14} weight="bold" />
-                                        <span className="hidden sm:inline">Customize</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border ${
-                                          !isHidden
-                                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                                            : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400 border-slate-300 dark:border-white/10'
-                                        }`}
-                                      >
-                                        {!isHidden ? <Eye size={15} /> : <EyeSlash size={15} />}
-                                        <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
-                                      </button>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {/* Loose unassigned entities */}
-                      {hierarchyData.looseUnassignedEntities.filter(matchesFilter).map(entity => {
-                        const isHidden = isEntityHidden(entity);
-                        return (
-                          <div
-                            key={entity.entity_id}
-                            className={`p-3 rounded-2xl flex items-center justify-between gap-3 border ${
-                              isHidden
-                                ? 'bg-slate-100/40 dark:bg-white/1 border-dashed opacity-60'
-                                : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="w-8 h-8 rounded-xl bg-slate-200/60 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-300">
-                                <DynamicPhosphorIcon name={entity.icon} size={18} weight="duotone" />
-                              </div>
-                              <div className="min-w-0">
-                                <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate block">{entity.name}</span>
-                                <span className="text-xs font-mono text-slate-500 truncate block mt-0.5">{entity.entity_id}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => setCustomizingEntity(entity)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-sky-50 dark:hover:bg-sky-500/20 text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-all cursor-pointer shadow-2xs"
-                                title="Customize entity name, icon & visibility"
-                              >
-                                <PencilSimple size={14} weight="bold" />
-                                <span className="hidden sm:inline">Customize</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleToggleEntityVisibility(entity.entity_id, isHidden)}
-                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border ${
-                                  !isHidden
-                                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                                    : 'bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400 border-slate-300 dark:border-white/10'
-                                }`}
-                              >
-                                {!isHidden ? <Eye size={15} /> : <EyeSlash size={15} />}
-                                <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           )}
+
+          {/* Floating Multi-Select Action Bar (appears when 1 or more entities are selected) */}
+          <AnimatePresence>
+            {selectedEntityIds.size > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 30, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="fixed bottom-5 inset-x-3 sm:inset-x-auto sm:right-8 z-50 sm:max-w-md p-3 sm:p-4 rounded-3xl bg-slate-900/95 dark:bg-slate-800/95 text-white border border-white/20 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center shrink-0">
+                    <CheckSquare size={18} weight="bold" />
+                  </div>
+                  <div>
+                    <span className="text-xs sm:text-sm font-bold block">
+                      {selectedEntityIds.size} Selected
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectAllFiltered(false)}
+                      className="text-[11px] text-slate-400 hover:text-white underline cursor-pointer"
+                    >
+                      Clear Selection
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleBulkSetVisibility(Array.from(selectedEntityIds), false, 'Selected Entities');
+                      setSelectedEntityIds(new Set());
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                  >
+                    <Eye size={14} weight="bold" />
+                    <span>Show ({selectedEntityIds.size})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleBulkSetVisibility(Array.from(selectedEntityIds), true, 'Selected Entities');
+                      setSelectedEntityIds(new Set());
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                  >
+                    <EyeSlash size={14} weight="bold" />
+                    <span>Hide ({selectedEntityIds.size})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedEntityIds(new Set())}
+                    className="p-1.5 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+                    title="Dismiss selection"
+                  >
+                    <X size={16} weight="bold" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 
@@ -2116,7 +1917,7 @@ export default function DeviceVisibilitySection({
                   setEditingFloor(null);
                   addToast?.({ type: 'success', title: 'Floor Saved', message: `Updated ${editingFloor.name} and synced to NAS.` });
                 }}
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-sky-500 text-white"
+                className="px-4 py-2 text-xs font-bold rounded-xl bg-sky-500 text-white cursor-pointer hover:bg-sky-400 transition-colors"
               >
                 Save
               </button>
@@ -2193,7 +1994,7 @@ export default function DeviceVisibilitySection({
                   setEditingArea(null);
                   addToast?.({ type: 'success', title: 'Area Saved', message: `Updated ${editingArea.name} and synced to NAS.` });
                 }}
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-500 text-white"
+                className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-500 text-white cursor-pointer hover:bg-indigo-400 transition-colors"
               >
                 Save
               </button>
@@ -2254,7 +2055,7 @@ export default function DeviceVisibilitySection({
                   setEditingLabel(null);
                   addToast?.({ type: 'success', title: 'Label Saved', message: `Updated ${editingLabel.name} and synced to NAS.` });
                 }}
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-sky-500 text-white"
+                className="px-4 py-2 text-xs font-bold rounded-xl bg-sky-500 text-white cursor-pointer hover:bg-sky-400 transition-colors"
               >
                 Save
               </button>
