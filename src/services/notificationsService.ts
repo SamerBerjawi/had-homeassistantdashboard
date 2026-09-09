@@ -12,7 +12,7 @@ import {
   HANativeRepairIssue 
 } from '../types/notifications';
 
-import { ResolvedEntity, HAState } from '../types';
+import { ResolvedEntity, HAState, HAEntityRegistryEntry } from '../types';
 import { safeOpenExternalUrl } from '../lib/utils';
 import { isLeakSensor, isBatteryEntity } from '../lib/entityClassifiers';
 import { useAlertStore, AlertItem } from '../store/useAlertStore';
@@ -22,6 +22,7 @@ import { alertService } from './alertService';
 export interface ExtractNotificationsParams {
   domainGroups: Record<string, ResolvedEntity[]>;
   states: Record<string, HAState>;
+  entityRegistry?: HAEntityRegistryEntry[];
   nativeNotifications?: HANativePersistentNotification[];
   nativePersistentNotifications?: HANativePersistentNotification[];
   nativeRepairs?: HANativeRepairIssue[];
@@ -71,6 +72,7 @@ export function formatTimeAgo(dateString?: string): string {
 export function extractHANotifications({
   domainGroups,
   states,
+  entityRegistry = [],
   nativeNotifications = [],
   nativePersistentNotifications = [],
   nativeRepairs = [],
@@ -87,6 +89,7 @@ export function extractHANotifications({
   const items: HANotificationItem[] = [];
   const dismissedSet = new Set(dismissedNotificationIds);
   const seenIds = new Set<string>();
+  const registryMap = new Map<string, HAEntityRegistryEntry>((entityRegistry || []).map(e => [e.entity_id, e]));
 
   // 1. SOFTWARE & FIRMWARE UPDATES (`update.*`)
   // Ingest from domainGroups['update'] and all states with entity_id starting with 'update.'
@@ -148,6 +151,26 @@ export function extractHANotifications({
       const title = attrs.title || attrs.friendly_name || ent.name;
       const releaseSummary = attrs.release_summary || '';
       const releaseUrl = attrs.release_url;
+      const releaseNotes = attrs.release_notes;
+
+      // Extract integration domain
+      const regEntry = registryMap.get(ent.entity_id);
+      let domain = regEntry?.platform;
+      if (!domain) {
+        const lowerId = ent.entity_id.toLowerCase();
+        if (lowerId.includes('home_assistant') || lowerId.includes('core')) domain = 'homeassistant';
+        else if (lowerId.includes('hacs')) domain = 'hacs';
+        else if (lowerId.includes('zigbee2mqtt')) domain = 'zigbee2mqtt';
+        else if (lowerId.includes('esphome')) domain = 'esphome';
+        else if (lowerId.includes('tp_link') || lowerId.includes('tplink')) domain = 'tplink';
+        else if (lowerId.includes('shelly')) domain = 'shelly';
+        else if (lowerId.includes('wled')) domain = 'wled';
+        else if (lowerId.includes('hue')) domain = 'hue';
+        else domain = attrs.device_class || ent.entity_id.replace(/^update\./, '').split('_')[0];
+      }
+
+      const source = attrs.source || (regEntry?.platform ? regEntry.platform.toUpperCase() : 'Home Assistant');
+      const image = attrs.entity_picture || attrs.data?.image || attrs.image;
 
       seenIds.add(ent.entity_id);
 
@@ -164,6 +187,10 @@ export function extractHANotifications({
         latestVersion: latestVer,
         releaseSummary,
         releaseUrl,
+        releaseNotes,
+        domain,
+        source,
+        image,
         inProgress,
         updatePercentage: typeof attrs.update_percentage === 'number' ? attrs.update_percentage : undefined,
         skippedVersion: attrs.skipped_version || null,
@@ -257,6 +284,15 @@ export function extractHANotifications({
       const installedVer = repo.installed_version || 'Installed';
       const latestVer = repo.available_version || 'Latest';
       const releaseSummary = repo.description || `HACS update available for ${repoTitle}`;
+      const releaseNotes = repo.release_notes || repo.changelog || repo.description;
+      const releaseUrl = repo.name && repo.name.includes('/') ? `https://github.com/${repo.name}/releases` : undefined;
+
+      let domain = repo.domain;
+      if (!domain && repo.name) {
+        const parts = repo.name.split('/');
+        domain = parts[parts.length - 1];
+      }
+      if (!domain) domain = 'hacs';
 
       items.push({
         id: repoId,
@@ -268,6 +304,10 @@ export function extractHANotifications({
         installedVersion: installedVer,
         latestVersion: latestVer,
         releaseSummary,
+        releaseNotes,
+        releaseUrl,
+        domain,
+        source: 'HACS',
         createdAt: hacsSensor.last_updated || new Date().toISOString(),
         dismissable: false,
         actions: [
@@ -304,7 +344,10 @@ export function extractHANotifications({
         title: 'Home Assistant Core Update Available',
         message: releaseNotes || `Home Assistant ${latestVer} is ready to install.`,
         latestVersion: latestVer,
-        releaseUrl: releaseNotes,
+        releaseNotes: typeof releaseNotes === 'string' ? releaseNotes : undefined,
+        releaseUrl: typeof releaseNotes === 'string' && releaseNotes.startsWith('http') ? releaseNotes : 'https://www.home-assistant.io/latest-blogs/',
+        domain: 'homeassistant',
+        source: 'Home Assistant Core',
         createdAt: updaterSensor.last_updated || new Date().toISOString(),
         dismissable: false,
         actions: [
@@ -314,7 +357,7 @@ export function extractHANotifications({
               label: 'Release Notes',
               variant: 'ghost' as const,
               onClick: () => {
-                safeOpenExternalUrl(releaseNotes);
+                safeOpenExternalUrl(typeof releaseNotes === 'string' && releaseNotes.startsWith('http') ? releaseNotes : 'https://www.home-assistant.io/latest-blogs/');
               }
             }
           ] : [])
@@ -340,6 +383,9 @@ export function extractHANotifications({
       title.toLowerCase().includes('reboot') || 
       message.toLowerCase().includes('reboot');
 
+    const domain = (notif as any).domain || (isRestartNotif ? 'homeassistant' : undefined);
+    const source = (notif as any).source || (isRestartNotif ? 'Home Assistant' : undefined);
+
     items.push({
       id: notifId,
       entity_id: `persistent_notification.${notifId}`,
@@ -347,6 +393,8 @@ export function extractHANotifications({
       severity: isRestartNotif ? 'warning' : 'info',
       title,
       message,
+      domain,
+      source,
       createdAt,
       dismissable: true,
       actions: [
@@ -398,6 +446,8 @@ export function extractHANotifications({
       message.toLowerCase().includes('restart') || 
       title.toLowerCase().includes('reboot') || 
       message.toLowerCase().includes('reboot');
+    const domain = notif.attributes.domain || (isRestartNotif ? 'homeassistant' : undefined);
+    const source = notif.attributes.domain || (isRestartNotif ? 'Home Assistant' : undefined);
 
     items.push({
       id: notifId,
@@ -407,6 +457,8 @@ export function extractHANotifications({
       title,
       message,
       image,
+      domain,
+      source,
       createdAt,
       dismissable: true,
       actions: [
@@ -525,6 +577,9 @@ export function extractHANotifications({
       }
     ];
 
+    const domain = rep.issue_domain || (rep.domain !== 'hacs' ? rep.domain : undefined) || (rep.translation_placeholders?.domain || rep.translation_placeholders?.integration) || rep.domain;
+    const source = rep.domain ? (rep.domain.toLowerCase() === 'hacs' ? 'HACS' : rep.domain) : undefined;
+
     items.push({
       id: issueId,
       entity_id: `repair.${rep.domain}_${rep.issue_id}`,
@@ -535,6 +590,8 @@ export function extractHANotifications({
       issueId,
       learnMoreUrl,
       isFixable: rep.is_fixable !== false,
+      domain,
+      source,
       createdAt: rep.created || new Date().toISOString(),
       dismissable: true,
       actions,
@@ -638,6 +695,10 @@ export function extractHANotifications({
       }
     ];
 
+    const domain = rep.attributes.issue_domain || (rep.attributes.domain !== 'hacs' ? rep.attributes.domain : undefined) || rep.attributes.domain;
+    const source = rep.attributes.domain ? (rep.attributes.domain.toLowerCase() === 'hacs' ? 'HACS' : rep.attributes.domain) : undefined;
+    const image = rep.attributes.entity_picture || rep.attributes.data?.image;
+
     items.push({
       id: issueId,
       entity_id: rep.entity_id,
@@ -648,6 +709,9 @@ export function extractHANotifications({
       issueId,
       learnMoreUrl,
       isFixable: rep.attributes.is_fixable !== false,
+      domain,
+      source,
+      image,
       createdAt: rep.last_updated,
       dismissable: true,
       actions,
@@ -696,6 +760,9 @@ export function extractHANotifications({
     seenIds.add(s.entity_id);
 
     const isReboot = eid.includes('reboot') || lowerName.includes('reboot');
+    const sensorReg = registryMap.get(s.entity_id);
+    const sensorDomain = sensorReg?.platform || (eid.includes('hacs') ? 'hacs' : 'homeassistant');
+
     items.push({
       id: s.entity_id,
       entity_id: s.entity_id,
@@ -703,6 +770,8 @@ export function extractHANotifications({
       severity: 'warning',
       title: isReboot ? `Reboot Required: ${friendlyName}` : `Restart Required: ${friendlyName}`,
       message: attrs.message || `${friendlyName} indicates a system restart is required to apply configuration changes or update packages.`,
+      domain: sensorDomain,
+      source: sensorReg?.platform ? sensorReg.platform.toUpperCase() : 'Home Assistant',
       createdAt: s.last_updated || new Date().toISOString(),
       dismissable: true,
       actions: [
@@ -753,6 +822,7 @@ export function extractHANotifications({
     b => isLeakSensor(b) && (b.state === 'on' || b.state === 'wet' || b.state === 'detected')
   );
   for (const leak of leakSensors) {
+    const leakDomain = registryMap.get(leak.entity_id)?.platform;
     items.push({
       id: `alert_leak_${leak.entity_id}`,
       entity_id: leak.entity_id,
@@ -762,6 +832,8 @@ export function extractHANotifications({
       message: `Moisture detected in ${leak.area?.name || 'Home'}. Immediate inspection recommended to prevent water damage.`,
       areaName: leak.area?.name,
       sensorType: 'leak',
+      domain: leakDomain,
+      source: leak.area?.name || 'Water Sensor',
       createdAt: leak.attributes.last_triggered || new Date().toISOString(),
       dismissable: false
     });
@@ -773,6 +845,7 @@ export function extractHANotifications({
          (b.state === 'on' || b.state === 'detected' || b.state === 'smoke')
   );
   for (const smoke of smokeSensors) {
+    const smokeDomain = registryMap.get(smoke.entity_id)?.platform;
     items.push({
       id: `alert_smoke_${smoke.entity_id}`,
       entity_id: smoke.entity_id,
@@ -782,6 +855,8 @@ export function extractHANotifications({
       message: `Hazardous environment detected in ${smoke.area?.name || 'Home'}. Ensure immediate safety and ventilation.`,
       areaName: smoke.area?.name,
       sensorType: 'smoke',
+      domain: smokeDomain,
+      source: smoke.area?.name || 'Smoke Detector',
       createdAt: smoke.attributes.last_triggered || new Date().toISOString(),
       dismissable: false
     });
@@ -841,6 +916,7 @@ export function extractHANotifications({
       displayName = `${deviceName} (${bat.name})`;
     }
 
+    const batDomain = registryMap.get(bat.entity_id)?.platform;
     items.push({
       id: notifId,
       entity_id: bat.entity_id,
@@ -851,6 +927,8 @@ export function extractHANotifications({
       areaName: bat.area?.name,
       batteryLevel: batteryPct,
       sensorType: 'battery',
+      domain: batDomain,
+      source: bat.area?.name || 'Battery Sensor',
       createdAt: new Date().toISOString(),
       dismissable: true,
       onDismiss: () => {
@@ -880,26 +958,33 @@ export function extractHANotifications({
     if (seenIds.has(notifId) || dismissedSet.has(notifId)) continue;
     seenIds.add(notifId);
 
-    const isTamper = prob.attributes.device_class === 'tamper';
+    const isTamper = prob.attributes.device_class === 'tamper' || prob.state === 'tampered';
+    const probDomain = registryMap.get(prob.entity_id)?.platform;
+
     items.push({
       id: notifId,
       entity_id: prob.entity_id,
-      category: isTamper ? 'security' : 'repair',
+      category: isTamper ? 'security' : 'hazard',
       severity: 'warning',
-      title: `${isTamper ? 'Tamper Detected' : 'Device Problem'}: ${prob.name}`,
-      message: `${prob.name} reported a ${isTamper ? 'tamper alert' : 'hardware problem'} in ${prob.area?.name || 'Home'}.`,
+      title: isTamper ? `Tamper Warning: ${prob.name}` : `Hardware Fault: ${prob.name}`,
+      message: isTamper
+        ? `Tamper sensor triggered on ${prob.name} in ${prob.area?.name || 'Home'}.`
+        : `Diagnostic problem detected on ${prob.name}. Review device state and logs.`,
       areaName: prob.area?.name,
+      domain: probDomain,
+      source: prob.area?.name || 'Diagnostic',
       createdAt: prob.attributes.last_triggered || new Date().toISOString(),
       dismissable: true,
       onDismiss: () => {
         dismissNotification(notifId);
+        dismissNotification(prob.entity_id);
       }
     });
   }
 
   // 5. HOME ASSISTANT NATIVE ALERTS (`alert.*` integration)
   const alertEntities = Object.values(states).filter(
-    s => s.entity_id.startsWith('alert.') && s.state === 'on'
+    s => s.entity_id.startsWith('alert.') && s.state !== 'idle' && s.state !== 'off'
   );
 
   for (const ent of alertEntities) {
@@ -907,12 +992,13 @@ export function extractHANotifications({
     seenIds.add(ent.entity_id);
 
     const attrs = ent.attributes || {};
-    const title = attrs.title || attrs.friendly_name || ent.entity_id.replace('alert.', '').replace(/_/g, ' ');
+    const title = attrs.title || attrs.friendly_name || ent.entity_id;
     const message = attrs.message || 'Home Assistant alert is actively triggering.';
     const severityRaw = (attrs.severity || 'warning').toLowerCase();
     const severity: NotificationSeverity = 
       severityRaw === 'critical' ? 'critical' :
       severityRaw === 'error' ? 'error' : 'warning';
+    const alertDomain = registryMap.get(ent.entity_id)?.platform;
 
     items.push({
       id: ent.entity_id,
@@ -921,6 +1007,8 @@ export function extractHANotifications({
       severity,
       title,
       message,
+      domain: alertDomain,
+      source: attrs.friendly_name || 'System Alert',
       createdAt: attrs.last_triggered || ent.last_updated || new Date().toISOString(),
       dismissable: true,
       actions: [
@@ -973,6 +1061,8 @@ export function extractHANotifications({
       alert.category === 'appliance' ? 'appliance' :
       alert.category === 'update' ? 'update' : 'alert';
 
+    const storeAlertDomain = alert.entityId ? registryMap.get(alert.entityId)?.platform : undefined;
+
     items.push({
       id: alertId,
       entity_id: alert.entityId,
@@ -980,8 +1070,11 @@ export function extractHANotifications({
       severity,
       title: alert.title,
       message: alert.message,
-      areaName: alert.areaName,
-      createdAt: alert.timestamp ? new Date(alert.timestamp).toISOString() : new Date().toISOString(),
+      image: (alert as any).imageUrl,
+      domain: storeAlertDomain,
+      source: alert.entityId ? 'Device Alert' : 'System',
+      createdAt: (alert as any).createdAt || new Date(alert.timestamp).toISOString(),
+      timestamp: alert.timestamp,
       dismissable: true,
       actions: [
         {

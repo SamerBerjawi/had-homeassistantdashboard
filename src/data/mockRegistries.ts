@@ -2391,6 +2391,19 @@ export const MOCK_STATES: Record<string, HAState> = {
       installed_version: '2026.8.0',
       latest_version: '2026.8.4',
       release_summary: 'Major performance optimizations, responsive weather stream APIs, and Matter 1.3 certification.',
+      release_notes: `## Home Assistant Core 2026.8.4 Changelog
+
+### Highlights
+- ⚡ **Performance:** 2.4x faster state engine serialization and reduced SQLite database write contention.
+- 🌐 **Matter 1.3 Certified:** Full telemetry support for smart energy monitoring and water management devices.
+- 📱 **Dashboards:** Dynamic badge sizing, sub-second live camera streaming, and adaptive dark mode palettes.
+- 🛡️ **Repairs & Diagnostics:** Automatic health audits and one-tap integration repairs.
+
+### Fixes & Improvements
+- Fix WebSocket event queue dropping rapid state updates on slow networks.
+- Fix TP-Link Kasa energy consumption rounding discrepancy.
+- Improve HACS custom repository update detection.
+- Optimize entity registry cache invalidation on integration reload.`,
       release_url: 'https://www.home-assistant.io/blog/2026/08/06/release-20268/',
       in_progress: false,
       auto_update: false
@@ -2405,6 +2418,16 @@ export const MOCK_STATES: Record<string, HAState> = {
       installed_version: '1.38.0',
       latest_version: '1.40.1',
       release_summary: 'Added support for 35 new smart sensors, OTA firmware caching, and mesh stability enhancements.',
+      release_notes: `## Zigbee2MQTT 1.40.1 Changelog
+
+### What's New
+- 🔌 **35 New Devices Supported:** Support added for Tuya radar presence sensors, Sonoff TRVZB, and Aqara T1 smart plugs.
+- 🚀 **OTA Firmware Engine:** Local caching of firmware binaries with auto-resume on transmission interrupts.
+- 📶 **Mesh Stability:** Dynamic channel interference detection and automated parent routing rebalancing.
+
+### Bug Fixes
+- Fix occasional MQTT publish timeout during heavy network coordinator stress.
+- Correct temperature unit reporting for multi-endpoint climate sensors.`,
       release_url: 'https://github.com/Koenkk/zigbee2mqtt/releases',
       in_progress: false,
       auto_update: false

@@ -247,21 +247,57 @@ class HAWebSocketClient {
       ],
       nativeRepairs: [
         {
+          issue_id: 'restart_required_grocy',
+          domain: 'hacs',
+          issue_domain: 'grocy',
+          title: 'Restart required',
+          message: 'Grocy custom integration was updated and requires a Home Assistant restart to take effect.',
+          severity: 'warning',
+          learn_more_url: 'https://github.com/custom-components/grocy',
+          created: new Date(Date.now() - 23 * 60 * 1000).toISOString(),
+          is_fixable: true
+        },
+        {
+          issue_id: 'restart_required_tplink',
+          domain: 'hacs',
+          issue_domain: 'tplink',
+          title: 'Restart required',
+          message: 'TP-Link Smart Home integration was updated. Restart Home Assistant to load the new version.',
+          severity: 'warning',
+          learn_more_url: 'https://www.home-assistant.io/integrations/tplink/',
+          created: new Date(Date.now() - 23 * 60 * 1000).toISOString(),
+          is_fixable: true
+        },
+        {
           issue_id: 'restart_required_core_update',
-          domain: 'homeassistant',
-          title: 'Restart Required',
+          domain: 'hacs',
+          issue_domain: 'homeassistant',
+          title: 'Restart required',
           message: 'A system restart is required to finish installing Home Assistant Core 2026.8.4 update.',
           severity: 'warning',
           learn_more_url: 'https://www.home-assistant.io/latest-blogs/',
+          created: new Date(Date.now() - 23 * 60 * 1000).toISOString(),
+          is_fixable: true
+        },
+        {
+          issue_id: 'restart_required_legacy_custom',
+          domain: 'hacs',
+          issue_domain: 'custom_legacy_device',
+          title: 'Restart required',
+          message: 'Custom legacy hardware integration updated. Restart required.',
+          severity: 'warning',
+          created: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
           is_fixable: true
         },
         {
           issue_id: 'mqtt_yaml_dep_1',
           domain: 'mqtt',
+          issue_domain: 'mqtt',
           title: 'Legacy MQTT YAML Config Detected',
           message: 'Legacy YAML configuration for MQTT sensors is deprecated. Please migrate to UI config flow.',
           severity: 'warning',
           learn_more_url: 'https://www.home-assistant.io/integrations/mqtt/',
+          created: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
           is_fixable: true
         }
       ]
@@ -779,6 +815,25 @@ class HAWebSocketClient {
       service_data: serviceData,
       target
     });
+  }
+
+  /**
+   * Fetches detailed release notes and changelog from Home Assistant WebSocket API
+   * for a given update entity (e.g. `update.home_assistant_core_update`).
+   */
+  public async getReleaseNotes(entityId: string): Promise<string | null> {
+    if (this.isDemoMode || this.status !== 'connected') {
+      return null;
+    }
+    try {
+      const res = await this.sendRequest<any>('update/release_notes', { entity_id: entityId });
+      if (typeof res === 'string') return res;
+      if (res && typeof res.release_notes === 'string') return res.release_notes;
+      return null;
+    } catch (err) {
+      console.debug(`[HAWebSocket] Could not fetch release notes for ${entityId}:`, err);
+      return null;
+    }
   }
 }
 

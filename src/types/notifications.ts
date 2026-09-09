@@ -36,11 +36,12 @@ export interface HANotificationItem {
   createdAt?: string; // ISO date string or human readable
   timestamp?: number; // epoch ms
   
-  // Specific to Software Updates
+  // Specific to Software Updates & Changelogs
   installedVersion?: string;
   latestVersion?: string;
   releaseSummary?: string;
   releaseUrl?: string;
+  releaseNotes?: string;
   inProgress?: boolean;
   updatePercentage?: number;
   skippedVersion?: string | null;
@@ -50,6 +51,10 @@ export interface HANotificationItem {
   issueId?: string;
   learnMoreUrl?: string;
   isFixable?: boolean;
+
+  // Domain / Integration Identification
+  domain?: string;
+  source?: string;
 
   // Specific to Hardware / Sensor alerts
   areaName?: string;

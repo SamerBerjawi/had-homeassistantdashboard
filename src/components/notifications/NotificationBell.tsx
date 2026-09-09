@@ -27,6 +27,7 @@ export default function NotificationBell({
   const {
     domainGroups,
     states,
+    entityRegistry,
     nativeNotifications,
     nativeRepairs,
     dismissedNotificationIds,
@@ -39,6 +40,7 @@ export default function NotificationBell({
   } = useAutoLayoutStore(useShallow(s => ({
     domainGroups: s.domainGroups,
     states: s.states,
+    entityRegistry: s.entityRegistry,
     nativeNotifications: s.nativeNotifications,
     nativeRepairs: s.nativeRepairs,
     dismissedNotificationIds: s.dismissedNotificationIds,
@@ -56,6 +58,7 @@ export default function NotificationBell({
     return extractHANotifications({
       domainGroups,
       states,
+      entityRegistry,
       nativeNotifications,
       nativeRepairs,
       dismissedNotificationIds,
@@ -67,7 +70,7 @@ export default function NotificationBell({
       clearSkippedUpdate,
       storeAlerts: alertStoreAlerts
     });
-  }, [domainGroups, states, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate, alertStoreAlerts]);
+  }, [domainGroups, states, entityRegistry, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate, alertStoreAlerts]);
 
   // Combined count from HA notifications, updates, repairs, sensors and alert store
   const totalCount = notifications.length;

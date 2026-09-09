@@ -34,6 +34,8 @@ import { HANotificationItem, NotificationCategory, HANotificationAction } from '
 import { haWebSocketService } from '../../services/haWebSocket';
 import { useAlertStore } from '../../store/useAlertStore';
 import NotificationRichContent from './NotificationRichContent';
+import IntegrationIcon from './IntegrationIcon';
+import NotificationChangelog from './NotificationChangelog';
 import { AnimatedList } from '../ui/animated-list';
 
 interface NotificationDrawerProps {
@@ -52,6 +54,8 @@ export default function NotificationDrawer({
   const {
     domainGroups,
     states,
+    entityRegistry,
+    serverUrl,
     nativeNotifications,
     nativeRepairs,
     dismissedNotificationIds,
@@ -65,6 +69,8 @@ export default function NotificationDrawer({
   } = useAutoLayoutStore(useShallow(s => ({
     domainGroups: s.domainGroups,
     states: s.states,
+    entityRegistry: s.entityRegistry,
+    serverUrl: s.serverUrl,
     nativeNotifications: s.nativeNotifications,
     nativeRepairs: s.nativeRepairs,
     dismissedNotificationIds: s.dismissedNotificationIds,
@@ -89,6 +95,7 @@ export default function NotificationDrawer({
     return extractHANotifications({
       domainGroups,
       states,
+      entityRegistry,
       nativeNotifications,
       nativeRepairs,
       dismissedNotificationIds,
@@ -100,7 +107,7 @@ export default function NotificationDrawer({
       clearSkippedUpdate,
       storeAlerts: alertStoreAlerts
     });
-  }, [domainGroups, states, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate, alertStoreAlerts]);
+  }, [domainGroups, states, entityRegistry, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate, alertStoreAlerts]);
 
   // Counts by category
   const counts = useMemo(() => {
@@ -464,7 +471,14 @@ export default function NotificationDrawer({
                   a.id.startsWith('ack_') ||
                   a.id === 'unskip'
                 );
-                const secondaryActions = (item.actions || []).filter(a => a !== primaryAction);
+                // Exclude release_notes from footer buttons since it is handled by the expandable changelog
+                const secondaryActions = (item.actions || []).filter(a => a !== primaryAction && a.id !== 'release_notes');
+
+                const subtitle = item.source
+                  ? `${formatTimeAgo(item.createdAt)} by ${item.source}`
+                  : item.createdAt
+                    ? formatTimeAgo(item.createdAt)
+                    : null;
 
                 const renderActionButton = (act: HANotificationAction, isPrimaryInHeader: boolean) => {
                   const isLoading = actionLoadingIds[act.id];
@@ -523,45 +537,55 @@ export default function NotificationDrawer({
                 return (
                   <div
                     key={item.id}
-                    className={`p-2.5 rounded-xl transition-all duration-200 flex flex-col justify-between gap-1.5 group ${darkMode
+                    className={`p-3 rounded-2xl transition-all duration-200 flex flex-col justify-between gap-2 group ${darkMode
                         ? 'bg-white/[0.03] hover:bg-white/[0.055] text-white border border-white/[0.04]'
                         : 'bg-white hover:bg-slate-50/90 text-slate-900 border border-slate-200 shadow-xs'
                       }`}
                   >
-                    {/* Row 1: Icon + Title + Category Badge + Primary Action + Time + Dismiss */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <div className="w-6.5 h-6.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-transparent flex items-center justify-center shrink-0">
-                          {visuals.icon}
-                        </div>
+                    {/* Row 1: Integration Icon (No Padding) + Title & Subtitle + Primary Action + Dismiss */}
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {/* Integration Brand Icon with Zero Padding */}
+                        <IntegrationIcon
+                          domain={item.domain}
+                          entityPicture={item.image}
+                          title={item.title}
+                          category={item.category}
+                          serverUrl={serverUrl}
+                          fallbackIcon={visuals.icon}
+                          size="md"
+                        />
 
-                        <div className="min-w-0 flex-1 flex items-center gap-1.5 flex-wrap">
-                          <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white truncate">
-                            {item.title}
-                          </h4>
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white truncate">
+                              {item.title}
+                            </h4>
 
-                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded shrink-0 ${visuals.badgeBg.replace(/border[^\s]*/g, '')}`}>
-                            {visuals.label}
-                          </span>
-
-                          {item.areaName && (
-                            <span className="flex items-center gap-0.5 text-[9px] font-medium text-slate-500 dark:text-slate-400 shrink-0">
-                              <HouseLine size={10} />
-                              {item.areaName}
+                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded shrink-0 ${visuals.badgeBg.replace(/border[^\s]*/g, '')}`}>
+                              {visuals.label}
                             </span>
+
+                            {item.areaName && (
+                              <span className="flex items-center gap-0.5 text-[9px] font-medium text-slate-500 dark:text-slate-400 shrink-0">
+                                <HouseLine size={10} />
+                                {item.areaName}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Subtitle: "23 minutes ago by HACS" (like Home Assistant) */}
+                          {subtitle && (
+                            <div className="text-[11px] font-medium text-slate-400 dark:text-slate-400">
+                              {subtitle}
+                            </div>
                           )}
                         </div>
                       </div>
 
-                      {/* Right: Primary Action + Time Ago + Dismiss */}
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Right: Primary Action + Dismiss Button */}
+                      <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
                         {primaryAction && renderActionButton(primaryAction, true)}
-
-                        {item.createdAt && (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap hidden sm:inline">
-                            {formatTimeAgo(item.createdAt)}
-                          </span>
-                        )}
 
                         {item.dismissable && item.onDismiss && (
                           <button
@@ -576,68 +600,62 @@ export default function NotificationDrawer({
                       </div>
                     </div>
 
-                    {/* Row 2: Details / Message / Versions + Secondary Actions */}
-                    <div className="flex items-center justify-between gap-2 flex-wrap text-[11px]">
-                      {/* Left: Message or Version tags */}
-                      <div className="min-w-0 flex-1">
-                        {/* Software Update Version Badge */}
-                        {item.category === 'update' && (
-                          <div className="flex items-center gap-1.5 flex-wrap font-semibold">
-                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/5 font-mono text-[10px] text-slate-700 dark:text-slate-300">
-                              <span>{item.installedVersion || 'Current'}</span>
-                              <span className="text-slate-400">➔</span>
-                              <span className="font-bold text-sky-700 dark:text-sky-400">{item.latestVersion || 'New'}</span>
-                            </div>
-
-                            {item.skippedVersion && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-300/80 dark:border-amber-500/20">
-                                Skipped
-                              </span>
-                            )}
-
-                            {item.createdAt && (
-                              <span className="text-[9px] text-slate-400 dark:text-slate-500 sm:hidden">
-                                • {formatTimeAgo(item.createdAt)}
-                              </span>
-                            )}
+                    {/* Row 2: Details / Message / Versions / Expandable Changelog + Secondary Actions */}
+                    <div className="pl-12 sm:pl-13.5 space-y-2 text-[11px]">
+                      {/* Software Update Version Badge */}
+                      {item.category === 'update' && (
+                        <div className="flex items-center gap-1.5 flex-wrap font-semibold">
+                          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/5 font-mono text-[10px] text-slate-700 dark:text-slate-300">
+                            <span>{item.installedVersion || 'Current'}</span>
+                            <span className="text-slate-400">➔</span>
+                            <span className="font-bold text-sky-700 dark:text-sky-400">{item.latestVersion || 'New'}</span>
                           </div>
-                        )}
 
-                        {/* Message / Description Body */}
-                        {item.message ? (
-                          <div className={item.category === 'update' ? 'pt-1' : ''}>
-                            <NotificationRichContent
-                              content={item.message}
-                              imageUrl={item.image}
-                              darkMode={darkMode}
-                              compact={true}
+                          {item.skippedVersion && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-300/80 dark:border-amber-500/20">
+                              Skipped
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Message / Description Body */}
+                      {item.message ? (
+                        <div className="pt-0.5">
+                          <NotificationRichContent
+                            content={item.message}
+                            imageUrl={item.image}
+                            darkMode={darkMode}
+                            compact={true}
+                          />
+                        </div>
+                      ) : null}
+
+                      {/* Expandable Release Notes & Changelog Section */}
+                      <NotificationChangelog item={item} darkMode={darkMode} />
+
+                      {/* In Progress Visual Bar */}
+                      {isProgress && (
+                        <div className="space-y-1 pt-1">
+                          <div className="flex items-center justify-between text-[10px] font-bold text-sky-500">
+                            <span className="flex items-center gap-1">
+                              <ArrowsClockwise size={11} className="animate-spin" />
+                              Installing update...
+                            </span>
+                            <span>{item.updatePercentage ? `${item.updatePercentage}%` : 'In Progress'}</span>
+                          </div>
+                          <div className="w-full h-1 rounded-full bg-sky-500/20 overflow-hidden">
+                            <div
+                              className="h-full bg-sky-500 rounded-full animate-pulse transition-all duration-300"
+                              style={{ width: item.updatePercentage ? `${item.updatePercentage}%` : '70%' }}
                             />
                           </div>
-                        ) : null}
+                        </div>
+                      )}
 
-                        {/* In Progress Visual Bar */}
-                        {isProgress && (
-                          <div className="space-y-1 pt-1">
-                            <div className="flex items-center justify-between text-[10px] font-bold text-sky-500">
-                              <span className="flex items-center gap-1">
-                                <ArrowsClockwise size={11} className="animate-spin" />
-                                Installing update...
-                              </span>
-                              <span>{item.updatePercentage ? `${item.updatePercentage}%` : 'In Progress'}</span>
-                            </div>
-                            <div className="w-full h-1 rounded-full bg-sky-500/20 overflow-hidden">
-                              <div
-                                className="h-full bg-sky-500 rounded-full animate-pulse transition-all duration-300"
-                                style={{ width: item.updatePercentage ? `${item.updatePercentage}%` : '70%' }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Right: Secondary Actions (Skip, Release Notes, etc.) */}
+                      {/* Secondary Actions (Skip, etc.) */}
                       {secondaryActions.length > 0 && (
-                        <div className="flex items-center gap-1.5 shrink-0 ml-auto pt-0.5">
+                        <div className="flex items-center gap-1.5 pt-0.5">
                           {secondaryActions.map(act => renderActionButton(act, false))}
                         </div>
                       )}

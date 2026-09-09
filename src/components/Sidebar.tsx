@@ -48,6 +48,7 @@ export default function Sidebar({
   const {
     domainGroups,
     states,
+    entityRegistry,
     nativeNotifications,
     nativeRepairs,
     dismissedNotificationIds,
@@ -63,6 +64,7 @@ export default function Sidebar({
   } = useAutoLayoutStore(useShallow(s => ({
     domainGroups: s.domainGroups,
     states: s.states,
+    entityRegistry: s.entityRegistry,
     nativeNotifications: s.nativeNotifications,
     nativeRepairs: s.nativeRepairs,
     dismissedNotificationIds: s.dismissedNotificationIds,
@@ -83,6 +85,7 @@ export default function Sidebar({
     return extractHANotifications({
       domainGroups,
       states,
+      entityRegistry,
       nativeNotifications,
       nativeRepairs,
       dismissedNotificationIds,
@@ -94,7 +97,7 @@ export default function Sidebar({
       clearSkippedUpdate,
       storeAlerts: alertStoreAlerts
     });
-  }, [domainGroups, states, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate, alertStoreAlerts]);
+  }, [domainGroups, states, entityRegistry, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate, alertStoreAlerts]);
 
   const totalNotifications = notifications.length;
 
