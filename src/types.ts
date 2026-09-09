@@ -98,6 +98,7 @@ export interface HADevice {
   via_device_id?: string | null;
   connections?: [string, string][];
   identifiers?: [string, string][];
+  config_entries?: string[];
   labels?: string[];
 }
 
@@ -107,6 +108,7 @@ export interface HAEntityRegistryEntry {
   original_name?: string | null;
   area_id?: string | null; // Direct match
   device_id?: string | null; // Inherited match
+  config_entry_id?: string | null;
   platform?: string;
   disabled_by?: string | null;
   entity_category?: 'diagnostic' | 'config' | 'system' | null;

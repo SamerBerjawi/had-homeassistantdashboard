@@ -12,6 +12,7 @@ import {
   Heartbeat,
   Broom,
   GitFork, 
+  PuzzlePiece,
   GearSix,
   Sparkle, 
   X, 
@@ -178,6 +179,7 @@ export default function Sidebar({
     { id: 'health', label: 'Health', icon: Heartbeat },
     { id: 'vacuums', label: 'Vacuums', icon: Broom },
     { id: 'automations', label: 'Automations', icon: GitFork },
+    { id: 'integrations', label: 'Integrations', icon: PuzzlePiece },
     { id: 'settings', label: 'Settings', icon: GearSix, mandatory: true }
   ], []);
 

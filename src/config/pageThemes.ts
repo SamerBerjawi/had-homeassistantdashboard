@@ -11,6 +11,7 @@ import {
   Heartbeat,
   Broom,
   GitFork,
+  PuzzlePiece,
   GearSix
 } from '@phosphor-icons/react';
 
@@ -243,6 +244,25 @@ export const PAGE_THEMES: Record<string, PageThemeConfig> = {
     activeSidebarDark: 'bg-gradient-to-r from-violet-500/20 to-purple-500/15 text-white border border-violet-400/30 shadow-[0_0_15px_-3px_rgba(139,92,246,0.25)]',
     activeSidebarLight: 'bg-gradient-to-r from-violet-500/15 to-purple-500/10 text-violet-950 border border-violet-500/30 shadow-[0_0_15px_-3px_rgba(139,92,246,0.2)]',
     indicator: 'bg-violet-400 shadow-[0_0_8px_rgba(139,92,246,0.8)]'
+  },
+  integrations: {
+    id: 'integrations',
+    title: 'Integrations & Add-ons',
+    subtitle: '',
+    icon: PuzzlePiece,
+    color: 'text-indigo-500 dark:text-indigo-400',
+    accentHex: '#6366f1',
+    glow1: 'bg-indigo-400 dark:bg-indigo-500',
+    glow2: 'bg-cyan-400 dark:bg-cyan-600',
+    glow3: 'bg-purple-400 dark:bg-indigo-600',
+    glowGradients: {
+      primary: '#6366f1',
+      secondary: '#06b6d4',
+      tertiary: '#8b5cf6'
+    },
+    activeSidebarDark: 'bg-gradient-to-r from-indigo-500/20 to-cyan-500/15 text-white border border-indigo-400/30 shadow-[0_0_15px_-3px_rgba(99,102,241,0.25)]',
+    activeSidebarLight: 'bg-gradient-to-r from-indigo-500/15 to-cyan-500/10 text-indigo-950 border border-indigo-500/30 shadow-[0_0_15px_-3px_rgba(99,102,241,0.2)]',
+    indicator: 'bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.8)]'
   },
   settings: {
     id: 'settings',

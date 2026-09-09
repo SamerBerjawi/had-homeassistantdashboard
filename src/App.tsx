@@ -83,6 +83,7 @@ const MobilityView = lazy(() => import('./components/views/MobilityView'));
 const HealthView = lazy(() => import('./components/views/HealthView'));
 const VacuumsView = lazy(() => import('./components/views/VacuumsView'));
 const AutomationsView = lazy(() => import('./components/views/AutomationsView'));
+const IntegrationsView = lazy(() => import('./components/views/IntegrationsView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 
 
@@ -103,6 +104,7 @@ const VALID_TABS = [
   'health',
   'vacuums',
   'automations',
+  'integrations',
   'settings'
 ] as const;
 
@@ -775,6 +777,7 @@ export default function App() {
               {activeTab === 'health' && <HealthView darkMode={darkMode} />}
               {activeTab === 'vacuums' && <VacuumsView darkMode={darkMode} />}
               {activeTab === 'automations' && <AutomationsView darkMode={darkMode} />}
+              {activeTab === 'integrations' && <IntegrationsView darkMode={darkMode} />}
               {activeTab === 'settings' && (
                 <SettingsView
                   darkMode={darkMode}

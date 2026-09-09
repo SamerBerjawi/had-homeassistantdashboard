@@ -69,6 +69,7 @@ import {
   Car,
   Heartbeat,
   GitFork,
+  PuzzlePiece,
   GearSix
 } from '@phosphor-icons/react';
 import { HAEntity, HAArea, HAFloor, HALabel, HAZone, HADevice, ResolvedEntity } from '../../types';
@@ -210,6 +211,14 @@ export const NAVIGATION_PAGES: NavigationPageMeta[] = [
     mandatory: false,
     description: 'Home Assistant automations, scenes, and execution triggers.',
     color: '#f97316'
+  },
+  {
+    id: 'integrations',
+    label: 'Integrations',
+    icon: PuzzlePiece,
+    mandatory: false,
+    description: 'Installed official integrations, HACS community packages, and add-ons.',
+    color: '#6366f1'
   },
   {
     id: 'settings',
