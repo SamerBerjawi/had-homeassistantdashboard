@@ -43,32 +43,32 @@ export function getWeatherConditionInfo(
         return {
           code: 'clear-night',
           name: 'Clear Night',
-          icon: <MoonStars size={iconSize} weight="duotone" className="text-indigo-300" />,
+          icon: <MoonStars size={iconSize} weight="duotone" className="text-indigo-500 dark:text-indigo-300 drop-shadow-xs" />,
           color: '#818cf8',
           gradient: 'from-indigo-950 via-slate-900 to-slate-950',
           bgGradient: 'from-indigo-900/40 via-slate-900/40 to-slate-950/60',
-          badgeBg: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+          badgeBg: 'bg-indigo-500/15 text-indigo-950 dark:text-indigo-200 border-indigo-500/30'
         };
       }
       return {
         code: 'sunny',
         name: 'Sunny & Clear',
-        icon: <Sun size={iconSize} weight="duotone" className="text-amber-400" />,
+        icon: <Sun size={iconSize} weight="duotone" className="text-amber-500 dark:text-amber-400 drop-shadow-xs" />,
         color: '#f59e0b',
         gradient: 'from-amber-500/30 via-orange-500/20 to-sky-900/40',
         bgGradient: 'from-amber-500/20 via-orange-500/10 to-transparent',
-        badgeBg: 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+        badgeBg: 'bg-amber-500/15 text-amber-900 dark:text-amber-200 border-amber-500/30'
       };
 
     case 'clear-night':
       return {
         code: 'clear-night',
         name: 'Clear Night',
-        icon: <MoonStars size={iconSize} weight="duotone" className="text-indigo-300" />,
+        icon: <MoonStars size={iconSize} weight="duotone" className="text-indigo-500 dark:text-indigo-300 drop-shadow-xs" />,
         color: '#818cf8',
         gradient: 'from-indigo-950 via-slate-900 to-slate-950',
         bgGradient: 'from-indigo-900/40 via-slate-900/40 to-slate-950/60',
-        badgeBg: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+        badgeBg: 'bg-indigo-500/15 text-indigo-950 dark:text-indigo-200 border-indigo-500/30'
       };
 
     case 'partlycloudy':
@@ -78,21 +78,21 @@ export function getWeatherConditionInfo(
         return {
           code: 'partlycloudy-night',
           name: 'Partly Cloudy Night',
-          icon: <CloudMoon size={iconSize} weight="duotone" className="text-indigo-300" />,
+          icon: <CloudMoon size={iconSize} weight="duotone" className="text-indigo-400 dark:text-indigo-300 drop-shadow-xs" />,
           color: '#818cf8',
           gradient: 'from-slate-900 via-indigo-950 to-slate-950',
           bgGradient: 'from-indigo-900/30 via-slate-900/30 to-transparent',
-          badgeBg: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+          badgeBg: 'bg-indigo-500/15 text-indigo-950 dark:text-indigo-200 border-indigo-500/30'
         };
       }
       return {
         code: 'partlycloudy',
         name: 'Partly Cloudy',
-        icon: <CloudSun size={iconSize} weight="duotone" className="text-sky-400" />,
+        icon: <CloudSun size={iconSize} weight="duotone" className="text-amber-500 dark:text-sky-400 drop-shadow-xs" />,
         color: '#38bdf8',
         gradient: 'from-sky-500/25 via-indigo-500/15 to-slate-900/40',
         bgGradient: 'from-sky-500/20 via-slate-800/30 to-transparent',
-        badgeBg: 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+        badgeBg: 'bg-sky-500/15 text-sky-950 dark:text-sky-200 border-sky-500/30'
       };
 
     case 'cloudy':
@@ -100,11 +100,11 @@ export function getWeatherConditionInfo(
       return {
         code: 'cloudy',
         name: 'Cloudy / Overcast',
-        icon: <Cloud size={iconSize} weight="duotone" className="text-slate-300" />,
+        icon: <Cloud size={iconSize} weight="duotone" className="text-slate-600 dark:text-slate-300 drop-shadow-xs" />,
         color: '#94a3b8',
         gradient: 'from-slate-800/60 via-slate-900/80 to-slate-950',
         bgGradient: 'from-slate-700/30 via-slate-800/30 to-transparent',
-        badgeBg: 'bg-slate-500/15 text-slate-300 border-slate-500/30'
+        badgeBg: 'bg-slate-500/15 text-slate-900 dark:text-slate-200 border-slate-500/30'
       };
 
     case 'rainy':
@@ -114,11 +114,11 @@ export function getWeatherConditionInfo(
       return {
         code: 'rainy',
         name: 'Rain Showers',
-        icon: <CloudRain size={iconSize} weight="duotone" className="text-blue-400" />,
+        icon: <CloudRain size={iconSize} weight="duotone" className="text-blue-600 dark:text-blue-400 drop-shadow-xs" />,
         color: '#3b82f6',
         gradient: 'from-blue-900/50 via-slate-900/80 to-slate-950',
         bgGradient: 'from-blue-600/25 via-slate-900/40 to-transparent',
-        badgeBg: 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+        badgeBg: 'bg-blue-500/15 text-blue-950 dark:text-blue-200 border-blue-500/30'
       };
 
     case 'pouring':
@@ -126,11 +126,11 @@ export function getWeatherConditionInfo(
       return {
         code: 'pouring',
         name: 'Heavy Downpour',
-        icon: <CloudRain size={iconSize} weight="fill" className="text-blue-400" />,
+        icon: <CloudRain size={iconSize} weight="fill" className="text-blue-700 dark:text-blue-300 drop-shadow-xs" />,
         color: '#2563eb',
         gradient: 'from-blue-950 via-slate-950 to-black',
         bgGradient: 'from-blue-700/30 via-slate-950/60 to-transparent',
-        badgeBg: 'bg-blue-600/20 text-blue-200 border-blue-500/40'
+        badgeBg: 'bg-blue-600/20 text-blue-950 dark:text-blue-200 border-blue-500/40'
       };
 
     case 'lightning':
@@ -139,11 +139,11 @@ export function getWeatherConditionInfo(
       return {
         code: 'thunderstorm',
         name: 'Thunderstorm',
-        icon: <CloudLightning size={iconSize} weight="duotone" className="text-amber-400" />,
+        icon: <CloudLightning size={iconSize} weight="duotone" className="text-amber-500 dark:text-amber-300 drop-shadow-xs" />,
         color: '#f59e0b',
         gradient: 'from-purple-950/70 via-slate-950 to-black',
         bgGradient: 'from-amber-500/20 via-purple-900/40 to-slate-950/80',
-        badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+        badgeBg: 'bg-amber-500/20 text-amber-950 dark:text-amber-200 border-amber-500/40'
       };
 
     case 'snowy':
@@ -153,11 +153,11 @@ export function getWeatherConditionInfo(
       return {
         code: 'snowy',
         name: 'Snow Flurries',
-        icon: <CloudSnow size={iconSize} weight="duotone" className="text-cyan-200" />,
+        icon: <CloudSnow size={iconSize} weight="duotone" className="text-cyan-600 dark:text-cyan-200 drop-shadow-xs" />,
         color: '#a5f3fc',
         gradient: 'from-cyan-900/40 via-slate-900 to-slate-950',
         bgGradient: 'from-cyan-500/20 via-slate-800/40 to-transparent',
-        badgeBg: 'bg-cyan-500/15 text-cyan-200 border-cyan-500/30'
+        badgeBg: 'bg-cyan-500/15 text-cyan-950 dark:text-cyan-200 border-cyan-500/30'
       };
 
     case 'windy':
@@ -166,11 +166,11 @@ export function getWeatherConditionInfo(
       return {
         code: 'windy',
         name: 'Breezy & Windy',
-        icon: <Wind size={iconSize} weight="duotone" className="text-teal-300" />,
+        icon: <Wind size={iconSize} weight="duotone" className="text-teal-600 dark:text-teal-300 drop-shadow-xs" />,
         color: '#2dd4bf',
         gradient: 'from-teal-900/30 via-slate-900 to-slate-950',
         bgGradient: 'from-teal-500/20 via-slate-800/30 to-transparent',
-        badgeBg: 'bg-teal-500/15 text-teal-300 border-teal-500/30'
+        badgeBg: 'bg-teal-500/15 text-teal-950 dark:text-teal-200 border-teal-500/30'
       };
 
     case 'fog':
@@ -180,22 +180,23 @@ export function getWeatherConditionInfo(
       return {
         code: 'fog',
         name: 'Misty & Foggy',
-        icon: <CloudFog size={iconSize} weight="duotone" className="text-slate-400" />,
+        icon: <CloudFog size={iconSize} weight="duotone" className="text-slate-600 dark:text-slate-300 drop-shadow-xs" />,
         color: '#94a3b8',
         gradient: 'from-slate-800/70 via-slate-900 to-slate-950',
         bgGradient: 'from-slate-500/20 via-slate-900/40 to-transparent',
-        badgeBg: 'bg-slate-500/20 text-slate-300 border-slate-500/30'
+        badgeBg: 'bg-slate-500/20 text-slate-900 dark:text-slate-200 border-slate-500/30'
       };
 
     default:
       return {
         code: 'partlycloudy',
         name: condition ? condition.charAt(0).toUpperCase() + condition.slice(1) : 'Fair Weather',
-        icon: <Sparkle size={iconSize} weight="duotone" className="text-sky-400" />,
+        icon: <Sparkle size={iconSize} weight="duotone" className="text-sky-600 dark:text-sky-400 drop-shadow-xs" />,
         color: '#38bdf8',
         gradient: 'from-sky-950/40 via-slate-900 to-slate-950',
         bgGradient: 'from-sky-500/20 via-slate-900/30 to-transparent',
-        badgeBg: 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+        badgeBg: 'bg-sky-500/15 text-sky-950 dark:text-sky-200 border-sky-500/30'
       };
   }
+
 }

@@ -34,6 +34,7 @@ import { classifyBinarySensors } from '../../lib/entityClassifiers';
 import { getHAImageUrl } from '../../lib/utils';
 import PersonAvatar from '../ui/PersonAvatar';
 import { getWeatherConditionInfo } from '../weather/weatherIcons';
+import AnimatedWeatherBackdrop from '../weather/AnimatedWeatherBackdrop';
 
 // Lazy-loaded interactive slide-over drawers (loaded on first open)
 const UsersPresenceModal = React.lazy(() => import('./modals/UsersPresenceModal'));
@@ -86,6 +87,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   const [openingsTab, setOpeningsTab] = useState<'all' | 'doors' | 'windows' | 'other'>('all');
   const [sensorsTab, setSensorsTab] = useState<'all' | 'motion' | 'leak' | 'smoke'>('all');
   const resolvedZones = useAutoLayoutStore((s) => s.resolvedZones);
+  const sunState = useAutoLayoutStore((s) => s.states?.['sun.sun']?.state);
 
   // alarmEntity for keypad
   const alarmEntities: ResolvedEntity[] = domainGroups['alarm_control_panel'] || [];
@@ -191,7 +193,8 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   }, [weatherEntities, selectedWeatherEntityId]);
 
   const weatherCondition = activeWeather?.state || 'partlycloudy';
-  const weatherCondInfo = getWeatherConditionInfo(weatherCondition, false, 20);
+  const isNight = weatherCondition.toLowerCase().includes('night') || sunState === 'below_horizon';
+  const weatherCondInfo = getWeatherConditionInfo(weatherCondition, isNight, 20);
   const currentTemp = typeof activeWeather?.attributes?.temperature === 'number' ? activeWeather.attributes.temperature : 22;
   const tempUnit = activeWeather?.attributes?.temperature_unit || '°C';
   const weatherHigh = activeWeather?.attributes?.forecast?.[0]?.temperature ?? Math.round(currentTemp + 3);
@@ -594,11 +597,19 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           onClick={() => setDrawerOpen('weather')}
           className={tileBaseClass(false, '')}
         >
+          {/* Dynamic Animated Atmospheric Weather Backdrop */}
+          <AnimatedWeatherBackdrop condition={weatherCondition} isNight={isNight} darkMode={darkMode} />
+
+          {/* Atmospheric Contrast Overlay */}
+          <div className={`absolute inset-0 pointer-events-none rounded-3xl ${
+            darkMode ? 'bg-black/20' : 'bg-white/10'
+          }`} />
+
           <div className="flex items-center justify-between relative z-10">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-xs">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/80 dark:border-white/10 flex items-center justify-center shadow-xs">
               {weatherCondInfo.icon}
             </div>
-            <span className="text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300">
+            <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full backdrop-blur-md border shadow-xs ${weatherCondInfo.badgeBg}`}>
               {weatherCondInfo.name}
             </span>
           </div>
@@ -608,7 +619,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
               <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono">
                 {Math.round(currentTemp)}{tempUnit}
               </span>
-              <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-600 dark:text-slate-300">
                 H: {Math.round(weatherHigh)}° L: {Math.round(weatherLow)}°
               </span>
             </div>
@@ -616,9 +627,9 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
           <div className="relative z-10">
             <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">Weather</div>
-            <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
+            <div className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 font-medium truncate flex items-center justify-between">
               <span>{humidity}% Humidity</span>
-              <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-sky-500 group-hover:translate-x-0.5 transition-all" />
+              <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-400 group-hover:text-sky-500 group-hover:translate-x-0.5 transition-all" />
             </div>
           </div>
         </div>
