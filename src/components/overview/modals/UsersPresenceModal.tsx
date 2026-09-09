@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Users, 
   MapPin, 
@@ -12,13 +12,21 @@ import {
   BatteryWarning, 
   DeviceMobile, 
   NavigationArrow,
-  Globe
+  Globe,
+  MagnifyingGlassPlus,
+  MagnifyingGlassMinus,
+  Clock
 } from '@phosphor-icons/react';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { ResolvedEntity } from '../../../types';
 import DetailsRightDrawer from '../DetailsRightDrawer';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { haWebSocketService } from '../../../services/haWebSocket';
 import PersonAvatar from '../../ui/PersonAvatar';
+import { useCartoBasemap } from '../../../hooks/useCartoBasemap';
+import { formatLastUpdated, getLastUpdatedDetail } from '../../../utils/dateFormat';
 
 interface UsersPresenceModalProps {
   isOpen: boolean;
@@ -26,6 +34,14 @@ interface UsersPresenceModalProps {
   users: ResolvedEntity[];
   selectedUser?: ResolvedEntity | null;
   darkMode?: boolean;
+}
+
+function PersonMapController({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
+  return null;
 }
 
 export default function UsersPresenceModal({
@@ -39,6 +55,8 @@ export default function UsersPresenceModal({
   const [activeUserId, setActiveUserId] = useState<string>(
     selectedUser?.entity_id || users[0]?.entity_id || ''
   );
+  const [zoom, setZoom] = useState<number>(16);
+  const { tileUrl, attribution, isCarto, cartoApiKey } = useCartoBasemap(darkMode);
 
   React.useEffect(() => {
     if (selectedUser?.entity_id) {
@@ -89,7 +107,17 @@ export default function UsersPresenceModal({
   const isCharging = activePerson?.attributes?.battery_charging || batteryState.toLowerCase().includes('charg');
   const location = matchedZone ? `In ${matchedZone.name} Zone` : activePerson?.attributes?.location || (isHome ? 'At Home' : activePerson?.state === 'not_home' ? 'Away from Home' : activePerson?.state || 'Unknown');
 
-  // OpenStreetMap Coordinates
+  // Last update resolution
+  const rawLastUpdated =
+    activePerson?.attributes?.last_seen ||
+    activePerson?.attributes?.updated_at ||
+    activePerson?.last_updated ||
+    activePerson?.last_changed;
+  const lastUpdateDetail = getLastUpdatedDetail(rawLastUpdated);
+  const formattedLastUpdated = lastUpdateDetail ? lastUpdateDetail.formatted : formatLastUpdated(rawLastUpdated);
+  const relativeLastUpdated = lastUpdateDetail?.relative;
+
+  // Coordinates
   const homeZone = resolvedZones.find(
     (z) => z.entity_id === 'zone.home' || z.name?.toLowerCase() === 'home'
   );
@@ -105,12 +133,29 @@ export default function UsersPresenceModal({
   const lon = personLon ?? matchedZone?.longitude ?? homeZone?.longitude ?? (isDemo ? -122.4194 : undefined);
   const hasGps = lat !== undefined && lon !== undefined;
 
-  const osmEmbedUrl = hasGps
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.008}%2C${lat - 0.005}%2C${lon + 0.008}%2C${lat + 0.005}&layer=mapnik&marker=${lat}%2C${lon}`
-    : '';
   const osmDirectUrl = hasGps
-    ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`
+    ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=${zoom}/${lat}/${lon}`
     : '';
+
+  const handleZoomIn = () => setZoom((prev) => Math.min(19, prev + 1));
+  const handleZoomOut = () => setZoom((prev) => Math.max(10, prev - 1));
+
+  const personMarkerIcon = useMemo(() => {
+    return L.divIcon({
+      className: 'person-leaflet-marker',
+      html: `
+        <div style="position: relative; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+          <span style="position: absolute; width: 40px; height: 40px; border-radius: 50%; background: ${isHome ? 'rgba(16, 185, 129, 0.35)' : 'rgba(99, 102, 241, 0.35)'}; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
+          <span style="position: absolute; width: 26px; height: 26px; border-radius: 50%; background: ${isHome ? 'rgba(16, 185, 129, 0.25)' : 'rgba(99, 102, 241, 0.25)'};"></span>
+          <div style="position: relative; width: 30px; height: 30px; border-radius: 50%; background: ${isHome ? '#10b981' : '#6366f1'}; border: 2px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: white;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A64,64,0,1,0,192,88,64.07,64.07,0,0,0,128,24Zm0,112a48,48,0,1,1,48-48A48.05,48.05,0,0,1,128,136ZM216,208a8,8,0,0,1-8,8H48a8,8,0,0,1,0-16,72.08,72.08,0,0,1,72-72h16a72.08,72.08,0,0,1,72,72A8,8,0,0,1,216,208Z"/></svg>
+          </div>
+        </div>
+      `,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20]
+    });
+  }, [isHome]);
 
   return (
     <DetailsRightDrawer
@@ -269,7 +314,22 @@ export default function UsersPresenceModal({
                 </span>
               </div>
 
-              <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04] col-span-2">
+              <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04]">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                  <Clock size={12} weight="duotone" className="text-indigo-400" />
+                  <span>Last Update</span>
+                </span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 block truncate">
+                  {formattedLastUpdated}
+                </span>
+                {relativeLastUpdated && (
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block truncate mt-0.5">
+                    {relativeLastUpdated}
+                  </span>
+                )}
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04]">
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                   HA Entity ID
                 </span>
@@ -280,53 +340,89 @@ export default function UsersPresenceModal({
             </div>
 
             {/* ------------------------------------------------------------- */}
-            {/* OPENSTREETMAP INTERACTIVE LOCATION POINTER (BORDERLESS)       */}
+            {/* CARTO MINIMALIST / OSM LOCATION MAP (BORDERLESS & NO FOOTER)  */}
             {/* ------------------------------------------------------------- */}
             <div className="space-y-2 pt-2">
               <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
                   <Globe size={16} weight="duotone" className="text-emerald-600 dark:text-emerald-400" />
-                  <span>OpenStreetMap Live Position</span>
+                  <span>Location Map</span>
+                  <span
+                    className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold uppercase tracking-wider ${
+                      cartoApiKey
+                        ? 'bg-sky-500/25 text-sky-400 border border-sky-500/30'
+                        : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    }`}
+                  >
+                    {cartoApiKey ? 'CARTO' : 'OSM'}
+                  </span>
                 </div>
                 {hasGps && (
-                  <a
-                    href={osmDirectUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline transition-colors flex items-center gap-1"
-                  >
-                    <span>Open Map</span>
-                    <NavigationArrow size={12} weight="bold" />
-                  </a>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={handleZoomIn}
+                      aria-label="Zoom In"
+                      className="w-6 h-6 rounded-lg bg-slate-900/80 hover:bg-slate-900 text-white flex items-center justify-center transition-colors cursor-pointer shadow-md"
+                    >
+                      <MagnifyingGlassPlus size={12} weight="bold" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleZoomOut}
+                      aria-label="Zoom Out"
+                      className="w-6 h-6 rounded-lg bg-slate-900/80 hover:bg-slate-900 text-white flex items-center justify-center transition-colors cursor-pointer shadow-md"
+                    >
+                      <MagnifyingGlassMinus size={12} weight="bold" />
+                    </button>
+                    <a
+                      href={osmDirectUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline transition-colors flex items-center gap-1 ml-1"
+                    >
+                      <span>Open Map</span>
+                      <NavigationArrow size={11} weight="bold" />
+                    </a>
+                  </div>
                 )}
               </div>
 
-              {/* Embedded OSM Map */}
+              {/* Embedded Carto / OSM Leaflet Map */}
               {hasGps && lat !== undefined && lon !== undefined ? (
-                <div className={`relative w-full h-44 rounded-2xl overflow-hidden shadow-inner ${
-                  darkMode ? 'bg-[#0B0F19]' : 'bg-slate-100'
-                }`}>
-                  <iframe
-                    title={`OpenStreetMap location for ${activePerson.name}`}
-                    src={osmEmbedUrl}
-                    style={darkMode ? { filter: 'invert(90%) hue-rotate(180deg) brightness(90%) contrast(95%)' } : {}}
-                    className="w-full h-full border-0 pointer-events-auto transition-all opacity-95 hover:opacity-100"
-                    loading="lazy"
-                  />
-
-                  {/* Center Pin Marker */}
-                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div className="relative flex items-center justify-center">
-                      <span className="absolute w-8 h-8 rounded-full bg-emerald-500/40 animate-ping" />
-                      <div className="w-5 h-5 rounded-full bg-emerald-500 shadow-xl flex items-center justify-center text-slate-950">
-                        <MapPin size={12} weight="bold" />
-                      </div>
-                    </div>
+                <div className="relative w-full h-48 rounded-2xl overflow-hidden shadow-inner border border-slate-200/50 dark:border-white/10 group">
+                  <div
+                    className={`w-full h-full ${
+                      !isCarto && darkMode
+                        ? '[&_.leaflet-tile]:invert-[.9] [&_.leaflet-tile]:hue-rotate-180 [&_.leaflet-tile]:brightness-[.88] [&_.leaflet-tile]:contrast-[.98]'
+                        : ''
+                    }`}
+                  >
+                    <MapContainer
+                      center={[lat, lon]}
+                      zoom={zoom}
+                      zoomControl={false}
+                      attributionControl={false}
+                      className="w-full h-full z-0"
+                      style={{ width: '100%', height: '100%' }}
+                    >
+                      {/* The 'key' prop is mandatory to force a remount when the URL changes */}
+                      <TileLayer attribution={attribution} key={tileUrl} url={tileUrl} />
+                      <Marker position={[lat, lon]} icon={personMarkerIcon} />
+                      <PersonMapController center={[lat, lon]} zoom={zoom} />
+                    </MapContainer>
                   </div>
 
-                  {/* GPS Coordinates Badge Overlay */}
-                  <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-xl bg-slate-900/80 text-white dark:bg-black/80 backdrop-blur-md text-[10px] font-mono shadow-md">
-                    {lat.toFixed(4)}° N, {lon.toFixed(4)}° W
+                  {/* GPS Coordinates Badge & Last Update Footer Overlay */}
+                  <div className="absolute bottom-2 inset-x-2 flex items-center justify-between pointer-events-none z-[400] gap-2">
+                    <div className="px-2.5 py-1 rounded-xl bg-slate-900/85 text-white backdrop-blur-md text-[10px] font-mono shadow-md">
+                      {lat.toFixed(4)}° N, {Math.abs(lon).toFixed(4)}° {lon >= 0 ? 'E' : 'W'}
+                    </div>
+
+                    <div className="px-2.5 py-1 rounded-xl bg-slate-900/85 text-slate-300 backdrop-blur-md text-[10px] font-mono shadow-md flex items-center gap-1.5 truncate">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                      <span className="truncate">Updated {formattedLastUpdated}</span>
+                    </div>
                   </div>
                 </div>
               ) : (

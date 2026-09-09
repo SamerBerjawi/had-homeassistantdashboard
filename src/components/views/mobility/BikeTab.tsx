@@ -40,6 +40,19 @@ import { ActionConfirmModal } from './ActionConfirmModal';
 import { formatDecimal } from '../../../utils/numberFormat';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { haWebSocketService } from '../../../services/haWebSocket';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { useCartoBasemap } from '../../../hooks/useCartoBasemap';
+import { formatLastUpdated } from '../../../utils/dateFormat';
+
+function BikeMapController({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap();
+  React.useEffect(() => {
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
+  return null;
+}
 
 interface BikeTabProps {
   metrics: BikeMetrics;
@@ -64,7 +77,8 @@ export function BikeTab({
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
   const [logoError, setLogoError] = useState(false);
-  const [zoomDelta, setZoomDelta] = useState<number>(0.007);
+  const [zoom, setZoom] = useState<number>(16);
+  const { tileUrl, attribution, isCarto, cartoApiKey } = useCartoBasemap(darkMode);
 
   const resolvedZones = useAutoLayoutStore((s) => s.resolvedZones);
   const homeZone = resolvedZones?.find(
@@ -132,21 +146,29 @@ export function BikeTab({
   };
 
   // Map settings
-  const delta = Math.max(0.002, Math.min(0.04, zoomDelta));
-  const latMin = (lat ?? 0) - delta * 0.7;
-  const latMax = (lat ?? 0) + delta * 0.7;
-  const lonMin = (lon ?? 0) - delta;
-  const lonMax = (lon ?? 0) + delta;
-
-  const osmEmbedUrl = hasGps
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${lonMin}%2C${latMin}%2C${lonMax}%2C${latMax}&layer=mapnik&marker=${lat}%2C${lon}`
-    : '';
   const osmDirectUrl = hasGps
-    ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`
+    ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=${zoom}/${lat}/${lon}`
     : '';
 
-  const handleZoomIn = () => setZoomDelta((prev) => Math.max(0.002, prev * 0.6));
-  const handleZoomOut = () => setZoomDelta((prev) => Math.min(0.04, prev * 1.5));
+  const handleZoomIn = () => setZoom((prev) => Math.min(19, prev + 1));
+  const handleZoomOut = () => setZoom((prev) => Math.max(10, prev - 1));
+
+  const bikeMarkerIcon = React.useMemo(() => {
+    return L.divIcon({
+      className: 'bike-leaflet-marker',
+      html: `
+        <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+          <span style="position: absolute; width: 44px; height: 44px; border-radius: 50%; background: rgba(245, 158, 11, 0.35); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
+          <span style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background: rgba(245, 158, 11, 0.25);"></span>
+          <div style="position: relative; width: 32px; height: 32px; border-radius: 50%; background: #f59e0b; border: 2.5px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: #020617;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M216,40H176a8,8,0,0,0,0,16h20.7l-34.9,59.84A59.88,59.88,0,0,0,136,112a60.33,60.33,0,0,0-8.62.62L150,73.19a8,8,0,1,0-13.88-8L106.84,115.6a60,60,0,1,0,33.22,48.51L173.31,108l17,29.13A60,60,0,1,0,208,136a8,8,0,0,0,0-16,44,44,0,1,1,38.11,66,43.68,43.68,0,0,1-30.22-12.22l-23-39.49L216,94.63V104a8,8,0,0,0,16,0V48A8,8,0,0,0,216,40ZM60,204a44,44,0,1,1,44-44A44.05,44.05,0,0,1,60,204Z"/></svg>
+          </div>
+        </div>
+      `,
+      iconSize: [44, 44],
+      iconAnchor: [22, 22]
+    });
+  }, []);
 
   // Daily goal calculation
   const dailyGoalKm = 20;
@@ -746,27 +768,44 @@ export function BikeTab({
 
             {/* Interactive Mini-Map Frame with HUD */}
             {hasGps && lat !== undefined && lon !== undefined ? (
-              <div className="relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md group">
-                <iframe
-                  title="E-Bike Location Map"
-                  src={osmEmbedUrl}
-                  style={
-                    darkMode
-                      ? {
-                          filter: 'invert(90%) hue-rotate(180deg) brightness(88%) contrast(98%)',
-                        }
-                      : {}
-                  }
-                  className="w-full h-full border-0 pointer-events-auto opacity-95 transition-opacity"
-                  loading="lazy"
-                />
+              <div className="relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md group border border-slate-200/50 dark:border-white/10">
+                <div
+                  className={`w-full h-full ${
+                    !isCarto && darkMode
+                      ? '[&_.leaflet-tile]:invert-[.9] [&_.leaflet-tile]:hue-rotate-180 [&_.leaflet-tile]:brightness-[.88] [&_.leaflet-tile]:contrast-[.98]'
+                      : ''
+                  }`}
+                >
+                  <MapContainer
+                    center={[lat, lon]}
+                    zoom={zoom}
+                    zoomControl={false}
+                    attributionControl={false}
+                    className="w-full h-full z-0"
+                    style={{ width: '100%', height: '100%' }}
+                  >
+                    {/* The 'key' prop is mandatory to force a remount when the URL changes */}
+                    <TileLayer attribution={attribution} key={tileUrl} url={tileUrl} />
+                    <Marker position={[lat, lon]} icon={bikeMarkerIcon} />
+                    <BikeMapController center={[lat, lon]} zoom={zoom} />
+                  </MapContainer>
+                </div>
 
                 {/* Map Top HUD */}
-                <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none gap-2 z-10">
+                <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none gap-2 z-[400]">
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950/85 backdrop-blur-md text-white text-[11px] font-bold shadow-lg pointer-events-auto">
                     <Globe size={13} weight="duotone" className="text-emerald-400 shrink-0" />
                     <span className="font-mono text-[10px]">
                       {lat.toFixed(4)}°, {lon.toFixed(4)}°
+                    </span>
+                    <span
+                      className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wider ${
+                        cartoApiKey
+                          ? 'bg-sky-500/25 text-sky-300 border border-sky-500/30'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      }`}
+                    >
+                      {cartoApiKey ? 'CARTO' : 'OSM'}
                     </span>
                   </div>
 
@@ -799,21 +838,10 @@ export function BikeTab({
                   </div>
                 </div>
 
-                {/* Center Radar Pinpoint */}
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
-                  <div className="relative flex items-center justify-center">
-                    <span className="absolute w-12 h-12 rounded-full bg-amber-500/30 animate-ping" />
-                    <span className="absolute w-8 h-8 rounded-full bg-amber-500/20 animate-pulse" />
-                    <div className="relative w-8 h-8 rounded-full bg-amber-500 border-2 border-white shadow-xl flex items-center justify-center text-slate-950">
-                      <Bicycle size={16} weight="bold" />
-                    </div>
-                  </div>
-                </div>
-
                 {/* Bottom map footer */}
-                <div className="absolute bottom-2.5 left-2.5 z-10 pointer-events-none">
+                <div className="absolute bottom-2.5 left-2.5 z-[400] pointer-events-none">
                   <div className="px-2 py-0.5 rounded-lg bg-slate-950/85 backdrop-blur-md text-[9px] font-mono text-slate-300">
-                    Last seen: {metrics.lastSeen}
+                    Last seen: {formatLastUpdated(metrics.lastSeen)}
                   </div>
                 </div>
               </div>

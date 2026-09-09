@@ -22,6 +22,7 @@ export type ResponsiveLayoutOverrides = {
 export interface UserDashboardConfig {
   version: number;
   updatedAt: string;
+  cartoApiKey?: string;
   theme: {
     accentColor: string;
     glassOpacity: number;
@@ -199,6 +200,7 @@ export interface ConfigContextType {
 export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
   version: 1,
   updatedAt: '1970-01-01T00:00:00.000Z',
+  cartoApiKey: '',
   theme: {
     accentColor: '#38bdf8', // sky-400
     glassOpacity: 0.75,

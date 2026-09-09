@@ -846,3 +846,8 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
     -webkit-app-region: no-drag;
   }
 }
+
+/* Hide Leaflet default attribution footer control across all mini-maps */
+.leaflet-control-attribution {
+  display: none !important;
+}

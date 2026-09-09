@@ -3,34 +3,60 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   NavigationArrow,
   Gauge as GaugeIcon,
   Globe,
   MagnifyingGlassPlus,
   MagnifyingGlassMinus,
-  Car,
   CheckCircle,
   Pulse
 } from '@phosphor-icons/react';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { CarEvMetrics } from '../../types/mobility';
 import { LineChart } from '../charts/line-chart';
 import { Line } from '../charts/line';
 import { formatDecimal } from '../../utils/numberFormat';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { haWebSocketService } from '../../services/haWebSocket';
+import { useUserConfig } from '../../contexts/ConfigContext';
+import { formatLastUpdated } from '../../utils/dateFormat';
 
 interface VehicleTelemetryMapProps {
   metrics: CarEvMetrics;
   darkMode?: boolean;
 }
 
+function MapController({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
+  return null;
+}
+
 export function VehicleTelemetryMap({
   metrics,
   darkMode = true
 }: VehicleTelemetryMapProps) {
-  const [zoomDelta, setZoomDelta] = useState<number>(0.007);
+  const { config } = useUserConfig();
+  const cartoApiKey = config.cartoApiKey?.trim();
+  const isDarkMode = darkMode;
+
+  let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  let attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+  if (cartoApiKey) {
+    tileUrl = isDarkMode
+      ? `https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${cartoApiKey}`
+      : `https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png?key=${cartoApiKey}`;
+    attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+  }
+
+  const [zoom, setZoom] = useState<number>(16);
 
   const resolvedZones = useAutoLayoutStore((s) => s.resolvedZones);
   const homeZone = resolvedZones?.find(
@@ -43,21 +69,31 @@ export function VehicleTelemetryMap({
   const lon = metrics.gps?.longitude ?? fallbackLon;
   const hasGps = lat !== undefined && lon !== undefined;
 
-  const delta = Math.max(0.002, Math.min(0.04, zoomDelta));
-  const latMin = (lat ?? 0) - delta * 0.7;
-  const latMax = (lat ?? 0) + delta * 0.7;
-  const lonMin = (lon ?? 0) - delta;
-  const lonMax = (lon ?? 0) + delta;
-
-  const osmEmbedUrl = hasGps
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${lonMin}%2C${latMin}%2C${lonMax}%2C${latMax}&layer=mapnik&marker=${lat}%2C${lon}`
-    : '';
   const osmDirectUrl = hasGps
-    ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`
+    ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=${zoom}/${lat}/${lon}`
     : '';
 
-  const handleZoomIn = () => setZoomDelta((prev) => Math.max(0.002, prev * 0.6));
-  const handleZoomOut = () => setZoomDelta((prev) => Math.min(0.04, prev * 1.5));
+  const handleZoomIn = () => setZoom((prev) => Math.min(19, prev + 1));
+  const handleZoomOut = () => setZoom((prev) => Math.max(10, prev - 1));
+
+  const vehicleMarkerIcon = useMemo(() => {
+    return L.divIcon({
+      className: 'vehicle-leaflet-marker',
+      html: `
+        <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+          <span style="position: absolute; width: 44px; height: 44px; border-radius: 50%; background: rgba(6, 182, 212, 0.35); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
+          <span style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background: rgba(6, 182, 212, 0.25);"></span>
+          <div style="position: relative; width: 32px; height: 32px; border-radius: 50%; background: #06b6d4; border: 2.5px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; color: #020617;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+              <path d="M240,112H229.2L201.42,49.5A16,16,0,0,0,186.8,40H69.2a16,16,0,0,0-14.62,9.5L26.8,112H16a8,8,0,0,0,0,16h8v80a16,16,0,0,0,16,16H64a16,16,0,0,0,16-16V192h96v16a16,16,0,0,0,16,16h24a16,16,0,0,0,16-16V128h8a8,8,0,0,0,0-16ZM71.2,56H184.8l21.33,48H49.87ZM64,192H40V128H64Zm152,0H192V128h24Zm-16-48a12,12,0,1,1,12-12A12,12,0,0,1,200,144Zm-144,0a12,12,0,1,1,12-12A12,12,0,0,1,56,144Z" />
+            </svg>
+          </div>
+        </div>
+      `,
+      iconSize: [44, 44],
+      iconAnchor: [22, 22]
+    });
+  }, []);
 
   const tpms = metrics.tirePressure;
 
@@ -109,27 +145,44 @@ export function VehicleTelemetryMap({
 
       {/* Interactive Mini-Map Frame with HUD */}
       {hasGps && lat !== undefined && lon !== undefined ? (
-        <div className="relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md group">
-          <iframe
-            title="Vehicle Location Map"
-            src={osmEmbedUrl}
-            style={
-              darkMode
-                ? {
-                    filter: 'invert(90%) hue-rotate(180deg) brightness(88%) contrast(98%)',
-                  }
-                : {}
-            }
-            className="w-full h-full border-0 pointer-events-auto opacity-95 transition-opacity"
-            loading="lazy"
-          />
+        <div className="relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md group border border-slate-200/50 dark:border-white/10">
+          <div
+            className={`w-full h-full ${
+              !cartoApiKey && isDarkMode
+                ? '[&_.leaflet-tile]:invert-[.9] [&_.leaflet-tile]:hue-rotate-180 [&_.leaflet-tile]:brightness-[.88] [&_.leaflet-tile]:contrast-[.98]'
+                : ''
+            }`}
+          >
+            <MapContainer
+              center={[lat, lon]}
+              zoom={zoom}
+              zoomControl={false}
+              attributionControl={false}
+              className="w-full h-full z-0"
+              style={{ width: '100%', height: '100%' }}
+            >
+              {/* The 'key' prop is mandatory to force a remount when the URL changes */}
+              <TileLayer attribution={attribution} key={tileUrl} url={tileUrl} />
+              <Marker position={[lat, lon]} icon={vehicleMarkerIcon} />
+              <MapController center={[lat, lon]} zoom={zoom} />
+            </MapContainer>
+          </div>
 
           {/* Map Top HUD */}
-          <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none gap-2 z-10">
+          <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none gap-2 z-[400]">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950/85 backdrop-blur-md text-white text-[11px] font-bold shadow-lg pointer-events-auto">
               <Globe size={13} weight="duotone" className="text-emerald-400 shrink-0" />
               <span className="font-mono text-[10px]">
                 {lat.toFixed(4)}°, {lon.toFixed(4)}°
+              </span>
+              <span
+                className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wider ${
+                  cartoApiKey
+                    ? 'bg-sky-500/25 text-sky-300 border border-sky-500/30'
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                }`}
+              >
+                {cartoApiKey ? 'CARTO' : 'OSM'}
               </span>
             </div>
 
@@ -162,21 +215,10 @@ export function VehicleTelemetryMap({
             </div>
           </div>
 
-          {/* Target Pinpoint Center Radar */}
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
-            <div className="relative flex items-center justify-center">
-              <span className="absolute w-12 h-12 rounded-full bg-cyan-500/30 animate-ping" />
-              <span className="absolute w-8 h-8 rounded-full bg-cyan-500/20 animate-pulse" />
-              <div className="relative w-8 h-8 rounded-full bg-cyan-500 border-2 border-white shadow-xl flex items-center justify-center text-slate-950">
-                <Car size={16} weight="bold" />
-              </div>
-            </div>
-          </div>
-
           {/* Bottom map footer */}
-          <div className="absolute bottom-2.5 left-2.5 z-10 pointer-events-none">
+          <div className="absolute bottom-2.5 left-2.5 z-[400] pointer-events-none">
             <div className="px-2 py-0.5 rounded-lg bg-slate-950/85 backdrop-blur-md text-[9px] font-mono text-slate-300">
-              {metrics.lastRefreshed}
+              {formatLastUpdated(metrics.lastRefreshed)}
             </div>
           </div>
         </div>

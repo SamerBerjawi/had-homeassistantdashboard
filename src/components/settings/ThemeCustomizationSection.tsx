@@ -20,7 +20,9 @@ import {
   SquareSplitHorizontal,
   SunHorizon,
   CloudRain,
-  MoonStars
+  MoonStars,
+  MapTrifold,
+  ArrowSquareOut
 } from '@phosphor-icons/react';
 import { WeatherBackdropType } from '../../types/canvas';
 import { TileLayoutMode } from '../../types/userConfig';
@@ -37,6 +39,8 @@ interface ThemeCustomizationSectionProps {
   setTileLayoutMode?: (mode: TileLayoutMode) => void;
   fullWidthTiles?: boolean;
   setFullWidthTiles?: (fullWidth: boolean) => void;
+  cartoApiKey?: string;
+  setCartoApiKey?: (key: string) => void;
   handleSavePreferences: () => void;
 }
 
@@ -52,6 +56,8 @@ export default function ThemeCustomizationSection({
   setTileLayoutMode,
   fullWidthTiles = false,
   setFullWidthTiles,
+  cartoApiKey = '',
+  setCartoApiKey,
   handleSavePreferences
 }: ThemeCustomizationSectionProps) {
   const activeTileMode: TileLayoutMode =
@@ -258,7 +264,69 @@ export default function ThemeCustomizationSection({
           </div>
         </div>
 
-      {/* 5. Save Button (Sleek full-width) */}
+        {/* 5. Map Basemap Tile Layer (CartoDB Positron / Dark Matter) */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-0.5">
+            <div className="flex items-center gap-1.5">
+              <MapTrifold size={15} weight="duotone" className="text-sky-500" />
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Map Basemap & Tiles
+              </span>
+            </div>
+            <a
+              href="https://carto.com/basemaps/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] font-semibold text-sky-500 hover:text-sky-400 dark:text-sky-400 flex items-center gap-1 transition-colors"
+            >
+              <span>Get Free Carto API Key</span>
+              <ArrowSquareOut size={12} weight="bold" />
+            </a>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>CartoDB Minimalist Tiles</span>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                      cartoApiKey
+                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
+                        : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    {cartoApiKey ? 'CARTO Active' : 'OSM Fallback'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Uber-style Positron (Light) & Dark Matter (Dark) raster tiles. Falls back to OpenStreetMap when empty.
+                </p>
+              </div>
+            </div>
+
+            <div className="relative flex items-center">
+              <input
+                type="password"
+                value={cartoApiKey || ''}
+                onChange={(e) => setCartoApiKey?.(e.target.value)}
+                placeholder="Paste your CartoDB raster tile API key..."
+                className="w-full h-10 px-3 pr-10 rounded-xl bg-white/80 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-xs font-mono focus:outline-hidden focus:border-sky-500 shadow-xs placeholder:text-slate-400 placeholder:font-sans"
+              />
+              <a
+                href="https://carto.com/basemaps/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Request free Carto API Key"
+                className="absolute right-2.5 text-slate-400 hover:text-sky-500 transition-colors p-1"
+              >
+                <ArrowSquareOut size={16} weight="bold" />
+              </a>
+            </div>
+          </div>
+        </div>
+
+      {/* 6. Save Button (Sleek full-width) */}
       <button
         type="button"
         onClick={handleSavePreferences}
