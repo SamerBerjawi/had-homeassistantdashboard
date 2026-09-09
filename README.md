@@ -11,7 +11,7 @@ A futuristic, high-performance Smart Home dashboard interface built with **React
 - **⚡ Energy Flow & Grid Analytics**: Interactive energy flow visualizers and Sankey diagrams tracking solar generation, battery storage, and grid import/export.
 - **🚗 Mobility & EV Telemetry**: Real-time vehicle range, battery SoC, tire pressures, location tracking, and custom vehicle asset uploads.
 - **🛋️ Rooms & Multi-Floor Layout**: Floor-by-floor navigation, area card sorting, favorite areas, and custom area icon/name overrides.
-- **🌤️ Grounded Weather & Forecasting**: Hourly and 7-day weather telemetry with optional Google Gemini AI grounding and local sensor failover.
+- **🌤️ Local Weather & Forecasting**: Hourly and 7-day weather telemetry with Home Assistant native meteorological sensor integration and dynamic animated backdrops.
 - **🎨 Obsidian & Custom Theme Engine**: Custom color palettes, dark/light presets, and real-time layout personalization.
 - **📱 PWA & Tablet Ready**: Optimized for iPad, Android tablets, and wall displays with offline caching and touch-friendly controls.
 - **🔄 Real-Time Multi-Device Sync**: Server-Sent Events (`/api/config/stream`) and `BroadcastChannel` instantly propagate configuration changes across all open screens and tablets.
@@ -148,7 +148,6 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     # Persistent storage volume for dashboard config JSON and uploaded vehicle assets
     volumes:
       - ./data:/app/data
@@ -163,7 +162,6 @@ services:
 2. **(Optional) Create a `.env` file** in the same directory:
 ```bash
 PORT=3000
-GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 3. **Start the container**:
@@ -186,7 +184,6 @@ Open your browser or tablet at:
 - **Environment Variables**:
   - `NODE_ENV`: `production`
   - `PORT`: `3000`
-  - `GEMINI_API_KEY`: *(Optional)* Your Google Gemini API key for live search-grounded weather.
 
 ---
 
@@ -199,7 +196,6 @@ docker run -d \
   -p 3000:3000 \
   -v $(pwd)/data:/app/data \
   -e NODE_ENV=production \
-  -e GEMINI_API_KEY="your_api_key_optional" \
   ghcr.io/samerberjawi/had-homeassistantdashboard:latest
 ```
 
@@ -214,7 +210,6 @@ docker run -d \
 | `DATA_DIR` | No | `/app/data` | Base directory for persistent files inside container |
 | `DASHBOARD_CONFIG_DIR` | No | `/app/data/config` | Directory where `dashboard-config.json` and backups are stored |
 | `DASHBOARD_ASSETS_DIR` | No | `/app/data/assets` | Directory where uploaded vehicle PNGs and icons are stored |
-| `GEMINI_API_KEY` | No | `""` | Optional Google Gemini API key for live AI weather grounding with Google Search |
 | `HASS_URL` | No | `http://homeassistant.local:8123` | Default fallback Home Assistant URL (can also be configured in the UI) |
 
 ---

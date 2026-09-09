@@ -389,11 +389,6 @@ export interface WeatherForecastDay {
   lowC: number;
 }
 
-export interface WeatherGroundingSource {
-  title: string;
-  url: string;
-}
-
 export interface WeatherData {
   location: string;
   country?: string;
@@ -415,9 +410,7 @@ export interface WeatherData {
   feelsLikeF: number;
   summary: string;
   forecast: WeatherForecastDay[];
-  groundingSources?: WeatherGroundingSource[];
   lastUpdated: string;
-  isGrounded?: boolean;
 }
 
 export * from './types/notifications';

@@ -1,6 +1,5 @@
 {
   "name": "HAD - Home Assistant Dashboard",
   "description": "A premium glassmorphic smart home IoT dashboard for Home Assistant with automatic layout generation, entity control, energy analytics, and real-time monitoring.",
-  "requestFramePermissions": ["geolocation"],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "requestFramePermissions": ["geolocation"]
 }
