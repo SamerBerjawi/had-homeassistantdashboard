@@ -2,6 +2,25 @@
 
 A futuristic, high-performance Smart Home dashboard interface built with **React 19**, **Vite**, **TypeScript**, **Tailwind CSS**, **Visx charts**, **Framer Motion**, and an integrated **Node.js Express** backend. Designed for wall-mounted tablets, desktops, and mobile devices with native **Progressive Web App (PWA)** support.
 
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="36%">
+        <b>🏠 Overview Dashboard</b><br/><br/>
+        <img src="assets/screenshots/overview.png" alt="Overview Dashboard" width="100%" />
+      </td>
+      <td align="center" width="36%">
+        <b>🛋️ Rooms & Areas</b><br/><br/>
+        <img src="assets/screenshots/rooms.png" alt="Rooms & Areas" width="100%" />
+      </td>
+      <td align="center" width="28%">
+        <b>🧭 Navigation Menu</b><br/><br/>
+        <img src="assets/screenshots/navigation.png" alt="Navigation Menu" width="100%" />
+      </td>
+    </tr>
+  </table>
+</div>
+
 ---
 
 ## ✨ Features & Capabilities
@@ -25,7 +44,7 @@ HAD features 12 dedicated, highly polished views designed for desktop browsers, 
 ### 1. 🏠 Overview (`/overview`)
 - **Executive Smart Home Summary**: Real-time status at a glance with context-aware greeting and weather summary.
 - **Presence & Person Badges**: Track family members' home/away states, zones, and presence dots with high-resolution avatars.
-- **Weather & Forecast Bar**: Live current temperature, conditions, hourly forecast cards, and AI-grounded weather insights.
+- **Weather & Forecast Bar**: Live current temperature, conditions, hourly forecast cards, and local weather insights.
 - **Quick Actions & Scenes**: One-tap toggles for home scenes, lighting presets, and critical device controls.
 
 ### 2. 🛋️ Rooms & Multi-Floor Navigation (`/rooms`)
