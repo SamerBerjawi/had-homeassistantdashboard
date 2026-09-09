@@ -1,0 +1,33 @@
+manifestVersion: 1
+id: had-homeassistantdashboard
+category: automation
+name: HOMZ Dashboard
+version: "0.4.0"
+tagline: Sleek, high-performance Home Assistant dashboard with responsive bento grid
+description: >-
+  HOMZ is a modern, high-performance dashboard for Home Assistant engineered for wall-mounted tablets, touch displays, desktops, and mobile devices.
+
+
+  Featuring a fluid responsive grid, real-time WebSocket state synchronization, interactive climate controls, media players, and automated scene activation, HOMZ brings an elevated, futuristic aesthetic to your smart home.
+
+
+  Features:
+
+  - Instant Auto-Discovery: Seamlessly reads your Home Assistant areas, entities, and devices.
+
+  - Interactive Widgets: Sleek control cards for lights, switches, thermostats, covers, locks, and sensors.
+
+  - Multi-Device Synchronization: Saved layouts and settings persist locally and sync across all your displays.
+
+  - Private & Sovereign: Runs 100% locally with zero cloud dependencies or external tracking.
+developer: Samer Berjawi
+website: https://github.com/SamerBerjawi/had-homeassistantdashboard
+dependencies: []
+repo: https://github.com/SamerBerjawi/had-homeassistantdashboard
+support: https://github.com/SamerBerjawi/had-homeassistantdashboard/issues
+port: 8124
+gallery: []
+path: ""
+defaultPassword: ""
+submitter: Samer Berjawi
+submission: ""

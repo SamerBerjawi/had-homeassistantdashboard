@@ -1,0 +1,18 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: had-homeassistantdashboard_web_1
+      APP_PORT: 3000
+      PROXY_AUTH_ADD: "false"
+
+  web:
+    image: ghcr.io/samerberjawi/had-homeassistantdashboard:latest@sha256:2a58b753dc8af5336822f6288b1d350b574f83f6890ed35afc61bcfb835511a0
+    restart: on-failure
+    stop_grace_period: 30s
+    volumes:
+      - ${APP_DATA_DIR}/data:/app/data
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
