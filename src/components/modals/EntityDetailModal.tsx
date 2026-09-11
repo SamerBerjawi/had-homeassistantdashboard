@@ -313,7 +313,7 @@ export default function EntityDetailModal() {
               className={`pointer-events-auto w-screen max-w-full sm:max-w-xl md:max-w-2xl h-screen flex flex-col justify-between overflow-hidden backdrop-blur-2xl transition-all relative ${
                 darkMode
                   ? 'bg-black/35 text-slate-100 border-l border-white/10 shadow-2xl shadow-black/50'
-                  : 'bg-white/35 text-slate-900 border-l border-white/50 shadow-2xl'
+                  : 'bg-white/95 text-slate-900 border-l border-slate-200/80 shadow-2xl'
               }`}
             >
               {/* Top Mobile Grab Handle */}
@@ -581,7 +581,7 @@ export default function EntityDetailModal() {
             </div>
 
             {/* Sticky Drawer Footer matching Health page outer container tokens */}
-            <div className="p-4 sm:p-5 border-t border-slate-200/60 dark:border-white/5 bg-white/35 dark:bg-black/35 backdrop-blur-xl flex items-center justify-between gap-3 shrink-0">
+            <div className="p-4 sm:p-5 border-t border-slate-200/80 dark:border-white/5 bg-slate-50/90 dark:bg-black/35 backdrop-blur-xl flex items-center justify-between gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowDiagnostics(!showDiagnostics)}

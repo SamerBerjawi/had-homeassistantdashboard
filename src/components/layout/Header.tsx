@@ -100,9 +100,16 @@ export const Header: React.FC<HeaderProps> = ({
                 <PageIcon size={30} weight="duotone" className={`${currentTheme.color} shrink-0`} />
               ) : null
             )}
-            <span>{pageTitle}</span>
-            {activeTab === 'overview' && (
-              <span className="inline-block animate-wave cursor-default select-none text-2xl sm:text-3xl" title="Welcome!">👋</span>
+            {activeTab === 'overview' && pageTitle.includes(',') ? (
+              <span className="inline-flex items-center gap-2 flex-wrap">
+                <span>{pageTitle.split(',')[0]},</span>
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                  <span>{pageTitle.split(',').slice(1).join(',').trim()}</span>
+                  <span className="inline-block animate-wave cursor-default select-none text-2xl sm:text-3xl" title="Welcome!">👋</span>
+                </span>
+              </span>
+            ) : (
+              <span>{pageTitle}</span>
             )}
           </h1>
         </div>

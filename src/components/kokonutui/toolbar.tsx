@@ -124,14 +124,12 @@ export function Toolbar({
                   }
                 }}
                 className={cn(
-                  "h-11 sm:h-12 rounded-2xl px-2.5 font-bold text-xs transition-all duration-200 cursor-pointer select-none",
-                  isSelected
-                    ? cn("flex-[1.6]", activeClass)
-                    : cn("flex-1", INACTIVE_CLASS)
+                  "h-11 sm:h-12 rounded-2xl px-2 font-bold text-xs transition-all duration-200 cursor-pointer select-none flex-1 min-w-0",
+                  isSelected ? activeClass : INACTIVE_CLASS
                 )}
-                icon={<item.icon size={18} className="shrink-0" weight={isSelected ? "duotone" : "regular"} />}
+                icon={<item.icon size={20} className="w-5 h-5 size-5 shrink-0" weight={isSelected ? "duotone" : "regular"} />}
                 label={isSelected ? item.title : undefined}
-                holdingLabel="Hold Away..."
+                holdingLabel="Hold..."
               />
             );
           }
@@ -147,16 +145,14 @@ export function Toolbar({
               transition={transition as any}
               onClick={(e) => handleItemClick(item.id, e)}
               className={cn(
-                "h-11 sm:h-12 relative flex items-center justify-center rounded-2xl",
-                "font-bold text-xs transition-all duration-200 cursor-pointer select-none",
-                isSelected
-                  ? cn("flex-[1.6]", activeClass)
-                  : cn("flex-1", INACTIVE_CLASS)
+                "h-11 sm:h-12 relative flex items-center justify-center rounded-2xl px-2",
+                "font-bold text-xs transition-all duration-200 cursor-pointer select-none flex-1 min-w-0",
+                isSelected ? activeClass : INACTIVE_CLASS
               )}
             >
               <item.icon
-                size={18}
-                className="shrink-0"
+                size={20}
+                className="w-5 h-5 size-5 shrink-0"
                 weight={isSelected ? "duotone" : "regular"}
               />
               <AnimatePresence initial={false}>

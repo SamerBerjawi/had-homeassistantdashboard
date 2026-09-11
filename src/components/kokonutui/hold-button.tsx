@@ -128,7 +128,8 @@ export function HoldButton({
   }
 
   return (
-    <Button
+    <button
+      type="button"
       className={cn(
         holdButtonVariants({ variant, className }),
         isHolding && "ring-2 ring-rose-500/60 scale-[0.98]"
@@ -155,19 +156,19 @@ export function HoldButton({
       />
 
       {/* Button content */}
-      <span className="relative z-10 flex w-full items-center justify-center gap-1.5 pointer-events-none">
+      <span className="relative z-10 flex w-full items-center justify-center gap-1.5 pointer-events-none px-1">
         {icon}
         {children ? (
           children
         ) : (
           ((isHolding && holdingLabel) || label) ? (
-            <span className="font-bold text-xs tracking-tight overflow-hidden whitespace-nowrap">
+            <span className="font-bold text-xs tracking-tight overflow-hidden whitespace-nowrap truncate">
               {isHolding ? (holdingLabel || "Hold...") : label}
             </span>
           ) : null
         )}
       </span>
-    </Button>
+    </button>
   );
 }
 

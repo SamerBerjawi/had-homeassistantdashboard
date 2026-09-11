@@ -66,7 +66,9 @@ export default function ArmAwayConfirmModal({
               e.stopPropagation();
               onClose();
             }}
-            className="fixed inset-0 bg-black/75 backdrop-blur-md cursor-pointer z-10"
+            className={`fixed inset-0 backdrop-blur-sm transition-opacity cursor-pointer z-10 ${
+              darkMode ? 'bg-black/50' : 'bg-slate-950/20'
+            }`}
             aria-hidden="true"
           />
 
@@ -79,10 +81,10 @@ export default function ArmAwayConfirmModal({
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
               onClick={(e) => e.stopPropagation()}
-              className={`relative w-full max-w-sm rounded-3xl p-5 sm:p-6 shadow-2xl overflow-hidden border pointer-events-auto z-30 ${
+              className={`relative w-full max-w-sm rounded-3xl p-5 sm:p-6 shadow-2xl overflow-hidden border pointer-events-auto z-30 backdrop-blur-2xl transition-all ${
                 darkMode
-                  ? 'bg-slate-900 border-white/15 text-white shadow-black/80'
-                  : 'bg-white border-slate-200 text-slate-900 shadow-slate-900/20'
+                  ? 'bg-black/40 border-white/15 text-white shadow-2xl shadow-black/80'
+                  : 'bg-white/95 border-slate-200/80 text-slate-900 shadow-2xl'
               }`}
             >
               {/* Subtle Ambient Red Glow */}
@@ -158,10 +160,10 @@ export default function ArmAwayConfirmModal({
                     e.stopPropagation();
                     onConfirm(30);
                   }}
-                  className={`w-full p-3.5 rounded-2xl border transition-all flex items-center justify-between cursor-pointer pointer-events-auto group active:scale-[0.98] ${
+                  className={`w-full p-3.5 rounded-2xl border transition-all flex items-center justify-between cursor-pointer pointer-events-auto group active:scale-[0.98] backdrop-blur-md shadow-xs ${
                     darkMode
-                      ? 'bg-white/5 hover:bg-white/10 active:bg-white/15 border-white/10 hover:border-rose-500/40 text-white'
-                      : 'bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border-slate-200 hover:border-rose-300 text-slate-900'
+                      ? 'bg-white/10 hover:bg-white/15 active:bg-white/20 border-white/10 hover:border-rose-500/40 text-white'
+                      : 'bg-slate-50/80 hover:bg-white active:bg-slate-100 border-slate-200/80 hover:border-rose-300 text-slate-900'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -194,10 +196,10 @@ export default function ArmAwayConfirmModal({
                     e.stopPropagation();
                     onConfirm(60);
                   }}
-                  className={`w-full p-3.5 rounded-2xl border transition-all flex items-center justify-between cursor-pointer pointer-events-auto group active:scale-[0.98] ${
+                  className={`w-full p-3.5 rounded-2xl border transition-all flex items-center justify-between cursor-pointer pointer-events-auto group active:scale-[0.98] backdrop-blur-md shadow-xs ${
                     darkMode
-                      ? 'bg-white/5 hover:bg-white/10 active:bg-white/15 border-white/10 hover:border-indigo-500/40 text-white'
-                      : 'bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border-slate-200 hover:border-indigo-300 text-slate-900'
+                      ? 'bg-white/10 hover:bg-white/15 active:bg-white/20 border-white/10 hover:border-indigo-500/40 text-white'
+                      : 'bg-slate-50/80 hover:bg-white active:bg-slate-100 border-slate-200/80 hover:border-indigo-300 text-slate-900'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -224,18 +226,18 @@ export default function ArmAwayConfirmModal({
                 </button>
               </div>
 
-              {/* Footer Cancel button */}
-              <div className="mt-4 text-center relative z-20">
+              {/* Cancel Button */}
+              <div className="mt-4 relative z-20">
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onClose();
                   }}
-                  className={`text-xs font-semibold px-4 py-2 rounded-xl transition-all cursor-pointer pointer-events-auto ${
-                    darkMode 
-                      ? 'text-slate-400 hover:text-white hover:bg-white/5 active:bg-white/10' 
-                      : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200'
+                  className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer pointer-events-auto active:scale-95 backdrop-blur-sm shadow-xs ${
+                    darkMode
+                      ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white'
+                      : 'bg-slate-100 hover:bg-slate-200 border-slate-200/80 text-slate-700 hover:text-slate-900'
                   }`}
                 >
                   Cancel

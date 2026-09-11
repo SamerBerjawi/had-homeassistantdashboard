@@ -140,10 +140,17 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
       <div
         onClick={() => onOpenDrawer ? onOpenDrawer(entity) : onIconClick?.()}
         style={{
-          boxShadow: darkMode
+          boxShadow: palette?.glowSubtle
+            ? `0 10px 25px -5px ${palette.glowSubtle}, 4px 6px 12px rgba(0, 0, 0, 0.25)`
+            : darkMode
             ? '4px 6px 12px rgba(0, 0, 0, 0.25)'
             : '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-          borderColor: palette?.badgeBorder || undefined
+          borderColor: palette?.badgeBorder || undefined,
+          background: !albumArtUrl && isActive
+            ? (darkMode
+                ? `linear-gradient(135deg, ${palette.glowSubtle} 0%, rgba(15, 23, 42, 0.85) 100%)`
+                : `linear-gradient(135deg, ${palette.glowSubtle} 0%, rgba(255, 255, 255, 0.88) 100%)`)
+            : undefined
         }}
         className={`w-full h-full group relative rounded-3xl p-4 sm:p-5 border overflow-hidden isolate backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between gap-3 ${
           albumArtUrl
@@ -167,6 +174,12 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
             <div className="absolute inset-0 bg-gradient-to-t from-white/92 via-white/70 to-white/40 dark:hidden block" />
           </div>
         )}
+
+        {/* Ambient Artwork Glow */}
+        <div
+          className="absolute -right-8 -bottom-8 w-48 h-48 rounded-full blur-3xl opacity-35 dark:opacity-30 pointer-events-none transition-all duration-700"
+          style={{ backgroundColor: palette.primary }}
+        />
 
         {/* Main Row: Album Artwork + Song Info + Transport Controls */}
         <div className="relative z-10 flex items-stretch justify-between gap-3.5 min-w-0">

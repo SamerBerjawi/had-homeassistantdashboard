@@ -609,9 +609,16 @@ export default function App() {
                       <PageIcon size={30} weight="duotone" className={`${currentTheme.color} shrink-0`} />
                     )
                   )}
-                  <span>{pageTitle}</span>
-                  {activeTab === 'overview' && (
-                    <span className="inline-block animate-wave cursor-default select-none text-2xl sm:text-3xl" title="Welcome!">👋</span>
+                  {activeTab === 'overview' ? (
+                    <span className="inline-flex items-center gap-2 flex-wrap">
+                      <span>{getTimeGreeting()},</span>
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                        <span>{userName}</span>
+                        <span className="inline-block animate-wave cursor-default select-none text-2xl sm:text-3xl" title="Welcome!">👋</span>
+                      </span>
+                    </span>
+                  ) : (
+                    <span>{pageTitle}</span>
                   )}
                 </h1>
               </div>
@@ -640,38 +647,26 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Edit Mode Toggle (Visible on Overview & Settings pages) */}
+                {/* Edit Mode Toggle (Single edit button in page header) */}
                 {(activeTab === 'overview' || activeTab === 'settings') && (
                   <button
                     type="button"
                     onClick={toggleEditMode}
-                    className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl border transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 sm:gap-2 text-xs font-bold shadow-xs ${
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl border transition-all duration-200 cursor-pointer active:scale-95 flex items-center justify-center shadow-xs backdrop-blur-md ${
                       isEditMode
-                        ? 'bg-sky-500 border-sky-400 text-white shadow-sky-500/25 ring-2 ring-sky-500/20'
+                        ? 'bg-sky-500 border-sky-400 text-white shadow-md shadow-sky-500/25 ring-2 ring-sky-500/30'
                         : darkMode
-                          ? 'bg-slate-900/80 hover:bg-slate-800 border-white/10 text-slate-300 hover:text-white'
-                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-900'
+                          ? 'bg-white/10 hover:bg-white/15 border-white/10 text-sky-400 hover:text-sky-300'
+                          : 'bg-white/80 hover:bg-white border-slate-200/80 text-sky-500 hover:text-sky-600 shadow-sm'
                     }`}
                     title={isEditMode ? 'Exit Edit Mode' : 'Enable Edit Mode'}
                     aria-pressed={isEditMode}
                   >
                     <PencilSimpleLine
-                      size={16}
+                      size={18}
                       weight={isEditMode ? 'fill' : 'bold'}
-                      className={isEditMode ? 'animate-pulse text-white' : 'text-sky-400'}
+                      className={isEditMode ? 'animate-pulse text-white' : 'text-sky-500'}
                     />
-                    <span>Edit Mode</span>
-                    <span
-                      className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out p-0.5 ${
-                        isEditMode ? 'bg-white/30' : darkMode ? 'bg-white/20' : 'bg-slate-300'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
-                          isEditMode ? 'translate-x-3' : 'translate-x-0'
-                        }`}
-                      />
-                    </span>
                   </button>
                 )}
 

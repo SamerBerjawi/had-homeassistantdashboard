@@ -49,6 +49,12 @@ interface PowerDataPoint {
   homeConsumption: number;
   netGrid: number;
   netBattery: number;
+  // Contour strokes for individual series (only non-null where active to prevent overwriting other lines)
+  solarLine: number | null;
+  gridImportLine: number | null;
+  batteryDischargeLine: number | null;
+  batteryChargeLine: number | null;
+  gridExportLine: number | null;
 }
 
 export default function PowerSourcesChart({
@@ -134,6 +140,10 @@ export default function PowerSourcesChart({
     const batteryDischarges = computePowerSeries((b) => b.batteryDischarge || 0);
     const batteryCharges = computePowerSeries((b) => b.batteryCharge || 0);
 
+    const isNearPositive = (idx: number, arr: number[]) => {
+      return (idx > 0 && arr[idx - 1] > 0.01) || (idx < arr.length - 1 && arr[idx + 1] > 0.01);
+    };
+
     const points: PowerDataPoint[] = activeBuckets.map((b, i) => {
       const d = new Date(b.startMs);
       const minuteOfDay = d.getHours() * 60 + d.getMinutes();
@@ -165,6 +175,35 @@ export default function PowerSourcesChart({
       const netGrid = Number((gridImport - gridExport).toFixed(2));
       const netBattery = Number((batteryDischarge - batteryCharge).toFixed(2));
 
+      // Stroke contours that only exist when the specific entity is actively generating / flowing
+      // This completely prevents inactive zero-value series from painting their stroke over other series!
+      const solarActive = solar > 0.01 || isNearPositive(i, solars);
+      const solarLine = solarActive ? solar : null;
+
+      const gridImportActive = gridImport > 0.01 || isNearPositive(i, gridImports);
+      const gridImportLine = gridImportActive
+        ? Number(((hasSolar && showSolar ? solar : 0) + gridImport).toFixed(2))
+        : null;
+
+      const batteryDischargeActive = batteryDischarge > 0.01 || isNearPositive(i, batteryDischarges);
+      const batteryDischargeLine = batteryDischargeActive
+        ? Number(
+            (
+              (hasSolar && showSolar ? solar : 0) +
+              (hasGrid && showGrid ? gridImport : 0) +
+              batteryDischarge
+            ).toFixed(2)
+          )
+        : null;
+
+      const batteryChargeActive = batteryCharge > 0.01 || isNearPositive(i, batteryCharges);
+      const batteryChargeLine = batteryChargeActive ? Number((-1 * batteryCharge).toFixed(2)) : null;
+
+      const gridExportActive = gridExport > 0.01 || isNearPositive(i, gridExports);
+      const gridExportLine = gridExportActive
+        ? Number((-1 * ((hasBattery && showBattery ? batteryCharge : 0) + gridExport)).toFixed(2))
+        : null;
+
       return {
         date: d,
         minuteOfDay,
@@ -176,7 +215,12 @@ export default function PowerSourcesChart({
         gridExportNegative,
         homeConsumption,
         netGrid,
-        netBattery
+        netBattery,
+        solarLine,
+        gridImportLine,
+        batteryDischargeLine,
+        batteryChargeLine,
+        gridExportLine
       };
     });
 
@@ -185,7 +229,7 @@ export default function PowerSourcesChart({
       currentMinuteOfDay: nowMinute,
       isViewingToday: isToday
     };
-  }, [buckets]);
+  }, [buckets, hasSolar, showSolar, hasGrid, showGrid, hasBattery, showBattery]);
 
   // Dynamically calculate Y-axis domain and nice step ticks based on active flow series
   // Eliminates hardcoded clamp/bounds (e.g. fixed -2kW to 6kW) and cleanly hugs real telemetry
@@ -290,9 +334,9 @@ export default function PowerSourcesChart({
         </div>
         <div className="space-y-1.5 font-medium">
           {hasSolar && (
-            <div className="flex items-center justify-between gap-3 text-amber-400">
+            <div className="flex items-center justify-between gap-3 text-amber-500 dark:text-amber-400">
               <span className="flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-amber-400" />
+                <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
                 Solar:
               </span>
               <span className="font-mono font-bold">{data.solar.toFixed(2)} kW</span>
@@ -300,10 +344,10 @@ export default function PowerSourcesChart({
           )}
 
           {hasBattery && (
-            <div className="flex items-center justify-between gap-3 text-teal-400">
+            <div className={`flex items-center justify-between gap-3 ${data.netBattery >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-cyan-600 dark:text-cyan-400'}`}>
               <span className="flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-teal-400" />
-                Battery:
+                <span className={`inline-block w-2 h-2 rounded-full ${data.netBattery >= 0 ? 'bg-emerald-500' : 'bg-cyan-500'}`} />
+                {data.netBattery >= 0 ? 'Battery Discharge:' : 'Battery Charge:'}
               </span>
               <span className="font-mono font-bold">
                 {data.netBattery >= 0 ? `+${data.netBattery.toFixed(2)}` : data.netBattery.toFixed(2)} kW
@@ -312,10 +356,10 @@ export default function PowerSourcesChart({
           )}
 
           {hasGrid && (
-            <div className="flex items-center justify-between gap-3 text-sky-400">
+            <div className={`flex items-center justify-between gap-3 ${data.netGrid >= 0 ? 'text-sky-600 dark:text-sky-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
               <span className="flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-sky-400" />
-                Grid:
+                <span className={`inline-block w-2 h-2 rounded-full ${data.netGrid >= 0 ? 'bg-sky-500' : 'bg-indigo-500'}`} />
+                {data.netGrid >= 0 ? 'Grid Import:' : 'Grid Export:'}
               </span>
               <span className="font-mono font-bold">
                 {data.netGrid >= 0 ? `+${data.netGrid.toFixed(2)}` : data.netGrid.toFixed(2)} kW
@@ -323,10 +367,10 @@ export default function PowerSourcesChart({
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-3 text-slate-200 pt-1 border-t border-white/10">
+          <div className={`flex items-center justify-between gap-3 pt-1 border-t ${darkMode ? 'text-slate-200 border-white/10' : 'text-slate-800 border-slate-200'}`}>
             <span className="flex items-center gap-1.5">
-              <span className="inline-block w-2 h-2 rounded-full border border-slate-300 bg-transparent" />
-              Consumption:
+              <span className={`inline-block w-2 h-2 rounded-full border ${darkMode ? 'border-slate-300' : 'border-slate-700'}`} />
+              Home Load:
             </span>
             <span className="font-mono font-bold">{data.homeConsumption.toFixed(2)} kW</span>
           </div>
@@ -363,7 +407,7 @@ export default function PowerSourcesChart({
       <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2" />
         <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none translate-y-1/3" />
+        <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none translate-y-1/3" />
       </div>
 
       {/* Header with Title and Live Instantaneous Power Badges */}
@@ -407,9 +451,13 @@ export default function PowerSourcesChart({
             {hasGrid && (
               <div
                 className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
-                  darkMode
-                    ? 'bg-sky-500/15 border-sky-500/30 text-sky-400'
-                    : 'bg-sky-50 border-sky-200 text-sky-700'
+                  liveGrid >= 0
+                    ? darkMode
+                      ? 'bg-sky-500/15 border-sky-500/30 text-sky-400'
+                      : 'bg-sky-50 border-sky-200 text-sky-700'
+                    : darkMode
+                      ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400'
+                      : 'bg-indigo-50 border-indigo-200 text-indigo-700'
                 }`}
               >
                 <Plug size={14} weight="fill" />
@@ -420,9 +468,13 @@ export default function PowerSourcesChart({
             {hasBattery && (
               <div
                 className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
-                  darkMode
-                    ? 'bg-teal-500/15 border-teal-500/30 text-teal-400'
-                    : 'bg-teal-50 border-teal-200 text-teal-700'
+                  liveBattery >= 0
+                    ? darkMode
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                      : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    : darkMode
+                      ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-400'
+                      : 'bg-cyan-50 border-cyan-200 text-cyan-700'
                 }`}
               >
                 <BatteryCharging size={14} weight="fill" />
@@ -460,7 +512,7 @@ export default function PowerSourcesChart({
                 : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
           }`}
         >
-          <span className="w-2.5 h-0.5 border-b-2 border-dashed border-white/70" />
+          <span className={`w-3 h-0.5 border-b-2 border-dashed ${darkMode ? 'border-white/80' : 'border-slate-700'}`} />
           <span>Home Load</span>
           {showHome ? <Eye size={13} /> : <EyeSlash size={13} />}
         </button>
@@ -501,7 +553,10 @@ export default function PowerSourcesChart({
                   : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
             }`}
           >
-            <span className="w-2.5 h-2.5 rounded-full bg-sky-500 shadow-xs" />
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-sky-500 shadow-xs" title="Grid Import" />
+              <span className="w-2 h-2 rounded-full bg-indigo-500 shadow-xs" title="Grid Export" />
+            </div>
             <span>Grid (Import + / Export -)</span>
             {showGrid ? <Eye size={13} /> : <EyeSlash size={13} />}
           </button>
@@ -515,14 +570,17 @@ export default function PowerSourcesChart({
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
               showBattery
                 ? darkMode
-                  ? 'bg-teal-500/20 border-teal-500/40 text-teal-300'
-                  : 'bg-teal-50 border-teal-300 text-teal-700 shadow-xs'
+                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                  : 'bg-emerald-50 border-emerald-300 text-emerald-700 shadow-xs'
                 : darkMode
                   ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
                   : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
             }`}
           >
-            <span className="w-2.5 h-2.5 rounded-full bg-teal-500 shadow-xs" />
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs" title="Battery Discharge" />
+              <span className="w-2 h-2 rounded-full bg-cyan-500 shadow-xs" title="Battery Charge" />
+            </div>
             <span>Battery (Discharge + / Charge -)</span>
             {showBattery ? <Eye size={13} /> : <EyeSlash size={13} />}
           </button>
@@ -549,32 +607,32 @@ export default function PowerSourcesChart({
                   <stop offset="100%" stopColor="#b45309" stopOpacity={0.08} />
                 </linearGradient>
 
-                {/* Grid Import Linear Gradient */}
+                {/* Grid Import Linear Gradient (Sky Blue) */}
                 <linearGradient id="gridImportGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.88} />
-                  <stop offset="60%" stopColor="#2563eb" stopOpacity={0.45} />
-                  <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.08} />
+                  <stop offset="0%" stopColor="#0284c7" stopOpacity={0.88} />
+                  <stop offset="60%" stopColor="#0369a1" stopOpacity={0.45} />
+                  <stop offset="100%" stopColor="#075985" stopOpacity={0.08} />
                 </linearGradient>
 
-                {/* Battery Discharge Linear Gradient */}
+                {/* Battery Discharge Linear Gradient (Emerald Green) */}
                 <linearGradient id="batteryDischargeGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#14b8a6" stopOpacity={0.88} />
-                  <stop offset="60%" stopColor="#0d9488" stopOpacity={0.45} />
-                  <stop offset="100%" stopColor="#0f766e" stopOpacity={0.08} />
+                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.88} />
+                  <stop offset="60%" stopColor="#059669" stopOpacity={0.45} />
+                  <stop offset="100%" stopColor="#047857" stopOpacity={0.08} />
                 </linearGradient>
 
-                {/* Battery Charge Linear Gradient (Negative Stack) */}
+                {/* Battery Charge Linear Gradient (Cyan - Negative Stack) */}
                 <linearGradient id="batteryChargeGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#14b8a6" stopOpacity={0.08} />
-                  <stop offset="60%" stopColor="#0d9488" stopOpacity={0.50} />
-                  <stop offset="100%" stopColor="#042f2e" stopOpacity={0.82} />
+                  <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.08} />
+                  <stop offset="60%" stopColor="#0891b2" stopOpacity={0.50} />
+                  <stop offset="100%" stopColor="#164e63" stopOpacity={0.82} />
                 </linearGradient>
 
-                {/* Grid Export Linear Gradient (Negative Stack) */}
+                {/* Grid Export Linear Gradient (Indigo - Negative Stack) */}
                 <linearGradient id="gridExportGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.08} />
-                  <stop offset="60%" stopColor="#2563eb" stopOpacity={0.50} />
-                  <stop offset="100%" stopColor="#1e3a8a" stopOpacity={0.82} />
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.08} />
+                  <stop offset="60%" stopColor="#4f46e5" stopOpacity={0.50} />
+                  <stop offset="100%" stopColor="#312e81" stopOpacity={0.82} />
                 </linearGradient>
               </defs>
 
@@ -626,7 +684,8 @@ export default function PowerSourcesChart({
               <Tooltip content={renderTooltip} />
 
               {/* ───────────────────────────────────────────────────────────── */}
-              {/* POSITIVE STACK (stackId="positive")                          */}
+              {/* POSITIVE STACK AREAS (Fill only - stroke="none" prevents     */}
+              {/* zero-level baseline border bleed across multiple series)     */}
               {/* ───────────────────────────────────────────────────────────── */}
               {hasSolar && showSolar && (
                 <Area
@@ -634,8 +693,7 @@ export default function PowerSourcesChart({
                   dataKey="solar"
                   stackId="positive"
                   fill="url(#solarGradient)"
-                  stroke="#f59e0b"
-                  strokeWidth={1.8}
+                  stroke="none"
                   isAnimationActive={false}
                 />
               )}
@@ -646,8 +704,7 @@ export default function PowerSourcesChart({
                   dataKey="gridImport"
                   stackId="positive"
                   fill="url(#gridImportGradient)"
-                  stroke="#3b82f6"
-                  strokeWidth={1.8}
+                  stroke="none"
                   isAnimationActive={false}
                 />
               )}
@@ -658,14 +715,13 @@ export default function PowerSourcesChart({
                   dataKey="batteryDischarge"
                   stackId="positive"
                   fill="url(#batteryDischargeGradient)"
-                  stroke="#14b8a6"
-                  strokeWidth={1.8}
+                  stroke="none"
                   isAnimationActive={false}
                 />
               )}
 
               {/* ───────────────────────────────────────────────────────────── */}
-              {/* NEGATIVE STACK (stackId="negative")                          */}
+              {/* NEGATIVE STACK AREAS (Fill only)                             */}
               {/* ───────────────────────────────────────────────────────────── */}
               {hasBattery && showBattery && (
                 <Area
@@ -673,8 +729,7 @@ export default function PowerSourcesChart({
                   dataKey="batteryChargeNegative"
                   stackId="negative"
                   fill="url(#batteryChargeGradient)"
-                  stroke="#14b8a6"
-                  strokeWidth={1.8}
+                  stroke="none"
                   isAnimationActive={false}
                 />
               )}
@@ -685,21 +740,86 @@ export default function PowerSourcesChart({
                   dataKey="gridExportNegative"
                   stackId="negative"
                   fill="url(#gridExportGradient)"
-                  stroke="#3b82f6"
-                  strokeWidth={1.8}
+                  stroke="none"
                   isAnimationActive={false}
                 />
               )}
 
               {/* ───────────────────────────────────────────────────────────── */}
-              {/* HOME CONSUMPTION OVERLAY LINE (Unstacked, Subtle Dashed)     */}
+              {/* DEDICATED ACTIVE FLOW CONTOUR LINES                          */}
+              {/* Only non-null where that series is generating/active,        */}
+              {/* ensuring each source retains its own distinct border color   */}
+              {/* ───────────────────────────────────────────────────────────── */}
+              {hasSolar && showSolar && (
+                <Line
+                  type="natural"
+                  dataKey="solarLine"
+                  stroke="#f59e0b"
+                  strokeWidth={1.8}
+                  dot={false}
+                  connectNulls={false}
+                  isAnimationActive={false}
+                />
+              )}
+
+              {hasGrid && showGrid && (
+                <Line
+                  type="natural"
+                  dataKey="gridImportLine"
+                  stroke="#0284c7"
+                  strokeWidth={1.8}
+                  dot={false}
+                  connectNulls={false}
+                  isAnimationActive={false}
+                />
+              )}
+
+              {hasBattery && showBattery && (
+                <Line
+                  type="natural"
+                  dataKey="batteryDischargeLine"
+                  stroke="#10b981"
+                  strokeWidth={1.8}
+                  dot={false}
+                  connectNulls={false}
+                  isAnimationActive={false}
+                />
+              )}
+
+              {hasBattery && showBattery && (
+                <Line
+                  type="natural"
+                  dataKey="batteryChargeLine"
+                  stroke="#06b6d4"
+                  strokeWidth={1.8}
+                  dot={false}
+                  connectNulls={false}
+                  isAnimationActive={false}
+                />
+              )}
+
+              {hasGrid && showGrid && (
+                <Line
+                  type="natural"
+                  dataKey="gridExportLine"
+                  stroke="#6366f1"
+                  strokeWidth={1.8}
+                  dot={false}
+                  connectNulls={false}
+                  isAnimationActive={false}
+                />
+              )}
+
+              {/* ───────────────────────────────────────────────────────────── */}
+              {/* HOME CONSUMPTION OVERLAY LINE (Unstacked, Crisp Dashed)      */}
+              {/* High contrast in both dark and light modes                   */}
               {/* ───────────────────────────────────────────────────────────── */}
               {showHome && (
                 <Line
                   type="natural"
                   dataKey="homeConsumption"
-                  stroke="rgba(255, 255, 255, 0.6)"
-                  strokeWidth={1.5}
+                  stroke={darkMode ? 'rgba(255, 255, 255, 0.75)' : '#334155'}
+                  strokeWidth={1.8}
                   strokeDasharray="4 4"
                   dot={false}
                   isAnimationActive={false}

@@ -82,8 +82,8 @@ export default function SolarProductionGraphCard({
             <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>Actual Production</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-0.5 border-t-2 border-dashed border-amber-400" />
-            <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>Solar Forecast</span>
+            <span className="w-3 h-0.5 border-t-2 border-dashed border-sky-500 dark:border-sky-400" />
+            <span className={darkMode ? 'text-sky-300' : 'text-sky-800'}>Solar Forecast</span>
           </div>
         </div>
       )}
@@ -142,10 +142,10 @@ export default function SolarProductionGraphCard({
                         onMouseEnter={() => setHoveredBucket(bucket)}
                         onMouseLeave={() => setHoveredBucket(null)}
                       >
-                        {/* Forecast Line Marker */}
+                        {/* Forecast Line Marker (Sky Blue for sharp contrast) */}
                         {hasForecast && forecast > 0 && (
                           <div
-                            className="absolute w-full max-w-[32px] border-t-2 border-dashed border-amber-400 z-10"
+                            className="absolute w-full max-w-[32px] border-t-2 border-dashed border-sky-500 dark:border-sky-400 z-10"
                             style={{ bottom: `${forecastHeightPct}%` }}
                           />
                         )}
@@ -200,7 +200,7 @@ export default function SolarProductionGraphCard({
               <span>{(hoveredBucket.solar || 0).toFixed(2)} kWh</span>
             </div>
             {hoveredBucket.solarForecast !== null && (
-              <div className={`flex justify-between gap-3 font-medium ${darkMode ? 'text-amber-200' : 'text-amber-700'}`}>
+              <div className={`flex justify-between gap-3 font-semibold ${darkMode ? 'text-sky-300' : 'text-sky-700'}`}>
                 <span>Forecast:</span>
                 <span>{hoveredBucket.solarForecast.toFixed(2)} kWh</span>
               </div>
