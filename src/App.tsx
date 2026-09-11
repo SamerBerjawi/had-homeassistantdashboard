@@ -640,8 +640,8 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Edit Mode Toggle (Only visible on Settings page) */}
-                {activeTab === 'settings' && (
+                {/* Edit Mode Toggle (Visible on Overview & Settings pages) */}
+                {(activeTab === 'overview' || activeTab === 'settings') && (
                   <button
                     type="button"
                     onClick={toggleEditMode}

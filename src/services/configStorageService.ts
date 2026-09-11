@@ -131,6 +131,12 @@ export function hasMaterialDashboardConfig(data: any): boolean {
     if (Array.isArray(data.cameras.favoriteCameras) && data.cameras.favoriteCameras.length > 0) return true;
   }
 
+  if (data.overview && typeof data.overview === 'object') {
+    if (Array.isArray(data.overview.tileOrder) && data.overview.tileOrder.length > 0) return true;
+    if (Array.isArray(data.overview.hiddenTiles) && data.overview.hiddenTiles.length > 0) return true;
+    if (data.overview.tileSizes && Object.keys(data.overview.tileSizes).length > 0) return true;
+  }
+
   if (data.preferences && typeof data.preferences === 'object' && Object.keys(data.preferences).length > 0) return true;
   if (data.profile && typeof data.profile === 'object' && Object.keys(data.profile).length > 0) return true;
 
@@ -160,7 +166,12 @@ export function mergeConfig(
         },
         cameras: { ...DEFAULT_USER_CONFIG.cameras, ...(base.cameras || {}) },
         network: { ...DEFAULT_USER_CONFIG.network, ...(base.network || {}) },
-        energy: { ...DEFAULT_USER_CONFIG.energy, ...(base.energy || {}) }
+        energy: { ...DEFAULT_USER_CONFIG.energy, ...(base.energy || {}) },
+        overview: {
+          tileOrder: base.overview?.tileOrder || DEFAULT_USER_CONFIG.overview?.tileOrder,
+          hiddenTiles: base.overview?.hiddenTiles || DEFAULT_USER_CONFIG.overview?.hiddenTiles,
+          tileSizes: { ...(DEFAULT_USER_CONFIG.overview?.tileSizes || {}), ...(base.overview?.tileSizes || {}) }
+        }
       }
     : DEFAULT_USER_CONFIG;
 
@@ -291,6 +302,22 @@ export function mergeConfig(
     canvas: {
       ...(safeBase.canvas || {}),
       ...(partial.canvas || {})
+    },
+    overview: {
+      tileOrder: Array.isArray(partial.overview?.tileOrder)
+        ? [...partial.overview.tileOrder]
+        : Array.isArray(safeBase.overview?.tileOrder)
+        ? [...safeBase.overview.tileOrder]
+        : [...(DEFAULT_USER_CONFIG.overview?.tileOrder || [])],
+      hiddenTiles: Array.isArray(partial.overview?.hiddenTiles)
+        ? [...partial.overview.hiddenTiles]
+        : Array.isArray(safeBase.overview?.hiddenTiles)
+        ? [...safeBase.overview.hiddenTiles]
+        : [],
+      tileSizes: {
+        ...(safeBase.overview?.tileSizes || {}),
+        ...(partial.overview?.tileSizes || {})
+      }
     },
     layoutOverrides: {
       ...(safeBase.layoutOverrides || {}),

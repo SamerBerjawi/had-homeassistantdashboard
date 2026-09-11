@@ -19,6 +19,30 @@ export type ResponsiveLayoutOverrides = {
   desktop?: Record<string, BreakpointLayoutOverride>;
 };
 
+export const DEFAULT_OVERVIEW_TILE_ORDER = [
+  'weather',
+  'users',
+  'lights',
+  'switches',
+  'vacuums',
+  'fans',
+  'media',
+  'alarm',
+  'doors',
+  'windows',
+  'motion',
+  'leak',
+  'smoke'
+] as const;
+
+export type OverviewTileId = (typeof DEFAULT_OVERVIEW_TILE_ORDER)[number] | string;
+
+export interface OverviewConfig {
+  tileOrder?: string[];
+  hiddenTiles?: string[];
+  tileSizes?: Record<string, '1x' | '2x'>;
+}
+
 export interface UserDashboardConfig {
   version: number;
   updatedAt: string;
@@ -143,6 +167,7 @@ export interface UserDashboardConfig {
     pinCode?: string;
     weatherBackdrop?: string;
   };
+  overview?: OverviewConfig;
   layoutOverrides?: Record<string, BreakpointLayoutOverride>;
   responsiveLayoutOverrides?: ResponsiveLayoutOverrides;
 }
@@ -287,6 +312,11 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
     activeProfileId: 'profile_main',
     pinCode: '',
     weatherBackdrop: 'auto'
+  },
+  overview: {
+    tileOrder: [...DEFAULT_OVERVIEW_TILE_ORDER],
+    hiddenTiles: [],
+    tileSizes: {}
   },
   layoutOverrides: {},
   responsiveLayoutOverrides: {
