@@ -117,6 +117,18 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     window.addEventListener('had_config_updated' as any, handleLocalUpdated);
 
+    // 3.5 Listen for dismissed notifications synchronization across tabs/devices
+    const handleDismissedSync = (e: any) => {
+      if (Array.isArray(e?.detail) && isMounted) {
+        updateConfig({
+          preferences: {
+            dismissedNotificationIds: e.detail
+          }
+        });
+      }
+    };
+    window.addEventListener('had_sync_dismissed_notifications' as any, handleDismissedSync);
+
     // 4. Global / Manual Refresh Event Listener
     const handleGlobalRefresh = () => {
       if (authState.isAuthenticated && !authState.isDemo && isMounted) {
@@ -141,6 +153,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           }
         },
         onStatusChanged: (status: SyncConnectionState) => {
+          if (!isMounted) return;
           if (status === 'connected') {
             setSyncStatus('synced');
           } else if (status === 'reconnecting') {
@@ -155,6 +168,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       window.removeEventListener('ha_connection_status' as any, handleConnectionStatus);
       window.removeEventListener('had_sync_status_changed' as any, handleSyncStatus);
       window.removeEventListener('had_config_updated' as any, handleLocalUpdated);
+      window.removeEventListener('had_sync_dismissed_notifications' as any, handleDismissedSync);
       window.removeEventListener('had_manual_refresh', handleGlobalRefresh);
       if (unsubscribeSync) unsubscribeSync();
       configSyncService.stop();

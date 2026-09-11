@@ -716,6 +716,19 @@ class HAWebSocketClient {
     }
   }
 
+  public async ignoreRepairIssue(domain: string, issueId: string, ignore = true): Promise<void> {
+    if (this.isDemoMode || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+    try {
+      await this.sendRequest('repairs/ignore_issue', {
+        domain,
+        issue_id: issueId,
+        ignore
+      });
+    } catch (e: any) {
+      console.warn(`[haWebSocket] Failed to ignore repair issue ${domain}/${issueId}:`, e);
+    }
+  }
+
   public sendRequest<T = any>(type: string, extra: Record<string, any> = {}): Promise<T> {
     return new Promise((resolve, reject) => {
       if (this.isDemoMode) {

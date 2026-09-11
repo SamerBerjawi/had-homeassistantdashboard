@@ -18,6 +18,7 @@ import { isLeakSensor, isBatteryEntity } from '../lib/entityClassifiers';
 import { useAlertStore, AlertItem } from '../store/useAlertStore';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { alertService } from './alertService';
+import { haWebSocketService } from './haWebSocket';
 
 export interface ExtractNotificationsParams {
   domainGroups: Record<string, ResolvedEntity[]>;
@@ -551,7 +552,10 @@ export function extractHANotifications({
             if (learnMoreUrl) {
               safeOpenExternalUrl(learnMoreUrl);
             }
-            await callHAService('repairs', 'ignore_issue', { issue_id: rep.issue_id }).catch(() => {});
+            await haWebSocketService.ignoreRepairIssue(rep.domain, rep.issue_id).catch(() => {});
+            useAutoLayoutStore.setState(prev => ({
+              nativeRepairs: prev.nativeRepairs.filter(r => r.issue_id !== rep.issue_id)
+            }));
             dismissNotification(issueId);
           }
         }
@@ -571,7 +575,10 @@ export function extractHANotifications({
         label: 'Ignore Issue',
         variant: 'ghost' as const,
         onClick: async () => {
-          await callHAService('repairs', 'ignore_issue', { issue_id: rep.issue_id }).catch(() => {});
+          await haWebSocketService.ignoreRepairIssue(rep.domain, rep.issue_id).catch(() => {});
+          useAutoLayoutStore.setState(prev => ({
+            nativeRepairs: prev.nativeRepairs.filter(r => r.issue_id !== rep.issue_id)
+          }));
           dismissNotification(issueId);
         }
       }
@@ -596,7 +603,10 @@ export function extractHANotifications({
       dismissable: true,
       actions,
       onDismiss: async () => {
-        await callHAService('repairs', 'ignore_issue', { issue_id: rep.issue_id }).catch(() => {});
+        await haWebSocketService.ignoreRepairIssue(rep.domain, rep.issue_id).catch(() => {});
+        useAutoLayoutStore.setState(prev => ({
+          nativeRepairs: prev.nativeRepairs.filter(r => r.issue_id !== rep.issue_id)
+        }));
         dismissNotification(issueId);
       }
     });
@@ -661,7 +671,8 @@ export function extractHANotifications({
             if (learnMoreUrl) {
               safeOpenExternalUrl(learnMoreUrl);
             }
-            await callHAService('repairs', 'ignore_issue', { issue_id: issueId }).catch(() => {});
+            const issueDomain = rep.attributes.issue_domain || rep.attributes.domain || rep.entity_id.replace(/^repair\./, '').split('_')[0];
+            await haWebSocketService.ignoreRepairIssue(issueDomain, issueId).catch(() => {});
             dismissNotification(issueId);
             dismissNotification(rep.entity_id);
             if (updateEntityState) {
@@ -685,7 +696,8 @@ export function extractHANotifications({
         label: 'Ignore Issue',
         variant: 'ghost' as const,
         onClick: async () => {
-          await callHAService('repairs', 'ignore_issue', { issue_id: issueId }).catch(() => {});
+          const issueDomain = rep.attributes.issue_domain || rep.attributes.domain || rep.entity_id.replace(/^repair\./, '').split('_')[0];
+          await haWebSocketService.ignoreRepairIssue(issueDomain, issueId).catch(() => {});
           dismissNotification(issueId);
           dismissNotification(rep.entity_id);
           if (updateEntityState) {
@@ -716,7 +728,8 @@ export function extractHANotifications({
       dismissable: true,
       actions,
       onDismiss: async () => {
-        await callHAService('repairs', 'ignore_issue', { issue_id: issueId }).catch(() => {});
+        const issueDomain = rep.attributes.issue_domain || rep.attributes.domain || rep.entity_id.replace(/^repair\./, '').split('_')[0];
+        await haWebSocketService.ignoreRepairIssue(issueDomain, issueId).catch(() => {});
         dismissNotification(issueId);
         dismissNotification(rep.entity_id);
         if (updateEntityState) {
@@ -862,6 +875,30 @@ export function extractHANotifications({
     });
   }
 
+  // Dynamically index mobile assets/trackers and mains-powered grid/energy hardware
+  const mobileTrackerDeviceIds = new Set<string>();
+  const mainsPowerDeviceIds = new Set<string>();
+
+  for (const [eid, reg] of registryMap.entries()) {
+    if (eid.startsWith('device_tracker.') && reg.device_id) {
+      mobileTrackerDeviceIds.add(reg.device_id);
+    }
+  }
+
+  for (const [eid, st] of Object.entries(states)) {
+    const dc = String(st.attributes?.device_class || '').toLowerCase().trim();
+    const uom = String(st.attributes?.unit_of_measurement || '').toLowerCase().trim();
+    if (
+      dc === 'power' || dc === 'energy' || dc === 'apparent_power' || dc === 'reactive_power' ||
+      uom === 'w' || uom === 'kw' || uom === 'mw' || uom === 'kwh' || uom === 'wh'
+    ) {
+      const reg = registryMap.get(eid);
+      if (reg?.device_id) {
+        mainsPowerDeviceIds.add(reg.device_id);
+      }
+    }
+  }
+
   // Critical Battery (<15%)
   const allResolved = Object.values(domainGroups).flat();
   // Filter only entities that legitimately represent a battery or battery-operated device
@@ -869,8 +906,19 @@ export function extractHANotifications({
   const lowBatteryDevices = new Map<string, { entity: ResolvedEntity; batteryPct: number; allEntities: ResolvedEntity[] }>();
 
   for (const e of allResolved) {
-    if (typeof e.batteryPct !== 'number' || e.batteryPct > 15) continue;
+    if (typeof e.batteryPct !== 'number' || e.batteryPct > 15 || e.batteryPct < 0) continue;
     if (!isBatteryEntity(e)) continue;
+
+    // Disqualify mobile devices, person trackers, vehicles, and stationary energy/power hardware
+    if (e.domain === 'person' || e.domain === 'device_tracker') continue;
+    if (e.device_id && (mobileTrackerDeviceIds.has(e.device_id) || mainsPowerDeviceIds.has(e.device_id))) continue;
+
+    // For sensors without a parent device: must be strictly device_class 'battery' with '%' unit
+    if (e.domain === 'sensor') {
+      const dc = String(e.attributes?.device_class || '').toLowerCase().trim();
+      const uom = String(e.attributes?.unit_of_measurement || '').toLowerCase().trim();
+      if (dc !== 'battery' || uom !== '%') continue;
+    }
 
     const deviceKey = e.device_id || e.entity_id;
     const existing = lowBatteryDevices.get(deviceKey);

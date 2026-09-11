@@ -173,16 +173,19 @@ export default function NotificationDrawer({
     // Call dismiss services for persistent notifications, issues & alerts
     for (const notif of allNotifications) {
       if (notif.category === 'persistent_notification' && notif.entity_id) {
-        await callHAService('persistent_notification', 'dismiss', { notification_id: notif.id }).catch(() => { });
+        const cleanHaId = (notif as any).notificationId || (notif.id.startsWith('pn_') ? notif.id.replace('pn_', '') : notif.id.startsWith('ha_notif_') ? notif.id.replace('ha_notif_', '') : notif.id);
+        await callHAService('persistent_notification', 'dismiss', { notification_id: cleanHaId }).catch(() => { });
         if (updateEntityState) updateEntityState(notif.entity_id, 'dismissed');
       } else if (notif.category === 'repair' && notif.issueId) {
-        await callHAService('repairs', 'ignore_issue', { issue_id: notif.issueId }).catch(() => { });
-        if (updateEntityState) updateEntityState(notif.entity_id || '', 'ignored');
+        const issueDomain = notif.domain || notif.entity_id?.replace(/^repair\./, '').split('_')[0] || 'homeassistant';
+        await haWebSocketService.ignoreRepairIssue(issueDomain, notif.issueId).catch(() => { });
+        if (updateEntityState && notif.entity_id) updateEntityState(notif.entity_id, 'ignored');
       } else if (notif.category === 'alert' && notif.entity_id) {
         await callHAService('alert', 'acknowledge', { entity_id: notif.entity_id }).catch(() => { });
       }
     }
 
+    useAutoLayoutStore.setState({ nativeRepairs: [], nativeNotifications: [] });
     await useAlertStore.getState().clearAllAlerts().catch(() => { });
     clearAllNotifications(dismissableIds);
   };

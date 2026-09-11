@@ -70,10 +70,22 @@ export class AlertService {
   }
 
   /**
-   * Syncs initial array of persistent notifications from Home Assistant backend
+   * Syncs array of persistent notifications from Home Assistant backend,
+   * adding new ones and pruning stale ones that were cleared or dismissed on HA.
    */
   public syncNativePersistentNotifications(notifications: HANativePersistentNotification[]) {
     if (!Array.isArray(notifications)) return;
+
+    const activeHaIds = new Set(notifications.map(n => n.notification_id));
+
+    // Prune stale persistent notifications that are no longer in HA's active list
+    useAlertStore.setState((state) => ({
+      alerts: state.alerts.filter((a) => {
+        if (a.category !== 'persistent_notification') return true;
+        const targetHaId = a.haNotificationId || (a.id.startsWith('pn_') ? a.id.replace('pn_', '') : null);
+        return targetHaId ? activeHaIds.has(targetHaId) : false;
+      })
+    }));
 
     notifications.forEach((pn) => {
       const id = `pn_${pn.notification_id}`;

@@ -94,17 +94,57 @@ export function resolveHAGraph(
   const criticalBatteryDeviceSet = new Set<string>();
   let securityAlertsCount = 0;
 
-  // Index all dedicated battery sensors from HA states to pair with devices
+  // Pre-index mobile trackers (vehicles, transit, phone trackers) and mains-powered grid/energy hardware
+  const mobileTrackerDeviceIds = new Set<string>();
+  const mainsPowerDeviceIds = new Set<string>();
+
+  for (const [eid, reg] of registryMap.entries()) {
+    if (eid.startsWith('device_tracker.') && reg.device_id) {
+      mobileTrackerDeviceIds.add(reg.device_id);
+    }
+  }
+
+  for (const [eid, st] of Object.entries(states)) {
+    const dc = String(st.attributes?.device_class || '').toLowerCase().trim();
+    const uom = String(st.attributes?.unit_of_measurement || '').toLowerCase().trim();
+    if (
+      dc === 'power' || dc === 'energy' || dc === 'apparent_power' || dc === 'reactive_power' ||
+      uom === 'w' || uom === 'kw' || uom === 'mw' || uom === 'kwh' || uom === 'wh'
+    ) {
+      const reg = registryMap.get(eid);
+      if (reg?.device_id) {
+        mainsPowerDeviceIds.add(reg.device_id);
+      }
+    }
+  }
+
+  // Index all dedicated diagnostic battery sensors from HA states to pair with smart home devices
   const deviceBatteryMap = new Map<string, number>();
   for (const [eid, st] of Object.entries(states)) {
     if (eid.startsWith('sensor.')) {
-      const isBatteryClass = st.attributes?.device_class === 'battery' || eid.endsWith('_battery') || eid.endsWith('_battery_level');
-      if (isBatteryClass) {
-        const val = parseFloat(st.state);
-        if (!isNaN(val)) {
-          const reg = registryMap.get(eid);
-          if (reg?.device_id) {
-            deviceBatteryMap.set(reg.device_id, val);
+      const uom = String(st.attributes?.unit_of_measurement || '').toLowerCase().trim();
+      const dc = String(st.attributes?.device_class || '').toLowerCase().trim();
+      const lowerEid = eid.toLowerCase();
+
+      // Battery percentage level MUST strictly have '%' unit of measurement and must not be an enum or power metric
+      if (uom === '%' && !Array.isArray(st.attributes?.options) && dc !== 'enum') {
+        const isBatteryClass =
+          dc === 'battery' ||
+          lowerEid.endsWith('_battery') ||
+          lowerEid.endsWith('_battery_level') ||
+          lowerEid.endsWith('_battery_percentage') ||
+          lowerEid.endsWith('_bat');
+
+        if (isBatteryClass) {
+          const val = parseFloat(st.state);
+          if (!isNaN(val) && val >= 0 && val <= 100) {
+            const reg = registryMap.get(eid);
+            if (reg?.device_id) {
+              // Pair with stationary home devices (not grid meters, solar inverters, or mobile trackers)
+              if (!mainsPowerDeviceIds.has(reg.device_id) && !mobileTrackerDeviceIds.has(reg.device_id)) {
+                deviceBatteryMap.set(reg.device_id, val);
+              }
+            }
           }
         }
       }
@@ -193,10 +233,29 @@ export function resolveHAGraph(
       batteryPct = liveState.attributes.battery_level;
     } else if (typeof liveState.attributes.battery === 'string') {
       const parsed = parseFloat(liveState.attributes.battery);
-      if (!isNaN(parsed)) batteryPct = parsed;
-    } else if (domain === 'sensor' && (liveState.attributes.device_class === 'battery' || entityId.includes('battery'))) {
-      const parsed = parseFloat(liveState.state);
-      if (!isNaN(parsed)) batteryPct = parsed;
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) batteryPct = parsed;
+    } else if (domain === 'sensor') {
+      const dc = String(liveState.attributes?.device_class || '').toLowerCase().trim();
+      const uom = String(liveState.attributes?.unit_of_measurement || '').toLowerCase().trim();
+      const eidLower = entityId.toLowerCase();
+      const fnLower = friendlyName.toLowerCase();
+
+      // Battery percentage MUST have '%' unit of measurement and must not be an enum or power metric
+      if (uom === '%' && !Array.isArray(liveState.attributes?.options) && dc !== 'enum') {
+        const isLegitBatterySensor =
+          dc === 'battery' ||
+          eidLower.endsWith('_battery') ||
+          eidLower.endsWith('_battery_level') ||
+          eidLower.endsWith('_battery_percentage') ||
+          eidLower.endsWith('_bat') ||
+          fnLower.endsWith('battery') ||
+          fnLower.endsWith('battery level');
+
+        if (isLegitBatterySensor) {
+          const parsed = parseFloat(liveState.state);
+          if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) batteryPct = parsed;
+        }
+      }
     } else if (domain === 'person') {
       const personKey = entityId.replace('person.', '');
       const linkedSensor = states[`sensor.${personKey}_battery`] || 
@@ -204,14 +263,19 @@ export function resolveHAGraph(
                            states[`sensor.${personKey}_battery_level`];
       if (linkedSensor) {
         const parsed = parseFloat(linkedSensor.state);
-        if (!isNaN(parsed)) batteryPct = parsed;
+        if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) batteryPct = parsed;
       }
     } else if (domain !== 'sensor' && regEntry?.device_id && deviceBatteryMap.has(regEntry.device_id)) {
       // Sibling battery sensors paired with devices only apply to non-sensor hardware (locks, climates, binary sensors, vacuums, etc.)
       batteryPct = deviceBatteryMap.get(regEntry.device_id);
     }
 
-    if (batteryPct !== undefined && batteryPct <= 20) {
+    const isExcludedFromCriticalHardwareAlert = 
+      domain === 'person' ||
+      domain === 'device_tracker' ||
+      (regEntry?.device_id && (mobileTrackerDeviceIds.has(regEntry.device_id) || mainsPowerDeviceIds.has(regEntry.device_id)));
+
+    if (batteryPct !== undefined && batteryPct <= 20 && !isExcludedFromCriticalHardwareAlert) {
       const devKey = regEntry?.device_id || entityId;
       criticalBatteryDeviceSet.add(devKey);
     }

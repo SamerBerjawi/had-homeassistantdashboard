@@ -77,11 +77,43 @@ export function detectSensorCapabilities(
   // Determine Sensor Kind with strict priority
   let kind: SensorKind = 'generic_numeric';
 
+  const normUnit = unit.toLowerCase().trim();
+
+  const isPowerOrEnergy =
+    rawClass === 'power' ||
+    rawClass === 'energy' ||
+    rawClass === 'apparent_power' ||
+    rawClass === 'reactive_power' ||
+    rawClass === 'voltage' ||
+    rawClass === 'current' ||
+    rawClass === 'frequency' ||
+    rawClass === 'power_factor' ||
+    rawClass === 'energy_storage' ||
+    normUnit === 'w' ||
+    normUnit === 'kw' ||
+    normUnit === 'mw' ||
+    normUnit === 'kwh' ||
+    normUnit === 'wh' ||
+    normUnit === 'mwh' ||
+    normUnit === 'va' ||
+    normUnit === 'var' ||
+    normUnit === 'v' ||
+    normUnit === 'mv' ||
+    normUnit === 'a' ||
+    normUnit === 'ma';
+
   const isBattery =
-    rawClass === 'battery' ||
-    eid.includes('battery') ||
-    fn.includes('battery') ||
-    (unit === '%' && (eid.includes('batt') || fn.includes('batt')));
+    !isPowerOrEnergy &&
+    normUnit === '%' &&
+    rawClass !== 'enum' &&
+    !Array.isArray(attrs.options) &&
+    (rawClass === 'battery' ||
+      eid.endsWith('_battery') ||
+      eid.endsWith('_battery_level') ||
+      eid.endsWith('_battery_percentage') ||
+      eid.endsWith('_bat') ||
+      fn.endsWith('battery') ||
+      fn.endsWith('battery level'));
 
   if (isBattery) {
     kind = 'battery';
@@ -185,7 +217,9 @@ export function detectSensorCapabilities(
 
   // Battery
   const rawBattery = attrs.battery_level ?? attrs.battery ?? ('batteryPct' in entity ? (entity as any).batteryPct : undefined);
-  const batteryPct = typeof rawBattery === 'number' ? Math.round(rawBattery) : (kind === 'battery' && isNum ? Math.round(numValue) : undefined);
+  const batteryPct = typeof rawBattery === 'number'
+    ? (rawBattery >= 0 && rawBattery <= 100 ? Math.round(rawBattery) : undefined)
+    : (kind === 'battery' && isNum && numValue >= 0 && numValue <= 100 ? Math.round(numValue) : undefined);
 
   const lastChanged = (entity as any).last_changed || (entity as any).last_updated || attrs.last_changed;
 

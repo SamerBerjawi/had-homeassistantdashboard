@@ -132,30 +132,72 @@ export function isOtherContactSensor(e: { attributes?: Record<string, any>; enti
 
 /**
  * Determines whether an entity is eligible to represent a battery level or battery notification.
- * If the entity is a sensor, it must strictly be a battery class/named sensor.
- * Auxiliary sensors like mileage, speed, time driven, CO2, temperature, etc. are rejected.
+ * Strictly complies with standard Home Assistant Core entity specifications:
+ * - Battery percentage level MUST strictly have '%' unit of measurement.
+ * - Device class must be 'battery' (or omit device class only if name/ID strictly denotes battery percentage).
+ * - Rejects non-battery device classes (power, energy, voltage, current, temperature, enum, etc.).
+ * - Rejects enum / options sensors and accumulator state_classes ('total', 'total_increasing').
+ * Adapts dynamically and generically to any user's naming conventions and integrations.
  */
-export function isBatteryEntity(e: { attributes?: Record<string, any>; entity_id: string; domain?: string; name?: string }): boolean {
+export function isBatteryEntity(e: { attributes?: Record<string, any>; entity_id: string; domain?: string; name?: string; device?: any }): boolean {
   const domain = e.domain || e.entity_id.split('.')[0];
-  const dc = (e.attributes?.device_class || '').toLowerCase();
+  const attrs = e.attributes || {};
+  const dc = (attrs.device_class || '').toLowerCase().trim();
   const eid = e.entity_id.toLowerCase();
-  const name = (e.name || e.attributes?.friendly_name || '').toLowerCase();
-  const uom = (e.attributes?.unit_of_measurement || '').toLowerCase();
+  const name = (e.name || attrs.friendly_name || '').toLowerCase();
+  const uom = (attrs.unit_of_measurement || '').toLowerCase().trim();
 
-  // If domain is sensor, it MUST specifically be a battery sensor entity
-  if (domain === 'sensor') {
-    return (
-      dc === 'battery' ||
-      eid.endsWith('_battery') ||
-      eid.endsWith('_battery_level') ||
-      eid.includes('battery') ||
-      name.includes('battery') ||
-      (uom === '%' && (eid.includes('batt') || name.includes('batt')))
-    );
+  // 1. Battery percentage level MUST strictly have '%' unit of measurement.
+  // Sensors without '%' (e.g. empty unit, W, kW, kWh, V, A, °C, status codes) are never battery percentages.
+  if (uom !== '%') {
+    return false;
   }
 
-  // Non-sensor entities (lock, climate, binary_sensor, vacuum, cover, fan, device_tracker, etc.)
-  // legitimately represent physical hardware devices that can have a battery.
+  // 2. Reject if the entity is an enum / select / categorical sensor
+  if (Array.isArray(attrs.options) || dc === 'enum') {
+    return false;
+  }
+
+  // 3. Reject non-battery device classes according to Home Assistant Core specifications
+  const nonBatteryDeviceClasses = new Set([
+    'power', 'energy', 'voltage', 'current', 'apparent_power', 'reactive_power',
+    'temperature', 'humidity', 'illuminance', 'co2', 'carbon_dioxide', 'carbon_monoxide',
+    'pm25', 'pm10', 'aqi', 'pressure', 'atmospheric_pressure', 'speed', 'distance',
+    'duration', 'timestamp', 'date', 'monetary', 'gas', 'water', 'volume',
+    'volume_flow_rate', 'volume_storage', 'weight', 'signal_strength', 'sound_pressure',
+    'enum', 'status'
+  ]);
+  if (nonBatteryDeviceClasses.has(dc)) {
+    return false;
+  }
+
+  // 4. Reject if state_class indicates accumulation/metering rather than point measurement
+  const sc = (attrs.state_class || '').toLowerCase().trim();
+  if (sc === 'total' || sc === 'total_increasing') {
+    return false;
+  }
+
+  // 5. Sensor domain evaluation
+  if (domain === 'sensor') {
+    // If device_class is explicitly battery and unit is %, it is a valid battery level sensor
+    if (dc === 'battery') {
+      return true;
+    }
+
+    // Fallback if device_class is omitted: must have a clear battery identifier
+    const isBatteryNamed =
+      eid.endsWith('_battery') ||
+      eid.endsWith('_battery_level') ||
+      eid.endsWith('_battery_percentage') ||
+      eid.endsWith('_bat') ||
+      name.endsWith('battery') ||
+      name.endsWith('battery level');
+
+    return isBatteryNamed;
+  }
+
+  // Non-sensor entities (lock, climate, binary_sensor, vacuum, etc.)
+  // represent physical smart home devices that can report internal battery telemetry.
   return true;
 }
 

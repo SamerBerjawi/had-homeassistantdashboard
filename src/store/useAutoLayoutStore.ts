@@ -1014,6 +1014,12 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         ? Array.from(new Set([...prev.dismissedNotificationIds, ...config.preferences.dismissedNotificationIds]))
         : prev.dismissedNotificationIds;
 
+      if (typeof window !== 'undefined' && Array.isArray(config.preferences?.dismissedNotificationIds)) {
+        try {
+          localStorage.setItem('ha_dismissed_notifications', JSON.stringify(dismissedIds));
+        } catch {}
+      }
+
       return {
         areas: newAreas,
         rawAreas: newAreas,
@@ -1118,6 +1124,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem('ha_dismissed_notifications', JSON.stringify(nextIds));
+          window.dispatchEvent(new CustomEvent('had_sync_dismissed_notifications', { detail: nextIds }));
         } catch {}
       }
       return { dismissedNotificationIds: nextIds };
@@ -1132,6 +1139,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem('ha_dismissed_notifications', JSON.stringify(nextIds));
+          window.dispatchEvent(new CustomEvent('had_sync_dismissed_notifications', { detail: nextIds }));
         } catch {}
       }
       return { dismissedNotificationIds: nextIds };
@@ -1144,6 +1152,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem('ha_dismissed_notifications', JSON.stringify(nextIds));
+          window.dispatchEvent(new CustomEvent('had_sync_dismissed_notifications', { detail: nextIds }));
         } catch {}
       }
       return { dismissedNotificationIds: nextIds };
