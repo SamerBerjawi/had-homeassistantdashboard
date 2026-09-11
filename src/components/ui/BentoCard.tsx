@@ -51,7 +51,7 @@ export const BentoCard: React.FC<BentoCardProps> = ({
 
   const themeClasses = darkMode
     ? 'bg-black/20 hover:bg-black/30 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-white/5'
-    : 'bg-white/20 hover:bg-white/30 text-slate-900 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-slate-200/50';
+    : 'bg-white/70 hover:bg-white/85 text-slate-900 shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-slate-200/80';
 
   return (
     <motion.div

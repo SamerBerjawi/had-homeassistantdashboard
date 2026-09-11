@@ -34,10 +34,13 @@ import {
   Tooltip,
   CartesianGrid
 } from 'recharts';
+import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
+import { fetchLiveEntityHistory } from '../../../services/haHistoryService';
 
 interface SensorHistoryViewProps {
   entity: HAEntity;
   darkMode?: boolean;
+  customIcon?: string | null;
 }
 
 interface NumericPoint {
@@ -56,9 +59,7 @@ interface StateChangeEvent {
   isCurrent: boolean;
 }
 
-import { fetchLiveEntityHistory } from '../../../services/haHistoryService';
-
-export default function SensorHistoryView({ entity, darkMode = true }: SensorHistoryViewProps) {
+export default function SensorHistoryView({ entity, darkMode = true, customIcon }: SensorHistoryViewProps) {
   const isLiveMode = useAutoLayoutStore((s) => s.isLiveMode);
 
   const rawState = String(entity?.state || '').toLowerCase();
@@ -447,49 +448,131 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
     return String(entity?.state || 'Unknown').toUpperCase();
   }, [deviceClass, entity?.entity_id, entity?.state, rawState]);
 
+  // Health page design tokens for containers and tiles (frosted translucent glass)
+  const bentoCardStyle = darkMode
+    ? 'bg-black/20 hover:bg-black/30 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-white/5 backdrop-blur-xl'
+    : 'bg-white/35 hover:bg-white/45 text-slate-900 shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-white/40 backdrop-blur-xl';
+
+  const bentoStaticCardStyle = darkMode
+    ? 'bg-black/20 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-white/5 backdrop-blur-xl'
+    : 'bg-white/35 text-slate-900 shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-white/40 backdrop-blur-xl';
+
   return (
-    <div className="space-y-6">
-      {/* ------------------------------------------------------------- */}
-      {/* 1. HERO SENSOR STATUS CARD                                     */}
-      {/* ------------------------------------------------------------- */}
+    <div className="space-y-4 select-none">
+      {/* ========================================================================= */}
+      {/* 1. TOP HEADER ROW (Health Section Header Pattern)                         */}
+      {/* ========================================================================= */}
+      <div className={`p-4 rounded-3xl backdrop-blur-xl flex items-center justify-between transition-all ${bentoStaticCardStyle}`}>
+        <div className="flex items-center gap-3">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-colors"
+            style={{
+              backgroundColor: isBinaryOrStatusSensor
+                ? isStateActive
+                  ? 'rgba(244, 63, 94, 0.15)'
+                  : 'rgba(16, 185, 129, 0.15)'
+                : 'rgba(6, 182, 212, 0.15)',
+              borderColor: isBinaryOrStatusSensor
+                ? isStateActive
+                  ? 'rgba(244, 63, 94, 0.35)'
+                  : 'rgba(16, 185, 129, 0.35)'
+                : 'rgba(6, 182, 212, 0.35)',
+              color: isBinaryOrStatusSensor
+                ? isStateActive
+                  ? '#f43f5e'
+                  : '#10b981'
+                : '#06b6d4'
+            }}
+          >
+            {customIcon ? (
+              <DynamicPhosphorIcon name={customIcon} size={18} weight="duotone" />
+            ) : (
+              <SensorHeroIcon size={18} weight="duotone" />
+            )}
+          </div>
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+              {entity.attributes.room || entity.attributes.area || (isBinaryOrStatusSensor ? 'BINARY SENSOR' : 'TELEMETRY SENSOR')}
+            </span>
+            <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white truncate max-w-[180px] sm:max-w-xs">
+              {entity.attributes.friendly_name || 'Sensor Feed'}
+            </h2>
+          </div>
+        </div>
+
+        {/* Status Pill Badge */}
+        <div className="flex items-center gap-2">
+          <div
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${
+              isBinaryOrStatusSensor
+                ? isStateActive
+                  ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                : 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                isBinaryOrStatusSensor
+                  ? isStateActive
+                    ? 'bg-rose-500 animate-pulse'
+                    : 'bg-emerald-500'
+                  : 'bg-cyan-500 animate-pulse'
+              }`}
+            />
+            <span className="uppercase">{heroStateDisplay}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 2. HERO SENSOR STATUS CARD (HealthMetricCard Typography)                  */}
+      {/* ========================================================================= */}
       <div
-        className={`p-6 rounded-3xl border flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-md transition-colors ${
-          darkMode ? 'bg-slate-800/40 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-sm'
-        }`}
+        className={`p-6 sm:p-7 rounded-3xl flex flex-col items-center justify-center text-center relative overflow-hidden transition-all ${bentoStaticCardStyle}`}
       >
         <div
-          className={`absolute -inset-10 opacity-30 blur-3xl rounded-full pointer-events-none transition-all ${
+          className={`absolute -inset-10 opacity-20 blur-3xl rounded-full pointer-events-none transition-all duration-700 ${
             isBinaryOrStatusSensor
               ? isStateActive
-                ? 'bg-rose-500/30'
-                : 'bg-emerald-500/25'
-              : 'bg-cyan-500/25'
+                ? 'bg-rose-500/25'
+                : 'bg-emerald-500/20'
+              : 'bg-cyan-500/20'
           }`}
         />
 
         <div
-          className={`w-16 h-16 rounded-2xl border flex items-center justify-center mb-3 shadow-lg transition-all ${
+          className={`w-16 h-16 rounded-2xl border flex items-center justify-center mb-3 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] transition-all ${
             isBinaryOrStatusSensor
               ? isStateActive
-                ? 'bg-rose-500/20 border-rose-500/30 text-rose-500 dark:text-rose-300 shadow-rose-500/20'
-                : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-600 dark:text-emerald-300 shadow-emerald-500/20'
-              : 'bg-cyan-500/20 border-cyan-500/30 text-cyan-600 dark:text-cyan-300 shadow-cyan-500/20'
+                ? 'bg-rose-500/15 border-rose-500/40 text-rose-500 dark:text-rose-300 ring-4 ring-rose-400/20'
+                : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-300 ring-4 ring-emerald-400/20'
+              : 'bg-cyan-500/15 border-cyan-500/40 text-cyan-600 dark:text-cyan-300 ring-4 ring-cyan-400/20'
           }`}
         >
           <SensorHeroIcon size={32} weight="duotone" />
         </div>
 
-        <h3 className={`text-3xl font-black font-mono tracking-tight uppercase ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-          {heroStateDisplay} {unit}
-        </h3>
-        <p className={`text-xs font-medium mt-1 capitalize ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+        {/* Big Metric Typography */}
+        <div className="flex items-baseline justify-center gap-1 my-1">
+          <span className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight uppercase">
+            {heroStateDisplay}
+          </span>
+          {unit && (
+            <span className="text-xl font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              {unit}
+            </span>
+          )}
+        </div>
+
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5 capitalize">
           {entity?.attributes?.friendly_name || entity?.entity_id}
         </p>
 
         {isBinaryOrStatusSensor && stateEvents.length > 0 && (
           <div
-            className={`mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono border ${
-              darkMode ? 'bg-white/5 border-white/10 text-slate-300' : 'bg-white border-slate-200 text-slate-600 shadow-xs'
+            className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono border ${
+              darkMode ? 'bg-black/20 border-white/10 text-slate-300' : 'bg-white/40 border-slate-200 text-slate-700 shadow-xs'
             }`}
           >
             <Clock size={14} weight="bold" className="text-slate-400" />
@@ -500,25 +583,21 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
         )}
       </div>
 
-      {/* ------------------------------------------------------------- */}
-      {/* 2. DISCRETE SENSORS: TIMELINE OF STATUS CHANGES                */}
-      {/* ------------------------------------------------------------- */}
+      {/* ========================================================================= */}
+      {/* 3. DISCRETE SENSORS: TIMELINE OF STATUS CHANGES                            */}
+      {/* ========================================================================= */}
       {isBinaryOrStatusSensor ? (
-        <div
-          className={`p-5 rounded-3xl border space-y-4 transition-colors ${
-            darkMode ? 'bg-slate-800/30 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-sm'
-          }`}
-        >
+        <div className={`p-4 sm:p-5 rounded-3xl space-y-4 ${bentoStaticCardStyle}`}>
           {/* Time-Range Header */}
-          <div className="flex items-center justify-between">
-            <div className={`flex items-center gap-1.5 text-xs font-bold ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-              <Clock size={16} weight="duotone" className="text-cyan-500" />
+          <div className="flex items-center justify-between px-0.5">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+              <Clock size={15} weight="duotone" className="text-cyan-500" />
               <span>Status History Timeline</span>
             </div>
 
             <div
-              className={`flex items-center gap-1 p-1 rounded-xl border ${
-                darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-slate-200/80 border-slate-300'
+              className={`flex items-center gap-1 p-1 rounded-2xl border ${
+                darkMode ? 'bg-black/30 border-white/10' : 'bg-white/40 border-slate-200/60'
               }`}
             >
               {(['6h', '24h', '7d'] as const).map((r) => (
@@ -526,7 +605,7 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
                   key={r}
                   type="button"
                   onClick={() => setTimeRange(r)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
                     timeRange === r
                       ? 'bg-cyan-500 text-slate-950 shadow-xs'
                       : darkMode
@@ -540,16 +619,16 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
             </div>
           </div>
 
-          {/* Continuous Segmented Status Ribbon (Bar) */}
+          {/* Continuous Segmented Status Ribbon */}
           <div className="space-y-1.5">
-            <div className="flex justify-between text-[10px] font-mono text-slate-400">
+            <div className="flex justify-between text-[10px] font-mono text-slate-400 px-0.5">
               <span>{timeRange} ago</span>
               <span>Now (Live)</span>
             </div>
 
             <div
-              className={`w-full h-5 rounded-xl overflow-hidden flex border p-0.5 gap-0.5 ${
-                darkMode ? 'bg-slate-900/80 border-white/10' : 'bg-slate-200 border-slate-300'
+              className={`w-full h-5 rounded-2xl overflow-hidden flex border p-0.5 gap-0.5 ${
+                darkMode ? 'bg-black/30 border-white/10' : 'bg-white/40 border-slate-200/60'
               }`}
             >
               {ribbonSegments.map((seg) => (
@@ -566,7 +645,7 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
               ))}
             </div>
 
-            <div className={`flex items-center justify-between text-[10px] pt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            <div className="flex items-center justify-between text-[10px] pt-1 text-slate-400 dark:text-slate-500 px-0.5">
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -582,8 +661,8 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
           </div>
 
           {/* Chronological State Transition Log */}
-          <div className={`space-y-2 pt-2 border-t ${darkMode ? 'border-white/10' : 'border-slate-200'}`}>
-            <label className={`text-xs font-bold block ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+          <div className={`space-y-2 pt-2 border-t ${darkMode ? 'border-white/5' : 'border-slate-200/50'}`}>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block px-0.5">
               Activity Log
             </label>
 
@@ -595,7 +674,7 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
             ) : stateEvents.length === 0 ? (
               <div className="py-4 text-center text-xs text-slate-400">No status changes in this period.</div>
             ) : (
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10">
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1 scrollbar-thin">
                 {stateEvents.map((evt) => {
                   const isActive =
                     evt.state === 'on' ||
@@ -606,9 +685,7 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
                   return (
                     <div
                       key={evt.id}
-                      className={`p-2.5 rounded-2xl border flex items-center justify-between gap-3 text-xs ${
-                        darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200/80 shadow-xs'
-                      }`}
+                      className={`p-2.5 rounded-2xl flex items-center justify-between gap-3 text-xs transition-all ${bentoCardStyle}`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div
@@ -625,7 +702,7 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
                           )}
                         </div>
                         <div className="min-w-0">
-                          <div className={`font-bold uppercase tracking-wide truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                          <div className="font-bold uppercase tracking-wide truncate text-slate-900 dark:text-white">
                             {formatStateLabel(evt.state)}
                             {evt.isCurrent && (
                               <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30">
@@ -633,14 +710,14 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
                               </span>
                             )}
                           </div>
-                          <div className={`text-[11px] font-mono mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                          <div className="text-[11px] font-mono mt-0.5 text-slate-400 dark:text-slate-500">
                             Started at {evt.timeFormatted}
                           </div>
                         </div>
                       </div>
 
                       <div className="text-right shrink-0">
-                        <span className={`font-mono font-bold ${darkMode ? 'text-slate-300' : 'text-slate-800'}`}>
+                        <span className="font-mono font-black text-slate-800 dark:text-slate-200">
                           {formatDuration(evt.durationMs)}
                         </span>
                         <div className="text-[10px] text-slate-400">duration</div>
@@ -653,24 +730,20 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
           </div>
         </div>
       ) : (
-        /* ------------------------------------------------------------- */
-        /* 3. NUMERIC SENSORS: TELEMETRY CONTINUOUS AREA CHART           */
-        /* ------------------------------------------------------------- */
-        <div
-          className={`p-5 rounded-3xl border space-y-4 transition-colors ${
-            darkMode ? 'bg-slate-800/30 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-sm'
-          }`}
-        >
+        /* ========================================================================= */
+        /* 4. NUMERIC SENSORS: TELEMETRY CONTINUOUS AREA CHART                       */
+        /* ========================================================================= */
+        <div className={`p-4 sm:p-5 rounded-3xl space-y-4 ${bentoStaticCardStyle}`}>
           {/* Time-Range Selector Header */}
-          <div className="flex items-center justify-between">
-            <div className={`flex items-center gap-1.5 text-xs font-bold ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-              <ChartLineUp size={16} weight="duotone" className="text-cyan-500" />
+          <div className="flex items-center justify-between px-0.5">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+              <ChartLineUp size={15} weight="duotone" className="text-cyan-500" />
               <span>Telemetry History Curve</span>
             </div>
 
             <div
-              className={`flex items-center gap-1 p-1 rounded-xl border ${
-                darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-slate-200/80 border-slate-300'
+              className={`flex items-center gap-1 p-1 rounded-2xl border ${
+                darkMode ? 'bg-black/30 border-white/10' : 'bg-white/40 border-slate-200/60'
               }`}
             >
               {(['6h', '24h', '7d'] as const).map((r) => (
@@ -678,7 +751,7 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
                   key={r}
                   type="button"
                   onClick={() => setTimeRange(r)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
                     timeRange === r
                       ? 'bg-cyan-500 text-slate-950 shadow-xs'
                       : darkMode
@@ -692,13 +765,17 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
             </div>
           </div>
 
-          {/* Aggregate Stats Pill Strip */}
-          <div className="flex items-center justify-around py-2 px-3 rounded-2xl bg-white/5 text-[11px] text-slate-300 font-mono">
-            <span>Min: <strong className="text-white">{Number(stats.min || 0).toFixed(1)}{unit}</strong></span>
-            <span className="text-white/20">•</span>
-            <span>Avg: <strong className="text-cyan-300">{Number(stats.avg || 0).toFixed(1)}{unit}</strong></span>
-            <span className="text-white/20">•</span>
-            <span>Max: <strong className="text-white">{Number(stats.max || 0).toFixed(1)}{unit}</strong></span>
+          {/* Aggregate Stats Pill Strip in Health sub-well */}
+          <div
+            className={`flex items-center justify-around py-2 px-3 rounded-2xl text-[11px] font-mono border ${
+              darkMode ? 'bg-black/20 border-white/5 text-slate-300' : 'bg-white/40 border-slate-200/50 text-slate-700'
+            }`}
+          >
+            <span>Min: <strong className="font-black text-slate-900 dark:text-white">{Number(stats.min || 0).toFixed(1)}{unit}</strong></span>
+            <span className="opacity-20">•</span>
+            <span>Avg: <strong className="font-black text-cyan-600 dark:text-cyan-300">{Number(stats.avg || 0).toFixed(1)}{unit}</strong></span>
+            <span className="opacity-20">•</span>
+            <span>Max: <strong className="font-black text-slate-900 dark:text-white">{Number(stats.max || 0).toFixed(1)}{unit}</strong></span>
           </div>
 
           {/* Chart Canvas */}
@@ -721,17 +798,17 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
                       <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'} vertical={false} />
                   <XAxis
                     dataKey="time"
-                    stroke="rgba(255,255,255,0.3)"
-                    tick={{ fontSize: 10, fill: '#94a3b8' }}
+                    stroke={darkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
+                    tick={{ fontSize: 10, fill: darkMode ? '#94a3b8' : '#64748b' }}
                     tickLine={false}
                     interval="preserveStartEnd"
                   />
                   <YAxis
-                    stroke="rgba(255,255,255,0.3)"
-                    tick={{ fontSize: 10, fill: '#94a3b8' }}
+                    stroke={darkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
+                    tick={{ fontSize: 10, fill: darkMode ? '#94a3b8' : '#64748b' }}
                     tickLine={false}
                     domain={['auto', 'auto']}
                   />
@@ -740,9 +817,11 @@ export default function SensorHistoryView({ entity, darkMode = true }: SensorHis
                       if (active && payload && payload.length) {
                         const data = payload[0].payload as NumericPoint;
                         return (
-                          <div className="p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/30 backdrop-blur-md shadow-xl text-xs">
+                          <div className={`p-2.5 rounded-2xl border backdrop-blur-xl shadow-xl text-xs ${
+                            darkMode ? 'bg-black/80 border-cyan-500/30 text-white' : 'bg-white/90 border-cyan-500/40 text-slate-900'
+                          }`}>
                             <p className="text-[10px] text-slate-400 font-mono">{data.time}</p>
-                            <p className="font-mono font-bold text-white text-sm mt-0.5">
+                            <p className="font-mono font-black text-cyan-500 text-sm mt-0.5">
                               {data.value} {unit}
                             </p>
                           </div>

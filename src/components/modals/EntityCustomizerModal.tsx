@@ -20,6 +20,7 @@ import {
   MapPin
 } from '@phosphor-icons/react';
 import IconPickerField from '../ui/IconPickerField';
+import IconFinderModal from '../ui/IconFinderModal';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
@@ -101,12 +102,14 @@ export default function EntityCustomizerModal({
   const [customIcon, setCustomIcon] = useState<string | null>(initialIcon || null);
   const [isHidden, setIsHidden] = useState<boolean>(Boolean(isHiddenInitially));
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isPickingIcon, setIsPickingIcon] = useState<boolean>(false);
 
   useEffect(() => {
     if (isOpen && entityId) {
       setCustomName(initialName);
       setCustomIcon(normalizePhosphorIconName(initialIcon) || null);
       setIsHidden(Boolean(isHiddenInitially));
+      setIsPickingIcon(false);
     }
   }, [isOpen, entityId, initialName, initialIcon, isHiddenInitially]);
 
@@ -217,154 +220,177 @@ export default function EntityCustomizerModal({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden">
-        {/* Backdrop Scrim: Crystal / Apple HIG 4px blur */}
+        {/* Backdrop Scrim: Crystal / Apple HIG gentle scrim in light, OLED scrim in dark */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
           onClick={onClose}
-          className="fixed inset-0 bg-black/25 dark:bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-950/20 dark:bg-black/70 backdrop-blur-sm"
         />
 
-        {/* Modal Card matching Health page outer container tokens */}
+        {/* Modal Card: Luminous frosted glass in light mode, deep dark glass in dark mode */}
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 12 }}
           transition={{ type: 'spring', damping: 26, stiffness: 350 }}
-          className="relative w-full max-w-lg p-5 sm:p-6 bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 rounded-3xl shadow-[4px_6px_12px_rgba(0,0,0,0.15)] backdrop-blur-xl text-slate-900 dark:text-slate-100 space-y-5 isolate z-10 overflow-hidden"
+          className={`relative w-full ${
+            isPickingIcon
+              ? 'max-w-2xl h-[620px] max-h-[90vh] flex flex-col p-0'
+              : 'max-w-lg p-5 sm:p-6 space-y-5'
+          } bg-white/35 dark:bg-black/40 border border-white/60 dark:border-white/10 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl text-slate-900 dark:text-slate-100 isolate z-10 overflow-hidden transition-all duration-300`}
         >
-          {/* Ambient Top Gradient Glow */}
-          <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-sky-500/10 via-sky-500/5 to-transparent pointer-events-none -z-1" />
+          {isPickingIcon ? (
+            <IconFinderModal
+              embedded
+              isOpen={true}
+              onClose={() => setIsPickingIcon(false)}
+              currentIcon={customIcon || defaultIcon}
+              onSelectIcon={(icon) => {
+                setCustomIcon(icon);
+                setIsPickingIcon(false);
+              }}
+              title={`Icon for ${customName || entityId}`}
+              subtitle="Choose any Phosphor icon to represent this entity"
+              accentColor="#0ea5e9"
+            />
+          ) : (
+            <>
+              {/* Ambient Top Gradient Glow */}
+              <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-sky-500/15 via-sky-500/5 to-transparent pointer-events-none -z-1" />
 
-          {/* Header */}
-          <div className="flex items-center justify-between gap-3 border-b border-black/5 dark:border-white/10 pb-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-2xl bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
-                <DynamicPhosphorIcon name={customIcon || defaultIcon || 'SlidersHorizontal'} size={22} weight="duotone" />
+              {/* Header */}
+              <div className="flex items-center justify-between gap-3 border-b border-black/10 dark:border-white/10 pb-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-2xl bg-white/60 dark:bg-white/10 text-slate-900 dark:text-white border border-white/80 dark:border-white/15 flex items-center justify-center shrink-0 shadow-xs">
+                    <DynamicPhosphorIcon name={customIcon || defaultIcon || 'SlidersHorizontal'} size={22} weight="duotone" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-base sm:text-lg font-black text-slate-950 dark:text-white truncate">
+                      Customize Entity
+                    </h3>
+                    <span className="text-xs font-mono text-slate-700 dark:text-slate-400 font-bold truncate block">
+                      {entityId}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-xl bg-white/40 hover:bg-white/60 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white border border-white/50 dark:border-white/10 flex items-center justify-center transition-all cursor-pointer shadow-xs"
+                >
+                  <X size={16} weight="bold" />
+                </button>
               </div>
-              <div className="min-w-0">
-                <h3 className="text-base sm:text-lg font-black text-white truncate">
-                  Customize Entity
-                </h3>
-                <span className="text-xs font-mono text-slate-400 truncate block">
-                  {entityId}
-                </span>
-              </div>
-            </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-            >
-              <X size={16} weight="bold" />
-            </button>
-          </div>
-
-          {/* Location details */}
-          {(areaName || floorName) && (
-            <div className="p-3 rounded-2xl bg-white/5 flex items-center gap-2 text-xs text-slate-400 font-medium">
-              <MapPin size={15} weight="duotone" className="text-sky-400 shrink-0" />
-              <span>Assigned to:</span>
-              <strong className="text-white font-bold">{areaName || 'Unassigned Area'}</strong>
-              {floorName && (
-                <>
-                  <span>•</span>
-                  <span className="text-slate-300">{floorName}</span>
-                </>
+              {/* Location details */}
+              {(areaName || floorName) && (
+                <div className="p-3 rounded-2xl bg-white/30 dark:bg-black/30 border border-white/40 dark:border-white/10 flex items-center gap-2 text-xs text-slate-800 dark:text-slate-300 font-medium shadow-2xs">
+                  <MapPin size={15} weight="duotone" className="text-sky-600 dark:text-sky-400 shrink-0" />
+                  <span className="text-slate-700 dark:text-slate-400 font-bold">Assigned to:</span>
+                  <strong className="text-slate-950 dark:text-white font-black">{areaName || 'Unassigned Area'}</strong>
+                  {floorName && (
+                    <>
+                      <span className="text-slate-400">•</span>
+                      <span className="text-slate-800 dark:text-slate-300 font-bold">{floorName}</span>
+                    </>
+                  )}
+                </div>
               )}
-            </div>
-          )}
 
-          {/* Form Fields */}
-          <div className="space-y-4">
-            {/* Custom Name */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-300">
-                  Friendly Display Name
-                </label>
-                {customName !== defaultName && defaultName && (
+              {/* Form Fields */}
+              <div className="space-y-4">
+                {/* Custom Name */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-900 dark:text-slate-200">
+                      Friendly Display Name
+                    </label>
+                    {customName !== defaultName && defaultName && (
+                      <button
+                        type="button"
+                        onClick={() => setCustomName(defaultName)}
+                        className="text-[11px] font-bold text-slate-600 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <ArrowCounterClockwise size={12} weight="bold" />
+                        <span>Reset Name</span>
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative flex items-center">
+                    <PencilSimple size={16} weight="bold" className="absolute left-3.5 text-slate-500 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={customName}
+                      onChange={e => setCustomName(e.target.value)}
+                      placeholder={defaultName || entityId}
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl bg-white/40 dark:bg-black/30 border border-white/50 dark:border-white/10 focus:border-sky-500 focus:bg-white/60 dark:focus:bg-black/50 text-slate-950 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-500 text-xs sm:text-sm font-bold outline-none transition-all shadow-inner"
+                    />
+                  </div>
+                </div>
+
+                {/* Phosphor Icon Picker */}
+                <IconPickerField
+                  label="Entity Phosphor Icon"
+                  value={customIcon}
+                  defaultValue={defaultIcon || 'Sparkle'}
+                  onChange={iconName => setCustomIcon(iconName)}
+                  accentColor="#0ea5e9"
+                  quickPresets={quickIcons}
+                  modalTitle={`Select Icon for ${customName || entityId}`}
+                  modalSubtitle="Choose any Phosphor icon to represent this entity"
+                  onOpenPicker={() => setIsPickingIcon(true)}
+                />
+
+                {/* Visibility Toggle */}
+                <div className="p-3.5 rounded-2xl bg-white/30 dark:bg-black/30 border border-white/40 dark:border-white/10 flex items-center justify-between gap-3 shadow-2xs">
+                  <div className="min-w-0">
+                    <span className="text-xs sm:text-sm font-black text-slate-950 dark:text-white block">
+                      Dashboard Visibility
+                    </span>
+                    <span className="text-[11px] text-slate-700 dark:text-slate-400 font-bold block mt-0.5">
+                      {isHidden ? 'Hidden from overview cards and rooms' : 'Visible on dashboard layouts'}
+                    </span>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => setCustomName(defaultName)}
-                    className="text-[11px] font-semibold text-slate-400 hover:text-rose-400 flex items-center gap-1 cursor-pointer transition-colors"
+                    onClick={() => setIsHidden(!isHidden)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                      !isHidden
+                        ? 'bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 border border-emerald-500/40 shadow-xs'
+                        : 'bg-white/40 dark:bg-white/10 text-slate-800 dark:text-slate-400 border border-white/50 dark:border-white/10'
+                    }`}
                   >
-                    <ArrowCounterClockwise size={12} weight="bold" />
-                    <span>Reset Name</span>
+                    {!isHidden ? <Eye size={15} weight="bold" /> : <EyeSlash size={15} weight="bold" />}
+                    <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
                   </button>
-                )}
+                </div>
               </div>
-              <div className="relative flex items-center">
-                <PencilSimple size={16} weight="bold" className="absolute left-3.5 text-slate-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={customName}
-                  onChange={e => setCustomName(e.target.value)}
-                  placeholder={defaultName || entityId}
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl bg-white/5 border border-white/10 focus:border-sky-500 focus:bg-white/8 text-white text-xs sm:text-sm font-medium outline-none transition-all"
-                />
+
+              {/* Action buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-black/10 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 text-xs font-black rounded-xl bg-white/40 hover:bg-white/60 dark:bg-white/10 dark:hover:bg-white/20 text-slate-900 dark:text-white border border-white/50 dark:border-white/10 transition-all cursor-pointer active:scale-95 shadow-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isSaving}
+                  onClick={handleSave}
+                  className="px-5 py-2 text-xs sm:text-sm font-black rounded-xl bg-sky-600 hover:bg-sky-500 text-white shadow-md hover:shadow-sky-500/25 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+                >
+                  <Check size={16} weight="bold" />
+                  <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+                </button>
               </div>
-            </div>
-
-            {/* Phosphor Icon Picker */}
-            <IconPickerField
-              label="Entity Phosphor Icon"
-              value={customIcon}
-              defaultValue={defaultIcon || 'Sparkle'}
-              onChange={iconName => setCustomIcon(iconName)}
-              accentColor="#0ea5e9"
-              quickPresets={quickIcons}
-              modalTitle={`Select Icon for ${customName || entityId}`}
-              modalSubtitle="Choose any Phosphor icon to represent this entity"
-            />
-
-            {/* Visibility Toggle */}
-            <div className="p-3.5 rounded-2xl bg-white/5 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <span className="text-xs sm:text-sm font-bold text-white block">
-                  Dashboard Visibility
-                </span>
-                <span className="text-[11px] text-slate-400 block mt-0.5">
-                  {isHidden ? 'Hidden from overview cards and rooms' : 'Visible on dashboard layouts'}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsHidden(!isHidden)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  !isHidden
-                    ? 'bg-emerald-500/20 text-emerald-300 shadow-xs'
-                    : 'bg-white/10 text-slate-400'
-                }`}
-              >
-                {!isHidden ? <Eye size={15} weight="bold" /> : <EyeSlash size={15} weight="bold" />}
-                <span>{!isHidden ? 'Visible' : 'Hidden'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-white/10">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-all cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={isSaving}
-              onClick={handleSave}
-              className="px-5 py-2 text-xs sm:text-sm font-bold rounded-xl bg-sky-500 hover:bg-sky-400 text-white shadow-md hover:shadow-sky-500/25 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
-            >
-              <Check size={16} weight="bold" />
-              <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
-            </button>
-          </div>
+            </>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>

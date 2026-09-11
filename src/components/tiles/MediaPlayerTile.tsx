@@ -140,14 +140,19 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
       <div
         onClick={() => onOpenDrawer ? onOpenDrawer(entity) : onIconClick?.()}
         style={{
-          boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.15)'
+          boxShadow: darkMode
+            ? '4px 6px 12px rgba(0, 0, 0, 0.25)'
+            : '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
+          borderColor: palette?.badgeBorder || undefined
         }}
-        className={`w-full h-full group relative rounded-3xl p-4 sm:p-5 border border-purple-500/40 overflow-hidden isolate backdrop-blur-sm transition-all duration-300 cursor-pointer flex flex-col justify-between gap-3 ${
+        className={`w-full h-full group relative rounded-3xl p-4 sm:p-5 border overflow-hidden isolate backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between gap-3 ${
           albumArtUrl
-            ? 'bg-slate-950/60 text-white'
+            ? darkMode
+              ? 'bg-slate-950/70 text-white'
+              : 'bg-white/85 text-slate-900'
             : darkMode
-            ? 'bg-black/20 text-white'
-            : 'bg-white/20 text-slate-900'
+            ? 'bg-black/20 text-white border-white/10'
+            : 'bg-white/70 text-slate-900 border-slate-200/80'
         }`}
       >
         {/* Dynamic Blurred Album Artwork Background */}
@@ -156,10 +161,10 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
             <img
               src={albumArtUrl}
               alt=""
-              className="w-full h-full object-cover scale-125 filter blur-2xl opacity-60 dark:opacity-55 transition-opacity duration-700"
+              className="w-full h-full object-cover scale-125 filter blur-2xl opacity-50 dark:opacity-55 transition-opacity duration-700"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/30 dark:block hidden" />
-            <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/60 to-white/40 dark:hidden block" />
+            <div className="absolute inset-0 bg-gradient-to-t from-white/92 via-white/70 to-white/40 dark:hidden block" />
           </div>
         )}
 
@@ -167,7 +172,7 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
         <div className="relative z-10 flex items-stretch justify-between gap-3.5 min-w-0">
           {/* Left Side: Large Album Artwork spanning full height */}
           <div className="flex items-stretch gap-3.5 min-w-0 flex-1">
-            <div className="relative aspect-square w-16 sm:w-20 rounded-2xl overflow-hidden shadow-xl ring-2 ring-white/20 dark:ring-white/10 shrink-0 group/art self-stretch flex items-center justify-center">
+            <div className="relative aspect-square w-16 sm:w-20 rounded-2xl overflow-hidden shadow-xl ring-2 ring-white/30 dark:ring-white/10 shrink-0 group/art self-stretch flex items-center justify-center">
               {albumArtUrl ? (
                 <img
                   src={albumArtUrl}
@@ -186,7 +191,7 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
               {/* Device Output Badge */}
               <div className="flex items-center gap-2 mb-0.5">
                 <span
-                  className="px-2 py-0.5 rounded-md text-[10px] font-bold border flex items-center gap-1 truncate max-w-[150px] transition-colors duration-300"
+                  className="px-2 py-0.5 rounded-md text-[10px] font-bold border flex items-center gap-1 truncate max-w-[150px] transition-colors duration-300 shadow-2xs"
                   style={{
                     backgroundColor: palette.badgeBg,
                     borderColor: palette.badgeBorder,
@@ -205,20 +210,20 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
               </div>
 
               {/* Song Title */}
-              <h4 className={`text-sm sm:text-base font-black truncate tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              <h4 className="text-sm sm:text-base font-black truncate tracking-tight text-slate-950 dark:text-white">
                 {title}
               </h4>
 
               {/* Artist Name */}
               <p
-                className="text-xs font-semibold truncate transition-colors duration-300"
-                style={{ color: darkMode ? palette.light : palette.primary }}
+                className="text-xs font-bold truncate transition-colors duration-300"
+                style={{ color: darkMode ? palette.light : (palette.badgeText || palette.dark) }}
               >
                 {artist}
               </p>
 
               {album && (
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                <p className="text-[10px] text-slate-600 dark:text-slate-400 font-semibold truncate">
                   {album}
                 </p>
               )}
@@ -230,7 +235,7 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
             <button
               type="button"
               onClick={handlePrev}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100/90 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200/80 dark:border-white/15 text-slate-800 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90 shadow-xs"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-200/80 hover:bg-slate-300/90 dark:bg-white/10 dark:hover:bg-white/20 border border-slate-300/80 dark:border-white/15 text-slate-900 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90 shadow-xs"
               title="Previous Track"
             >
               <SkipBack size={15} weight="fill" />
@@ -239,7 +244,9 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
             <button
               type="button"
               onClick={handlePlayPause}
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl text-white flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:scale-105"
+              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:scale-105 shadow-md ${
+                darkMode ? 'text-white' : 'text-slate-950 font-black'
+              }`}
               style={{
                 backgroundColor: palette.primary,
                 boxShadow: `0 8px 20px -4px ${palette.glow}`,
@@ -252,7 +259,7 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
             <button
               type="button"
               onClick={handleNext}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100/90 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200/80 dark:border-white/15 text-slate-800 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90 shadow-xs"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-200/80 hover:bg-slate-300/90 dark:bg-white/10 dark:hover:bg-white/20 border border-slate-300/80 dark:border-white/15 text-slate-900 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90 shadow-xs"
               title="Next Track"
             >
               <SkipForward size={15} weight="fill" />
@@ -270,6 +277,7 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
             isPlaying={isPlaying}
             onSeek={handleSeek}
             palette={palette}
+            timeTextColor={darkMode ? palette.light : (palette.badgeText || palette.dark)}
             darkMode={darkMode}
             barCount={56}
             layout="inline"

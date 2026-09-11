@@ -27,8 +27,10 @@ import {
   CloudSun,
   Wind,
   Plus,
-  Minus
+  Minus,
+  ArrowsClockwise
 } from '@phosphor-icons/react';
+import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import {
@@ -39,26 +41,35 @@ import {
 interface ClimateControlViewProps {
   entity: HAEntity;
   darkMode?: boolean;
+  customIcon?: string | null;
 }
 
 // Mode display definitions
 interface ModeDefinition {
   id: string;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ size?: number; weight?: any; className?: string; style?: React.CSSProperties }>;
   activeColor: string;
   gradientStart: string;
   gradientEnd: string;
 }
 
 const MODE_DEFINITIONS: Record<string, ModeDefinition> = {
+  off: {
+    id: 'off',
+    label: 'Off',
+    icon: Power,
+    activeColor: '#64748b',
+    gradientStart: '#475569',
+    gradientEnd: '#334155'
+  },
   heat: {
     id: 'heat',
-    label: 'Heating',
-    icon: Sun,
+    label: 'Heat',
+    icon: Flame,
     activeColor: '#f97316',
-    gradientStart: '#f97316',
-    gradientEnd: '#ef4444'
+    gradientStart: '#fb923c',
+    gradientEnd: '#ea580c'
   },
   cool: {
     id: 'cool',
@@ -99,18 +110,10 @@ const MODE_DEFINITIONS: Record<string, ModeDefinition> = {
     activeColor: '#10b981',
     gradientStart: '#10b981',
     gradientEnd: '#059669'
-  },
-  off: {
-    id: 'off',
-    label: 'Off',
-    icon: Power,
-    activeColor: '#64748b',
-    gradientStart: '#64748b',
-    gradientEnd: '#475569'
   }
 };
 
-export default function ClimateControlView({ entity, darkMode = true }: ClimateControlViewProps) {
+export default function ClimateControlView({ entity, darkMode = true, customIcon: _customIcon }: ClimateControlViewProps) {
   const { callHAService, updateEntityState, states } = useAutoLayoutStore();
 
   const caps: ClimateCapabilities = useMemo(() => {
@@ -343,7 +346,7 @@ export default function ClimateControlView({ entity, darkMode = true }: ClimateC
   // Exact Health page backdrop colors for outer containers and inner tiles
   const bentoCardStyle = darkMode
     ? 'bg-black/20 hover:bg-black/30 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-white/5 backdrop-blur-xl'
-    : 'bg-white/20 hover:bg-white/30 text-slate-900 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-slate-200/50 backdrop-blur-xl';
+    : 'bg-white/35 hover:bg-white/45 text-slate-900 shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-white/40 backdrop-blur-xl';
 
   return (
     <div className="space-y-4 select-none">
@@ -351,7 +354,7 @@ export default function ClimateControlView({ entity, darkMode = true }: ClimateC
       {/* 1. TOP HVAC MODE BAR: Health Page Segmented Control Bar                   */}
       {/* ========================================================================= */}
       {availableModes.length > 0 && (
-        <div className="flex bg-white/20 dark:bg-black/20 p-1 rounded-2xl border border-slate-200/50 dark:border-white/5 backdrop-blur-xl">
+        <div className="flex bg-white/40 dark:bg-black/20 p-1 rounded-2xl border border-white/50 dark:border-white/5 backdrop-blur-xl">
           {availableModes.map((modeKey) => {
             const def = MODE_DEFINITIONS[modeKey] || {
               id: modeKey,
@@ -371,8 +374,8 @@ export default function ClimateControlView({ entity, darkMode = true }: ClimateC
                 onClick={() => handleSelectMode(modeKey)}
                 className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-98 ${
                   isSelected
-                    ? 'bg-white/40 dark:bg-white/10 text-slate-900 dark:text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)] font-black'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-white dark:bg-white/10 text-slate-950 dark:text-white shadow-xs font-black'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white font-bold'
                 }`}
               >
                 <IconComp

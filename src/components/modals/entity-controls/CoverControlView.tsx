@@ -6,6 +6,7 @@ import {
   SlidersHorizontal,
   ArrowsVertical
 } from '@phosphor-icons/react';
+import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { formatRelativeTime } from '../../../lib/utils';
@@ -18,9 +19,10 @@ import TouchCapsuleSlider from '../../ui/TouchCapsuleSlider';
 interface CoverControlViewProps {
   entity: HAEntity;
   darkMode?: boolean;
+  customIcon?: string | null;
 }
 
-export default function CoverControlView({ entity, darkMode = true }: CoverControlViewProps) {
+export default function CoverControlView({ entity, darkMode = true, customIcon }: CoverControlViewProps) {
   const { callHAService, updateEntityState } = useAutoLayoutStore();
 
   const caps: CoverCapabilities = useMemo(() => {
@@ -88,74 +90,157 @@ export default function CoverControlView({ entity, darkMode = true }: CoverContr
 
   const lastChangedStr = formatRelativeTime(caps.lastChanged);
 
+  // Health page design tokens for containers and tiles (frosted translucent glass)
+  const bentoCardStyle = darkMode
+    ? 'bg-black/20 hover:bg-black/30 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-white/5 backdrop-blur-xl'
+    : 'bg-white/35 hover:bg-white/45 text-slate-900 shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-white/40 backdrop-blur-xl';
+
+  const bentoStaticCardStyle = darkMode
+    ? 'bg-black/20 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-white/5 backdrop-blur-xl'
+    : 'bg-white/35 text-slate-900 shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-white/40 backdrop-blur-xl';
+
+  const isOpen = position > 0;
+
   return (
-    <div className="space-y-6">
-      {/* 1. MASTER HERO COVER CARD WITH VISUAL BLIND PREVIEW */}
+    <div className="space-y-4 select-none">
+      {/* ========================================================================= */}
+      {/* 1. TOP HEADER ROW (Health Section Header Pattern)                         */}
+      {/* ========================================================================= */}
+      <div className={`p-4 rounded-3xl backdrop-blur-xl flex items-center justify-between transition-all ${bentoStaticCardStyle}`}>
+        <div className="flex items-center gap-3">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-colors"
+            style={{
+              backgroundColor: isOpen ? 'rgba(14, 165, 233, 0.15)' : 'rgba(100, 116, 139, 0.12)',
+              borderColor: isOpen ? 'rgba(14, 165, 233, 0.35)' : 'rgba(100, 116, 139, 0.25)',
+              color: isOpen ? '#0ea5e9' : '#94a3b8'
+            }}
+          >
+            {customIcon ? (
+              <DynamicPhosphorIcon name={customIcon} size={18} weight="duotone" />
+            ) : (
+              <SlidersHorizontal size={18} weight="duotone" />
+            )}
+          </div>
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+              {entity.attributes.room || entity.attributes.area || 'SHADES & COVERS'}
+            </span>
+            <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white truncate max-w-[180px] sm:max-w-xs">
+              {entity.attributes.friendly_name || 'Window Cover'}
+            </h2>
+          </div>
+        </div>
+
+        {/* Status Pill Badge + Master Stop/Action Button */}
+        <div className="flex items-center gap-2">
+          <div
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${
+              caps.isOpening || caps.isClosing
+                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                : isOpen
+                ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30'
+                : 'bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/20'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                caps.isOpening || caps.isClosing
+                  ? 'bg-amber-500 animate-ping'
+                  : isOpen
+                  ? 'bg-sky-500'
+                  : 'bg-slate-400'
+              }`}
+            />
+            <span>
+              {caps.isOpening
+                ? 'Opening'
+                : caps.isClosing
+                ? 'Closing'
+                : position === 0
+                ? 'Closed'
+                : position === 100
+                ? 'Open'
+                : `${position}%`}
+            </span>
+          </div>
+
+          {caps.supportsStop && (
+            <button
+              type="button"
+              onClick={handleStop}
+              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 border ${
+                darkMode
+                  ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300'
+                  : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700 shadow-xs'
+              }`}
+              title="Stop Motion"
+            >
+              <Stop size={15} weight="fill" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 2. MASTER HERO COVER CARD WITH VISUAL BLIND PREVIEW                       */}
+      {/* ========================================================================= */}
       <div
-        className={`p-6 sm:p-7 rounded-3xl border flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-xl transition-all duration-300 ${
-          darkMode
-            ? 'bg-slate-800/40 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.36)]'
-            : 'bg-white/70 border-slate-200/80 shadow-[0_8px_30px_rgba(0,0,0,0.06)]'
-        }`}
+        className={`p-6 sm:p-7 rounded-3xl flex flex-col items-center justify-center text-center relative overflow-hidden transition-all ${bentoStaticCardStyle}`}
       >
-        {/* Dynamic ambient glow aura */}
+        {/* Subtle Ambient Glow Aura */}
         <div
-          className={`absolute -inset-10 opacity-30 blur-3xl rounded-full transition-all duration-500 pointer-events-none ${
-            position > 0 ? 'bg-sky-500/35' : 'bg-transparent'
+          className={`absolute -inset-10 opacity-20 blur-3xl rounded-full transition-all duration-700 pointer-events-none ${
+            isOpen ? 'bg-sky-500/30' : 'bg-transparent'
           }`}
         />
 
         {/* Visual Animated Window Blind Graphic */}
         <div
-          className={`w-32 h-36 sm:w-36 sm:h-40 rounded-3xl p-2.5 relative flex flex-col justify-between overflow-hidden shadow-2xl mb-3 border-2 ${
+          className={`w-32 h-36 sm:w-36 sm:h-40 rounded-3xl p-2 relative flex flex-col justify-between overflow-hidden shadow-[4px_6px_12px_rgba(0,0,0,0.15)] mb-3 border ${
             darkMode
-              ? 'bg-slate-950 border-white/20'
-              : 'bg-slate-900 border-slate-300 shadow-slate-300/50'
+              ? 'bg-black/40 border-white/10'
+              : 'bg-slate-900/10 border-slate-300/80 shadow-slate-300/30'
           }`}
         >
           {/* Window Frame Glass Backdrop */}
-          <div className="absolute inset-0 bg-gradient-to-b from-sky-400/25 to-indigo-600/30" />
+          <div className="absolute inset-0 bg-gradient-to-b from-sky-400/20 to-indigo-600/25" />
 
           {/* Slat Sliders Roll-down effect */}
           <div
-            className="w-full bg-slate-800/95 border-b-2 border-sky-400 transition-all duration-300 flex flex-col gap-1 p-1 z-10 shadow-lg rounded-t-xl"
+            className="w-full bg-slate-800/90 dark:bg-black/60 border-b-2 border-sky-400 transition-all duration-300 flex flex-col gap-1 p-1 z-10 shadow-lg rounded-t-xl backdrop-blur-md"
             style={{ height: `${100 - position}%` }}
           >
             {Array.from({ length: 6 }).map((_, idx) => (
-              <div key={idx} className="w-full h-1 bg-slate-600/60 rounded-full" />
+              <div key={idx} className="w-full h-1 bg-slate-500/40 rounded-full" />
             ))}
           </div>
 
           <div className="z-10 w-full text-center py-1 mt-auto">
-            <span className="text-[11px] font-mono font-extrabold text-white drop-shadow-md">
-              {position === 0 ? 'Fully Closed' : position === 100 ? 'Fully Open' : `${position}% Open`}
+            <span className="text-[10px] font-mono font-black text-slate-800 dark:text-white drop-shadow-xs">
+              {position === 0 ? 'Closed' : position === 100 ? 'Fully Open' : `${position}% Open`}
             </span>
           </div>
         </div>
 
-        {/* Headline */}
-        <h3
-          className={`text-xl sm:text-2xl font-black tracking-tight ${
-            darkMode ? 'text-white' : 'text-slate-900'
-          }`}
-        >
-          {caps.isOpening
-            ? 'Opening...'
-            : caps.isClosing
-            ? 'Closing...'
-            : position === 0
-            ? 'Closed'
-            : position === 100
-            ? 'Fully Open'
-            : `Open (${position}%)`}
-        </h3>
+        {/* HealthMetricCard Style Big Values */}
+        {caps.supportsPosition ? (
+          <div className="flex items-baseline justify-center gap-1 my-1">
+            <span className="text-5xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight">
+              {position}
+            </span>
+            <span className="text-xl font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              %
+            </span>
+          </div>
+        ) : (
+          <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white my-1">
+            {position === 0 ? 'Closed' : 'Open'}
+          </h3>
+        )}
 
-        <p
-          className={`text-xs font-medium mt-1 flex items-center gap-1.5 ${
-            darkMode ? 'text-slate-400' : 'text-slate-500'
-          }`}
-        >
-          <span>{caps.deviceClassLabel}</span>
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5 flex items-center justify-center gap-1.5">
+          <span>{caps.deviceClassLabel || 'Cover'}</span>
           {lastChangedStr && (
             <>
               <span>•</span>
@@ -165,14 +250,14 @@ export default function CoverControlView({ entity, darkMode = true }: CoverContr
         </p>
 
         {/* Master Transport Actions (Open, Stop, Close) */}
-        <div className="flex items-center gap-2.5 sm:gap-3 mt-4 w-full max-w-xs justify-center">
+        <div className="flex items-center gap-2 sm:gap-3 mt-4 w-full max-w-xs justify-center">
           <button
             type="button"
             onClick={handleOpen}
             disabled={position === 100}
-            className="flex-1 h-12 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 h-11 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-[4px_6px_12px_rgba(14,165,233,0.25)] disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <ArrowUp size={18} weight="bold" />
+            <ArrowUp size={16} weight="bold" />
             <span>Open</span>
           </button>
 
@@ -180,14 +265,14 @@ export default function CoverControlView({ entity, darkMode = true }: CoverContr
             <button
               type="button"
               onClick={handleStop}
-              className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-md ${
+              className={`w-11 h-11 rounded-2xl border flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${
                 darkMode
-                  ? 'bg-white/10 hover:bg-white/15 text-slate-200 border-white/10'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                  ? 'bg-black/20 hover:bg-black/30 text-slate-200 border-white/5'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
               }`}
               title="Stop Motion"
             >
-              <Stop size={18} weight="fill" />
+              <Stop size={16} weight="fill" />
             </button>
           )}
 
@@ -195,37 +280,29 @@ export default function CoverControlView({ entity, darkMode = true }: CoverContr
             type="button"
             onClick={handleClose}
             disabled={position === 0}
-            className={`flex-1 h-12 rounded-2xl font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-md disabled:opacity-40 disabled:cursor-not-allowed ${
+            className={`flex-1 h-11 rounded-2xl font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border disabled:opacity-40 disabled:cursor-not-allowed ${
               darkMode
-                ? 'bg-slate-700 hover:bg-slate-600 text-white'
-                : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+                ? 'bg-black/20 hover:bg-black/30 text-white border-white/5'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
             }`}
           >
-            <ArrowDown size={18} weight="bold" />
+            <ArrowDown size={16} weight="bold" />
             <span>Close</span>
           </button>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. POSITION CONTROL CAPSULE SLIDER & PRESETS */}
+      {/* 3. POSITION CONTROL CAPSULE SLIDER & PRESETS                              */}
       {/* ========================================================================= */}
       {caps.supportsPosition && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <span
-              className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-                darkMode ? 'text-sky-400' : 'text-sky-600'
-              }`}
-            >
-              <SlidersHorizontal size={15} weight="duotone" />
+        <div className={`p-4 sm:p-5 rounded-3xl space-y-3 ${bentoStaticCardStyle}`}>
+          <div className="flex items-center justify-between px-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+              <SlidersHorizontal size={14} weight="duotone" className="text-sky-500" />
               <span>Target Position</span>
             </span>
-            <span
-              className={`font-mono text-xs font-extrabold ${
-                darkMode ? 'text-sky-300' : 'text-sky-700'
-              }`}
-            >
+            <span className="font-mono text-xs font-black text-sky-500 dark:text-sky-400">
               {position}%
             </span>
           </div>
@@ -240,24 +317,24 @@ export default function CoverControlView({ entity, darkMode = true }: CoverContr
             label="Position"
             valueFormatter={(val) => `${Math.round(val)}%`}
             fillColor="#0284c7"
-            glowColor="rgba(2, 132, 199, 0.3)"
+            glowColor="rgba(2, 132, 199, 0.25)"
             darkMode={darkMode}
             heightClass="h-14 sm:h-15"
           />
 
           {/* Quick Position Jump Chips */}
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-5 gap-2 pt-1">
             {[0, 25, 50, 75, 100].map((pct) => (
               <button
                 key={pct}
                 type="button"
                 onClick={() => handlePositionChange(pct)}
-                className={`h-11 rounded-2xl text-xs font-extrabold transition-all cursor-pointer active:scale-95 flex items-center justify-center border ${
+                className={`h-11 rounded-2xl text-xs font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center border ${
                   position === pct
-                    ? 'bg-sky-500 text-slate-950 font-black shadow-md border-sky-400 ring-2 ring-sky-400/30'
+                    ? 'bg-sky-500 text-slate-950 font-black shadow-[4px_6px_12px_rgba(14,165,233,0.25)] border-sky-400 ring-2 ring-sky-400/30'
                     : darkMode
-                    ? 'bg-slate-800/50 hover:bg-slate-800 border-white/10 text-slate-300'
-                    : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+                    ? 'bg-black/20 hover:bg-black/30 border-white/5 text-slate-300 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]'
+                    : 'bg-white/40 hover:bg-white/60 border-slate-200/50 text-slate-700 shadow-[4px_6px_12px_rgba(0,0,0,0.05)]'
                 }`}
               >
                 {pct === 0 ? 'Closed' : pct === 100 ? 'Open' : `${pct}%`}
@@ -268,24 +345,16 @@ export default function CoverControlView({ entity, darkMode = true }: CoverContr
       )}
 
       {/* ========================================================================= */}
-      {/* 3. VENETIAN SLAT TILT SLIDER */}
+      {/* 4. VENETIAN SLAT TILT SLIDER                                              */}
       {/* ========================================================================= */}
       {caps.supportsTilt && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <span
-              className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-                darkMode ? 'text-teal-400' : 'text-teal-600'
-              }`}
-            >
-              <ArrowsVertical size={15} weight="duotone" />
+        <div className={`p-4 sm:p-5 rounded-3xl space-y-3 ${bentoStaticCardStyle}`}>
+          <div className="flex items-center justify-between px-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+              <ArrowsVertical size={14} weight="duotone" className="text-teal-500" />
               <span>Slat Tilt Angle</span>
             </span>
-            <span
-              className={`font-mono text-xs font-extrabold ${
-                darkMode ? 'text-teal-300' : 'text-teal-700'
-              }`}
-            >
+            <span className="font-mono text-xs font-black text-teal-500 dark:text-teal-400">
               {tilt}%
             </span>
           </div>
@@ -300,13 +369,13 @@ export default function CoverControlView({ entity, darkMode = true }: CoverContr
             label="Slat Tilt"
             valueFormatter={(val) => `${Math.round(val)}%`}
             fillColor="#14b8a6"
-            glowColor="rgba(20, 184, 166, 0.3)"
+            glowColor="rgba(20, 184, 166, 0.25)"
             darkMode={darkMode}
             heightClass="h-14 sm:h-15"
           />
 
           <div
-            className={`flex justify-between text-[11px] font-mono px-1 ${
+            className={`flex justify-between text-[10px] font-mono px-1 ${
               darkMode ? 'text-slate-400' : 'text-slate-500'
             }`}
           >

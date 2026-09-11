@@ -33,6 +33,7 @@ import {
 } from '@phosphor-icons/react';
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import {
   detectFanCapabilities,
   FanCapabilities
@@ -41,6 +42,7 @@ import {
 interface FanControlViewProps {
   entity: HAEntity;
   darkMode?: boolean;
+  customIcon?: string | null;
 }
 
 // Preset mode icon resolver
@@ -53,7 +55,7 @@ const getPresetIcon = (name: string) => {
   return Fan;
 };
 
-export default function FanControlView({ entity, darkMode = true }: FanControlViewProps) {
+export default function FanControlView({ entity, darkMode = true, customIcon }: FanControlViewProps) {
   const { callHAService, updateEntityState } = useAutoLayoutStore();
 
   const caps: FanCapabilities = useMemo(() => {
@@ -234,7 +236,7 @@ export default function FanControlView({ entity, darkMode = true }: FanControlVi
   // Exact Health page backdrop colors for outer containers and inner tiles
   const bentoCardStyle = darkMode
     ? 'bg-black/20 hover:bg-black/30 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-white/5 backdrop-blur-xl'
-    : 'bg-white/20 hover:bg-white/30 text-slate-900 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-slate-200/50 backdrop-blur-xl';
+    : 'bg-white/35 hover:bg-white/45 text-slate-900 shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-white/40 backdrop-blur-xl';
 
   // Dynamic capability cards count for layout grid
   const hasOscillation = caps.supportsOscillation;
@@ -273,7 +275,11 @@ export default function FanControlView({ entity, darkMode = true }: FanControlVi
               color: isOn ? '#06b6d4' : '#94a3b8'
             }}
           >
-            <Wind size={18} weight="duotone" />
+            {customIcon ? (
+              <DynamicPhosphorIcon name={customIcon} size={18} weight="duotone" />
+            ) : (
+              <Wind size={18} weight="duotone" />
+            )}
           </div>
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">

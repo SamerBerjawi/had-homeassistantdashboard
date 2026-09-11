@@ -15,6 +15,7 @@ interface AudioWaveformScrubberProps {
   onSeek: (seconds: number) => void;
   accentColor?: 'purple' | 'pink' | 'cyan' | 'emerald';
   palette?: AlbumArtPalette;
+  timeTextColor?: string;
   darkMode?: boolean;
   barCount?: number;
   layout?: 'stacked' | 'inline';
@@ -90,6 +91,7 @@ export default function AudioWaveformScrubber({
   onSeek,
   accentColor = 'purple',
   palette,
+  timeTextColor: customTimeTextColor,
   darkMode = true,
   barCount = 64,
   layout = 'stacked'
@@ -176,9 +178,9 @@ export default function AudioWaveformScrubber({
     }
   }[accentColor];
 
-  const timeTextColor = palette
-    ? (darkMode ? palette.light : palette.primary)
-    : undefined;
+  const timeTextColor = customTimeTextColor || (palette
+    ? (darkMode ? palette.light : (palette.badgeText || palette.primary))
+    : undefined);
 
   const waveformCanvas = (
     <div
@@ -221,7 +223,7 @@ export default function AudioWaveformScrubber({
                     : `${defaultThemeGradients.played} shadow-xs`
                   : darkMode
                     ? 'bg-white/18 hover:bg-white/35'
-                    : 'bg-slate-300/80 hover:bg-slate-400'
+                    : 'bg-slate-900/15 hover:bg-slate-900/25'
               } ${
                 isCurrentPeak
                   ? 'animate-pulse scale-y-110 brightness-130'

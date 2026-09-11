@@ -1220,7 +1220,7 @@ export default function AreaDetailView({
                     isActive={!isLocked}
                     accentColor={isLocked ? '#10b981' : '#f59e0b'}
                     activeBorderColor={isLocked ? 'border-emerald-500/40' : 'border-amber-400/50'}
-                    onIconClick={() => handleToggleLock(lock)}
+                    onIconClick={() => openEntityDetails(lock.entity_id)}
                     icon={
                       isLocked ? (
                         <Lock size={22} weight="fill" className="text-emerald-500 dark:text-emerald-400" />
@@ -1234,31 +1234,23 @@ export default function AreaDetailView({
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleToggleLock(lock);
+                            openEntityDetails(lock.entity_id);
                           }}
                           className={`h-8 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 shrink-0 ${
                             isLocked
                               ? darkMode
-                                ? 'bg-white/10 text-slate-300'
-                                : 'bg-slate-900/[0.04] text-slate-700'
-                              : 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                                ? 'bg-white/10 hover:bg-white/15 text-slate-300'
+                                : 'bg-slate-900/[0.04] hover:bg-slate-900/[0.08] text-slate-700'
+                              : 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-xs'
                           }`}
+                          title="Open Lock Controls"
                         >
-                          {isLocked ? 'Unlock' : 'Lock'}
+                          <span>{isLocked ? 'Locked' : 'Unlocked'}</span>
+                          <CaretRight size={14} weight="bold" />
                         </button>
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEntityDetails(lock.entity_id);
-                          }}
-                          className="p-1.5 -mr-1 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
-                          title="Open Device Details"
-                        >
-                          <CaretRight size={16} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
-                        </div>
                       </div>
                     }
-                    onClick={() => handleToggleLock(lock)}
+                    onClick={() => openEntityDetails(lock.entity_id)}
                     onContextMenu={(e) => {
                       e.preventDefault();
                       openEntityDetails(lock.entity_id);

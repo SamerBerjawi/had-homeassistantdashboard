@@ -536,14 +536,14 @@ function AreaTileComponent({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onToggleLocks(area.areaId);
+                  if (primaryLockId) openEntityDetails(primaryLockId);
                 }}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   if (primaryLockId) openEntityDetails(primaryLockId);
                 }}
-                title={isLockUnlocked ? `${unlockedLocksCount} unlocked. Click to lock, right-click for details.` : 'All locked. Click to unlock.'}
+                title={isLockUnlocked ? `${unlockedLocksCount} unlocked. Click to open lock controls.` : 'All locked. Click to open lock controls.'}
                 className={`p-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 border ${
                   isLockUnlocked
                     ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/40 text-amber-800 dark:bg-amber-500/25 dark:hover:bg-amber-500/35 dark:border-amber-500/40 dark:text-amber-300 shadow-sm shadow-amber-500/10 dark:shadow-amber-500/20'
