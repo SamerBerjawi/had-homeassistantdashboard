@@ -954,7 +954,7 @@ export default function AreaDetailView({
                     darkMode={darkMode}
                     onToggle={handleToggleLight}
                     onBrightnessChange={handleBrightnessChange}
-                    onIconClick={() => openEntityDetails(light.entity_id)}
+                    onChevronClick={() => openEntityDetails(light.entity_id)}
                     onContextMenu={() => openEntityDetails(light.entity_id)}
                   />
                 </GridTile>
@@ -1020,7 +1020,7 @@ export default function AreaDetailView({
                     onTempSlider={handleTempSlider}
                     onModeChange={handleHvacModeChange}
                     onToggle={handleToggleClimate}
-                    onClick={() => openEntityDetails(climate.entity_id)}
+                    onChevronClick={() => openEntityDetails(climate.entity_id)}
                     onContextMenu={() => openEntityDetails(climate.entity_id)}
                   />
                 </GridTile>
@@ -1082,13 +1082,13 @@ export default function AreaDetailView({
                           e.stopPropagation();
                           openEntityDetails(fan.entity_id);
                         }}
-                        className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+                        className="p-1.5 -mr-1 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
                         title="Open Device Details"
                       >
-                        <CaretRight size={15} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+                        <CaretRight size={16} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     }
-                    onClick={() => openEntityDetails(fan.entity_id)}
+                    onClick={() => handleToggleFan(fan)}
                     onContextMenu={(e) => {
                       e.preventDefault();
                       openEntityDetails(fan.entity_id);
@@ -1174,7 +1174,7 @@ export default function AreaDetailView({
                     areaName={area.name}
                     darkMode={darkMode}
                     onToggle={handleToggleSwitch}
-                    onIconClick={() => openEntityDetails(sw.entity_id)}
+                    onChevronClick={() => openEntityDetails(sw.entity_id)}
                     onContextMenu={() => openEntityDetails(sw.entity_id)}
                   />
                 </GridTile>
@@ -1220,7 +1220,7 @@ export default function AreaDetailView({
                     isActive={!isLocked}
                     accentColor={isLocked ? '#10b981' : '#f59e0b'}
                     activeBorderColor={isLocked ? 'border-emerald-500/40' : 'border-amber-400/50'}
-                    onIconClick={() => openEntityDetails(lock.entity_id)}
+                    onIconClick={() => handleToggleLock(lock)}
                     icon={
                       isLocked ? (
                         <Lock size={22} weight="fill" className="text-emerald-500 dark:text-emerald-400" />
@@ -1229,22 +1229,34 @@ export default function AreaDetailView({
                       )
                     }
                     actionButton={
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleLock(lock);
-                        }}
-                        className={`h-9 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 shrink-0 ${
-                          isLocked
-                            ? darkMode
-                              ? 'bg-white/10 text-slate-300'
-                              : 'bg-slate-900/[0.04] text-slate-700'
-                            : 'bg-amber-500 text-slate-950 font-black shadow-xs'
-                        }`}
-                      >
-                        {isLocked ? 'Unlock' : 'Lock'}
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleLock(lock);
+                          }}
+                          className={`h-8 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 shrink-0 ${
+                            isLocked
+                              ? darkMode
+                                ? 'bg-white/10 text-slate-300'
+                                : 'bg-slate-900/[0.04] text-slate-700'
+                              : 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                          }`}
+                        >
+                          {isLocked ? 'Unlock' : 'Lock'}
+                        </button>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEntityDetails(lock.entity_id);
+                          }}
+                          className="p-1.5 -mr-1 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
+                          title="Open Device Details"
+                        >
+                          <CaretRight size={16} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </div>
                     }
                     onClick={() => handleToggleLock(lock)}
                     onContextMenu={(e) => {
@@ -1291,7 +1303,6 @@ export default function AreaDetailView({
                     darkMode={darkMode}
                     title={formatEntityDisplayName(cover.name, area.name)}
                     subtitle={subtitle}
-                    onIconClick={() => openEntityDetails(cover.entity_id)}
                     icon={<AppWindow size={22} weight="duotone" className="text-purple-500 dark:text-purple-400" />}
                     actionButton={
                       <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -1313,6 +1324,13 @@ export default function AreaDetailView({
                         >
                           Close
                         </button>
+                        <div
+                          onClick={() => openEntityDetails(cover.entity_id)}
+                          className="p-1.5 -mr-1 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
+                          title="Open Device Details"
+                        >
+                          <CaretRight size={16} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
                       </div>
                     }
                     onContextMenu={(e) => {
@@ -1426,7 +1444,6 @@ export default function AreaDetailView({
                     isActive={caps.isCleaning}
                     accentColor="#0d9488"
                     activeBorderColor="border-teal-400/50"
-                    onIconClick={() => openEntityDetails(vac.entity_id)}
                     icon={<Broom size={22} weight={caps.isCleaning ? 'fill' : 'duotone'} className={caps.isCleaning ? 'text-teal-400' : 'text-slate-400'} />}
                     badge={
                       <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${
@@ -1438,6 +1455,18 @@ export default function AreaDetailView({
                       }`}>
                         {caps.isCleaning ? 'Cleaning' : 'Docked'}
                       </span>
+                    }
+                    actionButton={
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEntityDetails(vac.entity_id);
+                        }}
+                        className="p-1.5 -mr-1 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
+                        title="Open Device Details"
+                      >
+                        <CaretRight size={16} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+                      </div>
                     }
                     onContextMenu={(e) => {
                       e.preventDefault();

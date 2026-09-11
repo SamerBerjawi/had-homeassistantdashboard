@@ -24,6 +24,7 @@ interface ClimateTileProps {
   onTempSlider: (entity: ResolvedEntity, temp: number) => void;
   onModeChange: (entity: ResolvedEntity, mode: string) => void;
   onToggle?: (entity: ResolvedEntity) => void;
+  onChevronClick?: () => void;
   onClick?: () => void;
   onIconClick?: () => void;
   onContextMenu?: () => void;
@@ -74,6 +75,7 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
   onTempSlider,
   onModeChange,
   onToggle,
+  onChevronClick,
   onClick,
   onIconClick,
   onContextMenu
@@ -107,6 +109,11 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
     />
   );
 
+  const handleOpenDetails = () => {
+    if (onChevronClick) onChevronClick();
+    else if (onContextMenu) onContextMenu();
+  };
+
   const handleToggleThermostat = () => {
     if (onToggle) {
       onToggle(entity);
@@ -137,22 +144,19 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
         <div
           onClick={(e) => {
             e.stopPropagation();
-            if (onClick) onClick();
-            else if (onContextMenu) onContextMenu();
-            else if (onIconClick) onIconClick();
+            handleOpenDetails();
           }}
-          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+          className="p-1.5 -mr-1 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
           title="Open Device Details"
         >
-          <CaretRight size={15} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+          <CaretRight size={16} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
         </div>
       }
-      onClick={onClick || onContextMenu || onIconClick}
+      onClick={onClick}
       onContextMenu={(e) => {
         e.preventDefault();
         if (onContextMenu) onContextMenu();
-        else if (onClick) onClick();
-        else if (onIconClick) onIconClick();
+        else handleOpenDetails();
       }}
       footer={
         <div className="flex items-center gap-1.5 flex-wrap w-full" onClick={(e) => e.stopPropagation()}>

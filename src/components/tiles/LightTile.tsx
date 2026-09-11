@@ -25,6 +25,7 @@ interface LightTileProps {
   darkMode?: boolean;
   onToggle: (entity: ResolvedEntity) => void;
   onBrightnessChange?: (entity: ResolvedEntity, brightnessPct: number) => void;
+  onChevronClick?: () => void;
   onClick?: () => void;
   onIconClick?: () => void;
   onContextMenu?: () => void;
@@ -36,6 +37,7 @@ const LightTileComponent: React.FC<LightTileProps> = ({
   darkMode = true,
   onToggle,
   onBrightnessChange,
+  onChevronClick,
   onClick,
   onIconClick,
   onContextMenu
@@ -70,6 +72,16 @@ const LightTileComponent: React.FC<LightTileProps> = ({
       : 'text-amber-500 dark:text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.3)]'
     : 'text-slate-400';
 
+  const handleOpenDetails = () => {
+    if (onChevronClick) onChevronClick();
+    else if (onContextMenu) onContextMenu();
+  };
+
+  const handleTileClick = () => {
+    if (onClick) onClick();
+    else onToggle(entity);
+  };
+
   if (caps.supportsBrightness && onBrightnessChange) {
     return (
       <TileShell
@@ -77,12 +89,11 @@ const LightTileComponent: React.FC<LightTileProps> = ({
         isActive={isOn}
         accentColor="#FBBF24"
         activeBorderColor={darkMode ? 'border-amber-400/20' : 'border-amber-500/20'}
-        onClick={onClick || onContextMenu || onIconClick}
+        onClick={handleTileClick}
         onContextMenu={(e) => {
           e.preventDefault();
           if (onContextMenu) onContextMenu();
-          else if (onClick) onClick();
-          else if (onIconClick) onIconClick();
+          else handleOpenDetails();
         }}
         className="p-3 sm:p-3.5 min-h-[92px] sm:min-h-[98px] justify-center"
       >
@@ -136,14 +147,12 @@ const LightTileComponent: React.FC<LightTileProps> = ({
             <div
               onClick={(e) => {
                 e.stopPropagation();
-                if (onClick) onClick();
-                else if (onContextMenu) onContextMenu();
-                else if (onIconClick) onIconClick();
+                handleOpenDetails();
               }}
-              className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer shrink-0"
+              className="p-1.5 -mr-1 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer shrink-0 rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
               title="Open Device Details"
             >
-              <CaretRight size={15} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+              <CaretRight size={16} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </div>
 
@@ -197,22 +206,19 @@ const LightTileComponent: React.FC<LightTileProps> = ({
         <div
           onClick={(e) => {
             e.stopPropagation();
-            if (onClick) onClick();
-            else if (onContextMenu) onContextMenu();
-            else if (onIconClick) onIconClick();
+            handleOpenDetails();
           }}
-          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+          className="p-1.5 -mr-1 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
           title="Open Device Details"
         >
-          <CaretRight size={15} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+          <CaretRight size={16} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
         </div>
       }
-      onClick={onClick || onContextMenu || onIconClick}
+      onClick={handleTileClick}
       onContextMenu={(e) => {
         e.preventDefault();
         if (onContextMenu) onContextMenu();
-        else if (onClick) onClick();
-        else if (onIconClick) onIconClick();
+        else handleOpenDetails();
       }}
     />
   );

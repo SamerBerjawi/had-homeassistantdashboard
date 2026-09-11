@@ -63,7 +63,7 @@ export const CompactTile: React.FC<CompactTileProps> = ({
                   e.stopPropagation();
                   onIconClick();
                 }}
-                title="Open Device Details"
+                title="Toggle or Activate"
                 className="shrink-0 flex items-center justify-center min-w-[32px] min-h-[32px] rounded-xl hover:bg-white/10 dark:hover:bg-white/10 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
               >
                 {icon}

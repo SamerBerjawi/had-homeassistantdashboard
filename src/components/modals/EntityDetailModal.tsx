@@ -26,6 +26,7 @@ import {
   PencilSimple
 } from '@phosphor-icons/react';
 import { useEntityPopup } from '../../contexts/EntityPopupContext';
+import { useUserConfig } from '../../contexts/ConfigContext';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { HAEntity } from '../../types';
 import { formatRelativeTime } from '../../lib/utils';
@@ -76,6 +77,8 @@ class ControlErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
 export default function EntityDetailModal() {
   const { isOpen, selectedEntityId, closeEntityDetails } = useEntityPopup();
+  const { config } = useUserConfig();
+  const darkMode = config?.theme?.mode !== 'light';
   const { states, entityRegistry, devices, areas, floors } = useAutoLayoutStore();
 
   const [copied, setCopied] = useState(false);
@@ -169,77 +172,77 @@ export default function EntityDetailModal() {
       case 'light':
         return {
           icon: Lightbulb,
-          color: 'text-amber-400',
-          badgeBg: 'bg-amber-500/15 border-amber-500/30 text-amber-300',
-          glow: 'drop-shadow-[0_0_12px_rgba(251,191,36,0.6)]'
+          color: darkMode ? 'text-amber-400' : 'text-amber-500',
+          badgeBg: darkMode ? 'bg-amber-500/15 border-amber-500/30 text-amber-300' : 'bg-amber-100/80 border-amber-300/70 text-amber-600',
+          glow: darkMode ? 'drop-shadow-[0_0_12px_rgba(251,191,36,0.6)]' : ''
         };
       case 'climate':
         return {
           icon: Thermometer,
-          color: 'text-orange-400',
-          badgeBg: 'bg-orange-500/15 border-orange-500/30 text-orange-300',
-          glow: 'drop-shadow-[0_0_12px_rgba(249,115,22,0.6)]'
+          color: darkMode ? 'text-orange-400' : 'text-orange-500',
+          badgeBg: darkMode ? 'bg-orange-500/15 border-orange-500/30 text-orange-300' : 'bg-orange-100/80 border-orange-300/70 text-orange-600',
+          glow: darkMode ? 'drop-shadow-[0_0_12px_rgba(249,115,22,0.6)]' : ''
         };
       case 'media_player':
         return {
           icon: SpeakerHigh,
-          color: 'text-purple-400',
-          badgeBg: 'bg-purple-500/15 border-purple-500/30 text-purple-300',
-          glow: 'drop-shadow-[0_0_12px_rgba(168,85,247,0.6)]'
+          color: darkMode ? 'text-purple-400' : 'text-purple-600',
+          badgeBg: darkMode ? 'bg-purple-500/15 border-purple-500/30 text-purple-300' : 'bg-purple-100/80 border-purple-300/70 text-purple-600',
+          glow: darkMode ? 'drop-shadow-[0_0_12px_rgba(168,85,247,0.6)]' : ''
         };
       case 'cover':
         return {
           icon: AppWindow,
-          color: 'text-indigo-400',
-          badgeBg: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300',
-          glow: 'drop-shadow-[0_0_12px_rgba(99,102,241,0.6)]'
+          color: darkMode ? 'text-indigo-400' : 'text-indigo-600',
+          badgeBg: darkMode ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300' : 'bg-indigo-100/80 border-indigo-300/70 text-indigo-600',
+          glow: darkMode ? 'drop-shadow-[0_0_12px_rgba(99,102,241,0.6)]' : ''
         };
       case 'switch':
       case 'outlet':
       case 'input_boolean':
         return {
           icon: Plug,
-          color: 'text-emerald-400',
-          badgeBg: 'bg-emerald-500/15 text-emerald-300',
-          glow: 'drop-shadow-[0_0_12px_rgba(16,185,129,0.6)]'
+          color: darkMode ? 'text-emerald-400' : 'text-emerald-600',
+          badgeBg: darkMode ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' : 'bg-emerald-100/80 border-emerald-300/70 text-emerald-600',
+          glow: darkMode ? 'drop-shadow-[0_0_12px_rgba(16,185,129,0.6)]' : ''
         };
       case 'fan':
         return {
           icon: Fan,
-          color: 'text-cyan-400',
-          badgeBg: 'bg-cyan-500/15 text-cyan-300',
-          glow: 'drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]'
+          color: darkMode ? 'text-cyan-400' : 'text-cyan-600',
+          badgeBg: darkMode ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300' : 'bg-cyan-100/80 border-cyan-300/70 text-cyan-600',
+          glow: darkMode ? 'drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]' : ''
         };
       case 'lock':
         return {
           icon: Lock,
-          color: 'text-emerald-400',
-          badgeBg: 'bg-emerald-500/15 text-emerald-300',
-          glow: 'drop-shadow-[0_0_12px_rgba(52,211,153,0.6)]'
+          color: darkMode ? 'text-emerald-400' : 'text-emerald-600',
+          badgeBg: darkMode ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' : 'bg-emerald-100/80 border-emerald-300/70 text-emerald-600',
+          glow: darkMode ? 'drop-shadow-[0_0_12px_rgba(52,211,153,0.6)]' : ''
         };
       case 'vacuum':
         return {
           icon: Broom,
-          color: 'text-teal-400',
-          badgeBg: 'bg-teal-500/15 text-teal-300',
-          glow: 'drop-shadow-[0_0_12px_rgba(45,212,191,0.6)]'
+          color: darkMode ? 'text-teal-400' : 'text-teal-600',
+          badgeBg: darkMode ? 'bg-teal-500/15 border-teal-500/30 text-teal-300' : 'bg-teal-100/80 border-teal-300/70 text-teal-600',
+          glow: darkMode ? 'drop-shadow-[0_0_12px_rgba(45,212,191,0.6)]' : ''
         };
       case 'camera':
         return {
           icon: VideoCamera,
-          color: 'text-blue-400',
-          badgeBg: 'bg-blue-500/15 text-blue-300',
-          glow: 'drop-shadow-[0_0_12px_rgba(59,130,246,0.6)]'
+          color: darkMode ? 'text-blue-400' : 'text-blue-600',
+          badgeBg: darkMode ? 'bg-blue-500/15 border-blue-500/30 text-blue-300' : 'bg-blue-100/80 border-blue-300/70 text-blue-600',
+          glow: darkMode ? 'drop-shadow-[0_0_12px_rgba(59,130,246,0.6)]' : ''
         };
       default:
         return {
           icon: Pulse,
-          color: 'text-cyan-400',
-          badgeBg: 'bg-cyan-500/15 text-cyan-300',
-          glow: 'drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]'
+          color: darkMode ? 'text-cyan-400' : 'text-cyan-600',
+          badgeBg: darkMode ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300' : 'bg-cyan-100/80 border-cyan-300/70 text-cyan-600',
+          glow: darkMode ? 'drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]' : ''
         };
     }
-  }, [domain]);
+  }, [domain, darkMode]);
 
   const HeaderIcon = domainTheme.icon;
 
@@ -270,7 +273,9 @@ export default function EntityDetailModal() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={closeEntityDetails}
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+            className={`fixed inset-0 backdrop-blur-md transition-colors ${
+              darkMode ? 'bg-slate-950/80' : 'bg-slate-900/40'
+            }`}
           />
 
           {/* Modal / Mobile Bottom Drawer */}
@@ -287,20 +292,28 @@ export default function EntityDetailModal() {
                 closeEntityDetails();
               }
             }}
-            className="relative w-full max-w-lg max-h-[92vh] sm:max-h-[85vh] flex flex-col bg-slate-900/85 rounded-t-3xl sm:rounded-3xl shadow-[4px_6px_20px_rgba(0,0,0,0.35)] backdrop-blur-md text-slate-100 overflow-hidden isolate z-10"
+            className={`relative w-full max-w-lg max-h-[92vh] sm:max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-3xl backdrop-blur-md overflow-hidden isolate z-10 transition-colors ${
+              darkMode
+                ? 'bg-slate-900/90 text-slate-100 border border-white/10 shadow-[4px_6px_20px_rgba(0,0,0,0.45)]'
+                : 'bg-white/95 text-slate-900 border border-slate-200/90 shadow-[0_20px_50px_rgba(0,0,0,0.15)]'
+            }`}
           >
             {/* Mobile Drag Handle */}
             {isMobile && (
               <div className="w-full flex items-center justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing">
-                <div className="w-12 h-1 rounded-full bg-white/25" />
+                <div className={`w-12 h-1 rounded-full ${darkMode ? 'bg-white/25' : 'bg-slate-300'}`} />
               </div>
             )}
 
             {/* Top Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
+            <div
+              className={`flex items-center justify-between px-5 py-4 border-b shrink-0 transition-colors ${
+                darkMode ? 'border-white/10' : 'border-slate-100'
+              }`}
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <div
-                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${domainTheme.badgeBg}`}
+                  className={`w-10 h-10 rounded-2xl border flex items-center justify-center shrink-0 ${domainTheme.badgeBg}`}
                 >
                   {(entity as any)?.icon || entity?.attributes?.icon ? (
                     <DynamicPhosphorIcon
@@ -314,11 +327,19 @@ export default function EntityDetailModal() {
                   )}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-base font-extrabold text-white truncate leading-snug">
+                  <h3
+                    className={`text-base font-extrabold truncate leading-snug ${
+                      darkMode ? 'text-white' : 'text-slate-900'
+                    }`}
+                  >
                     {entityTitle}
                   </h3>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400 truncate">
-                    <MapPin size={12} weight="bold" className="text-slate-400 shrink-0" />
+                  <div
+                    className={`flex items-center gap-1.5 text-xs truncate ${
+                      darkMode ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
+                    <MapPin size={12} weight="bold" className="shrink-0" />
                     <span className="truncate">{metadata?.areaName || 'Unassigned Area'}</span>
                     {metadata?.floorName && (
                       <>
@@ -335,7 +356,11 @@ export default function EntityDetailModal() {
                 <button
                   type="button"
                   onClick={() => setCustomizerOpen(true)}
-                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-sky-500/20 hover:text-sky-300 text-slate-300 flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer border active:scale-95 ${
+                    darkMode
+                      ? 'bg-white/5 hover:bg-sky-500/20 hover:text-sky-300 text-slate-300 border-white/10'
+                      : 'bg-slate-100 hover:bg-sky-50 hover:text-sky-600 text-slate-600 border-slate-200/80'
+                  }`}
                   title="Customize entity name, icon & visibility"
                 >
                   <PencilSimple size={15} weight="bold" />
@@ -344,10 +369,14 @@ export default function EntityDetailModal() {
                 <button
                   type="button"
                   onClick={handleCopyEntityId}
-                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer border active:scale-95 ${
+                    darkMode
+                      ? 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-200/80'
+                  }`}
                   title={copied ? 'Copied Entity ID!' : 'Copy Entity ID'}
                 >
-                  {copied ? <Check size={15} weight="bold" className="text-emerald-400" /> : <Copy size={15} weight="duotone" />}
+                  {copied ? <Check size={15} weight="bold" className="text-emerald-500" /> : <Copy size={15} weight="duotone" />}
                 </button>
 
                 <button
@@ -355,8 +384,10 @@ export default function EntityDetailModal() {
                   onClick={() => setShowDiagnostics(!showDiagnostics)}
                   className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer border active:scale-95 ${
                     showDiagnostics
-                      ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
-                      : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
+                      ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400'
+                      : darkMode
+                      ? 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-200/80'
                   }`}
                   title="Toggle Detailed Attributes"
                 >
@@ -366,7 +397,11 @@ export default function EntityDetailModal() {
                 <button
                   type="button"
                   onClick={closeEntityDetails}
-                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-white/10 active:scale-95 ml-1"
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer border active:scale-95 ml-1 ${
+                    darkMode
+                      ? 'bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white border-white/10'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 border-slate-200/80'
+                  }`}
                   title="Close popup"
                 >
                   <X size={16} weight="bold" />
@@ -375,51 +410,59 @@ export default function EntityDetailModal() {
             </div>
 
             {/* Scrollable Content Body */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 scrollbar-thin scrollbar-thumb-white/10">
+            <div
+              className={`flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 scrollbar-thin ${
+                darkMode ? 'scrollbar-thumb-white/10' : 'scrollbar-thumb-slate-200'
+              }`}
+            >
               {/* Domain-Specific Interactive Control View with Error Boundary */}
               <ControlErrorBoundary
                 fallback={
-                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2.5">
-                    <Warning size={20} weight="fill" className="shrink-0 text-amber-400" />
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs flex items-center gap-2.5">
+                    <Warning size={20} weight="fill" className="shrink-0 text-amber-500" />
                     <span>Control panel encountered an unexpected state. Use the diagnostics below.</span>
                   </div>
                 }
               >
                 {domain === 'light' ? (
-                  <LightControlView entity={entity} />
+                  <LightControlView entity={entity} darkMode={darkMode} />
                 ) : domain === 'climate' ? (
-                  <ClimateControlView entity={entity} />
+                  <ClimateControlView entity={entity} darkMode={darkMode} />
                 ) : domain === 'media_player' ? (
-                  <MediaPlayerControlView entity={entity} />
+                  <MediaPlayerControlView entity={entity} darkMode={darkMode} />
                 ) : domain === 'cover' ? (
-                  <CoverControlView entity={entity} />
+                  <CoverControlView entity={entity} darkMode={darkMode} />
                 ) : domain === 'lock' ? (
-                  <LockControlView entity={entity} />
+                  <LockControlView entity={entity} darkMode={darkMode} />
                 ) : domain === 'fan' ? (
-                  <FanControlView entity={entity} />
+                  <FanControlView entity={entity} darkMode={darkMode} />
                 ) : domain === 'camera' ? (
                   <CameraControlView entity={entity} />
                 ) : domain === 'vacuum' ? (
-                  <VacuumControlView entity={entity} />
+                  <VacuumControlView entity={entity} darkMode={darkMode} />
                 ) : domain === 'switch' || domain === 'outlet' || domain === 'input_boolean' ? (
-                  <SwitchControlView entity={entity} />
+                  <SwitchControlView entity={entity} darkMode={darkMode} />
                 ) : (
-                  <SensorHistoryView entity={entity} />
+                  <SensorHistoryView entity={entity} darkMode={darkMode} />
                 )}
               </ControlErrorBoundary>
 
               {/* Diagnostic & Technical Attributes Accordion */}
-              <div className="pt-2 border-t border-white/10">
+              <div className={`pt-2 border-t ${darkMode ? 'border-white/10' : 'border-slate-200'}`}>
                 <button
                   type="button"
                   onClick={() => setShowDiagnostics(!showDiagnostics)}
-                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-800/40 hover:bg-slate-800/70 border border-white/10 text-xs font-bold text-slate-300 transition-all cursor-pointer"
+                  className={`w-full flex items-center justify-between p-3.5 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
+                    darkMode
+                      ? 'bg-slate-800/40 hover:bg-slate-800/70 border-white/10 text-slate-300'
+                      : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                  }`}
                 >
                   <div className="flex items-center gap-2">
-                    <SlidersHorizontal size={15} weight="duotone" className="text-cyan-400" />
+                    <SlidersHorizontal size={15} weight="duotone" className="text-cyan-500" />
                     <span>Device Information & Attributes</span>
                   </div>
-                  <span className="text-[11px] font-mono text-cyan-400">
+                  <span className="text-[11px] font-mono text-cyan-500 font-bold">
                     {showDiagnostics ? 'Hide ▲' : 'Show ▼'}
                   </span>
                 </button>
@@ -434,42 +477,58 @@ export default function EntityDetailModal() {
                     >
                       {/* Metadata Summary */}
                       <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 space-y-0.5">
-                          <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
+                        <div
+                          className={`p-3 rounded-2xl border space-y-0.5 ${
+                            darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-xs'
+                          }`}
+                        >
+                          <div className={`flex items-center gap-1 text-[10px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                             <Tag size={12} weight="bold" />
                             <span>Entity ID</span>
                           </div>
-                          <div className="font-mono text-white text-[11px] truncate select-all" title={selectedEntityId || ''}>
+                          <div className={`font-mono text-[11px] truncate select-all font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`} title={selectedEntityId || ''}>
                             {selectedEntityId}
                           </div>
                         </div>
 
-                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 space-y-0.5">
-                          <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
+                        <div
+                          className={`p-3 rounded-2xl border space-y-0.5 ${
+                            darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-xs'
+                          }`}
+                        >
+                          <div className={`flex items-center gap-1 text-[10px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                             <Cpu size={12} weight="bold" />
                             <span>Hardware Device</span>
                           </div>
-                          <div className="font-semibold text-white text-xs truncate" title={metadata?.deviceName || 'Virtual'}>
+                          <div className={`font-semibold text-xs truncate ${darkMode ? 'text-white' : 'text-slate-900'}`} title={metadata?.deviceName || 'Virtual'}>
                             {metadata?.deviceName || 'Virtual / Template'}
                           </div>
                         </div>
 
-                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 space-y-0.5">
-                          <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
+                        <div
+                          className={`p-3 rounded-2xl border space-y-0.5 ${
+                            darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-xs'
+                          }`}
+                        >
+                          <div className={`flex items-center gap-1 text-[10px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                             <Buildings size={12} weight="bold" />
                             <span>Manufacturer</span>
                           </div>
-                          <div className="text-slate-200 text-xs truncate">
+                          <div className={`text-xs truncate font-medium ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                             {metadata?.manufacturer || 'Generic'}
                           </div>
                         </div>
 
-                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 space-y-0.5">
-                          <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
+                        <div
+                          className={`p-3 rounded-2xl border space-y-0.5 ${
+                            darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-xs'
+                          }`}
+                        >
+                          <div className={`flex items-center gap-1 text-[10px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                             <Clock size={12} weight="bold" />
                             <span>Last Changed</span>
                           </div>
-                          <div className="text-slate-200 text-xs truncate font-mono">
+                          <div className={`text-xs truncate font-mono font-medium ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                             {formatRelativeTime(entity.last_changed || entity.last_updated)}
                           </div>
                         </div>
@@ -481,31 +540,43 @@ export default function EntityDetailModal() {
                           <MagnifyingGlass
                             size={14}
                             weight="bold"
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                            className={`absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}
                           />
                           <input
                             type="text"
                             placeholder="Filter attributes..."
                             value={attributeFilter}
                             onChange={(e) => setAttributeFilter(e.target.value)}
-                            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-800/80 border border-white/10 text-xs text-white placeholder:text-slate-500 focus:outline-hidden focus:border-cyan-400/60 transition-all font-mono"
+                            className={`w-full pl-8 pr-3 py-2 rounded-xl border text-xs placeholder:text-slate-400 focus:outline-hidden focus:border-cyan-400 font-mono transition-all ${
+                              darkMode
+                                ? 'bg-slate-800/80 border-white/10 text-white placeholder:text-slate-500'
+                                : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'
+                            }`}
                           />
                         </div>
 
                         {/* Raw Attributes Table (without friendly_name) */}
-                        <div className="max-h-40 overflow-y-auto rounded-xl border border-white/10 bg-slate-950/60 p-1.5 space-y-0.5 font-mono text-[10px] scrollbar-thin scrollbar-thumb-white/10">
+                        <div
+                          className={`max-h-40 overflow-y-auto rounded-xl border p-1.5 space-y-0.5 font-mono text-[10px] scrollbar-thin ${
+                            darkMode
+                              ? 'border-white/10 bg-slate-950/60 scrollbar-thumb-white/10'
+                              : 'border-slate-200 bg-slate-50 scrollbar-thumb-slate-200'
+                          }`}
+                        >
                           {rawAttributes.length === 0 ? (
-                            <div className="p-2.5 text-center text-slate-500 text-xs font-sans">
+                            <div className="p-2.5 text-center text-slate-400 text-xs font-sans">
                               No attributes matching filter.
                             </div>
                           ) : (
                             rawAttributes.map(([key, val]) => (
                               <div
                                 key={key}
-                                className="flex items-start justify-between gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                                className={`flex items-start justify-between gap-2 p-1.5 rounded-lg transition-colors ${
+                                  darkMode ? 'hover:bg-white/5' : 'hover:bg-slate-100'
+                                }`}
                               >
-                                <span className="text-cyan-400 font-bold shrink-0">{key}:</span>
-                                <span className="text-slate-300 text-right truncate max-w-56" title={typeof val === 'object' ? JSON.stringify(val) : String(val)}>
+                                <span className={`font-bold shrink-0 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>{key}:</span>
+                                <span className={`text-right truncate max-w-56 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`} title={typeof val === 'object' ? JSON.stringify(val) : String(val)}>
                                   {typeof val === 'object' ? JSON.stringify(val) : String(val)}
                                 </span>
                               </div>

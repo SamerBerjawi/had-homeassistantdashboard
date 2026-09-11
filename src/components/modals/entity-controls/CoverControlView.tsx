@@ -1,14 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  AppWindow,
   ArrowUp,
   ArrowDown,
   Stop,
   SlidersHorizontal,
-  ArrowsVertical,
-  HouseLine,
-  Garage,
-  Door
+  ArrowsVertical
 } from '@phosphor-icons/react';
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
@@ -17,12 +13,14 @@ import {
   detectCoverCapabilities,
   CoverCapabilities
 } from '../../../services/coverClassification';
+import TouchCapsuleSlider from '../../ui/TouchCapsuleSlider';
 
 interface CoverControlViewProps {
   entity: HAEntity;
+  darkMode?: boolean;
 }
 
-export default function CoverControlView({ entity }: CoverControlViewProps) {
+export default function CoverControlView({ entity, darkMode = true }: CoverControlViewProps) {
   const { callHAService, updateEntityState } = useAutoLayoutStore();
 
   const caps: CoverCapabilities = useMemo(() => {
@@ -68,45 +66,59 @@ export default function CoverControlView({ entity }: CoverControlViewProps) {
   };
 
   const handlePositionChange = (val: number) => {
-    setPosition(val);
-    const nextState = val === 0 ? 'closed' : 'open';
+    const safeVal = Math.round(val);
+    setPosition(safeVal);
+    const nextState = safeVal === 0 ? 'closed' : 'open';
     updateEntityState(entity.entity_id, nextState, {
       ...entity.attributes,
-      current_position: val
+      current_position: safeVal
     });
-    callHAService('cover', 'set_cover_position', { position: val }, { entity_id: entity.entity_id });
+    callHAService('cover', 'set_cover_position', { position: safeVal }, { entity_id: entity.entity_id });
   };
 
   const handleTiltChange = (val: number) => {
-    setTilt(val);
+    const safeVal = Math.round(val);
+    setTilt(safeVal);
     updateEntityState(entity.entity_id, entity.state, {
       ...entity.attributes,
-      current_tilt_position: val
+      current_tilt_position: safeVal
     });
-    callHAService('cover', 'set_cover_tilt_position', { tilt_position: val }, { entity_id: entity.entity_id });
+    callHAService('cover', 'set_cover_tilt_position', { tilt_position: safeVal }, { entity_id: entity.entity_id });
   };
 
   const lastChangedStr = formatRelativeTime(caps.lastChanged);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* 1. MASTER HERO COVER CARD WITH VISUAL BLIND PREVIEW */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-800/40 border border-white/10 flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-md">
+      <div
+        className={`p-6 sm:p-7 rounded-3xl border flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-xl transition-all duration-300 ${
+          darkMode
+            ? 'bg-slate-800/40 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.36)]'
+            : 'bg-white/70 border-slate-200/80 shadow-[0_8px_30px_rgba(0,0,0,0.06)]'
+        }`}
+      >
         {/* Dynamic ambient glow aura */}
         <div
           className={`absolute -inset-10 opacity-30 blur-3xl rounded-full transition-all duration-500 pointer-events-none ${
-            position > 0 ? 'bg-sky-500/40' : 'bg-transparent'
+            position > 0 ? 'bg-sky-500/35' : 'bg-transparent'
           }`}
         />
 
-        {/* Visual Animated Window Blind / Slat Representation */}
-        <div className="w-28 h-32 sm:w-32 sm:h-36 rounded-2xl bg-slate-900 border-2 border-white/20 p-2 relative flex flex-col justify-between overflow-hidden shadow-2xl mb-3">
+        {/* Visual Animated Window Blind Graphic */}
+        <div
+          className={`w-32 h-36 sm:w-36 sm:h-40 rounded-3xl p-2.5 relative flex flex-col justify-between overflow-hidden shadow-2xl mb-3 border-2 ${
+            darkMode
+              ? 'bg-slate-950 border-white/20'
+              : 'bg-slate-900 border-slate-300 shadow-slate-300/50'
+          }`}
+        >
           {/* Window Frame Glass Backdrop */}
-          <div className="absolute inset-0 bg-gradient-to-b from-sky-400/20 to-indigo-500/20" />
+          <div className="absolute inset-0 bg-gradient-to-b from-sky-400/25 to-indigo-600/30" />
 
           {/* Slat Sliders Roll-down effect */}
           <div
-            className="w-full bg-slate-800/95 border-b-2 border-sky-400/80 transition-all duration-300 flex flex-col gap-1 p-1 z-10 shadow-lg"
+            className="w-full bg-slate-800/95 border-b-2 border-sky-400 transition-all duration-300 flex flex-col gap-1 p-1 z-10 shadow-lg rounded-t-xl"
             style={{ height: `${100 - position}%` }}
           >
             {Array.from({ length: 6 }).map((_, idx) => (
@@ -115,14 +127,18 @@ export default function CoverControlView({ entity }: CoverControlViewProps) {
           </div>
 
           <div className="z-10 w-full text-center py-1 mt-auto">
-            <span className="text-[10px] font-mono font-bold text-slate-300">
+            <span className="text-[11px] font-mono font-extrabold text-white drop-shadow-md">
               {position === 0 ? 'Fully Closed' : position === 100 ? 'Fully Open' : `${position}% Open`}
             </span>
           </div>
         </div>
 
         {/* Headline */}
-        <h3 className="text-xl font-black text-white tracking-tight">
+        <h3
+          className={`text-xl sm:text-2xl font-black tracking-tight ${
+            darkMode ? 'text-white' : 'text-slate-900'
+          }`}
+        >
           {caps.isOpening
             ? 'Opening...'
             : caps.isClosing
@@ -134,20 +150,29 @@ export default function CoverControlView({ entity }: CoverControlViewProps) {
             : `Open (${position}%)`}
         </h3>
 
-        <p className="text-xs text-slate-400 font-medium mt-1">
-          {caps.deviceClassLabel}
-          {lastChangedStr && ` • ${lastChangedStr}`}
+        <p
+          className={`text-xs font-medium mt-1 flex items-center gap-1.5 ${
+            darkMode ? 'text-slate-400' : 'text-slate-500'
+          }`}
+        >
+          <span>{caps.deviceClassLabel}</span>
+          {lastChangedStr && (
+            <>
+              <span>•</span>
+              <span>{lastChangedStr}</span>
+            </>
+          )}
         </p>
 
         {/* Master Transport Actions (Open, Stop, Close) */}
-        <div className="flex items-center gap-3 mt-4">
+        <div className="flex items-center gap-2.5 sm:gap-3 mt-4 w-full max-w-xs justify-center">
           <button
             type="button"
             onClick={handleOpen}
             disabled={position === 100}
-            className="px-4 py-2.5 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 h-12 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <ArrowUp size={16} weight="bold" />
+            <ArrowUp size={18} weight="bold" />
             <span>Open</span>
           </button>
 
@@ -155,10 +180,14 @@ export default function CoverControlView({ entity }: CoverControlViewProps) {
             <button
               type="button"
               onClick={handleStop}
-              className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-95 border border-white/10"
+              className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-md ${
+                darkMode
+                  ? 'bg-white/10 hover:bg-white/15 text-slate-200 border-white/10'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+              }`}
               title="Stop Motion"
             >
-              <Stop size={16} weight="fill" />
+              <Stop size={18} weight="fill" />
             </button>
           )}
 
@@ -166,45 +195,69 @@ export default function CoverControlView({ entity }: CoverControlViewProps) {
             type="button"
             onClick={handleClose}
             disabled={position === 0}
-            className="px-4 py-2.5 rounded-2xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+            className={`flex-1 h-12 rounded-2xl font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-md disabled:opacity-40 disabled:cursor-not-allowed ${
+              darkMode
+                ? 'bg-slate-700 hover:bg-slate-600 text-white'
+                : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+            }`}
           >
-            <ArrowDown size={16} weight="bold" />
+            <ArrowDown size={18} weight="bold" />
             <span>Close</span>
           </button>
         </div>
       </div>
 
-      {/* 2. POSITION CONTROL SLIDER & PRESETS (Strictly if supportsPosition) */}
+      {/* ========================================================================= */}
+      {/* 2. POSITION CONTROL CAPSULE SLIDER & PRESETS */}
+      {/* ========================================================================= */}
       {caps.supportsPosition && (
-        <div className="space-y-3 p-4 rounded-2xl bg-slate-800/30 border border-white/10">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-            <span className="flex items-center gap-1.5 text-slate-400">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span
+              className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                darkMode ? 'text-sky-400' : 'text-sky-600'
+              }`}
+            >
               <SlidersHorizontal size={15} weight="duotone" />
               <span>Target Position</span>
             </span>
-            <span className="font-mono text-white">{position}%</span>
+            <span
+              className={`font-mono text-xs font-extrabold ${
+                darkMode ? 'text-sky-300' : 'text-sky-700'
+              }`}
+            >
+              {position}%
+            </span>
           </div>
 
-          <input
-            type="range"
-            min="0"
-            max="100"
+          <TouchCapsuleSlider
             value={position}
-            onChange={(e) => handlePositionChange(Number(e.target.value))}
-            className="w-full h-2.5 bg-slate-700/60 rounded-lg appearance-none cursor-pointer accent-sky-400"
+            min={0}
+            max={100}
+            step={1}
+            onChange={handlePositionChange}
+            icon={<SlidersHorizontal size={20} weight="duotone" />}
+            label="Position"
+            valueFormatter={(val) => `${Math.round(val)}%`}
+            fillColor="#0284c7"
+            glowColor="rgba(2, 132, 199, 0.3)"
+            darkMode={darkMode}
+            heightClass="h-14 sm:h-15"
           />
 
           {/* Quick Position Jump Chips */}
-          <div className="flex justify-between gap-1">
+          <div className="grid grid-cols-5 gap-2">
             {[0, 25, 50, 75, 100].map((pct) => (
               <button
                 key={pct}
                 type="button"
                 onClick={() => handlePositionChange(pct)}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer active:scale-95 ${
+                className={`h-11 rounded-2xl text-xs font-extrabold transition-all cursor-pointer active:scale-95 flex items-center justify-center border ${
                   position === pct
-                    ? 'bg-sky-500 text-slate-950 font-extrabold shadow-sm'
-                    : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white'
+                    ? 'bg-sky-500 text-slate-950 font-black shadow-md border-sky-400 ring-2 ring-sky-400/30'
+                    : darkMode
+                    ? 'bg-slate-800/50 hover:bg-slate-800 border-white/10 text-slate-300'
+                    : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
                 }`}
               >
                 {pct === 0 ? 'Closed' : pct === 100 ? 'Open' : `${pct}%`}
@@ -214,30 +267,52 @@ export default function CoverControlView({ entity }: CoverControlViewProps) {
         </div>
       )}
 
-      {/* 3. VENETIAN SLAT TILT SLIDER (Strictly if supportsTilt) */}
+      {/* ========================================================================= */}
+      {/* 3. VENETIAN SLAT TILT SLIDER */}
+      {/* ========================================================================= */}
       {caps.supportsTilt && (
-        <div className="space-y-3 p-4 rounded-2xl bg-slate-800/30 border border-white/10">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-            <span className="flex items-center gap-1.5 text-slate-400">
-              <ArrowsVertical size={15} weight="duotone" className="text-teal-400" />
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span
+              className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                darkMode ? 'text-teal-400' : 'text-teal-600'
+              }`}
+            >
+              <ArrowsVertical size={15} weight="duotone" />
               <span>Slat Tilt Angle</span>
             </span>
-            <span className="font-mono text-white">{tilt}%</span>
+            <span
+              className={`font-mono text-xs font-extrabold ${
+                darkMode ? 'text-teal-300' : 'text-teal-700'
+              }`}
+            >
+              {tilt}%
+            </span>
           </div>
 
-          <input
-            type="range"
-            min="0"
-            max="100"
+          <TouchCapsuleSlider
             value={tilt}
-            onChange={(e) => handleTiltChange(Number(e.target.value))}
-            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-400"
+            min={0}
+            max={100}
+            step={1}
+            onChange={handleTiltChange}
+            icon={<ArrowsVertical size={20} weight="duotone" />}
+            label="Slat Tilt"
+            valueFormatter={(val) => `${Math.round(val)}%`}
+            fillColor="#14b8a6"
+            glowColor="rgba(20, 184, 166, 0.3)"
+            darkMode={darkMode}
+            heightClass="h-14 sm:h-15"
           />
 
-          <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-            <span>0° Flat</span>
-            <span>45° Half</span>
-            <span>90° Open</span>
+          <div
+            className={`flex justify-between text-[11px] font-mono px-1 ${
+              darkMode ? 'text-slate-400' : 'text-slate-500'
+            }`}
+          >
+            <span>0° (Flat Closed)</span>
+            <span>45° (Half Open)</span>
+            <span>90° (Full Slat)</span>
           </div>
         </div>
       )}

@@ -17,9 +17,11 @@ import {
   kelvinToRgb,
   LightCapabilities
 } from '../../../services/lightClassification';
+import TouchCapsuleSlider from '../../ui/TouchCapsuleSlider';
 
 interface LightControlViewProps {
   entity: HAEntity;
+  darkMode?: boolean;
 }
 
 const CHROMATIC_SWATCHES = [
@@ -38,11 +40,11 @@ const CHROMATIC_SWATCHES = [
 ];
 
 const WHITE_TEMP_PRESETS = [
-  { name: 'Candle', kelvin: 2200, label: '2200K' },
-  { name: 'Warm', kelvin: 2700, label: '2700K' },
-  { name: 'Soft', kelvin: 3000, label: '3000K' },
-  { name: 'Neutral', kelvin: 4000, label: '4000K' },
-  { name: 'Daylight', kelvin: 6500, label: '6500K' }
+  { name: 'Candle', kelvin: 2200 },
+  { name: 'Warm', kelvin: 2700 },
+  { name: 'Soft', kelvin: 3000 },
+  { name: 'Neutral', kelvin: 4000 },
+  { name: 'Daylight', kelvin: 6500 }
 ];
 
 const BRIGHTNESS_PRESETS = [
@@ -59,7 +61,7 @@ const MOOD_PRESETS = [
   { id: 'party', name: 'Neon Glow', color: '#a855f7', rgb: [168, 85, 247], brightness: 80, icon: Sparkle }
 ];
 
-export default function LightControlView({ entity }: LightControlViewProps) {
+export default function LightControlView({ entity, darkMode = true }: LightControlViewProps) {
   const { callHAService, updateEntityState } = useAutoLayoutStore();
 
   const caps: LightCapabilities = useMemo(() => {
@@ -105,7 +107,6 @@ export default function LightControlView({ entity }: LightControlViewProps) {
         { entity_id: entity.entity_id }
       );
     } else {
-      // Pure On/Off light
       updateEntityState(entity.entity_id, nextState, {
         ...entity.attributes
       });
@@ -121,16 +122,17 @@ export default function LightControlView({ entity }: LightControlViewProps) {
 
   // Adjust Brightness
   const handleBrightnessChange = (val: number) => {
-    setBrightness(val);
-    const haBrightness255 = Math.round((val / 100) * 255);
-    const nextState = val > 0 ? 'on' : 'off';
+    const safeVal = Math.round(val);
+    setBrightness(safeVal);
+    const haBrightness255 = Math.round((safeVal / 100) * 255);
+    const nextState = safeVal > 0 ? 'on' : 'off';
 
     updateEntityState(entity.entity_id, nextState, {
       ...entity.attributes,
       brightness: haBrightness255
     });
 
-    if (val > 0) {
+    if (safeVal > 0) {
       callHAService(
         'light',
         'turn_on',
@@ -144,19 +146,20 @@ export default function LightControlView({ entity }: LightControlViewProps) {
 
   // Adjust White Temperature (Kelvin)
   const handleKelvinChange = (kelvin: number) => {
-    setColorTempKelvin(kelvin);
-    const rgbStr = kelvinToRgb(kelvin);
+    const safeKelvin = Math.round(kelvin);
+    setColorTempKelvin(safeKelvin);
+    const rgbStr = kelvinToRgb(safeKelvin);
     setSelectedColor(rgbStr);
 
     updateEntityState(entity.entity_id, 'on', {
       ...entity.attributes,
-      color_temp_kelvin: kelvin
+      color_temp_kelvin: safeKelvin
     });
 
     callHAService(
       'light',
       'turn_on',
-      { color_temp_kelvin: kelvin },
+      { color_temp_kelvin: safeKelvin },
       { entity_id: entity.entity_id }
     );
   };
@@ -215,10 +218,18 @@ export default function LightControlView({ entity }: LightControlViewProps) {
       : '#f59e0b'
     : 'transparent';
 
+  const hasCustomColor = isOn && caps.supportsColor && Boolean(selectedColor);
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* 1. MASTER TOGGLE HERO SECTION */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-800/40 border border-white/10 flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-md">
+      <div
+        className={`p-6 sm:p-7 rounded-3xl border flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-xl transition-all duration-300 ${
+          darkMode
+            ? 'bg-slate-800/40 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.36)]'
+            : 'bg-white/70 border-slate-200/80 shadow-[0_8px_30px_rgba(0,0,0,0.06)]'
+        }`}
+      >
         {/* Glow ambient background aura */}
         <div
           className="absolute -inset-10 opacity-35 blur-3xl rounded-full transition-all duration-500 pointer-events-none"
@@ -229,75 +240,99 @@ export default function LightControlView({ entity }: LightControlViewProps) {
         <button
           type="button"
           onClick={handleToggle}
-          className={`w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-2xl mb-3 border ${
+          className={`w-22 h-22 sm:w-26 sm:h-26 rounded-3xl flex items-center justify-center transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95 shadow-2xl mb-3 border ${
             isOn
-              ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-amber-500/25 ring-4 ring-amber-400/20'
-              : 'bg-slate-800/80 border-white/10 text-slate-500 hover:text-slate-300'
+              ? darkMode
+                ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-amber-500/30 ring-4 ring-amber-400/20'
+                : 'bg-amber-100/90 border-amber-400 text-amber-600 shadow-amber-500/20 ring-4 ring-amber-400/25'
+              : darkMode
+              ? 'bg-slate-800/80 border-white/10 text-slate-500 hover:text-slate-300'
+              : 'bg-slate-100 border-slate-200 text-slate-400 hover:text-slate-600'
           }`}
           style={{
-            borderColor: isOn && caps.supportsColor ? selectedColor : undefined,
-            color: isOn && caps.supportsColor ? selectedColor : undefined
+            borderColor: isOn && hasCustomColor ? selectedColor : undefined,
+            color: isOn && hasCustomColor ? selectedColor : undefined
           }}
           title={isOn ? 'Click to Turn Off' : 'Click to Turn On'}
         >
           <Lightbulb
-            size={40}
+            size={44}
             weight={isOn ? 'fill' : 'duotone'}
             className={isOn ? 'drop-shadow-[0_0_15px_currentColor]' : ''}
           />
         </button>
 
-        <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+        <h3
+          className={`text-xl sm:text-2xl font-black tracking-tight ${
+            darkMode ? 'text-white' : 'text-slate-900'
+          }`}
+        >
           {isOn
             ? caps.supportsBrightness
               ? `${brightness}% Brightness`
               : 'Turned On'
             : 'Turned Off'}
         </h3>
-        <p className="text-xs text-slate-400 font-medium mt-1">
-          {isOn
-            ? caps.type === 'color'
-              ? 'Color Active'
-              : caps.type === 'white_temp'
-              ? `${colorTempKelvin}K White Light`
-              : 'Active'
-            : 'Off'}
-          {lastChangedStr && ` • ${lastChangedStr}`}
+        <p
+          className={`text-xs font-medium mt-1 flex items-center gap-1.5 ${
+            darkMode ? 'text-slate-400' : 'text-slate-500'
+          }`}
+        >
+          <span>
+            {isOn
+              ? caps.type === 'color'
+                ? 'Color Active'
+                : caps.type === 'white_temp'
+                ? `${colorTempKelvin}K White Light`
+                : 'Light Active'
+              : 'Off'}
+          </span>
+          {lastChangedStr && (
+            <>
+              <span>•</span>
+              <span>{lastChangedStr}</span>
+            </>
+          )}
         </p>
       </div>
 
       {/* ========================================================================= */}
-      {/* TIER 2, 3, 4: BRIGHTNESS SLIDER & QUICK JUMP PRESETS */}
+      {/* 2. BRIGHTNESS CAPSULE SLIDER & PRESETS */}
       {/* ========================================================================= */}
       {caps.supportsBrightness && (
-        <div className="space-y-2.5">
-          {/* Tactile Brightness Slider */}
-          <div className="space-y-2 p-3.5 sm:p-4 rounded-2xl bg-slate-800/30 border border-white/10">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-              <span className="flex items-center gap-1.5 text-amber-400">
-                <Sun size={16} weight="duotone" />
-                <span>Brightness</span>
-              </span>
-              <span className="font-mono text-amber-300">{isOn ? `${brightness}%` : '0%'}</span>
-            </div>
-
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={isOn ? brightness : 0}
-              onChange={(e) => handleBrightnessChange(Number(e.target.value))}
-              className="w-full h-2.5 bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-amber-400"
-            />
-
-            <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-              <span>0%</span>
-              <span>25%</span>
-              <span>50%</span>
-              <span>75%</span>
-              <span>100%</span>
-            </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span
+              className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                darkMode ? 'text-amber-400' : 'text-amber-600'
+              }`}
+            >
+              <Sun size={15} weight="duotone" />
+              <span>Brightness</span>
+            </span>
+            <span
+              className={`font-mono text-xs font-extrabold ${
+                darkMode ? 'text-amber-300' : 'text-amber-700'
+              }`}
+            >
+              {isOn ? `${brightness}%` : '0%'}
+            </span>
           </div>
+
+          <TouchCapsuleSlider
+            value={isOn ? brightness : 0}
+            min={0}
+            max={100}
+            step={1}
+            onChange={handleBrightnessChange}
+            icon={<Sun size={20} weight={isOn ? 'fill' : 'duotone'} />}
+            label="Drag to Adjust"
+            valueFormatter={(val) => `${Math.round(val)}%`}
+            fillColor={hasCustomColor ? selectedColor : '#f59e0b'}
+            glowColor={hasCustomColor ? `${selectedColor}44` : 'rgba(245, 158, 11, 0.3)'}
+            darkMode={darkMode}
+            heightClass="h-14 sm:h-15"
+          />
 
           {/* Quick Brightness Jump Buttons */}
           <div className="grid grid-cols-4 gap-2">
@@ -308,10 +343,12 @@ export default function LightControlView({ entity }: LightControlViewProps) {
                   key={preset.label}
                   type="button"
                   onClick={() => handleBrightnessChange(preset.val)}
-                  className={`py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 ${
+                  className={`h-11 rounded-2xl text-xs font-extrabold transition-all cursor-pointer active:scale-95 flex items-center justify-center border ${
                     isSelected
-                      ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-1 ring-amber-300'
-                      : 'bg-slate-800/40 hover:bg-slate-800 border border-white/10 text-slate-300'
+                      ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-2 ring-amber-400/40 border-amber-400'
+                      : darkMode
+                      ? 'bg-slate-800/50 hover:bg-slate-800 border-white/10 text-slate-300'
+                      : 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700'
                   }`}
                 >
                   {preset.label}
@@ -323,38 +360,41 @@ export default function LightControlView({ entity }: LightControlViewProps) {
       )}
 
       {/* ========================================================================= */}
-      {/* TIER 3 & 4: WHITE TEMPERATURE CONTROL (Kelvin Slider & Presets) */}
+      {/* 3. WHITE TEMPERATURE CONTROL (Kelvin Capsule Slider & Presets) */}
       {/* ========================================================================= */}
       {caps.supportsColorTemp && (
-        <div className="space-y-2.5">
-          <div className="space-y-2 p-3.5 sm:p-4 rounded-2xl bg-slate-800/30 border border-white/10">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-              <span className="flex items-center gap-1.5 text-amber-300">
-                <ThermometerSimple size={16} weight="duotone" />
-                <span>White Temperature</span>
-              </span>
-              <span className="font-mono text-amber-200">{colorTempKelvin}K</span>
-            </div>
-
-            <input
-              type="range"
-              min={caps.minKelvin || 2000}
-              max={caps.maxKelvin || 6500}
-              step="50"
-              value={colorTempKelvin}
-              onChange={(e) => handleKelvinChange(Number(e.target.value))}
-              className="w-full h-3 rounded-lg appearance-none cursor-pointer border border-white/10"
-              style={{
-                background: 'linear-gradient(to right, #ff8a00, #ffa73b, #ffeed6, #ffffff, #c7e6ff, #99d2ff)'
-              }}
-            />
-
-            <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-              <span>{caps.minKelvin || 2000}K (Warm)</span>
-              <span>4000K (Neutral)</span>
-              <span>{caps.maxKelvin || 6500}K (Cool)</span>
-            </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span
+              className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                darkMode ? 'text-amber-300' : 'text-amber-700'
+              }`}
+            >
+              <ThermometerSimple size={15} weight="duotone" />
+              <span>Color Temperature</span>
+            </span>
+            <span
+              className={`font-mono text-xs font-extrabold ${
+                darkMode ? 'text-amber-200' : 'text-amber-800'
+              }`}
+            >
+              {colorTempKelvin}K
+            </span>
           </div>
+
+          <TouchCapsuleSlider
+            value={colorTempKelvin}
+            min={caps.minKelvin || 2000}
+            max={caps.maxKelvin || 6500}
+            step={50}
+            onChange={handleKelvinChange}
+            icon={<ThermometerSimple size={20} weight="duotone" />}
+            label="Warm to Daylight"
+            valueFormatter={(val) => `${Math.round(val)}K`}
+            fillGradient="linear-gradient(to right, #ff8a00, #ffa73b, #ffeed6, #ffffff, #c7e6ff, #99d2ff)"
+            darkMode={darkMode}
+            heightClass="h-14 sm:h-15"
+          />
 
           {/* White Temperature Preset Chips */}
           <div className="grid grid-cols-5 gap-1.5">
@@ -365,14 +405,16 @@ export default function LightControlView({ entity }: LightControlViewProps) {
                   key={preset.name}
                   type="button"
                   onClick={() => handleKelvinChange(preset.kelvin)}
-                  className={`py-1.5 px-1 rounded-xl border flex flex-col items-center gap-0.5 text-center transition-all cursor-pointer active:scale-95 ${
+                  className={`h-14 px-1 rounded-2xl border flex flex-col items-center justify-center gap-1 text-center transition-all cursor-pointer active:scale-95 ${
                     isSelected
-                      ? 'border-amber-400 bg-amber-500/20 text-white shadow-md'
-                      : 'border-white/10 bg-slate-800/30 hover:bg-slate-800/70 text-slate-300'
+                      ? 'border-amber-400 bg-amber-500/20 ring-2 ring-amber-400/30 text-amber-500 font-black shadow-md'
+                      : darkMode
+                      ? 'border-white/10 bg-slate-800/40 hover:bg-slate-800 text-slate-300'
+                      : 'border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700'
                   }`}
                 >
                   <span
-                    className="w-3 h-3 rounded-full border border-black/20 shadow-xs"
+                    className="w-3.5 h-3.5 rounded-full border border-black/15 shadow-xs"
                     style={{ backgroundColor: kelvinToRgb(preset.kelvin) }}
                   />
                   <span className="text-[10px] font-bold truncate w-full">{preset.name}</span>
@@ -384,103 +426,140 @@ export default function LightControlView({ entity }: LightControlViewProps) {
       )}
 
       {/* ========================================================================= */}
-      {/* TIER 4: COLOR PALETTE & MOOD PRESETS */}
+      {/* 4. CHROMATIC COLOR PALETTE */}
       {/* ========================================================================= */}
       {caps.supportsColor && (
-        <div className="space-y-4">
-          {/* Chromatic Swatches */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                <Palette size={15} weight="duotone" className="text-indigo-400" />
-                <span>Color Palette</span>
-              </label>
-              <span className="text-[10px] text-slate-400 font-mono">{selectedColor}</span>
-            </div>
-
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-              {CHROMATIC_SWATCHES.map((swatch) => {
-                const isSelected =
-                  isOn && selectedColor.toLowerCase() === swatch.color.toLowerCase();
-                return (
-                  <button
-                    key={swatch.name}
-                    type="button"
-                    onClick={() => handleSelectChromaticSwatch(swatch)}
-                    style={{ backgroundColor: swatch.color }}
-                    className={`w-full py-2.5 rounded-xl transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-md flex items-center justify-center text-slate-950 font-bold text-[9px] ${
-                      isSelected
-                        ? 'ring-3 ring-white ring-offset-2 ring-offset-slate-900 scale-105'
-                        : 'opacity-90 hover:opacity-100'
-                    }`}
-                    title={swatch.name}
-                  >
-                    <span className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] truncate px-1">
-                      {swatch.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span
+              className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                darkMode ? 'text-indigo-400' : 'text-indigo-600'
+              }`}
+            >
+              <Palette size={15} weight="duotone" />
+              <span>Color Palette</span>
+            </span>
+            <span
+              className={`font-mono text-[10px] font-bold ${
+                darkMode ? 'text-slate-400' : 'text-slate-500'
+              }`}
+            >
+              {selectedColor}
+            </span>
           </div>
 
-          {/* Atmosphere Mood Presets */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-              <Sparkle size={15} weight="duotone" className="text-pink-400" />
-              <span>Mood Presets</span>
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {MOOD_PRESETS.map((preset) => {
-                const Icon = preset.icon;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => handleApplyMoodPreset(preset)}
-                    className="p-2.5 rounded-2xl bg-slate-800/30 hover:bg-slate-800/70 border border-white/10 flex flex-col items-center gap-1 transition-all cursor-pointer active:scale-95 text-center group"
-                  >
-                    <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm"
-                      style={{ backgroundColor: `${preset.color}25`, color: preset.color }}
-                    >
-                      <Icon size={16} weight="duotone" />
-                    </div>
-                    <span className="text-[11px] font-bold text-white truncate w-full">{preset.name}</span>
-                    <span className="text-[9px] text-slate-400 font-mono">{preset.brightness}%</span>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+            {CHROMATIC_SWATCHES.map((swatch) => {
+              const isSelected =
+                isOn && selectedColor.toLowerCase() === swatch.color.toLowerCase();
+              return (
+                <button
+                  key={swatch.name}
+                  type="button"
+                  onClick={() => handleSelectChromaticSwatch(swatch)}
+                  style={{ backgroundColor: swatch.color }}
+                  className={`h-11 rounded-2xl transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-md flex items-center justify-center text-slate-950 font-extrabold text-[10px] border border-black/10 ${
+                    isSelected
+                      ? 'ring-3 ring-amber-400 ring-offset-2 ring-offset-slate-900 scale-105 font-black'
+                      : 'opacity-90 hover:opacity-100'
+                  }`}
+                  title={swatch.name}
+                >
+                  <span className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] truncate px-1">
+                    {swatch.name}
+                  </span>
+                </button>
+              );
+            })}
           </div>
+        </div>
+      )}
 
-          {/* Dynamic Effects (if present) */}
-          {caps.effectList.length > 0 && (
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-300 block">
-                Dynamic Effects ({caps.effectList.length})
-              </label>
-              <div className="flex items-center gap-1.5 flex-wrap max-h-28 overflow-y-auto scrollbar-thin">
-                {caps.effectList.map((eff) => {
-                  const isSelected = activeEffect === eff;
-                  return (
-                    <button
-                      key={eff}
-                      type="button"
-                      onClick={() => handleSelectEffect(eff)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-amber-500 text-slate-950 shadow-md scale-105 font-black'
-                          : 'bg-slate-800/40 hover:bg-slate-800 border border-white/10 text-slate-300'
-                      }`}
-                    >
-                      {eff}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+      {/* ========================================================================= */}
+      {/* 5. ATMOSPHERE MOOD PRESETS */}
+      {/* ========================================================================= */}
+      <div className="space-y-3">
+        <span
+          className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 px-1 ${
+            darkMode ? 'text-pink-400' : 'text-pink-600'
+          }`}
+        >
+          <Sparkle size={15} weight="duotone" />
+          <span>Mood Atmospheres</span>
+        </span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {MOOD_PRESETS.map((preset) => {
+            const Icon = preset.icon;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => handleApplyMoodPreset(preset)}
+                className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-center group ${
+                  darkMode
+                    ? 'bg-slate-800/40 hover:bg-slate-800/80 border-white/10'
+                    : 'bg-slate-100 hover:bg-slate-200/80 border-slate-200/80'
+                }`}
+              >
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm"
+                  style={{ backgroundColor: `${preset.color}33`, color: preset.color }}
+                >
+                  <Icon size={18} weight="duotone" />
+                </div>
+                <span
+                  className={`text-xs font-extrabold truncate w-full ${
+                    darkMode ? 'text-white' : 'text-slate-900'
+                  }`}
+                >
+                  {preset.name}
+                </span>
+                <span
+                  className={`text-[10px] font-mono font-medium ${
+                    darkMode ? 'text-slate-400' : 'text-slate-500'
+                  }`}
+                >
+                  {preset.brightness}%
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 6. DYNAMIC EFFECTS */}
+      {/* ========================================================================= */}
+      {caps.effectList.length > 0 && (
+        <div className="space-y-2.5">
+          <label
+            className={`text-xs font-bold uppercase tracking-wider block px-1 ${
+              darkMode ? 'text-slate-300' : 'text-slate-700'
+            }`}
+          >
+            Dynamic Lighting Effects ({caps.effectList.length})
+          </label>
+          <div className="flex items-center gap-2 flex-wrap max-h-32 overflow-y-auto scrollbar-thin">
+            {caps.effectList.map((eff) => {
+              const isSelected = activeEffect === eff;
+              return (
+                <button
+                  key={eff}
+                  type="button"
+                  onClick={() => handleSelectEffect(eff)}
+                  className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    isSelected
+                      ? 'bg-amber-500 text-slate-950 shadow-md font-black border-amber-400 ring-2 ring-amber-400/30'
+                      : darkMode
+                      ? 'bg-slate-800/40 hover:bg-slate-800 border-white/10 text-slate-300'
+                      : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+                  }`}
+                >
+                  {eff}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

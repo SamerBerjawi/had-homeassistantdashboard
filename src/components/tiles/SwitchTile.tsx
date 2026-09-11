@@ -20,6 +20,7 @@ interface SwitchTileProps {
   areaName?: string;
   darkMode?: boolean;
   onToggle: (entity: ResolvedEntity) => void;
+  onChevronClick?: () => void;
   onClick?: () => void;
   onIconClick?: () => void;
   onContextMenu?: () => void;
@@ -30,6 +31,7 @@ const SwitchTileComponent: React.FC<SwitchTileProps> = ({
   areaName = '',
   darkMode = true,
   onToggle,
+  onChevronClick,
   onClick,
   onIconClick,
   onContextMenu
@@ -55,6 +57,16 @@ const SwitchTileComponent: React.FC<SwitchTileProps> = ({
       ]}
     />
   );
+
+  const handleOpenDetails = () => {
+    if (onChevronClick) onChevronClick();
+    else if (onContextMenu) onContextMenu();
+  };
+
+  const handleTileClick = () => {
+    if (onClick) onClick();
+    else onToggle(entity);
+  };
 
   return (
     <CompactTile
@@ -89,22 +101,19 @@ const SwitchTileComponent: React.FC<SwitchTileProps> = ({
         <div
           onClick={(e) => {
             e.stopPropagation();
-            if (onClick) onClick();
-            else if (onContextMenu) onContextMenu();
-            else if (onIconClick) onIconClick();
+            handleOpenDetails();
           }}
-          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+          className="p-1.5 -mr-1 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
           title="Open Device Details"
         >
-          <CaretRight size={15} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+          <CaretRight size={16} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
         </div>
       }
-      onClick={onClick || onContextMenu || onIconClick}
+      onClick={handleTileClick}
       onContextMenu={(e) => {
         e.preventDefault();
         if (onContextMenu) onContextMenu();
-        else if (onClick) onClick();
-        else if (onIconClick) onIconClick();
+        else handleOpenDetails();
       }}
     />
   );

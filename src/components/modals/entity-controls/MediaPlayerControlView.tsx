@@ -33,9 +33,12 @@ import {
 
 interface MediaPlayerControlViewProps {
   entity: HAEntity;
+  darkMode?: boolean;
 }
 
-export default function MediaPlayerControlView({ entity }: MediaPlayerControlViewProps) {
+import TouchCapsuleSlider from '../../ui/TouchCapsuleSlider';
+
+export default function MediaPlayerControlView({ entity, darkMode = true }: MediaPlayerControlViewProps) {
   const { callHAService, updateEntityState, serverUrl } = useAutoLayoutStore();
 
   const caps: MediaCapabilities = useMemo(() => {
@@ -143,20 +146,26 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
       {!caps.isTv ? (
         <>
           {/* Master Media Hero Card */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-slate-800/40 border border-white/10 flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-md">
+          <div
+            className={`p-5 sm:p-6 rounded-3xl border flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-md transition-colors ${
+              darkMode
+                ? 'bg-slate-800/40 border-white/10'
+                : 'bg-slate-50 border-slate-200/80 shadow-sm'
+            }`}
+          >
             {/* Dynamic ambient glow aura */}
             <div
               className={`absolute -inset-10 opacity-35 blur-3xl rounded-full transition-all duration-500 pointer-events-none ${
-                caps.isPlaying ? 'bg-brand-purple/40' : 'bg-transparent'
+                caps.isPlaying ? 'bg-purple-500/40' : 'bg-transparent'
               }`}
             />
 
             {/* Album Art or Vinyl Disc */}
             <div className="relative mb-4 group">
               <div
-                className={`w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden shadow-2xl border border-white/20 relative flex items-center justify-center bg-slate-900 ${
-                  caps.isPlaying ? 'ring-4 ring-purple-500/30' : ''
-                }`}
+                className={`w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden shadow-2xl relative flex items-center justify-center ${
+                  darkMode ? 'bg-slate-900 border border-white/20' : 'bg-white border border-slate-200'
+                } ${caps.isPlaying ? 'ring-4 ring-purple-500/30' : ''}`}
               >
                 {albumArtUrl ? (
                   <img
@@ -165,11 +174,11 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center text-slate-500">
+                  <div className="flex flex-col items-center justify-center text-slate-400">
                     <Disc
                       size={48}
                       weight="duotone"
-                      className={caps.isPlaying ? 'text-purple-400 animate-spin' : ''}
+                      className={caps.isPlaying ? 'text-purple-500 animate-spin' : ''}
                       style={{ animationDuration: '6s' }}
                     />
                   </div>
@@ -183,7 +192,9 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
                 className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-lg border ${
                   !caps.isOff
                     ? 'bg-emerald-500 text-slate-950 border-emerald-400'
-                    : 'bg-slate-800 text-slate-400 border-white/10 hover:text-white'
+                    : darkMode
+                    ? 'bg-slate-800 text-slate-400 border-white/10 hover:text-white'
+                    : 'bg-slate-200 text-slate-600 border-slate-300 hover:text-slate-900'
                 }`}
                 title={caps.isOff ? 'Turn Speaker On' : 'Turn Speaker Off'}
               >
@@ -192,14 +203,20 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
             </div>
 
             {/* Track Info */}
-            <h3 className="text-lg sm:text-xl font-black text-white tracking-tight line-clamp-1 max-w-[280px]">
+            <h3
+              className={`text-lg sm:text-xl font-black tracking-tight line-clamp-1 max-w-[280px] ${
+                darkMode ? 'text-white' : 'text-slate-900'
+              }`}
+            >
               {caps.mediaTitle || (caps.isOff ? 'Speaker Off' : 'Ready to Stream')}
             </h3>
-            <p className="text-xs text-purple-300 font-semibold mt-0.5 line-clamp-1">
+            <p className="text-xs text-purple-500 dark:text-purple-300 font-semibold mt-0.5 line-clamp-1">
               {caps.mediaArtist || caps.appName || (caps.isOff ? 'Standby' : 'AirPlay / Spotify')}
             </p>
             {caps.mediaAlbum && (
-              <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{caps.mediaAlbum}</p>
+              <p className={`text-[11px] line-clamp-1 mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                {caps.mediaAlbum}
+              </p>
             )}
 
             {/* Transport Bar */}
@@ -207,18 +224,26 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
               <button
                 type="button"
                 onClick={handleToggleShuffle}
-                className={`p-2 rounded-xl text-xs transition-colors cursor-pointer ${
-                  shuffle ? 'bg-purple-500 text-white font-bold' : 'text-slate-400 hover:text-white'
+                className={`p-2.5 rounded-xl text-xs transition-colors cursor-pointer ${
+                  shuffle
+                    ? 'bg-purple-500 text-white font-bold'
+                    : darkMode
+                    ? 'text-slate-400 hover:text-white'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
                 title="Shuffle"
               >
-                <Shuffle size={16} weight="bold" />
+                <Shuffle size={18} weight="bold" />
               </button>
 
               <button
                 type="button"
                 onClick={handlePrevious}
-                className="w-10 h-10 rounded-2xl bg-white/10 hover:bg-white/15 text-white flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer active:scale-90 ${
+                  darkMode
+                    ? 'bg-white/10 hover:bg-white/15 text-white'
+                    : 'bg-slate-200/80 hover:bg-slate-200 text-slate-800'
+                }`}
                 title="Previous Track"
               >
                 <SkipBack size={18} weight="fill" />
@@ -228,7 +253,7 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
               <button
                 type="button"
                 onClick={handlePlayPause}
-                className="w-14 h-14 rounded-3xl bg-purple-500 hover:bg-purple-400 text-slate-950 flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-xl shadow-purple-500/30"
+                className="w-14 h-14 rounded-3xl bg-purple-500 hover:bg-purple-400 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-xl shadow-purple-500/30"
                 title={caps.isPlaying ? 'Pause' : 'Play'}
               >
                 {caps.isPlaying ? (
@@ -241,7 +266,11 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
               <button
                 type="button"
                 onClick={handleNext}
-                className="w-10 h-10 rounded-2xl bg-white/10 hover:bg-white/15 text-white flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer active:scale-90 ${
+                  darkMode
+                    ? 'bg-white/10 hover:bg-white/15 text-white'
+                    : 'bg-slate-200/80 hover:bg-slate-200 text-slate-800'
+                }`}
                 title="Next Track"
               >
                 <SkipForward size={18} weight="fill" />
@@ -250,57 +279,75 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
               <button
                 type="button"
                 onClick={handleToggleRepeat}
-                className={`p-2 rounded-xl text-xs transition-colors cursor-pointer ${
-                  repeat !== 'off' ? 'bg-purple-500 text-white font-bold' : 'text-slate-400 hover:text-white'
+                className={`p-2.5 rounded-xl text-xs transition-colors cursor-pointer ${
+                  repeat !== 'off'
+                    ? 'bg-purple-500 text-white font-bold'
+                    : darkMode
+                    ? 'text-slate-400 hover:text-white'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
                 title={`Repeat: ${repeat}`}
               >
-                <Repeat size={16} weight="bold" />
+                <Repeat size={18} weight="bold" />
               </button>
             </div>
           </div>
 
-          {/* Volume Slider Card */}
-          <div className="p-4 rounded-2xl bg-slate-800/30 border border-white/10 space-y-3">
+          {/* Volume Slider Card with TouchCapsuleSlider */}
+          <div
+            className={`p-4 rounded-3xl border space-y-3 transition-colors ${
+              darkMode ? 'bg-slate-800/30 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-sm'
+            }`}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleToggleMute}
-                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  className={`p-2 rounded-xl transition-colors cursor-pointer ${
                     caps.isMuted
                       ? 'bg-rose-500 text-white'
-                      : 'bg-white/10 text-slate-300 hover:text-white'
+                      : darkMode
+                      ? 'bg-white/10 text-slate-300 hover:text-white'
+                      : 'bg-slate-200 text-slate-700 hover:text-slate-900'
                   }`}
                   title={caps.isMuted ? 'Unmute' : 'Mute'}
                 >
                   {caps.isMuted ? <SpeakerSimpleSlash size={16} weight="bold" /> : <SpeakerHigh size={16} weight="bold" />}
                 </button>
-                <span className="text-xs font-bold text-slate-300">Volume</span>
+                <span className={`text-xs font-bold ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Volume</span>
               </div>
-              <span className="text-xs font-mono font-bold text-white">{caps.isMuted ? 'Muted' : `${volume}%`}</span>
+              <span className={`text-xs font-mono font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                {caps.isMuted ? 'Muted' : `${volume}%`}
+              </span>
             </div>
 
-            <input
-              type="range"
-              min="0"
-              max="100"
+            <TouchCapsuleSlider
               value={volume}
-              onChange={(e) => handleVolumeChange(Number(e.target.value))}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-400"
+              min={0}
+              max={100}
+              onChange={handleVolumeChange}
+              icon={<SpeakerHigh size={20} weight="fill" />}
+              label="Volume Level"
+              fillColor="#a855f7"
+              fillGradient="linear-gradient(to right, #a855f7, #ec4899)"
+              glowColor="rgba(168, 85, 247, 0.4)"
+              darkMode={darkMode}
             />
 
             {/* Quick Volume Presets */}
-            <div className="flex justify-between gap-1">
+            <div className="grid grid-cols-5 gap-1.5 pt-1">
               {[20, 40, 60, 80, 100].map((v) => (
                 <button
                   key={v}
                   type="button"
                   onClick={() => handleVolumeChange(v)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer active:scale-95 ${
+                  className={`py-2 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer active:scale-95 text-center ${
                     volume === v
                       ? 'bg-purple-500 text-white font-extrabold shadow-sm'
-                      : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white'
+                      : darkMode
+                      ? 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/5'
+                      : 'bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 shadow-xs'
                   }`}
                 >
                   {v}%
@@ -315,7 +362,11 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
         /* ========================================================================= */
         <>
           {/* TV Master Screen Card */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-slate-800/40 border border-white/10 flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-md">
+          <div
+            className={`p-5 sm:p-6 rounded-3xl border flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-md transition-colors ${
+              darkMode ? 'bg-slate-800/40 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-sm'
+            }`}
+          >
             {/* Dynamic ambient glow aura */}
             <div
               className={`absolute -inset-10 opacity-30 blur-3xl rounded-full transition-all duration-500 pointer-events-none ${
@@ -338,9 +389,9 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
             <button
               type="button"
               onClick={handleTogglePower}
-              className={`px-4 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer active:scale-95 text-xs font-bold shadow-md ${
+              className={`px-5 py-2.5 rounded-2xl flex items-center gap-2 transition-all cursor-pointer active:scale-95 text-xs font-bold shadow-md ${
                 !caps.isOff
-                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                  ? 'bg-rose-500/20 text-rose-500 dark:text-rose-300 border border-rose-500/30'
                   : 'bg-emerald-500 text-slate-950 font-black'
               }`}
             >
@@ -350,13 +401,23 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
           </div>
 
           {/* Directional D-Pad Navigation */}
-          <div className="p-5 rounded-3xl bg-slate-800/30 border border-white/10 flex flex-col items-center justify-center">
-            <div className="w-48 h-48 rounded-full bg-slate-900/80 border border-white/15 p-2 relative flex items-center justify-center shadow-inner">
+          <div
+            className={`p-5 rounded-3xl border flex flex-col items-center justify-center transition-colors ${
+              darkMode ? 'bg-slate-800/30 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-sm'
+            }`}
+          >
+            <div
+              className={`w-48 h-48 rounded-full border p-2 relative flex items-center justify-center shadow-inner ${
+                darkMode ? 'bg-slate-900/80 border-white/15' : 'bg-slate-200/80 border-slate-300'
+              }`}
+            >
               {/* Up */}
               <button
                 type="button"
                 onClick={() => sendRemoteCommand('up')}
-                className="absolute top-2 w-12 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer active:scale-90"
+                className={`absolute top-2 w-12 h-10 rounded-xl flex items-center justify-center cursor-pointer active:scale-90 ${
+                  darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white hover:bg-slate-100 text-slate-800 shadow-sm'
+                }`}
                 title="Up"
               >
                 <CaretUp size={20} weight="bold" />
@@ -366,7 +427,9 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
               <button
                 type="button"
                 onClick={() => sendRemoteCommand('down')}
-                className="absolute bottom-2 w-12 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer active:scale-90"
+                className={`absolute bottom-2 w-12 h-10 rounded-xl flex items-center justify-center cursor-pointer active:scale-90 ${
+                  darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white hover:bg-slate-100 text-slate-800 shadow-sm'
+                }`}
                 title="Down"
               >
                 <CaretDown size={20} weight="bold" />
@@ -376,7 +439,9 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
               <button
                 type="button"
                 onClick={() => sendRemoteCommand('left')}
-                className="absolute left-2 w-10 h-12 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer active:scale-90"
+                className={`absolute left-2 w-10 h-12 rounded-xl flex items-center justify-center cursor-pointer active:scale-90 ${
+                  darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white hover:bg-slate-100 text-slate-800 shadow-sm'
+                }`}
                 title="Left"
               >
                 <CaretLeft size={20} weight="bold" />
@@ -386,7 +451,9 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
               <button
                 type="button"
                 onClick={() => sendRemoteCommand('right')}
-                className="absolute right-2 w-10 h-12 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer active:scale-90"
+                className={`absolute right-2 w-10 h-12 rounded-xl flex items-center justify-center cursor-pointer active:scale-90 ${
+                  darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white hover:bg-slate-100 text-slate-800 shadow-sm'
+                }`}
                 title="Right"
               >
                 <CaretRight size={20} weight="bold" />
@@ -396,18 +463,20 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
               <button
                 type="button"
                 onClick={() => sendRemoteCommand('select')}
-                className="w-16 h-16 rounded-full bg-sky-500 text-slate-950 font-black text-xs flex items-center justify-center cursor-pointer active:scale-95 shadow-lg shadow-sky-500/30"
+                className="w-16 h-16 rounded-full bg-sky-500 text-slate-950 font-black text-xs flex items-center justify-center cursor-pointer active:scale-95 shadow-lg shadow-sky-500/30 hover:bg-sky-400 transition-transform"
               >
                 OK
               </button>
             </div>
 
             {/* TV Navigation Aux Bar */}
-            <div className="flex items-center gap-4 mt-4">
+            <div className="flex items-center gap-3 sm:gap-4 mt-4">
               <button
                 type="button"
                 onClick={() => sendRemoteCommand('back')}
-                className="p-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 flex items-center gap-1.5 text-xs font-bold cursor-pointer active:scale-90"
+                className={`px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold cursor-pointer active:scale-90 ${
+                  darkMode ? 'bg-white/10 hover:bg-white/15 text-slate-300' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                }`}
               >
                 <ArrowUUpLeft size={16} weight="bold" />
                 <span>Back</span>
@@ -416,7 +485,9 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
               <button
                 type="button"
                 onClick={handlePlayPause}
-                className="p-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 flex items-center gap-1.5 text-xs font-bold cursor-pointer active:scale-90"
+                className={`px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold cursor-pointer active:scale-90 ${
+                  darkMode ? 'bg-white/10 hover:bg-white/15 text-slate-300' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                }`}
               >
                 {caps.isPlaying ? <Pause size={16} weight="fill" /> : <Play size={16} weight="fill" />}
                 <span>{caps.isPlaying ? 'Pause' : 'Play'}</span>
@@ -425,7 +496,9 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
               <button
                 type="button"
                 onClick={() => sendRemoteCommand('home')}
-                className="p-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 flex items-center gap-1.5 text-xs font-bold cursor-pointer active:scale-90"
+                className={`px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold cursor-pointer active:scale-90 ${
+                  darkMode ? 'bg-white/10 hover:bg-white/15 text-slate-300' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                }`}
               >
                 <House size={16} weight="bold" />
                 <span>Home</span>
@@ -434,20 +507,32 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
           </div>
 
           {/* TV Volume Bar */}
-          <div className="p-4 rounded-2xl bg-slate-800/30 border border-white/10 flex items-center justify-between gap-3">
+          <div
+            className={`p-4 rounded-3xl border flex items-center justify-between gap-3 transition-colors ${
+              darkMode ? 'bg-slate-800/30 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-sm'
+            }`}
+          >
             <div className="flex items-center gap-2 min-w-0">
               <button
                 type="button"
                 onClick={handleToggleMute}
                 className={`p-2 rounded-xl transition-colors cursor-pointer ${
-                  caps.isMuted ? 'bg-rose-500 text-white' : 'bg-white/10 text-slate-300'
+                  caps.isMuted
+                    ? 'bg-rose-500 text-white'
+                    : darkMode
+                    ? 'bg-white/10 text-slate-300'
+                    : 'bg-slate-200 text-slate-700'
                 }`}
               >
                 {caps.isMuted ? <SpeakerSimpleSlash size={16} weight="bold" /> : <SpeakerHigh size={16} weight="bold" />}
               </button>
               <div className="min-w-0">
-                <span className="text-xs font-bold text-slate-300 block">TV Volume</span>
-                <span className="text-[11px] font-mono text-slate-400">{caps.isMuted ? 'Muted' : `${volume}%`}</span>
+                <span className={`text-xs font-bold block ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                  TV Volume
+                </span>
+                <span className={`text-[11px] font-mono ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {caps.isMuted ? 'Muted' : `${volume}%`}
+                </span>
               </div>
             </div>
 
@@ -455,14 +540,16 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
               <button
                 type="button"
                 onClick={() => handleVolumeChange(Math.max(0, volume - 5))}
-                className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold flex items-center justify-center cursor-pointer active:scale-90"
+                className={`w-10 h-10 rounded-xl font-bold flex items-center justify-center cursor-pointer active:scale-90 ${
+                  darkMode ? 'bg-white/10 hover:bg-white/15 text-white' : 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-200'
+                }`}
               >
                 -
               </button>
               <button
                 type="button"
                 onClick={() => handleVolumeChange(Math.min(100, volume + 5))}
-                className="w-9 h-9 rounded-xl bg-sky-500 text-slate-950 font-bold flex items-center justify-center cursor-pointer active:scale-90"
+                className="w-10 h-10 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold flex items-center justify-center cursor-pointer active:scale-90"
               >
                 +
               </button>
@@ -476,7 +563,9 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
       {/* ========================================================================= */}
       {caps.sourceList.length > 0 && (
         <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-300 block">Input Source</label>
+          <label className={`text-xs font-bold block ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+            Input Source
+          </label>
           <div className="flex items-center gap-1.5 flex-wrap">
             {caps.sourceList.map((src) => {
               const isSelected = caps.currentSource?.toLowerCase() === src.toLowerCase();
@@ -485,10 +574,12 @@ export default function MediaPlayerControlView({ entity }: MediaPlayerControlVie
                   key={src}
                   type="button"
                   onClick={() => handleSelectSource(src)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 ${
                     isSelected
-                      ? 'bg-purple-500 text-white shadow-md scale-105 font-black'
-                      : 'bg-slate-800/40 hover:bg-slate-800 border border-white/10 text-slate-300'
+                      ? 'bg-purple-500 text-white shadow-md font-black'
+                      : darkMode
+                      ? 'bg-slate-800/40 hover:bg-slate-800 border border-white/10 text-slate-300'
+                      : 'bg-white hover:bg-slate-100 border border-slate-200 text-slate-700'
                   }`}
                 >
                   {src}
