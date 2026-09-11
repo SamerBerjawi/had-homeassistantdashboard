@@ -22,8 +22,9 @@ function formatDeviceName(rawPrefix: string): string {
     return 'Apple Health';
   }
 
-  // Replace underscores and capitalize words
-  return rawPrefix
+  // Replace common possessive suffix like samer_s_iphone -> Samer's iPhone
+  const normalized = rawPrefix.replace(/_s_/g, "'s_");
+  return normalized
     .split('_')
     .filter(Boolean)
     .map((word) => {
@@ -31,9 +32,11 @@ function formatDeviceName(rawPrefix: string): string {
       if (lower === 'iphone') return 'iPhone';
       if (lower === 'ipad') return 'iPad';
       if (lower === 'watch') return 'Apple Watch';
-      if (lower === 'samer' || lower === 'samers') return "Samer's";
+      if (lower === "samer's" || lower === 'samer' || lower === 'samers') return "Samer's";
+      if (lower === 's') return '';
       return word.charAt(0).toUpperCase() + word.slice(1);
     })
+    .filter(Boolean)
     .join(' ');
 }
 
@@ -118,7 +121,26 @@ export function matchHealthMetricSuffix(
 
   const rawWithoutDomain = entityId.slice(7); // Remove 'sensor.'
   const lowerWithoutDomain = rawWithoutDomain.toLowerCase();
-  const hasExplicitHealthKeyword = lowerWithoutDomain.includes('health_') || lowerWithoutDomain.includes('apple_health');
+  const hasExplicitHealthKeyword =
+    lowerWithoutDomain.includes('health_') ||
+    lowerWithoutDomain.includes('apple_health') ||
+    lowerWithoutDomain.includes('sleep_') ||
+    lowerWithoutDomain.includes('_sleep') ||
+    lowerWithoutDomain.includes('_awake');
+
+  const isEligiblePrefix = (cleanPrefix: string) => {
+    return (
+      hasExplicitHealthKeyword ||
+      (confirmedMobilePrefixes && confirmedMobilePrefixes.has(cleanPrefix)) ||
+      cleanPrefix === 'apple_health' ||
+      cleanPrefix === 'default' ||
+      cleanPrefix.includes('iphone') ||
+      cleanPrefix.includes('watch') ||
+      cleanPrefix.includes('phone') ||
+      cleanPrefix.includes('ipad') ||
+      (!confirmedMobilePrefixes || confirmedMobilePrefixes.size === 0)
+    );
+  };
 
   // 1. Check primary suffixes from registry first
   for (const [keyStr, suffix] of Object.entries(HEALTH_METRIC_SUFFIXES)) {
@@ -129,8 +151,8 @@ export function matchHealthMetricSuffix(
       const prefix = rawWithoutDomain.slice(0, -targetSuffix.length);
       const cleanPrefix = (prefix || 'default').toLowerCase();
 
-      // Only match if explicit health keyword is present OR device is a confirmed mobile companion app
-      if (hasExplicitHealthKeyword || (confirmedMobilePrefixes && confirmedMobilePrefixes.has(cleanPrefix)) || cleanPrefix === 'apple_health') {
+      // Only match if explicit health/sleep keyword is present OR device is a mobile companion app
+      if (isEligiblePrefix(cleanPrefix)) {
         return { metricKey: key, devicePrefix: prefix || 'default' };
       }
     }
@@ -155,7 +177,7 @@ export function matchHealthMetricSuffix(
 
         // Stricter check for fallbacks (e.g. 'steps', 'distance', 'floors'):
         // Must have confirmed mobile prefix or explicit health keyword
-        if (hasExplicitHealthKeyword || (confirmedMobilePrefixes && confirmedMobilePrefixes.has(cleanPrefix))) {
+        if (isEligiblePrefix(cleanPrefix)) {
           return { metricKey: key, devicePrefix: prefix || 'default' };
         }
       }

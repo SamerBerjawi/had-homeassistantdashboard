@@ -4,11 +4,14 @@ import {
   Flame,
   Scales,
   Sparkle,
+  MoonStars,
+  DeviceMobile,
 } from '@phosphor-icons/react';
 import { useHealthData } from '../../hooks/useHealthData';
 import { HealthActivityRingsCompact } from './health/HealthActivityRingsCompact';
 import { HealthStatisticChart } from './health/HealthStatisticChart';
 import { HealthMetricCard } from './health/HealthMetricCard';
+import { HealthSleepDurationCard, HealthSleepStagesCard } from './health/HealthSleepTile';
 import { HealthOnboardingEmptyState } from './health/HealthOnboardingEmptyState';
 
 interface HealthViewProps {
@@ -21,6 +24,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
     summaries,
     activityRingsData,
     totalSensorsFound,
+    activeDevice,
     isPreviewDemo,
     setIsPreviewDemo,
     refreshHistory,
@@ -39,9 +43,23 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
 
   return (
     <div className="w-full flex-1 flex flex-col gap-4 sm:gap-5 animate-fadeIn pb-16 md:pb-8">
-      {/* Optional Demo Mode Exit Banner */}
-      {isPreviewDemo && (
-        <div className="flex justify-end">
+      {/* Top Header Row: Active Companion Device Pill & Demo Mode Exit Banner */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        {activeDevice ? (
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-white/40 dark:bg-black/20 backdrop-blur-md border border-slate-200/60 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-xs">
+            <DeviceMobile size={15} weight="duotone" className="text-rose-500 shrink-0" />
+            <span className="truncate">
+              Bound to <strong className="text-slate-900 dark:text-white font-bold">{activeDevice.deviceName}</strong>
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-slate-200/80 dark:bg-white/10 text-slate-500 dark:text-slate-400">
+              {activeDevice.sensorCount} sensors
+            </span>
+          </div>
+        ) : (
+          <div />
+        )}
+
+        {isPreviewDemo && (
           <button
             type="button"
             onClick={() => setIsPreviewDemo(false)}
@@ -51,8 +69,8 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
             <Sparkle size={13} weight="fill" />
             <span>Demo Mode Active (Click to Exit)</span>
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ========================================================================= */}
       {/* 3 PANORAMIC SECTIONS: Top-Aligned with no empty space in Desktop View      */}
@@ -232,15 +250,15 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
             {/* Card Section Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-400 flex items-center justify-center">
-                  <Scales size={18} weight="fill" />
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center">
+                  <MoonStars size={18} weight="fill" />
                 </div>
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                    Trends &amp; Body
+                    Sleep &amp; Body
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Energy expenditure &amp; body composition
+                    Sleep stages, energy &amp; body metrics
                   </p>
                 </div>
               </div>
@@ -255,8 +273,42 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
               />
             )}
 
-            {/* Body & Nutrition Biometrics Grid */}
+            {/* Body, Nutrition & Sleep Biometrics Grid */}
             <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+              {/* Square Tile 1: Sleep Duration with Backlit Donut / Pie Chart */}
+              {(summaries['sleepDuration']?.entityId ||
+                summaries['awake']?.entityId ||
+                summaries['coreSleep']?.entityId ||
+                summaries['deepSleep']?.entityId ||
+                summaries['remSleep']?.entityId ||
+                isPreviewDemo) && (
+                <HealthSleepDurationCard
+                  summary={summaries['sleepDuration']}
+                  awake={summaries['awake']}
+                  coreSleep={summaries['coreSleep']}
+                  deepSleep={summaries['deepSleep']}
+                  remSleep={summaries['remSleep']}
+                  darkMode={darkMode}
+                />
+              )}
+
+              {/* Square Tile 2: Sleep Stages Breakdown (Awake, REM, Core, Deep) */}
+              {(summaries['sleepDuration']?.entityId ||
+                summaries['awake']?.entityId ||
+                summaries['coreSleep']?.entityId ||
+                summaries['deepSleep']?.entityId ||
+                summaries['remSleep']?.entityId ||
+                isPreviewDemo) && (
+                <HealthSleepStagesCard
+                  sleepDuration={summaries['sleepDuration']}
+                  awake={summaries['awake']}
+                  coreSleep={summaries['coreSleep']}
+                  deepSleep={summaries['deepSleep']}
+                  remSleep={summaries['remSleep']}
+                  darkMode={darkMode}
+                />
+              )}
+
               {summaries['vo2Max'] && (
                 <HealthMetricCard
                   summary={summaries['vo2Max']}

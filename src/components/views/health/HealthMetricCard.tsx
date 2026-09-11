@@ -64,32 +64,6 @@ export const HealthMetricCard: React.FC<HealthMetricCardProps> = ({
       break;
   }
 
-  // Mini sparkline SVG path calculation with internal padding to prevent clipping
-  const historyVals = (summary.history || []).map((h) => h.value);
-  const minVal = historyVals.length > 0 ? Math.min(...historyVals) : 0;
-  const maxVal = historyVals.length > 0 ? Math.max(...historyVals) : 1;
-  const valRange = maxVal - minVal || 1;
-
-  const sparkWidth = 70;
-  const sparkHeight = 24;
-  const padX = 2;
-  const padY = 3;
-  const sparkPoints = historyVals
-    .map((v, i) => {
-      const x = padX + (i / Math.max(1, historyVals.length - 1)) * (sparkWidth - padX * 2);
-      const y = sparkHeight - padY - ((v - minVal) / valRange) * (sparkHeight - padY * 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
-
-  // Format stat helper strictly limited to at most 1 decimal digit
-  const formatStatVal = (val: number | undefined): string => {
-    if (val === undefined || val === null || isNaN(val)) return '—';
-    if (def.decimals === 0) return Math.round(val).toLocaleString();
-    const cappedDecimals = Math.min(def.decimals, 1);
-    return val.toFixed(cappedDecimals);
-  };
-
   return (
     <BentoCard
       colSpan={colSpan}
@@ -100,9 +74,9 @@ export const HealthMetricCard: React.FC<HealthMetricCardProps> = ({
         e.preventDefault();
         if (summary.entityId) openEntityDetails(summary.entityId);
       }}
-      className="group relative select-none"
+      className="group relative select-none h-[136px] flex flex-col justify-between"
     >
-      <div>
+      <div className="flex flex-col h-full justify-between">
         {/* Row 1: Icon on Left, Status Badge on Right (never overlap) */}
         <div className="flex items-center justify-between gap-2">
           <div
@@ -127,14 +101,14 @@ export const HealthMetricCard: React.FC<HealthMetricCardProps> = ({
         </div>
 
         {/* Row 2: Metric Name / Title (Full width, no badge crowding) */}
-        <div className="mt-2 min-w-0">
+        <div className="mt-1.5 min-w-0">
           <h3 className="text-xs font-bold text-slate-800 dark:text-white truncate" title={def.label}>
             {def.label}
           </h3>
         </div>
 
         {/* Row 3: Big Value, Unit & Change Indicator */}
-        <div className="flex items-baseline justify-between gap-1.5 mt-1">
+        <div className="flex items-baseline justify-between gap-1.5 mt-auto pt-1">
           <div className="flex items-baseline gap-1.5 min-w-0">
             {summary.currentValue !== null ? (
               <NumberTicker
@@ -166,48 +140,6 @@ export const HealthMetricCard: React.FC<HealthMetricCardProps> = ({
             </div>
           )}
         </div>
-      </div>
-
-      {/* Footer: Sparkline & Min/Max/Total Ribbon */}
-      <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-2 overflow-hidden">
-        <div className="min-w-0 flex-1 text-[10px] font-medium text-slate-400 dark:text-slate-500 truncate leading-tight">
-          {def.chartType === 'bar' && summary.totalSum !== undefined ? (
-            <span className="truncate block">
-              Total: <strong className="text-slate-700 dark:text-slate-300 font-semibold">{formatStatVal(summary.totalSum)}</strong>
-            </span>
-          ) : (
-            <span className="truncate block">
-              {summary.min !== undefined && (
-                <>Min: <strong className="text-slate-700 dark:text-slate-300 font-semibold">{formatStatVal(summary.min)}</strong></>
-              )}
-              {summary.max !== undefined && (
-                <> · Max: <strong className="text-slate-700 dark:text-slate-300 font-semibold">{formatStatVal(summary.max)}</strong></>
-              )}
-            </span>
-          )}
-        </div>
-
-        {/* Mini Sparkline (Bounded and non-clipping) */}
-        {sparkPoints && (
-          <div className="shrink-0 w-14 h-5 overflow-hidden">
-            <svg viewBox={`0 0 ${sparkWidth} ${sparkHeight}`} className="w-full h-full block">
-              <defs>
-                <linearGradient id={`sparkGrad-${summary.key}`} x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor={def.accentColor} stopOpacity={0.6} />
-                  <stop offset="100%" stopColor={def.accentColor} stopOpacity={1} />
-                </linearGradient>
-              </defs>
-              <polyline
-                fill="none"
-                stroke={`url(#sparkGrad-${summary.key})`}
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                points={sparkPoints}
-              />
-            </svg>
-          </div>
-        )}
       </div>
     </BentoCard>
   );

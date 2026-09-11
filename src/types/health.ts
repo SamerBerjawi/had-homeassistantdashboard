@@ -37,6 +37,13 @@ export const HEALTH_METRIC_SUFFIXES = {
   bodyFat: 'body_fat_percentage',
   leanBodyMass: 'lean_body_mass',
   water: 'water',
+
+  // Sleep & Recovery
+  sleepDuration: 'sleep_duration',
+  awake: 'awake',
+  coreSleep: 'core_sleep',
+  deepSleep: 'deep_sleep',
+  remSleep: 'rem_sleep',
 } as const;
 
 export type HealthMetricKey = keyof typeof HEALTH_METRIC_SUFFIXES;
@@ -52,6 +59,11 @@ export const HEALTH_METRIC_FALLBACKS: Partial<Record<HealthMetricKey, string[]>>
   bodyFat: ['body_fat', 'fat_percentage'],
   leanBodyMass: ['lean_mass'],
   water: ['water_intake', 'hydration'],
+  sleepDuration: ['sleep', 'sleep_analysis', 'total_sleep', 'time_in_bed', 'sleep_time'],
+  awake: ['sleep_awake', 'awake_time', 'time_awake'],
+  coreSleep: ['sleep_core', 'core'],
+  deepSleep: ['sleep_deep', 'deep'],
+  remSleep: ['sleep_rem', 'rem'],
 };
 
 /** Suffixes that represent generic device telemetry and must be ignored */
@@ -86,7 +98,7 @@ export const EXCLUDED_TELEMETRY_SUFFIXES = [
   'network_type',
 ] as const;
 
-export type HealthCategory = 'activity' | 'vitals' | 'body';
+export type HealthCategory = 'activity' | 'vitals' | 'body' | 'sleep';
 
 export type HealthTimeRange = 'today' | 'week' | 'month' | 'year';
 
@@ -392,6 +404,65 @@ export const HEALTH_METRIC_DEFINITIONS: Record<HealthMetricKey, HealthMetricDefi
     chartType: 'bar',
     statAggregation: 'sum',
     goal: 2.5,
+  },
+
+  // Sleep & Recovery
+  sleepDuration: {
+    key: 'sleepDuration',
+    label: 'Sleep Duration',
+    category: 'sleep',
+    defaultUnit: 'hr',
+    decimals: 1,
+    iconName: 'MoonStars',
+    accentColor: '#5E5CE6', // Apple Sleep Indigo
+    chartType: 'bar',
+    statAggregation: 'sum',
+    goal: 8,
+    normalRange: { min: 7, max: 9 },
+  },
+  awake: {
+    key: 'awake',
+    label: 'Awake',
+    category: 'sleep',
+    defaultUnit: 'min',
+    decimals: 0,
+    iconName: 'Sun',
+    accentColor: '#FF9F0A', // Apple Awake Orange/Amber
+    chartType: 'bar',
+    statAggregation: 'sum',
+  },
+  coreSleep: {
+    key: 'coreSleep',
+    label: 'Core Sleep',
+    category: 'sleep',
+    defaultUnit: 'hr',
+    decimals: 1,
+    iconName: 'Moon',
+    accentColor: '#0A84FF', // Apple Core Sleep Blue
+    chartType: 'bar',
+    statAggregation: 'sum',
+  },
+  deepSleep: {
+    key: 'deepSleep',
+    label: 'Deep Sleep',
+    category: 'sleep',
+    defaultUnit: 'hr',
+    decimals: 1,
+    iconName: 'Bed',
+    accentColor: '#5856D6', // Apple Deep Sleep Violet
+    chartType: 'bar',
+    statAggregation: 'sum',
+  },
+  remSleep: {
+    key: 'remSleep',
+    label: 'REM Sleep',
+    category: 'sleep',
+    defaultUnit: 'hr',
+    decimals: 1,
+    iconName: 'Sparkle',
+    accentColor: '#64D2FF', // Apple REM Light Blue/Cyan
+    chartType: 'bar',
+    statAggregation: 'sum',
   },
 };
 

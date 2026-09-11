@@ -109,6 +109,82 @@ export function parseHealthNumber(val: unknown, fallback = 0): number {
 }
 
 /**
+ * Normalizes sleep sensor values into hours, minutes, and formatted string.
+ * Supports minutes, hours, seconds, or timestamp strings ("HH:MM:SS").
+ */
+export function parseSleepDuration(rawVal: unknown, unit?: string): {
+  totalMinutes: number;
+  hours: number;
+  minutes: number;
+  formatted: string;
+} {
+  if (rawVal === undefined || rawVal === null || rawVal === '') {
+    return { totalMinutes: 0, hours: 0, minutes: 0, formatted: '—' };
+  }
+
+  // Handle time format string "HH:MM:SS" or "HH:MM"
+  if (typeof rawVal === 'string' && rawVal.includes(':')) {
+    const parts = rawVal.split(':').map((p) => parseFloat(p) || 0);
+    let totalMins = 0;
+    if (parts.length >= 2) {
+      totalMins = parts[0] * 60 + parts[1];
+    }
+    const h = Math.floor(totalMins / 60);
+    const m = Math.round(totalMins % 60);
+    return {
+      totalMinutes: totalMins,
+      hours: Math.round((totalMins / 60) * 10) / 10,
+      minutes: m,
+      formatted: h > 0 ? `${h}h ${m}m` : `${m}m`,
+    };
+  }
+
+  const num = parseHealthNumber(rawVal, 0);
+  if (isNaN(num) || num <= 0) {
+    return { totalMinutes: 0, hours: 0, minutes: 0, formatted: '0m' };
+  }
+
+  const normalizedUnit = (unit || '').toLowerCase().trim();
+  let totalMins = 0;
+
+  if (normalizedUnit === 's' || normalizedUnit === 'sec' || normalizedUnit === 'seconds') {
+    totalMins = num / 60;
+  } else if (
+    normalizedUnit === 'min' ||
+    normalizedUnit === 'm' ||
+    normalizedUnit === 'mins' ||
+    normalizedUnit === 'minutes'
+  ) {
+    totalMins = num;
+  } else if (
+    normalizedUnit === 'h' ||
+    normalizedUnit === 'hr' ||
+    normalizedUnit === 'hrs' ||
+    normalizedUnit === 'hours'
+  ) {
+    totalMins = num * 60;
+  } else {
+    // Heuristic if unit is missing or unknown:
+    if (num > 1000) {
+      totalMins = num / 60; // likely seconds
+    } else if (num > 24) {
+      totalMins = num; // likely minutes
+    } else {
+      totalMins = num * 60; // likely hours
+    }
+  }
+
+  const h = Math.floor(totalMins / 60);
+  const m = Math.round(totalMins % 60);
+  return {
+    totalMinutes: Math.round(totalMins),
+    hours: Math.round((totalMins / 60) * 10) / 10,
+    minutes: m,
+    formatted: h > 0 ? `${h}h ${m}m` : `${m}m`,
+  };
+}
+
+/**
  * Generates realistic Apple Health demo/preview timeseries for a given metric
  */
 export function generateDemoTimeseries(
@@ -218,6 +294,21 @@ export function generateDemoTimeseries(
       case 'water':
         baseline = range === 'today' ? 0.35 : 2.2;
         break;
+      case 'sleepDuration':
+        baseline = range === 'today' ? 7.6 : 7.4;
+        break;
+      case 'awake':
+        baseline = range === 'today' ? 26 : 28;
+        break;
+      case 'coreSleep':
+        baseline = range === 'today' ? 4.2 : 4.1;
+        break;
+      case 'deepSleep':
+        baseline = range === 'today' ? 1.5 : 1.4;
+        break;
+      case 'remSleep':
+        baseline = range === 'today' ? 1.8 : 1.7;
+        break;
       default:
         baseline = 50;
     }
@@ -233,6 +324,10 @@ export function generateDemoTimeseries(
       factor = 1 + (Math.sin(i) * 0.015);
     } else if (key === 'weight' || key === 'height' || key === 'bodyFat' || key === 'leanBodyMass') {
       factor = 1 + (Math.sin(i * 0.3) * 0.01);
+    } else if (key === 'sleepDuration' || key === 'coreSleep' || key === 'deepSleep' || key === 'remSleep') {
+      factor = 1 + (Math.sin(i * 0.5) * 0.08);
+    } else if (key === 'awake') {
+      factor = 1 + (Math.cos(i * 0.7) * 0.15);
     }
 
     let val = Math.max(0, baseline * factor);
