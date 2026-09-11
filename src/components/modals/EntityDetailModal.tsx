@@ -278,17 +278,17 @@ export default function EntityDetailModal() {
             }`}
           />
 
-          {/* Sidebar Drawer Container: Crystal slide-out drawer */}
+          {/* Sidebar Drawer Container: Exact Health page outer container tokens */}
           <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10 pointer-events-none z-10">
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 320, mass: 0.8 }}
-              className={`pointer-events-auto w-screen max-w-full sm:max-w-xl md:max-w-2xl h-screen flex flex-col justify-between overflow-hidden backdrop-blur-2xl transition-all relative ${
+              className={`pointer-events-auto w-screen max-w-full sm:max-w-xl md:max-w-2xl h-screen flex flex-col justify-between overflow-hidden backdrop-blur-xl transition-all relative ${
                 darkMode
-                  ? 'bg-white/[0.035] text-slate-100 border-l border-white/10 shadow-2xl dark:shadow-[inset_1px_0_0_0_rgba(255,255,255,0.1)]'
-                  : 'bg-white/55 text-slate-900 border-l border-black/10 shadow-2xl'
+                  ? 'bg-black/20 text-slate-100 border-l border-white/5 shadow-2xl shadow-black/50'
+                  : 'bg-white/20 text-slate-900 border-l border-slate-200/50 shadow-2xl'
               }`}
             >
               {/* Top Mobile Grab Handle */}
@@ -296,18 +296,18 @@ export default function EntityDetailModal() {
                 <div className={`w-10 h-1 rounded-full ${darkMode ? 'bg-white/20' : 'bg-black/20'}`} />
               </div>
 
-              {/* Ambient Top Gradient Glow (Crystal pattern matching entity domain) */}
+              {/* Ambient Top Gradient Glow (matching Health page accent) */}
               <div
-                className="absolute top-0 left-0 right-0 h-36 pointer-events-none -z-1 opacity-60"
+                className="absolute top-0 left-0 right-0 h-36 pointer-events-none -z-1 opacity-50"
                 style={{
                   background: darkMode
-                    ? `linear-gradient(to bottom, ${domain === 'climate' ? '#f59e0b20' : domain === 'fan' ? '#06b6d420' : '#38bdf820'}, transparent)`
+                    ? `linear-gradient(to bottom, ${domain === 'climate' ? '#f59e0b15' : domain === 'fan' ? '#06b6d415' : '#38bdf815'}, transparent)`
                     : `linear-gradient(to bottom, ${domain === 'climate' ? '#f59e0b10' : domain === 'fan' ? '#06b6d410' : '#38bdf810'}, transparent)`
                 }}
               />
 
-              {/* Header matching Crystal Category / Transaction Modal */}
-              <div className="p-5 sm:p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-primary-500/5 to-transparent shrink-0">
+              {/* Header matching Health page section style */}
+              <div className="p-5 sm:p-6 border-b border-slate-200/50 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-primary-500/5 to-transparent shrink-0">
                 <div className="flex items-center gap-3.5 min-w-0">
                   <div
                     className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-md transition-transform hover:scale-105 border ${domainTheme.badgeBg}`}
@@ -548,8 +548,8 @@ export default function EntityDetailModal() {
               </div>
             </div>
 
-            {/* Sticky Drawer Footer matching Crystal */}
-            <div className="p-4 sm:p-5 border-t border-black/5 dark:border-white/5 bg-white/50 dark:bg-white/[0.02] backdrop-blur-md flex items-center justify-between gap-3 shrink-0">
+            {/* Sticky Drawer Footer matching Health page outer container tokens */}
+            <div className="p-4 sm:p-5 border-t border-slate-200/50 dark:border-white/5 bg-white/20 dark:bg-black/20 backdrop-blur-xl flex items-center justify-between gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowDiagnostics(!showDiagnostics)}

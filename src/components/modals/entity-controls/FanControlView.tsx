@@ -231,10 +231,10 @@ export default function FanControlView({ entity, darkMode = true }: FanControlVi
   const effectivePct = isOn ? speed : 0;
   const ActivePresetIcon = activePreset ? getPresetIcon(activePreset) : Wind;
 
-  // Shared Bento card style from Crystal Design System
+  // Exact Health page backdrop colors for outer containers and inner tiles
   const bentoCardStyle = darkMode
-    ? 'bg-white/[0.025] border border-white/5 text-white shadow-sm dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]'
-    : 'bg-white/45 border border-black/5 text-slate-900 shadow-xs backdrop-blur-md';
+    ? 'bg-black/20 hover:bg-black/30 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-white/5 backdrop-blur-xl'
+    : 'bg-white/20 hover:bg-white/30 text-slate-900 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-slate-200/50 backdrop-blur-xl';
 
   // Dynamic capability cards count for layout grid
   const hasOscillation = caps.supportsOscillation;

@@ -340,18 +340,18 @@ export default function ClimateControlView({ entity, darkMode = true }: ClimateC
     return dots;
   }, [startAngle, totalSweep, currentNeedleAngle, cx, cy, radius]);
 
-  // Shared Bento card style from Crystal Design System
+  // Exact Health page backdrop colors for outer containers and inner tiles
   const bentoCardStyle = darkMode
-    ? 'bg-white/[0.025] border border-white/5 text-white shadow-sm dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]'
-    : 'bg-white/45 border border-black/5 text-slate-900 shadow-xs backdrop-blur-md';
+    ? 'bg-black/20 hover:bg-black/30 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-white/5 backdrop-blur-xl'
+    : 'bg-white/20 hover:bg-white/30 text-slate-900 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] border border-slate-200/50 backdrop-blur-xl';
 
   return (
     <div className="space-y-4 select-none">
       {/* ========================================================================= */}
-      {/* 1. TOP HVAC MODE BAR: Crystal Segmented Control Bar                       */}
+      {/* 1. TOP HVAC MODE BAR: Health Page Segmented Control Bar                   */}
       {/* ========================================================================= */}
       {availableModes.length > 0 && (
-        <div className="flex bg-black/[0.04] dark:bg-white/5 p-1 rounded-2xl border border-black/5 dark:border-white/5">
+        <div className="flex bg-white/20 dark:bg-black/20 p-1 rounded-2xl border border-slate-200/50 dark:border-white/5 backdrop-blur-xl">
           {availableModes.map((modeKey) => {
             const def = MODE_DEFINITIONS[modeKey] || {
               id: modeKey,
@@ -371,7 +371,7 @@ export default function ClimateControlView({ entity, darkMode = true }: ClimateC
                 onClick={() => handleSelectMode(modeKey)}
                 className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-98 ${
                   isSelected
-                    ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-xs font-black'
+                    ? 'bg-white/40 dark:bg-white/10 text-slate-900 dark:text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)] font-black'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -492,7 +492,7 @@ export default function ClimateControlView({ entity, darkMode = true }: ClimateC
             {/* Connected Precision Stepper Pill */}
             <div
               className={`inline-flex items-center rounded-2xl border p-1 pointer-events-auto backdrop-blur-md transition-all ${
-                darkMode ? 'bg-black/40 border-white/10' : 'bg-white/50 border-black/10 shadow-xs'
+                darkMode ? 'bg-black/20 border-white/10' : 'bg-white/40 border-slate-200/60 shadow-xs'
               }`}
             >
               <button

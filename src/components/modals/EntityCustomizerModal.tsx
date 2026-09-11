@@ -227,13 +227,13 @@ export default function EntityCustomizerModal({
           className="fixed inset-0 bg-black/25 dark:bg-black/70 backdrop-blur-sm"
         />
 
-        {/* Modal Card */}
+        {/* Modal Card matching Health page outer container tokens */}
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 12 }}
           transition={{ type: 'spring', damping: 26, stiffness: 350 }}
-          className="relative w-full max-w-lg p-5 sm:p-6 bg-white/65 dark:bg-white/[0.04] border border-black/10 dark:border-white/10 rounded-3xl shadow-2xl dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] backdrop-blur-2xl text-slate-900 dark:text-slate-100 space-y-5 isolate z-10 overflow-hidden"
+          className="relative w-full max-w-lg p-5 sm:p-6 bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 rounded-3xl shadow-[4px_6px_12px_rgba(0,0,0,0.15)] backdrop-blur-xl text-slate-900 dark:text-slate-100 space-y-5 isolate z-10 overflow-hidden"
         >
           {/* Ambient Top Gradient Glow */}
           <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-sky-500/10 via-sky-500/5 to-transparent pointer-events-none -z-1" />
