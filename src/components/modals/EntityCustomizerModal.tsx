@@ -217,14 +217,14 @@ export default function EntityCustomizerModal({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden">
-        {/* Backdrop */}
+        {/* Backdrop Scrim: Crystal / Apple HIG 4px blur */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
           onClick={onClose}
-          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+          className="fixed inset-0 bg-black/25 dark:bg-black/70 backdrop-blur-sm"
         />
 
         {/* Modal Card */}
@@ -233,10 +233,13 @@ export default function EntityCustomizerModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 12 }}
           transition={{ type: 'spring', damping: 26, stiffness: 350 }}
-          className="relative w-full max-w-lg p-5 sm:p-6 bg-slate-900/85 rounded-3xl shadow-[4px_6px_20px_rgba(0,0,0,0.35)] backdrop-blur-md text-slate-100 space-y-5 isolate z-10"
+          className="relative w-full max-w-lg p-5 sm:p-6 bg-white/65 dark:bg-white/[0.04] border border-black/10 dark:border-white/10 rounded-3xl shadow-2xl dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] backdrop-blur-2xl text-slate-900 dark:text-slate-100 space-y-5 isolate z-10 overflow-hidden"
         >
+          {/* Ambient Top Gradient Glow */}
+          <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-sky-500/10 via-sky-500/5 to-transparent pointer-events-none -z-1" />
+
           {/* Header */}
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
+          <div className="flex items-center justify-between gap-3 border-b border-black/5 dark:border-white/10 pb-4">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-2xl bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
                 <DynamicPhosphorIcon name={customIcon || defaultIcon || 'SlidersHorizontal'} size={22} weight="duotone" />

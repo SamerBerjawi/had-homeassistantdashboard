@@ -265,156 +265,114 @@ export default function EntityDetailModal() {
   return (
     <AnimatePresence>
       {isOpen && entity && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          {/* Glassmorphic Backdrop */}
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          {/* Translucent Backdrop: Crystal / Apple HIG 4px blur filter & gentle scrim */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
             onClick={closeEntityDetails}
-            className={`fixed inset-0 backdrop-blur-md transition-colors ${
-              darkMode ? 'bg-slate-950/80' : 'bg-slate-900/40'
+            className={`fixed inset-0 backdrop-blur-sm transition-opacity cursor-pointer ${
+              darkMode ? 'bg-black/50' : 'bg-black/25'
             }`}
           />
 
-          {/* Modal / Mobile Bottom Drawer */}
-          <motion.div
-            initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.96, y: 16 }}
-            animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-            exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.96, y: 16 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 340 }}
-            drag={isMobile ? 'y' : false}
-            dragConstraints={{ top: 0 }}
-            dragElastic={0.2}
-            onDragEnd={(_, info) => {
-              if (info.offset.y > 100 || info.velocity.y > 300) {
-                closeEntityDetails();
-              }
-            }}
-            className={`relative w-full max-w-lg max-h-[92vh] sm:max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-3xl backdrop-blur-md overflow-hidden isolate z-10 transition-colors ${
-              darkMode
-                ? 'bg-slate-900/90 text-slate-100 border border-white/10 shadow-[4px_6px_20px_rgba(0,0,0,0.45)]'
-                : 'bg-white/95 text-slate-900 border border-slate-200/90 shadow-[0_20px_50px_rgba(0,0,0,0.15)]'
-            }`}
-          >
-            {/* Mobile Drag Handle */}
-            {isMobile && (
-              <div className="w-full flex items-center justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing">
-                <div className={`w-12 h-1 rounded-full ${darkMode ? 'bg-white/25' : 'bg-slate-300'}`} />
-              </div>
-            )}
-
-            {/* Top Header */}
-            <div
-              className={`flex items-center justify-between px-5 py-4 border-b shrink-0 transition-colors ${
-                darkMode ? 'border-white/10' : 'border-slate-100'
+          {/* Sidebar Drawer Container: Crystal slide-out drawer */}
+          <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10 pointer-events-none z-10">
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 320, mass: 0.8 }}
+              className={`pointer-events-auto w-screen max-w-full sm:max-w-xl md:max-w-2xl h-screen flex flex-col justify-between overflow-hidden backdrop-blur-2xl transition-all relative ${
+                darkMode
+                  ? 'bg-white/[0.035] text-slate-100 border-l border-white/10 shadow-2xl dark:shadow-[inset_1px_0_0_0_rgba(255,255,255,0.1)]'
+                  : 'bg-white/55 text-slate-900 border-l border-black/10 shadow-2xl'
               }`}
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className={`w-10 h-10 rounded-2xl border flex items-center justify-center shrink-0 ${domainTheme.badgeBg}`}
-                >
-                  {(entity as any)?.icon || entity?.attributes?.icon ? (
-                    <DynamicPhosphorIcon
-                      name={(entity as any)?.icon || entity?.attributes?.icon}
-                      size={22}
-                      weight="duotone"
-                      className={`${domainTheme.color} ${domainTheme.glow}`}
-                    />
-                  ) : (
-                    <HeaderIcon size={22} weight="duotone" className={`${domainTheme.color} ${domainTheme.glow}`} />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <h3
-                    className={`text-base font-extrabold truncate leading-snug ${
-                      darkMode ? 'text-white' : 'text-slate-900'
-                    }`}
-                  >
-                    {entityTitle}
-                  </h3>
+              {/* Top Mobile Grab Handle */}
+              <div className="sm:hidden pt-3 pb-1 flex justify-center shrink-0" aria-hidden="true">
+                <div className={`w-10 h-1 rounded-full ${darkMode ? 'bg-white/20' : 'bg-black/20'}`} />
+              </div>
+
+              {/* Ambient Top Gradient Glow (Crystal pattern matching entity domain) */}
+              <div
+                className="absolute top-0 left-0 right-0 h-36 pointer-events-none -z-1 opacity-60"
+                style={{
+                  background: darkMode
+                    ? `linear-gradient(to bottom, ${domain === 'climate' ? '#f59e0b20' : domain === 'fan' ? '#06b6d420' : '#38bdf820'}, transparent)`
+                    : `linear-gradient(to bottom, ${domain === 'climate' ? '#f59e0b10' : domain === 'fan' ? '#06b6d410' : '#38bdf810'}, transparent)`
+                }}
+              />
+
+              {/* Header matching Crystal Category / Transaction Modal */}
+              <div className="p-5 sm:p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-primary-500/5 to-transparent shrink-0">
+                <div className="flex items-center gap-3.5 min-w-0">
                   <div
-                    className={`flex items-center gap-1.5 text-xs truncate ${
-                      darkMode ? 'text-slate-400' : 'text-slate-500'
-                    }`}
+                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-md transition-transform hover:scale-105 border ${domainTheme.badgeBg}`}
                   >
-                    <MapPin size={12} weight="bold" className="shrink-0" />
-                    <span className="truncate">{metadata?.areaName || 'Unassigned Area'}</span>
-                    {metadata?.floorName && (
-                      <>
-                        <span>•</span>
-                        <span className="truncate">{metadata.floorName}</span>
-                      </>
+                    {(entity as any)?.icon || entity?.attributes?.icon ? (
+                      <DynamicPhosphorIcon
+                        name={(entity as any)?.icon || entity?.attributes?.icon}
+                        size={24}
+                        weight="duotone"
+                        className={domainTheme.color}
+                      />
+                    ) : (
+                      <HeaderIcon size={24} weight="duotone" className={domainTheme.color} />
                     )}
                   </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate">
+                        {entityTitle}
+                      </h2>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-2xs font-bold uppercase tracking-wider border ${domainTheme.badgeBg}`}
+                      >
+                        {entity.state}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5 font-medium">
+                      <MapPin size={13} weight="bold" className="shrink-0" />
+                      <span className="truncate">{metadata?.areaName || 'Unassigned Area'}</span>
+                      {metadata?.floorName && (
+                        <>
+                          <span>•</span>
+                          <span className="truncate">{metadata.floorName}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setCustomizerOpen(true)}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                    title="Customize entity"
+                  >
+                    <PencilSimple size={16} weight="bold" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeEntityDetails}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                    aria-label="Close drawer"
+                  >
+                    <X size={18} weight="bold" />
+                  </button>
                 </div>
               </div>
 
-              {/* Header Actions */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setCustomizerOpen(true)}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer border active:scale-95 ${
-                    darkMode
-                      ? 'bg-white/5 hover:bg-sky-500/20 hover:text-sky-300 text-slate-300 border-white/10'
-                      : 'bg-slate-100 hover:bg-sky-50 hover:text-sky-600 text-slate-600 border-slate-200/80'
-                  }`}
-                  title="Customize entity name, icon & visibility"
-                >
-                  <PencilSimple size={15} weight="bold" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleCopyEntityId}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer border active:scale-95 ${
-                    darkMode
-                      ? 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-200/80'
-                  }`}
-                  title={copied ? 'Copied Entity ID!' : 'Copy Entity ID'}
-                >
-                  {copied ? <Check size={15} weight="bold" className="text-emerald-500" /> : <Copy size={15} weight="duotone" />}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowDiagnostics(!showDiagnostics)}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer border active:scale-95 ${
-                    showDiagnostics
-                      ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400'
-                      : darkMode
-                      ? 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-200/80'
-                  }`}
-                  title="Toggle Detailed Attributes"
-                >
-                  <Info size={15} weight="duotone" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={closeEntityDetails}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer border active:scale-95 ml-1 ${
-                    darkMode
-                      ? 'bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white border-white/10'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 border-slate-200/80'
-                  }`}
-                  title="Close popup"
-                >
-                  <X size={16} weight="bold" />
-                </button>
-              </div>
-            </div>
-
-            {/* Scrollable Content Body */}
-            <div
-              className={`flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 scrollbar-thin ${
-                darkMode ? 'scrollbar-thumb-white/10' : 'scrollbar-thumb-slate-200'
-              }`}
-            >
+              {/* Scrollable Content Body */}
+              <div
+                className={`flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 scrollbar-thin ${
+                  darkMode ? 'scrollbar-thumb-white/10' : 'scrollbar-thumb-slate-200'
+                }`}
+              >
               {/* Domain-Specific Interactive Control View with Error Boundary */}
               <ControlErrorBoundary
                 fallback={
@@ -493,7 +451,7 @@ export default function EntityDetailModal() {
 
                         <div
                           className={`p-3 rounded-2xl border space-y-0.5 ${
-                            darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-xs'
+                            darkMode ? 'bg-white/5 border-white/10' : 'bg-white/50 border-black/5 shadow-xs'
                           }`}
                         >
                           <div className={`flex items-center gap-1 text-[10px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -507,7 +465,7 @@ export default function EntityDetailModal() {
 
                         <div
                           className={`p-3 rounded-2xl border space-y-0.5 ${
-                            darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-xs'
+                            darkMode ? 'bg-white/5 border-white/10' : 'bg-white/50 border-black/5 shadow-xs'
                           }`}
                         >
                           <div className={`flex items-center gap-1 text-[10px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -521,7 +479,7 @@ export default function EntityDetailModal() {
 
                         <div
                           className={`p-3 rounded-2xl border space-y-0.5 ${
-                            darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200/80 shadow-xs'
+                            darkMode ? 'bg-white/5 border-white/10' : 'bg-white/50 border-black/5 shadow-xs'
                           }`}
                         >
                           <div className={`flex items-center gap-1 text-[10px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -550,7 +508,7 @@ export default function EntityDetailModal() {
                             className={`w-full pl-8 pr-3 py-2 rounded-xl border text-xs placeholder:text-slate-400 focus:outline-hidden focus:border-cyan-400 font-mono transition-all ${
                               darkMode
                                 ? 'bg-slate-800/80 border-white/10 text-white placeholder:text-slate-500'
-                                : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'
+                                : 'bg-white/60 border-black/5 text-slate-900 placeholder:text-slate-400'
                             }`}
                           />
                         </div>
@@ -560,7 +518,7 @@ export default function EntityDetailModal() {
                           className={`max-h-40 overflow-y-auto rounded-xl border p-1.5 space-y-0.5 font-mono text-[10px] scrollbar-thin ${
                             darkMode
                               ? 'border-white/10 bg-slate-950/60 scrollbar-thumb-white/10'
-                              : 'border-slate-200 bg-slate-50 scrollbar-thumb-slate-200'
+                              : 'border-black/5 bg-white/40 scrollbar-thumb-slate-300'
                           }`}
                         >
                           {rawAttributes.length === 0 ? (
@@ -572,7 +530,7 @@ export default function EntityDetailModal() {
                               <div
                                 key={key}
                                 className={`flex items-start justify-between gap-2 p-1.5 rounded-lg transition-colors ${
-                                  darkMode ? 'hover:bg-white/5' : 'hover:bg-slate-100'
+                                  darkMode ? 'hover:bg-white/5' : 'hover:bg-black/[0.03]'
                                 }`}
                               >
                                 <span className={`font-bold shrink-0 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>{key}:</span>
@@ -589,9 +547,41 @@ export default function EntityDetailModal() {
                 </AnimatePresence>
               </div>
             </div>
+
+            {/* Sticky Drawer Footer matching Crystal */}
+            <div className="p-4 sm:p-5 border-t border-black/5 dark:border-white/5 bg-white/50 dark:bg-white/[0.02] backdrop-blur-md flex items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowDiagnostics(!showDiagnostics)}
+                className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-cyan-400 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <SlidersHorizontal size={14} weight="duotone" />
+                <span>{showDiagnostics ? 'Hide Technical Info' : 'Technical Info'}</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyEntityId}
+                  className="h-10 px-3.5 rounded-xl border border-black/5 dark:border-white/10 bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                  title="Copy Entity ID"
+                >
+                  {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                  <span className="font-mono text-[11px]">{copied ? 'Copied' : selectedEntityId.split('.')[1] || 'Entity ID'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={closeEntityDetails}
+                  className="h-10 px-6 rounded-xl font-bold text-xs uppercase tracking-wider bg-white/10 hover:bg-white/15 dark:text-white transition-all cursor-pointer active:scale-95"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
           </motion.div>
         </div>
-      )}
+      </div>
+    )}
 
       {/* Entity Customizer Modal with Phosphor Icon Finder */}
       <EntityCustomizerModal
