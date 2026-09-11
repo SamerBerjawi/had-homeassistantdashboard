@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { 
   Users, 
   Lightbulb, 
@@ -30,7 +30,13 @@ import {
   ArrowCounterClockwise,
   CheckCircle,
   Eye,
-  Wind
+  Wind,
+  HouseLine,
+  ShieldWarning,
+  Moon,
+  Key,
+  ArrowUp,
+  ArrowDown
 } from '@phosphor-icons/react';
 import {
   DndContext,
@@ -58,6 +64,8 @@ import { getHAImageUrl } from '../../lib/utils';
 import PersonAvatar from '../ui/PersonAvatar';
 import { getWeatherConditionInfo } from '../weather/weatherIcons';
 import AnimatedWeatherBackdrop from '../weather/AnimatedWeatherBackdrop';
+import { getDailyForecast } from '../../lib/weatherForecast';
+import Toolbar, { ToolbarItem } from '../kokonutui/toolbar';
 
 // Lazy-loaded interactive slide-over drawers (loaded on first open)
 const UsersPresenceModal = React.lazy(() => import('./modals/UsersPresenceModal'));
@@ -66,6 +74,7 @@ const SwitchesOverviewModal = React.lazy(() => import('./modals/SwitchesOverview
 const FansOverviewModal = React.lazy(() => import('./modals/FansOverviewModal'));
 const OpeningsOverviewModal = React.lazy(() => import('./modals/OpeningsOverviewModal'));
 const AlarmKeypadModal = React.lazy(() => import('./modals/AlarmKeypadModal'));
+const ArmAwayConfirmModal = React.lazy(() => import('./modals/ArmAwayConfirmModal'));
 const MediaOverviewDrawer = React.lazy(() => import('./modals/MediaOverviewDrawer'));
 const SensorsOverviewDrawer = React.lazy(() => import('./modals/SensorsOverviewDrawer'));
 const VacuumsOverviewDrawer = React.lazy(() => import('./modals/VacuumsOverviewDrawer'));
@@ -236,8 +245,16 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   const weatherCondInfo = getWeatherConditionInfo(weatherCondition, isNight, 20);
   const currentTemp = typeof activeWeather?.attributes?.temperature === 'number' ? activeWeather.attributes.temperature : 22;
   const tempUnit = activeWeather?.attributes?.temperature_unit || '°C';
-  const weatherHigh = activeWeather?.attributes?.forecast?.[0]?.temperature ?? Math.round(currentTemp + 3);
-  const weatherLow = activeWeather?.attributes?.forecast?.[0]?.templow ?? Math.round(currentTemp - 4);
+  const dailyForecast = useMemo(() => {
+    return getDailyForecast(activeWeather);
+  }, [activeWeather]);
+  const todayForecast = dailyForecast[0];
+  const weatherHigh = typeof todayForecast?.temperature === 'number'
+    ? todayForecast.temperature
+    : (activeWeather?.attributes?.forecast?.[0]?.temperature ?? Math.round(currentTemp + 3));
+  const weatherLow = typeof todayForecast?.templow === 'number'
+    ? todayForecast.templow
+    : (activeWeather?.attributes?.forecast?.[0]?.templow ?? Math.round(currentTemp - 4));
   const humidity = activeWeather?.attributes?.humidity ?? 55;
 
   const isAlarmArmed = alarmEntity?.state && alarmEntity.state !== 'disarmed';
@@ -352,6 +369,119 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     }
   };
 
+  const [isArmAwayModalOpen, setIsArmAwayModalOpen] = useState(false);
+  const [armAwayCountdown, setArmAwayCountdown] = useState<number | null>(null);
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleCancelCountdown = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+    setArmAwayCountdown(null);
+  }, []);
+
+  const executeArmAway = useCallback(async () => {
+    if (!alarmEntity) return;
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+    setArmAwayCountdown(null);
+    try {
+      updateEntityState(alarmEntity.entity_id, 'armed_away');
+      await callHAService('alarm_control_panel', 'alarm_arm_away', {}, { entity_id: alarmEntity.entity_id });
+    } catch (err) {
+      console.error('Failed to arm away:', err);
+    }
+  }, [alarmEntity, callHAService, updateEntityState]);
+
+  const handleConfirmArmAway = useCallback((delaySeconds: number) => {
+    setIsArmAwayModalOpen(false);
+    if (!alarmEntity) return;
+
+    if (delaySeconds <= 0) {
+      executeArmAway();
+      return;
+    }
+
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+    }
+    setArmAwayCountdown(delaySeconds);
+
+    countdownTimerRef.current = setInterval(() => {
+      setArmAwayCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          if (countdownTimerRef.current) {
+            clearInterval(countdownTimerRef.current);
+            countdownTimerRef.current = null;
+          }
+          executeArmAway();
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [alarmEntity, executeArmAway]);
+
+  const handleSetAlarmMode = async (
+    mode: 'disarmed' | 'armed_home' | 'armed_away' | 'armed_night',
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+    if (!alarmEntity) return;
+
+    if (armAwayCountdown !== null) {
+      handleCancelCountdown();
+      if (mode === 'disarmed') return;
+    }
+
+    if (mode === 'armed_away') {
+      if (alarmEntity.state === 'armed_away') {
+        setDrawerOpen('alarm');
+        return;
+      }
+      setIsArmAwayModalOpen(true);
+      return;
+    }
+
+    if (mode === 'disarmed') {
+      const isCurrentlyArmed = alarmEntity.state && alarmEntity.state !== 'disarmed';
+      const requiresCode = Boolean(alarmEntity.attributes?.code_format);
+      if (isCurrentlyArmed && requiresCode) {
+        setDrawerOpen('alarm');
+        return;
+      }
+      try {
+        updateEntityState(alarmEntity.entity_id, 'disarmed');
+        await callHAService('alarm_control_panel', 'alarm_disarm', {}, { entity_id: alarmEntity.entity_id });
+      } catch {
+        setDrawerOpen('alarm');
+      }
+      return;
+    }
+
+    const serviceName =
+      mode === 'armed_home' ? 'alarm_arm_home' : 'alarm_arm_night';
+
+    try {
+      updateEntityState(alarmEntity.entity_id, mode);
+      await callHAService('alarm_control_panel', serviceName, {}, { entity_id: alarmEntity.entity_id });
+    } catch (err) {
+      console.error('Failed to set alarm mode:', err);
+    }
+  };
+
   const getAlarmBadgeDetails = () => {
     switch (alarmEntity?.state) {
       case 'armed_home':
@@ -362,7 +492,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         return { label: 'Armed Night', bg: 'bg-indigo-500/15', text: 'text-indigo-700 dark:text-indigo-300' };
       case 'disarmed':
       default:
-        return { label: 'Disarmed', bg: 'bg-slate-200 dark:bg-white/10', text: 'text-slate-600 dark:text-slate-400' };
+        return { label: 'Disarmed', bg: 'bg-amber-500/15', text: 'text-amber-600 dark:text-amber-400' };
     }
   };
 
@@ -914,50 +1044,189 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                         const windSpeed = activeWeather?.attributes?.wind_speed;
                         const windUnit = activeWeather?.attributes?.wind_speed_unit || 'km/h';
                         const precip = activeWeather?.attributes?.precipitation;
+                        const friendlyName = activeWeather?.name || activeWeather?.attributes?.friendly_name || 'Weather';
 
+                        if (is2x) {
+                          return (
+                            <div className={tileBaseClass(false, '', false, true)}>
+                              <AnimatedWeatherBackdrop condition={weatherCondition} isNight={isNight} darkMode={darkMode} />
+                              <div className={`absolute inset-0 pointer-events-none rounded-3xl ${darkMode ? 'bg-black/25' : 'bg-white/10'}`} />
+
+                              <div className="relative z-10 flex items-stretch h-full gap-2.5 sm:gap-3.5">
+                                {/* Left Column: Current Weather Hero */}
+                                <div className="flex-1 flex flex-col justify-between min-w-0 pr-1">
+                                  {/* Top: Icon + Location/Title + Condition Badge */}
+                                  <div className="flex items-center justify-between gap-1.5">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div className="w-8 h-8 rounded-xl bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/80 dark:border-white/10 flex items-center justify-center shadow-xs shrink-0">
+                                        {weatherCondInfo.icon}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                          {friendlyName}
+                                        </h4>
+                                        <p className="text-[10px] text-slate-600 dark:text-slate-300 font-medium capitalize truncate">
+                                          {weatherCondition.replace(/_/g, ' ')}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full backdrop-blur-md border shadow-xs shrink-0 ${weatherCondInfo.badgeBg}`}>
+                                      {weatherCondInfo.name}
+                                    </span>
+                                  </div>
+
+                                  {/* Middle: Big Temp + High / Low */}
+                                  <div className="flex items-baseline gap-2.5 my-auto">
+                                    <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none">
+                                      {Math.round(currentTemp)}{tempUnit}
+                                    </span>
+                                    <div className="flex flex-col text-[10px] font-mono font-bold leading-tight">
+                                      <span className="text-amber-500 flex items-center gap-0.5">
+                                        <ArrowUp size={10} weight="bold" />{Math.round(weatherHigh)}°
+                                      </span>
+                                      <span className="text-sky-500 flex items-center gap-0.5">
+                                        <ArrowDown size={10} weight="bold" />{Math.round(weatherLow)}°
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Bottom: Live Telemetry Row */}
+                                  <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                                    <span className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-white/50 dark:bg-black/30 backdrop-blur-xs border border-white/30 dark:border-white/10 shrink-0">
+                                      <Drop size={11} weight="fill" className="text-sky-400 shrink-0" />
+                                      <span>{humidity}%</span>
+                                    </span>
+                                    {typeof windSpeed === 'number' && (
+                                      <span className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-white/50 dark:bg-black/30 backdrop-blur-xs border border-white/30 dark:border-white/10 truncate">
+                                        <Wind size={11} weight="bold" className="text-teal-400 shrink-0" />
+                                        <span className="truncate">{Math.round(windSpeed)} {windUnit}</span>
+                                      </span>
+                                    )}
+                                    {typeof precip === 'number' && precip > 0 && (
+                                      <span className="hidden sm:flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-white/50 dark:bg-black/30 backdrop-blur-xs border border-white/30 dark:border-white/10 shrink-0">
+                                        <span>{precip}mm</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Vertical Divider */}
+                                <div className="w-px bg-black/5 dark:bg-white/10 my-0.5 shrink-0" />
+
+                                {/* Right Column: 3-Day Forecast Strip */}
+                                <div className="flex-[1.1] sm:flex-[1.2] flex flex-col justify-between min-w-0 pl-1">
+                                  {/* Header: Forecast label + CaretRight */}
+                                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                                    <span className="text-[10px] font-extrabold uppercase tracking-wider">
+                                      3-Day Forecast
+                                    </span>
+                                    <div className="flex items-center gap-0.5 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                                      <CaretRight size={13} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+                                    </div>
+                                  </div>
+
+                                  {/* 3 mini forecast cards (Next 3 Days: Tomorrow onwards) */}
+                                  <div className="flex items-center gap-1 sm:gap-1.5 w-full my-auto">
+                                    {dailyForecast.slice(1, 4).map((f, i) => {
+                                      const dayLabel = i === 0 
+                                        ? 'Tomorrow' 
+                                        : new Date(f.datetime).toLocaleDateString(undefined, { weekday: 'short' });
+                                      const dayIcon = getWeatherConditionInfo(f.condition, false, 18).icon;
+                                      const high = Math.round(f.temperature);
+                                      const low = Math.round(f.templow);
+
+                                      return (
+                                        <div
+                                          key={f.datetime || i}
+                                          className="flex-1 min-w-0 py-1.5 px-0.5 sm:px-1 rounded-2xl bg-white/40 dark:bg-white/[0.06] hover:bg-white/60 dark:hover:bg-white/[0.1] backdrop-blur-md border border-white/40 dark:border-white/10 flex flex-col items-center justify-between text-center transition-all shadow-2xs group/card"
+                                        >
+                                          <span className="text-[9px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-tight truncate w-full">
+                                            {i === 0 ? (
+                                              <>
+                                                <span className="hidden sm:inline">Tomorrow</span>
+                                                <span className="sm:hidden">Tmw</span>
+                                              </>
+                                            ) : (
+                                              dayLabel
+                                            )}
+                                          </span>
+                                          <div className="my-1 scale-90 sm:scale-100 flex items-center justify-center">
+                                            {dayIcon}
+                                          </div>
+                                          <div className="flex items-center gap-0.5 sm:gap-1 font-mono text-[10px] sm:text-[11px] leading-tight font-bold">
+                                            <span className="text-slate-900 dark:text-white font-black">{high}°</span>
+                                            <span className="text-slate-400 dark:text-slate-500 text-[9px] sm:text-[10px]">{low}°</span>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Mini summary footer */}
+                                  <div className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate flex items-center justify-between">
+                                    <span>{dailyForecast.length > 3 ? '7-day outlook' : 'Daily forecast'}</span>
+                                    <span className="text-sky-500 dark:text-sky-400 font-bold">Details →</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x Compact mode
                         return (
-                          <div className={tileBaseClass(false, '', false, is2x)}>
+                          <div className={tileBaseClass(false, '', false, false)}>
                             <AnimatedWeatherBackdrop condition={weatherCondition} isNight={isNight} darkMode={darkMode} />
                             <div className={`absolute inset-0 pointer-events-none rounded-3xl ${darkMode ? 'bg-black/20' : 'bg-white/10'}`} />
 
+                            {/* Top row: Icon + Condition Badge */}
                             <div className="flex items-center justify-between relative z-10">
                               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/80 dark:border-white/10 flex items-center justify-center shadow-xs">
                                 {weatherCondInfo.icon}
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                {is2x && typeof windSpeed === 'number' && (
-                                  <span className="text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full backdrop-blur-md bg-white/40 dark:bg-black/40 border border-white/20 text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                                    <Wind size={11} weight="bold" />
-                                    <span>{Math.round(windSpeed)} {windUnit}</span>
-                                  </span>
-                                )}
-                                <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full backdrop-blur-md border shadow-xs ${weatherCondInfo.badgeBg}`}>
-                                  {weatherCondInfo.name}
-                                </span>
-                              </div>
+                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full backdrop-blur-md border shadow-xs ${weatherCondInfo.badgeBg}`}>
+                                {weatherCondInfo.name}
+                              </span>
                             </div>
 
+                            {/* Center: Temp + High/Low pill */}
                             <div className="relative z-10 my-0.5 flex items-baseline justify-between">
-                              <div className="flex items-baseline gap-1.5">
-                                <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono">
-                                  {Math.round(currentTemp)}{tempUnit}
+                              <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none">
+                                {Math.round(currentTemp)}{tempUnit}
+                              </span>
+                              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-white/50 dark:bg-black/30 backdrop-blur-sm border border-black/5 dark:border-white/10 text-[11px] font-mono font-bold">
+                                <span className="text-amber-500 flex items-center gap-0.5">
+                                  <ArrowUp size={10} weight="bold" />{Math.round(weatherHigh)}°
                                 </span>
-                                <span className="text-[11px] sm:text-xs font-bold text-slate-600 dark:text-slate-300">
-                                  H: {Math.round(weatherHigh)}° L: {Math.round(weatherLow)}°
+                                <span className="opacity-30">|</span>
+                                <span className="text-sky-500 flex items-center gap-0.5">
+                                  <ArrowDown size={10} weight="bold" />{Math.round(weatherLow)}°
                                 </span>
                               </div>
-                              {is2x && (
-                                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 capitalize truncate ml-2">
-                                  {weatherCondition.replace(/_/g, ' ')}
-                                </span>
-                              )}
                             </div>
 
+                            {/* Bottom: Location & telemetry summary */}
                             <div className="relative z-10">
-                              <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">Weather</div>
-                              <div className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 font-medium truncate flex items-center justify-between">
-                                <span>{humidity}% Humidity{is2x && typeof precip === 'number' ? ` • ${precip}mm rain` : ''}</span>
-                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-400 group-hover:text-sky-500 group-hover:translate-x-0.5 transition-all" />
+                              <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                {friendlyName}
+                              </div>
+                              <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium truncate flex items-center justify-between mt-0.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="flex items-center gap-1">
+                                    <Drop size={11} weight="fill" className="text-sky-400 shrink-0" />
+                                    {humidity}%
+                                  </span>
+                                  {typeof windSpeed === 'number' && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="flex items-center gap-1">
+                                        <Wind size={11} weight="bold" className="text-teal-400 shrink-0" />
+                                        {Math.round(windSpeed)} {windUnit}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-400 group-hover:text-sky-500 group-hover:translate-x-0.5 transition-all shrink-0" />
                               </div>
                             </div>
                           </div>
@@ -1330,13 +1599,120 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                       }
 
                       case 'alarm': {
+                        const currentState = alarmEntity?.state || 'disarmed';
+                        const isArmed = currentState !== 'disarmed';
+                        const alarmColorClass =
+                          currentState === 'armed_away'
+                            ? (darkMode ? 'bg-rose-500/20 text-white border-rose-500/30' : 'bg-rose-500/15 text-slate-900 border-rose-300/60')
+                            : currentState === 'armed_night'
+                            ? (darkMode ? 'bg-indigo-500/20 text-white border-indigo-500/30' : 'bg-indigo-500/15 text-slate-900 border-indigo-300/60')
+                            : currentState === 'armed_home'
+                            ? (darkMode ? 'bg-emerald-500/20 text-white border-emerald-500/30' : 'bg-emerald-500/15 text-slate-900 border-emerald-300/60')
+                            : '';
+
+                        if (is2x) {
+                          return (
+                            <div
+                              className={tileBaseClass(
+                                isArmed,
+                                alarmColorClass,
+                                false,
+                                true
+                              )}
+                            >
+                              {/* Top row: Security identity + Right Chevron */}
+                              <div className="flex items-center justify-between relative z-10">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all ${alarmDetails.bg} ${alarmDetails.text}`}>
+                                    {currentState === 'armed_away' ? (
+                                      <ShieldWarning size={18} weight="duotone" />
+                                    ) : currentState === 'armed_night' ? (
+                                      <Moon size={18} weight="duotone" />
+                                    ) : currentState === 'armed_home' ? (
+                                      <ShieldCheck size={18} weight="duotone" />
+                                    ) : (
+                                      <LockOpen size={18} weight="duotone" />
+                                    )}
+                                  </div>
+                                  <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                                    {alarmEntity?.name || alarmEntity?.attributes?.friendly_name || 'Security Guard'}
+                                  </span>
+                                </div>
+
+                                <div className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white transition-colors shrink-0">
+                                  <CaretRight size={16} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+                                </div>
+                              </div>
+
+                              {/* Action Row: Exit delay countdown or @kokonutui/toolbar with @kokonutui/hold-button */}
+                              {armAwayCountdown !== null && armAwayCountdown > 0 ? (
+                                <div className="flex items-center justify-between bg-rose-500/15 border border-rose-500/30 rounded-2xl p-2 sm:p-2.5 my-auto z-10 animate-fadeIn">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-rose-500 text-white font-mono font-black text-sm shadow-md shadow-rose-500/30 shrink-0">
+                                      <span className="relative z-10">{armAwayCountdown}s</span>
+                                      <span className="absolute inset-0 rounded-xl bg-rose-400 animate-ping opacity-30" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-rose-600 dark:text-rose-300 truncate">
+                                        Exit Delay • Arming Away
+                                      </div>
+                                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                                        Please exit and close all doors
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        executeArmAway();
+                                      }}
+                                      className="px-2.5 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95"
+                                    >
+                                      Arm Now
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleCancelCountdown}
+                                      className="px-2.5 py-1.5 rounded-xl bg-white/60 dark:bg-white/10 hover:bg-white/90 dark:hover:bg-white/20 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all border border-black/5 dark:border-white/10 cursor-pointer active:scale-95"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="relative z-10 my-auto pt-1 w-full" onClick={(e) => e.stopPropagation()}>
+                                  <Toolbar
+                                    items={[
+                                      { id: 'disarmed', title: 'Disarm', icon: LockOpen, color: 'amber' },
+                                      { id: 'armed_home', title: 'Home', icon: HouseLine, color: 'emerald' },
+                                      { id: 'armed_away', title: 'Away', icon: ShieldWarning, color: 'rose', isHold: true, holdDuration: 1000 },
+                                      { id: 'armed_night', title: 'Night', icon: Moon, color: 'indigo' },
+                                    ]}
+                                    selected={currentState}
+                                    onSelect={(mode) => {
+                                      handleSetAlarmMode(mode as any, { stopPropagation: () => {} } as any);
+                                    }}
+                                    onHoldComplete={() => {
+                                      setIsArmAwayModalOpen(true);
+                                    }}
+                                    className="bg-transparent border-0 p-0 shadow-none w-full"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        // 1x Compact mode
                         return (
                           <div
                             className={tileBaseClass(
-                              isAlarmArmed,
-                              darkMode ? 'bg-emerald-500/20 text-white border-emerald-500/30' : 'bg-emerald-500/20 text-slate-900 border-emerald-300/60',
+                              isArmed,
+                              alarmColorClass,
                               false,
-                              is2x
+                              false
                             )}
                           >
                             <div className="flex items-center justify-between relative z-10">
@@ -1350,7 +1726,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[9px] sm:text-[10px] font-extrabold uppercase transition-all cursor-pointer ${
                                   isAlarmArmed
                                     ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/30'
-                                    : 'bg-white/80 dark:bg-white/5 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/15'
+                                    : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30'
                                 }`}
                                 title={isAlarmArmed ? 'Click to disarm' : 'Click to arm'}
                               >
@@ -1362,18 +1738,13 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight truncate">
                                 {alarmDetails.label}
                               </div>
-                              {is2x && (
-                                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                  {isAlarmArmed ? 'Sensors active' : 'Ready to arm'}
-                                </span>
-                              )}
                             </div>
 
                             <div className="relative z-10">
                               <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Security Guard</div>
                               <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-                                <span>{isAlarmArmed ? 'Perimeter armed' : 'Ready to arm'}</span>
-                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />
+                                <span>{isAlarmArmed ? 'Perimeter armed' : 'System disarmed'}</span>
+                                <CaretRight size={13} weight="bold" className={`text-slate-400 dark:text-slate-500 transition-all ${isAlarmArmed ? 'group-hover:text-emerald-500' : 'group-hover:text-orange-500'} group-hover:translate-x-0.5`} />
                               </div>
                             </div>
                           </div>
@@ -1745,6 +2116,16 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
             onClose={() => setDrawerOpen(null)}
             alarmEntity={alarmEntity}
             onUpdateEntity={updateEntityState}
+            darkMode={darkMode}
+          />
+        )}
+
+        {isArmAwayModalOpen && (
+          <ArmAwayConfirmModal
+            isOpen={isArmAwayModalOpen}
+            onClose={() => setIsArmAwayModalOpen(false)}
+            onConfirm={handleConfirmArmAway}
+            alarmName={alarmEntity?.name || alarmEntity?.attributes?.friendly_name || 'Security Guard'}
             darkMode={darkMode}
           />
         )}
