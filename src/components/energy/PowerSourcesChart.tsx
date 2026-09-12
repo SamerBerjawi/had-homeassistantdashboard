@@ -20,9 +20,7 @@ import {
   Sun,
   Plug,
   BatteryCharging,
-  House,
-  Eye,
-  EyeSlash
+  House
 } from '@phosphor-icons/react';
 import { TransformedEnergyBucket } from '../../services/energyDataTransformer';
 import { InstantaneousPowerTelemetry } from '../../utils/energyMath';
@@ -499,6 +497,7 @@ export default function PowerSourcesChart({
       {/* Interactive Legend & Series Filter Toggles */}
       <div className="flex flex-wrap items-center gap-2.5 text-xs font-bold mb-4 z-10">
         {/* Home Load (Dashed Line) */}
+        {/* Home Load (Solid Line) */}
         <button
           type="button"
           onClick={() => setShowHome(!showHome)}
@@ -512,9 +511,8 @@ export default function PowerSourcesChart({
                 : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
           }`}
         >
-          <span className={`w-3 h-0.5 border-b-2 border-dashed ${darkMode ? 'border-white/80' : 'border-slate-700'}`} />
+          <span className={`w-3 h-0.5 border-b-2 ${darkMode ? 'border-white/80' : 'border-slate-700'}`} />
           <span>Home Load</span>
-          {showHome ? <Eye size={13} /> : <EyeSlash size={13} />}
         </button>
 
         {/* Solar */}
@@ -534,11 +532,10 @@ export default function PowerSourcesChart({
           >
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-xs" />
             <span>Solar</span>
-            {showSolar ? <Eye size={13} /> : <EyeSlash size={13} />}
           </button>
         )}
 
-        {/* Grid (Import / Export) */}
+        {/* Grid */}
         {hasGrid && (
           <button
             type="button"
@@ -557,12 +554,11 @@ export default function PowerSourcesChart({
               <span className="w-2 h-2 rounded-full bg-sky-500 shadow-xs" title="Grid Import" />
               <span className="w-2 h-2 rounded-full bg-indigo-500 shadow-xs" title="Grid Export" />
             </div>
-            <span>Grid (Import + / Export -)</span>
-            {showGrid ? <Eye size={13} /> : <EyeSlash size={13} />}
+            <span>Grid</span>
           </button>
         )}
 
-        {/* Battery (Discharge / Charge) */}
+        {/* Battery */}
         {hasBattery && (
           <button
             type="button"
@@ -581,8 +577,7 @@ export default function PowerSourcesChart({
               <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs" title="Battery Discharge" />
               <span className="w-2 h-2 rounded-full bg-cyan-500 shadow-xs" title="Battery Charge" />
             </div>
-            <span>Battery (Discharge + / Charge -)</span>
-            {showBattery ? <Eye size={13} /> : <EyeSlash size={13} />}
+            <span>Battery</span>
           </button>
         )}
       </div>
@@ -820,7 +815,6 @@ export default function PowerSourcesChart({
                   dataKey="homeConsumption"
                   stroke={darkMode ? 'rgba(255, 255, 255, 0.75)' : '#334155'}
                   strokeWidth={1.8}
-                  strokeDasharray="4 4"
                   dot={false}
                   isAnimationActive={false}
                 />

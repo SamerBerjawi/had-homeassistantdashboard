@@ -39,7 +39,16 @@ import {
   ArrowDown,
   SkipBack,
   SkipForward,
-  SpeakerHigh
+  SpeakerHigh,
+  MapPin,
+  BatteryCharging,
+  BatteryHigh,
+  BatteryWarning,
+  Lightning,
+  Sun,
+  ChartBar,
+  Plug,
+  House
 } from '@phosphor-icons/react';
 import {
   DndContext,
@@ -69,7 +78,13 @@ import { getWeatherConditionInfo } from '../weather/weatherIcons';
 import AnimatedWeatherBackdrop from '../weather/AnimatedWeatherBackdrop';
 import { getDailyForecast } from '../../lib/weatherForecast';
 import { useAlbumArtColor } from '../../hooks/useAlbumArtColor';
+import { useEnergyData } from '../../hooks/useEnergyData';
 import Toolbar, { ToolbarItem } from '../kokonutui/toolbar';
+import {
+  MinimalistPowerFlowChart,
+  MinimalistEnergyUsageChart,
+  MinimalistSolarProductionChart
+} from './EnergySparklineCharts';
 
 // Lazy-loaded interactive slide-over drawers (loaded on first open)
 const UsersPresenceModal = React.lazy(() => import('./modals/UsersPresenceModal'));
@@ -93,6 +108,12 @@ const TILE_TITLES: Record<string, string> = {
   fans: 'Fans & Airflow',
   media: 'Audio & Media',
   alarm: 'Security Guard',
+  power_flow: 'Power Sources Flow',
+  power_flow_chart: 'Power Sources Flow (Chart)',
+  energy_usage: 'Energy Usage & Return',
+  energy_usage_chart: 'Energy Usage & Return (Chart)',
+  solar_production: 'Solar Production & Forecast',
+  solar_production_chart: 'Solar Production & Forecast (Chart)',
   doors: 'Entry Doors',
   windows: 'Windows',
   motion: 'Motion Zones',
@@ -140,6 +161,17 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   const [sensorsTab, setSensorsTab] = useState<'all' | 'motion' | 'leak' | 'smoke'>('all');
   const resolvedZones = useAutoLayoutStore((s) => s.resolvedZones);
   const sunState = useAutoLayoutStore((s) => s.states?.['sun.sun']?.state);
+
+  // Live Energy & Power Telemetry
+  const energyData = useEnergyData();
+  const {
+    realtime: energyRealtime,
+    totals: energyTotals,
+    model: energyModel,
+    hasSolar: energyHasSolar,
+    hasGrid: energyHasGrid,
+    hasBattery: energyHasBattery
+  } = energyData;
 
   // alarmEntity for keypad
   const alarmEntities: ResolvedEntity[] = domainGroups['alarm_control_panel'] || [];
@@ -686,6 +718,16 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       case 'fans': return () => setDrawerOpen('fans');
       case 'media': return () => setDrawerOpen('media');
       case 'alarm': return () => setDrawerOpen('alarm');
+      case 'power_flow':
+      case 'power_flow_chart':
+      case 'energy_usage':
+      case 'energy_usage_chart':
+      case 'solar_production':
+      case 'solar_production_chart':
+        return () => {
+          window.history.pushState({ tab: 'energy' }, '', '/energy');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        };
       case 'doors': return openDoorsDrawer;
       case 'windows': return openWindowsDrawer;
       case 'motion': return () => openSensorsDrawer('motion');
@@ -1190,18 +1232,19 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                             <AnimatedWeatherBackdrop condition={weatherCondition} isNight={isNight} darkMode={darkMode} />
                             <div className={`absolute inset-0 pointer-events-none rounded-3xl ${darkMode ? 'bg-black/20' : 'bg-white/10'}`} />
 
-                            {/* Top row: Icon + Condition Badge */}
+                            {/* Top row: Weather icon on left, Condition Badge on right */}
                             <div className="flex items-center justify-between relative z-10">
-                              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/80 dark:border-white/10 flex items-center justify-center shadow-xs">
+                              <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/80 dark:border-white/10 flex items-center justify-center shadow-xs shrink-0">
                                 {weatherCondInfo.icon}
                               </div>
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full backdrop-blur-md border shadow-xs ${weatherCondInfo.badgeBg}`}>
+
+                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full backdrop-blur-md border shadow-2xs ${weatherCondInfo.badgeBg}`}>
                                 {weatherCondInfo.name}
                               </span>
                             </div>
 
                             {/* Center: Temp + High/Low pill */}
-                            <div className="relative z-10 my-0.5 flex items-baseline justify-between">
+                            <div className="relative z-10 my-auto py-0.5 flex items-baseline justify-between">
                               <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none">
                                 {Math.round(currentTemp)}{tempUnit}
                               </span>
@@ -1216,28 +1259,24 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               </div>
                             </div>
 
-                            {/* Bottom: Location & telemetry summary */}
+                            {/* Bottom: Location Title & Telemetry summary with Chevron */}
                             <div className="relative z-10">
-                              <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
                                 {friendlyName}
                               </div>
-                              <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium truncate flex items-center justify-between mt-0.5">
-                                <div className="flex items-center gap-2">
-                                  <span className="flex items-center gap-1">
-                                    <Drop size={11} weight="fill" className="text-sky-400 shrink-0" />
-                                    {humidity}%
-                                  </span>
+                              <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
+                                <span className="flex items-center gap-1.5 truncate">
+                                  <Drop size={11} weight="fill" className="text-sky-400 shrink-0" />
+                                  <span>{humidity}%</span>
                                   {typeof windSpeed === 'number' && (
                                     <>
                                       <span>•</span>
-                                      <span className="flex items-center gap-1">
-                                        <Wind size={11} weight="bold" className="text-teal-400 shrink-0" />
-                                        {Math.round(windSpeed)} {windUnit}
-                                      </span>
+                                      <Wind size={11} weight="bold" className="text-teal-400 shrink-0" />
+                                      <span className="truncate">{Math.round(windSpeed)} {windUnit}</span>
                                     </>
                                   )}
-                                </div>
-                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-400 group-hover:text-sky-500 group-hover:translate-x-0.5 transition-all shrink-0" />
+                                </span>
+                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-sky-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                               </div>
                             </div>
                           </div>
@@ -1245,51 +1284,273 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                       }
 
                       case 'users': {
-                        return (
-                          <div className={tileBaseClass(false, '', false, is2x)}>
-                            <div className="flex items-center justify-between relative z-10">
-                              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-xs">
-                                <Users size={20} weight="duotone" />
-                              </div>
-                              <span className="text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                                {homeUsers.length} Home{activeZoneUsers.length > homeUsers.length ? ` • ${activeZoneUsers.length - homeUsers.length} Zone` : ''}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-2 my-auto py-1 relative z-10 overflow-hidden">
-                              {userEntities.slice(0, is2x ? 6 : 3).map((user) => {
-                                const { isHome, isInKnownZone } = getPersonZoneDetails(user);
-                                return (
-                                  <div key={user.entity_id} className="flex items-center gap-1.5 shrink-0">
-                                    <PersonAvatar
-                                      name={user.name}
-                                      entity_picture={user.attributes?.entity_picture}
-                                      state={user.state}
-                                      isHome={isHome}
-                                      inZone={isInKnownZone && !isHome}
-                                      size="sm"
-                                      className="w-8 h-8 sm:w-9 sm:h-9"
-                                    />
-                                    {is2x && (
-                                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate max-w-[65px] hidden sm:inline">
-                                        {user.name.split(' ')[0]}
-                                      </span>
-                                    )}
+                        if (is2x) {
+                          return (
+                            <div className={tileBaseClass(false, '', false, true)}>
+                              {/* Header: Identity on left, Live presence badges on right */}
+                              <div className="flex items-center justify-between relative z-10">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-xs shrink-0">
+                                    <Users size={19} weight="duotone" />
                                   </div>
-                                );
-                              })}
+                                  <div className="min-w-0">
+                                    <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                                      Family Presence
+                                    </div>
+                                    <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                      {userEntities.length === 0
+                                        ? 'No members tracked'
+                                        : `${userEntities.length} member${userEntities.length === 1 ? '' : 's'} • ${homeUsers.length} at home`}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  {homeUsers.length > 0 && (
+                                    <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shadow-2xs">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                      {homeUsers.length} Home
+                                    </span>
+                                  )}
+                                  {activeZoneUsers.length > homeUsers.length && (
+                                    <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/20 shadow-2xs">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                                      {activeZoneUsers.length - homeUsers.length} Zone
+                                    </span>
+                                  )}
+                                  {homeUsers.length === 0 && activeZoneUsers.length === 0 && (
+                                    <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/20 shadow-2xs">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                      Away
+                                    </span>
+                                  )}
+                                  <CaretRight
+                                    size={14}
+                                    weight="bold"
+                                    className="text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-0.5"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Middle: Member Cards Row */}
+                              <div className="flex items-center gap-2 my-auto py-0.5 relative z-10 overflow-x-auto no-scrollbar">
+                                {userEntities.length === 0 ? (
+                                  <div className="w-full flex items-center justify-center py-2 text-xs text-slate-400 font-medium">
+                                    No family members configured
+                                  </div>
+                                ) : (
+                                  <>
+                                    {userEntities.slice(0, 4).map((user) => {
+                                      const { isHome, isInKnownZone, zoneName } = getPersonZoneDetails(user);
+                                      const battery = user?.batteryPct ?? (
+                                        typeof user?.attributes?.battery === 'number'
+                                          ? user.attributes.battery
+                                          : typeof user?.attributes?.battery_level === 'number'
+                                            ? user.attributes.battery_level
+                                            : undefined
+                                      );
+                                      const batteryState = user?.attributes?.battery_state || user?.attributes?.battery_status;
+                                      const isCharging = Boolean(
+                                        user?.attributes?.battery_charging ||
+                                        (typeof batteryState === 'string' && batteryState.toLowerCase().includes('charg'))
+                                      );
+                                      const firstName = user.name.split(' ')[0];
+
+                                      return (
+                                        <div
+                                          key={user.entity_id}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openUsersDrawer(user);
+                                          }}
+                                          className={`flex-1 min-w-[105px] sm:min-w-[120px] p-2 rounded-2xl transition-all cursor-pointer flex items-center gap-2 sm:gap-2.5 shadow-2xs group/card border ${
+                                            darkMode
+                                              ? 'bg-white/5 hover:bg-white/10 border-white/10 hover:border-white/20 text-white'
+                                              : 'bg-white/60 hover:bg-white/90 border-slate-200/60 hover:border-slate-300 text-slate-900'
+                                          }`}
+                                          title={`${user.name}: ${isHome ? 'Home' : isInKnownZone ? zoneName : 'Away'}`}
+                                        >
+                                          <PersonAvatar
+                                            name={user.name}
+                                            entity_picture={user.attributes?.entity_picture}
+                                            state={user.state}
+                                            isHome={isHome}
+                                            inZone={isInKnownZone && !isHome}
+                                            size="sm"
+                                            className="w-8.5 h-8.5 sm:w-9 sm:h-9 shrink-0"
+                                          />
+                                          <div className="min-w-0 flex-1">
+                                            <div className="text-xs font-bold truncate group-hover/card:text-indigo-500 dark:group-hover/card:text-indigo-400 transition-colors">
+                                              {firstName}
+                                            </div>
+                                            <div className="flex items-center gap-1 mt-0.5">
+                                              {isHome ? (
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 truncate">
+                                                  <HouseLine size={11} weight="bold" className="shrink-0" />
+                                                  <span className="truncate">Home</span>
+                                                </span>
+                                              ) : isInKnownZone ? (
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-600 dark:text-sky-400 truncate">
+                                                  <MapPin size={11} weight="fill" className="shrink-0" />
+                                                  <span className="truncate">{zoneName}</span>
+                                                </span>
+                                              ) : (
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                                                  <span className="truncate">Away</span>
+                                                </span>
+                                              )}
+                                            </div>
+                                            {typeof battery === 'number' && (
+                                              <div className="flex items-center gap-1 text-[9px] font-mono font-semibold text-slate-400 dark:text-slate-400 mt-0.5">
+                                                {isCharging ? (
+                                                  <BatteryCharging size={11} weight="fill" className="text-emerald-500 shrink-0" />
+                                                ) : battery <= 20 ? (
+                                                  <BatteryWarning size={11} weight="fill" className="text-rose-500 shrink-0" />
+                                                ) : (
+                                                  <BatteryHigh size={11} weight="fill" className="text-slate-400 dark:text-slate-400 shrink-0" />
+                                                )}
+                                                <span>{Math.round(battery)}%</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                    {userEntities.length > 4 && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openUsersDrawer();
+                                        }}
+                                        className={`shrink-0 px-2.5 py-2 rounded-2xl transition-all text-center flex flex-col items-center justify-center border cursor-pointer ${
+                                          darkMode
+                                            ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300'
+                                            : 'bg-white/60 hover:bg-white/90 border-slate-200/60 text-slate-700'
+                                        }`}
+                                        title="View all family members"
+                                      >
+                                        <span className="text-xs font-black">+{userEntities.length - 4}</span>
+                                        <span className="text-[9px] font-medium text-slate-400">more</span>
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Bottom Summary Bar */}
+                              <div className="relative z-10 flex items-center justify-between text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 border-t border-black/5 dark:border-white/5 pt-1.5 mt-0.5">
+                                <span className="truncate">
+                                  {activeZoneUsers.length === 0
+                                    ? 'All members away from home'
+                                    : homeUsers.length === userEntities.length
+                                    ? 'Everyone is currently at home'
+                                    : activeZoneUsers.map((u) => {
+                                        const fn = u.name.split(' ')[0];
+                                        const { isHome, zoneName } = getPersonZoneDetails(u);
+                                        return isHome ? `${fn} (Home)` : `${fn} (${zoneName})`;
+                                      }).join(' • ')}
+                                </span>
+                                <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 shrink-0 ml-2 group-hover:underline flex items-center gap-0.5">
+                                  Map & Details
+                                  <CaretRight size={10} weight="bold" />
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x width version
+                        const statusSummary = (() => {
+                          if (userEntities.length === 0) return 'No members tracked';
+                          if (homeUsers.length === userEntities.length) return 'Everyone is home';
+                          if (activeZoneUsers.length === 0) return 'All members away';
+                          return activeZoneUsers.map((u) => {
+                            const fn = u.name.split(' ')[0];
+                            const { isHome, zoneName } = getPersonZoneDetails(u);
+                            return isHome ? fn : `${fn} (${zoneName})`;
+                          }).join(', ');
+                        })();
+
+                        return (
+                          <div className={tileBaseClass(false, '', false, false)}>
+                            {/* Top Row: Icon on left, Presence Status Badge on right */}
+                            <div className="flex items-center justify-between relative z-10">
+                              <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-xs shrink-0">
+                                <Users size={19} weight="duotone" />
+                              </div>
+
+                              {homeUsers.length > 0 ? (
+                                <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shadow-2xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  {homeUsers.length} Home
+                                </span>
+                              ) : activeZoneUsers.length > 0 ? (
+                                <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/20 shadow-2xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                                  {activeZoneUsers.length} Zone
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/20 shadow-2xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                  All Away
+                                </span>
+                              )}
                             </div>
 
-                            <div className="relative z-10">
-                              <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">Family Presence</div>
-                              <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-                                <span className="truncate">
-                                  {activeZoneUsers.map((u) => {
-                                    const fn = u.name.split(' ')[0];
-                                    const { isHome, zoneName } = getPersonZoneDetails(u);
-                                    return isHome ? fn : `${fn} (${zoneName})`;
-                                  }).join(', ') || 'No one home or in zone'}
+                            {/* Middle Row: Avatars Cluster with presence rings & hover zoom */}
+                            <div className="flex items-center my-auto py-1 relative z-10">
+                              <div className="flex items-center -space-x-2 overflow-hidden">
+                                {userEntities.slice(0, 3).map((user, idx) => {
+                                  const { isHome, isInKnownZone } = getPersonZoneDetails(user);
+                                  return (
+                                    <div
+                                      key={user.entity_id}
+                                      className="relative transition-transform duration-200 hover:scale-110 hover:z-20 cursor-pointer"
+                                      style={{ zIndex: 10 - idx }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openUsersDrawer(user);
+                                      }}
+                                      title={`${user.name} (${isHome ? 'Home' : isInKnownZone ? 'In Zone' : 'Away'})`}
+                                    >
+                                      <PersonAvatar
+                                        name={user.name}
+                                        entity_picture={user.attributes?.entity_picture}
+                                        state={user.state}
+                                        isHome={isHome}
+                                        inZone={isInKnownZone && !isHome}
+                                        size="sm"
+                                        className="w-8 h-8 sm:w-9 sm:h-9 ring-2 ring-white dark:ring-slate-900 shadow-xs"
+                                      />
+                                    </div>
+                                  );
+                                })}
+                                {userEntities.length > 3 && (
+                                  <div
+                                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 ring-2 ring-white dark:ring-slate-900 text-[10px] sm:text-[11px] font-black flex items-center justify-center shadow-xs z-0"
+                                    title={`${userEntities.length - 3} more members`}
+                                  >
+                                    +{userEntities.length - 3}
+                                  </div>
+                                )}
+                              </div>
+
+                              {userEntities.length === 1 && (
+                                <span className="text-xs font-bold text-slate-700 dark:text-slate-200 ml-2.5 truncate">
+                                  {userEntities[0].name.split(' ')[0]}
                                 </span>
+                              )}
+                            </div>
+
+                            {/* Bottom: Title & Natural Language Presence Summary with Chevron */}
+                            <div className="relative z-10">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Family Presence
+                              </div>
+                              <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
+                                <span className="truncate">{statusSummary}</span>
                                 <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                               </div>
                             </div>
@@ -1308,12 +1569,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                             )}
                           >
                             <div className="flex items-center justify-between relative z-10">
-                              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
+                              <div className={`w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center transition-all shrink-0 ${
                                 onLights.length > 0
                                   ? 'bg-amber-500 text-slate-950 shadow-xs'
                                   : 'bg-white/80 dark:bg-white/10 text-slate-500 dark:text-slate-400'
                               }`}>
-                                <Lightbulb size={20} weight={onLights.length > 0 ? 'fill' : 'duotone'} />
+                                <Lightbulb size={19} weight={onLights.length > 0 ? 'fill' : 'duotone'} />
                               </div>
 
                               <div className="flex items-center gap-2">
@@ -1325,7 +1586,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 <button
                                   type="button"
                                   onClick={handleToggleLightBatch}
-                                  className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                                     onLights.length > 0
                                       ? 'bg-amber-500/25 text-amber-700 dark:text-amber-300 hover:bg-amber-500/40'
                                       : 'bg-white/80 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/15'
@@ -1350,10 +1611,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                             </div>
 
                             <div className="relative z-10">
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Lighting</div>
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Lighting
+                              </div>
                               <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
                                 <span>{onLights.length > 0 ? `${onLights.length} active` : 'All lights off'}</span>
-                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all" />
+                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                               </div>
                             </div>
                           </div>
@@ -1371,12 +1634,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                             )}
                           >
                             <div className="flex items-center justify-between relative z-10">
-                              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
+                              <div className={`w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center transition-all shrink-0 ${
                                 onSwitches.length > 0
                                   ? 'bg-emerald-500 text-white shadow-xs'
                                   : 'bg-white/80 dark:bg-white/10 text-slate-500 dark:text-slate-400'
                               }`}>
-                                <ToggleRight size={20} weight="duotone" />
+                                <ToggleRight size={19} weight="duotone" />
                               </div>
 
                               <div className="flex items-center gap-2">
@@ -1388,7 +1651,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 <button
                                   type="button"
                                   onClick={handleToggleSwitchBatch}
-                                  className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                                     onSwitches.length > 0
                                       ? 'bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/40'
                                       : 'bg-white/80 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/15'
@@ -1413,10 +1676,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                             </div>
 
                             <div className="relative z-10">
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Switches</div>
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Switches
+                              </div>
                               <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-                                <span>{onSwitches.length > 0 ? `${onSwitches.length} powered` : 'All off'}</span>
-                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />
+                                <span>{onSwitches.length > 0 ? `${onSwitches.length} active` : 'All switches off'}</span>
+                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                               </div>
                             </div>
                           </div>
@@ -1434,18 +1699,18 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                             )}
                           >
                             <div className="flex items-center justify-between relative z-10">
-                              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
+                              <div className={`w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center transition-all shrink-0 ${
                                 isVacuumCleaning
                                   ? 'bg-teal-500 text-slate-950 shadow-xs'
                                   : 'bg-white/80 dark:bg-white/10 text-slate-500 dark:text-slate-400'
                               }`}>
-                                <Broom size={20} weight={isVacuumCleaning ? 'fill' : 'duotone'} />
+                                <Broom size={19} weight={isVacuumCleaning ? 'fill' : 'duotone'} />
                               </div>
 
                               <button
                                 type="button"
                                 onClick={handleToggleVacuum}
-                                className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                                   isVacuumCleaning
                                     ? 'bg-amber-500/25 text-amber-700 dark:text-amber-300 hover:bg-amber-500/40'
                                     : 'bg-white/80 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/15'
@@ -1475,10 +1740,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                             </div>
 
                             <div className="relative z-10">
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Vacuums</div>
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Vacuums
+                              </div>
                               <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-                                <span>{firstVacuum?.name || 'Robotic Cleaner'}</span>
-                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-teal-500 group-hover:translate-x-0.5 transition-all" />
+                                <span className="truncate">{firstVacuum?.name || 'Robotic Cleaner'}</span>
+                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-teal-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                               </div>
                             </div>
                           </div>
@@ -1496,18 +1763,18 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                             )}
                           >
                             <div className="flex items-center justify-between relative z-10">
-                              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
+                              <div className={`w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center transition-all shrink-0 ${
                                 activeFans.length > 0
                                   ? 'bg-cyan-500 text-slate-950 shadow-xs'
                                   : 'bg-white/80 dark:bg-white/10 text-slate-500 dark:text-slate-400'
                               }`}>
-                                <Fan size={20} weight="duotone" className={activeFans.length > 0 ? 'animate-spin' : ''} style={{ animationDuration: '2s' }} />
+                                <Fan size={19} weight="duotone" className={activeFans.length > 0 ? 'animate-spin' : ''} style={{ animationDuration: '2s' }} />
                               </div>
 
                               <button
                                 type="button"
                                 onClick={handleToggleFanBatch}
-                                className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                                   activeFans.length > 0
                                     ? 'bg-cyan-500/25 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/40'
                                     : 'bg-white/80 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/15'
@@ -1531,10 +1798,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                             </div>
 
                             <div className="relative z-10">
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Fans & Airflow</div>
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Fans & Airflow
+                              </div>
                               <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
                                 <span>{activeFans.length > 0 ? 'Circulating air' : 'All fans idle'}</span>
-                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-cyan-500 group-hover:translate-x-0.5 transition-all" />
+                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-cyan-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                               </div>
                             </div>
                           </div>
@@ -1761,10 +2030,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               style={{ backgroundColor: mediaPalette.primary }}
                             />
 
-                            {/* Top Row: Artwork + Play/Pause Button */}
+                            {/* Top Row: Artwork/Icon on left, Controls on right */}
                             <div className="flex items-center justify-between relative z-10">
                               <div
-                                className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-2xl overflow-hidden shadow-xs border shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform"
+                                className="relative w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl overflow-hidden shadow-xs border shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform"
                                 style={{ borderColor: hasActiveMedia ? mediaPalette.badgeBorder : undefined }}
                               >
                                 {mediaArt ? (
@@ -1781,15 +2050,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                       color: hasActiveMedia ? mediaPalette.primary : (darkMode ? '#d8b4fe' : '#9333ea'),
                                     }}
                                   >
-                                    <MusicNotes size={20} weight="duotone" />
+                                    <MusicNotes size={19} weight="duotone" />
                                   </div>
                                 )}
                               </div>
 
-                              <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                                 {isPlayingMedia && (
                                   <div
-                                    className="flex items-end gap-0.5 h-2.5 px-1.5 py-0.5 rounded-full border"
+                                    className="flex items-end gap-0.5 h-2.5 px-1.5 py-0.5 rounded-full border hidden sm:flex"
                                     style={{
                                       backgroundColor: mediaPalette.badgeBg,
                                       borderColor: mediaPalette.badgeBorder,
@@ -1803,14 +2072,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 <button
                                   type="button"
                                   onClick={handleTogglePlayPause}
-                                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 text-white font-black"
+                                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 text-white font-black"
                                   style={{
                                     backgroundColor: hasActiveMedia ? mediaPalette.primary : '#9333ea',
                                     boxShadow: hasActiveMedia ? `0 6px 16px -3px ${mediaPalette.glow}` : '0 6px 16px -3px rgba(147, 51, 234, 0.35)',
                                   }}
                                   title={isPlayingMedia ? 'Pause Audio' : 'Play Audio'}
                                 >
-                                  {isPlayingMedia ? <Pause size={15} weight="fill" /> : <Play size={15} weight="fill" className="ml-0.5" />}
+                                  {isPlayingMedia ? <Pause size={13} weight="fill" /> : <Play size={13} weight="fill" className="ml-0.5" />}
                                 </button>
                               </div>
                             </div>
@@ -1828,17 +2097,17 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               </p>
                             </div>
 
-                            {/* Bottom: Device Name + Caret */}
+                            {/* Bottom: Device Name & Subtitle with Chevron */}
                             <div className="relative z-10">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                {activeMedia?.name || 'Media Player'}
+                              </div>
                               <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-                                <div className="flex items-center gap-1 truncate">
-                                  <SpeakerHigh size={12} weight="bold" className="shrink-0" style={{ color: hasActiveMedia ? mediaPalette.primary : undefined }} />
-                                  <span className="truncate">{activeMedia?.name || 'Media Player'}</span>
-                                </div>
+                                <span className="truncate">{isPlayingMedia ? 'Now Playing' : 'Audio Idle'}{volumePct !== undefined ? ` • ${volumePct}% vol` : ''}</span>
                                 <CaretRight
                                   size={13}
                                   weight="bold"
-                                  className="text-slate-400 dark:text-slate-500 group-hover:translate-x-0.5 transition-all shrink-0"
+                                  className="text-slate-400 dark:text-slate-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1"
                                   style={{ color: hasActiveMedia ? (darkMode ? mediaPalette.light : mediaPalette.badgeText) : undefined }}
                                 />
                               </div>
@@ -1895,7 +2164,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
                               {/* Action Row: Exit delay countdown or @kokonutui/toolbar with @kokonutui/hold-button */}
                               {armAwayCountdown !== null && armAwayCountdown > 0 ? (
-                                <div className="flex items-center justify-between bg-rose-500/15 border border-rose-500/30 rounded-2xl p-2 sm:p-2.5 my-auto z-10 animate-fadeIn">
+                                <div className="flex items-center justify-between bg-rose-500/15 border border-rose-500/30 rounded-2xl p-2 sm:p-2.5 mt-auto mb-1.5 sm:mb-2 z-10 animate-fadeIn">
                                   <div className="flex items-center gap-2.5 min-w-0">
                                     <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-rose-500 text-white font-mono font-black text-sm shadow-md shadow-rose-500/30 shrink-0">
                                       <span className="relative z-10">{armAwayCountdown}s</span>
@@ -1931,7 +2200,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   </div>
                                 </div>
                               ) : (
-                                <div className="relative z-10 my-auto pt-1 w-full" onClick={(e) => e.stopPropagation()}>
+                                <div className="relative z-10 mt-auto mb-1.5 sm:mb-2 w-full" onClick={(e) => e.stopPropagation()}>
                                   <Toolbar
                                     items={[
                                       { id: 'disarmed', title: 'Disarm', icon: LockOpen, color: 'amber' },
@@ -1965,28 +2234,23 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               false
                             )}
                           >
-                            {/* Top row: Security identity + Right Chevron */}
+                            {/* Top row: Security icon on left, status badge on right */}
                             <div className="flex items-center justify-between relative z-10">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0 transition-all ${alarmDetails.bg} ${alarmDetails.text}`}>
-                                  {currentState === 'armed_away' ? (
-                                    <ShieldWarning size={16} weight="duotone" />
-                                  ) : currentState === 'armed_night' ? (
-                                    <Moon size={16} weight="duotone" />
-                                  ) : currentState === 'armed_home' ? (
-                                    <ShieldCheck size={16} weight="duotone" />
-                                  ) : (
-                                    <LockOpen size={16} weight="duotone" />
-                                  )}
-                                </div>
-                                <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                  {alarmEntity?.name || alarmEntity?.attributes?.friendly_name || 'Security Guard'}
-                                </span>
+                              <div className={`w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center shrink-0 transition-all ${alarmDetails.bg} ${alarmDetails.text}`}>
+                                {currentState === 'armed_away' ? (
+                                  <ShieldWarning size={19} weight="duotone" />
+                                ) : currentState === 'armed_night' ? (
+                                  <Moon size={19} weight="duotone" />
+                                ) : currentState === 'armed_home' ? (
+                                  <ShieldCheck size={19} weight="duotone" />
+                                ) : (
+                                  <LockOpen size={19} weight="duotone" />
+                                )}
                               </div>
 
-                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white transition-colors shrink-0">
-                                <CaretRight size={14} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
-                              </div>
+                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${alarmDetails.bg} ${alarmDetails.text} border-current/20`}>
+                                {alarmDetails.label}
+                              </span>
                             </div>
 
                             {/* Action Row: Exit delay countdown or Toolbar */}
@@ -2031,57 +2295,1034 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 />
                               </div>
                             )}
+
+                            {/* Bottom: Title & Alarm Status with Chevron */}
+                            <div className="relative z-10">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                {alarmEntity?.name || alarmEntity?.attributes?.friendly_name || 'Security Guard'}
+                              </div>
+                              <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
+                                <span>{isArmed ? 'Perimeter armed' : 'System disarmed'}</span>
+                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      case 'power_flow': {
+                        const solarKW = energyRealtime?.solarPowerKW || 0;
+                        const gridImportKW = energyRealtime?.gridImportPowerKW || 0;
+                        const gridExportKW = energyRealtime?.gridExportPowerKW || 0;
+                        const batteryDischargeKW = energyRealtime?.batteryDischargePowerKW || 0;
+                        const batteryChargeKW = energyRealtime?.batteryChargePowerKW || 0;
+                        const batterySoc = energyRealtime?.batterySoC;
+                        const homeKW = energyRealtime?.homeConsumptionKW || 0;
+                        const isExporting = gridExportKW > 0.05;
+                        const isImporting = gridImportKW > 0.05;
+                        const isSolarActive = solarKW > 0.05;
+                        const selfSufficiencyPct = homeKW > 0 
+                          ? Math.min(100, Math.max(0, Math.round(((solarKW + batteryDischargeKW) / homeKW) * 100))) 
+                          : 100;
+
+                        if (is2x) {
+                          return (
+                            <div className={tileBaseClass(false, '', false, true)}>
+                              {/* Header */}
+                              <div className="flex items-center justify-between relative z-10">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center shadow-xs shrink-0">
+                                    <Lightning size={19} weight="fill" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                                      Power Sources Flow
+                                    </div>
+                                    <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                      Instantaneous continuous flow • {selfSufficiencyPct}% self-powered
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border shadow-2xs ${
+                                    isExporting
+                                      ? 'bg-indigo-100 text-indigo-900 border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/20'
+                                      : isSolarActive
+                                      ? 'bg-amber-100 text-amber-900 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/20'
+                                      : 'bg-purple-100 text-purple-900 border-purple-200 dark:bg-purple-500/15 dark:text-purple-400 dark:border-purple-500/20'
+                                  }`}>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                                    {homeKW.toFixed(2)} kW Load
+                                  </span>
+                                  <CaretRight
+                                    size={14}
+                                    weight="bold"
+                                    className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-0.5"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Middle: 4 Flow Cards with Vertical Stack (No Truncation) */}
+                              <div className={`grid ${energyHasBattery ? 'grid-cols-4' : 'grid-cols-3'} gap-2 my-auto relative z-10`}>
+                                {/* Solar */}
+                                <div className={`p-2 sm:p-2.5 rounded-2xl transition-all shadow-2xs flex flex-col justify-center ${
+                                  darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                }`}>
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <div className="w-5 h-5 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
+                                      <Sun size={12} weight="fill" />
+                                    </div>
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                      Solar
+                                    </span>
+                                  </div>
+                                  <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
+                                    {solarKW.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                  </div>
+                                </div>
+
+                                {/* Grid */}
+                                <div className={`p-2 sm:p-2.5 rounded-2xl transition-all shadow-2xs flex flex-col justify-center ${
+                                  darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                }`}>
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${
+                                      isExporting ? 'bg-indigo-500/15 text-indigo-500' : 'bg-sky-500/15 text-sky-500'
+                                    }`}>
+                                      <Plug size={12} weight="fill" />
+                                    </div>
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                      {isExporting ? 'Export' : 'Grid'}
+                                    </span>
+                                  </div>
+                                  <div className={`text-xs sm:text-sm font-black font-mono whitespace-nowrap ${
+                                    isExporting ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-white'
+                                  }`}>
+                                    {isExporting ? `-${gridExportKW.toFixed(2)}` : `+${gridImportKW.toFixed(2)}`} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                  </div>
+                                </div>
+
+                                {/* Battery (if available) */}
+                                {energyHasBattery && (
+                                  <div className={`p-2 sm:p-2.5 rounded-2xl transition-all shadow-2xs flex flex-col justify-center ${
+                                    darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                  }`}>
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                      <div className="w-5 h-5 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
+                                        <BatteryCharging size={12} weight="fill" />
+                                      </div>
+                                      <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                        Battery {typeof batterySoc === 'number' ? `(${batterySoc}%)` : ''}
+                                      </span>
+                                    </div>
+                                    <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
+                                      {batteryDischargeKW > 0.05 ? `+${batteryDischargeKW.toFixed(2)}` : batteryChargeKW > 0.05 ? `-${batteryChargeKW.toFixed(2)}` : '0.00'} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Home Load */}
+                                <div className={`p-2 sm:p-2.5 rounded-2xl transition-all shadow-2xs flex flex-col justify-center ${
+                                  darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                }`}>
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <div className="w-5 h-5 rounded-lg bg-purple-500/15 text-purple-500 flex items-center justify-center shrink-0">
+                                      <House size={12} weight="fill" />
+                                    </div>
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                      Home Load
+                                    </span>
+                                  </div>
+                                  <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
+                                    {homeKW.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x Layout
+                        return (
+                          <div className={tileBaseClass(false, '', false, false)}>
+                            {/* Top Row: Icon on left, Percentage Self-Powered Badge on right */}
+                            <div className="flex items-center justify-between relative z-10 shrink-0">
+                              <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center shadow-xs shrink-0">
+                                <Lightning size={19} weight="fill" />
+                              </div>
+
+                              <span className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${
+                                selfSufficiencyPct >= 100
+                                  ? darkMode ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-100 text-amber-900 border-amber-300'
+                                  : selfSufficiencyPct > 50
+                                  ? darkMode ? 'bg-sky-500/20 text-sky-300 border-sky-500/30' : 'bg-sky-100 text-sky-900 border-sky-300'
+                                  : darkMode ? 'bg-slate-500/20 text-slate-300 border-slate-500/30' : 'bg-slate-200 text-slate-900 border-slate-300'
+                              }`}>
+                                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                                {selfSufficiencyPct}% Self-Powered
+                              </span>
+                            </div>
+
+                            {/* Middle: 2x2 compact telemetry badges with zero inner borders */}
+                            <div className="grid grid-cols-2 gap-1 my-auto relative z-10">
+                              <div className={`flex items-center gap-1 px-1.5 py-1 rounded-xl min-w-0 ${
+                                darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
+                              }`}>
+                                <Sun size={11} weight="fill" className="text-amber-500 shrink-0" />
+                                <span className="font-mono text-[10.5px] font-bold truncate">{solarKW.toFixed(1)} kW</span>
+                              </div>
+                              <div className={`flex items-center gap-1 px-1.5 py-1 rounded-xl min-w-0 ${
+                                darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
+                              }`}>
+                                <House size={11} weight="fill" className="text-purple-500 shrink-0" />
+                                <span className="font-mono text-[10.5px] font-bold truncate">{homeKW.toFixed(1)} kW</span>
+                              </div>
+                              <div className={`flex items-center gap-1 px-1.5 py-1 rounded-xl min-w-0 ${
+                                darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
+                              }`}>
+                                <Plug size={11} weight="fill" className="text-sky-500 shrink-0" />
+                                <span className="font-mono text-[10.5px] font-bold truncate">
+                                  {isExporting ? `-${gridExportKW.toFixed(1)}` : `+${gridImportKW.toFixed(1)}`}
+                                </span>
+                              </div>
+                              <div className={`flex items-center gap-1 px-1.5 py-1 rounded-xl min-w-0 ${
+                                darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
+                              }`}>
+                                <BatteryCharging size={11} weight="fill" className="text-emerald-500 shrink-0" />
+                                <span className="font-mono text-[10.5px] font-bold truncate">
+                                  {typeof batterySoc === 'number' ? `${batterySoc}%` : `${batteryDischargeKW.toFixed(1)} kW`}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Bottom: Title aligned with Chevron */}
+                            <div className="relative z-10 shrink-0 flex items-center justify-between">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Power Sources Flow
+                              </div>
+                              <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      case 'power_flow_chart': {
+                        const solarKW = energyRealtime?.solarPowerKW || 0;
+                        const homeKW = energyRealtime?.homeConsumptionKW || 0;
+                        const gridImportKW = energyRealtime?.gridImportPowerKW || 0;
+                        const gridExportKW = energyRealtime?.gridExportPowerKW || 0;
+                        const batteryDischargeKW = energyRealtime?.batteryDischargePowerKW || 0;
+                        const batterySoc = energyRealtime?.batterySoC;
+                        const isExporting = gridExportKW > 0.05;
+                        const chartBuckets = (energyModel.powerBuckets && energyModel.powerBuckets.length > 0)
+                          ? energyModel.powerBuckets
+                          : (energyData.buckets || []);
+
+                        const selfSufficiencyPct = homeKW > 0 
+                          ? Math.min(100, Math.round(((solarKW + batteryDischargeKW) / homeKW) * 100))
+                          : 100;
+
+                        if (is2x) {
+                          return (
+                            <div className={tileBaseClass(false, '', false, true)}>
+                              <div className="grid grid-cols-2 gap-4 h-full items-center relative z-10">
+                                {/* Left Side: Info & Metrics */}
+                                <div className="flex flex-col justify-between h-full min-w-0 pr-1">
+                                  {/* Header with Title (No pill) */}
+                                  <div className="flex items-center justify-between gap-2 shrink-0">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center shadow-xs shrink-0">
+                                        <Lightning size={18} weight="fill" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                                          Power Sources Flow
+                                        </div>
+                                        <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                          Home • Solar • Grid • Battery
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Telemetry chips with zero inner borders */}
+                                  <div className="grid grid-cols-2 gap-1.5 my-auto py-1">
+                                    <div className={`p-1.5 rounded-xl transition-all ${
+                                      darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                    }`}>
+                                      <div className="text-[9px] sm:text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                        <Sun size={11} weight="fill" className="text-amber-500 shrink-0" /> Solar
+                                      </div>
+                                      <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white truncate">
+                                        {solarKW.toFixed(2)} <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                      </div>
+                                    </div>
+
+                                    <div className={`p-1.5 rounded-xl transition-all ${
+                                      darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                    }`}>
+                                      <div className="text-[9px] sm:text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                        <House size={11} weight="fill" className="text-purple-500 shrink-0" /> Home Load
+                                      </div>
+                                      <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white truncate">
+                                        {homeKW.toFixed(2)} <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Subtitle / summary */}
+                                  <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate flex items-center gap-2 shrink-0">
+                                    <span>Grid: {isExporting ? `-${gridExportKW.toFixed(1)} kW` : `+${gridImportKW.toFixed(1)} kW`}</span>
+                                    {typeof batterySoc === 'number' && (
+                                      <>
+                                        <span>•</span>
+                                        <span>Bat: {batterySoc}%</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Right Side: Minimalist Chart & Clean Legend */}
+                                <div className="flex flex-col justify-between h-full min-w-0 pl-3 border-l border-slate-200/60 dark:border-white/5">
+                                  <div className="flex items-center justify-between shrink-0">
+                                    <div className="flex items-center gap-2 text-[9px] sm:text-[10px] font-bold text-slate-400">
+                                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />Solar</span>
+                                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-sky-500" />Grid</span>
+                                      <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 border-t border-slate-400" />Home</span>
+                                    </div>
+                                    <CaretRight size={14} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                                  </div>
+
+                                  {/* Responsive minimalist chart container */}
+                                  <div className="w-full flex-1 min-h-0 my-1 relative">
+                                    <MinimalistPowerFlowChart
+                                      buckets={chartBuckets}
+                                      darkMode={darkMode}
+                                      hasSolar={energyHasSolar}
+                                      hasGrid={energyHasGrid}
+                                      hasBattery={energyHasBattery}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x Layout: Chart in Middle (No pill)
+                        return (
+                          <div className={tileBaseClass(false, '', false, false)}>
+                            {/* Top Row: Icon on left (No pill) */}
+                            <div className="flex items-center justify-between relative z-10 shrink-0">
+                              <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center shadow-xs shrink-0">
+                                <Lightning size={19} weight="fill" />
+                              </div>
+                            </div>
+
+                            {/* Middle: Minimalistic Chart (Dynamic height, zero grids, zero axes, zero labels) */}
+                            <div className="w-full flex-1 min-h-0 my-auto py-0.5 relative z-10">
+                              <MinimalistPowerFlowChart
+                                buckets={chartBuckets}
+                                darkMode={darkMode}
+                                hasSolar={energyHasSolar}
+                                hasGrid={energyHasGrid}
+                                hasBattery={energyHasBattery}
+                              />
+                            </div>
+
+                            {/* Bottom: Title aligned with Chevron */}
+                            <div className="relative z-10 shrink-0 flex items-center justify-between">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Power Sources Flow
+                              </div>
+                              <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      case 'energy_usage': {
+                        const homeConsumption = energyTotals?.homeConsumption || 0;
+                        const gridImport = energyTotals?.gridImport || 0;
+                        const gridExport = energyTotals?.gridExport || 0;
+                        const solarConsumed = energyTotals?.solarToHome || 0;
+                        const batteryDischarged = energyTotals?.batteryToHome || 0;
+                        const solarOffset = homeConsumption > 0 
+                          ? Math.min(100, Math.round(((solarConsumed + batteryDischarged) / homeConsumption) * 100)) 
+                          : 0;
+                        const netGrid = gridImport - gridExport;
+
+                        if (is2x) {
+                          return (
+                            <div className={tileBaseClass(false, '', false, true)}>
+                              {/* Header */}
+                              <div className="flex items-center justify-between relative z-10">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-purple-500/15 text-purple-500 flex items-center justify-center shadow-xs shrink-0">
+                                    <ChartBar size={19} weight="fill" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                                      Energy Usage & Return
+                                    </div>
+                                    <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                      Today's consumption • {gridExport > 0 ? `${gridExport.toFixed(1)} kWh returned` : 'No grid return'}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${
+                                    netGrid <= 0
+                                      ? darkMode ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-indigo-100 text-indigo-900 border-indigo-300'
+                                      : darkMode ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-purple-100 text-purple-900 border-purple-300'
+                                  }`}>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                                    {netGrid <= 0 ? `Net -${Math.abs(netGrid).toFixed(1)} kWh` : `Net +${netGrid.toFixed(1)} kWh`}
+                                  </span>
+                                  <CaretRight
+                                    size={14}
+                                    weight="bold"
+                                    className="text-slate-400 dark:text-slate-500 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-0.5"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Middle: 4 Metric Cards with Vertical Stack (High Contrast Light Mode) */}
+                              <div className="grid grid-cols-4 gap-2 my-auto relative z-10">
+                                {/* Total Usage */}
+                                <div className={`p-2 sm:p-2.5 rounded-2xl transition-all shadow-2xs flex flex-col justify-center ${
+                                  darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                }`}>
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <div className="w-5 h-5 rounded-lg bg-purple-500/15 text-purple-500 flex items-center justify-center shrink-0">
+                                      <House size={12} weight="fill" />
+                                    </div>
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                      Total Use
+                                    </span>
+                                  </div>
+                                  <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
+                                    {homeConsumption.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                  </div>
+                                </div>
+
+                                {/* Grid Import */}
+                                <div className={`p-2 sm:p-2.5 rounded-2xl transition-all shadow-2xs flex flex-col justify-center ${
+                                  darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                }`}>
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <div className="w-5 h-5 rounded-lg bg-sky-500/15 text-sky-500 flex items-center justify-center shrink-0">
+                                      <Plug size={12} weight="fill" />
+                                    </div>
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                      Grid Import
+                                    </span>
+                                  </div>
+                                  <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
+                                    {gridImport.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                  </div>
+                                </div>
+
+                                {/* Grid Return */}
+                                <div className={`p-2 sm:p-2.5 rounded-2xl transition-all shadow-2xs flex flex-col justify-center ${
+                                  darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                }`}>
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <div className="w-5 h-5 rounded-lg bg-indigo-500/15 text-indigo-500 flex items-center justify-center shrink-0">
+                                      <ArrowArcLeft size={12} weight="bold" />
+                                    </div>
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                      Grid Return
+                                    </span>
+                                  </div>
+                                  <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
+                                    {gridExport.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                  </div>
+                                </div>
+
+                                {/* Solar Offset */}
+                                <div className={`p-2 sm:p-2.5 rounded-2xl transition-all shadow-2xs flex flex-col justify-center ${
+                                  darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                }`}>
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <div className="w-5 h-5 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
+                                      <Sun size={12} weight="fill" />
+                                    </div>
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                      Solar Offset
+                                    </span>
+                                  </div>
+                                  <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
+                                    {solarOffset}%
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x Layout
+                        return (
+                          <div className={tileBaseClass(false, '', false, false)}>
+                            {/* Top Row: Icon on left, Percentage Offset Badge on right */}
+                            <div className="flex items-center justify-between relative z-10 shrink-0">
+                              <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-purple-500/15 text-purple-500 flex items-center justify-center shadow-xs shrink-0">
+                                <ChartBar size={19} weight="fill" />
+                              </div>
+
+                              <span className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${
+                                solarOffset >= 100
+                                  ? darkMode ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-100 text-amber-900 border-amber-300'
+                                  : solarOffset > 0
+                                  ? darkMode ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                  : darkMode ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-purple-100 text-purple-900 border-purple-300'
+                              }`}>
+                                <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                                {solarOffset}% Offset
+                              </span>
+                            </div>
+
+                            {/* Middle: 2x2 Telemetry Badges (Zero overflow, no inner borders) */}
+                            <div className="grid grid-cols-2 gap-1 my-auto relative z-10">
+                              <div className={`flex items-center gap-1 px-1.5 py-1 rounded-xl min-w-0 ${
+                                darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
+                              }`}>
+                                <House size={11} weight="fill" className="text-purple-500 shrink-0" />
+                                <span className="font-mono text-[10.5px] font-bold truncate">{homeConsumption.toFixed(1)} kWh</span>
+                              </div>
+                              <div className={`flex items-center gap-1 px-1.5 py-1 rounded-xl min-w-0 ${
+                                darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
+                              }`}>
+                                <Plug size={11} weight="fill" className="text-sky-500 shrink-0" />
+                                <span className="font-mono text-[10.5px] font-bold truncate">{gridImport.toFixed(1)} kWh</span>
+                              </div>
+                              <div className={`flex items-center gap-1 px-1.5 py-1 rounded-xl min-w-0 ${
+                                darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
+                              }`}>
+                                <ArrowArcLeft size={11} weight="bold" className="text-indigo-500 shrink-0" />
+                                <span className="font-mono text-[10.5px] font-bold truncate">{gridExport.toFixed(1)} kWh</span>
+                              </div>
+                              <div className={`flex items-center gap-1 px-1.5 py-1 rounded-xl min-w-0 ${
+                                darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
+                              }`}>
+                                <Sun size={11} weight="fill" className="text-amber-500 shrink-0" />
+                                <span className="font-mono text-[10.5px] font-bold truncate">{solarOffset}%</span>
+                              </div>
+                            </div>
+
+                            {/* Bottom: Title aligned with Chevron */}
+                            <div className="relative z-10 shrink-0 flex items-center justify-between">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Energy Usage & Return
+                              </div>
+                              <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      case 'energy_usage_chart': {
+                        const homeConsumption = energyTotals?.homeConsumption || 0;
+                        const gridImport = energyTotals?.gridImport || 0;
+                        const gridExport = energyTotals?.gridExport || 0;
+                        const solarConsumed = energyTotals?.solarToHome || 0;
+                        const batteryDischarged = energyTotals?.batteryToHome || 0;
+                        const solarOffset = homeConsumption > 0 
+                          ? Math.min(100, Math.round(((solarConsumed + batteryDischarged) / homeConsumption) * 100)) 
+                          : 0;
+                        const chartBuckets = energyData.buckets || [];
+
+                        if (is2x) {
+                          return (
+                            <div className={tileBaseClass(false, '', false, true)}>
+                              <div className="grid grid-cols-2 gap-4 h-full items-center relative z-10">
+                                {/* Left Side: Info & Metrics */}
+                                <div className="flex flex-col justify-between h-full min-w-0 pr-1">
+                                  {/* Header with Title (No pill) */}
+                                  <div className="flex items-center justify-between gap-2 shrink-0">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-500 flex items-center justify-center shadow-xs shrink-0">
+                                        <ChartBar size={18} weight="fill" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                                          Energy Usage & Return
+                                        </div>
+                                        <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                          Today's Energy Balance
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Telemetry chips with zero inner borders */}
+                                  <div className="grid grid-cols-2 gap-1.5 my-auto py-1">
+                                    <div className={`p-1.5 rounded-xl transition-all ${
+                                      darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                    }`}>
+                                      <div className="text-[9px] sm:text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                        <House size={11} weight="fill" className="text-purple-500 shrink-0" /> Total Use
+                                      </div>
+                                      <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white truncate">
+                                        {homeConsumption.toFixed(2)} <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                      </div>
+                                    </div>
+
+                                    <div className={`p-1.5 rounded-xl transition-all ${
+                                      darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                    }`}>
+                                      <div className="text-[9px] sm:text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                        <ArrowArcLeft size={11} weight="bold" className="text-indigo-500 shrink-0" /> Grid Return
+                                      </div>
+                                      <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white truncate">
+                                        {gridExport.toFixed(2)} <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Subtitle / summary (Non-redundant) */}
+                                  <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate flex items-center gap-2 shrink-0">
+                                    <span>Import: {gridImport.toFixed(1)} kWh</span>
+                                    <span>•</span>
+                                    <span>Solar: {solarConsumed.toFixed(1)} kWh</span>
+                                  </div>
+                                </div>
+
+                                {/* Right Side: Minimalist Chart & Clean Legend */}
+                                <div className="flex flex-col justify-between h-full min-w-0 pl-3 border-l border-slate-200/60 dark:border-white/5">
+                                  <div className="flex items-center justify-between shrink-0">
+                                    <div className="flex items-center gap-2 text-[9px] sm:text-[10px] font-bold text-slate-400">
+                                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-purple-500" />Use</span>
+                                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Return</span>
+                                    </div>
+                                    <CaretRight size={14} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                                  </div>
+
+                                  {/* Responsive minimalist bar chart container (positive up, negative down) */}
+                                  <div className="w-full flex-1 min-h-0 my-1 relative">
+                                    <MinimalistEnergyUsageChart
+                                      buckets={chartBuckets}
+                                      darkMode={darkMode}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x Layout: Chart in Middle (No pill)
+                        return (
+                          <div className={tileBaseClass(false, '', false, false)}>
+                            {/* Top Row: Icon on left (No pill) */}
+                            <div className="flex items-center justify-between relative z-10 shrink-0">
+                              <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-purple-500/15 text-purple-500 flex items-center justify-center shadow-xs shrink-0">
+                                <ChartBar size={19} weight="fill" />
+                              </div>
+                            </div>
+
+                            {/* Middle: Minimalistic Chart (Dynamic height, zero grids, zero axes, zero labels) */}
+                            <div className="w-full flex-1 min-h-0 my-auto py-0.5 relative z-10">
+                              <MinimalistEnergyUsageChart
+                                buckets={chartBuckets}
+                                darkMode={darkMode}
+                              />
+                            </div>
+
+                            {/* Bottom: Title aligned with Chevron */}
+                            <div className="relative z-10 shrink-0 flex items-center justify-between">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Energy Usage & Return
+                              </div>
+                              <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      case 'solar_production': {
+                        const solarYield = energyTotals?.solar || 0;
+                        const solarPowerKW = energyRealtime?.solarPowerKW || 0;
+                        const forecastTotal = energyTotals?.solarForecastTotal;
+                        const forecastPct = forecastTotal && forecastTotal > 0
+                          ? Math.min(150, Math.round((solarYield / forecastTotal) * 100))
+                          : null;
+
+                        if (is2x) {
+                          return (
+                            <div className={tileBaseClass(false, '', false, true)}>
+                              {/* Header */}
+                              <div className="flex items-center justify-between relative z-10">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center shadow-xs shrink-0">
+                                    <Sun size={19} weight="fill" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                                      Solar Production & Forecast
+                                    </div>
+                                    <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                      {forecastTotal ? `${forecastTotal.toFixed(1)} kWh daily target` : 'Solar PV generation'}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/20 shadow-2xs">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                    {forecastPct ? `${forecastPct}% Target` : `${solarYield.toFixed(1)} kWh Yield`}
+                                  </span>
+                                  <CaretRight
+                                    size={14}
+                                    weight="bold"
+                                    className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-0.5"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Middle: 3 Metric Cards with Vertical Stack (High Contrast Light Mode) */}
+                              <div className="grid grid-cols-3 gap-2.5 my-auto relative z-10">
+                                {/* Current Power */}
+                                <div className={`p-2 sm:p-2.5 rounded-2xl transition-all shadow-2xs flex flex-col justify-center ${
+                                  darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                }`}>
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <div className="w-5 h-5 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
+                                      <Lightning size={12} weight="fill" />
+                                    </div>
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                      Current Power
+                                    </span>
+                                  </div>
+                                  <div className="text-xs sm:text-sm font-black font-mono text-amber-500 dark:text-amber-400 whitespace-nowrap">
+                                    {solarPowerKW.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                  </div>
+                                </div>
+
+                                {/* Today's Yield */}
+                                <div className={`p-2 sm:p-2.5 rounded-2xl transition-all shadow-2xs flex flex-col justify-center ${
+                                  darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                }`}>
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <div className="w-5 h-5 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
+                                      <Sun size={12} weight="fill" />
+                                    </div>
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                      Today's Yield
+                                    </span>
+                                  </div>
+                                  <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
+                                    {solarYield.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                  </div>
+                                </div>
+
+                                {/* Forecast Target */}
+                                <div className={`p-2 sm:p-2.5 rounded-2xl transition-all shadow-2xs flex flex-col justify-center ${
+                                  darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                }`}>
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <div className="w-5 h-5 rounded-lg bg-sky-500/15 text-sky-500 flex items-center justify-center shrink-0">
+                                      <CloudSun size={12} weight="duotone" />
+                                    </div>
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                      Forecast Target
+                                    </span>
+                                  </div>
+                                  <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
+                                    {forecastTotal ? `${forecastTotal.toFixed(2)}` : 'N/A'} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">{forecastTotal ? 'kWh' : ''}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x Layout
+                        return (
+                          <div className={tileBaseClass(false, '', false, false)}>
+                            {/* Top Row: Icon on left, Forecast target pill on right */}
+                            <div className="flex items-center justify-between relative z-10 shrink-0">
+                              <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center shadow-xs shrink-0">
+                                <Sun size={19} weight="fill" />
+                              </div>
+
+                              <span className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${
+                                darkMode ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-100 text-amber-900 border-amber-300'
+                              }`}>
+                                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                                {forecastPct ? `${forecastPct}% Target` : 'Solar PV'}
+                              </span>
+                            </div>
+
+                            {/* Middle: 2 Telemetry Badges (Zero overflow, no inner borders) */}
+                            <div className="grid grid-cols-2 gap-1 my-auto relative z-10">
+                              <div className={`p-1.5 rounded-xl min-w-0 ${
+                                darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
+                              }`}>
+                                <div className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-0.5">
+                                  <Lightning size={11} weight="fill" className="text-amber-500 shrink-0" /> Live Power
+                                </div>
+                                <div className="font-mono text-xs font-black text-amber-500 dark:text-amber-400 truncate">
+                                  {solarPowerKW.toFixed(2)} <span className="text-[9px] font-medium text-slate-400">kW</span>
+                                </div>
+                              </div>
+
+                              <div className={`p-1.5 rounded-xl min-w-0 ${
+                                darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
+                              }`}>
+                                <div className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-0.5">
+                                  <Sun size={11} weight="fill" className="text-amber-500 shrink-0" /> Today's Yield
+                                </div>
+                                <div className="font-mono text-xs font-black text-slate-900 dark:text-white truncate">
+                                  {solarYield.toFixed(1)} <span className="text-[9px] font-medium text-slate-400">kWh</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Bottom: Title aligned with Chevron */}
+                            <div className="relative z-10 shrink-0 flex items-center justify-between">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Solar Production & Forecast
+                              </div>
+                              <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      case 'solar_production_chart': {
+                        const solarYield = energyTotals?.solar || 0;
+                        const solarPowerKW = energyRealtime?.solarPowerKW || 0;
+                        const forecastTotal = energyTotals?.solarForecastTotal;
+                        const forecastPct = forecastTotal && forecastTotal > 0
+                          ? Math.min(150, Math.round((solarYield / forecastTotal) * 100))
+                          : null;
+                        const chartBuckets = energyData.buckets || [];
+
+                        if (is2x) {
+                          return (
+                            <div className={tileBaseClass(false, '', false, true)}>
+                              <div className="grid grid-cols-2 gap-4 h-full items-center relative z-10">
+                                {/* Left Side: Info & Metrics */}
+                                <div className="flex flex-col justify-between h-full min-w-0 pr-1">
+                                  {/* Header with Title (No pill) */}
+                                  <div className="flex items-center justify-between gap-2 shrink-0">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center shadow-xs shrink-0">
+                                        <Sun size={18} weight="fill" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                                          Solar Production & Forecast
+                                        </div>
+                                        <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                          {forecastTotal ? `${forecastTotal.toFixed(1)} kWh daily target` : 'Solar PV generation'}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Telemetry chips with zero inner borders */}
+                                  <div className="grid grid-cols-2 gap-1.5 my-auto py-1">
+                                    <div className={`p-1.5 rounded-xl transition-all ${
+                                      darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                    }`}>
+                                      <div className="text-[9px] sm:text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                        <Lightning size={11} weight="fill" className="text-amber-500 shrink-0" /> Live Power
+                                      </div>
+                                      <div className="text-xs sm:text-sm font-black font-mono text-amber-500 dark:text-amber-400 truncate">
+                                        {solarPowerKW.toFixed(2)} <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                      </div>
+                                    </div>
+
+                                    <div className={`p-1.5 rounded-xl transition-all ${
+                                      darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
+                                    }`}>
+                                      <div className="text-[9px] sm:text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                        <Sun size={11} weight="fill" className="text-amber-500 shrink-0" /> Today's Yield
+                                      </div>
+                                      <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white truncate">
+                                        {solarYield.toFixed(2)} <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Subtitle / summary (Non-redundant, kWh generated removed) */}
+                                  <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate flex items-center gap-2 shrink-0">
+                                    <span>Peak: {solarPowerKW.toFixed(2)} kW</span>
+                                    {forecastPct !== null && (
+                                      <>
+                                        <span>•</span>
+                                        <span>{forecastPct}% of daily target</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Right Side: Minimalist Chart & Clean Legend */}
+                                <div className="flex flex-col justify-between h-full min-w-0 pl-3 border-l border-slate-200/60 dark:border-white/5">
+                                  <div className="flex items-center justify-between shrink-0">
+                                    <div className="flex items-center gap-2 text-[9px] sm:text-[10px] font-bold text-slate-400">
+                                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />Actual</span>
+                                      <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 border-t border-dashed border-slate-400" />Forecast</span>
+                                    </div>
+                                    <CaretRight size={14} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                                  </div>
+
+                                  {/* Responsive minimalist chart container */}
+                                  <div className="w-full flex-1 min-h-0 my-1 relative">
+                                    <MinimalistSolarProductionChart
+                                      buckets={chartBuckets}
+                                      forecastTotal={forecastTotal}
+                                      darkMode={darkMode}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x Layout: Chart in Middle (No pill)
+                        return (
+                          <div className={tileBaseClass(false, '', false, false)}>
+                            {/* Top Row: Icon on left (No pill) */}
+                            <div className="flex items-center justify-between relative z-10 shrink-0">
+                              <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center shadow-xs shrink-0">
+                                <Sun size={19} weight="fill" />
+                              </div>
+                            </div>
+
+                            {/* Middle: Minimalistic Chart (Dynamic height, zero grids, zero axes, zero labels) */}
+                            <div className="w-full flex-1 min-h-0 my-auto py-0.5 relative z-10">
+                              <MinimalistSolarProductionChart
+                                buckets={chartBuckets}
+                                forecastTotal={forecastTotal}
+                                darkMode={darkMode}
+                              />
+                            </div>
+
+                            {/* Bottom: Title aligned with Chevron (redundant kWh generated removed) */}
+                            <div className="relative z-10 shrink-0 flex items-center justify-between">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Solar Production & Forecast
+                              </div>
+                              <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                            </div>
                           </div>
                         );
                       }
 
                       case 'doors': {
+                        if (is2x) {
+                          return (
+                            <div
+                              className={tileBaseClass(
+                                openDoors.length > 0,
+                                darkMode ? 'bg-amber-500/20 text-white border-amber-500/30' : 'bg-amber-500/20 text-slate-900 border-amber-300/60',
+                                false,
+                                true
+                              )}
+                            >
+                              {/* Top Row: Icon + Title on left, Status Badge + Chevron on right */}
+                              <div className="flex items-center justify-between relative z-10">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+                                    openDoors.length > 0
+                                      ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                                      : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                  }`}>
+                                    {openDoors.length > 0 ? <DoorOpen size={18} weight="duotone" /> : <Door size={18} weight="duotone" />}
+                                  </div>
+                                  <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                    Entry Doors
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                                    openDoors.length > 0
+                                      ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                                      : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                                  }`}>
+                                    {openDoors.length > 0 ? `${openDoors.length} Open` : 'Secure'}
+                                  </span>
+                                  <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all ml-0.5" />
+                                </div>
+                              </div>
+
+                              <div className="relative z-10 my-0.5 flex items-baseline justify-between">
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white">
+                                    {openDoors.length}
+                                  </span>
+                                  <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">/ {doorSensors.length} Doors</span>
+                                </div>
+                                {openDoors.length > 0 && (
+                                  <span className="text-xs font-bold text-amber-600 dark:text-amber-300 truncate max-w-[140px]">
+                                    {openDoors.map(d => d.name).slice(0, 2).join(', ')}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="relative z-10 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                                {openDoors.length > 0 ? `${openDoors.length} open` : 'All doors closed'}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x Layout
                         return (
                           <div
                             className={tileBaseClass(
                               openDoors.length > 0,
                               darkMode ? 'bg-amber-500/20 text-white border-amber-500/30' : 'bg-amber-500/20 text-slate-900 border-amber-300/60',
                               false,
-                              is2x
+                              false
                             )}
                           >
-                            <div className="flex items-center justify-between relative z-10">
-                              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
+                            {/* Top Row: Icon badge on left, Status badge on right */}
+                            <div className="flex items-center justify-between relative z-10 shrink-0">
+                              <div className={`w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center transition-all shadow-xs shrink-0 ${
                                 openDoors.length > 0
                                   ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
                                   : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                               }`}>
-                                {openDoors.length > 0 ? <DoorOpen size={20} weight="duotone" /> : <Door size={20} weight="duotone" />}
+                                {openDoors.length > 0 ? <DoorOpen size={19} weight="duotone" /> : <Door size={19} weight="duotone" />}
                               </div>
 
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
                                 openDoors.length > 0
-                                  ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
-                                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                                  ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
                               }`}>
                                 {openDoors.length > 0 ? `${openDoors.length} Open` : 'Secure'}
                               </span>
                             </div>
 
-                            <div className="relative z-10 my-0.5 flex items-baseline justify-between">
-                              <div className="flex items-baseline gap-1.5">
-                                <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white">
-                                  {openDoors.length}
-                                </span>
-                                <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">/ {doorSensors.length} Doors</span>
-                              </div>
-                              {is2x && openDoors.length > 0 && (
-                                <span className="text-xs font-bold text-amber-600 dark:text-amber-300 truncate max-w-[140px]">
-                                  {openDoors.map(d => d.name).slice(0, 2).join(', ')}
-                                </span>
-                              )}
+                            {/* Middle: Count */}
+                            <div className="relative z-10 my-auto py-0.5 flex items-baseline gap-1.5">
+                              <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white">
+                                {openDoors.length}
+                              </span>
+                              <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
+                                {doorSensors.length > 0 ? `/ ${doorSensors.length} Doors` : 'Doors'}
+                              </span>
                             </div>
 
-                            <div className="relative z-10">
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Entry Doors</div>
+                            {/* Bottom: Title & Subtitle with Chevron */}
+                            <div className="relative z-10 shrink-0">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Entry Doors
+                              </div>
                               <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-                                <span>{openDoors.length > 0 ? `${openDoors.length} open` : 'All doors closed'}</span>
-                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all" />
+                                <span className="truncate">
+                                  {openDoors.length > 0 ? openDoors.map(d => d.name).slice(0, 2).join(', ') : 'All doors closed'}
+                                </span>
+                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                               </div>
                             </div>
                           </div>
@@ -2089,52 +3330,115 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                       }
 
                       case 'windows': {
+                        if (is2x) {
+                          return (
+                            <div
+                              className={tileBaseClass(
+                                openWindows.length > 0,
+                                darkMode ? 'bg-amber-500/20 text-white border-amber-500/30' : 'bg-amber-500/20 text-slate-900 border-amber-300/60',
+                                false,
+                                true
+                              )}
+                            >
+                              {/* Top Row: Icon + Title on left, Status Badge + Chevron on right */}
+                              <div className="flex items-center justify-between relative z-10">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+                                    openWindows.length > 0
+                                      ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                                      : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                  }`}>
+                                    <FrameCorners size={18} weight="duotone" className={openWindows.length > 0 ? 'text-amber-500' : 'text-emerald-500'} />
+                                  </div>
+                                  <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                    Windows
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                                    openWindows.length > 0
+                                      ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                                      : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                                  }`}>
+                                    {openWindows.length > 0 ? `${openWindows.length} Open` : 'Sealed'}
+                                  </span>
+                                  <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all ml-0.5" />
+                                </div>
+                              </div>
+
+                              <div className="relative z-10 my-0.5 flex items-baseline justify-between">
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white">
+                                    {openWindows.length}
+                                  </span>
+                                  <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
+                                    {windowSensors.length > 0 ? `/ ${windowSensors.length} Windows` : 'Windows'}
+                                  </span>
+                                </div>
+                                {openWindows.length > 0 && (
+                                  <span className="text-xs font-bold text-amber-600 dark:text-amber-300 truncate max-w-[140px]">
+                                    {openWindows.map(w => w.name).slice(0, 2).join(', ')}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="relative z-10 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                                {openWindows.length > 0 ? `${openWindows.length} open` : 'All windows shut'}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x Layout
                         return (
                           <div
                             className={tileBaseClass(
                               openWindows.length > 0,
                               darkMode ? 'bg-amber-500/20 text-white border-amber-500/30' : 'bg-amber-500/20 text-slate-900 border-amber-300/60',
                               false,
-                              is2x
+                              false
                             )}
                           >
-                            <div className="flex items-center justify-between relative z-10">
-                              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
+                            {/* Top Row: Icon badge on left, Status badge on right */}
+                            <div className="flex items-center justify-between relative z-10 shrink-0">
+                              <div className={`w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center transition-all shadow-xs shrink-0 ${
                                 openWindows.length > 0
                                   ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
                                   : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                               }`}>
-                                <FrameCorners size={20} weight="duotone" className={openWindows.length > 0 ? 'text-amber-500' : 'text-emerald-500'} />
+                                <FrameCorners size={19} weight="duotone" className={openWindows.length > 0 ? 'text-amber-500' : 'text-emerald-500'} />
                               </div>
 
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
                                 openWindows.length > 0
-                                  ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
-                                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                                  ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
                               }`}>
                                 {openWindows.length > 0 ? `${openWindows.length} Open` : 'Sealed'}
                               </span>
                             </div>
 
-                            <div className="relative z-10 my-0.5 flex items-baseline justify-between">
-                              <div className="flex items-baseline gap-1.5">
-                                <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white">
-                                  {openWindows.length}
-                                </span>
-                                <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">/ {windowSensors.length} Windows</span>
-                              </div>
-                              {is2x && openWindows.length > 0 && (
-                                <span className="text-xs font-bold text-amber-600 dark:text-amber-300 truncate max-w-[140px]">
-                                  {openWindows.map(w => w.name).slice(0, 2).join(', ')}
-                                </span>
-                              )}
+                            {/* Middle: Count */}
+                            <div className="relative z-10 my-auto py-0.5 flex items-baseline gap-1.5">
+                              <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white">
+                                {openWindows.length}
+                              </span>
+                              <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
+                                {windowSensors.length > 0 ? `/ ${windowSensors.length} Windows` : 'Windows'}
+                              </span>
                             </div>
 
-                            <div className="relative z-10">
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Windows</div>
+                            {/* Bottom: Title & Subtitle with Chevron */}
+                            <div className="relative z-10 shrink-0">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Windows
+                              </div>
                               <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-                                <span>{openWindows.length > 0 ? `${openWindows.length} open` : 'All windows shut'}</span>
-                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all" />
+                                <span className="truncate">
+                                  {openWindows.length > 0 ? openWindows.map(w => w.name).slice(0, 2).join(', ') : 'All windows shut'}
+                                </span>
+                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                               </div>
                             </div>
                           </div>
@@ -2142,50 +3446,111 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                       }
 
                       case 'motion': {
+                        if (is2x) {
+                          return (
+                            <div
+                              className={tileBaseClass(
+                                activeMotion.length > 0,
+                                darkMode ? 'bg-amber-500/20 text-white border-amber-500/30' : 'bg-amber-500/20 text-slate-900 border-amber-300/60',
+                                false,
+                                true
+                              )}
+                            >
+                              {/* Top Row: Icon + Title on left, Status Badge + Chevron on right */}
+                              <div className="flex items-center justify-between relative z-10">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+                                    activeMotion.length > 0
+                                      ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                                      : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                  }`}>
+                                    <PersonSimpleWalk size={18} weight="duotone" />
+                                  </div>
+                                  <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                    Motion Zones
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                                    activeMotion.length > 0
+                                      ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                                      : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                                  }`}>
+                                    {activeMotion.length > 0 ? 'Motion' : 'Clear'}
+                                  </span>
+                                  <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all ml-0.5" />
+                                </div>
+                              </div>
+
+                              <div className="relative z-10 my-0.5 flex items-baseline justify-between">
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono">{activeMotion.length}</span>
+                                  <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
+                                    {motionSensors.length > 0 ? `/ ${motionSensors.length} Active` : 'Zones'}
+                                  </span>
+                                </div>
+                                {activeMotion.length > 0 && (
+                                  <span className="text-xs font-bold text-amber-600 dark:text-amber-300 truncate max-w-[140px]">
+                                    {activeMotion.map(m => m.name).slice(0, 2).join(', ')}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="relative z-10 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                                {activeMotion.length > 0 ? `${activeMotion.length} active` : 'No activity'}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x Layout
                         return (
                           <div
                             className={tileBaseClass(
                               activeMotion.length > 0,
                               darkMode ? 'bg-amber-500/20 text-white border-amber-500/30' : 'bg-amber-500/20 text-slate-900 border-amber-300/60',
                               false,
-                              is2x
+                              false
                             )}
                           >
-                            <div className="flex items-center justify-between relative z-10">
-                              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
+                            {/* Top Row: Icon badge on left, Status badge on right */}
+                            <div className="flex items-center justify-between relative z-10 shrink-0">
+                              <div className={`w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center transition-all shadow-xs shrink-0 ${
                                 activeMotion.length > 0
                                   ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
                                   : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                               }`}>
-                                <PersonSimpleWalk size={20} weight="duotone" />
+                                <PersonSimpleWalk size={19} weight="duotone" />
                               </div>
 
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
                                 activeMotion.length > 0
-                                  ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
-                                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                                  ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
                               }`}>
                                 {activeMotion.length > 0 ? 'Motion' : 'Clear'}
                               </span>
                             </div>
 
-                            <div className="relative z-10 my-0.5 flex items-baseline justify-between">
-                              <div className="flex items-baseline gap-1.5">
-                                <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono">{activeMotion.length}</span>
-                                <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">/ {motionSensors.length} Active</span>
-                              </div>
-                              {is2x && activeMotion.length > 0 && (
-                                <span className="text-xs font-bold text-amber-600 dark:text-amber-300 truncate max-w-[140px]">
-                                  {activeMotion.map(m => m.name).slice(0, 2).join(', ')}
-                                </span>
-                              )}
+                            {/* Middle: Count */}
+                            <div className="relative z-10 my-auto py-0.5 flex items-baseline gap-1.5">
+                              <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono">{activeMotion.length}</span>
+                              <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
+                                {motionSensors.length > 0 ? `/ ${motionSensors.length} Active` : 'Zones'}
+                              </span>
                             </div>
 
-                            <div className="relative z-10">
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Motion Zones</div>
+                            {/* Bottom: Title & Subtitle with Chevron */}
+                            <div className="relative z-10 shrink-0">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Motion Zones
+                              </div>
                               <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-                                <span>{activeMotion.length > 0 ? `${activeMotion.length} active` : 'No activity'}</span>
-                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all" />
+                                <span className="truncate">
+                                  {activeMotion.length > 0 ? activeMotion.map(m => m.name).slice(0, 2).join(', ') : 'No activity'}
+                                </span>
+                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                               </div>
                             </div>
                           </div>
@@ -2193,52 +3558,113 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                       }
 
                       case 'leak': {
+                        if (is2x) {
+                          return (
+                            <div
+                              className={tileBaseClass(
+                                activeLeaks.length > 0,
+                                darkMode ? 'bg-rose-500/20 text-white border-rose-500/30' : 'bg-rose-500/20 text-rose-950 border-rose-300/60',
+                                activeLeaks.length > 0,
+                                true
+                              )}
+                            >
+                              {/* Top Row: Icon + Title on left, Status Badge + Chevron on right */}
+                              <div className="flex items-center justify-between relative z-10">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+                                    activeLeaks.length > 0
+                                      ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                                      : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                  }`}>
+                                    <Drop size={18} weight="duotone" />
+                                  </div>
+                                  <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                    Water Leaks
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                                    activeLeaks.length > 0
+                                      ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
+                                      : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                                  }`}>
+                                    {activeLeaks.length > 0 ? 'Hazard' : 'Dry'}
+                                  </span>
+                                  <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-rose-500 group-hover:translate-x-0.5 transition-all ml-0.5" />
+                                </div>
+                              </div>
+
+                              <div className="relative z-10 my-0.5 flex items-baseline justify-between">
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className={`text-xl sm:text-2xl font-black font-mono ${activeLeaks.length > 0 ? 'text-rose-500' : 'text-slate-900 dark:text-white'}`}>
+                                    {activeLeaks.length}
+                                  </span>
+                                  <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
+                                    {leakSensors.length > 0 ? `/ ${leakSensors.length} Probes` : 'Probes'}
+                                  </span>
+                                </div>
+                                <span className={`text-xs font-bold truncate max-w-[150px] ${activeLeaks.length > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                  {activeLeaks.length > 0 ? 'Moisture detected!' : 'All zones sealed & dry'}
+                                </span>
+                              </div>
+
+                              <div className="relative z-10 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                                {activeLeaks.length > 0 ? 'Moisture detected!' : 'All zones dry'}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x Layout
                         return (
                           <div
                             className={tileBaseClass(
                               activeLeaks.length > 0,
                               darkMode ? 'bg-rose-500/20 text-white border-rose-500/30' : 'bg-rose-500/20 text-rose-950 border-rose-300/60',
                               activeLeaks.length > 0,
-                              is2x
+                              false
                             )}
                           >
-                            <div className="flex items-center justify-between relative z-10">
-                              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
+                            {/* Top Row: Icon badge on left, Status badge on right */}
+                            <div className="flex items-center justify-between relative z-10 shrink-0">
+                              <div className={`w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center transition-all shadow-xs shrink-0 ${
                                 activeLeaks.length > 0
                                   ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
                                   : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                               }`}>
-                                <Drop size={20} weight="duotone" />
+                                <Drop size={19} weight="duotone" />
                               </div>
 
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
                                 activeLeaks.length > 0
-                                  ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
-                                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                                  ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/30'
+                                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
                               }`}>
                                 {activeLeaks.length > 0 ? 'Hazard' : 'Dry'}
                               </span>
                             </div>
 
-                            <div className="relative z-10 my-0.5 flex items-baseline justify-between">
-                              <div className="flex items-baseline gap-1.5">
-                                <span className={`text-xl sm:text-2xl font-black font-mono ${activeLeaks.length > 0 ? 'text-rose-500' : 'text-slate-900 dark:text-white'}`}>
-                                  {activeLeaks.length}
-                                </span>
-                                <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">/ {leakSensors.length} Probes</span>
-                              </div>
-                              {is2x && (
-                                <span className={`text-xs font-bold truncate max-w-[150px] ${activeLeaks.length > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                                  {activeLeaks.length > 0 ? 'Moisture detected!' : 'All zones sealed & dry'}
-                                </span>
-                              )}
+                            {/* Middle: Count */}
+                            <div className="relative z-10 my-auto py-0.5 flex items-baseline gap-1.5">
+                              <span className={`text-xl sm:text-2xl font-black font-mono ${activeLeaks.length > 0 ? 'text-rose-500' : 'text-slate-900 dark:text-white'}`}>
+                                {activeLeaks.length}
+                              </span>
+                              <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
+                                {leakSensors.length > 0 ? `/ ${leakSensors.length} Probes` : 'Probes'}
+                              </span>
                             </div>
 
-                            <div className="relative z-10">
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Water Leaks</div>
+                            {/* Bottom: Title & Subtitle with Chevron */}
+                            <div className="relative z-10 shrink-0">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Water Leaks
+                              </div>
                               <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-                                <span>{activeLeaks.length > 0 ? 'Moisture detected!' : 'All zones dry'}</span>
-                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-rose-500 group-hover:translate-x-0.5 transition-all" />
+                                <span className="truncate">
+                                  {activeLeaks.length > 0 ? 'Moisture detected!' : 'All zones dry'}
+                                </span>
+                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-rose-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                               </div>
                             </div>
                           </div>
@@ -2246,52 +3672,113 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                       }
 
                       case 'smoke': {
+                        if (is2x) {
+                          return (
+                            <div
+                              className={tileBaseClass(
+                                activeSmoke.length > 0,
+                                darkMode ? 'bg-rose-500/20 text-white border-rose-500/30' : 'bg-rose-500/20 text-rose-950 border-rose-300/60',
+                                activeSmoke.length > 0,
+                                true
+                              )}
+                            >
+                              {/* Top Row: Icon + Title on left, Status Badge + Chevron on right */}
+                              <div className="flex items-center justify-between relative z-10">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+                                    activeSmoke.length > 0
+                                      ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                                      : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                  }`}>
+                                    <Flame size={18} weight="duotone" />
+                                  </div>
+                                  <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                    Smoke & Fire
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                                    activeSmoke.length > 0
+                                      ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
+                                      : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                                  }`}>
+                                    {activeSmoke.length > 0 ? 'Hazard' : 'Safe'}
+                                  </span>
+                                  <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-rose-500 group-hover:translate-x-0.5 transition-all ml-0.5" />
+                                </div>
+                              </div>
+
+                              <div className="relative z-10 my-0.5 flex items-baseline justify-between">
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className={`text-xl sm:text-2xl font-black font-mono ${activeSmoke.length > 0 ? 'text-rose-500' : 'text-slate-900 dark:text-white'}`}>
+                                    {activeSmoke.length}
+                                  </span>
+                                  <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
+                                    {smokeSensors.length > 0 ? `/ ${smokeSensors.length} Detectors` : 'Detectors'}
+                                  </span>
+                                </div>
+                                <span className={`text-xs font-bold truncate max-w-[150px] ${activeSmoke.length > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                  {activeSmoke.length > 0 ? 'Smoke detected!' : 'All detectors normal'}
+                                </span>
+                              </div>
+
+                              <div className="relative z-10 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                                {activeSmoke.length > 0 ? 'Smoke alarm triggered!' : 'All normal'}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x Layout
                         return (
                           <div
                             className={tileBaseClass(
                               activeSmoke.length > 0,
                               darkMode ? 'bg-rose-500/20 text-white border-rose-500/30' : 'bg-rose-500/20 text-rose-950 border-rose-300/60',
                               activeSmoke.length > 0,
-                              is2x
+                              false
                             )}
                           >
-                            <div className="flex items-center justify-between relative z-10">
-                              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${
+                            {/* Top Row: Icon badge on left, Status badge on right */}
+                            <div className="flex items-center justify-between relative z-10 shrink-0">
+                              <div className={`w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center transition-all shadow-xs shrink-0 ${
                                 activeSmoke.length > 0
                                   ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
                                   : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                               }`}>
-                                <Flame size={20} weight="duotone" />
+                                <Flame size={19} weight="duotone" />
                               </div>
 
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
                                 activeSmoke.length > 0
-                                  ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
-                                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                                  ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/30'
+                                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
                               }`}>
                                 {activeSmoke.length > 0 ? 'Hazard' : 'Safe'}
                               </span>
                             </div>
 
-                            <div className="relative z-10 my-0.5 flex items-baseline justify-between">
-                              <div className="flex items-baseline gap-1.5">
-                                <span className={`text-xl sm:text-2xl font-black font-mono ${activeSmoke.length > 0 ? 'text-rose-500' : 'text-slate-900 dark:text-white'}`}>
-                                  {activeSmoke.length}
-                                </span>
-                                <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">/ {smokeSensors.length} Detectors</span>
-                              </div>
-                              {is2x && (
-                                <span className={`text-xs font-bold truncate max-w-[150px] ${activeSmoke.length > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                                  {activeSmoke.length > 0 ? 'Smoke detected!' : 'All detectors normal'}
-                                </span>
-                              )}
+                            {/* Middle: Count */}
+                            <div className="relative z-10 my-auto py-0.5 flex items-baseline gap-1.5">
+                              <span className={`text-xl sm:text-2xl font-black font-mono ${activeSmoke.length > 0 ? 'text-rose-500' : 'text-slate-900 dark:text-white'}`}>
+                                {activeSmoke.length}
+                              </span>
+                              <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
+                                {smokeSensors.length > 0 ? `/ ${smokeSensors.length} Detectors` : 'Detectors'}
+                              </span>
                             </div>
 
-                            <div className="relative z-10">
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Smoke & Fire</div>
+                            {/* Bottom: Title & Subtitle with Chevron */}
+                            <div className="relative z-10 shrink-0">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Smoke & Fire
+                              </div>
                               <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-                                <span>{activeSmoke.length > 0 ? 'Smoke alarm triggered!' : 'All normal'}</span>
-                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-rose-500 group-hover:translate-x-0.5 transition-all" />
+                                <span className="truncate">
+                                  {activeSmoke.length > 0 ? 'Smoke alarm triggered!' : 'All normal'}
+                                </span>
+                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-rose-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                               </div>
                             </div>
                           </div>
