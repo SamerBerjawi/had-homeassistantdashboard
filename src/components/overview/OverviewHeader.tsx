@@ -1946,7 +1946,8 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     onHoldComplete={() => {
                                       setIsArmAwayModalOpen(true);
                                     }}
-                                    className="bg-transparent border-0 p-0 shadow-none w-full"
+                                    darkMode={darkMode}
+                                    className="w-full"
                                   />
                                 </div>
                               )}
@@ -1964,38 +1965,72 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               false
                             )}
                           >
+                            {/* Top row: Security identity + Right Chevron */}
                             <div className="flex items-center justify-between relative z-10">
-                              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all ${alarmDetails.bg} ${alarmDetails.text}`}>
-                                {isAlarmArmed ? <ShieldCheck size={20} weight="duotone" /> : <LockOpen size={20} weight="duotone" />}
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0 transition-all ${alarmDetails.bg} ${alarmDetails.text}`}>
+                                  {currentState === 'armed_away' ? (
+                                    <ShieldWarning size={16} weight="duotone" />
+                                  ) : currentState === 'armed_night' ? (
+                                    <Moon size={16} weight="duotone" />
+                                  ) : currentState === 'armed_home' ? (
+                                    <ShieldCheck size={16} weight="duotone" />
+                                  ) : (
+                                    <LockOpen size={16} weight="duotone" />
+                                  )}
+                                </div>
+                                <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                  {alarmEntity?.name || alarmEntity?.attributes?.friendly_name || 'Security Guard'}
+                                </span>
                               </div>
 
-                              <button
-                                type="button"
-                                onClick={handleQuickAlarmToggle}
-                                className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[9px] sm:text-[10px] font-extrabold uppercase transition-all cursor-pointer ${
-                                  isAlarmArmed
-                                    ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/30'
-                                    : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30'
-                                }`}
-                                title={isAlarmArmed ? 'Click to disarm' : 'Click to arm'}
-                              >
-                                {isAlarmArmed ? 'Armed' : 'Disarmed'}
-                              </button>
-                            </div>
-
-                            <div className="relative z-10 my-0.5 flex items-baseline justify-between">
-                              <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight truncate">
-                                {alarmDetails.label}
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white transition-colors shrink-0">
+                                <CaretRight size={14} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
                               </div>
                             </div>
 
-                            <div className="relative z-10">
-                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Security Guard</div>
-                              <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-                                <span>{isAlarmArmed ? 'Perimeter armed' : 'System disarmed'}</span>
-                                <CaretRight size={13} weight="bold" className={`text-slate-400 dark:text-slate-500 transition-all ${isAlarmArmed ? 'group-hover:text-emerald-500' : 'group-hover:text-orange-500'} group-hover:translate-x-0.5`} />
+                            {/* Action Row: Exit delay countdown or Toolbar */}
+                            {armAwayCountdown !== null && armAwayCountdown > 0 ? (
+                              <div className="flex items-center justify-between bg-rose-500/15 border border-rose-500/30 rounded-2xl p-1.5 my-auto z-10 animate-fadeIn">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <div className="relative flex items-center justify-center w-7 h-7 rounded-lg bg-rose-500 text-white font-mono font-black text-xs shadow-md shadow-rose-500/30 shrink-0">
+                                    <span className="relative z-10">{armAwayCountdown}s</span>
+                                    <span className="absolute inset-0 rounded-lg bg-rose-400 animate-ping opacity-30" />
+                                  </div>
+                                  <div className="text-[10px] font-bold text-rose-600 dark:text-rose-300 truncate">
+                                    Exit Delay
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={handleCancelCountdown}
+                                  className="px-2 py-1 rounded-lg bg-white/60 dark:bg-white/10 hover:bg-white/90 dark:hover:bg-white/20 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-all border border-black/5 dark:border-white/10 cursor-pointer active:scale-95 shrink-0"
+                                >
+                                  Cancel
+                                </button>
                               </div>
-                            </div>
+                            ) : (
+                              <div className="relative z-10 my-auto w-full" onClick={(e) => e.stopPropagation()}>
+                                <Toolbar
+                                  items={[
+                                    { id: 'disarmed', title: 'Disarm', icon: LockOpen, color: 'amber' },
+                                    { id: 'armed_home', title: 'Home', icon: HouseLine, color: 'emerald' },
+                                    { id: 'armed_away', title: 'Away', icon: ShieldWarning, color: 'rose', isHold: true, holdDuration: 1000 },
+                                    { id: 'armed_night', title: 'Night', icon: Moon, color: 'indigo' },
+                                  ]}
+                                  selected={currentState}
+                                  onSelect={(mode) => {
+                                    handleSetAlarmMode(mode as any, { stopPropagation: () => {} } as any);
+                                  }}
+                                  onHoldComplete={() => {
+                                    setIsArmAwayModalOpen(true);
+                                  }}
+                                  darkMode={darkMode}
+                                  compact={true}
+                                  className="w-full"
+                                />
+                              </div>
+                            )}
                           </div>
                         );
                       }

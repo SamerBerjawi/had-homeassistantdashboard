@@ -3,172 +3,224 @@
 /**
  * @author: @dorianbaffier
  * @description: Hold Button
- * @version: 1.0.0
- * @date: 2025-06-26
+ * @version: 1.1.0
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
 import React, { useState, useRef } from "react";
-import { cva, type VariantProps } from "class-variance-authority";
-import { motion, useAnimation } from "motion/react";
-import { Button } from "@/components/ui/button";
+import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 
-const holdButtonVariants = cva("relative touch-none overflow-hidden select-none transition-all duration-200 cursor-pointer", {
-  variants: {
-    variant: {
-      amber: [
-        "bg-amber-500/20",
-        "hover:bg-amber-500/25",
-        "text-amber-600 dark:text-amber-400",
-        "border border-amber-500/50",
-      ],
-      red: [
-        "bg-red-500/10 dark:bg-red-500/20",
-        "hover:bg-red-500/15 dark:hover:bg-red-500/25",
-        "text-red-600 dark:text-red-400",
-        "border border-red-500/30",
-      ],
-      rose: [
-        "bg-rose-500/20",
-        "hover:bg-rose-500/25",
-        "text-rose-600 dark:text-rose-300",
-        "border border-rose-500/50",
-      ],
-      green: [
-        "bg-emerald-500/20",
-        "hover:bg-emerald-500/25",
-        "text-emerald-600 dark:text-emerald-300",
-        "border border-emerald-500/50",
-      ],
-      blue: [
-        "bg-blue-500/20",
-        "hover:bg-blue-500/25",
-        "text-blue-600 dark:text-blue-300",
-        "border border-blue-500/50",
-      ],
-      orange: [
-        "bg-amber-500/20",
-        "hover:bg-amber-500/25",
-        "text-amber-600 dark:text-amber-400",
-        "border border-amber-500/50",
-      ],
-      grey: [
-        "bg-gray-100 dark:bg-white/10",
-        "hover:bg-gray-200 dark:hover:bg-white/15",
-        "text-gray-700 dark:text-slate-300",
-        "border border-black/5 dark:border-white/10",
-      ],
-    },
-  },
-  defaultVariants: {
-    variant: "rose",
-  },
-});
-
 export interface HoldButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof holdButtonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "rose" | "amber" | "green" | "blue" | "orange" | "grey" | "red";
   holdDuration?: number;
   onHoldComplete?: () => void;
   icon?: React.ReactNode;
   label?: React.ReactNode;
   holdingLabel?: React.ReactNode;
   active?: boolean;
+  activeBg?: string;
+  darkMode?: boolean;
+  compact?: boolean;
 }
 
 export function HoldButton({
   className,
   variant = "rose",
-  holdDuration = 1200,
+  holdDuration = 1000,
   onHoldComplete,
   icon,
   label,
   holdingLabel = "Holding...",
   active = false,
-  children,
+  activeBg,
+  darkMode = true,
+  compact = false,
+  onClick,
   ...props
 }: HoldButtonProps) {
+  const [progress, setProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
-  const isCancelledRef = useRef(false);
-  const controls = useAnimation();
+  const [showHint, setShowHint] = useState(false);
 
-  async function handleHoldStart(e: React.MouseEvent | React.TouchEvent) {
+  const holdStartTimeRef = useRef<number | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const hintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const completedRef = useRef(false);
+
+  const startHold = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
-    isCancelledRef.current = false;
+    if (active) return; // Already in this mode
+
+    completedRef.current = false;
     setIsHolding(true);
-    controls.set({ width: "0%" });
-    
-    await controls.start({
-      width: "100%",
-      transition: {
-        duration: holdDuration / 1000,
-        ease: "linear",
-      },
-    });
+    setProgress(0);
+    holdStartTimeRef.current = performance.now();
 
-    if (!isCancelledRef.current) {
-      setIsHolding(false);
-      controls.set({ width: "0%" });
-      onHoldComplete?.();
-    }
-  }
+    const loop = (time: number) => {
+      if (!holdStartTimeRef.current) return;
+      const elapsed = time - holdStartTimeRef.current;
+      const currentProgress = Math.min(1, elapsed / holdDuration);
+      setProgress(currentProgress);
 
-  function handleHoldEnd(e?: React.MouseEvent | React.TouchEvent) {
+      if (currentProgress >= 1) {
+        completedRef.current = true;
+        setIsHolding(false);
+        setProgress(0);
+        holdStartTimeRef.current = null;
+        if (typeof window !== "undefined" && "vibrate" in navigator) {
+          try {
+            navigator.vibrate(50);
+          } catch {}
+        }
+        onHoldComplete?.();
+        return;
+      }
+
+      animFrameRef.current = requestAnimationFrame(loop);
+    };
+
+    animFrameRef.current = requestAnimationFrame(loop);
+  };
+
+  const endHold = (e?: React.MouseEvent | React.TouchEvent) => {
     e?.stopPropagation();
-    isCancelledRef.current = true;
+    if (active) return;
+
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+
+    // If hold was released early and didn't complete
+    if (isHolding && !completedRef.current) {
+      const elapsed = holdStartTimeRef.current ? performance.now() - holdStartTimeRef.current : 0;
+      // If user tapped briefly without holding, show helper hint
+      if (elapsed < 350) {
+        setShowHint(true);
+        if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+        hintTimeoutRef.current = setTimeout(() => setShowHint(false), 1600);
+      }
+    }
+
     setIsHolding(false);
-    controls.stop();
-    controls.start({
-      width: "0%",
-      transition: { duration: 0.15 },
-    });
+    setProgress(0);
+    holdStartTimeRef.current = null;
+  };
+
+  // 1. ACTIVE PILL STATE
+  if (active) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          "flex-1 min-w-0 rounded-full flex items-center justify-center font-bold transition-all duration-300 cursor-pointer select-none shrink-0",
+          compact
+            ? "h-7 sm:h-8 px-2 sm:px-2.5 gap-1 text-[11px]"
+            : "h-9 sm:h-10 px-3.5 sm:px-4 gap-1.5 sm:gap-2 text-xs",
+          activeBg || "bg-rose-500 text-white font-bold shadow-md shadow-rose-500/25",
+          className
+        )}
+      >
+        {icon}
+        <span className="overflow-hidden whitespace-nowrap tracking-tight truncate">
+          {label}
+        </span>
+      </button>
+    );
   }
 
+  // 2. INACTIVE MINIMIZED CIRCULAR ICON WITH HOLD BEHAVIOR
   return (
-    <button
-      type="button"
-      className={cn(
-        holdButtonVariants({ variant, className }),
-        isHolding && "ring-2 ring-rose-500/60 scale-[0.98]"
-      )}
-      onMouseDown={handleHoldStart}
-      onMouseLeave={handleHoldEnd}
-      onMouseUp={handleHoldEnd}
-      onTouchCancel={handleHoldEnd}
-      onTouchEnd={handleHoldEnd}
-      onTouchStart={handleHoldStart}
-      {...props}
-    >
-      {/* Progress fill layer */}
-      <motion.div
-        animate={controls}
-        className={cn("absolute top-0 left-0 h-full pointer-events-none z-0", {
-          "bg-rose-500/35 dark:bg-rose-500/45": variant === "rose" || variant === "red",
-          "bg-emerald-500/35 dark:bg-emerald-500/45": variant === "green",
-          "bg-blue-500/35 dark:bg-blue-500/45": variant === "blue",
-          "bg-amber-500/35 dark:bg-amber-500/45": variant === "orange" || variant === "amber",
-          "bg-gray-500/30 dark:bg-white/20": variant === "grey",
-        })}
-        initial={{ width: "0%" }}
-      />
-
-      {/* Button content */}
-      <span className="relative z-10 flex w-full items-center justify-center gap-1.5 pointer-events-none px-1">
-        {icon}
-        {children ? (
-          children
-        ) : (
-          ((isHolding && holdingLabel) || label) ? (
-            <span className="font-bold text-xs tracking-tight overflow-hidden whitespace-nowrap truncate">
-              {isHolding ? (holdingLabel || "Hold...") : label}
-            </span>
-          ) : null
+    <div className="relative inline-flex items-center justify-center shrink-0">
+      <button
+        type="button"
+        title={typeof label === "string" ? label : "Hold to arm"}
+        aria-label={typeof label === "string" ? label : "Hold to arm"}
+        onMouseDown={startHold}
+        onMouseUp={endHold}
+        onMouseLeave={endHold}
+        onTouchStart={startHold}
+        onTouchEnd={endHold}
+        onTouchCancel={endHold}
+        onContextMenu={(e) => e.preventDefault()}
+        className={cn(
+          "rounded-full flex items-center justify-center shrink-0 relative",
+          compact
+            ? "w-7 h-7 sm:w-8 sm:h-8"
+            : "w-9 h-9 sm:w-10 sm:h-10",
+          "transition-all duration-200 select-none touch-none cursor-pointer",
+          "text-rose-500 dark:text-rose-400 hover:bg-rose-500/10 active:scale-95",
+          isHolding && "scale-105 shadow-md shadow-rose-500/20 bg-rose-500/15",
+          className
         )}
-      </span>
-    </button>
+        {...props}
+      >
+        {/* Circular SVG Progress Ring */}
+        <svg
+          className="absolute inset-0 w-full h-full -rotate-90 origin-center pointer-events-none p-0.5"
+          viewBox="0 0 36 36"
+        >
+          <circle
+            cx="18"
+            cy="18"
+            r="15"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            className="opacity-15 text-rose-500"
+          />
+          {progress > 0 && (
+            <circle
+              cx="18"
+              cy="18"
+              r="15"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeDasharray="94.25"
+              strokeDashoffset={94.25 * (1 - progress)}
+              strokeLinecap="round"
+              className="text-rose-500"
+            />
+          )}
+        </svg>
+
+        <div className="relative z-10 flex items-center justify-center pointer-events-none">
+          {icon}
+        </div>
+      </button>
+
+      {/* Floating hints */}
+      <AnimatePresence>
+        {isHolding && (
+          <motion.div
+            initial={{ opacity: 0, y: 4, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 2, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md bg-slate-900/95 dark:bg-black/95 text-[10px] font-bold text-rose-400 whitespace-nowrap shadow-lg border border-rose-500/30 pointer-events-none z-30"
+          >
+            {holdingLabel || "Holding..."}
+          </motion.div>
+        )}
+        {!isHolding && showHint && (
+          <motion.div
+            initial={{ opacity: 0, y: 4, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 2, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md bg-slate-900/95 dark:bg-black/95 text-[10px] font-bold text-rose-400 whitespace-nowrap shadow-lg border border-rose-500/30 pointer-events-none z-30"
+          >
+            Hold to Arm
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 

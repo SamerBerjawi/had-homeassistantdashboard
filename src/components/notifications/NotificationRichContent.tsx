@@ -175,19 +175,24 @@ export default function NotificationRichContent({
         </div>
       ) : null}
 
-      {/* Embedded Images */}
+      {/* Embedded Images - Display full image without cropping */}
       {images.length > 0 && (
-        <div className={`pt-1 grid gap-2 ${images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <div className={`pt-1.5 grid gap-2.5 ${images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
           {images.map((img, idx) => (
             <div
               key={`img-${idx}`}
-              className="rounded-xl overflow-hidden flex items-center justify-center bg-transparent"
+              className="w-full rounded-xl overflow-hidden flex items-center justify-center bg-black/10 dark:bg-black/35 border border-black/5 dark:border-white/10 p-1.5 sm:p-2 transition-all hover:border-black/15 dark:hover:border-white/20 cursor-pointer group/nimg"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (img.src) window.open(img.src, '_blank');
+              }}
+              title="Click to view full image"
             >
               <img
                 src={img.src}
                 alt={img.alt || 'Notification image'}
                 loading="lazy"
-                className={`w-full h-auto ${compact ? 'max-h-36' : 'max-h-72'} object-cover rounded-xl`}
+                className="max-w-full w-auto h-auto max-h-[500px] object-contain rounded-lg select-none transition-transform duration-200 group-hover/nimg:scale-[1.01]"
                 onError={(e) => {
                   const target = e.currentTarget;
                   target.style.display = 'none';
