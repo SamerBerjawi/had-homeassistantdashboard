@@ -37,71 +37,12 @@ export function discoverVacuumDevices(
   const vacuums: VacuumDeviceData[] = (vacuumEntities || [])
     .filter((vac) => !vac.disabled_by)
     .map((vac) => {
-    const rawState = String(vac.state || 'docked').toLowerCase();
     const entityId = vac.entity_id;
     const deviceId = vac.device_id || entityRegistry.find((e) => e.entity_id === entityId)?.device_id;
     const matchedDevice = deviceId ? devices.find((d) => d.id === deviceId) : null;
-    const areaName = vac.area?.name || 'Unassigned Area';
+    const areaName = vac.area?.name && vac.area.name !== 'Unassigned Area' ? vac.area.name : undefined;
 
-    // 1. Normalize State
-    let normalizedState: VacuumDeviceData['state'] = 'docked';
-    if (rawState === 'cleaning' || rawState === 'on') {
-      normalizedState = 'cleaning';
-    } else if (rawState === 'returning') {
-      normalizedState = 'returning';
-    } else if (rawState === 'paused') {
-      normalizedState = 'paused';
-    } else if (rawState === 'error' || rawState === 'problem') {
-      normalizedState = 'error';
-    } else if (rawState === 'idle' || rawState === 'off') {
-      normalizedState = 'idle';
-    } else {
-      normalizedState = 'docked';
-    }
-
-    // 2. Battery & Charging
-    const rawBattery = vac.attributes?.battery_level ?? vac.attributes?.battery;
-    const batteryLevel = typeof rawBattery === 'number' ? Math.round(rawBattery) : 100;
-    const batteryCharging = Boolean(
-      vac.attributes?.battery_icon?.includes('charging') ||
-      normalizedState === 'docked' ||
-      rawState.includes('charging')
-    );
-
-    // 3. Status Text
-    const statusText =
-      String(vac.attributes?.status || vac.attributes?.activity || normalizedState)
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (c) => c.toUpperCase());
-
-    // 4. Feature Flags Bitmask
-    const sf = Number(vac.attributes?.supported_features || 0);
-    const supports = {
-      pause: Boolean(sf & SUPPORT_PAUSE) || true,
-      stop: Boolean(sf & SUPPORT_STOP) || true,
-      returnToBase: Boolean(sf & SUPPORT_RETURN_HOME) || true,
-      fanSpeed: Boolean(sf & SUPPORT_FAN_SPEED) || Boolean(vac.attributes?.fan_speed_list),
-      battery: Boolean(sf & SUPPORT_BATTERY) || typeof rawBattery === 'number',
-      status: Boolean(sf & SUPPORT_STATUS) || true,
-      locate: Boolean(sf & SUPPORT_LOCATE) || true,
-      cleanSpot: Boolean(sf & SUPPORT_CLEAN_SPOT) || true,
-      map: Boolean(sf & SUPPORT_MAP)
-    };
-
-    // 5. Fan Speed & Water Flow Options
-    const fanSpeed = vac.attributes?.fan_speed ? String(vac.attributes.fan_speed) : 'Balanced';
-    const fanSpeedList: string[] = Array.isArray(vac.attributes?.fan_speed_list)
-      ? vac.attributes.fan_speed_list
-      : ['Quiet', 'Balanced', 'Turbo', 'Max'];
-
-    const waterFlowLevel = vac.attributes?.water_box_mode || vac.attributes?.water_level || 'Medium';
-    const waterFlowList: string[] = Array.isArray(vac.attributes?.water_box_mode_list)
-      ? vac.attributes.water_box_mode_list
-      : ['Off', 'Low', 'Medium', 'High'];
-
-    const mopMode = vac.attributes?.mop_mode ? String(vac.attributes.mop_mode) : undefined;
-
-    // 6. Companion Entities Aggregation (Matching device_id or entity_id prefix)
+    // 1. Companion Entities Aggregation (Matching device_id or entity_id prefix)
     const basePrefix = entityId.replace(/^vacuum\./, '');
     const cleanPrefix = basePrefix.replace(/_vacuum$/, '').replace(/_robot$/, '');
 
@@ -113,6 +54,129 @@ export function discoverVacuumDevices(
       if (deviceId && reg?.device_id === deviceId) return true;
       return s.entity_id.includes(cleanPrefix) || s.entity_id.includes(basePrefix);
     });
+
+    const companionStatusSensor = companionStates.find((s) => {
+      const id = s.entity_id.toLowerCase();
+      return id.startsWith('sensor.') && (id.endsWith('_status') || id.endsWith('_state') || id.endsWith('_activity') || id.includes('vacuum_status'));
+    });
+
+    const rawState = String(vac.state || '').toLowerCase().trim();
+    const rawActivity = String(vac.attributes?.activity || '').toLowerCase().trim();
+    const rawStatus = String(vac.attributes?.status || companionStatusSensor?.state || '').toLowerCase().trim();
+
+    // 2. Normalize State
+    let normalizedState: VacuumDeviceData['state'] = 'docked';
+    if (
+      rawState === 'error' || rawState === 'problem' || rawState === 'fault' ||
+      rawActivity === 'error' ||
+      rawStatus.includes('error') || rawStatus.includes('problem') || rawStatus.includes('stuck') || rawStatus.includes('fault')
+    ) {
+      normalizedState = 'error';
+    } else if (
+      rawState === 'returning' || rawState.includes('return') ||
+      rawActivity === 'returning' ||
+      rawStatus.includes('returning') || rawStatus.includes('return to dock') || rawStatus.includes('going to dock')
+    ) {
+      normalizedState = 'returning';
+    } else if (
+      rawState === 'paused' || rawState === 'pause' ||
+      rawActivity === 'paused' ||
+      rawStatus.includes('pause')
+    ) {
+      normalizedState = 'paused';
+    } else if (
+      rawState === 'cleaning' || rawState === 'on' ||
+      rawActivity === 'cleaning' ||
+      rawStatus.includes('clean') || rawStatus.includes('mop') || rawStatus.includes('sweep') || rawStatus.includes('vacuum')
+    ) {
+      normalizedState = 'cleaning';
+    } else if (
+      rawState === 'docked' || rawState.includes('charg') ||
+      rawActivity === 'docked' ||
+      rawStatus.includes('dock') || rawStatus.includes('charg') || rawStatus.includes('empty') || rawStatus.includes('wash') || rawStatus.includes('dry')
+    ) {
+      normalizedState = 'docked';
+    } else if (
+      rawState === 'idle' || rawState === 'off' || rawState === 'standby' ||
+      rawActivity === 'idle' ||
+      rawStatus.includes('idle') || rawStatus.includes('standby')
+    ) {
+      normalizedState = 'idle';
+    } else if (rawState === 'unavailable' || rawState === 'unknown') {
+      normalizedState = 'idle';
+    } else {
+      normalizedState = 'docked';
+    }
+
+    // 3. Battery & Charging
+    const rawBattery = vac.attributes?.battery_level ?? vac.attributes?.battery;
+    const companionBattery = companionStates.find((s) => {
+      const id = s.entity_id.toLowerCase();
+      return (id.startsWith('sensor.') && (id.includes('battery') || id.includes('bat'))) && !id.includes('battery_health');
+    });
+    const parsedCompBattery = companionBattery ? parseFloat(companionBattery.state) : NaN;
+
+    let batteryLevel = 100;
+    if (typeof rawBattery === 'number') {
+      batteryLevel = Math.round(rawBattery);
+    } else if (!isNaN(parsedCompBattery)) {
+      batteryLevel = Math.round(parsedCompBattery);
+    }
+
+    const batteryCharging = Boolean(
+      vac.attributes?.battery_icon?.includes('charging') ||
+      rawState.includes('charg') ||
+      rawStatus.includes('charg') ||
+      companionStates.some((s) => s.entity_id.includes('charging') && (s.state === 'on' || s.state === 'true')) ||
+      (normalizedState === 'docked' && batteryLevel < 100)
+    );
+
+    // 4. Status Text
+    let statusText = 'Docked';
+    if (vac.attributes?.status) {
+      statusText = String(vac.attributes.status)
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    } else if (companionStatusSensor?.state) {
+      statusText = String(companionStatusSensor.state)
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    } else if (rawActivity && rawActivity !== 'unknown' && rawActivity !== 'unavailable') {
+      statusText = String(vac.attributes.activity)
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    } else if (rawState && rawState !== 'unknown' && rawState !== 'unavailable') {
+      statusText = rawState.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    } else {
+      statusText = normalizedState.charAt(0).toUpperCase() + normalizedState.slice(1);
+    }
+
+    // 5. Feature Flags Bitmask
+    const sf = Number(vac.attributes?.supported_features || 0);
+    const supports = {
+      pause: Boolean(sf & SUPPORT_PAUSE) || true,
+      stop: Boolean(sf & SUPPORT_STOP) || true,
+      returnToBase: Boolean(sf & SUPPORT_RETURN_HOME) || true,
+      fanSpeed: Boolean(sf & SUPPORT_FAN_SPEED) || Boolean(vac.attributes?.fan_speed_list),
+      battery: Boolean(sf & SUPPORT_BATTERY) || typeof rawBattery === 'number' || !isNaN(parsedCompBattery),
+      status: Boolean(sf & SUPPORT_STATUS) || true,
+      locate: Boolean(sf & SUPPORT_LOCATE) || true,
+      cleanSpot: Boolean(sf & SUPPORT_CLEAN_SPOT) || true,
+      map: Boolean(sf & SUPPORT_MAP)
+    };
+
+    // Fan Speed & Water Flow Options
+    const fanSpeed = vac.attributes?.fan_speed ? String(vac.attributes.fan_speed) : 'Balanced';
+    const fanSpeedList: string[] = Array.isArray(vac.attributes?.fan_speed_list)
+      ? vac.attributes.fan_speed_list
+      : ['Quiet', 'Balanced', 'Turbo', 'Max'];
+
+    const waterFlowLevel = vac.attributes?.water_box_mode || vac.attributes?.water_level || 'Medium';
+    const waterFlowList: string[] = Array.isArray(vac.attributes?.water_box_mode_list)
+      ? vac.attributes.water_box_mode_list
+      : ['Off', 'Low', 'Medium', 'High'];
+
+    const mopMode = vac.attributes?.mop_mode ? String(vac.attributes.mop_mode) : undefined;
 
     // Consumables Search
     const findNumericSensor = (keywords: string[]) => {
@@ -169,19 +233,28 @@ export function discoverVacuumDevices(
       mopAttached
     };
 
-    // 7. Cleaning Session Telemetry
+    // 6. Cleaning Session Telemetry
+    const rawCleanTime = vac.attributes?.cleaning_time ?? vac.attributes?.clean_time;
+    const parsedCleanTime = typeof rawCleanTime === 'number'
+      ? (rawCleanTime > 180 ? Math.round(rawCleanTime / 60) : Math.round(rawCleanTime))
+      : undefined;
+
+    const rawCleanArea = vac.attributes?.cleaning_area ?? vac.attributes?.cleaned_area ?? vac.attributes?.clean_area;
+    const parsedCleanArea = typeof rawCleanArea === 'number' ? Number(rawCleanArea.toFixed(1)) : undefined;
+
     const cleaningTimeMinutes =
       findNumericSensor(['cleaning_time', 'clean_time', 'duration']) ??
-      (vac.attributes?.cleaning_time ? Math.round(vac.attributes.cleaning_time / 60) : normalizedState === 'cleaning' ? 28 : 0);
+      parsedCleanTime;
 
     const cleanedAreaM2 =
       findNumericSensor(['cleaning_area', 'clean_area', 'area_cleaned']) ??
-      (vac.attributes?.cleaning_area ? Number(vac.attributes.cleaning_area) : normalizedState === 'cleaning' ? 34.2 : 0);
+      parsedCleanArea;
 
-    const currentRoom =
+    const currentRoomRaw =
       vac.attributes?.current_room ||
       companionStates.find((s) => s.entity_id.includes('current_room') || s.entity_id.includes('room_name'))?.state ||
       areaName;
+    const currentRoom = currentRoomRaw && currentRoomRaw !== 'Unassigned Area' ? String(currentRoomRaw) : undefined;
 
     // 8. Multi-Map & Camera Discovery (Strictly related to the vacuum device)
     const availableMaps: VacuumMapItem[] = [];

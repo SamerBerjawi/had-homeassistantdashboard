@@ -790,6 +790,22 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
   animation: wave-hand 0.8s infinite ease-in-out;
 }
 
+/* Vacuum Mop / Broom Swing Animation */
+@keyframes mop-swing {
+  0%, 100% {
+    transform: rotate(-18deg);
+  }
+  50% {
+    transform: rotate(18deg);
+  }
+}
+
+.animate-mop-swing {
+  display: inline-block;
+  transform-origin: 50% 65%;
+  animation: mop-swing 1.3s ease-in-out infinite;
+}
+
 /* SVG Power Flow Dash Animation */
 @keyframes dash {
   from {

@@ -34,7 +34,25 @@ export default function VacuumsView({ darkMode = true }: ViewProps) {
 
   const [activeSubTab, setActiveSubTab] = useState<VacuumSubTab>('robot');
 
-  const vacuumEntities = (domainGroups['vacuum'] || []).filter((v) => !v.disabled_by);
+  const vacuumEntities = useMemo(() => {
+    const fromGroup = (domainGroups['vacuum'] || []).filter((v) => !v.disabled_by);
+    if (fromGroup.length > 0) return fromGroup;
+
+    const fromResolved = Object.values(resolvedEntities || {}).filter(
+      (e) => (e.entity_id?.startsWith('vacuum.') || e.domain === 'vacuum') && !e.disabled_by
+    );
+    if (fromResolved.length > 0) return fromResolved;
+
+    return Object.keys(states || {})
+      .filter((id) => id.startsWith('vacuum.'))
+      .map((id) => ({
+        entity_id: id,
+        state: states[id]?.state,
+        attributes: states[id]?.attributes || {},
+        name: states[id]?.attributes?.friendly_name || id.replace('vacuum.', '').replace(/_/g, ' '),
+        domain: 'vacuum',
+      } as ResolvedEntity));
+  }, [domainGroups, resolvedEntities, states]);
 
   // Discover and aggregate companion entities and maps strictly related to the vacuum device
   const { vacuums } = useMemo(() => {

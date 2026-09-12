@@ -21,6 +21,7 @@ export type ResponsiveLayoutOverrides = {
 
 export const DEFAULT_OVERVIEW_TILE_ORDER = [
   'weather',
+  'weather_hourly',
   'users',
   'lights',
   'switches',
@@ -322,7 +323,10 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
   overview: {
     tileOrder: [...DEFAULT_OVERVIEW_TILE_ORDER],
     hiddenTiles: [],
-    tileSizes: {}
+    tileSizes: {
+      weather: '2x',
+      weather_hourly: '2x'
+    }
   },
   layoutOverrides: {},
   responsiveLayoutOverrides: {

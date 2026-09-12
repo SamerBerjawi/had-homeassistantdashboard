@@ -56,6 +56,7 @@ interface MinimalistPowerFlowChartProps {
   hasSolar?: boolean;
   hasGrid?: boolean;
   hasBattery?: boolean;
+  lastHours?: number;
 }
 
 export function MinimalistPowerFlowChart({
@@ -64,12 +65,13 @@ export function MinimalistPowerFlowChart({
   className = '',
   hasSolar = true,
   hasGrid = true,
-  hasBattery = true
+  hasBattery = true,
+  lastHours = 12
 }: MinimalistPowerFlowChartProps) {
   const width = 300;
   const height = 80;
-  const paddingTop = 6;
-  const paddingBottom = 6;
+  const paddingTop = 2;
+  const paddingBottom = 2;
   const effectiveHeight = height - paddingTop - paddingBottom;
 
   const {
@@ -93,17 +95,42 @@ export function MinimalistPowerFlowChart({
     hasActiveBatDischarge,
     hasActiveBatCharge
   } = useMemo(() => {
-    // Need at least 2 points; synthesize 24 slots if empty
-    const dataList = buckets.length >= 2
-      ? buckets
-      : Array.from({ length: 24 }, () => ({
-          solar: 0,
-          homeConsumption: 0,
-          gridImport: 0,
-          gridExport: 0,
-          batteryCharge: 0,
-          batteryDischarge: 0
-        }));
+    // Filter to last N hours (e.g. 12) if requested
+    let dataList = buckets;
+    if (lastHours && lastHours > 0 && buckets.length > 0) {
+      const now = Date.now();
+      const cutoff = now - lastHours * 60 * 60 * 1000;
+      const hasTimestamps = buckets.some((b) => (b.startMs || 0) > 0 || (b.endMs || 0) > 0);
+      if (hasTimestamps) {
+        const filtered = buckets.filter((b) => {
+          const end = b.endMs || b.startMs || 0;
+          return end >= cutoff && (b.startMs || 0) <= now + 5 * 60 * 1000;
+        });
+        if (filtered.length >= 2) {
+          dataList = filtered;
+        } else if (buckets.length > 12) {
+          const ratio = Math.min(1, lastHours / 24);
+          const count = Math.max(2, Math.round(buckets.length * ratio));
+          dataList = buckets.slice(-count);
+        }
+      } else if (buckets.length > 12) {
+        const ratio = Math.min(1, lastHours / 24);
+        const count = Math.max(2, Math.round(buckets.length * ratio));
+        dataList = buckets.slice(-count);
+      }
+    }
+
+    // Need at least 2 points; synthesize default slots if empty
+    if (dataList.length < 2) {
+      dataList = Array.from({ length: 12 }, () => ({
+        solar: 0,
+        homeConsumption: 0,
+        gridImport: 0,
+        gridExport: 0,
+        batteryCharge: 0,
+        batteryDischarge: 0
+      }));
+    }
 
     // Find max positive stacked value (Solar + Grid Import + Battery Discharge)
     const maxPositive = Math.max(
@@ -370,8 +397,8 @@ export function MinimalistEnergyUsageChart({
 }: MinimalistEnergyUsageChartProps) {
   const width = 300;
   const height = 80;
-  const paddingTop = 6;
-  const paddingBottom = 6;
+  const paddingTop = 2;
+  const paddingBottom = 2;
   const effectiveHeight = height - paddingTop - paddingBottom;
 
   const { bars, zeroY, hasNegative } = useMemo(() => {
@@ -597,8 +624,8 @@ export function MinimalistSolarProductionChart({
 }: MinimalistSolarProductionChartProps) {
   const width = 300;
   const height = 80;
-  const paddingBottom = 6;
-  const paddingTop = 6;
+  const paddingBottom = 2;
+  const paddingTop = 2;
   const effectiveHeight = height - paddingTop - paddingBottom;
 
   const { bars, forecastPoints } = useMemo(() => {

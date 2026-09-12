@@ -76,7 +76,7 @@ import { getHAImageUrl } from '../../lib/utils';
 import PersonAvatar from '../ui/PersonAvatar';
 import { getWeatherConditionInfo } from '../weather/weatherIcons';
 import AnimatedWeatherBackdrop from '../weather/AnimatedWeatherBackdrop';
-import { getDailyForecast } from '../../lib/weatherForecast';
+import { getDailyForecast, getHourlyForecast, generateFallbackHourlyForecast } from '../../lib/weatherForecast';
 import { useAlbumArtColor } from '../../hooks/useAlbumArtColor';
 import { useEnergyData } from '../../hooks/useEnergyData';
 import Toolbar, { ToolbarItem } from '../kokonutui/toolbar';
@@ -85,6 +85,7 @@ import {
   MinimalistEnergyUsageChart,
   MinimalistSolarProductionChart
 } from './EnergySparklineCharts';
+import { discoverVacuumDevices } from '../../services/vacuumDiscovery';
 
 // Lazy-loaded interactive slide-over drawers (loaded on first open)
 const UsersPresenceModal = React.lazy(() => import('./modals/UsersPresenceModal'));
@@ -101,6 +102,7 @@ const WeatherOverviewDrawer = React.lazy(() => import('../weather/WeatherOvervie
 
 const TILE_TITLES: Record<string, string> = {
   weather: 'Weather',
+  weather_hourly: 'Weather (Hourly)',
   users: 'Family Presence',
   lights: 'Lighting',
   switches: 'Switches',
@@ -132,14 +134,22 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     callHAService,
     serverUrl,
     selectedAlarmEntityId,
-    selectedWeatherEntityId
+    selectedWeatherEntityId,
+    resolvedEntities,
+    states,
+    entityRegistry,
+    devices
   } = useAutoLayoutStore(useShallow((s) => ({
     domainGroups: s.domainGroups,
     updateEntityState: s.updateEntityState,
     callHAService: s.callHAService,
     serverUrl: s.serverUrl,
     selectedAlarmEntityId: s.selectedAlarmEntityId,
-    selectedWeatherEntityId: s.selectedWeatherEntityId
+    selectedWeatherEntityId: s.selectedWeatherEntityId,
+    resolvedEntities: s.resolvedEntities,
+    states: s.states,
+    entityRegistry: s.entityRegistry,
+    devices: s.devices
   })));
 
   // Active Right Sidebar State
@@ -193,7 +203,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     const switchEntitiesLocal = (domainGroups['switch'] || []).filter(isVisible);
     const fanEntitiesLocal = (domainGroups['fan'] || []).filter(isVisible);
     const mediaEntitiesLocal = (domainGroups['media_player'] || []).filter(isVisible);
-    const vacuumEntitiesLocal = (domainGroups['vacuum'] || []).filter(isVisible);
+    const rawVacuums = (domainGroups['vacuum'] || []).filter((v) => !v.disabled_by);
+    const vacuumEntitiesLocal = rawVacuums.length > 0
+      ? rawVacuums
+      : Object.values(resolvedEntities || {}).filter(
+          (e) => (e.entity_id?.startsWith('vacuum.') || e.domain === 'vacuum') && !e.disabled_by
+        );
     const weatherEntitiesLocal = (domainGroups['weather'] || []).filter(isVisible);
 
     const {
@@ -284,6 +299,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   const dailyForecast = useMemo(() => {
     return getDailyForecast(activeWeather);
   }, [activeWeather]);
+  const hourlyForecast = useMemo(() => {
+    const extracted = getHourlyForecast(activeWeather);
+    if (extracted && extracted.length > 0) return extracted;
+    return generateFallbackHourlyForecast(currentTemp, weatherCondition);
+  }, [activeWeather, currentTemp, weatherCondition]);
   const todayForecast = dailyForecast[0];
   const weatherHigh = typeof todayForecast?.temperature === 'number'
     ? todayForecast.temperature
@@ -308,9 +328,21 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     darkMode
   });
 
+  const { vacuums: discoveredVacuums } = useMemo(() => {
+    return discoverVacuumDevices(
+      vacuumEntities,
+      resolvedEntities,
+      states,
+      entityRegistry || [],
+      devices || []
+    );
+  }, [vacuumEntities, resolvedEntities, states, entityRegistry, devices]);
+
+  const activeVacuumDevice = discoveredVacuums[0];
   const firstVacuum = vacuumEntities[0];
-  const isVacuumCleaning = activeVacuums.length > 0;
-  const vacuumBattery = firstVacuum?.attributes?.battery_level ?? firstVacuum?.attributes?.battery;
+  const isVacuumCleaning = discoveredVacuums.some((v) => v.state === 'cleaning');
+  const vacuumBattery = activeVacuumDevice?.batteryLevel ?? (firstVacuum?.attributes?.battery_level ?? firstVacuum?.attributes?.battery);
+  const isVacuumCharging = activeVacuumDevice?.batteryCharging;
 
   // Open Drawer Handlers
   const openUsersDrawer = (user?: ResolvedEntity) => {
@@ -405,13 +437,18 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
   const handleToggleVacuum = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!firstVacuum) return;
-    if (isVacuumCleaning) {
-      updateEntityState(firstVacuum.entity_id, 'returning');
-      await callHAService('vacuum', 'return_to_base', {}, { entity_id: firstVacuum.entity_id });
+    const targetEntityId = activeVacuumDevice?.entityId || firstVacuum?.entity_id;
+    if (!targetEntityId) return;
+
+    if (activeVacuumDevice?.state === 'cleaning') {
+      updateEntityState(targetEntityId, 'returning');
+      await callHAService('vacuum', 'return_to_base', {}, { entity_id: targetEntityId });
+    } else if (activeVacuumDevice?.state === 'paused') {
+      updateEntityState(targetEntityId, 'cleaning');
+      await callHAService('vacuum', 'start', {}, { entity_id: targetEntityId });
     } else {
-      updateEntityState(firstVacuum.entity_id, 'cleaning');
-      await callHAService('vacuum', 'start', {}, { entity_id: firstVacuum.entity_id });
+      updateEntityState(targetEntityId, 'cleaning');
+      await callHAService('vacuum', 'start', {}, { entity_id: targetEntityId });
     }
   };
 
@@ -656,7 +693,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   }, [displayTiles, handleReorder]);
 
   const handleToggleSize = useCallback((tileId: string) => {
-    const currentSize = tileSizes[tileId] || '1x';
+    const currentSize = tileSizes[tileId] ?? (tileId === 'weather' || tileId === 'weather_hourly' ? '2x' : '1x');
     const nextSize = currentSize === '2x' ? '1x' : '2x';
     updateConfig((prev) => ({
       ...prev,
@@ -703,14 +740,19 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       overview: {
         tileOrder: [...DEFAULT_OVERVIEW_TILE_ORDER],
         hiddenTiles: [],
-        tileSizes: {}
+        tileSizes: {
+          weather: '2x',
+          weather_hourly: '2x'
+        }
       }
     }));
   }, [updateConfig]);
 
   const getTileClickHandler = useCallback((tileId: string) => {
     switch (tileId) {
-      case 'weather': return () => setDrawerOpen('weather');
+      case 'weather':
+      case 'weather_hourly':
+        return () => setDrawerOpen('weather');
       case 'users': return () => openUsersDrawer();
       case 'lights': return () => setDrawerOpen('lights');
       case 'switches': return () => setDrawerOpen('switches');
@@ -1072,7 +1114,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           <div className="grid grid-cols-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
             {displayTiles.map((tileId, index) => {
               const isHidden = hiddenTilesSet.has(tileId);
-              const is2x = tileSizes[tileId] === '2x';
+              const is2x = tileSizes[tileId] === '2x' || (tileSizes[tileId] === undefined && (tileId === 'weather' || tileId === 'weather_hourly'));
               const canMoveLeft = index > 0;
               const canMoveRight = index < displayTiles.length - 1;
 
@@ -1097,7 +1139,6 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                         const windSpeed = activeWeather?.attributes?.wind_speed;
                         const windUnit = activeWeather?.attributes?.wind_speed_unit || 'km/h';
                         const precip = activeWeather?.attributes?.precipitation;
-                        const friendlyName = activeWeather?.name || activeWeather?.attributes?.friendly_name || 'Weather';
 
                         if (is2x) {
                           return (
@@ -1108,24 +1149,19 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               <div className="relative z-10 flex items-stretch h-full gap-2.5 sm:gap-3.5">
                                 {/* Left Column: Current Weather Hero */}
                                 <div className="flex-1 flex flex-col justify-between min-w-0 pr-1">
-                                  {/* Top: Icon + Location/Title + Condition Badge */}
-                                  <div className="flex items-center justify-between gap-1.5">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <div className="w-8 h-8 rounded-xl bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/80 dark:border-white/10 flex items-center justify-center shadow-xs shrink-0">
-                                        {weatherCondInfo.icon}
-                                      </div>
-                                      <div className="min-w-0">
-                                        <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                          {friendlyName}
-                                        </h4>
-                                        <p className="text-[10px] text-slate-600 dark:text-slate-300 font-medium capitalize truncate">
-                                          {weatherCondition.replace(/_/g, ' ')}
-                                        </p>
-                                      </div>
+                                  {/* Top: Icon + Title (No condition pill) */}
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className="w-8 h-8 rounded-xl bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/80 dark:border-white/10 flex items-center justify-center shadow-xs shrink-0">
+                                      {weatherCondInfo.icon}
                                     </div>
-                                    <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full backdrop-blur-md border shadow-xs shrink-0 ${weatherCondInfo.badgeBg}`}>
-                                      {weatherCondInfo.name}
-                                    </span>
+                                    <div className="min-w-0">
+                                      <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                        Weather
+                                      </h4>
+                                      <p className="text-[10px] text-slate-600 dark:text-slate-300 font-medium capitalize truncate">
+                                        {weatherCondition.replace(/_/g, ' ')}
+                                      </p>
+                                    </div>
                                   </div>
 
                                   {/* Middle: Big Temp + High / Low */}
@@ -1259,10 +1295,202 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               </div>
                             </div>
 
-                            {/* Bottom: Location Title & Telemetry summary with Chevron */}
+                            {/* Bottom: Title & Telemetry summary with Chevron */}
                             <div className="relative z-10">
                               <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
-                                {friendlyName}
+                                Weather
+                              </div>
+                              <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
+                                <span className="flex items-center gap-1.5 truncate">
+                                  <Drop size={11} weight="fill" className="text-sky-400 shrink-0" />
+                                  <span>{humidity}%</span>
+                                  {typeof windSpeed === 'number' && (
+                                    <>
+                                      <span>•</span>
+                                      <Wind size={11} weight="bold" className="text-teal-400 shrink-0" />
+                                      <span className="truncate">{Math.round(windSpeed)} {windUnit}</span>
+                                    </>
+                                  )}
+                                </span>
+                                <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-sky-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      case 'weather_hourly': {
+                        const windSpeed = activeWeather?.attributes?.wind_speed;
+                        const windUnit = activeWeather?.attributes?.wind_speed_unit || 'km/h';
+                        const precip = activeWeather?.attributes?.precipitation;
+
+                        if (is2x) {
+                          return (
+                            <div className={tileBaseClass(false, '', false, true)}>
+                              <AnimatedWeatherBackdrop condition={weatherCondition} isNight={isNight} darkMode={darkMode} />
+                              <div className={`absolute inset-0 pointer-events-none rounded-3xl ${darkMode ? 'bg-black/25' : 'bg-white/10'}`} />
+
+                              <div className="relative z-10 flex items-stretch h-full gap-2.5 sm:gap-3.5">
+                                {/* Left Column: Current Weather Hero */}
+                                <div className="flex-1 flex flex-col justify-between min-w-0 pr-1">
+                                  {/* Top: Icon + Title (No condition pill) */}
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className="w-8 h-8 rounded-xl bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/80 dark:border-white/10 flex items-center justify-center shadow-xs shrink-0">
+                                      {weatherCondInfo.icon}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                        Weather
+                                      </h4>
+                                      <p className="text-[10px] text-slate-600 dark:text-slate-300 font-medium capitalize truncate">
+                                        {weatherCondition.replace(/_/g, ' ')}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* Middle: Big Temp + High / Low */}
+                                  <div className="flex items-baseline gap-2.5 my-auto">
+                                    <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none">
+                                      {Math.round(currentTemp)}{tempUnit}
+                                    </span>
+                                    <div className="flex flex-col text-[10px] font-mono font-bold leading-tight">
+                                      <span className="text-amber-500 flex items-center gap-0.5">
+                                        <ArrowUp size={10} weight="bold" />{Math.round(weatherHigh)}°
+                                      </span>
+                                      <span className="text-sky-500 flex items-center gap-0.5">
+                                        <ArrowDown size={10} weight="bold" />{Math.round(weatherLow)}°
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Bottom: Live Telemetry Row */}
+                                  <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                                    <span className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-white/50 dark:bg-black/30 backdrop-blur-xs border border-white/30 dark:border-white/10 shrink-0">
+                                      <Drop size={11} weight="fill" className="text-sky-400 shrink-0" />
+                                      <span>{humidity}%</span>
+                                    </span>
+                                    {typeof windSpeed === 'number' && (
+                                      <span className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-white/50 dark:bg-black/30 backdrop-blur-xs border border-white/30 dark:border-white/10 truncate">
+                                        <Wind size={11} weight="bold" className="text-teal-400 shrink-0" />
+                                        <span className="truncate">{Math.round(windSpeed)} {windUnit}</span>
+                                      </span>
+                                    )}
+                                    {typeof precip === 'number' && precip > 0 && (
+                                      <span className="hidden sm:flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-white/50 dark:bg-black/30 backdrop-blur-xs border border-white/30 dark:border-white/10 shrink-0">
+                                        <span>{precip}mm</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Vertical Divider */}
+                                <div className="w-px bg-black/5 dark:bg-white/10 my-0.5 shrink-0" />
+
+                                {/* Right Column: Hourly Forecast Strip */}
+                                <div className="flex-[1.1] sm:flex-[1.2] flex flex-col justify-between min-w-0 pl-1">
+                                  {/* Header: Hourly Forecast label + CaretRight */}
+                                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                                    <span className="text-[10px] font-extrabold uppercase tracking-wider">
+                                      Hourly Forecast
+                                    </span>
+                                    <div className="flex items-center gap-0.5 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                                      <CaretRight size={13} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
+                                    </div>
+                                  </div>
+
+                                  {/* 4 mini hourly cards */}
+                                  <div className="flex items-center gap-1 sm:gap-1.5 w-full my-auto">
+                                    {hourlyForecast.slice(0, 4).map((h, i) => {
+                                      const timeLabel = i === 0 ? 'Now' : (() => {
+                                        try {
+                                          const d = new Date(h.datetime);
+                                          return d.toLocaleTimeString(undefined, { hour: 'numeric' });
+                                        } catch {
+                                          return `${i * 2}h`;
+                                        }
+                                      })();
+                                      const hourDate = h.datetime ? new Date(h.datetime) : new Date();
+                                      const hour = hourDate.getHours();
+                                      const isHourNight = hour < 6 || hour >= 21;
+                                      const hourIcon = getWeatherConditionInfo(h.condition, isHourNight, 18).icon;
+                                      const temp = Math.round(h.temperature);
+                                      const rain = h.precipitation_probability;
+
+                                      return (
+                                        <div
+                                          key={h.datetime || i}
+                                          className="flex-1 min-w-0 py-1.5 px-0.5 sm:px-1 rounded-2xl bg-white/40 dark:bg-white/[0.06] hover:bg-white/60 dark:hover:bg-white/[0.1] backdrop-blur-md border border-white/40 dark:border-white/10 flex flex-col items-center justify-between text-center transition-all shadow-2xs group/card"
+                                        >
+                                          <span className="text-[9px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-tight truncate w-full">
+                                            {timeLabel}
+                                          </span>
+                                          <div className="my-1 scale-90 sm:scale-100 flex items-center justify-center">
+                                            {hourIcon}
+                                          </div>
+                                          <div className="flex flex-col items-center leading-none">
+                                            <span className="text-slate-900 dark:text-white font-mono text-[10px] sm:text-[11px] font-black">
+                                              {temp}°
+                                            </span>
+                                            {typeof rain === 'number' && rain > 0 && (
+                                              <span className="text-[8px] font-bold text-sky-500 dark:text-sky-400 flex items-center gap-0.5 mt-0.5">
+                                                <Drop size={7} weight="fill" />
+                                                {rain}%
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Mini summary footer */}
+                                  <div className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate flex items-center justify-between">
+                                    <span>{hourlyForecast.length > 0 ? 'Upcoming hours' : 'Hourly forecast'}</span>
+                                    <span className="text-sky-500 dark:text-sky-400 font-bold">Details →</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 1x Compact mode
+                        return (
+                          <div className={tileBaseClass(false, '', false, false)}>
+                            <AnimatedWeatherBackdrop condition={weatherCondition} isNight={isNight} darkMode={darkMode} />
+                            <div className={`absolute inset-0 pointer-events-none rounded-3xl ${darkMode ? 'bg-black/20' : 'bg-white/10'}`} />
+
+                            {/* Top row: Weather icon on left, Condition Badge on right */}
+                            <div className="flex items-center justify-between relative z-10">
+                              <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/80 dark:border-white/10 flex items-center justify-center shadow-xs shrink-0">
+                                {weatherCondInfo.icon}
+                              </div>
+
+                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full backdrop-blur-md border shadow-2xs ${weatherCondInfo.badgeBg}`}>
+                                {weatherCondInfo.name}
+                              </span>
+                            </div>
+
+                            {/* Center: Temp + High/Low pill */}
+                            <div className="relative z-10 my-auto py-0.5 flex items-baseline justify-between">
+                              <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none">
+                                {Math.round(currentTemp)}{tempUnit}
+                              </span>
+                              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-white/50 dark:bg-black/30 backdrop-blur-sm border border-black/5 dark:border-white/10 text-[11px] font-mono font-bold">
+                                <span className="text-amber-500 flex items-center gap-0.5">
+                                  <ArrowUp size={10} weight="bold" />{Math.round(weatherHigh)}°
+                                </span>
+                                <span className="opacity-30">|</span>
+                                <span className="text-sky-500 flex items-center gap-0.5">
+                                  <ArrowDown size={10} weight="bold" />{Math.round(weatherLow)}°
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Bottom: Title & Telemetry summary with Chevron */}
+                            <div className="relative z-10">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                Weather
                               </div>
                               <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
                                 <span className="flex items-center gap-1.5 truncate">
@@ -1689,10 +1917,17 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                       }
 
                       case 'vacuums': {
+                        const isCleaning = activeVacuumDevice?.state === 'cleaning' || isVacuumCleaning;
+                        const isReturning = activeVacuumDevice?.state === 'returning';
+                        const isPaused = activeVacuumDevice?.state === 'paused';
+                        const isError = activeVacuumDevice?.state === 'error';
+                        const displayStatus = activeVacuumDevice?.statusText || (isCleaning ? 'Cleaning' : (isReturning ? 'Returning' : (isPaused ? 'Paused' : 'Docked')));
+                        const activeRoom = activeVacuumDevice?.currentRoom || (isCleaning ? activeVacuumDevice?.areaName : undefined);
+
                         return (
                           <div
                             className={tileBaseClass(
-                              isVacuumCleaning,
+                              isCleaning,
                               darkMode ? 'bg-teal-500/20 text-white border-teal-500/30' : 'bg-teal-500/20 text-slate-900 border-teal-300/60',
                               false,
                               is2x
@@ -1700,41 +1935,50 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                           >
                             <div className="flex items-center justify-between relative z-10">
                               <div className={`w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center transition-all shrink-0 ${
-                                isVacuumCleaning
+                                isCleaning
                                   ? 'bg-teal-500 text-slate-950 shadow-xs'
+                                  : isError
+                                  ? 'bg-rose-500 text-white shadow-xs'
+                                  : isPaused
+                                  ? 'bg-amber-500 text-slate-950 shadow-xs'
                                   : 'bg-white/80 dark:bg-white/10 text-slate-500 dark:text-slate-400'
                               }`}>
-                                <Broom size={19} weight={isVacuumCleaning ? 'fill' : 'duotone'} />
+                                <Broom size={19} weight={isCleaning ? 'fill' : 'duotone'} className={isCleaning ? 'animate-mop-swing' : ''} />
                               </div>
 
-                              <button
-                                type="button"
-                                onClick={handleToggleVacuum}
-                                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                                  isVacuumCleaning
-                                    ? 'bg-amber-500/25 text-amber-700 dark:text-amber-300 hover:bg-amber-500/40'
-                                    : 'bg-white/80 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/15'
-                                }`}
-                                title={isVacuumCleaning ? 'Dock vacuum' : 'Start cleaning'}
-                              >
-                                {isVacuumCleaning ? <ArrowArcLeft size={13} weight="bold" /> : <Play size={13} weight="fill" />}
-                              </button>
+                              {activeRoom && (
+                                <span
+                                  className={`inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full border shadow-2xs truncate max-w-[140px] sm:max-w-[160px] ${
+                                    isCleaning
+                                      ? darkMode
+                                        ? 'bg-teal-500/20 text-teal-300 border-teal-500/30'
+                                        : 'bg-teal-100 text-teal-800 border-teal-300'
+                                      : darkMode
+                                      ? 'bg-white/10 text-slate-300 border-white/10'
+                                      : 'bg-slate-100 text-slate-700 border-slate-200'
+                                  }`}
+                                >
+                                  <MapPin size={11} weight="bold" className={isCleaning ? 'text-teal-400 shrink-0' : 'text-slate-400 shrink-0'} />
+                                  <span className="truncate">{activeRoom}</span>
+                                </span>
+                              )}
                             </div>
 
                             <div className="relative z-10 my-0.5 flex items-baseline justify-between">
-                              <div className="flex items-baseline gap-1.5">
-                                <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono">
-                                  {isVacuumCleaning ? 'Cleaning' : 'Docked'}
+                              <div className="flex items-baseline gap-1.5 min-w-0">
+                                <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono truncate capitalize">
+                                  {displayStatus}
                                 </span>
                                 {vacuumBattery !== undefined && (
-                                  <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
-                                    • {Math.round(vacuumBattery)}%
+                                  <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-0.5 shrink-0">
+                                    {isVacuumCharging ? <BatteryCharging size={13} weight="fill" className="text-teal-500" /> : null}
+                                    {Math.round(vacuumBattery)}%
                                   </span>
                                 )}
                               </div>
                               {is2x && (
                                 <span className="text-xs font-semibold text-teal-600 dark:text-teal-300 truncate ml-2">
-                                  {firstVacuum?.name || 'Robotic Cleaner'}
+                                  {isCleaning ? 'Cleaning in progress' : (isReturning ? 'Returning' : (isPaused ? 'Paused' : 'Ready'))}
                                 </span>
                               )}
                             </div>
@@ -1744,13 +1988,16 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 Vacuums
                               </div>
                               <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate flex items-center justify-between">
-                                <span className="truncate">{firstVacuum?.name || 'Robotic Cleaner'}</span>
+                                <span className="truncate">
+                                  {activeVacuumDevice?.name || firstVacuum?.name || 'Robotic Cleaner'}
+                                </span>
                                 <CaretRight size={13} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-teal-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                               </div>
                             </div>
                           </div>
                         );
                       }
+
 
                       case 'fans': {
                         return (
@@ -2515,9 +2762,22 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                         const batteryDischargeKW = energyRealtime?.batteryDischargePowerKW || 0;
                         const batterySoc = energyRealtime?.batterySoC;
                         const isExporting = gridExportKW > 0.05;
-                        const chartBuckets = (energyModel.powerBuckets && energyModel.powerBuckets.length > 0)
+                        const rawPowerBuckets = (energyModel.powerBuckets && energyModel.powerBuckets.length > 0)
                           ? energyModel.powerBuckets
                           : (energyData.buckets || []);
+
+                        // Filter Power Sources flow to only show the last 12 hours instead of full day
+                        const nowMs = Date.now();
+                        const twelveHoursAgoMs = nowMs - 12 * 60 * 60 * 1000;
+                        const hasTimestamps = rawPowerBuckets.some((b) => (b.startMs || 0) > 0 || (b.endMs || 0) > 0);
+                        const chartBuckets = hasTimestamps
+                          ? rawPowerBuckets.filter((b) => {
+                              const end = b.endMs || b.startMs || 0;
+                              return end >= twelveHoursAgoMs && (b.startMs || 0) <= nowMs + 5 * 60 * 1000;
+                            })
+                          : (rawPowerBuckets.length > 12
+                              ? rawPowerBuckets.slice(-Math.round(rawPowerBuckets.length / 2))
+                              : rawPowerBuckets);
 
                         const selfSufficiencyPct = homeKW > 0 
                           ? Math.min(100, Math.round(((solarKW + batteryDischargeKW) / homeKW) * 100))
@@ -2583,25 +2843,21 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   </div>
                                 </div>
 
-                                {/* Right Side: Minimalist Chart & Clean Legend */}
-                                <div className="flex flex-col justify-between h-full min-w-0 pl-3 border-l border-slate-200/60 dark:border-white/5">
-                                  <div className="flex items-center justify-between shrink-0">
-                                    <div className="flex items-center gap-2 text-[9px] sm:text-[10px] font-bold text-slate-400">
-                                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />Solar</span>
-                                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-sky-500" />Grid</span>
-                                      <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 border-t border-slate-400" />Home</span>
-                                    </div>
-                                    <CaretRight size={14} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                                {/* Right Side: Full-Height Minimalist Chart (Legend removed for max height) */}
+                                <div className="relative h-full min-w-0 pl-3 border-l border-slate-200/60 dark:border-white/5 flex items-center">
+                                  <div className="absolute top-0 right-0 z-20 pointer-events-none">
+                                    <CaretRight size={14} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0" />
                                   </div>
 
-                                  {/* Responsive minimalist chart container */}
-                                  <div className="w-full flex-1 min-h-0 my-1 relative">
+                                  {/* Full-height minimalist chart container */}
+                                  <div className="w-full h-full relative py-0.5">
                                     <MinimalistPowerFlowChart
                                       buckets={chartBuckets}
                                       darkMode={darkMode}
                                       hasSolar={energyHasSolar}
                                       hasGrid={energyHasGrid}
                                       hasBattery={energyHasBattery}
+                                      lastHours={12}
                                     />
                                   </div>
                                 </div>
@@ -2628,6 +2884,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 hasSolar={energyHasSolar}
                                 hasGrid={energyHasGrid}
                                 hasBattery={energyHasBattery}
+                                lastHours={12}
                               />
                             </div>
 
@@ -2890,18 +3147,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   </div>
                                 </div>
 
-                                {/* Right Side: Minimalist Chart & Clean Legend */}
-                                <div className="flex flex-col justify-between h-full min-w-0 pl-3 border-l border-slate-200/60 dark:border-white/5">
-                                  <div className="flex items-center justify-between shrink-0">
-                                    <div className="flex items-center gap-2 text-[9px] sm:text-[10px] font-bold text-slate-400">
-                                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-purple-500" />Use</span>
-                                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Return</span>
-                                    </div>
-                                    <CaretRight size={14} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                                {/* Right Side: Full-Height Minimalist Chart (Legend removed for max height) */}
+                                <div className="relative h-full min-w-0 pl-3 border-l border-slate-200/60 dark:border-white/5 flex items-center">
+                                  <div className="absolute top-0 right-0 z-20 pointer-events-none">
+                                    <CaretRight size={14} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all shrink-0" />
                                   </div>
 
-                                  {/* Responsive minimalist bar chart container (positive up, negative down) */}
-                                  <div className="w-full flex-1 min-h-0 my-1 relative">
+                                  {/* Full-height minimalist bar chart container (positive up, negative down) */}
+                                  <div className="w-full h-full relative py-0.5">
                                     <MinimalistEnergyUsageChart
                                       buckets={chartBuckets}
                                       darkMode={darkMode}
@@ -3161,18 +3414,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   </div>
                                 </div>
 
-                                {/* Right Side: Minimalist Chart & Clean Legend */}
-                                <div className="flex flex-col justify-between h-full min-w-0 pl-3 border-l border-slate-200/60 dark:border-white/5">
-                                  <div className="flex items-center justify-between shrink-0">
-                                    <div className="flex items-center gap-2 text-[9px] sm:text-[10px] font-bold text-slate-400">
-                                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />Actual</span>
-                                      <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 border-t border-dashed border-slate-400" />Forecast</span>
-                                    </div>
-                                    <CaretRight size={14} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                                {/* Right Side: Full-Height Minimalist Chart (Legend removed for max height) */}
+                                <div className="relative h-full min-w-0 pl-3 border-l border-slate-200/60 dark:border-white/5 flex items-center">
+                                  <div className="absolute top-0 right-0 z-20 pointer-events-none">
+                                    <CaretRight size={14} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0" />
                                   </div>
 
-                                  {/* Responsive minimalist chart container */}
-                                  <div className="w-full flex-1 min-h-0 my-1 relative">
+                                  {/* Full-height minimalist chart container */}
+                                  <div className="w-full h-full relative py-0.5">
                                     <MinimalistSolarProductionChart
                                       buckets={chartBuckets}
                                       forecastTotal={forecastTotal}
