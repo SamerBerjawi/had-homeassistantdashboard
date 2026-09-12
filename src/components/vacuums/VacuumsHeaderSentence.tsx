@@ -31,6 +31,7 @@ import {
 } from '@phosphor-icons/react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { discoverVacuumDevices } from '../../services/vacuumDiscovery';
+import { ResolvedEntity } from '../../types';
 
 interface VacuumsHeaderSentenceProps {
   darkMode?: boolean;

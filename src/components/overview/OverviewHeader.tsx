@@ -30,6 +30,7 @@ import {
   ArrowCounterClockwise,
   CheckCircle,
   Eye,
+  EyeSlash,
   Wind,
   HouseLine,
   ShieldWarning,
@@ -48,7 +49,8 @@ import {
   Sun,
   ChartBar,
   Plug,
-  House
+  House,
+  SquaresFour
 } from '@phosphor-icons/react';
 import {
   DndContext,
@@ -86,6 +88,7 @@ import {
   MinimalistSolarProductionChart
 } from './EnergySparklineCharts';
 import { discoverVacuumDevices } from '../../services/vacuumDiscovery';
+import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 
 // Lazy-loaded interactive slide-over drawers (loaded on first open)
 const UsersPresenceModal = React.lazy(() => import('./modals/UsersPresenceModal'));
@@ -631,6 +634,8 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     return overviewConfig.tileSizes || {};
   }, [overviewConfig.tileSizes]);
 
+  const hideBadges = overviewConfig.hideBadges ?? false;
+
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
       distance: 5
@@ -646,13 +651,135 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
   const sensors = useSensors(pointerSensor, touchSensor);
 
+  // Active Overview Category Filter Tab
+  const [activeOverviewTab, setActiveOverviewTab] = useState<string>('all');
+
+  // When entering edit mode, automatically switch to 'all' so user sees and arranges all tiles
+  useEffect(() => {
+    if (isEditMode) {
+      setActiveOverviewTab('all');
+    }
+  }, [isEditMode]);
+
+  // Tab to tile ID mapping
+  const OVERVIEW_TAB_TILE_MAP: Record<string, string[]> = useMemo(() => ({
+    all: [],
+    lights: ['lights', 'switches'],
+    energy: ['power_flow', 'power_flow_chart', 'energy_usage', 'energy_usage_chart', 'solar_production', 'solar_production_chart'],
+    security: ['alarm', 'doors', 'windows', 'motion', 'leak', 'smoke'],
+    climate: ['fans', 'weather', 'weather_hourly'],
+    openings: ['doors', 'windows'],
+    media: ['media'],
+    vacuums: ['vacuums']
+  }), []);
+
+  // Compute adaptive section tabs with real-time badges
+  const overviewTabs: SectionTabItem[] = useMemo(() => {
+    const totalOnLights = onLights.length + onSwitches.length;
+    const totalOpenings = openDoors.length + openWindows.length;
+    const totalSecurityAlerts = totalOpenings + activeMotion.length + activeLeaks.length + activeSmoke.length;
+
+    const tabs: SectionTabItem[] = [
+      {
+        id: 'all',
+        label: 'All',
+        icon: SquaresFour,
+        color: '#38bdf8'
+      },
+      {
+        id: 'lights',
+        label: 'Lights',
+        icon: Lightbulb,
+        color: '#eab308',
+        badge: totalOnLights > 0 ? `${totalOnLights} on` : undefined,
+        badgeColor: totalOnLights > 0 ? 'bg-amber-500/20 text-amber-300 font-bold' : undefined
+      },
+      {
+        id: 'energy',
+        label: 'Energy',
+        icon: Lightning,
+        color: '#10b981',
+        badge: energyTotals?.homeConsumption && energyTotals.homeConsumption > 0
+          ? `${Math.min(100, Math.round((((energyTotals.solarToHome || 0) + (energyTotals.batteryToHome || 0)) / energyTotals.homeConsumption) * 100))}%`
+          : undefined,
+        badgeColor: 'bg-emerald-500/20 text-emerald-300 font-bold'
+      },
+      {
+        id: 'security',
+        label: 'Security',
+        icon: ShieldCheck,
+        color: '#ef4444',
+        badge: totalSecurityAlerts > 0 ? `${totalSecurityAlerts}` : undefined,
+        badgeColor: totalSecurityAlerts > 0 ? 'bg-rose-500/20 text-rose-300 font-bold' : undefined
+      },
+      {
+        id: 'climate',
+        label: 'Climate',
+        icon: Thermometer,
+        color: '#06b6d4',
+        badge: activeFans.length > 0 ? `${activeFans.length} active` : undefined,
+        badgeColor: activeFans.length > 0 ? 'bg-cyan-500/20 text-cyan-300 font-bold' : undefined
+      },
+      {
+        id: 'openings',
+        label: 'Windows & Doors',
+        icon: Door,
+        color: '#8b5cf6',
+        badge: totalOpenings > 0 ? `${totalOpenings} open` : undefined,
+        badgeColor: totalOpenings > 0 ? 'bg-amber-500/20 text-amber-300 font-bold' : undefined
+      },
+      {
+        id: 'media',
+        label: 'Media',
+        icon: MusicNotes,
+        color: '#ec4899',
+        badge: playingMediaEntities.length > 0 ? `${playingMediaEntities.length} active` : undefined,
+        badgeColor: 'bg-purple-500/20 text-purple-300 font-bold'
+      }
+    ];
+
+    if (vacuumEntities.length > 0) {
+      tabs.push({
+        id: 'vacuums',
+        label: 'Vacuums',
+        icon: Broom,
+        color: '#f97316',
+        badge: activeVacuums.length > 0 ? `${activeVacuums.length} active` : undefined,
+        badgeColor: 'bg-amber-500/20 text-amber-300 font-bold'
+      });
+    }
+
+    return tabs;
+  }, [
+    onLights.length,
+    onSwitches.length,
+    openDoors.length,
+    openWindows.length,
+    activeMotion.length,
+    activeLeaks.length,
+    activeSmoke.length,
+    energyRealtime,
+    activeFans.length,
+    playingMediaEntities.length,
+    vacuumEntities.length,
+    activeVacuums.length
+  ]);
+
   const displayTiles = useMemo(() => {
     return currentTileOrder.filter((id) => {
       if (id === 'vacuums' && vacuumEntities.length === 0 && !isEditMode) return false;
       if (isEditMode) return true;
-      return !hiddenTilesSet.has(id);
+      if (hiddenTilesSet.has(id)) return false;
+
+      if (activeOverviewTab !== 'all') {
+        const allowed = OVERVIEW_TAB_TILE_MAP[activeOverviewTab];
+        if (allowed && !allowed.includes(id)) {
+          return false;
+        }
+      }
+      return true;
     });
-  }, [currentTileOrder, vacuumEntities.length, isEditMode, hiddenTilesSet]);
+  }, [currentTileOrder, vacuumEntities.length, isEditMode, hiddenTilesSet, activeOverviewTab, OVERVIEW_TAB_TILE_MAP]);
 
   const handleReorder = useCallback((newOrder: string[]) => {
     const fullOrder = [...newOrder];
@@ -734,12 +861,23 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     }));
   }, [updateConfig]);
 
+  const handleToggleBadges = useCallback(() => {
+    updateConfig((prev) => ({
+      ...prev,
+      overview: {
+        ...(prev.overview || {}),
+        hideBadges: !(prev.overview?.hideBadges ?? false)
+      }
+    }));
+  }, [updateConfig]);
+
   const handleResetLayout = useCallback(() => {
     updateConfig((prev) => ({
       ...prev,
       overview: {
         tileOrder: [...DEFAULT_OVERVIEW_TILE_ORDER],
         hiddenTiles: [],
+        hideBadges: false,
         tileSizes: {
           weather: '2x',
           weather_hourly: '2x'
@@ -803,7 +941,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       {/* ============================================================= */}
       {/* 1. STATUS PILLS BAR (ONLY ACTIVE BADGES IN EXACT ORDER)      */}
       {/* ============================================================= */}
-      {hasAnyActiveBadge && (
+      {!hideBadges && hasAnyActiveBadge ? (
         <div className="flex flex-wrap items-center gap-2 animate-fadeIn">
           {/* 1.1 USERS IN KNOWN ZONES (HOME & KNOWN ZONES) */}
           {activeZoneUsers.map((user) => {
@@ -1027,6 +1165,32 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
             </button>
           )}
         </div>
+      ) : isEditMode && hideBadges ? (
+        <div className="w-full px-3.5 py-2.5 rounded-2xl border border-dashed border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-300 text-xs flex items-center justify-between gap-2 animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <EyeSlash size={15} weight="bold" className="shrink-0" />
+            <span className="font-semibold">Overview status badges are hidden</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleBadges}
+            className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-500/20 hover:bg-amber-500/30 transition-all cursor-pointer"
+          >
+            Show Badges
+          </button>
+        </div>
+      ) : null}
+
+      {/* Overview Category Tabs (All, Lights, Energy, Security, Climate, etc.) */}
+      {!isEditMode && (
+        <div className="w-full flex items-center justify-between gap-3 pt-0.5 animate-fadeIn">
+          <AdaptiveSectionTabs
+            tabs={overviewTabs}
+            activeTab={activeOverviewTab}
+            onChange={(tabId) => setActiveOverviewTab(tabId)}
+            darkMode={darkMode}
+          />
+        </div>
       )}
 
       {/* Overview Customization Header / Action Banner */}
@@ -1050,6 +1214,21 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Badges visibility toggle */}
+            <button
+              type="button"
+              onClick={handleToggleBadges}
+              className={`h-7 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                hideBadges
+                  ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                  : 'bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-slate-300'
+              }`}
+              title={hideBadges ? 'Show overview status badges' : 'Hide overview status badges'}
+            >
+              {hideBadges ? <Eye size={13} weight="bold" /> : <EyeSlash size={13} weight="bold" />}
+              <span>{hideBadges ? 'Show Badges' : 'Hide Badges'}</span>
+            </button>
+
             {hiddenTilesSet.size > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
@@ -4041,6 +4220,21 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                 </OverviewSortableTile>
               );
             })}
+
+            {displayTiles.length === 0 && (
+              <div className="col-span-full w-full py-12 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-slate-100/50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
+                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+                  No visible tiles in this category
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveOverviewTab('all')}
+                  className="mt-3 px-4 py-2 text-xs font-bold rounded-xl bg-sky-500 text-white hover:bg-sky-400 transition-all cursor-pointer shadow-xs"
+                >
+                  View All Tiles
+                </button>
+              </div>
+            )}
           </div>
         </SortableContext>
       </DndContext>

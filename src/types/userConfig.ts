@@ -48,6 +48,7 @@ export interface OverviewConfig {
   tileOrder?: string[];
   hiddenTiles?: string[];
   tileSizes?: Record<string, '1x' | '2x'>;
+  hideBadges?: boolean;
 }
 
 export interface UserDashboardConfig {

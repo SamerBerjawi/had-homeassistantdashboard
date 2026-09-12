@@ -129,7 +129,7 @@ export function MinimalistPowerFlowChart({
         gridExport: 0,
         batteryCharge: 0,
         batteryDischarge: 0
-      }));
+      })) as TransformedEnergyBucket[];
     }
 
     // Find max positive stacked value (Solar + Grid Import + Battery Discharge)

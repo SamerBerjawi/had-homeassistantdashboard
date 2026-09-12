@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Broom, Robot } from '@phosphor-icons/react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { discoverVacuumDevices } from '../../services/vacuumDiscovery';
+import { ResolvedEntity } from '../../types';
 import AdaptiveSectionTabs, { SectionTabItem } from '../common/AdaptiveSectionTabs';
 import ViewEmptyState from '../ui/ViewEmptyState';
 import ViewLoadingState from '../ui/ViewLoadingState';
