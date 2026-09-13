@@ -77,7 +77,7 @@ export function PieCenter({
   }
 
   // If custom render function is provided, use it
-  if (children && hoveredData) {
+  if (children) {
     return (
       <div
         className={cn(
@@ -91,7 +91,7 @@ export function PieCenter({
           value: displayValue,
           label: displayLabel,
           isHovered: effectiveHoveredIndex !== null,
-          data: hoveredData,
+          data: hoveredData ?? { label: displayLabel, value: displayValue },
         })}
       </div>
     );

@@ -171,8 +171,8 @@ export const WIDGET_CATALOG: WidgetCatalogItem[] = [
   },
   {
     id: 'energy_usage',
-    title: 'Monitored Devices Pie',
-    description: 'Individual device consumption share with interactive pie breakdown',
+    title: 'Monitored Devices Donut',
+    description: 'Individual device consumption share with interactive donut breakdown',
     category: 'Energy',
     icon: Lightning,
     color: '#8b5cf6',
