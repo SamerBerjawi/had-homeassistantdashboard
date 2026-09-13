@@ -50,12 +50,14 @@ import {
   ChartBar,
   Plug,
   House,
-  SquaresFour
+  SquaresFour,
+  Plus,
+  PlusCircle
 } from '@phosphor-icons/react';
 import {
   DndContext,
-  closestCenter,
-  PointerSensor,
+  closestCorners,
+  MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -68,7 +70,7 @@ import {
 } from '@dnd-kit/sortable';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { useEditMode } from '../../contexts/EditModeContext';
-import { DEFAULT_OVERVIEW_TILE_ORDER } from '../../types/userConfig';
+import { DEFAULT_OVERVIEW_TILE_ORDER, OverviewTileVisibilityMode } from '../../types/userConfig';
 import OverviewSortableTile from './OverviewSortableTile';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -102,6 +104,7 @@ const MediaOverviewDrawer = React.lazy(() => import('./modals/MediaOverviewDrawe
 const SensorsOverviewDrawer = React.lazy(() => import('./modals/SensorsOverviewDrawer'));
 const VacuumsOverviewDrawer = React.lazy(() => import('./modals/VacuumsOverviewDrawer'));
 const WeatherOverviewDrawer = React.lazy(() => import('../weather/WeatherOverviewDrawer'));
+const WidgetsDrawer = React.lazy(() => import('./modals/WidgetsDrawer'));
 
 const TILE_TITLES: Record<string, string> = {
   weather: 'Weather',
@@ -159,6 +162,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   const [drawerOpen, setDrawerOpen] = useState<
     'users' | 'lights' | 'switches' | 'fans' | 'doors' | 'windows' | 'alarm' | 'media' | 'sensors' | 'vacuums' | 'weather' | null
   >(null);
+  const [isWidgetDrawerOpen, setIsWidgetDrawerOpen] = useState<boolean>(false);
 
   // Track which drawers have been opened at least once to preserve exit animations
   const [openedDrawers, setOpenedDrawers] = useState<Record<string, boolean>>({});
@@ -630,13 +634,17 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     return new Set(overviewConfig.hiddenTiles || []);
   }, [overviewConfig.hiddenTiles]);
 
+  const hiddenFromAllSet = useMemo(() => {
+    return new Set(overviewConfig.hiddenFromAllTiles || []);
+  }, [overviewConfig.hiddenFromAllTiles]);
+
   const tileSizes = useMemo(() => {
     return overviewConfig.tileSizes || {};
   }, [overviewConfig.tileSizes]);
 
   const hideBadges = overviewConfig.hideBadges ?? false;
 
-  const pointerSensor = useSensor(PointerSensor, {
+  const mouseSensor = useSensor(MouseSensor, {
     activationConstraint: {
       distance: 5
     }
@@ -644,12 +652,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
   const touchSensor = useSensor(TouchSensor, {
     activationConstraint: {
-      delay: 150,
+      delay: 180,
       tolerance: 8
     }
   });
 
-  const sensors = useSensors(pointerSensor, touchSensor);
+  const sensors = useSensors(mouseSensor, touchSensor);
 
   // Active Overview Category Filter Tab
   const [activeOverviewTab, setActiveOverviewTab] = useState<string>('all');
@@ -768,10 +776,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   const displayTiles = useMemo(() => {
     return currentTileOrder.filter((id) => {
       if (id === 'vacuums' && vacuumEntities.length === 0 && !isEditMode) return false;
-      if (isEditMode) return true;
       if (hiddenTilesSet.has(id)) return false;
 
-      if (activeOverviewTab !== 'all') {
+      if (activeOverviewTab === 'all') {
+        // If hidden specifically from 'all' tab, hide unless in edit mode so user can see & toggle it
+        if (hiddenFromAllSet.has(id) && !isEditMode) {
+          return false;
+        }
+      } else {
         const allowed = OVERVIEW_TAB_TILE_MAP[activeOverviewTab];
         if (allowed && !allowed.includes(id)) {
           return false;
@@ -779,7 +791,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       }
       return true;
     });
-  }, [currentTileOrder, vacuumEntities.length, isEditMode, hiddenTilesSet, activeOverviewTab, OVERVIEW_TAB_TILE_MAP]);
+  }, [currentTileOrder, vacuumEntities.length, isEditMode, hiddenTilesSet, hiddenFromAllSet, activeOverviewTab, OVERVIEW_TAB_TILE_MAP]);
 
   const handleReorder = useCallback((newOrder: string[]) => {
     const fullOrder = [...newOrder];
@@ -851,6 +863,45 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     }));
   }, [hiddenTilesSet, updateConfig]);
 
+  const handleAddWidget = useCallback((widgetId: string) => {
+    const nextSet = new Set(hiddenTilesSet);
+    nextSet.delete(widgetId);
+    const nextOrder = [...currentTileOrder];
+    if (!nextOrder.includes(widgetId)) {
+      nextOrder.push(widgetId);
+    }
+    updateConfig((prev) => ({
+      ...prev,
+      overview: {
+        ...(prev.overview || {}),
+        tileOrder: nextOrder,
+        hiddenTiles: Array.from(nextSet)
+      }
+    }));
+  }, [hiddenTilesSet, currentTileOrder, updateConfig]);
+
+  const handleRemoveWidget = useCallback((widgetId: string) => {
+    const nextSet = new Set(hiddenTilesSet);
+    nextSet.add(widgetId);
+    updateConfig((prev) => ({
+      ...prev,
+      overview: {
+        ...(prev.overview || {}),
+        hiddenTiles: Array.from(nextSet)
+      }
+    }));
+  }, [hiddenTilesSet, updateConfig]);
+
+  const handleAddAllWidgets = useCallback(() => {
+    updateConfig((prev) => ({
+      ...prev,
+      overview: {
+        ...(prev.overview || {}),
+        hiddenTiles: []
+      }
+    }));
+  }, [updateConfig]);
+
   const handleUnhideAll = useCallback(() => {
     updateConfig((prev) => ({
       ...prev,
@@ -862,14 +913,65 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   }, [updateConfig]);
 
   const handleToggleBadges = useCallback(() => {
+    updateConfig((prev) => {
+      const current = Boolean(prev.overview?.hideBadges);
+      return {
+        ...prev,
+        overview: {
+          ...(prev.overview || {}),
+          hideBadges: !current
+        }
+      };
+    });
+  }, [updateConfig]);
+
+  const handleToggleHiddenFromAll = useCallback((tileId: string) => {
+    const isHiddenFromAll = hiddenFromAllSet.has(tileId);
+    const nextSet = new Set(hiddenFromAllSet);
+    if (isHiddenFromAll) {
+      nextSet.delete(tileId);
+    } else {
+      nextSet.add(tileId);
+    }
     updateConfig((prev) => ({
       ...prev,
       overview: {
         ...(prev.overview || {}),
-        hideBadges: !(prev.overview?.hideBadges ?? false)
+        hiddenFromAllTiles: Array.from(nextSet)
       }
     }));
-  }, [updateConfig]);
+  }, [hiddenFromAllSet, updateConfig]);
+
+  const handleSetTileMode = useCallback((tileId: string, mode: OverviewTileVisibilityMode) => {
+    const nextHiddenTiles = new Set(hiddenTilesSet);
+    const nextHiddenFromAll = new Set(hiddenFromAllSet);
+
+    if (mode === 'all_on') {
+      nextHiddenTiles.delete(tileId);
+      nextHiddenFromAll.delete(tileId);
+    } else if (mode === 'tab_only') {
+      nextHiddenTiles.delete(tileId);
+      nextHiddenFromAll.add(tileId);
+    } else if (mode === 'all_off') {
+      nextHiddenTiles.add(tileId);
+      nextHiddenFromAll.delete(tileId);
+    }
+
+    const nextOrder = [...currentTileOrder];
+    if (mode !== 'all_off' && !nextOrder.includes(tileId)) {
+      nextOrder.push(tileId);
+    }
+
+    updateConfig((prev) => ({
+      ...prev,
+      overview: {
+        ...(prev.overview || {}),
+        tileOrder: nextOrder,
+        hiddenTiles: Array.from(nextHiddenTiles),
+        hiddenFromAllTiles: Array.from(nextHiddenFromAll)
+      }
+    }));
+  }, [hiddenTilesSet, hiddenFromAllSet, currentTileOrder, updateConfig]);
 
   const handleResetLayout = useCallback(() => {
     updateConfig((prev) => ({
@@ -877,6 +979,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       overview: {
         tileOrder: [...DEFAULT_OVERVIEW_TILE_ORDER],
         hiddenTiles: [],
+        hiddenFromAllTiles: [],
         hideBadges: false,
         tileSizes: {
           weather: '2x',
@@ -1182,16 +1285,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       ) : null}
 
       {/* Overview Category Tabs (All, Lights, Energy, Security, Climate, etc.) */}
-      {!isEditMode && (
-        <div className="w-full flex items-center justify-between gap-3 pt-0.5 animate-fadeIn">
-          <AdaptiveSectionTabs
-            tabs={overviewTabs}
-            activeTab={activeOverviewTab}
-            onChange={(tabId) => setActiveOverviewTab(tabId)}
-            darkMode={darkMode}
-          />
-        </div>
-      )}
+      <div className="w-full flex items-center justify-between gap-3 pt-0.5 animate-fadeIn">
+        <AdaptiveSectionTabs
+          tabs={overviewTabs}
+          activeTab={activeOverviewTab}
+          onChange={(tabId) => setActiveOverviewTab(tabId)}
+          darkMode={darkMode}
+        />
+      </div>
 
       {/* Overview Customization Header / Action Banner */}
       {isEditMode ? (
@@ -1214,6 +1315,22 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Add Widgets Button */}
+            <button
+              type="button"
+              onClick={() => setIsWidgetDrawerOpen(true)}
+              className="h-7 px-3 rounded-xl text-xs font-bold bg-sky-500 hover:bg-sky-400 text-white shadow-xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+              title="Open widget library to add or customize widgets"
+            >
+              <PlusCircle size={14} weight="bold" />
+              <span>Add Widgets</span>
+              {hiddenTilesSet.size > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[10px] font-black">
+                  +{hiddenTilesSet.size}
+                </span>
+              )}
+            </button>
+
             {/* Badges visibility toggle */}
             <button
               type="button"
@@ -1228,33 +1345,6 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
               {hideBadges ? <Eye size={13} weight="bold" /> : <EyeSlash size={13} weight="bold" />}
               <span>{hideBadges ? 'Show Badges' : 'Hide Badges'}</span>
             </button>
-
-            {hiddenTilesSet.size > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                  Hidden:
-                </span>
-                {Array.from(hiddenTilesSet).map((hiddenId) => (
-                  <button
-                    key={hiddenId}
-                    type="button"
-                    onClick={() => handleToggleHide(hiddenId)}
-                    className="h-6 px-2 rounded-lg text-[10px] font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-500/30 transition-all cursor-pointer flex items-center gap-1"
-                    title={`Click to show ${TILE_TITLES[hiddenId] || hiddenId}`}
-                  >
-                    <Eye size={11} weight="bold" />
-                    <span>+{TILE_TITLES[hiddenId] || hiddenId}</span>
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={handleUnhideAll}
-                  className="h-6 px-2 rounded-lg text-[10px] font-extrabold bg-amber-500/25 hover:bg-amber-500/40 text-amber-700 dark:text-amber-300 transition-all cursor-pointer"
-                >
-                  Show All
-                </button>
-              </div>
-            )}
 
             <button
               type="button"
@@ -1286,13 +1376,19 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       {/* ============================================================= */}
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={closestCorners}
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={displayTiles} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
             {displayTiles.map((tileId, index) => {
               const isHidden = hiddenTilesSet.has(tileId);
+              const isHiddenFromAll = hiddenFromAllSet.has(tileId);
+              const tileVisibilityMode: OverviewTileVisibilityMode = isHidden
+                ? 'all_off'
+                : isHiddenFromAll
+                ? 'tab_only'
+                : 'all_on';
               const is2x = tileSizes[tileId] === '2x' || (tileSizes[tileId] === undefined && (tileId === 'weather' || tileId === 'weather_hourly'));
               const canMoveLeft = index > 0;
               const canMoveRight = index < displayTiles.length - 1;
@@ -1302,7 +1398,9 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                   key={tileId}
                   id={tileId}
                   isEditMode={isEditMode}
+                  visibilityMode={tileVisibilityMode}
                   isHidden={isHidden}
+                  isHiddenFromAll={isHiddenFromAll}
                   is2x={is2x}
                   canMoveLeft={canMoveLeft}
                   canMoveRight={canMoveRight}
@@ -1310,6 +1408,8 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                   onMoveRight={() => handleMoveTile(tileId, 'right')}
                   onToggleHide={() => handleToggleHide(tileId)}
                   onToggleSize={() => handleToggleSize(tileId)}
+                  onToggleHiddenFromAll={() => handleToggleHiddenFromAll(tileId)}
+                  onSetVisibilityMode={(mode) => handleSetTileMode(tileId, mode)}
                   onClick={getTileClickHandler(tileId)}
                 >
                   {(() => {
@@ -4222,17 +4322,35 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
             })}
 
             {displayTiles.length === 0 && (
-              <div className="col-span-full w-full py-12 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-slate-100/50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
-                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                  No visible tiles in this category
+              <div className="col-span-full w-full py-16 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-slate-100/50 dark:bg-white/[0.02] border border-dashed border-slate-300/80 dark:border-white/10">
+                <div className="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center mb-3">
+                  <SquaresFour size={24} weight="duotone" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white">
+                  No widgets on this view
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
+                  Add widgets from the library or switch tabs to see your active dashboard cards.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setActiveOverviewTab('all')}
-                  className="mt-3 px-4 py-2 text-xs font-bold rounded-xl bg-sky-500 text-white hover:bg-sky-400 transition-all cursor-pointer shadow-xs"
-                >
-                  View All Tiles
-                </button>
+                <div className="flex items-center gap-2 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsWidgetDrawerOpen(true)}
+                    className="px-4 py-2 text-xs font-bold rounded-xl bg-sky-500 hover:bg-sky-400 text-white transition-all cursor-pointer shadow-md flex items-center gap-1.5 active:scale-95"
+                  >
+                    <Plus size={14} weight="bold" />
+                    <span>Add Widgets</span>
+                  </button>
+                  {activeOverviewTab !== 'all' && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveOverviewTab('all')}
+                      className="px-3.5 py-2 text-xs font-bold rounded-xl bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
+                    >
+                      View All
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -4243,6 +4361,22 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       {/* 3. SLIDE-OVER RIGHT SIDEBARS                                  */}
       {/* ============================================================= */}
       <React.Suspense fallback={null}>
+        {isWidgetDrawerOpen && (
+          <WidgetsDrawer
+            isOpen={isWidgetDrawerOpen}
+            onClose={() => setIsWidgetDrawerOpen(false)}
+            activeTileIds={currentTileOrder}
+            hiddenTileIds={Array.from(hiddenTilesSet)}
+            hiddenFromAllTileIds={Array.from(hiddenFromAllSet)}
+            onAddWidget={handleAddWidget}
+            onRemoveWidget={handleRemoveWidget}
+            onToggleHiddenFromAll={handleToggleHiddenFromAll}
+            onSetTileMode={handleSetTileMode}
+            onAddAllWidgets={handleAddAllWidgets}
+            onResetWidgets={handleResetLayout}
+            darkMode={darkMode}
+          />
+        )}
         {openedDrawers['weather'] && (
           <WeatherOverviewDrawer
             isOpen={drawerOpen === 'weather'}

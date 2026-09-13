@@ -62,7 +62,8 @@ export default function SolarProductionGraphCard({
       ? new Date(buckets[0].startMs)
       : new Date();
 
-    return Array.from({ length: 24 }, (_, hour) => {
+    // 1. Initial pass to extract existing solar and solarForecast from buckets
+    const slots: HourlySlot[] = Array.from({ length: 24 }, (_, hour) => {
       const slotDate = new Date(refDate);
       slotDate.setHours(hour, 0, 0, 0);
       const timeMs = slotDate.getTime();
@@ -88,11 +89,38 @@ export default function SolarProductionGraphCard({
         label,
         timeRange,
         solar: match?.solar ?? 0,
-        solarForecast: match?.solarForecast ?? null,
+        solarForecast: match?.solarForecast !== undefined ? match.solarForecast : null,
         startMs: timeMs
       };
     });
-  }, [buckets]);
+
+    // 2. Check forecast availability and compute effective total
+    const hasAnyForecast = slots.some((s) => s.solarForecast !== null && s.solarForecast > 0);
+    const effectiveForecastTotal = (forecastTotal && forecastTotal > 0)
+      ? forecastTotal
+      : (hasAnyForecast ? slots.reduce((acc, s) => acc + (s.solarForecast || 0), 0) : null);
+
+    // 3. Ensure full 24-hour forecast curve across all hours (with peak at solar noon ~12:30)
+    if (effectiveForecastTotal && effectiveForecastTotal > 0) {
+      const hasMiddayForecast = slots.filter((s) => s.hour >= 10 && s.hour <= 15).every((s) => s.solarForecast !== null);
+      if (!hasMiddayForecast) {
+        slots.forEach((s) => {
+          if (s.solarForecast === null || s.solarForecast === undefined) {
+            if (s.hour >= 5 && s.hour <= 20) {
+              const center = 12.5;
+              const sigma = 3.2;
+              const dist = Math.abs(s.hour - center);
+              s.solarForecast = Number(((effectiveForecastTotal / 8.02) * Math.exp(-(dist * dist) / (2 * sigma * sigma))).toFixed(3));
+            } else {
+              s.solarForecast = 0;
+            }
+          }
+        });
+      }
+    }
+
+    return slots;
+  }, [buckets, forecastTotal]);
 
   const hasForecast = useMemo(() => {
     return (

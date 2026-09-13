@@ -214,6 +214,25 @@ export function transformEnergyStatistics(
         }
       }
     }
+
+    // Include forecast timestamps so future hours of the day are present in buckets
+    for (const fKey of Object.keys(forecastWhHours)) {
+      const fTime = new Date(fKey).getTime();
+      if (!isNaN(fTime)) {
+        rawTimestamps.push(fTime);
+      }
+    }
+  }
+
+  // When viewing hourly data (e.g. today or single day view), ensure all 24 hours of that day
+  // are present so the chart can display the full 24-hour day and full forecast curve
+  if (periodType === 'hour' && rawTimestamps.length > 0) {
+    const baseDate = new Date(rawTimestamps[0]);
+    for (let h = 0; h < 24; h++) {
+      const hDate = new Date(baseDate);
+      hDate.setHours(h, 0, 0, 0);
+      rawTimestamps.push(hDate.getTime());
+    }
   }
 
   // Generate canonical slots using real reported timestamps from Home Assistant

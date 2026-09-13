@@ -134,7 +134,9 @@ export function hasMaterialDashboardConfig(data: any): boolean {
   if (data.overview && typeof data.overview === 'object') {
     if (Array.isArray(data.overview.tileOrder) && data.overview.tileOrder.length > 0) return true;
     if (Array.isArray(data.overview.hiddenTiles) && data.overview.hiddenTiles.length > 0) return true;
+    if (Array.isArray(data.overview.hiddenFromAllTiles) && data.overview.hiddenFromAllTiles.length > 0) return true;
     if (data.overview.tileSizes && Object.keys(data.overview.tileSizes).length > 0) return true;
+    if (typeof data.overview.hideBadges === 'boolean') return true;
   }
 
   if (data.preferences && typeof data.preferences === 'object' && Object.keys(data.preferences).length > 0) return true;
@@ -170,7 +172,11 @@ export function mergeConfig(
         overview: {
           tileOrder: base.overview?.tileOrder || DEFAULT_USER_CONFIG.overview?.tileOrder,
           hiddenTiles: base.overview?.hiddenTiles || DEFAULT_USER_CONFIG.overview?.hiddenTiles,
-          tileSizes: { ...(DEFAULT_USER_CONFIG.overview?.tileSizes || {}), ...(base.overview?.tileSizes || {}) }
+          hiddenFromAllTiles: base.overview?.hiddenFromAllTiles || DEFAULT_USER_CONFIG.overview?.hiddenFromAllTiles,
+          tileSizes: { ...(DEFAULT_USER_CONFIG.overview?.tileSizes || {}), ...(base.overview?.tileSizes || {}) },
+          hideBadges: typeof base.overview?.hideBadges === 'boolean'
+            ? base.overview.hideBadges
+            : (DEFAULT_USER_CONFIG.overview?.hideBadges ?? false)
         }
       }
     : DEFAULT_USER_CONFIG;
@@ -314,10 +320,18 @@ export function mergeConfig(
         : Array.isArray(safeBase.overview?.hiddenTiles)
         ? [...safeBase.overview.hiddenTiles]
         : [],
+      hiddenFromAllTiles: Array.isArray(partial.overview?.hiddenFromAllTiles)
+        ? [...partial.overview.hiddenFromAllTiles]
+        : Array.isArray(safeBase.overview?.hiddenFromAllTiles)
+        ? [...safeBase.overview.hiddenFromAllTiles]
+        : [],
       tileSizes: {
         ...(safeBase.overview?.tileSizes || {}),
         ...(partial.overview?.tileSizes || {})
-      }
+      },
+      hideBadges: typeof partial.overview?.hideBadges === 'boolean'
+        ? partial.overview.hideBadges
+        : (safeBase.overview?.hideBadges ?? false)
     },
     layoutOverrides: {
       ...(safeBase.layoutOverrides || {}),

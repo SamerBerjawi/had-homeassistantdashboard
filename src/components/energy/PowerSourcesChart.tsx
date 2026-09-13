@@ -430,156 +430,110 @@ export default function PowerSourcesChart({
           </div>
         </div>
 
-        {/* Live Power Instantaneous Badges */}
-        {realtime && (
-          <div className="flex flex-wrap items-center gap-2 text-xs font-mono font-bold">
-            {hasSolar && (
-              <div
-                className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
-                  darkMode
-                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                    : 'bg-amber-50 border-amber-200 text-amber-700'
-                }`}
-              >
-                <Sun size={14} weight="fill" />
-                <span>{realtime.solarPowerKW.toFixed(2)} kW</span>
-              </div>
+        {/* Interactive Label Pills Acting as Chart Toggles */}
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono font-bold">
+          {/* Home Load Toggle Pill */}
+          <button
+            type="button"
+            onClick={() => setShowHome(!showHome)}
+            title={showHome ? 'Click to hide Home Load from chart' : 'Click to show Home Load in chart'}
+            className={`px-2.5 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer select-none active:scale-95 ${
+              showHome
+                ? darkMode
+                  ? 'bg-purple-500/15 border-purple-500/30 text-purple-300 shadow-xs'
+                  : 'bg-purple-50 border-purple-200 text-purple-700 shadow-xs'
+                : darkMode
+                  ? 'bg-white/5 border-white/10 text-slate-500 opacity-50 line-through'
+                  : 'bg-slate-100 border-slate-200 text-slate-400 opacity-50 line-through'
+            }`}
+          >
+            <House size={14} weight="fill" className={showHome ? 'text-purple-400' : 'text-slate-500'} />
+            <span>Home</span>
+            {realtime && (
+              <span className="font-mono">{realtime.homeConsumptionKW.toFixed(2)} kW</span>
             )}
+          </button>
 
-            {hasGrid && (
-              <div
-                className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
-                  liveGrid >= 0
-                    ? darkMode
-                      ? 'bg-sky-500/15 border-sky-500/30 text-sky-400'
-                      : 'bg-sky-50 border-sky-200 text-sky-700'
-                    : darkMode
-                      ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400'
-                      : 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                }`}
-              >
-                <Plug size={14} weight="fill" />
-                <span>{liveGrid >= 0 ? `+${liveGrid.toFixed(2)}` : liveGrid.toFixed(2)} kW</span>
-              </div>
-            )}
-
-            {hasBattery && (
-              <div
-                className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
-                  liveBattery >= 0
-                    ? darkMode
-                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                      : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                    : darkMode
-                      ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-400'
-                      : 'bg-cyan-50 border-cyan-200 text-cyan-700'
-                }`}
-              >
-                <BatteryCharging size={14} weight="fill" />
-                <span>{liveBattery >= 0 ? `+${liveBattery.toFixed(2)}` : liveBattery.toFixed(2)} kW</span>
-              </div>
-            )}
-
-            <div
-              className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
-                darkMode
-                  ? 'bg-purple-500/15 border-purple-500/30 text-purple-400'
-                  : 'bg-purple-50 border-purple-200 text-purple-700'
+          {/* Solar Toggle Pill */}
+          {hasSolar && (
+            <button
+              type="button"
+              onClick={() => setShowSolar(!showSolar)}
+              title={showSolar ? 'Click to hide Solar from chart' : 'Click to show Solar in chart'}
+              className={`px-2.5 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer select-none active:scale-95 ${
+                showSolar
+                  ? darkMode
+                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-400 shadow-xs'
+                    : 'bg-amber-50 border-amber-200 text-amber-700 shadow-xs'
+                  : darkMode
+                    ? 'bg-white/5 border-white/10 text-slate-500 opacity-50 line-through'
+                    : 'bg-slate-100 border-slate-200 text-slate-400 opacity-50 line-through'
               }`}
             >
-              <House size={14} weight="fill" />
-              <span>{realtime.homeConsumptionKW.toFixed(2)} kW</span>
-            </div>
-          </div>
-        )}
-      </div>
+              <Sun size={14} weight="fill" className={showSolar ? 'text-amber-500' : 'text-slate-500'} />
+              <span>Solar</span>
+              {realtime && (
+                <span className="font-mono">{realtime.solarPowerKW.toFixed(2)} kW</span>
+              )}
+            </button>
+          )}
 
-      {/* Interactive Legend & Series Filter Toggles */}
-      <div className="flex flex-wrap items-center gap-2.5 text-xs font-bold mb-4 z-10">
-        {/* Home Load (Dashed Line) */}
-        {/* Home Load (Solid Line) */}
-        <button
-          type="button"
-          onClick={() => setShowHome(!showHome)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
-            showHome
-              ? darkMode
-                ? 'bg-white/15 border-white/30 text-white'
-                : 'bg-slate-100 border-slate-300 text-slate-800 shadow-xs'
-              : darkMode
-                ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
-                : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
-          }`}
-        >
-          <span className={`w-3 h-0.5 border-b-2 ${darkMode ? 'border-white/80' : 'border-slate-700'}`} />
-          <span>Home Load</span>
-        </button>
+          {/* Grid Toggle Pill */}
+          {hasGrid && (
+            <button
+              type="button"
+              onClick={() => setShowGrid(!showGrid)}
+              title={showGrid ? 'Click to hide Grid from chart' : 'Click to show Grid in chart'}
+              className={`px-2.5 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer select-none active:scale-95 ${
+                showGrid
+                  ? liveGrid >= 0
+                    ? darkMode
+                      ? 'bg-sky-500/15 border-sky-500/30 text-sky-400 shadow-xs'
+                      : 'bg-sky-50 border-sky-200 text-sky-700 shadow-xs'
+                    : darkMode
+                      ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400 shadow-xs'
+                      : 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-xs'
+                  : darkMode
+                    ? 'bg-white/5 border-white/10 text-slate-500 opacity-50 line-through'
+                    : 'bg-slate-100 border-slate-200 text-slate-400 opacity-50 line-through'
+              }`}
+            >
+              <Plug size={14} weight="fill" className={showGrid ? (liveGrid >= 0 ? 'text-sky-400' : 'text-indigo-400') : 'text-slate-500'} />
+              <span>Grid</span>
+              {realtime && (
+                <span className="font-mono">{liveGrid >= 0 ? `+${liveGrid.toFixed(2)}` : liveGrid.toFixed(2)} kW</span>
+              )}
+            </button>
+          )}
 
-        {/* Solar */}
-        {hasSolar && (
-          <button
-            type="button"
-            onClick={() => setShowSolar(!showSolar)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
-              showSolar
-                ? darkMode
-                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                  : 'bg-amber-50 border-amber-300 text-amber-700 shadow-xs'
-                : darkMode
-                  ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
-                  : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
-            }`}
-          >
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-xs" />
-            <span>Solar</span>
-          </button>
-        )}
-
-        {/* Grid */}
-        {hasGrid && (
-          <button
-            type="button"
-            onClick={() => setShowGrid(!showGrid)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
-              showGrid
-                ? darkMode
-                  ? 'bg-sky-500/20 border-sky-500/40 text-sky-300'
-                  : 'bg-sky-50 border-sky-300 text-sky-700 shadow-xs'
-                : darkMode
-                  ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
-                  : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
-            }`}
-          >
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-sky-500 shadow-xs" title="Grid Import" />
-              <span className="w-2 h-2 rounded-full bg-indigo-500 shadow-xs" title="Grid Export" />
-            </div>
-            <span>Grid</span>
-          </button>
-        )}
-
-        {/* Battery */}
-        {hasBattery && (
-          <button
-            type="button"
-            onClick={() => setShowBattery(!showBattery)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
-              showBattery
-                ? darkMode
-                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                  : 'bg-emerald-50 border-emerald-300 text-emerald-700 shadow-xs'
-                : darkMode
-                  ? 'bg-white/5 border-white/10 text-slate-500 opacity-60'
-                  : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
-            }`}
-          >
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs" title="Battery Discharge" />
-              <span className="w-2 h-2 rounded-full bg-cyan-500 shadow-xs" title="Battery Charge" />
-            </div>
-            <span>Battery</span>
-          </button>
-        )}
+          {/* Battery Toggle Pill */}
+          {hasBattery && (
+            <button
+              type="button"
+              onClick={() => setShowBattery(!showBattery)}
+              title={showBattery ? 'Click to hide Battery from chart' : 'Click to show Battery in chart'}
+              className={`px-2.5 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer select-none active:scale-95 ${
+                showBattery
+                  ? liveBattery >= 0
+                    ? darkMode
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 shadow-xs'
+                      : 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-xs'
+                    : darkMode
+                      ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-400 shadow-xs'
+                      : 'bg-cyan-50 border-cyan-200 text-cyan-700 shadow-xs'
+                  : darkMode
+                    ? 'bg-white/5 border-white/10 text-slate-500 opacity-50 line-through'
+                    : 'bg-slate-100 border-slate-200 text-slate-400 opacity-50 line-through'
+              }`}
+            >
+              <BatteryCharging size={14} weight="fill" className={showBattery ? (liveBattery >= 0 ? 'text-emerald-400' : 'text-cyan-400') : 'text-slate-500'} />
+              <span>Battery</span>
+              {realtime && (
+                <span className="font-mono">{liveBattery >= 0 ? `+${liveBattery.toFixed(2)}` : liveBattery.toFixed(2)} kW</span>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main Recharts Composed Stacked Chart Area - Flexibly fills full card height */}

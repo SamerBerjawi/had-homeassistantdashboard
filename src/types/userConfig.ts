@@ -44,9 +44,12 @@ export const DEFAULT_OVERVIEW_TILE_ORDER = [
 
 export type OverviewTileId = (typeof DEFAULT_OVERVIEW_TILE_ORDER)[number] | string;
 
+export type OverviewTileVisibilityMode = 'all_on' | 'tab_only' | 'all_off';
+
 export interface OverviewConfig {
   tileOrder?: string[];
   hiddenTiles?: string[];
+  hiddenFromAllTiles?: string[];
   tileSizes?: Record<string, '1x' | '2x'>;
   hideBadges?: boolean;
 }
@@ -324,6 +327,8 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
   overview: {
     tileOrder: [...DEFAULT_OVERVIEW_TILE_ORDER],
     hiddenTiles: [],
+    hiddenFromAllTiles: [],
+    hideBadges: false,
     tileSizes: {
       weather: '2x',
       weather_hourly: '2x'

@@ -12,24 +12,29 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
   DotsSixVertical,
-  Eye,
   EyeSlash,
   ArrowsLeftRight,
   CaretLeft,
-  CaretRight
+  CaretRight,
+  SquaresFour
 } from '@phosphor-icons/react';
+import type { OverviewTileVisibilityMode } from '../../types/userConfig';
 
 export interface OverviewSortableTileProps {
   id: string;
   isEditMode: boolean;
-  isHidden: boolean;
+  visibilityMode?: OverviewTileVisibilityMode;
+  isHidden?: boolean;
+  isHiddenFromAll?: boolean;
   is2x: boolean;
   canMoveLeft: boolean;
   canMoveRight: boolean;
   onMoveLeft: () => void;
   onMoveRight: () => void;
-  onToggleHide: () => void;
+  onToggleHide?: () => void;
   onToggleSize: () => void;
+  onToggleHiddenFromAll?: () => void;
+  onSetVisibilityMode?: (mode: OverviewTileVisibilityMode) => void;
   onClick?: () => void;
   children: React.ReactNode;
 }
@@ -37,7 +42,9 @@ export interface OverviewSortableTileProps {
 export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
   id,
   isEditMode,
-  isHidden,
+  visibilityMode,
+  isHidden = false,
+  isHiddenFromAll = false,
   is2x,
   canMoveLeft,
   canMoveRight,
@@ -45,6 +52,8 @@ export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
   onMoveRight,
   onToggleHide,
   onToggleSize,
+  onToggleHiddenFromAll,
+  onSetVisibilityMode,
   onClick,
   children
 }) => {
@@ -57,11 +66,15 @@ export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
     isDragging
   } = useSortable({ id, disabled: !isEditMode });
 
+  const currentMode: OverviewTileVisibilityMode =
+    visibilityMode ??
+    (isHidden ? 'all_off' : isHiddenFromAll ? 'tab_only' : 'all_on');
+
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
-    transition,
+    transition: isDragging ? undefined : transition,
     zIndex: isDragging ? 50 : undefined,
-    opacity: isDragging ? 0.35 : isHidden ? 0.45 : 1
+    opacity: isDragging ? 0.9 : currentMode === 'all_off' || isHidden ? 0.45 : 1
   };
 
   return (
@@ -72,9 +85,13 @@ export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
         is2x ? 'col-span-4 sm:col-span-2' : 'col-span-2 sm:col-span-1'
       } ${
         isEditMode
-          ? isHidden
-            ? 'ring-2 ring-dashed ring-amber-500/60 rounded-3xl'
-            : 'hover:ring-2 hover:ring-sky-400/40 rounded-3xl'
+          ? isDragging
+            ? 'ring-2 ring-sky-400 shadow-2xl shadow-sky-500/30 scale-[1.03] rounded-3xl z-50 cursor-grabbing'
+            : currentMode === 'all_off' || isHidden
+            ? 'ring-2 ring-dashed ring-rose-500/60 rounded-3xl cursor-grab'
+            : currentMode === 'tab_only'
+            ? 'ring-2 ring-dashed ring-amber-500/60 rounded-3xl cursor-grab'
+            : 'hover:ring-2 hover:ring-sky-400/50 hover:shadow-lg rounded-3xl cursor-grab'
           : ''
       }`}
     >
@@ -86,23 +103,29 @@ export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
         {children}
       </div>
 
-      {/* Edit Mode Controls Overlay */}
+      {/* Edit Mode Controls Overlay - Entire surface is draggable */}
       {isEditMode && (
-        <div className="absolute inset-0 pointer-events-none rounded-3xl ring-2 ring-sky-500/40 p-2 sm:p-2.5 flex flex-col justify-between z-30 bg-black/20 dark:bg-black/30 backdrop-blur-[2px] transition-all">
-          {/* Top Row: Drag Handle + Move Arrows on Left, Size & Hide on Right */}
-          <div className="flex items-center justify-between pointer-events-auto gap-1">
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute inset-0 rounded-3xl ring-2 ring-sky-500/40 p-2 sm:p-2.5 flex flex-col justify-between z-30 bg-black/20 dark:bg-black/30 backdrop-blur-[2px] transition-all cursor-grab active:cursor-grabbing"
+        >
+          {/* Top Row: Drag Handle + Move Arrows on Left, Size & Visibility Modes on Right */}
+          <div
+            className="flex items-center justify-between gap-1 pointer-events-auto"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             {/* Left: Drag Handle & Shift Controls */}
             <div className="flex items-center gap-0.5 sm:gap-1 bg-black/80 dark:bg-black/90 backdrop-blur-md rounded-xl p-0.5 sm:p-1 border border-white/15 shadow-lg">
-              <button
-                type="button"
-                {...attributes}
-                {...listeners}
-                className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/15 cursor-grab active:cursor-grabbing transition-all"
-                title="Drag to reorder"
+              <div
+                className="p-1 rounded-lg text-sky-400 bg-white/10 flex items-center justify-center pointer-events-none"
+                title="Drag tile to reorder"
                 aria-label="Drag handle"
               >
                 <DotsSixVertical size={16} weight="bold" />
-              </button>
+              </div>
 
               <button
                 type="button"
@@ -131,8 +154,34 @@ export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
               </button>
             </div>
 
-            {/* Right: Width Size Toggle & Hide/Unhide */}
+            {/* Right: Visibility Mode Toggle, Width Size Toggle & All Off */}
             <div className="flex items-center gap-1 bg-black/80 dark:bg-black/90 backdrop-blur-md rounded-xl p-0.5 sm:p-1 border border-white/15 shadow-lg">
+              {/* Visibility Mode Switcher: Toggles between 'All On' and 'Tab Only' */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onSetVisibilityMode) {
+                    onSetVisibilityMode(currentMode === 'all_on' ? 'tab_only' : 'all_on');
+                  } else if (onToggleHiddenFromAll) {
+                    onToggleHiddenFromAll();
+                  }
+                }}
+                className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg text-[10px] sm:text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 ${
+                  currentMode === 'tab_only'
+                    ? 'bg-amber-500/30 border border-amber-500/50 text-amber-300'
+                    : 'bg-emerald-500/25 border border-emerald-500/40 text-emerald-300'
+                }`}
+                title={
+                  currentMode === 'tab_only'
+                    ? "Mode: Tab Only (hidden from 'All' tab, visible in category tab). Click to switch to All On."
+                    : "Mode: All On (visible in both 'All' tab and category tab). Click to switch to Tab Only."
+                }
+              >
+                <SquaresFour size={12} weight={currentMode === 'all_on' ? 'fill' : 'duotone'} />
+                <span>{currentMode === 'tab_only' ? 'Tab Only' : 'All On'}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={(e) => {
@@ -154,25 +203,32 @@ export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onToggleHide();
+                  if (onSetVisibilityMode) {
+                    onSetVisibilityMode('all_off');
+                  } else if (onToggleHide) {
+                    onToggleHide();
+                  }
                 }}
-                className={`p-1 sm:p-1.5 rounded-lg transition-all cursor-pointer active:scale-95 ${
-                  isHidden
-                    ? 'bg-amber-500 text-slate-950 font-bold'
-                    : 'text-slate-300 hover:text-white hover:bg-white/15'
-                }`}
-                title={isHidden ? 'Unhide tile' : 'Hide tile'}
+                className="p-1 sm:p-1.5 rounded-lg transition-all cursor-pointer active:scale-95 text-slate-300 hover:text-rose-400 hover:bg-rose-500/15"
+                title="Mode: All Off (hide completely, move to Widget Drawer)"
               >
-                {isHidden ? <Eye size={15} weight="bold" /> : <EyeSlash size={15} weight="bold" />}
+                <EyeSlash size={15} weight="bold" />
               </button>
             </div>
           </div>
 
-          {/* Bottom Center Pill if tile is currently hidden */}
-          {isHidden && (
-            <div className="flex items-center justify-center pb-0.5">
-              <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-md pointer-events-none">
-                Hidden • Tap Eye to Show
+          {/* Bottom badge indicating active visibility mode */}
+          {currentMode === 'tab_only' && (
+            <div className="w-full flex justify-center pointer-events-none pb-0.5">
+              <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black tracking-wider uppercase bg-amber-500 text-slate-950 shadow-md">
+                Category Tab Only
+              </span>
+            </div>
+          )}
+          {currentMode === 'all_off' && (
+            <div className="w-full flex justify-center pointer-events-none pb-0.5">
+              <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black tracking-wider uppercase bg-rose-500 text-white shadow-md">
+                All Off (Hidden)
               </span>
             </div>
           )}

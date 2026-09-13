@@ -15,10 +15,9 @@ import {
   Cpu
 } from '@phosphor-icons/react';
 import { TransformedDevice } from '../../services/energyDataTransformer';
-import { RingChart } from '../charts/ring-chart';
-import { Ring } from '../charts/ring';
-import { RingCenter } from '../charts/ring-center';
-import { RingData } from '../charts/ring-context';
+import { PieChart } from '../charts/pie-chart';
+import { PieSlice } from '../charts/pie-slice';
+import { PieData } from '../charts/pie-context';
 
 interface DevicesEnergyGraphCardProps {
   devices: TransformedDevice[];
@@ -29,7 +28,7 @@ interface DevicesEnergyGraphCardProps {
   className?: string;
 }
 
-const RING_COLORS_DARK = [
+const PIE_COLORS_DARK = [
   '#f43f5e', // rose-500
   '#38bdf8', // sky-400
   '#10b981', // emerald-500
@@ -38,7 +37,7 @@ const RING_COLORS_DARK = [
   '#6366f1', // indigo-500
 ];
 
-const RING_COLORS_LIGHT = [
+const PIE_COLORS_LIGHT = [
   '#e11d48', // rose-600
   '#0284c7', // sky-600
   '#059669', // emerald-600
@@ -79,20 +78,29 @@ export default function DevicesEnergyGraphCard({
 
   if (devices.length === 0) return null;
 
-  const ringPalette = darkMode ? RING_COLORS_DARK : RING_COLORS_LIGHT;
+  const piePalette = darkMode ? PIE_COLORS_DARK : PIE_COLORS_LIGHT;
 
-  // Prepare top devices for concentric ring visualization (up to top 5)
-  const topDevices = devices.slice(0, 5);
-  const maxDeviceKwh = Math.max(0.1, ...topDevices.map((d) => d.kwh));
+  // Prepare top devices for pie chart (up to top 6 + grouped remainder)
+  const topDevices = devices.slice(0, 6);
+  const otherKwh = devices.slice(6).reduce((sum, d) => sum + d.kwh, 0);
 
-  const ringData: RingData[] = useMemo(() => {
-    return topDevices.map((d, i) => ({
+  const pieData: PieData[] = useMemo(() => {
+    const list: PieData[] = topDevices.map((d, i) => ({
       label: d.name,
-      value: Number(d.kwh.toFixed(2)),
-      maxValue: Math.max(d.kwh, maxDeviceKwh),
-      color: d.color || ringPalette[i % ringPalette.length]
+      value: Math.max(0.001, Number(d.kwh.toFixed(2))),
+      color: d.color || piePalette[i % piePalette.length]
     }));
-  }, [topDevices, maxDeviceKwh, ringPalette]);
+
+    if (otherKwh > 0.05) {
+      list.push({
+        label: 'Other Devices',
+        value: Number(otherKwh.toFixed(2)),
+        color: darkMode ? '#64748b' : '#94a3b8'
+      });
+    }
+
+    return list;
+  }, [topDevices, otherKwh, piePalette, darkMode]);
 
   const totalDevicesKwh = devices.reduce((sum, d) => sum + d.kwh, 0);
 
@@ -131,7 +139,7 @@ export default function DevicesEnergyGraphCard({
               Monitored Devices
             </h3>
             <p className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              Concentric breakdown of {devices.length} individual consumers
+              Distribution across {devices.length} monitored consumers
             </p>
           </div>
         </div>
@@ -147,56 +155,71 @@ export default function DevicesEnergyGraphCard({
         </div>
       </div>
 
-      {/* Main Content Area: Ring Chart on Left/Top, Detailed List on Right/Bottom */}
+      {/* Main Content Area: Pie Chart on Left/Top, Detailed List on Right/Bottom */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center my-auto flex-1 py-2 z-10">
-        {/* Ring Chart Column */}
-        <div className="md:col-span-5 flex items-center justify-center relative min-h-[220px]">
-          <div className="w-[220px] h-[220px] relative flex items-center justify-center">
-            <RingChart
-              data={ringData}
-              size={220}
-              strokeWidth={9}
-              ringGap={5}
-              baseInnerRadius={45}
+        {/* Pie Chart Column */}
+        <div className="md:col-span-5 flex flex-col items-center justify-center relative min-h-[220px]">
+          <div className="w-[190px] h-[190px] sm:w-[210px] sm:h-[210px] relative flex items-center justify-center">
+            <PieChart
+              data={pieData}
+              size={210}
+              innerRadius={0}
+              padAngle={0.02}
+              cornerRadius={3}
               hoveredIndex={hoveredIndex}
               onHoverChange={setHoveredIndex}
               className="w-full h-full"
             >
-              {ringData.map((d, idx) => (
-                <Ring
+              {pieData.map((d, idx) => (
+                <PieSlice
                   key={idx}
                   index={idx}
                   color={d.color}
                   showGlow={hoveredIndex === idx}
                 />
               ))}
-              <RingCenter
-                defaultLabel="Top Devices"
-                suffix=" kWh"
-                className="text-center select-none"
-                valueClassName={`font-extrabold tabular-nums leading-none text-[clamp(0.85rem,20cqw,1.5rem)] ${
-                  darkMode ? 'text-white' : 'text-slate-900'
-                }`}
-                labelClassName={`font-semibold max-w-full truncate leading-tight text-[clamp(0.6rem,8cqw,0.75rem)] ${
-                  darkMode ? 'text-slate-400' : 'text-slate-500'
-                }`}
-              />
-            </RingChart>
+            </PieChart>
+          </div>
+
+          {/* Device Detail or Summary Beneath Pie */}
+          <div className="mt-2.5 text-center min-h-[36px] flex flex-col items-center justify-center select-none">
+            {hoveredIndex !== null && pieData[hoveredIndex] ? (
+              <div className="flex flex-col items-center animate-in fade-in duration-150">
+                <span className={`text-[11px] font-bold max-w-[200px] truncate ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                  {pieData[hoveredIndex].label}
+                </span>
+                <span className={`text-xs font-mono font-black ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                  {pieData[hoveredIndex].value.toFixed(2)} kWh
+                  <span className={`ml-1.5 text-[10px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    ({((pieData[hoveredIndex].value / Math.max(0.01, totalDevicesKwh)) * 100).toFixed(1)}%)
+                  </span>
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Total Tracked
+                </span>
+                <span className={`text-xs font-mono font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {totalDevicesKwh.toFixed(2)} kWh
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Device Breakdown List Column */}
         <div className="md:col-span-7 space-y-2.5 overflow-y-auto max-h-[420px] pr-1">
           {devices.map((device, idx) => {
-            const isRingItem = idx < 5;
-            const color = isRingItem ? (device.color || ringPalette[idx % ringPalette.length]) : (darkMode ? '#64748b' : '#94a3b8');
+            const isPieItem = idx < 6;
+            const color = isPieItem ? (device.color || piePalette[idx % piePalette.length]) : (darkMode ? '#64748b' : '#94a3b8');
             const isHovered = hoveredIndex === idx;
 
             return (
               <div
                 key={device.statId}
-                onMouseEnter={() => isRingItem && setHoveredIndex(idx)}
-                onMouseLeave={() => isRingItem && setHoveredIndex(null)}
+                onMouseEnter={() => isPieItem && setHoveredIndex(idx)}
+                onMouseLeave={() => isPieItem && setHoveredIndex(null)}
                 className={`p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col gap-1.5 ${
                   isHovered
                     ? darkMode

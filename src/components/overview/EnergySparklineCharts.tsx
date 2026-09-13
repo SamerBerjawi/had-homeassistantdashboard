@@ -629,12 +629,30 @@ export function MinimalistSolarProductionChart({
   const effectiveHeight = height - paddingTop - paddingBottom;
 
   const { bars, forecastPoints } = useMemo(() => {
-    const list = buckets.length > 0
-      ? buckets.slice(-24)
-      : Array.from({ length: 24 }, () => ({
-          solar: 0,
-          solarForecast: null
-        }));
+    // Always build 24 hourly slots for the day (00:00 to 23:00)
+    const list = Array.from({ length: 24 }, (_, hour) => {
+      const match = buckets.find((b) => {
+        if (b.startMs) {
+          const bd = new Date(b.startMs);
+          return bd.getHours() === hour;
+        }
+        if (b.label) {
+          const hourPart = parseInt(b.label.split(':')[0], 10);
+          return hourPart === hour;
+        }
+        return false;
+      });
+
+      return {
+        solar: match?.solar ?? 0,
+        solarForecast: match?.solarForecast !== undefined ? match.solarForecast : null
+      };
+    });
+
+    const hasAnyForecast = list.some((s) => s.solarForecast !== null && s.solarForecast > 0);
+    const effectiveForecastTotal = (forecastTotal && forecastTotal > 0)
+      ? forecastTotal
+      : (hasAnyForecast ? list.reduce((acc, s) => acc + (s.solarForecast || 0), 0) : null);
 
     // Find peak between solar and forecast
     let maxVal = 0.5;
@@ -642,8 +660,12 @@ export function MinimalistSolarProductionChart({
       if ((b.solar || 0) > maxVal) maxVal = b.solar;
       if ((b.solarForecast || 0) > maxVal) maxVal = b.solarForecast!;
     });
+    if (effectiveForecastTotal && effectiveForecastTotal > 0) {
+      const peakEstimated = (effectiveForecastTotal / 8.02);
+      if (peakEstimated > maxVal) maxVal = peakEstimated;
+    }
 
-    const slotWidth = width / list.length;
+    const slotWidth = width / 24;
     const barWidth = Math.max(2.5, slotWidth * 0.65);
     const gap = (slotWidth - barWidth) / 2;
 
@@ -662,22 +684,12 @@ export function MinimalistSolarProductionChart({
       };
     });
 
-    // Striped forecast line points: matching SolarProductionGraphCard
-    const stepX = width / Math.max(1, list.length - 1);
+    // Striped forecast line points spanning full 24 hours: matching SolarProductionGraphCard exactly
+    const stepX = width / 23;
     const fPts = list.map((b, i) => {
-      let val = b.solarForecast;
-      if (val === null || val === undefined) {
-        if (forecastTotal && forecastTotal > 0) {
-          const center = 12.5;
-          const sigma = 3.5;
-          const dist = Math.abs(i - center);
-          val = (forecastTotal / 6) * Math.exp(-(dist * dist) / (2 * sigma * sigma));
-        } else {
-          val = 0;
-        }
-      }
+      const val = b.solarForecast ?? 0;
       const y = height - paddingBottom - (val / maxVal) * effectiveHeight;
-      return { x: i * stepX, y };
+      return { x: i * stepX, y: Math.min(height - paddingBottom, Math.max(paddingTop, y)) };
     });
 
     return {
@@ -685,6 +697,30 @@ export function MinimalistSolarProductionChart({
       forecastPoints: fPts
     };
   }, [buckets, forecastTotal, width, height, effectiveHeight, paddingTop, paddingBottom]);
+
+  // Generate smooth Catmull-Rom bezier path clamped at baseline (matching SolarProductionGraphCard)
+  const forecastPath = useMemo(() => {
+    const pts = forecastPoints;
+    if (pts.length === 0) return '';
+    if (pts.length === 1) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+
+    const baseline = height - paddingBottom;
+    let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(pts.length - 1, i + 2)];
+
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = Math.min(baseline, Math.max(paddingTop, p1.y + (p2.y - p0.y) / 6));
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = Math.min(baseline, Math.max(paddingTop, p2.y - (p3.y - p1.y) / 6));
+
+      d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    }
+    return d;
+  }, [forecastPoints, height, paddingBottom, paddingTop]);
 
   const uniqueId = useMemo(() => Math.random().toString(36).substring(2, 9), []);
 
@@ -730,7 +766,7 @@ export function MinimalistSolarProductionChart({
 
         {/* Continuous Striped Forecast Line - exact match to SolarProductionGraphCard */}
         <path
-          d={createSmoothPath(forecastPoints)}
+          d={forecastPath}
           fill="none"
           stroke={darkMode ? '#94a3b8' : '#64748b'}
           strokeWidth="2.2"
