@@ -767,7 +767,7 @@ export default function PowerSourcesChart({
                 <Line
                   type="natural"
                   dataKey="homeConsumption"
-                  stroke={darkMode ? 'rgba(255, 255, 255, 0.75)' : '#334155'}
+                  stroke={darkMode ? 'rgba(255, 255, 255, 0.5)' : '#64748b'}
                   strokeWidth={1.8}
                   dot={false}
                   isAnimationActive={false}

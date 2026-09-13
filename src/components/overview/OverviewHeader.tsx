@@ -3065,9 +3065,9 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                         if (is2x) {
                           return (
                             <div className={tileBaseClass(false, '', false, true)}>
-                              <div className="grid grid-cols-2 gap-4 h-full items-center relative z-10">
+                              <div className="grid grid-cols-2 gap-3 h-full items-center">
                                 {/* Left Side: Info & Metrics */}
-                                <div className="flex flex-col justify-between h-full min-w-0 pr-1">
+                                <div className="flex flex-col justify-between h-full min-w-0 pr-1 py-0.5 relative z-10">
                                   {/* Header with Title (No pill) */}
                                   <div className="flex items-center justify-between gap-2 shrink-0">
                                     <div className="flex items-center gap-2 min-w-0">
@@ -3129,7 +3129,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   </div>
 
                                   {/* Full-height minimalist chart container */}
-                                  <div className="w-full h-full relative py-0.5">
+                                  <div className="w-full h-full relative">
                                     <MinimalistPowerFlowChart
                                       buckets={chartBuckets}
                                       darkMode={darkMode}
@@ -3156,7 +3156,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                             </div>
 
                             {/* Middle: Minimalistic Chart (Dynamic height, zero grids, zero axes, zero labels) */}
-                            <div className="w-full flex-1 min-h-0 my-auto py-0.5 relative z-10">
+                            <div className="w-full flex-1 min-h-0 my-auto py-0 relative z-10">
                               <MinimalistPowerFlowChart
                                 buckets={chartBuckets}
                                 darkMode={darkMode}
@@ -3370,14 +3370,15 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                           : 0;
                         const chartBuckets = energyData.buckets || [];
 
+                        const netGrid = gridImport - gridExport;
+
                         if (is2x) {
                           return (
                             <div className={tileBaseClass(false, '', false, true)}>
-                              <div className="grid grid-cols-2 gap-4 h-full items-center relative z-10">
-                                {/* Left Side: Info & Metrics */}
-                                <div className="flex flex-col justify-between h-full min-w-0 pr-1">
-                                  {/* Header with Title (No pill) */}
-                                  <div className="flex items-center justify-between gap-2 shrink-0">
+                              <div className="grid grid-cols-2 gap-3 h-full items-center">
+                                {/* Left Side: Identity & Primary Telemetry */}
+                                <div className="flex flex-col justify-between h-full min-w-0 pr-1 py-0.5 relative z-10">
+                                  <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 min-w-0">
                                       <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-500 flex items-center justify-center shadow-xs shrink-0">
                                         <ChartBar size={18} weight="fill" />
@@ -3426,14 +3427,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   </div>
                                 </div>
 
-                                {/* Right Side: Full-Height Minimalist Chart (Legend removed for max height) */}
+                                {/* Right Side: Full-Height Minimalist Chart */}
                                 <div className="relative h-full min-w-0 pl-3 border-l border-slate-200/60 dark:border-white/5 flex items-center">
                                   <div className="absolute top-0 right-0 z-20 pointer-events-none">
                                     <CaretRight size={14} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all shrink-0" />
                                   </div>
 
                                   {/* Full-height minimalist bar chart container (positive up, negative down) */}
-                                  <div className="w-full h-full relative py-0.5">
+                                  <div className="w-full h-full relative">
                                     <MinimalistEnergyUsageChart
                                       buckets={chartBuckets}
                                       darkMode={darkMode}
@@ -3456,7 +3457,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                             </div>
 
                             {/* Middle: Minimalistic Chart (Dynamic height, zero grids, zero axes, zero labels) */}
-                            <div className="w-full flex-1 min-h-0 my-auto py-0.5 relative z-10">
+                            <div className="w-full flex-1 min-h-0 my-auto py-0 relative z-10">
                               <MinimalistEnergyUsageChart
                                 buckets={chartBuckets}
                                 darkMode={darkMode}
@@ -3636,9 +3637,9 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                         if (is2x) {
                           return (
                             <div className={tileBaseClass(false, '', false, true)}>
-                              <div className="grid grid-cols-2 gap-4 h-full items-center relative z-10">
+                              <div className="grid grid-cols-2 gap-3 h-full items-center">
                                 {/* Left Side: Info & Metrics */}
-                                <div className="flex flex-col justify-between h-full min-w-0 pr-1">
+                                <div className="flex flex-col justify-between h-full min-w-0 pr-1 py-0.5 relative z-10">
                                   {/* Header with Title (No pill) */}
                                   <div className="flex items-center justify-between gap-2 shrink-0">
                                     <div className="flex items-center gap-2 min-w-0">
@@ -3700,7 +3701,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   </div>
 
                                   {/* Full-height minimalist chart container */}
-                                  <div className="w-full h-full relative py-0.5">
+                                  <div className="w-full h-full relative">
                                     <MinimalistSolarProductionChart
                                       buckets={chartBuckets}
                                       forecastTotal={forecastTotal}
@@ -3724,7 +3725,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                             </div>
 
                             {/* Middle: Minimalistic Chart (Dynamic height, zero grids, zero axes, zero labels) */}
-                            <div className="w-full flex-1 min-h-0 my-auto py-0.5 relative z-10">
+                            <div className="w-full flex-1 min-h-0 my-auto py-0 relative z-10">
                               <MinimalistSolarProductionChart
                                 buckets={chartBuckets}
                                 forecastTotal={forecastTotal}

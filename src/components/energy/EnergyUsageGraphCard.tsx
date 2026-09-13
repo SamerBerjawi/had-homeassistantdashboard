@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChartBar } from '@phosphor-icons/react';
 import { TransformedEnergyBucket } from '../../services/energyDataTransformer';
 
@@ -28,20 +28,97 @@ export default function EnergyUsageGraphCard({
 }: EnergyUsageGraphCardProps) {
   const [hoveredBucket, setHoveredBucket] = useState<TransformedEnergyBucket | null>(null);
 
-  // Maximum positive and negative stack heights across all buckets for balanced zero baseline
+  // Check if viewing hourly data (e.g. Day view)
+  const isHourly = useMemo(() => {
+    if (buckets.length === 0) return true;
+    return buckets.every((b) => !b.label || b.label.includes(':'));
+  }, [buckets]);
+
+  // When viewing hourly data, build all 24 slots (00:00 to 24:00) so the chart spans the full day,
+  // matching SolarProductionGraphCard
+  const displayBuckets = useMemo<TransformedEnergyBucket[]>(() => {
+    if (!isHourly) return buckets;
+
+    const refDate = buckets.length > 0 && buckets[0].startMs
+      ? new Date(buckets[0].startMs)
+      : new Date();
+
+    return Array.from({ length: 24 }, (_, hour) => {
+      const slotDate = new Date(refDate);
+      slotDate.setHours(hour, 0, 0, 0);
+      const timeMs = slotDate.getTime();
+      const label = `${String(hour).padStart(2, '0')}:00`;
+
+      // Find matching bucket from props
+      const match = buckets.find((b) => {
+        if (b.startMs) {
+          const bd = new Date(b.startMs);
+          return bd.getHours() === hour;
+        }
+        if (b.label) {
+          const hourPart = parseInt(b.label.split(':')[0], 10);
+          return hourPart === hour;
+        }
+        return false;
+      });
+
+      if (match) return match;
+
+      return {
+        startMs: timeMs,
+        endMs: timeMs + 3600000,
+        label,
+        isoDate: slotDate.toISOString(),
+        solar: 0,
+        gridImport: 0,
+        gridExport: 0,
+        batteryCharge: 0,
+        batteryDischarge: 0,
+        solarToHome: 0,
+        solarToGrid: 0,
+        solarToBattery: 0,
+        gridToHome: 0,
+        gridToBattery: 0,
+        batteryToHome: 0,
+        batteryToGrid: 0,
+        homeConsumption: 0,
+        gasUsage: 0,
+        waterUsage: 0
+      };
+    });
+  }, [buckets, isHourly]);
+
+  // Maximum positive and negative stack heights across all displayBuckets for balanced zero baseline
   const maxPositive = Math.max(
     0.1,
-    ...buckets.map((b) => (b.solarToHome || 0) + (b.batteryToHome || 0) + (b.gridToHome || 0))
+    ...displayBuckets.map((b) => {
+      const solarPart = b.solarToHome || 0;
+      const batteryPart = b.batteryToHome || 0;
+      const gridPart = b.gridToHome || 0;
+      const total = solarPart + batteryPart + gridPart;
+      return total === 0 && (b.homeConsumption || 0) > 0 ? b.homeConsumption : total;
+    })
   );
 
   const maxNegative = Math.max(
     0.05,
-    ...buckets.map((b) => (b.gridExport || 0) + (b.batteryCharge || 0))
+    ...displayBuckets.map((b) => (b.gridExport || 0) + (b.batteryCharge || 0))
   );
 
   const totalRange = maxPositive + maxNegative;
   const positiveRatio = (maxPositive / totalRange) * 100;
   const negativeRatio = (maxNegative / totalRange) * 100;
+
+  // 7 Major X-Axis Ticks spanning from 00:00 to 24:00 (matching SolarProductionGraphCard)
+  const xTicks = [
+    { hour: 0, label: '00:00', pos: 'left-0 text-left' },
+    { hour: 4, label: '04:00', pos: 'left-[16.67%] -translate-x-1/2 text-center' },
+    { hour: 8, label: '08:00', pos: 'left-[33.33%] -translate-x-1/2 text-center' },
+    { hour: 12, label: '12:00', pos: 'left-[50%] -translate-x-1/2 text-center' },
+    { hour: 16, label: '16:00', pos: 'left-[66.67%] -translate-x-1/2 text-center' },
+    { hour: 20, label: '20:00', pos: 'left-[83.33%] -translate-x-1/2 text-center' },
+    { hour: 24, label: '24:00', pos: 'right-0 text-right' }
+  ];
 
   const formatNumber = (num: number) => num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -186,11 +263,15 @@ export default function EnergyUsageGraphCard({
                   className="w-full flex items-end justify-between gap-1 sm:gap-1.5 relative z-10"
                   style={{ height: `${positiveRatio}%` }}
                 >
-                  {buckets.map((bucket, idx) => {
-                    const solarPart = bucket.solarToHome || 0;
-                    const batteryPart = bucket.batteryToHome || 0;
-                    const gridPart = bucket.gridToHome || 0;
-                    const bucketPositive = solarPart + batteryPart + gridPart;
+                  {displayBuckets.map((bucket, idx) => {
+                    let solarPart = bucket.solarToHome || 0;
+                    let batteryPart = bucket.batteryToHome || 0;
+                    let gridPart = bucket.gridToHome || 0;
+                    let bucketPositive = solarPart + batteryPart + gridPart;
+                    if (bucketPositive === 0 && (bucket.homeConsumption || 0) > 0) {
+                      bucketPositive = bucket.homeConsumption;
+                      gridPart = bucket.homeConsumption;
+                    }
                     const heightPct = Math.min(100, Math.max(bucketPositive > 0 ? 3 : 0, (bucketPositive / maxPositive) * 100));
 
                     return (
@@ -236,7 +317,7 @@ export default function EnergyUsageGraphCard({
                   className="w-full flex items-start justify-between gap-1 sm:gap-1.5 relative z-10"
                   style={{ height: `${negativeRatio}%` }}
                 >
-                  {buckets.map((bucket, idx) => {
+                  {displayBuckets.map((bucket, idx) => {
                     const exportPart = bucket.gridExport || 0;
                     const chargePart = bucket.batteryCharge || 0;
                     const bucketNegative = exportPart + chargePart;
@@ -266,16 +347,6 @@ export default function EnergyUsageGraphCard({
                             />
                           )}
                         </div>
-
-                        {/* X-Axis Tick Label */}
-                        {(buckets.length <= 12 || idx % Math.ceil(buckets.length / 10) === 0) && (
-                          <span
-                            className={`absolute -bottom-5 text-[9px] font-mono font-bold whitespace-nowrap ${darkMode ? 'text-slate-400' : 'text-slate-600'
-                              }`}
-                          >
-                            {bucket.label}
-                          </span>
-                        )}
                       </div>
                     );
                   })}
@@ -283,9 +354,42 @@ export default function EnergyUsageGraphCard({
               </div>
             </div>
 
+            {/* X-Axis Labels */}
+            {isHourly ? (
+              <div className="w-full relative h-5 select-none pt-1">
+                {xTicks.map((tick) => (
+                  <span
+                    key={tick.label}
+                    className={`absolute top-1 text-[9px] sm:text-[10px] font-mono font-bold whitespace-nowrap ${
+                      tick.pos
+                    } ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}
+                  >
+                    {tick.label}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="w-full relative h-5 select-none pt-1 flex justify-between">
+                {displayBuckets.map((bucket, idx) => {
+                  const show = displayBuckets.length <= 12 || idx % Math.ceil(displayBuckets.length / 10) === 0;
+                  if (!show) return <span key={idx} className="flex-1" />;
+                  return (
+                    <span
+                      key={idx}
+                      className={`text-[9px] sm:text-[10px] font-mono font-bold whitespace-nowrap text-center flex-1 ${
+                        darkMode ? 'text-slate-400' : 'text-slate-600'
+                      }`}
+                    >
+                      {bucket.label}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
             {/* X-Axis Label */}
             <div className={`w-full text-center text-[10px] font-bold uppercase tracking-wider select-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              Time
+              {isHourly ? 'Time (24 Hours)' : 'Time'}
             </div>
           </div>
         )}

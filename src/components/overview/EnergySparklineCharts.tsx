@@ -70,8 +70,8 @@ export function MinimalistPowerFlowChart({
 }: MinimalistPowerFlowChartProps) {
   const width = 300;
   const height = 80;
-  const paddingTop = 2;
-  const paddingBottom = 2;
+  const paddingTop = 1;
+  const paddingBottom = 1;
   const effectiveHeight = height - paddingTop - paddingBottom;
 
   const {
@@ -134,7 +134,7 @@ export function MinimalistPowerFlowChart({
 
     // Find max positive stacked value (Solar + Grid Import + Battery Discharge)
     const maxPositive = Math.max(
-      0.5,
+      0.1,
       ...dataList.map((b) => {
         const s = hasSolar ? (b.solar || 0) : 0;
         const gi = hasGrid ? (b.gridImport || 0) : 0;
@@ -368,7 +368,7 @@ export function MinimalistPowerFlowChart({
         <path
           d={createSmoothPath(homePoints)}
           fill="none"
-          stroke={darkMode ? 'rgba(255, 255, 255, 0.85)' : '#334155'}
+          stroke={darkMode ? 'rgba(255, 255, 255, 0.5)' : '#64748b'}
           strokeWidth="1.8"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -388,35 +388,68 @@ interface MinimalistEnergyUsageChartProps {
   buckets: TransformedEnergyBucket[];
   darkMode?: boolean;
   className?: string;
+  showTimeLabels?: boolean;
 }
 
 export function MinimalistEnergyUsageChart({
   buckets = [],
   darkMode = true,
-  className = ''
+  className = '',
+  showTimeLabels = false
 }: MinimalistEnergyUsageChartProps) {
   const width = 300;
-  const height = 80;
-  const paddingTop = 2;
-  const paddingBottom = 2;
+  const height = showTimeLabels ? 88 : 80;
+  const paddingTop = 1;
+  const paddingBottom = showTimeLabels ? 14 : 1;
   const effectiveHeight = height - paddingTop - paddingBottom;
+  const uniqueId = useMemo(() => Math.random().toString(36).substring(2, 9), []);
 
   const { bars, zeroY, hasNegative } = useMemo(() => {
-    // 24 hourly buckets
-    const list = buckets.length > 0
-      ? buckets.slice(-24)
-      : Array.from({ length: 24 }, () => ({
-          homeConsumption: 0,
-          gridImport: 0,
-          gridExport: 0,
-          solarToHome: 0,
-          batteryToHome: 0,
-          gridToHome: 0,
-          batteryCharge: 0
-        }));
+    const isHourly = buckets.length === 0 || buckets.every((b) => !b.label || b.label.includes(':'));
+
+    // Always build 24 hourly slots for the day (00:00 to 23:00) when viewing hourly data
+    const list: TransformedEnergyBucket[] = isHourly
+      ? Array.from({ length: 24 }, (_, hour) => {
+          const match = buckets.find((b) => {
+            if (b.startMs) {
+              const bd = new Date(b.startMs);
+              return bd.getHours() === hour;
+            }
+            if (b.label) {
+              const hourPart = parseInt(b.label.split(':')[0], 10);
+              return hourPart === hour;
+            }
+            return false;
+          });
+
+          return (
+            match || {
+              startMs: 0,
+              endMs: 0,
+              label: `${String(hour).padStart(2, '0')}:00`,
+              isoDate: '',
+              solar: 0,
+              gridImport: 0,
+              gridExport: 0,
+              batteryCharge: 0,
+              batteryDischarge: 0,
+              solarToHome: 0,
+              solarToGrid: 0,
+              solarToBattery: 0,
+              gridToHome: 0,
+              gridToBattery: 0,
+              batteryToHome: 0,
+              batteryToGrid: 0,
+              homeConsumption: 0,
+              gasUsage: 0,
+              waterUsage: 0
+            }
+          );
+        })
+      : (buckets.length > 0 ? buckets.slice(-24) : []);
 
     const maxPositive = Math.max(
-      0.5,
+      0.1,
       ...list.map((b) => {
         const total = (b.solarToHome || 0) + (b.batteryToHome || 0) + (b.gridToHome || 0);
         return Math.max(total, b.homeConsumption || 0);
@@ -435,7 +468,7 @@ export function MinimalistEnergyUsageChart({
       ? paddingTop + (maxPositive / totalSpan) * effectiveHeight
       : height - paddingBottom;
 
-    const slotWidth = width / list.length;
+    const slotWidth = width / (list.length || 24);
     const barWidth = Math.max(2.5, slotWidth * 0.65);
     const gap = (slotWidth - barWidth) / 2;
 
@@ -515,7 +548,7 @@ export function MinimalistEnergyUsageChart({
               {bar.totalPos > 0 && (
                 <g>
                   {/* Clip path for rounded top of positive bar */}
-                  <clipPath id={`pos-clip-${i}`}>
+                  <clipPath id={`${uniqueId}-pos-clip-${i}`}>
                     <rect
                       x={bar.x}
                       y={zeroY - bar.hTotalPos}
@@ -524,7 +557,7 @@ export function MinimalistEnergyUsageChart({
                       rx={rx}
                     />
                   </clipPath>
-                  <g clipPath={`url(#pos-clip-${i})`}>
+                  <g clipPath={`url(#${uniqueId}-pos-clip-${i})`}>
                     {/* Solar to Home: Amber #f59e0b */}
                     {bar.hSolar > 0 && (
                       <rect
@@ -563,7 +596,7 @@ export function MinimalistEnergyUsageChart({
               {bar.totalNeg > 0 && (
                 <g>
                   {/* Clip path for rounded bottom of negative bar */}
-                  <clipPath id={`neg-clip-${i}`}>
+                  <clipPath id={`${uniqueId}-neg-clip-${i}`}>
                     <rect
                       x={bar.x}
                       y={zeroY}
@@ -572,7 +605,7 @@ export function MinimalistEnergyUsageChart({
                       rx={rx}
                     />
                   </clipPath>
-                  <g clipPath={`url(#neg-clip-${i})`}>
+                  <g clipPath={`url(#${uniqueId}-neg-clip-${i})`}>
                     {/* Grid Export: Indigo #818cf8 */}
                     {bar.hExport > 0 && (
                       <rect
@@ -599,6 +632,17 @@ export function MinimalistEnergyUsageChart({
             </g>
           );
         })}
+
+        {/* 24-Hour X-Axis Time Labels along the bottom */}
+        {showTimeLabels && (
+          <g className="select-none pointer-events-none" fill={darkMode ? 'rgba(148,163,184,0.7)' : 'rgba(100,116,139,0.8)'} fontSize="8" fontFamily="monospace" fontWeight="600">
+            <text x="0" y={height - 2} textAnchor="start">00:00</text>
+            <text x={width * 0.25} y={height - 2} textAnchor="middle">06:00</text>
+            <text x={width * 0.5} y={height - 2} textAnchor="middle">12:00</text>
+            <text x={width * 0.75} y={height - 2} textAnchor="middle">18:00</text>
+            <text x={width} y={height - 2} textAnchor="end">24:00</text>
+          </g>
+        )}
       </svg>
     </div>
   );
@@ -624,8 +668,8 @@ export function MinimalistSolarProductionChart({
 }: MinimalistSolarProductionChartProps) {
   const width = 300;
   const height = 80;
-  const paddingBottom = 2;
-  const paddingTop = 2;
+  const paddingBottom = 1;
+  const paddingTop = 1;
   const effectiveHeight = height - paddingTop - paddingBottom;
 
   const { bars, forecastPoints } = useMemo(() => {
@@ -644,6 +688,7 @@ export function MinimalistSolarProductionChart({
       });
 
       return {
+        hour,
         solar: match?.solar ?? 0,
         solarForecast: match?.solarForecast !== undefined ? match.solarForecast : null
       };
@@ -654,16 +699,21 @@ export function MinimalistSolarProductionChart({
       ? forecastTotal
       : (hasAnyForecast ? list.reduce((acc, s) => acc + (s.solarForecast || 0), 0) : null);
 
-    // Find peak between solar and forecast
-    let maxVal = 0.5;
-    list.forEach((b) => {
-      if ((b.solar || 0) > maxVal) maxVal = b.solar;
-      if ((b.solarForecast || 0) > maxVal) maxVal = b.solarForecast!;
-    });
-    if (effectiveForecastTotal && effectiveForecastTotal > 0) {
-      const peakEstimated = (effectiveForecastTotal / 8.02);
-      if (peakEstimated > maxVal) maxVal = peakEstimated;
+    // If no per-slot forecast but effectiveForecastTotal is given, synthesize Gaussian forecast curve
+    if (!hasAnyForecast && effectiveForecastTotal && effectiveForecastTotal > 0) {
+      const peakHour = 13;
+      const sigma = 3.2;
+      for (const s of list) {
+        const dist = s.hour - peakHour;
+        s.solarForecast = Number(((effectiveForecastTotal / 8.02) * Math.exp(-(dist * dist) / (2 * sigma * sigma))).toFixed(3));
+      }
     }
+
+    // Dynamic peak value based on actual data to utilize 100% of vertical height
+    const maxVal = Math.max(
+      0.1,
+      ...list.map((s) => Math.max(s.solar || 0, s.solarForecast || 0))
+    );
 
     const slotWidth = width / 24;
     const barWidth = Math.max(2.5, slotWidth * 0.65);
