@@ -1479,15 +1479,15 @@ export default function AreaDetailView({
                 <GridTile
                   key={cam.entity_id}
                   id={cam.entity_id}
-                  colSpan={4}
-                  tabletColSpan={6}
-                  desktopColSpan={6}
+                  colSpan={2}
+                  tabletColSpan={3}
+                  desktopColSpan={3}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(cam.entity_id)}
                 >
                   <div
                     onClick={() => openEntityDetails(cam.entity_id)}
-                    className="relative w-full aspect-video rounded-3xl overflow-hidden bg-slate-950 border border-white/10 shadow-lg group cursor-pointer isolate hover:border-blue-500/40 transition-all duration-300"
+                    className="relative w-full aspect-video rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-950 border border-white/10 shadow-lg group cursor-pointer isolate hover:border-blue-500/40 transition-all duration-300"
                   >
                     <CameraFeed
                       camera={cam}
@@ -1502,7 +1502,7 @@ export default function AreaDetailView({
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none z-10" />
 
                     {/* Top Right: Expand to Fullscreen Feed */}
-                    <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                       <button
                         type="button"
                         onClick={(e) => {
@@ -1510,23 +1510,23 @@ export default function AreaDetailView({
                           openEntityDetails(cam.entity_id);
                         }}
                         title="Open Fullscreen Feed"
-                        className="p-1.5 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white border border-white/10 transition-transform active:scale-95 shadow-md cursor-pointer"
+                        className="p-1 rounded-lg bg-black/60 hover:bg-black/80 backdrop-blur-md text-white border border-white/10 transition-transform active:scale-95 shadow-md cursor-pointer"
                       >
-                        <ArrowsOut size={14} weight="bold" />
+                        <ArrowsOut size={12} weight="bold" />
                       </button>
                     </div>
 
                     {/* Bottom Info Bar: Camera Name + Live Status */}
-                    <div className="absolute bottom-2.5 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="p-1.5 rounded-xl bg-black/50 backdrop-blur-md border border-white/10 text-cyan-400 shrink-0">
-                          <VideoCamera size={16} weight="duotone" />
+                    <div className="absolute bottom-2 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="p-1 rounded-lg bg-black/50 backdrop-blur-md border border-white/10 text-cyan-400 shrink-0">
+                          <VideoCamera size={13} weight="duotone" />
                         </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-xs sm:text-sm font-bold text-white truncate drop-shadow-sm">
+                        <div className="flex flex-col min-w-0 leading-tight">
+                          <span className="text-[11px] sm:text-xs font-bold text-white truncate drop-shadow-sm">
                             {displayName}
                           </span>
-                          <span className="text-[10px] text-slate-300 truncate">
+                          <span className="text-[9px] text-slate-300 truncate">
                             {isUnavailable ? 'Offline' : lastChanged ? `Active • ${lastChanged}` : 'Live'}
                           </span>
                         </div>
