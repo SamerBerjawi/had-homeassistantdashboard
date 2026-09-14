@@ -10,7 +10,7 @@ export default defineConfig(() => {
       react(),
       tailwindcss(),
       VitePWA({
-        registerType: 'autoUpdate',
+        registerType: 'prompt',
         manifestFilename: 'manifest.json',
         devOptions: {
           enabled: process.env.SW_DEV === 'true',
@@ -33,7 +33,6 @@ export default defineConfig(() => {
         workbox: {
           maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MiB to cache full app shell and icon bundle
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
-          skipWaiting: true,
           clientsClaim: true,
           cleanupOutdatedCaches: true,
           // Explicitly exclude API, WebSocket, auth, and media assets from Workbox navigation & runtime caching
