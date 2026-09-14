@@ -24,6 +24,7 @@ import {
 import { HAEntity, ToastNotification } from '../../types';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { CameraSourceConfig } from '../../types/userConfig';
+import { getAuthHeaders } from '../../services/configStorageService';
 import CameraFeed from '../camera/CameraFeed';
 
 interface CameraSettingsSectionProps {
@@ -146,7 +147,7 @@ export default function CameraSettingsSection({
     handleCancelEdit();
   };
 
-  const handleDeleteCamera = (id: string) => {
+  const handleDeleteCamera = async (id: string) => {
     const updatedSources = { ...configuredSources };
     delete updatedSources[id];
 
@@ -155,6 +156,16 @@ export default function CameraSettingsSection({
         sources: updatedSources
       }
     });
+
+    // Notify backend endpoint to clean up stream and persistent config immediately
+    try {
+      await fetch(`/api/cameras/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+    } catch (err) {
+      console.warn('[CameraSettings] Could not notify backend of camera deletion:', err);
+    }
 
     if (testingCameraId === id) {
       setTestingCameraId(null);

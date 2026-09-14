@@ -100,6 +100,10 @@ async function runCameraPipelineTests() {
   });
 
   try {
+    serverProcess.stderr?.on('data', (d) => {
+      console.error('SERVER STDERR:', d.toString());
+    });
+
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Server boot timeout')), 8000);
       serverProcess.stdout?.on('data', (d) => {
@@ -265,7 +269,76 @@ async function runCameraPipelineTests() {
       headers: { Authorization: 'Bearer test_mock_token' }
     });
     assert.strictEqual(snapshotOnlyHls.statusCode, 404);
-    console.log('✓ Cameras without RTSP source safely bypass streaming and preserve snapshot fallback');
+    console.log('\n--- 6. Testing RTSP Camera Deletion & No-Resurrection ---');
+    // 6a. Delete via DELETE /api/cameras/:cameraId
+    const delRes = await request({
+      path: '/api/cameras/camera.driveway',
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer test_mock_token' }
+    });
+    assert.strictEqual(delRes.statusCode, 200, 'DELETE /api/cameras/:cameraId should return 200');
+    console.log('✓ Camera deletion endpoint returned 200');
+
+    // 6b. Verify camera is now gone from persistent config
+    const verifyDelRes = await request({
+      path: '/api/config',
+      method: 'GET',
+      headers: { Authorization: 'Bearer test_mock_token' }
+    });
+    const verifyDelData = JSON.parse(verifyDelRes.body);
+    assert(!verifyDelData.config?.cameras?.sources?.['camera.driveway'], 'Deleted camera must not exist in config.json');
+    console.log('✓ Deleted camera verified removed from persistent config');
+
+    // 6c. Verify deleting via POST /api/config with empty/updated sources does not resurrect
+    // First re-add a camera
+    await request({
+      path: '/api/config',
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer test_mock_token',
+        'Content-Type': 'application/json'
+      }
+    }, JSON.stringify({
+      config: {
+        cameras: {
+          sources: {
+            'camera.test_readd': { id: 'camera.test_readd', rtspUrl: 'rtsp://127.0.0.1/test' }
+          }
+        }
+      }
+    }));
+
+    // Now update with empty sources {}
+    const updateEmptyRes = await request({
+      path: '/api/config',
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer test_mock_token',
+        'Content-Type': 'application/json'
+      }
+    }, JSON.stringify({
+      config: {
+        cameras: {
+          sources: {}
+        }
+      }
+    }));
+    assert.strictEqual(updateEmptyRes.statusCode, 200);
+    const updateEmptyData = JSON.parse(updateEmptyRes.body);
+    assert(!updateEmptyData.config?.cameras?.sources?.['camera.test_readd'], 'Updated sources {} must not resurrect deleted camera');
+    console.log('✓ Updating sources map wholesale-replaces dictionary without resurrecting deleted keys');
+
+    // 6d. Verify streaming endpoints for deleted camera now return 404
+    const deletedWebRtc = await request({
+      path: '/api/cameras/camera.driveway/webrtc',
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer test_mock_token',
+        'Content-Type': 'application/json'
+      }
+    }, JSON.stringify({ sdp: 'v=0' }));
+    assert.strictEqual(deletedWebRtc.statusCode, 404, 'Streaming routes must return 404 after camera deletion');
+    console.log('✓ Streaming route returns 404 for deleted camera, falling back to snapshot cleanly');
 
     console.log('\n🎉 ALL CAMERA STREAMING PIPELINE & GO2RTC TESTS PASSED!\n');
   } finally {

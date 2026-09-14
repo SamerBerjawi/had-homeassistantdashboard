@@ -192,7 +192,14 @@ async function startServer() {
     const result: any = { ...(base || {}) };
     for (const [key, value] of Object.entries(partial || {})) {
       if (value === undefined) continue;
-      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      if (value === null) {
+        delete result[key];
+        continue;
+      }
+      if (key === 'sources' && typeof value === 'object' && !Array.isArray(value)) {
+        // Wholesale replace camera sources dictionary so deleted sources are not resurrected
+        result[key] = { ...value };
+      } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
         const baseVal =
           result[key] !== null && typeof result[key] === 'object' && !Array.isArray(result[key])
             ? result[key]
@@ -789,7 +796,8 @@ async function startServer() {
         const currentConfig = existing?.config || null;
 
         // Material Data Safeguard (Refuse empty payload overwriting material config unless allowEmpty is explicitly set)
-        if (!allowEmpty && currentConfig && hasMaterialDashboardConfig(currentConfig) && !hasMaterialDashboardConfig(targetConfig)) {
+        const isExplicitCameraSourcesUpdate = targetConfig.cameras?.sources !== undefined;
+        if (!allowEmpty && !isExplicitCameraSourcesUpdate && currentConfig && hasMaterialDashboardConfig(currentConfig) && !hasMaterialDashboardConfig(targetConfig)) {
           return {
             conflict: true,
             statusCode: 409,
@@ -1042,13 +1050,26 @@ async function startServer() {
   const GO2RTC_URL = (process.env.GO2RTC_URL || 'http://127.0.0.1:1984').replace(/\/+$/, '');
   const registeredGo2RtcStreams = new Map<string, string>(); // streamName -> rtspUrl
 
+  function getCameraStreamName(cameraId: string): string {
+    return cameraId.replace(/[^a-zA-Z0-9_-]/g, '_');
+  }
+
   function getCameraRtspConfig(cameraId: string): { streamName: string; rtspUrl: string } | null {
     const sources = (cachedServerConfig as any)?.cameras?.sources;
     if (!sources || typeof sources !== 'object') return null;
     const entry = sources[cameraId];
     if (!entry || !entry.rtspUrl) return null;
-    const streamName = (entry.id || cameraId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const streamName = getCameraStreamName(entry.id || cameraId);
     return { streamName, rtspUrl: String(entry.rtspUrl).trim() };
+  }
+
+  let lastGo2RtcWarnTime = 0;
+  function logGo2RtcUnreachable(errMessage: string) {
+    const now = Date.now();
+    if (now - lastGo2RtcWarnTime > 30000) {
+      lastGo2RtcWarnTime = now;
+      console.warn(`[go2rtc Proxy] go2rtc relay is unreachable at ${GO2RTC_URL} (${errMessage}). Ensure the go2rtc container is running or set GO2RTC_URL in your environment.`);
+    }
   }
 
   async function ensureGo2RtcStream(streamName: string, rtspUrl: string): Promise<boolean> {
@@ -1074,7 +1095,7 @@ async function startServer() {
       console.warn(`[go2rtc Proxy] Failed to register stream "${streamName}": status ${res.status}`);
       return false;
     } catch (err: any) {
-      console.warn(`[go2rtc Proxy] Error communicating with go2rtc at ${GO2RTC_URL}: ${err?.message}`);
+      logGo2RtcUnreachable(err?.message);
       return false;
     }
   }
@@ -1141,7 +1162,7 @@ async function startServer() {
         sdp: answerSdp
       });
     } catch (err: any) {
-      console.error(`[go2rtc Proxy] WebRTC error for "${cameraId}":`, err?.message);
+      logGo2RtcUnreachable(err?.message);
       return res.status(502).json({
         error: 'Failed to negotiate WebRTC stream with go2rtc: ' + (err?.message || 'Unknown error')
       });
@@ -1202,11 +1223,60 @@ async function startServer() {
       const buffer = Buffer.from(await go2rtcRes.arrayBuffer());
       return res.send(buffer);
     } catch (err: any) {
-      console.error(`[go2rtc Proxy] HLS error for "${cameraId}":`, err?.message);
+      logGo2RtcUnreachable(err?.message);
       return res.status(502).json({
         error: 'Failed to fetch HLS stream from go2rtc: ' + (err?.message || 'Unknown error')
       });
     }
+  });
+
+  // Delete camera source endpoint
+  app.delete('/api/cameras/:cameraId', requireHAAuth, async (req, res) => {
+    const { cameraId } = req.params;
+    console.log(`[Camera API] Deleting camera stream source "${cameraId}"...`);
+
+    const result = await withConfigWriteLock(async () => {
+      const existing = await readPersistentConfig();
+      const currentConfig = existing?.config || cachedServerConfig || null;
+      const currentServerVersion = existing?.serverVersion || cachedServerVersion || 1;
+
+      if (currentConfig?.cameras?.sources && currentConfig.cameras.sources[cameraId]) {
+        const streamName = getCameraStreamName(cameraId);
+        delete currentConfig.cameras.sources[cameraId];
+
+        // Remove stream from go2rtc memory if running
+        try {
+          await fetch(`${GO2RTC_URL}/api/streams?src=${encodeURIComponent(streamName)}`, {
+            method: 'DELETE',
+            signal: AbortSignal.timeout(3000)
+          });
+          console.log(`[Camera API] Removed stream "${streamName}" from go2rtc`);
+        } catch (err: any) {
+          console.warn(`[Camera API] Could not delete stream "${streamName}" from go2rtc:`, err?.message);
+        }
+        registeredGo2RtcStreams.delete(streamName);
+
+        // Atomically persist config
+        const nextVersion = currentServerVersion + 1;
+        const diskPayload = {
+          serverVersion: nextVersion,
+          config: currentConfig
+        };
+        await writeConfigFileAtomic(configFilePath, JSON.stringify(diskPayload, null, 2));
+        cachedServerConfig = currentConfig;
+        cachedServerVersion = nextVersion;
+
+        return { nextVersion };
+      }
+      return { nextVersion: currentServerVersion };
+    });
+
+    if (result.nextVersion) {
+      broadcastConfigUpdate(result.nextVersion);
+    }
+
+    applyCorsHeaders(req, res, 'DELETE, OPTIONS');
+    return res.json({ success: true, cameraId });
   });
 
 

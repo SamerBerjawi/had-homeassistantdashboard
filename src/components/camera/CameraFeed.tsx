@@ -359,7 +359,7 @@ export default function CameraFeed({
 
   return (
     <div
-      className={`relative w-full h-full min-h-[140px] flex items-center justify-center overflow-hidden bg-slate-950 select-none ${className}`}
+      className={`relative w-full h-full flex items-center justify-center overflow-hidden bg-slate-950 select-none ${className}`}
       onClick={mode === 'preview' ? onGoLive : undefined}
     >
       {/* 1. Live Video Viewport */}

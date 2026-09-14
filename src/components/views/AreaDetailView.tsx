@@ -30,7 +30,8 @@ import {
   SquaresFour,
   Warning,
   Gear,
-  CaretRight
+  CaretRight,
+  ArrowsOut
 } from '@phosphor-icons/react';
 import { AreaData } from '../../types/rooms';
 import { ResolvedEntity } from '../../types';
@@ -1472,48 +1473,66 @@ export default function AreaDetailView({
             {sortedCameras.map((cam) => {
               const isUnavailable = cam.state === 'unavailable' || cam.state === 'unknown';
               const lastChanged = formatRelativeTime(cam.last_changed || cam.last_updated);
-              const subtitle = (
-                <TelemetryLine
-                  items={[
-                    'Live Video Feed',
-                    lastChanged || null
-                  ]}
-                />
-              );
+              const displayName = formatEntityDisplayName(cam.name, area.name);
 
               return (
                 <GridTile
                   key={cam.entity_id}
                   id={cam.entity_id}
                   colSpan={4}
-                  rowSpan={2}
                   tabletColSpan={6}
                   desktopColSpan={6}
                   isUnavailable={isUnavailable}
                   onLongPress={() => openEntityDetails(cam.entity_id)}
                 >
-                  <WideTile
-                    darkMode={darkMode}
-                    title={formatEntityDisplayName(cam.name, area.name)}
-                    subtitle={subtitle}
-                    icon={<VideoCamera size={24} weight="duotone" className="text-blue-500 dark:text-blue-400" />}
-                    headerAction={<span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-500/20 text-blue-700 dark:text-blue-300">Live</span>}
-                    onIconClick={() => openEntityDetails(cam.entity_id)}
+                  <div
+                    onClick={() => openEntityDetails(cam.entity_id)}
+                    className="relative w-full aspect-video rounded-3xl overflow-hidden bg-slate-950 border border-white/10 shadow-lg group cursor-pointer isolate hover:border-blue-500/40 transition-all duration-300"
                   >
-                    <div 
-                      onClick={() => openEntityDetails(cam.entity_id)}
-                      className="w-full h-32 rounded-2xl overflow-hidden bg-black relative group cursor-pointer"
-                    >
-                      <CameraFeed
-                        camera={cam}
-                        mode="preview"
-                        darkMode={darkMode}
-                        showControls={false}
-                        autoPlay={true}
-                        muted={true}
-                      />
+                    <CameraFeed
+                      camera={cam}
+                      mode="preview"
+                      darkMode={darkMode}
+                      showControls={false}
+                      autoPlay={true}
+                      muted={true}
+                    />
+
+                    {/* Gradient Overlay for bottom text legibility */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none z-10" />
+
+                    {/* Top Right: Expand to Fullscreen Feed */}
+                    <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEntityDetails(cam.entity_id);
+                        }}
+                        title="Open Fullscreen Feed"
+                        className="p-1.5 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white border border-white/10 transition-transform active:scale-95 shadow-md cursor-pointer"
+                      >
+                        <ArrowsOut size={14} weight="bold" />
+                      </button>
                     </div>
-                  </WideTile>
+
+                    {/* Bottom Info Bar: Camera Name + Live Status */}
+                    <div className="absolute bottom-2.5 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="p-1.5 rounded-xl bg-black/50 backdrop-blur-md border border-white/10 text-cyan-400 shrink-0">
+                          <VideoCamera size={16} weight="duotone" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs sm:text-sm font-bold text-white truncate drop-shadow-sm">
+                            {displayName}
+                          </span>
+                          <span className="text-[10px] text-slate-300 truncate">
+                            {isUnavailable ? 'Offline' : lastChanged ? `Active • ${lastChanged}` : 'Live'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </GridTile>
               );
             })}

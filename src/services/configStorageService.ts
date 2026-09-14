@@ -74,13 +74,22 @@ export async function getAuthHeadersAsync(): Promise<Record<string, string>> {
  * Used for accumulating granular user changes in pendingDeltaRef before debounced persistence.
  */
 export function mergeDelta(
-  base: Partial<UserDashboardConfig> = {},
-  partial: Partial<UserDashboardConfig> = {}
+  base: Partial<UserDashboardConfig>,
+  delta: Partial<UserDashboardConfig>
 ): Partial<UserDashboardConfig> {
-  const result: any = { ...(base || {}) };
-  for (const [key, value] of Object.entries(partial || {})) {
+  const result: any = { ...base };
+
+  for (const [key, value] of Object.entries(delta)) {
     if (value === undefined) continue;
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    if (value === null) {
+      delete result[key];
+      continue;
+    }
+
+    if (key === 'sources' && typeof value === 'object' && !Array.isArray(value)) {
+      // Wholesale replace camera sources dictionary so deleted sources are not resurrected
+      result[key] = { ...value };
+    } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
       const baseVal =
         result[key] !== null && typeof result[key] === 'object' && !Array.isArray(result[key])
           ? result[key]
@@ -90,6 +99,7 @@ export function mergeDelta(
       result[key] = value;
     }
   }
+
   return result;
 }
 
@@ -277,7 +287,10 @@ export function mergeConfig(
     },
     cameras: {
       ...safeBase.cameras,
-      ...(partial.cameras || {})
+      ...(partial.cameras || {}),
+      sources: partial.cameras?.sources !== undefined
+        ? { ...partial.cameras.sources }
+        : safeBase.cameras?.sources
     },
     network: {
       ...safeBase.network,
@@ -600,7 +613,8 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
     });
 
     // Material Data Safeguard (Client-side): Skip auto-save if incoming data is empty while current has material data
-    if (!options?.allowEmpty && hasMaterialDashboardConfig(current) && !hasMaterialDashboardConfig(updated)) {
+    const isExplicitCameraSourcesUpdate = partial.cameras?.sources !== undefined;
+    if (!options?.allowEmpty && !isExplicitCameraSourcesUpdate && hasMaterialDashboardConfig(current) && !hasMaterialDashboardConfig(updated)) {
       console.warn('[RemoteStorageDriver] Skipping auto-save of uninitialized payload to prevent potential NAS data loss.');
       return current;
     }
