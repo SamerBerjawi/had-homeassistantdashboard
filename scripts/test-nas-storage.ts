@@ -174,7 +174,15 @@ async function runTests() {
     assert.strictEqual((mergedDelta as any).theme.darkMode, true);
     assert.strictEqual((mergedDelta as any).theme.primaryColor, '#ff0000');
     assert.strictEqual((mergedDelta as any).rooms, undefined, 'mergeDelta must NOT inject DEFAULT_USER_CONFIG keys');
-    console.log('   ✓ Granular delta merge preserves isolated changes without default pollution');
+
+    // Nested two-level object delta merge
+    const nestedDelta1 = { mobility: { car: { customName: 'CyberTruck' } } };
+    const nestedDelta2 = { mobility: { car: { vehicleImageUrl: 'https://example.com/car.png' } } };
+    const mergedNested = mergeDelta(nestedDelta1 as any, nestedDelta2 as any);
+
+    assert.strictEqual((mergedNested as any).mobility?.car?.customName, 'CyberTruck', 'mobility.car.customName must survive');
+    assert.strictEqual((mergedNested as any).mobility?.car?.vehicleImageUrl, 'https://example.com/car.png', 'mobility.car.vehicleImageUrl must survive');
+    console.log('   ✓ Granular delta merge preserves isolated changes and deep-merges nested objects without data loss');
 
     console.log('\n🎉 ALL NAS STORAGE RELIABILITY TESTS PASSED SUCCESSFULLY!\n');
   } finally {

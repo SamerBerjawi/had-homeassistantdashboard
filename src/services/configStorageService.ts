@@ -77,14 +77,15 @@ export function mergeDelta(
   base: Partial<UserDashboardConfig> = {},
   partial: Partial<UserDashboardConfig> = {}
 ): Partial<UserDashboardConfig> {
-  const result: any = { ...base };
-  for (const [key, value] of Object.entries(partial)) {
+  const result: any = { ...(base || {}) };
+  for (const [key, value] of Object.entries(partial || {})) {
     if (value === undefined) continue;
     if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      result[key] = {
-        ...(result[key] || {}),
-        ...value
-      };
+      const baseVal =
+        result[key] !== null && typeof result[key] === 'object' && !Array.isArray(result[key])
+          ? result[key]
+          : {};
+      result[key] = mergeDelta(baseVal, value);
     } else {
       result[key] = value;
     }
