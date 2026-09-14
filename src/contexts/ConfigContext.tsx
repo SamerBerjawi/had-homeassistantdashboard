@@ -67,10 +67,14 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       try {
         const loaded = await driver.loadConfig();
         if (isMounted && loaded) {
-          latestConfigRef.current = loaded;
-          setConfig(loaded);
+          // Reconcile pending in-flight local edits on top of remote config
+          // to prevent incoming SSE broadcasts or sync polls from reverting active user edits
+          const hasPendingDelta = pendingDeltaRef.current && Object.keys(pendingDeltaRef.current).length > 0;
+          const merged = hasPendingDelta ? mergeConfig(loaded, pendingDeltaRef.current) : loaded;
+          latestConfigRef.current = merged;
+          setConfig(merged);
           setLastSaved(loaded.updatedAt);
-          applyToSubsystems(loaded);
+          applyToSubsystems(merged);
           setSyncStatus('synced');
           setLastSuccessfulSync(new Date().toISOString());
         }
@@ -109,10 +113,12 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // 3. Listen to local/cross-tab broadcast updates
     const handleLocalUpdated = (e: any) => {
       if (e?.detail && isMounted) {
-        latestConfigRef.current = e.detail;
-        setConfig(e.detail);
+        const hasPendingDelta = pendingDeltaRef.current && Object.keys(pendingDeltaRef.current).length > 0;
+        const merged = hasPendingDelta ? mergeConfig(e.detail, pendingDeltaRef.current) : e.detail;
+        latestConfigRef.current = merged;
+        setConfig(merged);
         setLastSaved(e.detail.updatedAt);
-        applyToSubsystems(e.detail);
+        applyToSubsystems(merged);
       }
     };
     window.addEventListener('had_config_updated' as any, handleLocalUpdated);

@@ -132,6 +132,24 @@ async function startServer() {
     return next;
   }
 
+  // Server-side recursive deep merge utility for plain objects (arrays are wholesale replaced, undefined skipped)
+  function deepMergeConfig(base: any = {}, partial: any = {}): any {
+    const result: any = { ...(base || {}) };
+    for (const [key, value] of Object.entries(partial || {})) {
+      if (value === undefined) continue;
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        const baseVal =
+          result[key] !== null && typeof result[key] === 'object' && !Array.isArray(result[key])
+            ? result[key]
+            : {};
+        result[key] = deepMergeConfig(baseVal, value);
+      } else {
+        result[key] = value;
+      }
+    }
+    return result;
+  }
+
   // Config validation helper
   function isValidDashboardConfig(body: any): boolean {
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -639,6 +657,7 @@ async function startServer() {
         // Real conflict check: client's version is older than server's current version
         if (currentConfig && clientExpectedVersion !== undefined && !isNaN(clientExpectedVersion)) {
           if (clientExpectedVersion < currentServerVersion) {
+            console.warn(`[NAS Config Conflict] Write rejected: client expected v${clientExpectedVersion} < server current v${currentServerVersion}`);
             return {
               conflict: true,
               statusCode: 409,
@@ -654,9 +673,24 @@ async function startServer() {
         }
 
         const nextServerVersion = currentServerVersion + 1;
+
+        // Deep merge targetConfig onto currentConfig (unless allowEmpty is explicitly set)
+        // to prevent partial payloads from silently wiping out unmentioned sections
+        let finalConfig = targetConfig;
+        if (!allowEmpty && currentConfig) {
+          finalConfig = deepMergeConfig(currentConfig, targetConfig);
+          // Audit detect if fields from currentConfig were omitted from incoming payload
+          const currentKeys = Object.keys(currentConfig);
+          const targetKeys = new Set(Object.keys(targetConfig));
+          const preservedKeys = currentKeys.filter(k => !targetKeys.has(k));
+          if (preservedKeys.length > 0) {
+            console.log(`[NAS Config Audit] Merged partial config into v${nextServerVersion}. Preserved ${preservedKeys.length} existing top-level sections: ${preservedKeys.join(', ')}`);
+          }
+        }
+
         const diskPayload = {
           serverVersion: nextServerVersion,
-          config: targetConfig
+          config: finalConfig
         };
 
         const payloadString = JSON.stringify(diskPayload, null, 2);
@@ -664,15 +698,17 @@ async function startServer() {
         // Atomic persistence with fsync and backup rotation
         await writeConfigFileAtomic(configFilePath, payloadString);
 
-        cachedServerConfig = targetConfig;
+        cachedServerConfig = finalConfig;
         cachedServerVersion = nextServerVersion;
+
+        console.log(`[NAS Config Audit] Config persisted successfully (v${nextServerVersion}) with atomic fsync & backup rotation`);
 
         return {
           conflict: false,
           statusCode: 200,
           payload: {
             success: true,
-            config: targetConfig,
+            config: finalConfig,
             serverVersion: nextServerVersion
           }
         };
@@ -743,8 +779,16 @@ async function startServer() {
       const targetPath = path.join(assetsDir, uniqueFilename);
       const tempFile = path.join(assetsDir, `.tmp-${uniqueFilename}`);
 
-      await fs.promises.writeFile(tempFile, buffer);
+      const handle = await fs.promises.open(tempFile, 'w');
+      try {
+        await handle.writeFile(buffer);
+        await handle.sync(); // fsync to ensure bytes reach physical NAS drive
+      } finally {
+        await handle.close();
+      }
       await fs.promises.rename(tempFile, targetPath);
+
+      console.log(`[NAS Assets Audit] Uploaded asset "${uniqueFilename}" (${(buffer.length / 1024).toFixed(1)} KB) saved with atomic fsync`);
 
       const publicUrl = `/api/assets/${uniqueFilename}`;
       return res.json({ success: true, url: publicUrl, filename: uniqueFilename });
