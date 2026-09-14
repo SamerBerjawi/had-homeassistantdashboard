@@ -14,7 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { HANotificationItem } from '../../types/notifications';
 import { haWebSocketService } from '../../services/haWebSocket';
-import { safeOpenExternalUrl } from '../../lib/utils';
+import { safeOpenExternalUrl, sanitizeSafeUrl } from '../../lib/utils';
 
 interface NotificationChangelogProps {
   item: HANotificationItem;
@@ -40,16 +40,21 @@ function FormattedChangelog({ content, darkMode = true }: { content: string; dar
         parts.push(text.substring(lastIndex, linkMatch.index));
       }
       const label = linkMatch[1];
-      const href = linkMatch[2];
+      const rawHref = linkMatch[2];
+      const safeHref = sanitizeSafeUrl(rawHref);
       parts.push(
         <a
           key={`link-${linkMatch.index}`}
-          href={href}
+          href={safeHref}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => {
             e.stopPropagation();
-            safeOpenExternalUrl(href);
+            if (safeHref === '#') {
+              e.preventDefault();
+              return;
+            }
+            safeOpenExternalUrl(safeHref);
           }}
           className="text-sky-500 hover:text-sky-400 underline underline-offset-2 font-medium inline-flex items-center gap-0.5"
         >

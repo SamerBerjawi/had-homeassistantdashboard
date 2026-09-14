@@ -6,6 +6,7 @@
 import React, { useMemo } from 'react';
 import { ArrowSquareOut } from '@phosphor-icons/react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import { sanitizeSafeUrl, safeOpenExternalUrl } from '../../lib/utils';
 
 interface ParsedImage {
   src: string;
@@ -27,17 +28,18 @@ export default function NotificationRichContent({
 }: NotificationRichContentProps) {
   const serverUrl = useAutoLayoutStore(s => s.serverUrl);
 
-  // Helper to normalize image URL (e.g. resolve relative HA URLs)
+  // Helper to normalize image URL (e.g. resolve relative HA URLs) with protocol validation
   const resolveImageUrl = (url: string): string => {
     if (!url) return '';
-    if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:')) {
-      return url;
+    const trimmed = url.trim();
+    if (trimmed.startsWith('data:image/') || trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('blob:')) {
+      return trimmed;
     }
-    if (url.startsWith('/') && serverUrl) {
+    if (trimmed.startsWith('/') && serverUrl) {
       const cleanServer = serverUrl.replace(/\/+$/, '');
-      return `${cleanServer}${url}`;
+      return `${cleanServer}${trimmed}`;
     }
-    return url;
+    return '';
   };
 
   // Parse markdown content, extracting images, headings, and clean text
@@ -124,14 +126,18 @@ export default function NotificationRichContent({
         parts.push(text.substring(lastIndex, linkMatch.index));
       }
       const label = linkMatch[1];
-      const href = linkMatch[2];
+      const rawHref = linkMatch[2];
+      const safeHref = sanitizeSafeUrl(rawHref);
       parts.push(
         <a
           key={`link-${linkMatch.index}`}
-          href={href}
+          href={safeHref}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (safeHref === '#') e.preventDefault();
+          }}
           className="text-sky-500 hover:text-sky-400 font-semibold underline underline-offset-2 transition-colors inline-flex items-center gap-1"
         >
           <span>{label}</span>
@@ -184,7 +190,7 @@ export default function NotificationRichContent({
               className="w-full rounded-xl overflow-hidden flex items-center justify-center bg-black/10 dark:bg-black/35 border border-black/5 dark:border-white/10 p-1.5 sm:p-2 transition-all hover:border-black/15 dark:hover:border-white/20 cursor-pointer group/nimg"
               onClick={(e) => {
                 e.stopPropagation();
-                if (img.src) window.open(img.src, '_blank');
+                if (img.src) safeOpenExternalUrl(img.src);
               }}
               title="Click to view full image"
             >

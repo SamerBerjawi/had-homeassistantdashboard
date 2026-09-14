@@ -28,6 +28,7 @@ import {
   ToggleRight,
   Power
 } from '@phosphor-icons/react';
+import { sanitizeSafeUrl } from '../../lib/utils';
 import { IntegrationItem } from '../../types/integrations';
 import IntegrationIcon from '../notifications/IntegrationIcon';
 import { integrationsService } from '../../services/integrationsService';
@@ -311,9 +312,9 @@ export default function IntegrationDetailDrawer({
                   <span>{isReloading ? 'Reloading...' : reloadSuccess === true ? 'Reloaded!' : 'Reload Integration'}</span>
                 </button>
 
-                {integration.documentationUrl && (
+                {integration.documentationUrl && sanitizeSafeUrl(integration.documentationUrl) !== '#' && (
                   <a
-                    href={integration.documentationUrl}
+                    href={sanitizeSafeUrl(integration.documentationUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`p-3.5 rounded-2xl border flex items-center justify-center gap-2 font-bold text-xs transition-all active:scale-95 shadow-sm ${

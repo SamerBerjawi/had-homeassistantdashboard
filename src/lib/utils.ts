@@ -10,10 +10,39 @@ export function getHAImageUrl(url?: string | null, serverUrl?: string | null): s
   return resolveHAImageUrl(url, serverUrl);
 }
 
+/**
+ * Safely sanitizes external and user/HA-supplied URLs.
+ * Rejects javascript:, data:, vbscript:, and other dangerous executable protocols.
+ * Allows http:, https:, mailto:, tel:, and relative URLs starting with / or #.
+ */
+export function sanitizeSafeUrl(url?: string | null): string {
+  if (!url || typeof url !== 'string') return '#';
+  const trimmed = url.trim();
+  if (!trimmed) return '#';
+
+  // Allow safe relative paths
+  if (trimmed.startsWith('/') || trimmed.startsWith('#')) {
+    return trimmed;
+  }
+
+  try {
+    const parsed = new URL(trimmed, 'https://had.local');
+    const protocol = parsed.protocol.toLowerCase();
+    if (protocol === 'http:' || protocol === 'https:' || protocol === 'mailto:' || protocol === 'tel:') {
+      return trimmed;
+    }
+  } catch {
+    // Malformed URL
+  }
+  return '#';
+}
+
 export function safeOpenExternalUrl(url?: string): void {
   if (!url) return;
+  const safe = sanitizeSafeUrl(url);
+  if (safe === '#') return; // Reject dangerous protocols (javascript:, etc.)
   try {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(safe, '_blank', 'noopener,noreferrer');
   } catch {
     // fallback
   }

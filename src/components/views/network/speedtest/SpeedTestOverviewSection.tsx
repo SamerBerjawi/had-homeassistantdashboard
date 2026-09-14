@@ -17,6 +17,7 @@ import {
   Sparkle
 } from '@phosphor-icons/react';
 import { SpeedTestMetrics } from '../../../../types/network';
+import { sanitizeSafeUrl } from '../../../../lib/utils';
 
 interface SpeedTestOverviewSectionProps {
   metrics: SpeedTestMetrics;
@@ -78,9 +79,9 @@ export const SpeedTestOverviewSection: React.FC<SpeedTestOverviewSectionProps> =
           </div>
 
           {/* Ookla Result External Link */}
-          {metrics.resultUrl && (
+          {metrics.resultUrl && sanitizeSafeUrl(metrics.resultUrl) !== '#' && (
             <a
-              href={metrics.resultUrl}
+              href={sanitizeSafeUrl(metrics.resultUrl)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/15 border border-indigo-500/20 transition-all cursor-pointer"

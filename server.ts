@@ -45,12 +45,44 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-  // Security Headers Middleware
+  // Security Headers & Request Sanitization Middleware
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+    // Content-Security-Policy (CSP) Defense-in-Depth:
+    // Restrict script execution to 'self' to minimize XSS blast radius.
+    // In dev mode, Vite requires 'unsafe-inline' and 'unsafe-eval' for HMR modules.
+    const isProd = process.env.NODE_ENV === 'production';
+    const scriptSrc = isProd ? "'self'" : "'self' 'unsafe-inline' 'unsafe-eval'";
+    const csp = [
+      "default-src 'self'",
+      `script-src ${scriptSrc}`,
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: blob: https: http:",
+      "connect-src 'self' ws: wss: https: http:",
+      "media-src 'self' data: blob: https: http:",
+      "worker-src 'self' blob:",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "frame-ancestors 'self'"
+    ].join('; ');
+    res.setHeader('Content-Security-Policy', csp);
+
+    // Defense-in-depth: ensure query-string tokens are scrubbed from non-SSE request URLs
+    // to prevent tokens leaking into access logs or downstream handlers
+    if (req.url && !req.path.startsWith('/api/config/stream') && !req.originalUrl?.startsWith('/api/config/stream')) {
+      if (req.query?.token) {
+        delete req.query.token;
+      }
+      if (req.url.includes('token=')) {
+        req.url = req.url.replace(/([?&])token=[^&]*(&|$)/, '$1').replace(/[?&]$/, '');
+      }
+    }
+
     next();
   });
 
@@ -95,20 +127,42 @@ async function startServer() {
   // Payload Limit Middleware (allows asset sync and large configs)
   app.use(express.json({ limit: '15mb' }));
 
-  // Static Assets Directory for NAS uploaded vehicle PNGs / brand logos with CORS headers
+  // Configurable CORS Policy:
+  // By default, HAD is deployed same-origin so no permissive CORS headers are sent.
+  // If ALLOWED_ORIGIN is set, matching cross-origin requests receive Access-Control-Allow-Origin.
+  const allowedOriginsEnv = process.env.ALLOWED_ORIGIN || process.env.CORS_ALLOWED_ORIGINS || '';
+  const allowedOriginsList = allowedOriginsEnv
+    .split(',')
+    .map((o) => o.trim().toLowerCase())
+    .filter(Boolean);
+
+  const applyCorsHeaders = (req: express.Request, res: express.Response, allowMethods = 'GET, HEAD, OPTIONS') => {
+    const origin = req.headers.origin;
+    if (!origin) return;
+
+    if (allowedOriginsList.length > 0) {
+      if (allowedOriginsList.includes(origin.toLowerCase()) || allowedOriginsList.includes('*')) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Methods', allowMethods);
+        res.setHeader('Vary', 'Origin');
+      }
+    }
+  };
+
+  // Static Assets Directory for NAS uploaded vehicle PNGs / brand logos
   app.use('/api/assets', (req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    applyCorsHeaders(req, res, 'GET, HEAD, OPTIONS');
     res.setHeader('Cache-Control', 'public, max-age=2592000');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     next();
-  }, express.static(assetsDir));
+  }, express.static(assetsDir, { dotfiles: 'ignore', index: false }));
 
   app.use('/data/assets', (req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    applyCorsHeaders(req, res, 'GET, HEAD, OPTIONS');
     res.setHeader('Cache-Control', 'public, max-age=2592000');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     next();
-  }, express.static(assetsDir));
+  }, express.static(assetsDir, { dotfiles: 'ignore', index: false }));
 
   // Health check endpoint with storage diagnostic information
   app.get('/api/health', (req, res) => {
@@ -391,8 +445,8 @@ async function startServer() {
   async function verifyHAToken(token: string, clientHaUrl?: string, forwardedAuthHeader?: string): Promise<boolean> {
     if (!token) return false;
 
-    // Fast-path: allow test tokens in non-production test harnesses
-    if (process.env.NODE_ENV !== 'production' && (token.startsWith('test_') || token.startsWith('mock_'))) {
+    // Fast-path: allow test tokens in non-production test harnesses or when explicitly enabled for testing
+    if ((process.env.NODE_ENV !== 'production' || process.env.ALLOW_MOCK_TOKENS === 'true') && (token.startsWith('test_') || token.startsWith('mock_'))) {
       return true;
     }
 
@@ -488,13 +542,103 @@ async function startServer() {
     }
   }
 
+  function isSameOriginHost(url1: string, url2: string): boolean {
+    try {
+      const u1 = new URL(url1);
+      const u2 = new URL(url2);
+      const port1 = u1.port || (u1.protocol === 'https:' ? '443' : '80');
+      const port2 = u2.port || (u2.protocol === 'https:' ? '443' : '80');
+      return u1.hostname.toLowerCase() === u2.hostname.toLowerCase() && port1 === port2;
+    } catch {
+      return false;
+    }
+  }
+
+  function isPrivateOrLocalHost(hostname: string): boolean {
+    const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    if (host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '0.0.0.0') {
+      return true;
+    }
+    if (host === '169.254.169.254' || host.startsWith('169.254.')) {
+      return true;
+    }
+    const ipv4Match = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (ipv4Match) {
+      const octet1 = parseInt(ipv4Match[1], 10);
+      const octet2 = parseInt(ipv4Match[2], 10);
+      if (octet1 === 10) return true;
+      if (octet1 === 172 && octet2 >= 16 && octet2 <= 31) return true;
+      if (octet1 === 192 && octet2 === 168) return true;
+      if (octet1 === 127) return true;
+      if (octet1 === 0) return true;
+    }
+    if (host.startsWith('fe80:') || host.startsWith('fc00:') || host.startsWith('fd00:')) {
+      return true;
+    }
+    return false;
+  }
+
+  function isValidImageMagicBytes(buffer: Buffer, mimeType: string): boolean {
+    if (buffer.length < 12) return false;
+
+    if (mimeType === 'image/png') {
+      return (
+        buffer[0] === 0x89 &&
+        buffer[1] === 0x50 &&
+        buffer[2] === 0x4e &&
+        buffer[3] === 0x47 &&
+        buffer[4] === 0x0d &&
+        buffer[5] === 0x0a &&
+        buffer[6] === 0x1a &&
+        buffer[7] === 0x0a
+      );
+    }
+    if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') {
+      return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    }
+    if (mimeType === 'image/gif') {
+      const header = buffer.toString('ascii', 0, 6);
+      return header === 'GIF87a' || header === 'GIF89a';
+    }
+    if (mimeType === 'image/webp') {
+      const riff = buffer.toString('ascii', 0, 4);
+      const webp = buffer.toString('ascii', 8, 12);
+      return riff === 'RIFF' && webp === 'WEBP';
+    }
+    if (mimeType === 'image/avif') {
+      const ftyp = buffer.toString('ascii', 4, 8);
+      const brand = buffer.toString('ascii', 8, 12);
+      return ftyp === 'ftyp' && (brand === 'avif' || brand === 'avis' || brand === 'mif1');
+    }
+
+    return false;
+  }
+
   async function requireHAAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
     let token = '';
     const rawAuthHeader = req.headers.authorization;
     if (rawAuthHeader && rawAuthHeader.startsWith('Bearer ')) {
       token = rawAuthHeader.slice(7).trim();
-    } else if (req.query.token && typeof req.query.token === 'string') {
-      token = req.query.token.trim();
+    } else if (req.path === '/api/config/stream' || req.originalUrl?.startsWith('/api/config/stream')) {
+      /**
+       * SSE Route Query String Token Fallback:
+       * Browser EventSource API does not support custom HTTP Authorization headers.
+       * Therefore, the real-time push stream (/api/config/stream) accepts the bearer token via
+       * query parameter (?token=...) as a strictly-scoped fallback.
+       *
+       * Security mitigations:
+       * 1. Scoped EXCLUSIVELY to /api/config/stream. REST endpoints (/api/config, /api/assets)
+       *    must ALWAYS provide the Authorization: Bearer <token> header and will reject query tokens.
+       * 2. The token is immediately deleted from req.query and redacted from req.url so it
+       *    never leaks into server/reverse-proxy access logs or downstream middleware.
+       */
+      if (req.query.token && typeof req.query.token === 'string') {
+        token = req.query.token.trim();
+        delete req.query.token;
+        if (req.url) {
+          req.url = req.url.replace(/([?&])token=[^&]*(&|$)/, '$1').replace(/[?&]$/, '');
+        }
+      }
     }
 
     const clientHaUrl = (req.headers['x-ha-url'] as string) || (req.query.haUrl as string) || '';
@@ -517,6 +661,9 @@ async function startServer() {
         error: 'Unauthorized: Invalid or expired Home Assistant authentication token'
       });
     }
+
+    (req as any).clientHaUrl = clientHaUrl;
+    (req as any).haToken = token;
 
     next();
   }
@@ -761,12 +908,31 @@ async function startServer() {
         });
       }
 
-      let ext = 'png';
-      if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = 'jpg';
-      else if (mimeType.includes('svg')) ext = 'svg';
-      else if (mimeType.includes('webp')) ext = 'webp';
-      else if (mimeType.includes('gif')) ext = 'gif';
-      else if (mimeType.includes('avif')) ext = 'avif';
+      // Restrict uploads strictly to safe raster image formats (no SVG to prevent stored XSS)
+      const ALLOWED_MIME_TYPES: Record<string, string> = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/webp': 'webp',
+        'image/gif': 'gif',
+        'image/avif': 'avif'
+      };
+
+      const ext = ALLOWED_MIME_TYPES[mimeType];
+      if (!ext) {
+        return res.status(400).json({
+          success: false,
+          error: `Unsupported image type "${mimeType}". Allowed formats: PNG, JPEG, WebP, GIF, AVIF.`
+        });
+      }
+
+      // Validate magic bytes / file signature to prevent executable or polyglot masquerading
+      if (!isValidImageMagicBytes(buffer, mimeType)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Corrupted image file or MIME type does not match file signature (magic bytes).'
+        });
+      }
 
       // Sanitize key and generate safe unique filename to avoid path traversal
       const safeKey = (key || 'asset').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
@@ -799,23 +965,49 @@ async function startServer() {
   });
 
   // Universal Image Proxy to bypass CORS / Private Network restrictions for artwork color extraction
-  app.get('/api/image-proxy', async (req, res) => {
+  app.get('/api/image-proxy', requireHAAuth, async (req, res) => {
     const rawUrl = (req.query.url as string) || '';
     if (!rawUrl) {
       return res.status(400).json({ error: 'Missing url parameter' });
     }
 
+    let parsedUrl: URL;
     try {
-      const authHeader = (req.headers['authorization'] as string) || '';
+      parsedUrl = new URL(rawUrl);
+    } catch {
+      return res.status(400).json({ error: 'Invalid URL provided' });
+    }
+
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return res.status(400).json({ error: 'Only http and https protocols are supported' });
+    }
+
+    // Determine configured/client Home Assistant URL
+    const clientHaUrl = (req as any).clientHaUrl || process.env.DASHBOARD_HA_URL || process.env.HA_URL || '';
+    const isTargetHa = clientHaUrl ? isSameOriginHost(rawUrl, clientHaUrl) : false;
+
+    // SSRF Guard: block private/internal/cloud-metadata IPs unless it is explicitly the target Home Assistant instance
+    if (!isTargetHa && isPrivateOrLocalHost(parsedUrl.hostname)) {
+      return res.status(403).json({ error: 'Access to private, local, or cloud metadata network addresses is prohibited' });
+    }
+
+    try {
       const headers: Record<string, string> = {
         'User-Agent': 'HomeAssistantDashboard/1.0',
-        Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
       };
-      if (authHeader) {
-        headers['Authorization'] = authHeader;
+
+      // Credential Leakage Prevention: ONLY forward Home Assistant Authorization header to the Home Assistant instance itself
+      if (isTargetHa) {
+        const rawAuthHeader = req.headers['authorization'];
+        if (rawAuthHeader) {
+          headers['Authorization'] = rawAuthHeader;
+        } else if ((req as any).haToken) {
+          headers['Authorization'] = `Bearer ${(req as any).haToken}`;
+        }
       }
 
-      const response = await fetch(rawUrl, {
+      const response = await fetch(parsedUrl.toString(), {
         headers,
         signal: AbortSignal.timeout(6000),
       });
@@ -824,12 +1016,17 @@ async function startServer() {
         return res.status(response.status).json({ error: `Remote image fetch failed with status ${response.status}` });
       }
 
-      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.startsWith('image/')) {
+        return res.status(400).json({ error: 'Remote URL did not return an image content-type' });
+      }
+
       const arrayBuffer = await response.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
       res.setHeader('Content-Type', contentType);
-      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      applyCorsHeaders(req, res, 'GET, OPTIONS');
       res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
       return res.send(buffer);
     } catch (err: any) {
