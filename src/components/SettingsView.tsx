@@ -24,6 +24,7 @@ import ThemeCustomizationSection from './settings/ThemeCustomizationSection';
 import DeviceVisibilitySection from './settings/DeviceVisibilitySection';
 import BackupRestoreSection from './settings/BackupRestoreSection';
 import ConnectionWebSocketSection from './settings/ConnectionWebSocketSection';
+import CameraSettingsSection from './settings/CameraSettingsSection';
 
 interface SettingsViewProps {
   darkMode: boolean;
@@ -798,6 +799,7 @@ export default function SettingsView({
               logsCount={logs.length}
               authType={authType}
               hasCartoKey={Boolean(cartoApiKey)}
+              camerasCount={Object.keys(config.cameras?.sources || {}).length}
             />
           </motion.div>
         )}
@@ -951,6 +953,23 @@ export default function SettingsView({
               entitiesCount={entities.length}
               roomsCount={rooms.length}
               devicesCount={Object.keys(rawDevices || {}).length || 18}
+              addToast={addToast}
+            />
+          </motion.div>
+        )}
+
+        {selectedSettingsSection === 'cameras' && (
+          <motion.div
+            key="subpage_cameras"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.15 }}
+            className="w-full"
+          >
+            <CameraSettingsSection
+              darkMode={darkMode}
+              entities={entities}
               addToast={addToast}
             />
           </motion.div>

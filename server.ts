@@ -124,8 +124,9 @@ async function startServer() {
     console.warn(`[NAS Storage Warning] DASHBOARD_ASSETS_DIR "${assetsDir}" is not writable or reachable: ${err.message}. Asset upload endpoints will return service unavailable errors.`);
   }
 
-  // Payload Limit Middleware (allows asset sync and large configs)
+  // Payload Limit Middleware (allows asset sync, large configs, and SDP text payloads)
   app.use(express.json({ limit: '15mb' }));
+  app.use(express.text({ type: ['text/*', 'application/sdp'], limit: '5mb' }));
 
   // Configurable CORS Policy:
   // By default, HAD is deployed same-origin so no permissive CORS headers are sent.
@@ -269,6 +270,7 @@ async function startServer() {
     // Check custom cameras
     if (data.cameras && typeof data.cameras === 'object') {
       if (Array.isArray(data.cameras.favoriteCameras) && data.cameras.favoriteCameras.length > 0) return true;
+      if (data.cameras.sources && typeof data.cameras.sources === 'object' && Object.keys(data.cameras.sources).length > 0) return true;
     }
 
     // Check preferences / profile
@@ -1031,6 +1033,179 @@ async function startServer() {
       return res.send(buffer);
     } catch (err: any) {
       return res.status(502).json({ error: 'Failed to proxy image: ' + (err?.message || 'Network error') });
+    }
+  });
+
+  // -------------------------------------------------------------
+  // Camera RTSP Streaming & go2rtc Proxy Layer
+  // -------------------------------------------------------------
+  const GO2RTC_URL = (process.env.GO2RTC_URL || 'http://127.0.0.1:1984').replace(/\/+$/, '');
+  const registeredGo2RtcStreams = new Map<string, string>(); // streamName -> rtspUrl
+
+  function getCameraRtspConfig(cameraId: string): { streamName: string; rtspUrl: string } | null {
+    const sources = (cachedServerConfig as any)?.cameras?.sources;
+    if (!sources || typeof sources !== 'object') return null;
+    const entry = sources[cameraId];
+    if (!entry || !entry.rtspUrl) return null;
+    const streamName = (entry.id || cameraId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    return { streamName, rtspUrl: String(entry.rtspUrl).trim() };
+  }
+
+  async function ensureGo2RtcStream(streamName: string, rtspUrl: string): Promise<boolean> {
+    if (registeredGo2RtcStreams.get(streamName) === rtspUrl) {
+      return true;
+    }
+    try {
+      const targetUrl = `${GO2RTC_URL}/api/streams?name=${encodeURIComponent(streamName)}&src=${encodeURIComponent(rtspUrl)}`;
+      let res = await fetch(targetUrl, {
+        method: 'PUT',
+        signal: AbortSignal.timeout(4000)
+      });
+      if (res.status === 405 || !res.ok) {
+        res = await fetch(targetUrl, {
+          method: 'POST',
+          signal: AbortSignal.timeout(4000)
+        });
+      }
+      if (res.ok || res.status === 201) {
+        registeredGo2RtcStreams.set(streamName, rtspUrl);
+        return true;
+      }
+      console.warn(`[go2rtc Proxy] Failed to register stream "${streamName}": status ${res.status}`);
+      return false;
+    } catch (err: any) {
+      console.warn(`[go2rtc Proxy] Error communicating with go2rtc at ${GO2RTC_URL}: ${err?.message}`);
+      return false;
+    }
+  }
+
+  // Camera streaming status check
+  app.get('/api/cameras/status', requireHAAuth, async (req, res) => {
+    try {
+      const ping = await fetch(`${GO2RTC_URL}/api/streams`, { signal: AbortSignal.timeout(3000) });
+      if (ping.ok) {
+        const streams = await ping.json();
+        return res.json({ success: true, go2rtcOnline: true, streams });
+      }
+      return res.json({ success: true, go2rtcOnline: false, error: `go2rtc returned status ${ping.status}` });
+    } catch (err: any) {
+      return res.json({ success: true, go2rtcOnline: false, error: err?.message || 'go2rtc unreachable' });
+    }
+  });
+
+  // WebRTC WHEP signaling proxy
+  app.post('/api/cameras/:cameraId/webrtc', requireHAAuth, async (req, res) => {
+    const { cameraId } = req.params;
+    const config = getCameraRtspConfig(cameraId);
+    if (!config) {
+      return res.status(404).json({
+        success: false,
+        error: `Camera "${cameraId}" has no configured RTSP source URL`
+      });
+    }
+
+    await ensureGo2RtcStream(config.streamName, config.rtspUrl);
+
+    try {
+      let clientSdp = '';
+      if (typeof req.body === 'string') {
+        clientSdp = req.body;
+      } else if (req.body && typeof req.body.sdp === 'string') {
+        clientSdp = req.body.sdp;
+      } else {
+        return res.status(400).json({ error: 'Missing client SDP offer in request body' });
+      }
+
+      const go2rtcRes = await fetch(`${GO2RTC_URL}/api/webrtc?src=${encodeURIComponent(config.streamName)}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/sdp',
+          'User-Agent': 'HomeAssistantDashboard/1.0'
+        },
+        body: clientSdp,
+        signal: AbortSignal.timeout(6000)
+      });
+
+      if (!go2rtcRes.ok) {
+        const errText = await go2rtcRes.text();
+        return res.status(go2rtcRes.status).json({
+          error: `go2rtc WebRTC signaling failed (${go2rtcRes.status}): ${errText}`
+        });
+      }
+
+      const answerSdp = await go2rtcRes.text();
+      res.setHeader('Content-Type', 'application/json');
+      applyCorsHeaders(req, res, 'POST, OPTIONS');
+      return res.json({
+        type: 'answer',
+        sdp: answerSdp
+      });
+    } catch (err: any) {
+      console.error(`[go2rtc Proxy] WebRTC error for "${cameraId}":`, err?.message);
+      return res.status(502).json({
+        error: 'Failed to negotiate WebRTC stream with go2rtc: ' + (err?.message || 'Unknown error')
+      });
+    }
+  });
+
+  // HLS stream and media segment proxy
+  app.all('/api/cameras/:cameraId/hls*', requireHAAuth, async (req, res) => {
+    const { cameraId } = req.params;
+    const config = getCameraRtspConfig(cameraId);
+    if (!config) {
+      return res.status(404).json({
+        success: false,
+        error: `Camera "${cameraId}" has no configured RTSP source URL`
+      });
+    }
+
+    await ensureGo2RtcStream(config.streamName, config.rtspUrl);
+
+    try {
+      let subpath = req.params[0] || '/stream.m3u8';
+      if (!subpath.startsWith('/')) subpath = `/${subpath}`;
+      if (subpath === '/' || subpath === '') subpath = '/stream.m3u8';
+
+      const urlObj = new URL(`${GO2RTC_URL}/api${subpath}`);
+      urlObj.searchParams.set('src', config.streamName);
+      for (const [k, v] of Object.entries(req.query)) {
+        if (k !== 'src' && typeof v === 'string') {
+          urlObj.searchParams.set(k, v);
+        }
+      }
+
+      const go2rtcRes = await fetch(urlObj.toString(), {
+        method: req.method,
+        headers: {
+          'User-Agent': 'HomeAssistantDashboard/1.0',
+          Accept: '*/*'
+        },
+        signal: AbortSignal.timeout(8000)
+      });
+
+      if (!go2rtcRes.ok) {
+        return res.status(go2rtcRes.status).send(`go2rtc HLS upstream error: ${go2rtcRes.status}`);
+      }
+
+      const contentType = go2rtcRes.headers.get('content-type') ||
+        (subpath.endsWith('.m3u8') ? 'application/vnd.apple.mpegurl' : 'video/MP2T');
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      applyCorsHeaders(req, res, 'GET, HEAD, OPTIONS');
+
+      if (subpath.endsWith('.m3u8')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+      }
+
+      const buffer = Buffer.from(await go2rtcRes.arrayBuffer());
+      return res.send(buffer);
+    } catch (err: any) {
+      console.error(`[go2rtc Proxy] HLS error for "${cameraId}":`, err?.message);
+      return res.status(502).json({
+        error: 'Failed to fetch HLS stream from go2rtc: ' + (err?.message || 'Unknown error')
+      });
     }
   });
 

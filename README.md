@@ -167,15 +167,32 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - GO2RTC_URL=http://go2rtc:1984
     # Persistent storage volume for dashboard config JSON and uploaded vehicle assets
     volumes:
       - ./data:/app/data
+    depends_on:
+      - go2rtc
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  go2rtc:
+    image: alexxit/go2rtc:latest
+    container_name: go2rtc
+    restart: unless-stopped
+    ports:
+      - "1984:1984"       # API, WebRTC HTTP signaling (WHEP), HLS, MSE
+      - "8555:8555/tcp"   # WebRTC media transport TCP
+      - "8555:8555/udp"   # WebRTC media transport UDP
+      - "8554:8554"       # RTSP server (optional)
+    volumes:
+      - ./data/go2rtc:/config
+    environment:
+      - GO2RTC_CONFIG=/config/go2rtc.yaml
 ```
 
 2. **(Optional) Create a `.env` file** in the same directory:
@@ -183,7 +200,7 @@ services:
 PORT=3000
 ```
 
-3. **Start the container**:
+3. **Start the containers**:
 ```bash
 docker compose up -d
 ```
@@ -191,6 +208,29 @@ docker compose up -d
 4. **Access the Dashboard**:
 Open your browser or tablet at:
 `http://<YOUR-NAS-IP>:3000`
+
+---
+
+### 📹 Live Camera Streaming Setup (go2rtc Sidecar & RTSP)
+
+HAD features an integrated, high-performance streaming pipeline capable of converting RTSP camera sources into ultra-low-latency WebRTC streams (<500ms latency) with automatic HLS fallback:
+
+1. **go2rtc Sidecar Engine**: The `go2rtc` container runs alongside the dashboard, converting camera RTSP feeds on demand.
+2. **Adding an RTSP Camera in Settings**:
+   - Navigate to **Settings** ➔ **Cameras & RTSP Feeds**.
+   - Select an existing Home Assistant camera entity (e.g. `camera.driveway`, `camera.front_door`).
+   - Enter or adjust the camera's display name.
+   - Enter your IP camera's RTSP stream URL:
+     - *Reolink*: `rtsp://admin:password@192.168.1.50:554/h264Preview_01_main` (or `_sub`)
+     - *Tapo*: `rtsp://admin:password@192.168.1.51:554/stream1` (or `stream2`)
+     - *Hikvision*: `rtsp://admin:password@192.168.1.52:554/Streaming/Channels/101`
+     - *Dahua / Amcrest*: `rtsp://admin:password@192.168.1.53:554/cam/realmonitor?channel=1&subtype=0`
+   - Select your preferred streaming mode (**Auto: WebRTC + HLS fallback**, **WebRTC Only**, or **HLS Only**).
+   - Click **Save Camera Stream** — changes are instantly synced to the NAS backend and across connected tablets.
+3. **Instant Live Playback**:
+   - Area Detail View (`/rooms`) and Security View (`/security`) immediately stream live WebRTC video with the live protocol badge.
+   - If WebRTC negotiation is blocked or fails, `hls.js` automatically activates with zero user intervention.
+   - Cameras without an RTSP URL continue to render still entity snapshots from Home Assistant unchanged.
 
 ---
 
@@ -203,6 +243,7 @@ Open your browser or tablet at:
 - **Environment Variables**:
   - `NODE_ENV`: `production`
   - `PORT`: `3000`
+  - `GO2RTC_URL`: `http://go2rtc:1984` (or host IP: `http://192.168.1.x:1984`)
 
 ---
 
@@ -215,6 +256,7 @@ docker run -d \
   -p 3000:3000 \
   -v $(pwd)/data:/app/data \
   -e NODE_ENV=production \
+  -e GO2RTC_URL=http://go2rtc:1984 \
   ghcr.io/samerberjawi/had-homeassistantdashboard:latest
 ```
 
@@ -230,6 +272,8 @@ docker run -d \
 | `DASHBOARD_CONFIG_DIR` | No | `/app/data/config` | Directory where `dashboard-config.json` and backups are stored |
 | `DASHBOARD_ASSETS_DIR` | No | `/app/data/assets` | Directory where uploaded vehicle PNGs and icons are stored |
 | `HASS_URL` | No | `http://homeassistant.local:8123` | Default fallback Home Assistant URL (can also be configured in the UI) |
+| `GO2RTC_URL` | No | `http://127.0.0.1:1984` | URL of the go2rtc sidecar instance for WebRTC and HLS conversion |
+
 
 ---
 

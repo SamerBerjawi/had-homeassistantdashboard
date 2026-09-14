@@ -54,6 +54,14 @@ export interface OverviewConfig {
   hideBadges?: boolean;
 }
 
+export interface CameraSourceConfig {
+  id: string; // camera entity_id or custom ID
+  name?: string;
+  rtspUrl?: string; // RTSP stream URL (e.g. rtsp://user:pass@192.168.1.50:554/stream1)
+  haEntityId?: string; // reference to an HA camera entity whose stream_source attribute provides one
+  liveType?: 'auto' | 'webrtc' | 'hls';
+}
+
 export interface UserDashboardConfig {
   version: number;
   updatedAt: string;
@@ -127,6 +135,8 @@ export interface UserDashboardConfig {
     mutedByDefault: boolean;
     autoPlayPreferences?: boolean;
     aspectRatio?: '16:9' | '4:3' | '1:1' | 'cover';
+    favoriteCameras?: string[];
+    sources?: Record<string, CameraSourceConfig>;
   };
   network: {
     adguardTimelineDefault: '24H' | '7D' | '30D' | '90D';
@@ -284,7 +294,9 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
     defaultStreamType: 'auto',
     mutedByDefault: true,
     autoPlayPreferences: true,
-    aspectRatio: '16:9'
+    aspectRatio: '16:9',
+    favoriteCameras: [],
+    sources: {}
   },
   network: {
     adguardTimelineDefault: '24H',

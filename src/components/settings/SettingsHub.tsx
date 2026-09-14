@@ -24,7 +24,8 @@ import {
   Moon,
   Sun,
   ShieldCheck,
-  HardDrives
+  HardDrives,
+  VideoCamera
 } from '@phosphor-icons/react';
 
 export type SettingsSection = 
@@ -32,7 +33,8 @@ export type SettingsSection =
   | 'theme_customization' 
   | 'devices_rooms' 
   | 'backup_restore' 
-  | 'connection_websocket';
+  | 'connection_websocket'
+  | 'cameras';
 
 interface SettingsHubProps {
   darkMode: boolean;
@@ -63,6 +65,7 @@ interface SettingsHubProps {
   logsCount: number;
   authType: 'oauth' | 'llat' | 'demo';
   hasCartoKey?: boolean;
+  camerasCount?: number;
 }
 
 export default function SettingsHub({
@@ -85,7 +88,8 @@ export default function SettingsHub({
   snapshotsCount,
   logsCount,
   authType,
-  hasCartoKey = false
+  hasCartoKey = false,
+  camerasCount = 0
 }: SettingsHubProps) {
 
 
@@ -168,6 +172,22 @@ export default function SettingsHub({
         { label: 'Snapshots', value: `${snapshotsCount}` },
         { label: 'Export', value: 'JSON' },
         { label: 'Reset', value: 'Factory' }
+      ]
+    },
+    {
+      id: 'cameras' as SettingsSection,
+      title: 'Cameras & RTSP Feeds',
+      icon: VideoCamera,
+      gradient: 'from-cyan-500/15 via-blue-500/10 to-teal-500/5',
+      accentColor: 'text-cyan-500 dark:text-cyan-400',
+      iconBg: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
+      borderColor: 'hover:border-cyan-500/40',
+      badge: `${camerasCount} Stream${camerasCount === 1 ? '' : 's'}`,
+      badgeType: camerasCount > 0 ? 'success' : 'neutral',
+      metrics: [
+        { label: 'Engine', value: 'go2rtc' },
+        { label: 'Streams', value: `${camerasCount}` },
+        { label: 'Latency', value: 'WebRTC' }
       ]
     }
   ];
@@ -263,6 +283,36 @@ export default function SettingsHub({
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {themeMode === 'auto' ? 'Auto' : darkMode ? 'Dark' : 'Light'}
+                </span>
+                <CaretRight size={18} weight="bold" className="text-slate-400" />
+              </div>
+            </div>
+
+            {/* Cameras & RTSP Streams Row */}
+            <div
+              onClick={() => onSelectCategory('cameras')}
+              className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 dark:active:bg-white/10 transition-colors"
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
+                  <VideoCamera size={20} weight="duotone" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-slate-900 dark:text-white">
+                    Cameras & Video Streams
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    go2rtc WebRTC & HLS conversion
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                  camerasCount > 0
+                    ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-400'
+                    : 'bg-slate-500/15 text-slate-600 dark:text-slate-400'
+                }`}>
+                  {camerasCount} Stream{camerasCount === 1 ? '' : 's'}
                 </span>
                 <CaretRight size={18} weight="bold" className="text-slate-400" />
               </div>

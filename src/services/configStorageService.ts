@@ -130,6 +130,7 @@ export function hasMaterialDashboardConfig(data: any): boolean {
 
   if (data.cameras && typeof data.cameras === 'object') {
     if (Array.isArray(data.cameras.favoriteCameras) && data.cameras.favoriteCameras.length > 0) return true;
+    if (data.cameras.sources && typeof data.cameras.sources === 'object' && Object.keys(data.cameras.sources).length > 0) return true;
   }
 
   if (data.overview && typeof data.overview === 'object') {

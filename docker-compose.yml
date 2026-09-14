@@ -10,9 +10,12 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - GO2RTC_URL=http://go2rtc:1984
     # Persistent storage volume for dashboard config JSON and uploaded vehicle assets
     volumes:
       - ./data:/app/data
+    depends_on:
+      - go2rtc
     # Optional: Load environment variables from a .env file placed in the same folder
     env_file:
       - path: .env
@@ -23,3 +26,17 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  go2rtc:
+    image: alexxit/go2rtc:latest
+    container_name: go2rtc
+    restart: unless-stopped
+    ports:
+      - "1984:1984"       # API, WebRTC signaling (WHEP), HLS, MSE
+      - "8555:8555/tcp"   # WebRTC media transport TCP
+      - "8555:8555/udp"   # WebRTC media transport UDP
+      - "8554:8554"       # RTSP server (optional)
+    volumes:
+      - ./data/go2rtc:/config
+    environment:
+      - GO2RTC_CONFIG=/config/go2rtc.yaml

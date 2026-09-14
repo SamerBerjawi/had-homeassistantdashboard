@@ -42,6 +42,7 @@
     "d3-shape": "^3.2.0",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
+    "hls.js": "^1.7.3",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.45.0",
     "motion": "^12.23.24",
