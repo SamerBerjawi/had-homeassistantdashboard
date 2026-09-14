@@ -220,6 +220,8 @@ export interface ConfigContextType {
   isSyncingRemote: boolean;
   syncStatus: 'synced' | 'syncing' | 'offline_fallback' | 'error';
   lastSuccessfulSync: string | null;
+  isDragActive?: boolean;
+  setDragActive?: (active: boolean) => void;
   updateConfig: (
     partialOrUpdater:
       | DeepPartial<UserDashboardConfig>

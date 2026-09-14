@@ -56,12 +56,14 @@ import {
 } from '@phosphor-icons/react';
 import {
   DndContext,
-  closestCorners,
+  closestCenter,
   MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
-  DragEndEvent
+  DragStartEvent,
+  DragEndEvent,
+  DragOverlay
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -614,7 +616,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     activeLeaks.length > 0 ||
     activeSmoke.length > 0;
 
-  const { config, updateConfig, flushPendingSave } = useUserConfig();
+  const { config, updateConfig, flushPendingSave, setDragActive } = useUserConfig();
   const { isEditMode, setEditMode } = useEditMode();
 
   const overviewConfig = config.overview || {};
@@ -658,6 +660,18 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
   });
 
   const sensors = useSensors(mouseSensor, touchSensor);
+
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+    setDragActive?.(true);
+  }, [setDragActive]);
+
+  const handleDragCancel = useCallback(() => {
+    setActiveId(null);
+    setDragActive?.(false);
+  }, [setDragActive]);
 
   // Active Overview Category Filter Tab
   const [activeOverviewTab, setActiveOverviewTab] = useState<string>('all');
@@ -793,43 +807,71 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     });
   }, [currentTileOrder, vacuumEntities.length, isEditMode, hiddenTilesSet, hiddenFromAllSet, activeOverviewTab, OVERVIEW_TAB_TILE_MAP]);
 
+  const currentTileOrderRef = useRef(currentTileOrder);
+  currentTileOrderRef.current = currentTileOrder;
+  const displayTilesRef = useRef(displayTiles);
+  displayTilesRef.current = displayTiles;
+
   const handleReorder = useCallback((newOrder: string[]) => {
-    const fullOrder = [...newOrder];
-    DEFAULT_OVERVIEW_TILE_ORDER.forEach((id) => {
-      if (!fullOrder.includes(id)) {
-        fullOrder.push(id);
+    updateConfig((prev) => {
+      const savedOrder = prev.overview?.tileOrder || currentTileOrderRef.current;
+      const orderSet = new Set(savedOrder);
+      const fullBase = [...savedOrder];
+      DEFAULT_OVERVIEW_TILE_ORDER.forEach((id) => {
+        if (!orderSet.has(id)) fullBase.push(id);
+      });
+
+      const displaySet = new Set(newOrder);
+      let newOrderIdx = 0;
+      const fullOrder = fullBase.map((id) => {
+        if (displaySet.has(id)) {
+          return newOrder[newOrderIdx++];
+        }
+        return id;
+      });
+      while (newOrderIdx < newOrder.length) {
+        fullOrder.push(newOrder[newOrderIdx++]);
       }
+      DEFAULT_OVERVIEW_TILE_ORDER.forEach((id) => {
+        if (!fullOrder.includes(id)) {
+          fullOrder.push(id);
+        }
+      });
+      return {
+        ...prev,
+        overview: {
+          ...(prev.overview || {}),
+          tileOrder: fullOrder
+        }
+      };
     });
-    updateConfig((prev) => ({
-      ...prev,
-      overview: {
-        ...(prev.overview || {}),
-        tileOrder: fullOrder
-      }
-    }));
   }, [updateConfig]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveId(null);
+    setDragActive?.(false);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = displayTiles.indexOf(String(active.id));
-    const newIndex = displayTiles.indexOf(String(over.id));
+    const currentDisplay = displayTilesRef.current;
+    const oldIndex = currentDisplay.indexOf(String(active.id));
+    const newIndex = currentDisplay.indexOf(String(over.id));
 
     if (oldIndex !== -1 && newIndex !== -1) {
-      const newDisplayOrder = arrayMove(displayTiles, oldIndex, newIndex);
+      const newDisplayOrder = arrayMove(currentDisplay, oldIndex, newIndex);
       handleReorder(newDisplayOrder);
     }
-  }, [displayTiles, handleReorder]);
+  }, [handleReorder, setDragActive]);
 
   const handleMoveTile = useCallback((tileId: string, direction: 'left' | 'right') => {
-    const index = displayTiles.indexOf(tileId);
+    const currentDisplay = displayTilesRef.current;
+    const index = currentDisplay.indexOf(tileId);
     if (index === -1) return;
     const targetIndex = direction === 'left' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= displayTiles.length) return;
-    const newOrder = arrayMove(displayTiles, index, targetIndex);
+    if (targetIndex < 0 || targetIndex >= currentDisplay.length) return;
+    const newOrder = arrayMove(currentDisplay, index, targetIndex);
     handleReorder(newOrder);
-  }, [displayTiles, handleReorder]);
+  }, [handleReorder]);
 
   const handleToggleSize = useCallback((tileId: string) => {
     const currentSize = tileSizes[tileId] ?? (tileId === 'weather' || tileId === 'weather_hourly' ? '2x' : '1x');
@@ -1038,6 +1080,8 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         : 'bg-white/20 hover:bg-white/30 text-slate-900 border-slate-200/50'
     }`;
   };
+
+  let activeOverlayChild: React.ReactNode = null;
 
   return (
     <section aria-label="House Telemetry and Fast Controls" className="space-y-4 mb-6">
@@ -1376,8 +1420,10 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
       {/* ============================================================= */}
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
         <SortableContext items={displayTiles} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
@@ -1393,7 +1439,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
               const canMoveLeft = index > 0;
               const canMoveRight = index < displayTiles.length - 1;
 
-              return (
+              const tileElement = (
                 <OverviewSortableTile
                   key={tileId}
                   id={tileId}
@@ -4320,6 +4366,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                   })()}
                 </OverviewSortableTile>
               );
+
+              if (activeId === tileId) {
+                activeOverlayChild = React.cloneElement(tileElement, { isOverlay: true });
+              }
+
+              return tileElement;
             })}
 
             {displayTiles.length === 0 && (
@@ -4356,6 +4408,20 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
             )}
           </div>
         </SortableContext>
+
+        {/* Elevated Floating Drag Preview Overlay */}
+        <DragOverlay
+          dropAnimation={{
+            duration: 180,
+            easing: 'cubic-bezier(0.2, 0, 0, 1)'
+          }}
+        >
+          {activeId && activeOverlayChild ? (
+            <div className="w-full h-full pointer-events-none scale-[1.03] shadow-2xl shadow-sky-500/30 ring-2 ring-sky-400 rounded-3xl opacity-95">
+              {activeOverlayChild}
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
 
       {/* ============================================================= */}

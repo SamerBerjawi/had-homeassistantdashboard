@@ -27,6 +27,7 @@ import {
 } from '@dnd-kit/sortable';
 import VirtualGrid from './VirtualGrid';
 import { useEditMode } from '../../contexts/EditModeContext';
+import { useUserConfig } from '../../contexts/ConfigContext';
 
 export interface SortableGridProps {
   items: string[];
@@ -44,6 +45,7 @@ export const SortableGrid: React.FC<SortableGridProps> = ({
   style
 }) => {
   const { isEditMode, reorderTiles } = useEditMode();
+  const { setDragActive } = useUserConfig();
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // Configure sensors for touch and pointer with collision guards
@@ -64,10 +66,12 @@ export const SortableGrid: React.FC<SortableGridProps> = ({
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(String(event.active.id));
+    setDragActive?.(true);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
+    setDragActive?.(false);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -85,6 +89,7 @@ export const SortableGrid: React.FC<SortableGridProps> = ({
 
   const handleDragCancel = () => {
     setActiveId(null);
+    setDragActive?.(false);
   };
 
   // If not in Edit Mode, render standard VirtualGrid without DND wrappers

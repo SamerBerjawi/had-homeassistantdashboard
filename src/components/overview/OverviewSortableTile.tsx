@@ -23,6 +23,7 @@ import type { OverviewTileVisibilityMode } from '../../types/userConfig';
 export interface OverviewSortableTileProps {
   id: string;
   isEditMode: boolean;
+  isOverlay?: boolean;
   visibilityMode?: OverviewTileVisibilityMode;
   isHidden?: boolean;
   isHiddenFromAll?: boolean;
@@ -42,6 +43,7 @@ export interface OverviewSortableTileProps {
 export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
   id,
   isEditMode,
+  isOverlay = false,
   visibilityMode,
   isHidden = false,
   isHiddenFromAll = false,
@@ -64,29 +66,35 @@ export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
     transform,
     transition,
     isDragging
-  } = useSortable({ id, disabled: !isEditMode });
+  } = useSortable({ id, disabled: !isEditMode || isOverlay });
 
   const currentMode: OverviewTileVisibilityMode =
     visibilityMode ??
     (isHidden ? 'all_off' : isHiddenFromAll ? 'tab_only' : 'all_on');
 
-  const style: React.CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    transition: isDragging ? undefined : transition,
-    zIndex: isDragging ? 50 : undefined,
-    opacity: isDragging ? 0.9 : currentMode === 'all_off' || isHidden ? 0.45 : 1
-  };
+  const style: React.CSSProperties = isOverlay
+    ? {}
+    : {
+        transform: CSS.Translate.toString(transform),
+        transition: isDragging ? undefined : transition,
+        zIndex: isDragging ? 50 : undefined,
+        opacity: isDragging ? 0.3 : currentMode === 'all_off' || isHidden ? 0.45 : 1
+      };
 
   return (
     <div
-      ref={setNodeRef}
+      ref={isOverlay ? undefined : setNodeRef}
       style={style}
       className={`relative select-none transition-all duration-200 ${
-        is2x ? 'col-span-4 sm:col-span-2' : 'col-span-2 sm:col-span-1'
+        isOverlay
+          ? 'w-full h-full'
+          : is2x
+          ? 'col-span-4 sm:col-span-2 md:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-2'
+          : 'col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1 xl:col-span-1 2xl:col-span-1'
       } ${
-        isEditMode
+        isEditMode && !isOverlay
           ? isDragging
-            ? 'ring-2 ring-sky-400 shadow-2xl shadow-sky-500/30 scale-[1.03] rounded-3xl z-50 cursor-grabbing'
+            ? 'ring-2 ring-dashed ring-sky-400/60 rounded-3xl cursor-grabbing'
             : currentMode === 'all_off' || isHidden
             ? 'ring-2 ring-dashed ring-rose-500/60 rounded-3xl cursor-grab'
             : currentMode === 'tab_only'
@@ -97,18 +105,18 @@ export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
     >
       {/* Click wrapper: clicking tile body triggers onClick when NOT in edit mode */}
       <div
-        onClick={isEditMode ? undefined : onClick}
+        onClick={isEditMode || isOverlay ? undefined : onClick}
         className={`w-full h-full ${isEditMode ? 'cursor-default' : ''}`}
       >
         {children}
       </div>
 
       {/* Edit Mode Controls Overlay - Entire surface is draggable */}
-      {isEditMode && (
+      {isEditMode && !isOverlay && (
         <div
           {...attributes}
           {...listeners}
-          className="absolute inset-0 rounded-3xl ring-2 ring-sky-500/40 p-2 sm:p-2.5 flex flex-col justify-between z-30 bg-black/20 dark:bg-black/30 backdrop-blur-[2px] transition-all cursor-grab active:cursor-grabbing"
+          className="absolute inset-0 rounded-3xl ring-2 ring-sky-500/40 p-2 sm:p-2.5 flex flex-col justify-between z-30 bg-black/20 dark:bg-black/30 backdrop-blur-[2px] transition-all cursor-grab active:cursor-grabbing touch-manipulation"
         >
           {/* Top Row: Drag Handle + Move Arrows on Left, Size & Visibility Modes on Right */}
           <div

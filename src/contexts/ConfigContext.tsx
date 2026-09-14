@@ -45,6 +45,27 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const pendingSaveTimeoutRef = useRef<any>(null);
   const latestConfigRef = useRef<UserDashboardConfig>(DEFAULT_USER_CONFIG);
 
+  // Active Drag Session Guard: Prevents incoming SSE or cross-tab updates from interrupting in-progress drag
+  const [isDragActive, setIsDragActiveState] = useState<boolean>(false);
+  const isDragActiveRef = useRef<boolean>(false);
+  const deferredRemoteConfigRef = useRef<UserDashboardConfig | null>(null);
+
+  const setDragActive = useCallback((active: boolean) => {
+    isDragActiveRef.current = active;
+    setIsDragActiveState(active);
+    if (!active && deferredRemoteConfigRef.current) {
+      const deferred = deferredRemoteConfigRef.current;
+      deferredRemoteConfigRef.current = null;
+      const hasPendingDelta = pendingDeltaRef.current && Object.keys(pendingDeltaRef.current).length > 0;
+      const merged = hasPendingDelta ? mergeConfig(deferred, pendingDeltaRef.current) : deferred;
+      latestConfigRef.current = merged;
+      setConfig(merged);
+      try {
+        useAutoLayoutStore.getState().applyConfigCustomizations(merged);
+      } catch {}
+    }
+  }, []);
+
   // Initialize and load configuration when AuthState changes or initializes
   useEffect(() => {
     if (isInitializing) return;
@@ -67,6 +88,14 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       try {
         const loaded = await driver.loadConfig();
         if (isMounted && loaded) {
+          if (isDragActiveRef.current) {
+            // Guard: Drag session in progress! Defer applying remote config
+            // so active drag coordinates, sorting indices, and DOM elements are never interrupted.
+            deferredRemoteConfigRef.current = loaded;
+            setSyncStatus('synced');
+            setLastSuccessfulSync(new Date().toISOString());
+            return;
+          }
           // Reconcile pending in-flight local edits on top of remote config
           // to prevent incoming SSE broadcasts or sync polls from reverting active user edits
           const hasPendingDelta = pendingDeltaRef.current && Object.keys(pendingDeltaRef.current).length > 0;
@@ -113,6 +142,10 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // 3. Listen to local/cross-tab broadcast updates
     const handleLocalUpdated = (e: any) => {
       if (e?.detail && isMounted) {
+        if (isDragActiveRef.current) {
+          deferredRemoteConfigRef.current = e.detail;
+          return;
+        }
         const hasPendingDelta = pendingDeltaRef.current && Object.keys(pendingDeltaRef.current).length > 0;
         const merged = hasPendingDelta ? mergeConfig(e.detail, pendingDeltaRef.current) : e.detail;
         latestConfigRef.current = merged;
@@ -122,6 +155,12 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     };
     window.addEventListener('had_config_updated' as any, handleLocalUpdated);
+
+    // 3.1 Listen to global drag session lifecycle events
+    const handleDragSessionStart = () => setDragActive(true);
+    const handleDragSessionEnd = () => setDragActive(false);
+    window.addEventListener('had_drag_session_start', handleDragSessionStart);
+    window.addEventListener('had_drag_session_end', handleDragSessionEnd);
 
     // 3.5 Listen for dismissed notifications synchronization across tabs/devices
     const handleDismissedSync = (e: any) => {
@@ -174,12 +213,14 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       window.removeEventListener('ha_connection_status' as any, handleConnectionStatus);
       window.removeEventListener('had_sync_status_changed' as any, handleSyncStatus);
       window.removeEventListener('had_config_updated' as any, handleLocalUpdated);
+      window.removeEventListener('had_drag_session_start', handleDragSessionStart);
+      window.removeEventListener('had_drag_session_end', handleDragSessionEnd);
       window.removeEventListener('had_sync_dismissed_notifications' as any, handleDismissedSync);
       window.removeEventListener('had_manual_refresh', handleGlobalRefresh);
       if (unsubscribeSync) unsubscribeSync();
       configSyncService.stop();
     };
-  }, [authState, isInitializing, isProduction]);
+  }, [authState, isInitializing, isProduction, setDragActive]);
 
   const pendingDeltaRef = useRef<Partial<UserDashboardConfig>>({});
 
@@ -224,10 +265,16 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         try {
           // Pass the delta to saveConfig so optimistic locking & remote persistence succeed
           const saved = await activeDriverRef.current.saveConfig(deltaToSave);
-          latestConfigRef.current = saved;
-          setConfig(saved);
+          // If additional local edits accumulated while saveConfig was in-flight,
+          // preserve them on top of saved to prevent temporary UI reverting.
+          const hasMorePending = pendingDeltaRef.current && Object.keys(pendingDeltaRef.current).length > 0;
+          const merged = hasMorePending ? mergeConfig(saved, pendingDeltaRef.current) : saved;
+          latestConfigRef.current = merged;
+          setConfig(merged);
           setLastSaved(saved.updatedAt);
-          setIsSaving(false);
+          if (!hasMorePending) {
+            setIsSaving(false);
+          }
           resolve(saved);
         } catch (err) {
           console.error('[ConfigProvider] Failed to save config:', err);
@@ -399,6 +446,8 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isSyncingRemote,
     syncStatus,
     lastSuccessfulSync,
+    isDragActive,
+    setDragActive,
     updateConfig,
     flushPendingSave,
     uploadVehicleAsset,
