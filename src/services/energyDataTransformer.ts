@@ -75,6 +75,7 @@ export interface TransformedEnergyTotals {
   gridToHome: number;
   gridToBattery: number;
   batteryToHome: number;
+  batteryToGrid: number;
   homeConsumption: number;
 
   selfSufficiencyPercentage: number; // Autarky %
@@ -460,6 +461,7 @@ export function transformEnergyStatistics(
   let totalGridToHome = 0;
   let totalGridToBattery = 0;
   let totalBatteryToHome = 0;
+  let totalBatteryToGrid = 0;
   let totalHomeConsumption = 0;
   let totalGasUsage = 0;
   let totalWaterUsage = 0;
@@ -476,6 +478,7 @@ export function transformEnergyStatistics(
     totalGridToHome += b.gridToHome;
     totalGridToBattery += b.gridToBattery;
     totalBatteryToHome += b.batteryToHome;
+    totalBatteryToGrid += b.batteryToGrid;
     totalHomeConsumption += b.homeConsumption;
     totalGasUsage += b.gasUsage;
     totalWaterUsage += b.waterUsage;
@@ -694,6 +697,7 @@ export function transformEnergyStatistics(
       gridToHome: Number(totalGridToHome.toFixed(2)),
       gridToBattery: Number(totalGridToBattery.toFixed(2)),
       batteryToHome: Number(totalBatteryToHome.toFixed(2)),
+      batteryToGrid: Number(totalBatteryToGrid.toFixed(2)),
       homeConsumption: Number(totalHomeConsumption.toFixed(2)),
       selfSufficiencyPercentage: Number(selfSufficiencyPercentage.toFixed(1)),
       selfConsumptionPercentage: Number(selfConsumptionPercentage.toFixed(1)),

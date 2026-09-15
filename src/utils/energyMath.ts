@@ -49,9 +49,12 @@ export function computeInstantaneousPower(
   let waterRate: number | null = null;
 
   // 1. Direct Active Helper Sensor Check (Highest Priority)
-  // Solar Power: sensor.mppt_total_input_power (Always >= 0 kW)
+  // Solar Power: sensor.mppt_total_input_power or sensor.inverter_active_power
   if (states['sensor.mppt_total_input_power']) {
     const v = parsePowerValueToKW(states['sensor.mppt_total_input_power']);
+    if (v !== null) solarPowerKW = Math.max(0, v);
+  } else if (states['sensor.inverter_active_power']) {
+    const v = parsePowerValueToKW(states['sensor.inverter_active_power']);
     if (v !== null) solarPowerKW = Math.max(0, v);
   }
 
@@ -64,6 +67,13 @@ export function computeInstantaneousPower(
       gridImportPowerKW = Math.max(0, -v);
       gridExportPowerKW = Math.max(0, v);
     }
+  } else if (states['sensor.meter_active_power']) {
+    // Native Huawei / Sun2000 meter: positive = export, negative = import
+    const v = parsePowerValueToKW(states['sensor.meter_active_power']);
+    if (v !== null) {
+      gridExportPowerKW = Math.max(0, v);
+      gridImportPowerKW = Math.max(0, -v);
+    }
   }
 
   // Battery Power Helper: sensor.battery_charge_discharge_power_inverted
@@ -75,6 +85,13 @@ export function computeInstantaneousPower(
       batteryDischargePowerKW = Math.max(0, -v);
       batteryChargePowerKW = Math.max(0, v);
     }
+  } else if (states['sensor.battery_charge_discharge_power']) {
+    // Native Huawei / Sun2000 battery: positive = charge, negative = discharge
+    const v = parsePowerValueToKW(states['sensor.battery_charge_discharge_power']);
+    if (v !== null) {
+      batteryChargePowerKW = Math.max(0, v);
+      batteryDischargePowerKW = Math.max(0, -v);
+    }
   }
 
   // 2. Scan from configured sources in prefs if not already resolved
@@ -83,8 +100,25 @@ export function computeInstantaneousPower(
       if (solarPowerKW === 0 && src.type === 'solar' && src.stat_rate && states[src.stat_rate]) {
         const v = parsePowerValueToKW(states[src.stat_rate]);
         if (v !== null && v >= 0) solarPowerKW += v;
-      } else if (gridImportPowerKW === 0 && gridExportPowerKW === 0 && src.type === 'grid') {
-        if (src.stat_rate && states[src.stat_rate]) {
+      } else if (src.type === 'grid') {
+        // Multi-flow support: flow_from and flow_to rate sensors
+        if (Array.isArray(src.flow_from)) {
+          for (const ff of src.flow_from) {
+            if (ff.stat_rate && states[ff.stat_rate]) {
+              const v = parsePowerValueToKW(states[ff.stat_rate]);
+              if (v !== null && v > 0) gridImportPowerKW += v;
+            }
+          }
+        }
+        if (Array.isArray(src.flow_to)) {
+          for (const ft of src.flow_to) {
+            if (ft.stat_rate && states[ft.stat_rate]) {
+              const v = parsePowerValueToKW(states[ft.stat_rate]);
+              if (v !== null && v > 0) gridExportPowerKW += v;
+            }
+          }
+        }
+        if (gridImportPowerKW === 0 && gridExportPowerKW === 0 && src.stat_rate && states[src.stat_rate]) {
           const v = parsePowerValueToKW(states[src.stat_rate]);
           if (v !== null) {
             if (v >= 0) gridImportPowerKW += v;

@@ -83,7 +83,9 @@ export default function EnergyUsageGraphCard({
         batteryToGrid: 0,
         homeConsumption: 0,
         gasUsage: 0,
-        waterUsage: 0
+        waterUsage: 0,
+        deviceValues: {},
+        solarForecast: null
       };
     });
   }, [buckets, isHourly]);
