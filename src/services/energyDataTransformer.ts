@@ -240,11 +240,18 @@ export function transformEnergyStatistics(
       const dayStart = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 0, 0, 0, 0).getTime();
 
       // Align start to midnight of the day if within 24h, else to nearest 5-min epoch
-      const startSlot = (dayStart <= minTime && minTime - dayStart < 24 * 3600 * 1000)
+      const isSingleDay = daysInPeriod === 1 && (dayStart <= minTime && minTime - dayStart < 24 * 3600 * 1000);
+      const startSlot = isSingleDay
         ? dayStart
         : Math.floor(minTime / STEP_MS) * STEP_MS;
 
-      const endSlot = Math.floor(maxTime / STEP_MS) * STEP_MS;
+      // In a 1-day period, 5-minute slots strictly cover the 24 hours of that day:
+      // from 00:00 (slot 0) to 23:55 (slot 287). Prevents next-day midnight slot from leaking in.
+      const maxAllowedSlot = isSingleDay
+        ? dayStart + 24 * 3600 * 1000 - STEP_MS
+        : Math.floor(maxTime / STEP_MS) * STEP_MS;
+
+      const endSlot = Math.min(Math.floor(maxTime / STEP_MS) * STEP_MS, maxAllowedSlot);
 
       for (let t = startSlot; t <= endSlot; t += STEP_MS) {
         sortedTimestamps.push(t);

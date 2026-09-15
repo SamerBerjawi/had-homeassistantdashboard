@@ -82,11 +82,20 @@ export default function PowerSourcesChart({
     const isToday = buckets.some((b) => new Date(b.startMs).toDateString() === todayStr);
     const nowMinute = now.getHours() * 60 + now.getMinutes();
 
-    // Strictly cut series at the current timestamp when viewing today (no future 0 padding)
+    // 1. Establish the reference day from the dataset:
+    // For today, use today's midnight. For historic days, use the start date of the buckets.
+    const firstDate = new Date(buckets[0].startMs);
+    const dayStartMs = isToday
+      ? new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime()
+      : new Date(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate(), 0, 0, 0, 0).getTime();
+    const dayEndMs = dayStartMs + 24 * 3600 * 1000;
+
+    // Strictly cut series at current timestamp when viewing today, or within the 24h day for historic days.
+    // Never allow next-day or previous-day buckets into the 24h chart domain.
     const nowMs = now.getTime();
     const activeBuckets = isToday
-      ? buckets.filter((b) => b.startMs <= nowMs)
-      : buckets;
+      ? buckets.filter((b) => b.startMs >= dayStartMs && b.startMs <= nowMs)
+      : buckets.filter((b) => b.startMs >= dayStartMs && b.startMs < dayEndMs);
 
     if (activeBuckets.length === 0) {
       return { chartData: [], currentMinuteOfDay: nowMinute, isViewingToday: isToday };
@@ -187,7 +196,10 @@ export default function PowerSourcesChart({
 
     const points: PowerDataPoint[] = activeBuckets.map((b, i) => {
       const d = new Date(b.startMs);
-      const minuteOfDay = d.getHours() * 60 + d.getMinutes();
+      // Monotonic minute of day relative to dayStartMs:
+      // Strictly ranges from 0 (00:00) to 1435 (23:55). Prevents wrap-around artifact to 0.
+      const rawMinute = Math.round((b.startMs - dayStartMs) / 60000);
+      const minuteOfDay = Math.min(1440, Math.max(0, rawMinute));
       const timeFormatted = d.toLocaleTimeString(undefined, {
         hour: 'numeric',
         minute: '2-digit',
@@ -230,6 +242,20 @@ export default function PowerSourcesChart({
         gridExportLine: gridExportLines[i]
       };
     });
+
+    // For historic days, extend cleanly to the 24:00 (1440) right border if the last bucket is at 23:55 (1435)
+    // Prevents incomplete cutoffs without creating any wrap-around artifact
+    if (!isToday && points.length > 0) {
+      const lastPoint = points[points.length - 1];
+      if (lastPoint.minuteOfDay < 1440 && lastPoint.minuteOfDay >= 1430) {
+        points.push({
+          ...lastPoint,
+          date: new Date(dayEndMs),
+          minuteOfDay: 1440,
+          timeFormatted: '12:00 AM'
+        });
+      }
+    }
 
     return {
       chartData: points,

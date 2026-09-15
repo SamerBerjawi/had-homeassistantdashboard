@@ -101,13 +101,13 @@ export default function EnergyDistributionCard({
 
   // Invariant Verification (Dev Mode)
   if (import.meta.env?.DEV) {
-    const inboundSum = (hasSolarToHome ? solarToHomeVal : 0) +
-                       (hasGridToHome ? gridToHomeVal : 0) +
-                       (hasBatteryToHome ? batteryToHomeVal : 0);
-    if (Math.abs(homeVal - inboundSum) > (isLive ? 0.02 : 0.05)) {
+    const trueInbound = (hasSolar ? solarToHomeVal : 0) +
+                        (hasGrid ? gridToHomeVal : 0) +
+                        (hasBattery ? batteryToHomeVal : 0);
+    if (Math.abs(homeVal - trueInbound) > (isLive ? 0.02 : 0.05)) {
       console.warn(
-        `[EnergyDistributionCard] Invariant mismatch: Home node value (${homeVal.toFixed(2)}) differs from sum of rendered inbound flows (${inboundSum.toFixed(2)}) by > ${isLive ? 0.02 : 0.05}.`,
-        { homeVal, inboundSum, isLive, totals }
+        `[EnergyDistributionCard] Invariant mismatch: Home node value (${homeVal.toFixed(2)}) differs from sum of inbound flows (${trueInbound.toFixed(2)}) by > ${isLive ? 0.02 : 0.05}.`,
+        { homeVal, trueInbound, isLive, totals }
       );
     }
   }
@@ -686,6 +686,14 @@ export default function EnergyDistributionCard({
             <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Solar to Home</span>
             <span className="text-xs font-bold font-mono text-amber-500">
               {solarToHomeVal.toFixed(2)} {solarUnit}
+            </span>
+          </div>
+        )}
+        {hasSolar && hasBattery && (isLive ? solarToBatteryVal > flowThreshold : totals.solarToBattery > 0) && (
+          <div className="flex flex-col min-w-[70px]">
+            <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Solar to Battery</span>
+            <span className="text-xs font-bold font-mono text-purple-500">
+              {solarToBatteryVal.toFixed(2)} {solarUnit}
             </span>
           </div>
         )}
