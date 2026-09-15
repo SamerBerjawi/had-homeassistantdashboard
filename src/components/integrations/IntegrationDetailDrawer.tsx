@@ -157,9 +157,7 @@ export default function IntegrationDetailDrawer({
           darkMode ? 'border-white/10 bg-slate-900/80' : 'border-slate-200/80 bg-white/80'
         } backdrop-blur-md`}>
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 p-2 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0 shadow-sm">
-              <IntegrationIcon domain={integration.iconDomain || integration.domain} size="md" />
-            </div>
+            <IntegrationIcon domain={integration.iconDomain || integration.domain} size="lg" />
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-black tracking-tight truncate">{integration.name}</h2>

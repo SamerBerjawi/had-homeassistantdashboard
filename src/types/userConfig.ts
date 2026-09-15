@@ -29,6 +29,7 @@ export const DEFAULT_OVERVIEW_TILE_ORDER = [
   'fans',
   'media',
   'alarm',
+  'cameras',
   'power_flow',
   'power_flow_chart',
   'energy_usage',
@@ -345,7 +346,8 @@ export const DEFAULT_USER_CONFIG: UserDashboardConfig = {
     hideBadges: false,
     tileSizes: {
       weather: '2x',
-      weather_hourly: '2x'
+      weather_hourly: '2x',
+      cameras: '1x'
     }
   },
   layoutOverrides: {},

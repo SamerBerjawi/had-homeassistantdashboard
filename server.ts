@@ -1057,7 +1057,15 @@ async function startServer() {
   function getCameraRtspConfig(cameraId: string): { streamName: string; rtspUrl: string } | null {
     const sources = (cachedServerConfig as any)?.cameras?.sources;
     if (!sources || typeof sources !== 'object') return null;
-    const entry = sources[cameraId];
+    const entry =
+      sources[cameraId] ||
+      Object.values(sources).find(
+        (s: any) =>
+          s?.id === cameraId ||
+          s?.haEntityId === cameraId ||
+          (s?.id && `camera.${s.id}` === cameraId) ||
+          (cameraId.startsWith('camera.') && s?.id === cameraId.replace('camera.', ''))
+      );
     if (!entry || !entry.rtspUrl) return null;
     const streamName = getCameraStreamName(entry.id || cameraId);
     return { streamName, rtspUrl: String(entry.rtspUrl).trim() };

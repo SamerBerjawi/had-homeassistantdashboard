@@ -5,9 +5,9 @@ import assert from 'node:assert';
 import { DEFAULT_OVERVIEW_TILE_ORDER } from '../src/types/userConfig.js';
 
 function spliceTileReorder(
-  currentTileOrder: string[],
+  currentTileOrder: readonly string[],
   newOrder: string[],
-  defaultOrder: string[] = DEFAULT_OVERVIEW_TILE_ORDER
+  defaultOrder: readonly string[] = DEFAULT_OVERVIEW_TILE_ORDER
 ): string[] {
   const displaySet = new Set(newOrder);
   let newOrderIdx = 0;
@@ -102,7 +102,7 @@ console.log('--- Testing Bug A: Tile Reorder Splicing ---');
 
 // Test 3: Multiple consecutive reorders on different filtered tabs
 {
-  let master = [...DEFAULT_OVERVIEW_TILE_ORDER];
+  let master: string[] = [...DEFAULT_OVERVIEW_TILE_ORDER];
   const originalOtherTiles = master.filter((id) => !['lights', 'switches'].includes(id));
 
   // Reorder on 'lights' tab

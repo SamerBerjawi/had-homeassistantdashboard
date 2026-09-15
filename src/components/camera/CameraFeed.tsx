@@ -73,7 +73,16 @@ export default function CameraFeed({
   const entityPicture = camera.attributes?.entity_picture;
 
   // Check if camera has an RTSP source configured
-  const configuredSource = config.cameras?.sources?.[cameraId];
+  const configuredSource =
+    config.cameras?.sources?.[cameraId] ||
+    Object.values(config.cameras?.sources || {}).find(
+      (s) =>
+        s.id === cameraId ||
+        s.haEntityId === cameraId ||
+        (s.id && `camera.${s.id}` === cameraId) ||
+        (cameraId.startsWith('camera.') && s.id === cameraId.replace('camera.', ''))
+    );
+  const targetStreamId = configuredSource?.id || cameraId;
   const rtspUrl = configuredSource?.rtspUrl;
   const effectiveProtocol = preferProtocol || configuredSource?.liveType || config.cameras?.defaultStreamType || 'auto';
 
@@ -141,7 +150,7 @@ export default function CameraFeed({
     setIsConnecting(true);
     setStreamError(null);
 
-    const hlsUrl = `/api/cameras/${encodeURIComponent(cameraId)}/hls/stream.m3u8?mp4`;
+    const hlsUrl = `/api/cameras/${encodeURIComponent(targetStreamId)}/hls/stream.m3u8?mp4`;
 
     if (Hls.isSupported()) {
       const hls = new Hls({
@@ -203,7 +212,7 @@ export default function CameraFeed({
       setStreamError('HLS not supported in browser');
       onError?.('HLS not supported');
     }
-  }, [cameraId, token, autoPlay, cleanupStream, onGoLive, scheduleReconnect, onError]);
+  }, [targetStreamId, token, autoPlay, cleanupStream, onGoLive, scheduleReconnect, onError]);
 
   // Connect via WebRTC (Primary low-latency path)
   const connectWebRtc = useCallback(async () => {
@@ -240,23 +249,15 @@ export default function CameraFeed({
           retryCountRef.current = 0;
           onGoLive?.();
           if (autoPlay) {
-            videoRef.current.play().catch(() => {});
+            videoRef.current?.play().catch(() => {});
           }
-        }
-      };
-
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-          if (iceTimeoutId) clearTimeout(iceTimeoutId);
-          console.warn(`[CameraFeed] WebRTC connection state ${pc.connectionState} for ${cameraId}. Falling back to HLS.`);
-          connectHls();
         }
       };
 
       pc.oniceconnectionstatechange = () => {
         if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
-          if (iceTimeoutId) clearTimeout(iceTimeoutId);
-          console.warn(`[CameraFeed] WebRTC ICE state ${pc.iceConnectionState} for ${cameraId}. Falling back to HLS.`);
+          console.warn(`[CameraFeed] WebRTC ICE connection failed on ${targetStreamId}. Falling back to HLS.`);
+          cleanupStream();
           connectHls();
         }
       };
@@ -287,7 +288,7 @@ export default function CameraFeed({
       const sdpPayload = pc.localDescription?.sdp || offer.sdp;
 
       // Send offer to HAD backend go2rtc proxy
-      const res = await fetch(`/api/cameras/${encodeURIComponent(cameraId)}/webrtc`, {
+      const res = await fetch(`/api/cameras/${encodeURIComponent(targetStreamId)}/webrtc`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -315,17 +316,17 @@ export default function CameraFeed({
       // seamlessly fall back to HTTP-based HLS stream
       iceTimeoutId = setTimeout(() => {
         if (pc.connectionState !== 'connected') {
-          console.info(`[CameraFeed] WebRTC ICE check timed out after 4.5s on ${cameraId} (likely behind Cloudflare Tunnel / restricted NAT). Seamlessly failing over to HLS.`);
+          console.info(`[CameraFeed] WebRTC ICE check timed out after 4.5s on ${targetStreamId} (likely behind Cloudflare Tunnel / restricted NAT). Seamlessly failing over to HLS.`);
           cleanupStream();
           connectHls();
         }
       }, 4500);
     } catch (err: any) {
-      console.warn(`[CameraFeed] WebRTC negotiation failed for ${cameraId}: ${err?.message}. Falling back to HLS.`);
+      console.warn(`[CameraFeed] WebRTC negotiation failed for ${targetStreamId}: ${err?.message}. Falling back to HLS.`);
       // Automatic fallback to HLS
       connectHls();
     }
-  }, [cameraId, token, autoPlay, cleanupStream, connectHls, onGoLive]);
+  }, [targetStreamId, token, autoPlay, cleanupStream, connectHls, onGoLive]);
 
   const initiateStreamConnection = useCallback(() => {
     if (!rtspUrl || isUnavailable) {
@@ -454,8 +455,8 @@ export default function CameraFeed({
         </div>
       )}
 
-      {/* 4. Live Protocol Badge in top corner when streaming */}
-      {isStreaming && (
+      {/* 4. Live Protocol Badge in top corner when streaming in live mode */}
+      {isStreaming && mode === 'live' && (
         <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white shadow-lg">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="uppercase tracking-wider">{streamType === 'webrtc' ? 'LIVE • WebRTC' : 'LIVE • HLS'}</span>

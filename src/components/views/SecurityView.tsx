@@ -22,6 +22,8 @@ import {
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { classifyBinarySensors, isSurveillanceCamera } from '../../lib/entityClassifiers';
 import { ResolvedEntity } from '../../types';
+import { useUserConfig } from '../../contexts/ConfigContext';
+import { getConfiguredRtspCameras } from '../../lib/cameraSources';
 
 import { SecurityFilterTab } from './security/SecurityBadgesBar';
 import AlarmPanelSection from './security/AlarmPanelSection';
@@ -56,14 +58,17 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
     }))
   );
 
+  const { config } = useUserConfig();
   const [activeFilter, setActiveFilter] = useState<SecurityFilterTab>('all');
   const [isKeypadModalOpen, setIsKeypadModalOpen] = useState<boolean>(false);
 
-  // Filter raw cameras to only real surveillance cameras (excluding hidden & disabled)
-  const rawCameras: ResolvedEntity[] = useMemo(() => {
-    const all = domainGroups['camera'] || [];
-    return all.filter((c) => isSurveillanceCamera(c) && !c.hidden && !c.disabled_by);
-  }, [domainGroups]);
+  // Filter cameras to only configured RTSP streams (excluding unconfigured entities)
+  const configuredRtspCameras: ResolvedEntity[] = useMemo(() => {
+    return getConfiguredRtspCameras(
+      config.cameras?.sources,
+      domainGroups['camera'] || []
+    );
+  }, [domainGroups, config.cameras?.sources]);
 
   // Classify all security domain entities
   const {
@@ -104,7 +109,7 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
       alarmEntities: alarms,
       activeAlarm: activeAlarmEntity,
       lockEntities: locks,
-      cameraEntities: rawCameras,
+      cameraEntities: configuredRtspCameras,
       userEntities: users,
       doorSensors: doors,
       windowSensors: windows,
@@ -114,7 +119,7 @@ export default function SecurityView({ darkMode = true }: SecurityViewProps) {
       openDoors: doors.filter((d) => d.state === 'on'),
       openWindows: windows.filter((w) => w.state === 'on')
     };
-  }, [domainGroups, selectedAlarmEntityId, rawCameras]);
+  }, [domainGroups, selectedAlarmEntityId, configuredRtspCameras]);
 
   const totalSecurityEntities =
     alarmEntities.length +

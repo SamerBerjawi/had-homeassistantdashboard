@@ -355,9 +355,11 @@ export default function IntegrationsView({ darkMode = true }: ViewProps) {
                       {/* Component Column */}
                       <td className="py-3.5 px-4 sm:px-5">
                         <div className="flex items-center gap-3.5 min-w-[220px]">
-                          <div className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-800 p-1.5 border border-slate-200/80 dark:border-white/10 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                            <IntegrationIcon domain={item.iconDomain || item.domain} size="md" />
-                          </div>
+                          <IntegrationIcon 
+                            domain={item.iconDomain || item.domain} 
+                            size="md" 
+                            className="group-hover:scale-105 transition-transform"
+                          />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">

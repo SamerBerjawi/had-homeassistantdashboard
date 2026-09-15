@@ -27,10 +27,14 @@ import {
   Lightning,
   Sun,
   MusicNotes,
-  Broom
+  Broom,
+  VideoCamera
 } from '@phosphor-icons/react';
 import type { OverviewTileVisibilityMode } from '../../../types/userConfig';
 import DetailsRightDrawer from '../DetailsRightDrawer';
+import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { useUserConfig } from '../../../contexts/ConfigContext';
+import { getConfiguredRtspCameras } from '../../../lib/cameraSources';
 
 export interface WidgetCatalogItem {
   id: string;
@@ -104,6 +108,15 @@ export const WIDGET_CATALOG: WidgetCatalogItem[] = [
     category: 'Security',
     icon: ShieldCheck,
     color: '#ef4444',
+    defaultSize: '1x'
+  },
+  {
+    id: 'cameras',
+    title: 'Surveillance Cameras',
+    description: 'Live surveillance feeds, motion monitoring, and perimeter camera streams',
+    category: 'Security',
+    icon: VideoCamera,
+    color: '#8b5cf6',
     defaultSize: '1x'
   },
   {
@@ -268,20 +281,41 @@ export default function WidgetsDrawer({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
+  const { config } = useUserConfig();
+  const domainGroups = useAutoLayoutStore((s) => s.domainGroups);
+
+  const fullCatalog = useMemo(() => {
+    const configuredCams = getConfiguredRtspCameras(
+      config.cameras?.sources,
+      domainGroups['camera'] || []
+    );
+    const specificCams = configuredCams.map((c) => ({
+      id: `camera:${c.entity_id}`,
+      title: c.name || c.attributes?.friendly_name || c.entity_id.replace('camera.', ''),
+      description: `Dedicated live surveillance feed for ${c.name || c.attributes?.friendly_name || c.entity_id}`,
+      category: 'Security' as const,
+      icon: VideoCamera,
+      color: '#8b5cf6',
+      defaultSize: '1x' as const
+    }));
+
+    return [...WIDGET_CATALOG, ...specificCams];
+  }, [config.cameras?.sources, domainGroups]);
+
   const hiddenSet = useMemo(() => new Set(hiddenTileIds), [hiddenTileIds]);
   const hiddenFromAllSet = useMemo(() => new Set(hiddenFromAllTileIds), [hiddenFromAllTileIds]);
 
   const allOnCount = useMemo(() => {
-    return WIDGET_CATALOG.filter((w) => !hiddenSet.has(w.id) && !hiddenFromAllSet.has(w.id)).length;
-  }, [hiddenSet, hiddenFromAllSet]);
+    return fullCatalog.filter((w) => !hiddenSet.has(w.id) && !hiddenFromAllSet.has(w.id)).length;
+  }, [fullCatalog, hiddenSet, hiddenFromAllSet]);
 
   const tabOnlyCount = useMemo(() => {
-    return WIDGET_CATALOG.filter((w) => !hiddenSet.has(w.id) && hiddenFromAllSet.has(w.id)).length;
-  }, [hiddenSet, hiddenFromAllSet]);
+    return fullCatalog.filter((w) => !hiddenSet.has(w.id) && hiddenFromAllSet.has(w.id)).length;
+  }, [fullCatalog, hiddenSet, hiddenFromAllSet]);
 
   const allOffCount = useMemo(() => {
-    return WIDGET_CATALOG.filter((w) => hiddenSet.has(w.id)).length;
-  }, [hiddenSet]);
+    return fullCatalog.filter((w) => hiddenSet.has(w.id)).length;
+  }, [fullCatalog, hiddenSet]);
 
   const handleModeChange = (widgetId: string, targetMode: OverviewTileVisibilityMode) => {
     if (onSetTileMode) {
@@ -304,7 +338,7 @@ export default function WidgetsDrawer({
   }, [_activeTileIds, hiddenSet]);
 
   const filteredWidgets = useMemo(() => {
-    return WIDGET_CATALOG.filter((widget) => {
+    return fullCatalog.filter((widget) => {
       // Category filter
       if (selectedCategory !== 'All' && widget.category !== selectedCategory) {
         return false;
@@ -319,7 +353,7 @@ export default function WidgetsDrawer({
       }
       return true;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [fullCatalog, selectedCategory, searchQuery]);
 
   return (
     <DetailsRightDrawer
