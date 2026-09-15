@@ -192,7 +192,8 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
           return;
         }
 
-        const parsed = extractEnergyStatisticIds(loadedPrefs);
+        const currentStates = useAutoLayoutStore.getState().states || {};
+        const parsed = extractEnergyStatisticIds(loadedPrefs, currentStates);
         setPreferences(loadedPrefs);
         setResolvedIds(parsed);
 
@@ -237,7 +238,6 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
         if (cancelled) return;
 
         // 4. Synchronous Snapshot Transformation
-        const currentStates = useAutoLayoutStore.getState().states || {};
         const computed = transformEnergyStatistics(
           loadedPrefs,
           stats,

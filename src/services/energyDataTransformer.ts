@@ -168,7 +168,7 @@ export function transformEnergyStatistics(
     states = {}
   } = options;
 
-  const extracted = extractEnergyStatisticIds(prefs);
+  const extracted = extractEnergyStatisticIds(prefs, states);
 
   const hasSolar = extracted.solarSources.length > 0;
   const hasGrid = extracted.gridImport.length > 0 || extracted.gridExport.length > 0;
@@ -225,79 +225,242 @@ export function transformEnergyStatistics(
     }
   }
 
-  // When viewing hourly data (e.g. today or single day view), ensure all 24 hours of that day
-  // are present so the chart can display the full 24-hour day and full forecast curve
-  if (periodType === 'hour' && rawTimestamps.length > 0) {
-    const baseDate = new Date(rawTimestamps[0]);
-    for (let h = 0; h < 24; h++) {
-      const hDate = new Date(baseDate);
-      hDate.setHours(h, 0, 0, 0);
-      rawTimestamps.push(hDate.getTime());
+  // ---------------------------------------------------------------------------
+  // 1. Uniform Fixed Canonical Slot Grid Construction
+  // ---------------------------------------------------------------------------
+  const sortedTimestamps: number[] = [];
+
+  if (rawTimestamps.length > 0) {
+    const minTime = Math.min(...rawTimestamps);
+    const maxTime = Math.max(...rawTimestamps);
+
+    if (periodType === '5minute') {
+      const STEP_MS = 5 * 60 * 1000;
+      const baseDate = new Date(minTime);
+      const dayStart = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 0, 0, 0, 0).getTime();
+
+      // Align start to midnight of the day if within 24h, else to nearest 5-min epoch
+      const startSlot = (dayStart <= minTime && minTime - dayStart < 24 * 3600 * 1000)
+        ? dayStart
+        : Math.floor(minTime / STEP_MS) * STEP_MS;
+
+      const endSlot = Math.floor(maxTime / STEP_MS) * STEP_MS;
+
+      for (let t = startSlot; t <= endSlot; t += STEP_MS) {
+        sortedTimestamps.push(t);
+      }
+    } else if (periodType === 'hour') {
+      const STEP_MS = 60 * 60 * 1000;
+      const baseDate = new Date(minTime);
+      const dayStart = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 0, 0, 0, 0).getTime();
+      const dayEnd = dayStart + 23 * STEP_MS;
+
+      const startSlot = (dayStart <= minTime && minTime - dayStart < 24 * 3600 * 1000)
+        ? dayStart
+        : Math.floor(minTime / STEP_MS) * STEP_MS;
+
+      const endSlot = (dayStart <= minTime && minTime - dayStart < 24 * 3600 * 1000)
+        ? Math.max(dayEnd, Math.floor(maxTime / STEP_MS) * STEP_MS)
+        : Math.floor(maxTime / STEP_MS) * STEP_MS;
+
+      for (let t = startSlot; t <= endSlot; t += STEP_MS) {
+        sortedTimestamps.push(t);
+      }
+    } else if (periodType === 'day') {
+      const dayMap = new Map<string, number>();
+      for (const ts of rawTimestamps) {
+        const d = new Date(ts);
+        const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+        if (!dayMap.has(key)) {
+          const dayMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime();
+          dayMap.set(key, dayMidnight);
+        }
+      }
+      sortedTimestamps.push(...Array.from(dayMap.values()).sort((a, b) => a - b));
+    } else if (periodType === 'month') {
+      const monthMap = new Map<string, number>();
+      for (const ts of rawTimestamps) {
+        const d = new Date(ts);
+        const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+        if (!monthMap.has(key)) {
+          const monthFirst = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0).getTime();
+          monthMap.set(key, monthFirst);
+        }
+      }
+      sortedTimestamps.push(...Array.from(monthMap.values()).sort((a, b) => a - b));
     }
   }
 
-  // Generate canonical slots using real reported timestamps from Home Assistant
-  // (deduplicating near-simultaneous timestamps across multiple sensors using a small tolerance window)
-  const clusterToleranceMs =
-    periodType === '5minute' ? 90 * 1000 :
-    periodType === 'hour' ? 15 * 60 * 1000 :
-    periodType === 'day' ? 6 * 3600 * 1000 :
-    7 * 24 * 3600 * 1000;
+  // ---------------------------------------------------------------------------
+  // 2. Pre-bin & Gap-Interpolate Each Entity's Statistics
+  // ---------------------------------------------------------------------------
+  // Eliminates:
+  // - Asynchronous timestamp drift between devices (e.g. Solar at :00, Battery at :02)
+  // - The erratic 0 kW drop / 2x spike sawtooth artifact
+  // - Late-night 3.5-4 kW spikes caused by intermittent updates or UTC midnight counter resets
+  const entitySlotChanges = new Map<string, Map<number, number>>();
+  const entitySlotPowerKW = new Map<string, Map<number, number>>();
 
-  const sortedRaw = Array.from(new Set(rawTimestamps)).sort((a, b) => a - b);
-  const sortedTimestamps: number[] = [];
+  for (const [statId, entries] of Object.entries(stats)) {
+    if (!Array.isArray(entries) || entries.length === 0) continue;
 
-  for (const ts of sortedRaw) {
-    if (sortedTimestamps.length === 0) {
-      sortedTimestamps.push(ts);
-    } else {
-      const last = sortedTimestamps[sortedTimestamps.length - 1];
-      if (ts - last > clusterToleranceMs) {
-        sortedTimestamps.push(ts);
+    const slotMap = new Map<number, number>();
+    entitySlotChanges.set(statId, slotMap);
+
+    const powerSlotMap = new Map<number, number>();
+    entitySlotPowerKW.set(statId, powerSlotMap);
+
+    // Determine power unit: check state attribute first, then metadata
+    const stateUom = (states[statId]?.attributes?.unit_of_measurement || '').trim().toLowerCase();
+    const metaUom = (metadata[statId]?.unit_of_measurement || '').trim().toLowerCase();
+    const isPowerEntity =
+      states[statId]?.attributes?.device_class === 'power' ||
+      statId.includes('power') ||
+      statId.includes('mppt') ||
+      statId.includes('rate');
+
+    let uom = stateUom;
+    if (!uom || (isPowerEntity && (uom === 'kwh' || uom === 'wh'))) {
+      uom = metaUom && metaUom !== 'kwh' ? metaUom : isPowerEntity ? 'w' : '';
+    }
+
+    // Collect instantaneous power statistics if mean is available (state_class: measurement)
+    for (const e of entries) {
+      if (typeof e.mean === 'number' && !isNaN(e.mean)) {
+        let kw = e.mean;
+        if (uom === 'w' || uom === 'watt' || uom === 'watts') {
+          kw = e.mean / 1000;
+        } else if (uom === 'kw') {
+          kw = e.mean;
+        } else if (uom === 'mw') {
+          kw = e.mean * 1000;
+        } else {
+          // If unit is unknown or missing, check magnitude or device_class:
+          // A magnitude > 25 for residential active power is in Watts (e.g. 75W standby, 2500W solar)
+          if (Math.abs(e.mean) > 25 || isPowerEntity) {
+            kw = e.mean / 1000;
+          }
+        }
+
+        const raw = e.start;
+        const t = typeof raw === 'number'
+          ? (raw > 1e11 ? raw : raw * 1000)
+          : new Date(raw).getTime();
+        if (!isNaN(t)) {
+          const stepMs = periodType === '5minute' ? 5 * 60 * 1000 : 60 * 60 * 1000;
+          const nearestSlot = Math.round(t / stepMs) * stepMs;
+          powerSlotMap.set(nearestSlot, kw);
+        }
+      }
+    }
+
+    if (periodType === '5minute' || periodType === 'hour') {
+      const stepMs = periodType === '5minute' ? 5 * 60 * 1000 : 60 * 60 * 1000;
+
+      // Sort entries chronologically and filter counter reset / glitch anomalies
+      const sortedEntries = entries
+        .map(e => {
+          const raw = e.start;
+          const t = typeof raw === 'number'
+            ? (raw > 1e11 ? raw : raw * 1000)
+            : new Date(raw).getTime();
+          let c = typeof e.change === 'number' ? e.change : 0;
+
+          // Guard against negative delta or wrap-around resets
+          if (c < 0) c = 0;
+
+          // Guard against implausible 5-minute residential energy surges (> 5.0 kWh in 5 min = > 60 kW)
+          // These occur exclusively from sensor initialization or daily counter wraps at 10-11 PM / midnight
+          if (periodType === '5minute' && c > 5.0) c = 0;
+
+          return { time: t, change: c };
+        })
+        .filter(e => !isNaN(e.time))
+        .sort((a, b) => a.time - b.time);
+
+      // Map each raw entry to nearest slot boundary
+      const rawSlotTotals = new Map<number, number>();
+      for (const e of sortedEntries) {
+        const nearestSlot = Math.round(e.time / stepMs) * stepMs;
+        rawSlotTotals.set(nearestSlot, (rawSlotTotals.get(nearestSlot) || 0) + e.change);
+      }
+
+      // Gap detection & proportional spreading across missed intervals
+      const recordedSlots = Array.from(rawSlotTotals.keys()).sort((a, b) => a - b);
+      let lastRecordedSlot: number | null = null;
+
+      for (const slot of recordedSlots) {
+        const totalChange = rawSlotTotals.get(slot) || 0;
+
+        if (lastRecordedSlot === null) {
+          slotMap.set(slot, totalChange);
+          lastRecordedSlot = slot;
+          continue;
+        }
+
+        const gapSlots = Math.round((slot - lastRecordedSlot) / stepMs);
+
+        if (gapSlots <= 1) {
+          slotMap.set(slot, totalChange);
+        } else if (gapSlots <= 12) {
+          // If the integration skipped 2 to 12 intervals (up to 1 hour), spread the accumulated
+          // energy evenly across the elapsed slots (kW = totalDelta / elapsedHours)
+          const changePerSlot = totalChange / gapSlots;
+          for (let s = lastRecordedSlot + stepMs; s <= slot; s += stepMs) {
+            slotMap.set(s, changePerSlot);
+          }
+        } else {
+          // Large gap (> 1 hour, e.g. overnight solar or device rebooted)
+          // Do not backfill into ancient history; assign delta to current slot
+          slotMap.set(slot, totalChange);
+        }
+
+        lastRecordedSlot = slot;
+      }
+    } else if (periodType === 'day') {
+      for (const e of entries) {
+        const raw = e.start;
+        const t = typeof raw === 'number'
+          ? (raw > 1e11 ? raw : raw * 1000)
+          : new Date(raw).getTime();
+        if (isNaN(t)) continue;
+        const d = new Date(t);
+        const dayMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime();
+        const c = typeof e.change === 'number' && e.change > 0 ? e.change : 0;
+        slotMap.set(dayMidnight, (slotMap.get(dayMidnight) || 0) + c);
+      }
+    } else if (periodType === 'month') {
+      for (const e of entries) {
+        const raw = e.start;
+        const t = typeof raw === 'number'
+          ? (raw > 1e11 ? raw : raw * 1000)
+          : new Date(raw).getTime();
+        if (isNaN(t)) continue;
+        const d = new Date(t);
+        const monthFirst = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0).getTime();
+        const c = typeof e.change === 'number' && e.change > 0 ? e.change : 0;
+        slotMap.set(monthFirst, (slotMap.get(monthFirst) || 0) + c);
       }
     }
   }
 
-  // Helper to test if two timestamps belong to the same period slot
-  const isSameSlot = (tMs: number, slotMs: number): boolean => {
-    const diff = Math.abs(tMs - slotMs);
-    if (periodType === '5minute') {
-      return diff <= clusterToleranceMs;
-    }
-    if (periodType === 'hour') {
-      return diff <= clusterToleranceMs;
-    }
-    if (periodType === 'day') {
-      const d1 = new Date(tMs);
-      const d2 = new Date(slotMs);
-      return (
-        d1.getFullYear() === d2.getFullYear() &&
-        d1.getMonth() === d2.getMonth() &&
-        d1.getDate() === d2.getDate()
-      );
-    }
-    if (periodType === 'month') {
-      const d1 = new Date(tMs);
-      const d2 = new Date(slotMs);
-      return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth();
-    }
-    return diff <= clusterToleranceMs;
+  // Fast O(1) change lookup at a given bucket timestamp
+  const getChangeAtTime = (statId: string, timeMs: number): number => {
+    const statSlots = entitySlotChanges.get(statId);
+    if (!statSlots) return 0;
+    return statSlots.get(timeMs) || 0;
   };
 
-  // Helper to lookup stat change at a given bucket timestamp
-  const getChangeAtTime = (statId: string, timeMs: number): number => {
-    const entries = stats[statId];
-    if (!entries || entries.length === 0) return 0;
-    const entry = entries.find(e => {
-      const raw = e.start;
-      const t = typeof raw === 'number'
-        ? (raw > 1e11 ? raw : raw * 1000)
-        : new Date(raw).getTime();
-      return isSameSlot(t, timeMs);
-    });
-    if (!entry) return 0;
-    if (typeof entry.change === 'number') return Math.max(0, entry.change);
-    return 0;
+  // Fast power (kW) lookup at a given bucket timestamp
+  const getPowerAtTime = (statId: string, timeMs: number): number | null => {
+    const statSlots = entitySlotPowerKW.get(statId);
+    if (!statSlots || statSlots.size === 0) return null;
+    if (statSlots.has(timeMs)) return statSlots.get(timeMs)!;
+    if (periodType === '5minute') {
+      if (statSlots.has(timeMs - 300000)) return statSlots.get(timeMs - 300000)!;
+      if (statSlots.has(timeMs + 300000)) return statSlots.get(timeMs + 300000)!;
+    }
+    return null;
   };
 
   // Helper to lookup price state or value
@@ -339,37 +502,109 @@ export function transformEnergyStatistics(
 
     // Sum solar
     let solarKWh = 0;
-    for (const src of extracted.solarSources) {
-      const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
-      solarKWh += getChangeAtTime(src.statId, timeMs) * mult;
+    let hasDirectSolar = false;
+    if (periodType === '5minute' && extracted.powerStatisticIds.solar.length > 0) {
+      let sumKW = 0;
+      let found = false;
+      for (const sId of extracted.powerStatisticIds.solar) {
+        const p = getPowerAtTime(sId, timeMs);
+        if (p !== null) {
+          sumKW += Math.max(0, p);
+          found = true;
+        }
+      }
+      if (found) {
+        solarKWh = sumKW / 12;
+        hasDirectSolar = true;
+      }
+    }
+    if (!hasDirectSolar) {
+      for (const src of extracted.solarSources) {
+        const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
+        solarKWh += getChangeAtTime(src.statId, timeMs) * mult;
+      }
     }
 
-    // Sum grid import
+    // Sum grid import & export
     let gridImportKWh = 0;
-    for (const src of extracted.gridImport) {
-      const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
-      gridImportKWh += getChangeAtTime(src.statId, timeMs) * mult;
-    }
-
-    // Sum grid export
     let gridExportKWh = 0;
-    for (const src of extracted.gridExport) {
-      const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
-      gridExportKWh += getChangeAtTime(src.statId, timeMs) * mult;
+    let hasDirectGrid = false;
+    if (periodType === '5minute' && extracted.powerStatisticIds.grid.length > 0) {
+      let totalImportKW = 0;
+      let totalExportKW = 0;
+      let found = false;
+      for (const gId of extracted.powerStatisticIds.grid) {
+        const p = getPowerAtTime(gId, timeMs);
+        if (p !== null) {
+          found = true;
+          if (gId === 'sensor.meter_active_power') {
+            // Raw Huawei meter: positive = export, negative = import
+            totalExportKW += Math.max(0, p);
+            totalImportKW += Math.max(0, -p);
+          } else {
+            // Home Assistant standard polarity (including sensor.meter_active_power_inverted and stat_rate):
+            // Positive = Import from grid, Negative = Export to grid
+            totalImportKW += Math.max(0, p);
+            totalExportKW += Math.max(0, -p);
+          }
+        }
+      }
+      if (found) {
+        gridImportKWh = totalImportKW / 12;
+        gridExportKWh = totalExportKW / 12;
+        hasDirectGrid = true;
+      }
+    }
+    if (!hasDirectGrid) {
+      for (const src of extracted.gridImport) {
+        const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
+        gridImportKWh += getChangeAtTime(src.statId, timeMs) * mult;
+      }
+      for (const src of extracted.gridExport) {
+        const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
+        gridExportKWh += getChangeAtTime(src.statId, timeMs) * mult;
+      }
     }
 
-    // Sum battery charging (to battery)
+    // Sum battery charging (to battery) & discharging (from battery)
     let batteryChargeKWh = 0;
-    for (const src of extracted.batteryCharging) {
-      const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
-      batteryChargeKWh += getChangeAtTime(src.statId, timeMs) * mult;
-    }
-
-    // Sum battery discharging (from battery)
     let batteryDischargeKWh = 0;
-    for (const src of extracted.batteryDischarging) {
-      const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
-      batteryDischargeKWh += getChangeAtTime(src.statId, timeMs) * mult;
+    let hasDirectBattery = false;
+    if (periodType === '5minute' && extracted.powerStatisticIds.battery.length > 0) {
+      let totalChargeKW = 0;
+      let totalDischargeKW = 0;
+      let found = false;
+      for (const bId of extracted.powerStatisticIds.battery) {
+        const p = getPowerAtTime(bId, timeMs);
+        if (p !== null) {
+          found = true;
+          if (bId === 'sensor.battery_charge_discharge_power') {
+            // Raw Huawei battery: positive = charge, negative = discharge
+            totalChargeKW += Math.max(0, p);
+            totalDischargeKW += Math.max(0, -p);
+          } else {
+            // Home Assistant standard polarity (including sensor.battery_charge_discharge_power_inverted and stat_rate):
+            // Positive = Discharge to home, Negative = Charge from solar
+            totalDischargeKW += Math.max(0, p);
+            totalChargeKW += Math.max(0, -p);
+          }
+        }
+      }
+      if (found) {
+        batteryChargeKWh = totalChargeKW / 12;
+        batteryDischargeKWh = totalDischargeKW / 12;
+        hasDirectBattery = true;
+      }
+    }
+    if (!hasDirectBattery) {
+      for (const src of extracted.batteryCharging) {
+        const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
+        batteryChargeKWh += getChangeAtTime(src.statId, timeMs) * mult;
+      }
+      for (const src of extracted.batteryDischarging) {
+        const mult = getEnergyToKWhMultiplier(metadata[src.statId]?.unit_of_measurement);
+        batteryDischargeKWh += getChangeAtTime(src.statId, timeMs) * mult;
+      }
     }
 
     // Gas & Water
@@ -429,19 +664,19 @@ export function transformEnergyStatistics(
       endMs: timeMs + (periodType === 'day' ? 86400000 : periodType === '5minute' ? 300000 : 3600000),
       label,
       isoDate: d.toISOString(),
-      solar: Number(solarKWh.toFixed(3)),
-      gridImport: Number(gridImportKWh.toFixed(3)),
-      gridExport: Number(gridExportKWh.toFixed(3)),
-      batteryCharge: Number(batteryChargeKWh.toFixed(3)),
-      batteryDischarge: Number(batteryDischargeKWh.toFixed(3)),
-      solarToHome: Number(solarToHome.toFixed(3)),
-      solarToGrid: Number(solarToGrid.toFixed(3)),
-      solarToBattery: Number(solarToBattery.toFixed(3)),
-      gridToHome: Number(gridToHome.toFixed(3)),
-      gridToBattery: Number(gridToBattery.toFixed(3)),
-      batteryToHome: Number(batteryToHome.toFixed(3)),
-      batteryToGrid: Number(batteryToGrid.toFixed(3)),
-      homeConsumption: Number(homeConsumption.toFixed(3)),
+      solar: Number(solarKWh.toFixed(4)),
+      gridImport: Number(gridImportKWh.toFixed(4)),
+      gridExport: Number(gridExportKWh.toFixed(4)),
+      batteryCharge: Number(batteryChargeKWh.toFixed(4)),
+      batteryDischarge: Number(batteryDischargeKWh.toFixed(4)),
+      solarToHome: Number(solarToHome.toFixed(4)),
+      solarToGrid: Number(solarToGrid.toFixed(4)),
+      solarToBattery: Number(solarToBattery.toFixed(4)),
+      gridToHome: Number(gridToHome.toFixed(4)),
+      gridToBattery: Number(gridToBattery.toFixed(4)),
+      batteryToHome: Number(batteryToHome.toFixed(4)),
+      batteryToGrid: Number(batteryToGrid.toFixed(4)),
+      homeConsumption: Number(homeConsumption.toFixed(4)),
       gasUsage: Number(gasVal.toFixed(3)),
       waterUsage: Number(waterVal.toFixed(3)),
       deviceValues,
@@ -757,36 +992,90 @@ export function transformPowerStatistics(
     }
   }
 
-  const sortedRaw = Array.from(new Set(rawTimestamps)).sort((a, b) => a - b);
   const sortedTimestamps: number[] = [];
-  const CLUSTER_TOLERANCE_MS = 90 * 1000;
+  const STEP_MS = 5 * 60 * 1000;
 
-  for (const ts of sortedRaw) {
-    if (sortedTimestamps.length === 0) {
-      sortedTimestamps.push(ts);
-    } else {
-      const last = sortedTimestamps[sortedTimestamps.length - 1];
-      if (ts - last > CLUSTER_TOLERANCE_MS) {
-        sortedTimestamps.push(ts);
-      }
+  if (rawTimestamps.length > 0) {
+    const minTime = Math.min(...rawTimestamps);
+    const maxTime = Math.max(...rawTimestamps);
+
+    const baseDate = new Date(minTime);
+    const dayStart = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 0, 0, 0, 0).getTime();
+
+    const startSlot = (dayStart <= minTime && minTime - dayStart < 24 * 3600 * 1000)
+      ? dayStart
+      : Math.floor(minTime / STEP_MS) * STEP_MS;
+
+    const endSlot = Math.floor(maxTime / STEP_MS) * STEP_MS;
+
+    for (let t = startSlot; t <= endSlot; t += STEP_MS) {
+      sortedTimestamps.push(t);
     }
   }
 
   if (sortedTimestamps.length === 0) return [];
 
+  const entitySlotChanges = new Map<string, Map<number, number>>();
+
+  for (const [statId, entries] of Object.entries(stats)) {
+    if (!Array.isArray(entries) || entries.length === 0) continue;
+
+    const slotMap = new Map<number, number>();
+    entitySlotChanges.set(statId, slotMap);
+
+    const sortedEntries = entries
+      .map(e => {
+        const raw = e.start;
+        const t = typeof raw === 'number'
+          ? (raw > 1e11 ? raw : raw * 1000)
+          : new Date(raw).getTime();
+        let c = typeof e.change === 'number' ? e.change : 0;
+        if (c < 0) c = 0;
+        if (c > 5.0) c = 0;
+        return { time: t, change: c };
+      })
+      .filter(e => !isNaN(e.time))
+      .sort((a, b) => a.time - b.time);
+
+    const rawSlotTotals = new Map<number, number>();
+    for (const e of sortedEntries) {
+      const nearestSlot = Math.round(e.time / STEP_MS) * STEP_MS;
+      rawSlotTotals.set(nearestSlot, (rawSlotTotals.get(nearestSlot) || 0) + e.change);
+    }
+
+    const recordedSlots = Array.from(rawSlotTotals.keys()).sort((a, b) => a - b);
+    let lastRecordedSlot: number | null = null;
+
+    for (const slot of recordedSlots) {
+      const totalChange = rawSlotTotals.get(slot) || 0;
+
+      if (lastRecordedSlot === null) {
+        slotMap.set(slot, totalChange);
+        lastRecordedSlot = slot;
+        continue;
+      }
+
+      const gapSlots = Math.round((slot - lastRecordedSlot) / STEP_MS);
+
+      if (gapSlots <= 1) {
+        slotMap.set(slot, totalChange);
+      } else if (gapSlots <= 12) {
+        const changePerSlot = totalChange / gapSlots;
+        for (let s = lastRecordedSlot + STEP_MS; s <= slot; s += STEP_MS) {
+          slotMap.set(s, changePerSlot);
+        }
+      } else {
+        slotMap.set(slot, totalChange);
+      }
+
+      lastRecordedSlot = slot;
+    }
+  }
+
   const getChangeAtTime = (statId: string, timeMs: number): number => {
-    const entries = stats[statId];
-    if (!entries || entries.length === 0) return 0;
-    const entry = entries.find(e => {
-      const raw = e.start;
-      const t = typeof raw === 'number'
-        ? (raw > 1e11 ? raw : raw * 1000)
-        : new Date(raw).getTime();
-      return Math.abs(t - timeMs) <= CLUSTER_TOLERANCE_MS;
-    });
-    if (!entry) return 0;
-    if (typeof entry.change === 'number') return Math.max(0, entry.change);
-    return 0;
+    const statSlots = entitySlotChanges.get(statId);
+    if (!statSlots) return 0;
+    return statSlots.get(timeMs) || 0;
   };
 
   const buckets: TransformedEnergyBucket[] = [];

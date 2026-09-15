@@ -176,11 +176,19 @@ export interface ExtractedEnergyStatisticIds {
   }>;
   allStatisticIds: string[];
   allPriceEntityIds: string[];
+  powerStatisticIds: {
+    solar: string[];
+    grid: string[];
+    battery: string[];
+  };
 }
 
 export type ResolvedEnergyEntityIds = ExtractedEnergyStatisticIds;
 
-export function extractEnergyStatisticIds(prefs: EnergyPreferences | null | undefined): ExtractedEnergyStatisticIds {
+export function extractEnergyStatisticIds(
+  prefs: EnergyPreferences | null | undefined,
+  states?: Record<string, any>
+): ExtractedEnergyStatisticIds {
   const solarSources: ExtractedEnergyStatisticIds['solarSources'] = [];
   const gridImport: GridImportConfig[] = [];
   const gridExport: GridExportConfig[] = [];
@@ -192,6 +200,10 @@ export function extractEnergyStatisticIds(prefs: EnergyPreferences | null | unde
   const waterSources: WaterSourceConfig[] = [];
   const deviceConsumption: ExtractedEnergyStatisticIds['deviceConsumption'] = [];
   const deviceConsumptionWater: ExtractedEnergyStatisticIds['deviceConsumptionWater'] = [];
+
+  const solarPowerIds: string[] = [];
+  const gridPowerIds: string[] = [];
+  const batteryPowerIds: string[] = [];
 
   const allStatIdsSet = new Set<string>();
   const allPriceEntitiesSet = new Set<string>();
@@ -208,10 +220,19 @@ export function extractEnergyStatisticIds(prefs: EnergyPreferences | null | unde
           });
           allStatIdsSet.add(s.stat_energy_from);
         }
+        if (s.stat_rate) {
+          solarPowerIds.push(s.stat_rate);
+          allStatIdsSet.add(s.stat_rate);
+        }
       } else if (source.type === 'grid') {
         const g = source as GridSource;
         if (typeof g.cost_adjustment_day === 'number') {
           costAdjustmentDay += g.cost_adjustment_day;
+        }
+
+        if (g.stat_rate) {
+          gridPowerIds.push(g.stat_rate);
+          allStatIdsSet.add(g.stat_rate);
         }
 
         // Multi-flow support (HA flow_from / flow_to)
@@ -227,6 +248,10 @@ export function extractEnergyStatisticIds(prefs: EnergyPreferences | null | unde
               allStatIdsSet.add(ff.stat_energy_from);
               if (ff.stat_cost) allStatIdsSet.add(ff.stat_cost);
               if (ff.entity_energy_price) allPriceEntitiesSet.add(ff.entity_energy_price);
+            }
+            if (ff.stat_rate) {
+              gridPowerIds.push(ff.stat_rate);
+              allStatIdsSet.add(ff.stat_rate);
             }
           }
         } else if (g.stat_energy_from) {
@@ -254,6 +279,10 @@ export function extractEnergyStatisticIds(prefs: EnergyPreferences | null | unde
               if (ft.stat_compensation) allStatIdsSet.add(ft.stat_compensation);
               if (ft.entity_energy_price) allPriceEntitiesSet.add(ft.entity_energy_price);
             }
+            if (ft.stat_rate) {
+              gridPowerIds.push(ft.stat_rate);
+              allStatIdsSet.add(ft.stat_rate);
+            }
           }
         } else if (g.stat_energy_to) {
           gridExport.push({
@@ -276,6 +305,10 @@ export function extractEnergyStatisticIds(prefs: EnergyPreferences | null | unde
         if (b.stat_energy_from) {
           batteryDischarging.push({ statId: b.stat_energy_from, name: b.name });
           allStatIdsSet.add(b.stat_energy_from);
+        }
+        if (b.stat_rate) {
+          batteryPowerIds.push(b.stat_rate);
+          allStatIdsSet.add(b.stat_rate);
         }
         if (b.stat_soc) {
           batterySoC = b.stat_soc;
@@ -310,6 +343,54 @@ export function extractEnergyStatisticIds(prefs: EnergyPreferences | null | unde
           if (w.stat_cost) allStatIdsSet.add(w.stat_cost);
           if (w.entity_energy_price) allPriceEntitiesSet.add(w.entity_energy_price);
         }
+      }
+    }
+  }
+
+  // Auto-detect instantaneous power entities if not explicitly configured in stat_rate
+  if (states) {
+    if (solarPowerIds.length === 0) {
+      if (states['sensor.mppt_total_input_power']) {
+        solarPowerIds.push('sensor.mppt_total_input_power');
+        allStatIdsSet.add('sensor.mppt_total_input_power');
+      } else if (states['sensor.inverter_active_power']) {
+        solarPowerIds.push('sensor.inverter_active_power');
+        allStatIdsSet.add('sensor.inverter_active_power');
+      } else if (states['sensor.solar_power']) {
+        solarPowerIds.push('sensor.solar_power');
+        allStatIdsSet.add('sensor.solar_power');
+      } else if (states['sensor.pv_power']) {
+        solarPowerIds.push('sensor.pv_power');
+        allStatIdsSet.add('sensor.pv_power');
+      }
+    }
+
+    if (gridPowerIds.length === 0) {
+      if (states['sensor.meter_active_power_inverted']) {
+        gridPowerIds.push('sensor.meter_active_power_inverted');
+        allStatIdsSet.add('sensor.meter_active_power_inverted');
+      } else if (states['sensor.meter_active_power']) {
+        gridPowerIds.push('sensor.meter_active_power');
+        allStatIdsSet.add('sensor.meter_active_power');
+      } else if (states['sensor.grid_power']) {
+        gridPowerIds.push('sensor.grid_power');
+        allStatIdsSet.add('sensor.grid_power');
+      } else if (states['sensor.power_meter']) {
+        gridPowerIds.push('sensor.power_meter');
+        allStatIdsSet.add('sensor.power_meter');
+      }
+    }
+
+    if (batteryPowerIds.length === 0) {
+      if (states['sensor.battery_charge_discharge_power_inverted']) {
+        batteryPowerIds.push('sensor.battery_charge_discharge_power_inverted');
+        allStatIdsSet.add('sensor.battery_charge_discharge_power_inverted');
+      } else if (states['sensor.battery_charge_discharge_power']) {
+        batteryPowerIds.push('sensor.battery_charge_discharge_power');
+        allStatIdsSet.add('sensor.battery_charge_discharge_power');
+      } else if (states['sensor.battery_power']) {
+        batteryPowerIds.push('sensor.battery_power');
+        allStatIdsSet.add('sensor.battery_power');
       }
     }
   }
@@ -352,7 +433,12 @@ export function extractEnergyStatisticIds(prefs: EnergyPreferences | null | unde
     deviceConsumption,
     deviceConsumptionWater,
     allStatisticIds: Array.from(allStatIdsSet),
-    allPriceEntityIds: Array.from(allPriceEntitiesSet)
+    allPriceEntityIds: Array.from(allPriceEntitiesSet),
+    powerStatisticIds: {
+      solar: solarPowerIds,
+      grid: gridPowerIds,
+      battery: batteryPowerIds
+    }
   };
 }
 
