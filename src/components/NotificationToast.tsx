@@ -36,7 +36,10 @@ export default function NotificationToast({ toasts, onDismiss, darkMode }: Notif
     <aside 
       id="toast-notification-container"
       aria-label="System Notifications"
-      className="fixed top-[max(1rem,calc(env(safe-area-inset-top,0px)+0.5rem))] right-4 sm:top-[max(1.5rem,calc(env(safe-area-inset-top,0px)+1rem))] sm:right-6 z-100 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-3 sm:px-0"
+      style={{
+        top: 'max(1rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))'
+      }}
+      className="fixed right-4 left-4 sm:left-auto sm:right-6 toast-safe-top z-100 flex flex-col gap-2.5 max-w-sm w-auto sm:w-full pointer-events-none px-0"
     >
       <AnimatedList delay={80}>
         {toasts.map((toast) => (

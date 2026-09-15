@@ -82,9 +82,15 @@ export default function FullScreenLoadingPage({
     : null;
 
   return (
-    <div className={`fixed inset-0 z-50 flex flex-col items-center justify-between p-6 sm:p-10 select-none overflow-hidden transition-colors duration-300 ${
-      isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
-    }`}>
+    <div
+      style={{
+        paddingTop: 'max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+        paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem))'
+      }}
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-between p-6 sm:p-10 select-none overflow-hidden transition-colors duration-300 ${
+        isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
+      }`}
+    >
       {/* Ambient background glows */}
       <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 w-[450px] sm:w-[600px] h-[450px] sm:h-[600px] rounded-full blur-[140px] pointer-events-none transition-all duration-300 ${
         isDark ? 'bg-sky-500/15' : 'bg-sky-400/20'

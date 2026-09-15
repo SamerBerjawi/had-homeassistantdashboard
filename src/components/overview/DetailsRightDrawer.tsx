@@ -85,6 +85,13 @@ export default function DetailsRightDrawer({
                   : 'bg-white/95 text-slate-900 border-l border-slate-200/80 shadow-2xl'
               }`}
             >
+              {/* Status Bar Safe-Area Clearance (PWA / Mobile) — Leaves the status bar completely empty */}
+              <div
+                className="w-full shrink-0"
+                style={{ height: 'env(safe-area-inset-top, 0px)' }}
+                aria-hidden="true"
+              />
+
               {/* Top Mobile Grab Handle */}
               <div className="sm:hidden pt-3 pb-1 flex justify-center shrink-0" aria-hidden="true">
                 <div className={`w-10 h-1 rounded-full ${darkMode ? 'bg-white/20' : 'bg-slate-300'}`} />

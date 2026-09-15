@@ -845,6 +845,21 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
     padding-right: var(--sar);
   }
 
+  .status-bar-spacer {
+    height: var(--sat);
+    height: env(safe-area-inset-top, 0px);
+  }
+
+  .toast-safe-top {
+    top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.75rem));
+  }
+
+  @media (min-width: 640px) {
+    .toast-safe-top {
+      top: max(1.25rem, calc(env(safe-area-inset-top, 0px) + 1rem));
+    }
+  }
+
   /* Desktop Chromium Window Controls Overlay integration */
   .pwa-desktop-titlebar {
     position: fixed;
