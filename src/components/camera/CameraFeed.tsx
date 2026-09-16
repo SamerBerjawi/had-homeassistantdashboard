@@ -11,12 +11,13 @@
  * 5. Surface clear "camera offline" and "stream interrupted" states with manual retry
  */
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { VideoCamera, WarningCircle, Broadcast, ArrowsClockwise, ArrowClockwise, WifiSlash } from '@phosphor-icons/react';
 import Hls from 'hls.js';
 import { ResolvedEntity, HAEntity } from '../../types';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { cameraStreamManager, CameraStreamState } from '../../services/cameraStreamManager';
 
 export type CameraEngine = 'auto' | 'webrtc' | 'hls' | 'snapshot';
 
@@ -48,20 +49,9 @@ export default function CameraFeed({
   onGoLive
 }: CameraFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const pcRef = useRef<RTCPeerConnection | null>(null);
-  const hlsRef = useRef<Hls | null>(null);
-  const reconnectTimeoutRef = useRef<any>(null);
-  const retryCountRef = useRef<number>(0);
-
   const { config } = useUserConfig();
   const { authState } = useAuth();
   const token = authState.tokens?.access_token || '';
-
-  const [isStreaming, setIsStreaming] = useState<boolean>(false);
-  const [streamType, setStreamType] = useState<'webrtc' | 'hls' | 'snapshot'>('snapshot');
-  const [isConnecting, setIsConnecting] = useState<boolean>(false);
-  const [streamError, setStreamError] = useState<string | null>(null);
-  const [retrySecondsLeft, setRetrySecondsLeft] = useState<number>(0);
 
   const cameraId = camera.entity_id;
   const cameraName = ('name' in camera ? camera.name : undefined) || 
@@ -86,277 +76,98 @@ export default function CameraFeed({
   const rtspUrl = configuredSource?.rtspUrl;
   const effectiveProtocol = preferProtocol || configuredSource?.liveType || config.cameras?.defaultStreamType || 'auto';
 
-  // Stop active streams and timers
-  const cleanupStream = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-    if (pcRef.current) {
-      try {
-        pcRef.current.close();
-      } catch {}
-      pcRef.current = null;
-    }
-    if (hlsRef.current) {
-      try {
-        hlsRef.current.destroy();
-      } catch {}
-      hlsRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-      videoRef.current.removeAttribute('src');
-    }
-    setIsStreaming(false);
-  }, []);
+  const [streamState, setStreamState] = useState<CameraStreamState>(() =>
+    cameraStreamManager.getState(targetStreamId)
+  );
 
-  // Forward declarations for mutual referencing in reconnect cycle
-  const scheduleReconnect = useCallback((errorMsg: string) => {
-    cleanupStream();
-    setIsConnecting(false);
-    setStreamError(errorMsg);
-    onError?.(errorMsg);
-
-    if (isUnavailable) return;
-
-    // Exponential backoff: 3s, 5.5s, 10s, 18s, max 30s
-    retryCountRef.current += 1;
-    const backoffMs = Math.min(Math.round(3000 * Math.pow(1.8, Math.min(retryCountRef.current - 1, 4))), 30000);
-    const seconds = Math.ceil(backoffMs / 1000);
-    setRetrySecondsLeft(seconds);
-
-    // Countdown interval
-    const countdownTimer = setInterval(() => {
-      setRetrySecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(countdownTimer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    reconnectTimeoutRef.current = setTimeout(() => {
-      clearInterval(countdownTimer);
-      setRetrySecondsLeft(0);
-      initiateStreamConnection();
-    }, backoffMs);
-  }, [cleanupStream, isUnavailable, onError]);
-
-  // Connect via HLS (Fallback path)
-  const connectHls = useCallback(() => {
-    cleanupStream();
-    setIsConnecting(true);
-    setStreamError(null);
-
-    const hlsUrl = `/api/cameras/${encodeURIComponent(targetStreamId)}/hls/stream.m3u8?mp4`;
-
-    if (Hls.isSupported()) {
-      const hls = new Hls({
-        xhrSetup: (xhr) => {
-          if (token) {
-            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-          }
-        },
-        enableWorker: true,
-        lowLatencyMode: true,
-        backBufferLength: 60
-      });
-
-      hlsRef.current = hls;
-      hls.loadSource(hlsUrl);
-
-      if (videoRef.current) {
-        hls.attachMedia(videoRef.current);
+  // Subscribe to centralized camera stream pool
+  useEffect(() => {
+    onReady?.();
+    const unsubscribe = cameraStreamManager.subscribe(
+      targetStreamId,
+      {
+        rtspUrl,
+        token,
+        preferProtocol: effectiveProtocol,
+        isUnavailable
+      },
+      (newState) => {
+        setStreamState(newState);
       }
+    );
 
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setIsConnecting(false);
-        setIsStreaming(true);
-        setStreamType('hls');
-        setStreamError(null);
-        retryCountRef.current = 0;
-        onGoLive?.();
-        if (autoPlay) {
-          videoRef.current?.play().catch(() => {});
-        }
-      });
+    return () => {
+      unsubscribe();
+    };
+  }, [targetStreamId, rtspUrl, token, effectiveProtocol, isUnavailable, onReady]);
 
-      hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) {
-          console.warn(`[CameraFeed] HLS fatal error on ${cameraId}:`, data.details);
-          scheduleReconnect('HLS Stream Error');
-        }
-      });
-    } else if (videoRef.current?.canPlayType('application/vnd.apple.mpegurl')) {
-      // Native Safari HLS
-      const video = videoRef.current;
-      video.src = hlsUrl;
-      video.addEventListener('loadedmetadata', () => {
-        setIsConnecting(false);
-        setIsStreaming(true);
-        setStreamType('hls');
-        setStreamError(null);
-        retryCountRef.current = 0;
-        onGoLive?.();
+  // Bind video element to shared MediaStream or direct HLS fallback
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (streamState.mediaStream) {
+      if (video.srcObject !== streamState.mediaStream) {
+        video.srcObject = streamState.mediaStream;
         if (autoPlay) {
           video.play().catch(() => {});
         }
-      }, { once: true });
-      video.addEventListener('error', () => {
-        scheduleReconnect('Native HLS Error');
-      }, { once: true });
-    } else {
-      setIsConnecting(false);
-      setStreamError('HLS not supported in browser');
-      onError?.('HLS not supported');
-    }
-  }, [targetStreamId, token, autoPlay, cleanupStream, onGoLive, scheduleReconnect, onError]);
-
-  // Connect via WebRTC (Primary low-latency path)
-  const connectWebRtc = useCallback(async () => {
-    cleanupStream();
-    setIsConnecting(true);
-    setStreamError(null);
-
-    try {
-      const pc = new RTCPeerConnection({
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]
-      });
-      pcRef.current = pc;
-
-      // Add receive-only transceivers for audio and video
-      pc.addTransceiver('video', { direction: 'recvonly' });
-      pc.addTransceiver('audio', { direction: 'recvonly' });
-
-      let iceTimeoutId: NodeJS.Timeout | null = null;
-
-      pc.ontrack = (event) => {
-        if (iceTimeoutId) {
-          clearTimeout(iceTimeoutId);
-          iceTimeoutId = null;
-        }
-        if (videoRef.current && event.streams[0]) {
-          videoRef.current.srcObject = event.streams[0];
-          setIsConnecting(false);
-          setIsStreaming(true);
-          setStreamType('webrtc');
-          setStreamError(null);
-          retryCountRef.current = 0;
-          onGoLive?.();
-          if (autoPlay) {
-            videoRef.current?.play().catch(() => {});
-          }
-        }
-      };
-
-      pc.oniceconnectionstatechange = () => {
-        if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
-          console.warn(`[CameraFeed] WebRTC ICE connection failed on ${targetStreamId}. Falling back to HLS.`);
-          cleanupStream();
-          connectHls();
-        }
-      };
-
-      // Create offer
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-
-      // Wait for local ICE gathering with 1000ms safety timeout
-      await new Promise<void>((resolve) => {
-        if (pc.iceGatheringState === 'complete') {
-          resolve();
-        } else {
-          const checkIce = () => {
-            if (pc.iceGatheringState === 'complete') {
-              pc.removeEventListener('icegatheringstatechange', checkIce);
-              resolve();
+      }
+    } else if (streamState.streamType === 'hls' && streamState.hlsUrl) {
+      // Fallback for browsers where captureStream is not supported
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          xhrSetup: (xhr) => {
+            if (token) {
+              xhr.setRequestHeader('Authorization', `Bearer ${token}`);
             }
-          };
-          pc.addEventListener('icegatheringstatechange', checkIce);
-          setTimeout(() => {
-            pc.removeEventListener('icegatheringstatechange', checkIce);
-            resolve();
-          }, 1000);
+          },
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 60
+        });
+        hls.loadSource(streamState.hlsUrl);
+        hls.attachMedia(video);
+        if (autoPlay) {
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            video.play().catch(() => {});
+          });
         }
-      });
-
-      const sdpPayload = pc.localDescription?.sdp || offer.sdp;
-
-      // Send offer to HAD backend go2rtc proxy
-      const res = await fetch(`/api/cameras/${encodeURIComponent(targetStreamId)}/webrtc`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ sdp: sdpPayload, type: 'offer' })
-      });
-
-      if (!res.ok) {
-        throw new Error(`WebRTC negotiation returned ${res.status}`);
-      }
-
-      const answerData = await res.json();
-      if (!answerData?.sdp) {
-        throw new Error('Missing SDP answer from server');
-      }
-
-      await pc.setRemoteDescription(new RTCSessionDescription({
-        type: 'answer',
-        sdp: answerData.sdp
-      }));
-
-      // Cloudflare Tunnel / UDP firewall watchdog:
-      // If WebRTC media packets don't arrive within 4.5s (common when remote behind Cloudflare Tunnel without UDP routing),
-      // seamlessly fall back to HTTP-based HLS stream
-      iceTimeoutId = setTimeout(() => {
-        if (pc.connectionState !== 'connected') {
-          console.info(`[CameraFeed] WebRTC ICE check timed out after 4.5s on ${targetStreamId} (likely behind Cloudflare Tunnel / restricted NAT). Seamlessly failing over to HLS.`);
-          cleanupStream();
-          connectHls();
+        return () => {
+          hls.destroy();
+        };
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = streamState.hlsUrl;
+        if (autoPlay) {
+          video.play().catch(() => {});
         }
-      }, 4500);
-    } catch (err: any) {
-      console.warn(`[CameraFeed] WebRTC negotiation failed for ${targetStreamId}: ${err?.message}. Falling back to HLS.`);
-      // Automatic fallback to HLS
-      connectHls();
-    }
-  }, [targetStreamId, token, autoPlay, cleanupStream, connectHls, onGoLive]);
-
-  const initiateStreamConnection = useCallback(() => {
-    if (!rtspUrl || isUnavailable) {
-      return;
-    }
-    if (effectiveProtocol === 'hls') {
-      connectHls();
+      }
     } else {
-      connectWebRtc();
+      video.srcObject = null;
+      video.removeAttribute('src');
     }
-  }, [rtspUrl, isUnavailable, effectiveProtocol, connectHls, connectWebRtc]);
+  }, [streamState.mediaStream, streamState.streamType, streamState.hlsUrl, autoPlay, token]);
+
+  // Notify parent component on state changes
+  useEffect(() => {
+    if (streamState.status === 'streaming') {
+      onGoLive?.();
+    } else if (streamState.status === 'error' && streamState.error) {
+      onError?.(streamState.error);
+    }
+  }, [streamState.status, streamState.error, onGoLive, onError]);
+
+  const isStreaming = streamState.status === 'streaming';
+  const isConnecting = streamState.status === 'connecting';
+  const streamError = streamState.error;
+  const retrySecondsLeft = streamState.retrySecondsLeft;
+  const streamType = streamState.streamType;
 
   // Manual retry handler
   const handleManualRetry = (e: React.MouseEvent) => {
     e.stopPropagation();
-    retryCountRef.current = 0;
-    setRetrySecondsLeft(0);
-    cleanupStream();
-    initiateStreamConnection();
+    cameraStreamManager.retry(targetStreamId);
   };
-
-  // Initiate stream connection when appropriate
-  useEffect(() => {
-    onReady?.();
-    initiateStreamConnection();
-
-    return () => {
-      cleanupStream();
-    };
-  }, [cameraId, rtspUrl, isUnavailable, effectiveProtocol, initiateStreamConnection, cleanupStream, onReady]);
 
   return (
     <div
