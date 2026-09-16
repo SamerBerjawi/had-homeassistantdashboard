@@ -143,7 +143,7 @@ export function useEnergyComparison(options: UseEnergyComparisonOptions): UseEne
       return {
         start: start.toISOString(),
         end: end.toISOString(),
-        periodType: '5minute' as const,
+        periodType: 'hour' as const,
         startTimeMs: start.getTime(),
         endTimeMs: end.getTime()
       };
@@ -206,7 +206,7 @@ export function useEnergyComparison(options: UseEnergyComparisonOptions): UseEne
     return {
       start: start.toISOString(),
       end: end.toISOString(),
-      periodType: '5minute' as const,
+      periodType: 'hour' as const,
       startTimeMs: start.getTime(),
       endTimeMs: end.getTime()
     };

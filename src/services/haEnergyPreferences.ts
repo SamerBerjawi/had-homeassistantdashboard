@@ -519,13 +519,26 @@ async function waitForConnection(timeoutMs = 2500): Promise<boolean> {
   return haWebSocketService.getStatus() === 'connected';
 }
 
-export async function fetchHAEnergyPreferences(connection?: any): Promise<EnergyPreferences> {
+let preferencesCache: { data: EnergyPreferences; expiresAt: number } | null = null;
+const PREFS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+export function clearPreferencesCache(): void {
+  preferencesCache = null;
+}
+
+export async function fetchHAEnergyPreferences(connection?: any, bypassCache = false): Promise<EnergyPreferences> {
+  if (!bypassCache && preferencesCache && preferencesCache.expiresAt > Date.now()) {
+    return preferencesCache.data;
+  }
+
   // Custom connection (e.g. home-assistant-js-websocket connection object)
   if (connection && typeof connection.sendMessagePromise === 'function') {
     try {
       const res = await connection.sendMessagePromise({ type: 'energy/get_prefs' });
       if (res && typeof res === 'object') {
-        return res as EnergyPreferences;
+        const prefs = res as EnergyPreferences;
+        preferencesCache = { data: prefs, expiresAt: Date.now() + PREFS_CACHE_TTL_MS };
+        return prefs;
       }
     } catch (err) {
       console.warn('[haEnergyPreferences] connection.sendMessagePromise energy/get_prefs failed:', err);
@@ -538,6 +551,7 @@ export async function fetchHAEnergyPreferences(connection?: any): Promise<Energy
       try {
         const res = await haWebSocketService.sendRequest<EnergyPreferences>('energy/get_prefs');
         if (res && typeof res === 'object') {
+          preferencesCache = { data: res, expiresAt: Date.now() + PREFS_CACHE_TTL_MS };
           return res;
         }
       } catch (err) {

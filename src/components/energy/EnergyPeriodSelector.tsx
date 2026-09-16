@@ -215,7 +215,11 @@ export default function EnergyPeriodSelector({
                   : 'hover:bg-slate-200/60 text-slate-900'
               }`}
             >
-              <CalendarBlank size={15} weight="duotone" className="text-amber-500 shrink-0" />
+              {isFetchingStats ? (
+                <ArrowsClockwise size={15} weight="bold" className="text-amber-500 animate-spin shrink-0" />
+              ) : (
+                <CalendarBlank size={15} weight="duotone" className="text-amber-500 shrink-0" />
+              )}
               <span>{dateLabel}</span>
             </button>
 

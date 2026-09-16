@@ -38,7 +38,9 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
     preferences,
     currency,
     loadState,
+    isLoading,
     isFetchingStats,
+    hasLoadedInitial,
     error,
     refresh,
     isLive,
@@ -55,8 +57,8 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
     );
   }
 
-  // 2. Initial Loading State
-  if (loadState === 'loading') {
+  // 2. Initial Loading State (Only displayed on the very first mount before any data exists)
+  if (loadState === 'loading' && !hasLoadedInitial) {
     return (
       <div className="w-full flex-1 flex flex-col items-center justify-center py-24 space-y-4">
         <ArrowsClockwise size={32} className="animate-spin text-amber-500" />
@@ -65,8 +67,8 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
     );
   }
 
-  // 3. Error State with Retry
-  if (loadState === 'error' && error) {
+  // 3. Error State with Retry (Only displayed if initial load completely failed)
+  if (loadState === 'error' && error && !hasLoadedInitial) {
     return (
       <div className="w-full flex-1 flex flex-col items-center justify-center py-16 px-4">
         <div
@@ -107,7 +109,14 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
   const hasAuxiliary = hasGas || hasWater;
 
   return (
-    <div className="w-full flex-1 flex flex-col space-y-5 sm:space-y-6 pb-12 animate-fadeIn">
+    <div className="w-full flex-1 flex flex-col space-y-5 sm:space-y-6 pb-12 animate-fadeIn relative">
+      {/* Subtle Background Data Refresh Indicator Bar */}
+      {isFetchingStats && (
+        <div className="fixed top-0 left-0 right-0 h-0.5 z-50 overflow-hidden bg-amber-500/15 pointer-events-none">
+          <div className="h-full bg-gradient-to-r from-transparent via-amber-500 to-transparent w-full animate-pulse" />
+        </div>
+      )}
+
       {/* ───────────────────────────────────────────────────────────── */}
       {/* TOP CONTROL TOOLBAR: Period Navigation & Live Status          */}
       {/* ───────────────────────────────────────────────────────────── */}
@@ -126,10 +135,14 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
       />
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* HERO METRICS CARD: REDESIGNED AUTARKY & SELF-CONSUMPTION      */}
-      {/* + 3 COMPACT HUAWEI FUSION SOLAR IMPACT TILES                  */}
+      {/* DASHBOARD CARDS & CHARTS CONTENT (SNAPPY SMOOTH TRANSITION)    */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <EnergyHeroCards
+      <div className={`space-y-5 sm:space-y-6 transition-opacity duration-150 ${isFetchingStats ? 'opacity-75' : 'opacity-100'}`}>
+        {/* ───────────────────────────────────────────────────────────── */}
+        {/* HERO METRICS CARD: REDESIGNED AUTARKY & SELF-CONSUMPTION      */}
+        {/* + 3 COMPACT HUAWEI FUSION SOLAR IMPACT TILES                  */}
+        {/* ───────────────────────────────────────────────────────────── */}
+        <EnergyHeroCards
         selfSufficiencyPercentage={totals.selfSufficiencyPercentage}
         selfConsumptionPercentage={totals.selfConsumptionPercentage}
         hasSolar={hasSolar}
@@ -253,6 +266,7 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
