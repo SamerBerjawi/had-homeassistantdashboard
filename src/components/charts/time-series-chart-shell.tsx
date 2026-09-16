@@ -118,7 +118,8 @@ export function calculateCleanMax(max: number): number {
 function resolveTimeSeriesYDomain(
   data: Record<string, unknown>[],
   dataKeys: string[],
-  yScaleDomainMax: number | undefined
+  yScaleDomainMax: number | undefined,
+  tightYDomain?: boolean
 ): [number, number] {
   if (yScaleDomainMax != null && yScaleDomainMax > 0) {
     const rawMax = yScaleDomainMax;
@@ -129,7 +130,7 @@ function resolveTimeSeriesYDomain(
 
   const { minValue, maxValue } = collectNumericExtents(data, dataKeys);
 
-  if (minValue >= 0) {
+  if (!tightYDomain && minValue >= 0) {
     if (maxValue <= 0) return [0, 100];
     const rawMax = maxValue;
     const padded = rawMax * 1.18;
@@ -138,7 +139,7 @@ function resolveTimeSeriesYDomain(
   }
 
   const span = maxValue - minValue || 1;
-  const padding = span * 0.18;
+  const padding = span * 0.15;
   return [minValue - padding, maxValue + padding];
 }
 
@@ -188,6 +189,7 @@ export interface TimeSeriesChartInnerProps {
   xDomainSlotCount?: number;
   /** Tween y-domain when the visible x-range changes during the ready phase. */
   tweenYDomainOnXDomainChange?: boolean;
+  tightYDomain?: boolean;
   onPhaseChange?: (phase: ChartPhase) => void;
 }
 
@@ -228,6 +230,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   xDomain,
   xDomainSlotCount,
   tweenYDomainOnXDomainChange = false,
+  tightYDomain = false,
   onPhaseChange,
 }: TimeSeriesChartInnerProps) {
   const staticPreview = useStaticChartPreview();
@@ -243,9 +246,9 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
         usesDefaultOnly && yScaleDomainMax != null
           ? yScaleDomainMax
           : undefined;
-      return resolveTimeSeriesYDomain(sourceData, dataKeys, domainMax);
+      return resolveTimeSeriesYDomain(sourceData, dataKeys, domainMax, tightYDomain);
     },
-    [lines, yScaleDomainMax]
+    [lines, yScaleDomainMax, tightYDomain]
   );
 
   const skeletonData = useMemo(() => {

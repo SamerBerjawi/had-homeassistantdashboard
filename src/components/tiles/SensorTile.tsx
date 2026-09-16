@@ -27,7 +27,7 @@ import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
 import { detectSensorCapabilities } from '../../services/sensorClassification';
 import { TelemetryLine, getBatteryIcon } from '../common/TelemetryBadge';
 import MiniSensorSparkline from '../sensors/MiniSensorSparkline';
-import DotSlider from '../ui/DotSlider';
+import EntityStatusBar from '../ui/EntityStatusBar';
 import TileShell from './TileShell';
 import CompactTile from './CompactTile';
 import StandardTile from './StandardTile';
@@ -93,11 +93,11 @@ const SensorTileComponent: React.FC<SensorTileProps> = ({
           if (onContextMenu) onContextMenu();
           else if (onIconClick) onIconClick();
         }}
-        className="p-3 min-h-[92px] sm:min-h-[98px] justify-center"
+        className="p-0 min-h-[92px] sm:min-h-[98px] justify-between overflow-hidden"
       >
-        <div className="flex flex-col justify-center h-full w-full relative z-10 my-auto gap-1">
+        <div className="flex flex-col justify-between h-full w-full relative z-10">
           {/* Top Header: Icon + Title & Subtitle */}
-          <div className="flex items-center justify-between gap-2 min-w-0 w-full">
+          <div className="flex items-center justify-between gap-2 min-w-0 w-full pt-3 px-3.5 pb-0">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
               {onIconClick ? (
                 <button
@@ -138,13 +138,13 @@ const SensorTileComponent: React.FC<SensorTileProps> = ({
             </div>
           </div>
 
-          {/* Bottom Sparkline: Compact 28px height */}
-          <div className="w-full pt-1">
+          {/* Full-Bleed Sparkline: Reaches just a few pixels below the text, 0 padding from left, right, and bottom */}
+          <div className="w-full flex-1 min-h-[40px] sm:min-h-[46px] mt-1 overflow-hidden pointer-events-none flex items-end">
             <MiniSensorSparkline
               entityId={entity.entity_id}
               currentValue={entity.state}
               color={sparkColor}
-              height={28}
+              height={44}
               strokeWidth={2}
             />
           </div>
@@ -227,36 +227,14 @@ const SensorTileComponent: React.FC<SensorTileProps> = ({
       icon={customIconNode || <Icon size={24} weight={isActiveAlert ? 'fill' : 'duotone'} className={iconClass} />}
       badge={
         pctVal !== undefined ? (
-          <div className="flex items-center justify-between gap-2 w-full pt-0.5">
-            <div className="flex-1">
-              <DotSlider
-                value={pctVal}
-                min={0}
-                max={100}
-                activeColor={
-                  isBattery
-                    ? pctVal < 20
-                      ? 'bg-rose-500'
-                      : pctVal < 50
-                      ? 'bg-amber-400'
-                      : 'bg-emerald-400'
-                    : 'bg-amber-400'
-                }
-                activeGlowColor={
-                  isBattery
-                    ? pctVal < 20
-                      ? 'rgba(244, 63, 94, 0.4)'
-                      : pctVal < 50
-                      ? 'rgba(251, 191, 36, 0.35)'
-                      : 'rgba(52, 211, 153, 0.35)'
-                    : 'rgba(251, 191, 36, 0.3)'
-                }
-                inactiveColor={darkMode ? 'bg-white/10' : 'bg-slate-300/60'}
-              />
-            </div>
-            <span className="font-mono font-bold text-xs shrink-0 text-slate-700 dark:text-slate-200">
-              {pctVal}%
-            </span>
+          <div className="w-full pt-1">
+            <EntityStatusBar
+              value={pctVal}
+              variant={isBattery ? 'battery' : caps.kind === 'humidity' ? 'humidity' : isPowerMetric ? 'power' : 'generic'}
+              isAlert={isBattery && pctVal < 20}
+              isCharging={Boolean(entity.attributes?.battery_charging || entity.attributes?.is_charging || entity.attributes?.charging)}
+              darkMode={darkMode}
+            />
           </div>
         ) : (
           <span

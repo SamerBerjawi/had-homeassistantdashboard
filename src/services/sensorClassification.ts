@@ -202,15 +202,19 @@ export function detectSensorCapabilities(
     }
   }
 
-  // Format value: for numeric sensors always include the formatted number + unit
+  // Format value: for numeric sensors always include the formatted number + unit (strictly max 1 decimal)
   let formattedValue = '';
   if (isNumeric) {
-    const rounded = Math.abs(numValue) < 10 && numValue % 1 !== 0
-      ? Math.round(numValue * 100) / 100
-      : Math.round(numValue * 10) / 10;
+    const rounded = Math.round(numValue * 10) / 10;
     formattedValue = `${rounded}${unit ? ` ${unit}` : ''}`;
   } else if (!isBinary && stateStr && stateStr !== 'unknown' && stateStr !== 'unavailable') {
-    formattedValue = `${stateStr}${unit ? ` ${unit}` : ''}`;
+    const parsed = parseFloat(stateStr);
+    if (!isNaN(parsed)) {
+      const rounded = Math.round(parsed * 10) / 10;
+      formattedValue = `${rounded}${unit ? ` ${unit}` : ''}`;
+    } else {
+      formattedValue = `${stateStr}${unit ? ` ${unit}` : ''}`;
+    }
   } else {
     formattedValue = alertLabel;
   }

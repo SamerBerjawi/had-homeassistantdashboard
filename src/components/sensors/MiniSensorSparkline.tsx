@@ -1,15 +1,10 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- *
- * Mini Sensor Sparkline Component
- * Accurate 24h live history trendline with smooth bezier curve
- */
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { fetchLiveEntityHistory } from '../../services/haHistoryService';
 import { haWebSocketService } from '../../services/haWebSocket';
+import { LineChart } from '../charts/line-chart';
+import { Line } from '../charts/line';
+import { Area } from '../charts/area';
 
 interface MiniSensorSparklineProps {
   entityId: string;
@@ -21,22 +16,61 @@ interface MiniSensorSparklineProps {
   strokeWidth?: number;
 }
 
-interface SparklinePoint {
-  x: number;
-  y: number;
-  val: number;
+interface ChartDatum {
+  date: Date;
+  value: number;
+}
+
+const HOURS_WINDOW = 72;
+
+function binPointsToHourly(
+  rawPoints: Array<{ timestamp: number; value: number }>,
+  startMs: number,
+  nowMs: number,
+  currentVal: number,
+  totalHours: number = HOURS_WINDOW
+): ChartDatum[] {
+  const hourStep = 3600 * 1000;
+  const result: ChartDatum[] = [];
+
+  let rawIdx = 0;
+  let lastVal = rawPoints.length > 0 ? rawPoints[0].value : currentVal;
+
+  for (let h = 0; h < totalHours; h++) {
+    const slotTime = startMs + (h + 1) * hourStep;
+
+    // Advance raw points up to this slot's time
+    while (rawIdx < rawPoints.length && rawPoints[rawIdx].timestamp <= slotTime) {
+      lastVal = rawPoints[rawIdx].value;
+      rawIdx++;
+    }
+
+    result.push({
+      date: new Date(slotTime),
+      value: Number(lastVal.toFixed(1))
+    });
+  }
+
+  // Ensure the latest point at the end is the current reading
+  if (!isNaN(currentVal) && result.length > 0) {
+    result[result.length - 1] = {
+      date: new Date(nowMs),
+      value: Number(currentVal.toFixed(1))
+    };
+  }
+
+  return result;
 }
 
 export default function MiniSensorSparkline({
   entityId,
   currentValue,
   color = '#f43f5e',
-  fillGradientId,
-  height = 36,
+  height = 32,
   strokeWidth = 2
 }: MiniSensorSparklineProps) {
   const isLiveMode = useAutoLayoutStore((s) => s.isLiveMode);
-  const [dataPoints, setDataPoints] = useState<number[]>([]);
+  const [dataPoints, setDataPoints] = useState<ChartDatum[]>([]);
 
   const parsedCurrent = typeof currentValue === 'number'
     ? currentValue
@@ -49,66 +83,53 @@ export default function MiniSensorSparkline({
     async function fetchPoints() {
       if (!entityId) return;
 
+      const nowMs = Date.now();
+      const startMs = nowMs - HOURS_WINDOW * 3600 * 1000;
+      const startTime = new Date(startMs).toISOString();
+
       try {
         if (isLiveMode) {
-          const startTime = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
           const liveHistory = await fetchLiveEntityHistory(entityId, startTime);
 
           if (!isCancelled && liveHistory.length > 0) {
-            const vals = liveHistory
-              .map((p) => parseFloat(p.state))
-              .filter((v) => !isNaN(v));
-
-            if (vals.length >= 1) {
-              // Ensure the latest point aligns with live entity current reading
-              if (!isNaN(parsedCurrent)) {
-                vals.push(parsedCurrent);
+            const rawPoints: Array<{ timestamp: number; value: number }> = [];
+            for (const p of liveHistory) {
+              const v = parseFloat(p.state);
+              if (!isNaN(v)) {
+                const ts = typeof (p as any).timestamp === 'number'
+                  ? ((p as any).timestamp < 1e12 ? (p as any).timestamp * 1000 : (p as any).timestamp)
+                  : Date.now();
+                rawPoints.push({ timestamp: ts, value: v });
               }
+            }
 
-              if (vals.length === 1) {
-                setDataPoints([vals[0], vals[0]]);
-                return;
-              }
+            if (rawPoints.length >= 1) {
+              // Sort chronologically
+              rawPoints.sort((a, b) => a.timestamp - b.timestamp);
 
-              // Sample down to max 24 points for crisp, high-performance SVG rendering
-              const maxPoints = 24;
-              if (vals.length <= maxPoints) {
-                setDataPoints(vals);
-              } else {
-                const step = (vals.length - 1) / (maxPoints - 1);
-                const sampled: number[] = [];
-                for (let i = 0; i < maxPoints - 1; i++) {
-                  sampled.push(vals[Math.round(i * step)]);
-                }
-                // Always include the absolute latest live point
-                sampled.push(vals[vals.length - 1]);
-                setDataPoints(sampled);
-              }
+              // Bin into 72 hourly points
+              const hourly = binPointsToHourly(rawPoints, startMs, nowMs, baseVal, HOURS_WINDOW);
+              setDataPoints(hourly);
               return;
             }
-          } else if (isLiveMode && !isNaN(parsedCurrent)) {
-            // Live sensor with constant state over the period
-            setDataPoints([parsedCurrent, parsedCurrent]);
-            return;
           }
         }
       } catch (err) {
         console.warn('[MiniSensorSparkline] History fetch error:', err);
       }
 
-      // Fallback for demo mode only
+      // Fallback for live sensor without prior history or demo mode (72 hours, 1 point/hr)
       if (!isCancelled) {
-        if (haWebSocketService.isDemo()) {
-          const synthetic: number[] = [];
-          const count = 16;
-          for (let i = 0; i < count; i++) {
-            const wave = Math.sin(i * 0.45) * 0.8 + Math.cos(i * 0.3) * 0.4;
-            synthetic.push(Number((baseVal + wave).toFixed(1)));
-          }
-          setDataPoints(synthetic);
-        } else {
-          setDataPoints([]);
+        const synthetic: ChartDatum[] = [];
+        for (let i = 0; i < HOURS_WINDOW; i++) {
+          const d = new Date(startMs + i * 3600 * 1000);
+          const wave = Math.sin(i * 0.18) * 1.2 + Math.cos(i * 0.08) * 0.6;
+          synthetic.push({
+            date: d,
+            value: Number((baseVal + wave).toFixed(1))
+          });
         }
+        setDataPoints(synthetic);
       }
     }
 
@@ -118,87 +139,45 @@ export default function MiniSensorSparkline({
     };
   }, [entityId, isLiveMode, baseVal, parsedCurrent]);
 
-  const svgPaths = useMemo(() => {
-    if (dataPoints.length < 2) return null;
-
-    const min = Math.min(...dataPoints);
-    const max = Math.max(...dataPoints);
-    const isFlat = max === min;
-    const range = isFlat ? 1 : max - min;
-
-    const w = 120;
-    const h = height;
-    const padding = 3;
-
-    const points: SparklinePoint[] = dataPoints.map((val, idx) => {
-      const x = (idx / (dataPoints.length - 1)) * (w - padding * 2) + padding;
-      // If flat line, place in vertical center
-      const y = isFlat
-        ? h / 2
-        : h - padding - ((val - min) / range) * (h - padding * 2);
-      return { x, y, val };
-    });
-
-    // Build smooth bezier path
-    let pathD = `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
-    for (let i = 0; i < points.length - 1; i++) {
-      const p0 = points[i];
-      const p1 = points[i + 1];
-      const mx = (p0.x + p1.x) / 2;
-      pathD += ` C ${mx.toFixed(1)},${p0.y.toFixed(1)} ${mx.toFixed(1)},${p1.y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
-    }
-
-    // Fill path closing at bottom
-    const fillD = `${pathD} L ${points[points.length - 1].x.toFixed(1)},${h} L ${points[0].x.toFixed(1)},${h} Z`;
-
-    return { pathD, fillD, points };
-  }, [dataPoints, height]);
-
-  if (!svgPaths) {
+  if (dataPoints.length < 2) {
     return <div style={{ height }} className="w-full" />;
   }
 
-  const gradId = fillGradientId || `grad-${entityId.replace(/[^a-zA-Z0-9]/g, '-')}`;
-
   return (
-    <div className="w-full relative overflow-hidden" style={{ height }}>
-      <svg
-        viewBox={`0 0 120 ${height}`}
-        className="w-full h-full overflow-visible preserve-3d"
-        preserveAspectRatio="none"
+    <div
+      className="w-full h-full relative overflow-hidden pointer-events-none"
+      style={{ height }}
+    >
+      <LineChart
+        data={dataPoints as unknown as Record<string, unknown>[]}
+        xDataKey="date"
+        margin={{ top: 2, right: 0, bottom: 0, left: 0 }}
+        aspectRatio=""
+        tightYDomain
+        animationDuration={0}
+        status="ready"
+        style={{ width: '100%', height: '100%' }}
+        className="w-full h-full"
       >
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.28" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.0" />
-          </linearGradient>
-        </defs>
-
-        {/* Gradient fill underneath curve */}
-        <path d={svgPaths.fillD} fill={`url(#${gradId})`} />
-
-        {/* Stroke Line */}
-        <path
-          d={svgPaths.pathD}
-          fill="none"
+        <Area
+          dataKey="value"
+          fill={color}
+          fillOpacity={0.2}
+          showLine={false}
+          showHighlight={false}
+          animate={false}
+          loading={false}
+        />
+        <Line
+          dataKey="value"
           stroke={color}
           strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="drop-shadow-xs"
+          animate={false}
+          showHighlight={false}
+          fadeEdges={false}
+          loading={false}
         />
-
-        {/* Pulsing latest point dot */}
-        {svgPaths.points.length > 0 && (
-          <circle
-            cx={svgPaths.points[svgPaths.points.length - 1].x}
-            cy={svgPaths.points[svgPaths.points.length - 1].y}
-            r="2.5"
-            fill={color}
-            className="animate-pulse"
-          />
-        )}
-      </svg>
+      </LineChart>
     </div>
   );
 }

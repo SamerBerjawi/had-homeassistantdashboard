@@ -13,7 +13,7 @@ import { ResolvedEntity } from '../../types';
 import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
 import { detectLightCapabilities } from '../../services/lightClassification';
 import { TelemetryLine } from '../common/TelemetryBadge';
-import DotSlider from '../ui/DotSlider';
+import EntityBrightnessSlider from '../ui/EntityBrightnessSlider';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import TileShell from './TileShell';
 import CompactTile from './CompactTile';
@@ -157,16 +157,12 @@ const LightTileComponent: React.FC<LightTileProps> = ({
           </div>
 
           {/* Capsule Brightness Slider */}
-          <div className="w-full pt-0.5" onClick={(e) => e.stopPropagation()}>
-            <DotSlider
+          <div className="w-full pt-1" onClick={(e) => e.stopPropagation()}>
+            <EntityBrightnessSlider
               value={isOn ? brightness : 0}
-              min={0}
-              max={100}
-              step={1}
-              activeColor={hasCustomColor ? '' : 'bg-amber-400 dark:bg-amber-400'}
-              activeStyle={hasCustomColor ? { backgroundColor: caps.displayColor } : undefined}
-              activeGlowColor={hasCustomColor ? `${caps.displayColor}44` : 'rgba(251, 191, 36, 0.25)'}
-              inactiveColor={darkMode ? 'bg-white/10' : 'bg-slate-300/60'}
+              isOn={isOn}
+              color={caps.supportsColor ? caps.displayColor : undefined}
+              darkMode={darkMode}
               onChange={(val) => onBrightnessChange(entity, val)}
             />
           </div>

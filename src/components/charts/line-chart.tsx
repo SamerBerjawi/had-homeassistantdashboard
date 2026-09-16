@@ -9,6 +9,7 @@ import {
   type ReactElement,
   type ReactNode,
   useCallback,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -57,6 +58,8 @@ export interface LineChartProps {
   xDomainSlotCount?: number;
   /** Tween y-domain when brush changes the visible x-range. Default: false */
   tweenYDomainOnXDomainChange?: boolean;
+  /** Scale Y-axis tightly to data min and max (e.g. for sensors). Default: false */
+  tightYDomain?: boolean;
   /** Inline container styles (e.g. fixed height for brush strip). */
   style?: CSSProperties;
   /** Fires when the internal chart phase changes (e.g. OG capture readiness). */
@@ -154,6 +157,8 @@ interface ChartInnerProps {
   xDomain?: [Date, Date];
   xDomainSlotCount?: number;
   tweenYDomainOnXDomainChange?: boolean;
+  tightYDomain?: boolean;
+  clipPathId: string;
   children: ReactNode;
   containerRef: React.RefObject<HTMLDivElement | null>;
   onPhaseChange: (phase: ChartPhase) => void;
@@ -176,6 +181,8 @@ function ChartInner({
   xDomain,
   xDomainSlotCount,
   tweenYDomainOnXDomainChange,
+  tightYDomain,
+  clipPathId,
   children,
   containerRef,
   onPhaseChange,
@@ -187,7 +194,7 @@ function ChartInner({
       animationDuration={animationDuration}
       animationEasing={animationEasing}
       chartStatus={chartStatus}
-      clipPathId="chart-grow-clip"
+      clipPathId={clipPathId}
       containerRef={containerRef}
       data={data}
       enterTransition={enterTransition}
@@ -198,6 +205,7 @@ function ChartInner({
       onPhaseChange={onPhaseChange}
       revealSignature={revealSignature}
       tweenYDomainOnXDomainChange={tweenYDomainOnXDomainChange}
+      tightYDomain={tightYDomain}
       width={width}
       xDataKey={xDataKey}
       xDomain={xDomain}
@@ -227,12 +235,15 @@ export function LineChart({
   xDomain,
   xDomainSlotCount,
   tweenYDomainOnXDomainChange = false,
+  tightYDomain = false,
   style,
   onPhaseChange,
   children,
 }: LineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const margin = { ...DEFAULT_MARGIN, ...marginProp };
+  const reactId = useId();
+  const clipPathId = `chart-grow-clip-${reactId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const [chartPhase, setChartPhase] = useState<ChartPhase>(() =>
     resolveRestingChartPhase(status)
   );
@@ -259,6 +270,7 @@ export function LineChart({
       style={{
         ...(aspectRatio ? { aspectRatio } : undefined),
         touchAction: "none",
+        height: style?.height ?? (aspectRatio ? undefined : "100%"),
         ...style,
       }}
     >
@@ -268,6 +280,7 @@ export function LineChart({
             animationDuration={animationDuration}
             animationEasing={animationEasing}
             chartStatus={status}
+            clipPathId={clipPathId}
             containerRef={containerRef}
             data={data}
             enterTransition={enterTransition}
@@ -277,6 +290,7 @@ export function LineChart({
             onPhaseChange={handlePhaseChange}
             revealSignature={revealSignature}
             tweenYDomainOnXDomainChange={tweenYDomainOnXDomainChange}
+            tightYDomain={tightYDomain}
             width={width}
             xDataKey={xDataKey}
             xDomain={xDomain}

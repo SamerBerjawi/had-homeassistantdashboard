@@ -13,7 +13,7 @@ import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
 import { detectClimateCapabilities } from '../../services/climateClassification';
 import { getClimateModeTheme } from '../../utils/climateTheme';
 import { TelemetryLine } from '../common/TelemetryBadge';
-import DotSlider from '../ui/DotSlider';
+import EntityTemperatureSlider from '../ui/EntityTemperatureSlider';
 import StandardTile from './StandardTile';
 
 interface ClimateTileProps {
@@ -51,19 +51,19 @@ const getModeAccentColor = (modeId: string): string => {
 const getSelectedModeBtnClass = (mode: string): string => {
   switch (mode) {
     case 'heat':
-      return 'bg-orange-500 text-white font-black shadow-xs';
+      return 'bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black shadow-[0_0_12px_rgba(249,115,22,0.45)] border border-orange-400/40 scale-102';
     case 'cool':
-      return 'bg-cyan-500 text-slate-950 font-black shadow-xs';
+      return 'bg-gradient-to-r from-cyan-500 to-sky-500 text-slate-950 font-black shadow-[0_0_12px_rgba(6,182,212,0.45)] border border-cyan-300/60 scale-102';
     case 'auto':
     case 'heat_cool':
-      return 'bg-emerald-500 text-white font-black shadow-xs';
+      return 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black shadow-[0_0_12px_rgba(16,185,129,0.45)] border border-emerald-400/40 scale-102';
     case 'fan_only':
     case 'fan':
-      return 'bg-teal-500 text-slate-950 font-black shadow-xs';
+      return 'bg-gradient-to-r from-teal-500 to-indigo-500 text-white font-black shadow-[0_0_12px_rgba(20,184,166,0.45)] border border-teal-400/40 scale-102';
     case 'dry':
-      return 'bg-amber-500 text-slate-950 font-black shadow-xs';
+      return 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black shadow-[0_0_12px_rgba(245,158,11,0.45)] border border-amber-300/60 scale-102';
     default:
-      return 'bg-slate-700 text-white font-bold shadow-xs';
+      return 'bg-slate-700/90 text-slate-200 font-bold border border-slate-600/50 shadow-xs';
   }
 };
 
@@ -182,54 +182,20 @@ export const ClimateTile: React.FC<ClimateTileProps> = ({
         </div>
       }
     >
-      {/* Target Temperature Readout + Steppers & Full-Width Dotted Slider */}
-      <div className="space-y-1.5 pt-0.5 w-full" onClick={(e) => e.stopPropagation()}>
-        {/* Row 1: Target Temp Label & Readout */}
-        <div className="flex items-center justify-between text-xs font-semibold">
-          <span className="text-slate-500 dark:text-slate-400">Target Temp</span>
-          <span className="font-mono font-black text-sm sm:text-base text-slate-800 dark:text-white">
-            {targetTemp !== undefined ? `${targetTemp}°C` : '--'}
-          </span>
-        </div>
-
-        {/* Row 2: Steppers and Dotted Slider */}
-        <div className="flex items-center gap-1.5 w-full">
-          <button
-            type="button"
-            disabled={targetTemp === undefined}
-            onClick={() => onTempAdjust(entity, -0.5)}
-            className={`w-8 h-8 rounded-xl bg-slate-900/[0.06] dark:bg-white/10 hover:bg-slate-900/10 dark:hover:bg-white/15 flex items-center justify-center font-bold text-sm select-none ${
-              targetTemp === undefined ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-90'
-            } shrink-0`}
-            title="Decrease Temp"
-          >
-            -
-          </button>
-          <div className="flex-1 px-1 flex items-center">
-            <DotSlider
-              value={targetTemp ?? minTemp}
-              min={minTemp}
-              max={maxTemp}
-              step={0.5}
-              disabled={targetTemp === undefined}
-              activeColor="bg-amber-500"
-              activeGlowColor="rgba(245, 158, 11, 0.35)"
-              inactiveColor={darkMode ? 'bg-white/10' : 'bg-slate-300/60'}
-              onChange={(val) => onTempSlider(entity, val)}
-            />
-          </div>
-          <button
-            type="button"
-            disabled={targetTemp === undefined}
-            onClick={() => onTempAdjust(entity, 0.5)}
-            className={`w-8 h-8 rounded-xl text-white ${theme.stepperBtnBg} ${theme.stepperBtnHover} ${theme.stepperBtnShadow} flex items-center justify-center font-bold text-sm select-none ${
-              targetTemp === undefined ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-90'
-            } shrink-0`}
-            title="Increase Temp"
-          >
-            +
-          </button>
-        </div>
+      {/* Redesigned Thermal Gradient Temperature Slider */}
+      <div className="w-full pt-0.5" onClick={(e) => e.stopPropagation()}>
+        <EntityTemperatureSlider
+          targetTemp={targetTemp}
+          currentTemp={currentTemp}
+          minTemp={minTemp}
+          maxTemp={maxTemp}
+          step={0.5}
+          hvacMode={currentHvacMode}
+          unit="°C"
+          darkMode={darkMode}
+          onTempAdjust={(delta) => onTempAdjust(entity, delta)}
+          onTempChange={(val) => onTempSlider(entity, val)}
+        />
       </div>
     </StandardTile>
   );
