@@ -27,10 +27,8 @@ import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { useHAImage } from '../../../services/haImageService';
 import { formatRelativeTime } from '../../../lib/utils';
-import {
-  detectMediaCapabilities,
-  MediaCapabilities
-} from '../../../services/mediaClassification';
+import { detectMediaCapabilities, MediaCapabilities } from '../../../services/mediaClassification';
+import { useAlbumArtColor } from '../../../hooks/useAlbumArtColor';
 
 interface MediaPlayerControlViewProps {
   entity: HAEntity;
@@ -62,6 +60,17 @@ export default function MediaPlayerControlView({
   }, [caps]);
 
   const { imageUrl: albumArtUrl } = useHAImage(caps.entityPicture, serverUrl);
+
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+  }, [albumArtUrl, caps.entityPicture]);
+
+  const palette = useAlbumArtColor(albumArtUrl || caps.entityPicture || null, {
+    title: caps.mediaTitle,
+    artist: caps.mediaArtist,
+    darkMode
+  });
 
   const handleTogglePower = () => {
     const nextState = caps.isOff ? 'idle' : 'off';
@@ -201,21 +210,35 @@ export default function MediaPlayerControlView({
         <div className="flex items-center gap-2">
           <div
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${
-              isPlaying
+              isPlaying && !palette.isExtracted
                 ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30'
                 : !caps.isOff
                 ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30'
                 : 'bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/20'
             }`}
+            style={
+              isPlaying && palette.isExtracted
+                ? {
+                    backgroundColor: palette.badgeBg,
+                    borderColor: palette.badgeBorder,
+                    color: palette.badgeText
+                  }
+                : undefined
+            }
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
-                isPlaying
+                isPlaying && !palette.isExtracted
                   ? 'bg-purple-500 animate-pulse'
                   : !caps.isOff
                   ? 'bg-sky-500'
                   : 'bg-slate-400'
               }`}
+              style={
+                isPlaying && palette.isExtracted
+                  ? { backgroundColor: palette.primary }
+                  : undefined
+              }
             />
             <span>{isPlaying ? 'Playing' : !caps.isOff ? 'Idle' : 'Off'}</span>
           </div>
@@ -224,12 +247,21 @@ export default function MediaPlayerControlView({
             type="button"
             onClick={handleTogglePower}
             className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 border ${
-              !caps.isOff
+              !caps.isOff && !palette.isExtracted
                 ? 'bg-purple-500 text-white border-purple-400 shadow-xs'
                 : darkMode
                 ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400'
                 : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-600 shadow-xs'
             }`}
+            style={
+              !caps.isOff && palette.isExtracted
+                ? {
+                    backgroundColor: palette.primary,
+                    borderColor: palette.badgeBorder,
+                    color: '#ffffff'
+                  }
+                : undefined
+            }
             aria-label={caps.isOff ? 'Turn Player On' : 'Turn Player Off'}
           >
             <Power size={16} weight="bold" />
@@ -249,8 +281,11 @@ export default function MediaPlayerControlView({
             {/* Subtle Ambient Glow Aura */}
             <div
               className={`absolute -inset-10 opacity-20 blur-3xl rounded-full transition-all duration-700 pointer-events-none ${
-                isPlaying ? 'bg-purple-500/35' : 'bg-transparent'
+                isPlaying && !palette.isExtracted ? 'bg-purple-500/35' : 'bg-transparent'
               }`}
+              style={{
+                backgroundColor: isPlaying && palette.isExtracted ? palette.glow : undefined
+              }}
             />
 
             {/* Album Art or Vinyl Disc */}
@@ -258,12 +293,17 @@ export default function MediaPlayerControlView({
               <div
                 className={`w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden shadow-[4px_6px_12px_rgba(0,0,0,0.15)] relative flex items-center justify-center border ${
                   darkMode ? 'bg-black/40 border-white/10' : 'bg-white/40 border-slate-200/60'
-                } ${isPlaying ? 'ring-4 ring-purple-500/30' : ''}`}
+                } ${isPlaying && !palette.isExtracted ? 'ring-4 ring-purple-500/30' : ''}`}
+                style={{
+                  boxShadow: isPlaying && palette.isExtracted ? `0 0 24px ${palette.glowSubtle}` : undefined,
+                  borderColor: isPlaying && palette.isExtracted ? palette.badgeBorder : undefined
+                }}
               >
-                {albumArtUrl ? (
+                {albumArtUrl && !imgError ? (
                   <img
                     src={albumArtUrl}
                     alt={caps.mediaTitle || 'Album Art'}
+                    onError={() => setImgError(true)}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -283,7 +323,12 @@ export default function MediaPlayerControlView({
             <h3 className="text-lg sm:text-xl font-black tracking-tight line-clamp-1 max-w-[280px] text-slate-900 dark:text-white">
               {caps.mediaTitle || (caps.isOff ? 'Speaker Off' : 'Ready to Stream')}
             </h3>
-            <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 mt-0.5 line-clamp-1">
+            <p
+              className="text-xs font-semibold text-purple-600 dark:text-purple-400 mt-0.5 line-clamp-1"
+              style={{
+                color: palette.isExtracted ? (darkMode ? palette.light : palette.badgeText) : undefined
+              }}
+            >
               {caps.mediaArtist || caps.appName || (caps.isOff ? 'Standby' : 'AirPlay / Spotify')}
             </p>
             {caps.mediaAlbum && (
@@ -298,12 +343,21 @@ export default function MediaPlayerControlView({
                 type="button"
                 onClick={handleToggleShuffle}
                 className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs transition-all cursor-pointer active:scale-90 border ${
-                  shuffle
+                  shuffle && !palette.isExtracted
                     ? 'bg-purple-500 text-white font-black border-purple-400 shadow-xs'
                     : darkMode
                     ? 'bg-black/20 text-slate-400 hover:text-white border-white/5'
                     : 'bg-white/40 text-slate-600 hover:text-slate-900 border-slate-200/50'
                 }`}
+                style={
+                  shuffle && palette.isExtracted
+                    ? {
+                        backgroundColor: palette.primary,
+                        borderColor: palette.badgeBorder,
+                        color: '#ffffff'
+                      }
+                    : undefined
+                }
                 title="Shuffle"
               >
                 <Shuffle size={16} weight="bold" />
@@ -326,7 +380,13 @@ export default function MediaPlayerControlView({
               <button
                 type="button"
                 onClick={handlePlayPause}
-                className="w-14 h-14 rounded-3xl bg-purple-500 hover:bg-purple-400 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-[4px_6px_12px_rgba(168,85,247,0.35)]"
+                className="w-14 h-14 rounded-3xl text-white flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
+                style={{
+                  backgroundColor: palette.isExtracted ? palette.primary : '#a855f7',
+                  boxShadow: palette.isExtracted
+                    ? `0 8px 24px -4px ${palette.glow}`
+                    : '4px 6px 12px rgba(168,85,247,0.35)'
+                }}
                 title={isPlaying ? 'Pause' : 'Play'}
               >
                 {isPlaying ? (
@@ -353,12 +413,21 @@ export default function MediaPlayerControlView({
                 type="button"
                 onClick={handleToggleRepeat}
                 className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs transition-all cursor-pointer active:scale-90 border ${
-                  repeat !== 'off'
+                  repeat !== 'off' && !palette.isExtracted
                     ? 'bg-purple-500 text-white font-black border-purple-400 shadow-xs'
                     : darkMode
                     ? 'bg-black/20 text-slate-400 hover:text-white border-white/5'
                     : 'bg-white/40 text-slate-600 hover:text-slate-900 border-slate-200/50'
                 }`}
+                style={
+                  repeat !== 'off' && palette.isExtracted
+                    ? {
+                        backgroundColor: palette.primary,
+                        borderColor: palette.badgeBorder,
+                        color: '#ffffff'
+                      }
+                    : undefined
+                }
                 title={`Repeat: ${repeat}`}
               >
                 <Repeat size={16} weight="bold" />
@@ -366,16 +435,16 @@ export default function MediaPlayerControlView({
             </div>
           </div>
 
-          {/* Volume Slider Bento Card */}
-          <div className={`p-4 sm:p-5 rounded-3xl space-y-3 ${bentoStaticCardStyle}`}>
-            <div className="flex items-center justify-between px-0.5">
+          {/* Master Volume Strip & Presets */}
+          <div className={`p-4 sm:p-5 rounded-3xl flex flex-col gap-3.5 ${bentoStaticCardStyle}`}>
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleToggleMute}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 border ${
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer border ${
                     caps.isMuted
-                      ? 'bg-rose-500 text-white border-rose-400 shadow-xs'
+                      ? 'bg-rose-500/15 text-rose-500 border-rose-500/30'
                       : darkMode
                       ? 'bg-black/20 hover:bg-black/30 text-slate-300 border-white/5'
                       : 'bg-white/40 hover:bg-white/60 text-slate-700 border-slate-200/50'
@@ -388,7 +457,12 @@ export default function MediaPlayerControlView({
                   Speaker Volume
                 </span>
               </div>
-              <span className="font-mono text-xs font-black text-purple-600 dark:text-purple-400">
+              <span
+                className="font-mono text-xs font-black text-purple-600 dark:text-purple-400"
+                style={{
+                  color: palette.isExtracted ? (darkMode ? palette.light : palette.badgeText) : undefined
+                }}
+              >
                 {caps.isMuted ? 'Muted' : `${volume}%`}
               </span>
             </div>
@@ -400,9 +474,13 @@ export default function MediaPlayerControlView({
               onChange={handleVolumeChange}
               icon={<SpeakerHigh size={20} weight="fill" />}
               label="Volume Level"
-              fillColor="#a855f7"
-              fillGradient="linear-gradient(to right, #a855f7, #ec4899)"
-              glowColor="rgba(168, 85, 247, 0.25)"
+              fillColor={palette.isExtracted ? palette.primary : '#a855f7'}
+              fillGradient={
+                palette.isExtracted
+                  ? `linear-gradient(to right, ${palette.dark}, ${palette.primary}, ${palette.light})`
+                  : 'linear-gradient(to right, #a855f7, #ec4899)'
+              }
+              glowColor={palette.isExtracted ? palette.glowSubtle : 'rgba(168, 85, 247, 0.25)'}
               darkMode={darkMode}
               heightClass="h-14 sm:h-15"
             />

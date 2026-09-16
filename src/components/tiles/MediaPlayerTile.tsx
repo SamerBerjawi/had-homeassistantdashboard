@@ -75,8 +75,13 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
   const rawPicture = entity.attributes?.entity_picture || entity.attributes?.media_image;
   const { imageUrl: albumArtUrl } = useHAImage(rawPicture, serverUrl);
 
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+  }, [albumArtUrl, rawPicture]);
+
   // Extract dynamic accent palette from album art
-  const palette = useAlbumArtColor(albumArtUrl || null, {
+  const palette = useAlbumArtColor(albumArtUrl || rawPicture || null, {
     title,
     artist,
     darkMode
@@ -140,13 +145,13 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
       <div
         onClick={() => onOpenDrawer ? onOpenDrawer(entity) : onIconClick?.()}
         style={{
-          boxShadow: palette?.glowSubtle
+          boxShadow: palette?.isExtracted && palette?.glowSubtle
             ? `0 10px 25px -5px ${palette.glowSubtle}, 4px 6px 12px rgba(0, 0, 0, 0.25)`
             : darkMode
             ? '4px 6px 12px rgba(0, 0, 0, 0.25)'
             : '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-          borderColor: palette?.badgeBorder || undefined,
-          background: !albumArtUrl && isActive
+          borderColor: palette?.isExtracted ? palette?.badgeBorder : undefined,
+          background: !albumArtUrl && isActive && palette.isExtracted
             ? (darkMode
                 ? `linear-gradient(135deg, ${palette.glowSubtle} 0%, rgba(15, 23, 42, 0.85) 100%)`
                 : `linear-gradient(135deg, ${palette.glowSubtle} 0%, rgba(255, 255, 255, 0.88) 100%)`)
@@ -163,11 +168,12 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
         }`}
       >
         {/* Dynamic Blurred Album Artwork Background */}
-        {albumArtUrl && (
+        {albumArtUrl && !imgError && (
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none z-0">
             <img
               src={albumArtUrl}
               alt=""
+              onError={() => setImgError(true)}
               className="w-full h-full object-cover scale-125 filter blur-2xl opacity-50 dark:opacity-55 transition-opacity duration-700"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/30 dark:block hidden" />
@@ -176,20 +182,23 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
         )}
 
         {/* Ambient Artwork Glow */}
-        <div
-          className="absolute -right-8 -bottom-8 w-48 h-48 rounded-full blur-3xl opacity-35 dark:opacity-30 pointer-events-none transition-all duration-700"
-          style={{ backgroundColor: palette.primary }}
-        />
+        {palette.isExtracted && (
+          <div
+            className="absolute -right-8 -bottom-8 w-48 h-48 rounded-full blur-3xl opacity-35 dark:opacity-30 pointer-events-none transition-all duration-700"
+            style={{ backgroundColor: palette.primary }}
+          />
+        )}
 
         {/* Main Row: Album Artwork + Song Info + Transport Controls */}
         <div className="relative z-10 flex items-stretch justify-between gap-3.5 min-w-0">
           {/* Left Side: Large Album Artwork spanning full height */}
           <div className="flex items-stretch gap-3.5 min-w-0 flex-1">
             <div className="relative aspect-square w-16 sm:w-20 rounded-2xl overflow-hidden shadow-xl ring-2 ring-white/30 dark:ring-white/10 shrink-0 group/art self-stretch flex items-center justify-center">
-              {albumArtUrl ? (
+              {albumArtUrl && !imgError ? (
                 <img
                   src={albumArtUrl}
                   alt={title}
+                  onError={() => setImgError(true)}
                   className="w-full h-full object-cover group-hover/art:scale-105 transition-transform duration-300"
                 />
               ) : (

@@ -68,7 +68,12 @@ export default function MediaDetailModal({
   const rawArt = entity.attributes?.media_image || entity.attributes?.entity_picture;
   const { imageUrl: albumArt } = useHAImage(rawArt, serverUrl);
 
-  const palette = useAlbumArtColor(albumArt || null, {
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+  }, [albumArt, rawArt]);
+
+  const palette = useAlbumArtColor(albumArt || rawArt || null, {
     title,
     artist,
     darkMode: true
@@ -197,11 +202,12 @@ export default function MediaDetailModal({
             {/* Unified Media Player Tile with Full-Cover Blurred Backdrop */}
             <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-black/40 border border-white/15 relative overflow-hidden space-y-4">
               {/* Blurred Album Backdrop covering the entire tile */}
-              {albumArt && (
+              {albumArt && !imgError && (
                 <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
                   <img
                     src={albumArt}
                     alt=""
+                    onError={() => setImgError(true)}
                     className="w-full h-full object-cover scale-110 blur-xl opacity-40 mix-blend-screen transition-opacity duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/35 backdrop-blur-xs" />
@@ -226,8 +232,13 @@ export default function MediaDetailModal({
 
               {/* Actual Unblurred Album Artwork / App Visual */}
               <div className="relative w-44 h-44 rounded-2xl overflow-hidden shadow-2xl border border-white/20 z-10 group flex items-center justify-center bg-slate-900">
-                {albumArt ? (
-                  <img src={albumArt} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                {albumArt && !imgError ? (
+                  <img
+                    src={albumArt}
+                    alt={title}
+                    onError={() => setImgError(true)}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
                 ) : (
                   <div 
                     className="w-full h-full flex flex-col items-center justify-center gap-2"
@@ -248,7 +259,7 @@ export default function MediaDetailModal({
                 <h4 className="text-base font-extrabold text-white tracking-tight truncate">{title}</h4>
                 <p 
                   className="text-xs font-semibold mt-0.5 truncate transition-colors duration-300"
-                  style={{ color: palette.light }}
+                  style={{ color: palette.isExtracted ? palette.light : 'rgb(148, 163, 184)' }}
                 >
                   {artist}
                 </p>

@@ -63,7 +63,12 @@ export default function MediaHierarchyPlayerCard({
   const rawArt = media.attributes?.media_image || media.attributes?.entity_picture;
   const { imageUrl: albumArt } = useHAImage(rawArt, serverUrl);
 
-  const palette = useAlbumArtColor(albumArt || null, {
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+  }, [albumArt, rawArt]);
+
+  const palette = useAlbumArtColor(albumArt || rawArt || null, {
     title: visual.title,
     artist: visual.subtitle,
     darkMode
@@ -122,8 +127,13 @@ export default function MediaHierarchyPlayerCard({
       <div className="flex items-center gap-3 min-w-0">
         {/* Artwork / Icon Thumbnail */}
         <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-800 flex items-center justify-center shadow-xs">
-          {albumArt ? (
-            <img src={albumArt} alt={visual.title} className="w-full h-full object-cover" />
+          {albumArt && !imgError ? (
+            <img
+              src={albumArt}
+              alt={visual.title}
+              onError={() => setImgError(true)}
+              className="w-full h-full object-cover"
+            />
           ) : (
             <AppIcon size={24} weight="duotone" className="text-slate-400" />
           )}

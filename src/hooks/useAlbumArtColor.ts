@@ -116,6 +116,35 @@ export function buildPaletteFromHsl(
   darkMode: boolean = true,
   isExtracted: boolean = true
 ): AlbumArtPalette {
+  if (!isExtracted) {
+    // Return a clean, muted, neutral slate treatment rather than a vivid pseudo-extracted hue
+    const primary = darkMode ? 'rgb(100, 116, 139)' : 'rgb(71, 85, 105)'; // slate-500 / slate-600
+    const light = darkMode ? 'rgb(148, 163, 184)' : 'rgb(100, 116, 139)'; // slate-400 / slate-500
+    const dark = darkMode ? 'rgb(30, 41, 59)' : 'rgb(15, 23, 42)'; // slate-800 / slate-900
+    const textRgb = darkMode ? [203, 213, 225] : [51, 65, 85]; // slate-300 / slate-700
+    const badgeText = `rgb(${textRgb.join(', ')})`;
+    const glow = darkMode ? 'rgba(100, 116, 139, 0.15)' : 'rgba(71, 85, 105, 0.12)';
+    const glowSubtle = darkMode ? 'rgba(100, 116, 139, 0.08)' : 'rgba(71, 85, 105, 0.05)';
+    const badgeBg = darkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)';
+    const badgeBorder = darkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)';
+    const waveformPlayedGradient = darkMode
+      ? 'linear-gradient(to top, rgb(51, 65, 85), rgb(100, 116, 139), rgb(148, 163, 184))'
+      : 'linear-gradient(to top, rgb(15, 23, 42), rgb(71, 85, 105), rgb(100, 116, 139))';
+
+    return {
+      primary,
+      light,
+      dark,
+      glow,
+      glowSubtle,
+      badgeBg,
+      badgeBorder,
+      badgeText,
+      waveformPlayedGradient,
+      isExtracted: false,
+    };
+  }
+
   // Enhance saturation for UI vibrancy while maintaining tone harmony
   const saturatedS = Math.max(s, 68);
   const primaryL = Math.max(46, Math.min(58, l));
@@ -147,7 +176,7 @@ export function buildPaletteFromHsl(
     badgeBorder,
     badgeText,
     waveformPlayedGradient,
-    isExtracted,
+    isExtracted: true,
   };
 }
 
@@ -249,56 +278,135 @@ function extractColorsFromImageData(imageData: ImageData): { h: number; s: numbe
 }
 
 import { loadHAImageBlob } from '../services/haImageService';
+import { getActiveHAToken } from '../services/haAuth';
+import { useRef } from 'react';
 
 /**
- * Loads an image from URL via loadHAImageBlob / Image element to safely extract ImageData
+ * Loads an image from URL and reads pixel data via an offscreen HTML Canvas.
+ * Employs a multi-tier fallback:
+ * Tier 1: Direct in-browser load with crossOrigin="anonymous" (fastest, zero-proxy for Spotify, Apple Music, and standard CDNs).
+ * Tier 2: Authenticated server proxy fallback via /api/image-proxy with content-type verification and blob URL creation.
  */
 async function extractPaletteFromUrl(url: string): Promise<{ h: number; s: number; l: number } | null> {
-  let safeObjectUrl = '';
+  if (!url) return null;
 
-  try {
-    if (url.startsWith('blob:') || url.startsWith('data:')) {
-      safeObjectUrl = url;
-    } else {
-      safeObjectUrl = await loadHAImageBlob(url);
+  const tryExtractFromSrc = (src: string, isProxy = false): Promise<{ h: number; s: number; l: number } | null> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      let timedOut = false;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn(`[useAlbumArtColor] Canvas image load timed out after 5s for ${src} (original: ${url}, isProxy=${isProxy})`);
+        }
+        resolve(null);
+      }, 5000);
+
+      img.onload = () => {
+        if (timedOut) return;
+        clearTimeout(timer);
+        try {
+          const canvas = document.createElement('canvas');
+          const size = 48;
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          if (!ctx) {
+            if (process.env.NODE_ENV !== 'production') {
+              console.warn(`[useAlbumArtColor] Canvas 2d context unavailable for ${url}`);
+            }
+            resolve(null);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, size, size);
+          const imageData = ctx.getImageData(0, 0, size, size);
+          const result = extractColorsFromImageData(imageData);
+          resolve(result);
+        } catch (err) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn(
+              `[useAlbumArtColor] Canvas pixel extraction failed (tainted canvas or SecurityError) for ${url} (isProxy=${isProxy}):`,
+              err
+            );
+          }
+          resolve(null);
+        }
+      };
+
+      img.onerror = (e) => {
+        if (timedOut) return;
+        clearTimeout(timer);
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn(`[useAlbumArtColor] Image failed to load from ${src} (original: ${url}, isProxy=${isProxy}):`, e);
+        }
+        resolve(null);
+      };
+
+      img.src = src;
+    });
+  };
+
+  // Tier 1: Try direct in-browser anonymous CORS load
+  // If it's a relative URL, resolve it first
+  let directSrc = url;
+  if (url.startsWith('/')) {
+    try {
+      directSrc = await loadHAImageBlob(url);
+    } catch {
+      directSrc = url;
     }
-  } catch {
-    safeObjectUrl = url;
   }
 
-  if (!safeObjectUrl) return null;
+  const directResult = await tryExtractFromSrc(directSrc, false);
+  if (directResult) {
+    return directResult;
+  }
 
-  return new Promise<{ h: number; s: number; l: number } | null>((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
+  // If already a self-contained blob: or data: URL, server proxying won't help
+  if (url.startsWith('blob:') || url.startsWith('data:')) {
+    return null;
+  }
 
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        const size = 48;
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        if (!ctx) {
-          resolve(null);
-          return;
-        }
+  // Tier 2: Proxy fallback to bypass strict CORS / tainted canvas restrictions
+  try {
+    const activeToken = getActiveHAToken();
+    const proxyEndpoint = `/api/image-proxy?url=${encodeURIComponent(url)}${activeToken ? `&token=${encodeURIComponent(activeToken)}` : ''}`;
+    const proxyRes = await fetch(proxyEndpoint, {
+      headers: activeToken ? { Authorization: `Bearer ${activeToken}` } : {},
+    });
 
-        ctx.drawImage(img, 0, 0, size, size);
-        const imageData = ctx.getImageData(0, 0, size, size);
-        const result = extractColorsFromImageData(imageData);
-        resolve(result);
-      } catch (err) {
-        resolve(null);
+    if (!proxyRes.ok) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[useAlbumArtColor] Proxy fetch returned HTTP ${proxyRes.status} for ${url}`);
       }
-    };
+      return null;
+    }
 
-    img.onerror = () => {
-      resolve(null);
-    };
+    const contentType = proxyRes.headers.get('content-type') || '';
+    if (!contentType.startsWith('image/')) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[useAlbumArtColor] Proxy returned non-image content-type (${contentType}) for ${url}`);
+      }
+      return null;
+    }
 
-    img.src = safeObjectUrl;
-  });
+    const blob = await proxyRes.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      const proxyResult = await tryExtractFromSrc(objectUrl, true);
+      return proxyResult;
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  } catch (proxyErr) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[useAlbumArtColor] Proxy fallback network request failed for ${url}:`, proxyErr);
+    }
+    return null;
+  }
 }
 
 /**
@@ -310,26 +418,34 @@ export function useAlbumArtColor(
 ): AlbumArtPalette {
   const { title = '', artist = '', darkMode = true, defaultHue = 275 } = options;
 
-  const fallbackHue = getDeterministicHue(title, artist, defaultHue);
-  const defaultPalette = buildPaletteFromHsl(fallbackHue, 75, 52, darkMode, false);
+  const defaultNeutralPalette = buildPaletteFromHsl(defaultHue, 0, 50, darkMode, false);
+
+  // Ref to hold the last successfully extracted palette across track changes
+  const lastExtractedRef = useRef<AlbumArtPalette | null>(null);
 
   const [palette, setPalette] = useState<AlbumArtPalette>(() => {
     if (albumArtUrl && colorCache.has(albumArtUrl)) {
       const cached = colorCache.get(albumArtUrl)!;
-      return buildPaletteFromHsl(cached.h, cached.s, cached.l, darkMode, true);
+      const cachedPalette = buildPaletteFromHsl(cached.h, cached.s, cached.l, darkMode, true);
+      lastExtractedRef.current = cachedPalette;
+      return cachedPalette;
     }
-    return defaultPalette;
+    return defaultNeutralPalette;
   });
 
   useEffect(() => {
     if (!albumArtUrl) {
-      setPalette(buildPaletteFromHsl(fallbackHue, 75, 52, darkMode, false));
+      // No active art - show neutral treatment and reset holdover
+      lastExtractedRef.current = null;
+      setPalette(buildPaletteFromHsl(defaultHue, 0, 50, darkMode, false));
       return;
     }
 
     if (colorCache.has(albumArtUrl)) {
       const cached = colorCache.get(albumArtUrl)!;
-      setPalette(buildPaletteFromHsl(cached.h, cached.s, cached.l, darkMode, true));
+      const cachedPalette = buildPaletteFromHsl(cached.h, cached.s, cached.l, darkMode, true);
+      lastExtractedRef.current = cachedPalette;
+      setPalette(cachedPalette);
       return;
     }
 
@@ -339,16 +455,24 @@ export function useAlbumArtColor(
       if (!isMounted) return;
       if (extracted) {
         colorCache.set(albumArtUrl, extracted);
-        setPalette(buildPaletteFromHsl(extracted.h, extracted.s, extracted.l, darkMode, true));
+        const newPalette = buildPaletteFromHsl(extracted.h, extracted.s, extracted.l, darkMode, true);
+        lastExtractedRef.current = newPalette;
+        setPalette(newPalette);
       } else {
-        setPalette(buildPaletteFromHsl(fallbackHue, 75, 52, darkMode, false));
+        // Extraction failed: hold over the previous successfully extracted palette if available,
+        // otherwise render the clean neutral palette. Avoids snapping to a fake text-hash color.
+        if (lastExtractedRef.current) {
+          setPalette(lastExtractedRef.current);
+        } else {
+          setPalette(buildPaletteFromHsl(defaultHue, 0, 50, darkMode, false));
+        }
       }
     });
 
     return () => {
       isMounted = false;
     };
-  }, [albumArtUrl, fallbackHue, darkMode]);
+  }, [albumArtUrl, darkMode, defaultHue]);
 
   return palette;
 }

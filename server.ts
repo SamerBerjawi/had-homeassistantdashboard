@@ -163,6 +163,10 @@ async function startServer() {
         res.setHeader('Access-Control-Allow-Methods', allowMethods);
         res.setHeader('Vary', 'Origin');
       }
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Methods', allowMethods);
+      res.setHeader('Vary', 'Origin');
     }
   };
 
@@ -644,15 +648,17 @@ async function startServer() {
     const rawAuthHeader = req.headers.authorization;
     if (rawAuthHeader && rawAuthHeader.startsWith('Bearer ')) {
       token = rawAuthHeader.slice(7).trim();
-    } else if (req.path === '/api/config/stream' || req.originalUrl?.startsWith('/api/config/stream')) {
+    } else if (
+      req.path === '/api/config/stream' || req.originalUrl?.startsWith('/api/config/stream') ||
+      req.path === '/api/image-proxy' || req.originalUrl?.startsWith('/api/image-proxy')
+    ) {
       /**
-       * SSE Route Query String Token Fallback:
-       * Browser EventSource API does not support custom HTTP Authorization headers.
-       * Therefore, the real-time push stream (/api/config/stream) accepts the bearer token via
+       * SSE & Image Proxy Route Query String Token Fallback:
+       * Browser EventSource and HTML image tags / canvas fetch may provide the bearer token via
        * query parameter (?token=...) as a strictly-scoped fallback.
        *
        * Security mitigations:
-       * 1. Scoped EXCLUSIVELY to /api/config/stream. REST endpoints (/api/config, /api/assets)
+       * 1. Scoped EXCLUSIVELY to /api/config/stream and /api/image-proxy. REST endpoints
        *    must ALWAYS provide the Authorization: Bearer <token> header and will reject query tokens.
        * 2. The token is immediately deleted from req.query and redacted from req.url so it
        *    never leaks into server/reverse-proxy access logs or downstream middleware.
@@ -1070,15 +1076,46 @@ async function startServer() {
   });
 
   // Universal Image Proxy to bypass CORS / Private Network restrictions for artwork color extraction
-  app.get('/api/image-proxy', requireHAAuth, async (req, res) => {
+  app.options('/api/image-proxy', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, x-ha-url');
+    res.sendStatus(204);
+  });
+
+  app.get('/api/image-proxy', async (req, res) => {
     const rawUrl = (req.query.url as string) || '';
     if (!rawUrl) {
       return res.status(400).json({ error: 'Missing url parameter' });
     }
 
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+
+    let token = '';
+    const rawAuthHeader = req.headers.authorization;
+    if (rawAuthHeader && rawAuthHeader.startsWith('Bearer ')) {
+      token = rawAuthHeader.slice(7).trim();
+    } else if (req.query.token && typeof req.query.token === 'string') {
+      token = req.query.token.trim();
+    }
+
+    // Determine configured/client Home Assistant URL
+    const clientHaUrl = (req as any).clientHaUrl || (req.headers['x-ha-url'] as string) || (req.query.haUrl as string) || process.env.DASHBOARD_HA_URL || process.env.HA_URL || '';
+
+    let fullUrl = rawUrl;
+    if (fullUrl.startsWith('/')) {
+      if (clientHaUrl) {
+        fullUrl = `${clientHaUrl.replace(/\/+$/, '')}${fullUrl}`;
+      } else {
+        const fallbackHa = resolveTargetHaBase();
+        fullUrl = `${fallbackHa.replace(/\/+$/, '')}${fullUrl}`;
+      }
+    }
+
     let parsedUrl: URL;
     try {
-      parsedUrl = new URL(rawUrl);
+      parsedUrl = new URL(fullUrl);
     } catch {
       return res.status(400).json({ error: 'Invalid URL provided' });
     }
@@ -1087,13 +1124,23 @@ async function startServer() {
       return res.status(400).json({ error: 'Only http and https protocols are supported' });
     }
 
-    // Determine configured/client Home Assistant URL
-    const clientHaUrl = (req as any).clientHaUrl || process.env.DASHBOARD_HA_URL || process.env.HA_URL || '';
-    const isTargetHa = clientHaUrl ? isSameOriginHost(rawUrl, clientHaUrl) : false;
+    const isTargetHa = clientHaUrl ? isSameOriginHost(fullUrl, clientHaUrl) : false;
 
     // SSRF Guard: block private/internal/cloud-metadata IPs unless it is explicitly the target Home Assistant instance
     if (!isTargetHa && isPrivateOrLocalHost(parsedUrl.hostname)) {
       return res.status(403).json({ error: 'Access to private, local, or cloud metadata network addresses is prohibited' });
+    }
+
+    // If target is Home Assistant, verify authentication
+    if (isTargetHa) {
+      if (!token) {
+        return res.status(401).json({ error: 'Unauthorized: Missing Home Assistant authentication token' });
+      }
+      const authHeader = rawAuthHeader && rawAuthHeader.startsWith('Bearer ') ? rawAuthHeader : `Bearer ${token}`;
+      const isValid = await verifyHAToken(token, clientHaUrl, authHeader);
+      if (!isValid) {
+        return res.status(401).json({ error: 'Unauthorized: Invalid Home Assistant authentication token' });
+      }
     }
 
     try {
@@ -1102,14 +1149,9 @@ async function startServer() {
         Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
       };
 
-      // Credential Leakage Prevention: ONLY forward Home Assistant Authorization header to the Home Assistant instance itself
-      if (isTargetHa) {
-        const rawAuthHeader = req.headers['authorization'];
-        if (rawAuthHeader) {
-          headers['Authorization'] = rawAuthHeader;
-        } else if ((req as any).haToken) {
-          headers['Authorization'] = `Bearer ${(req as any).haToken}`;
-        }
+      // ONLY forward Home Assistant Authorization header to the Home Assistant instance itself
+      if (isTargetHa && token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
 
       const response = await fetch(parsedUrl.toString(), {
@@ -1131,7 +1173,6 @@ async function startServer() {
 
       res.setHeader('Content-Type', contentType);
       res.setHeader('X-Content-Type-Options', 'nosniff');
-      applyCorsHeaders(req, res, 'GET, OPTIONS');
       res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
       return res.send(buffer);
     } catch (err: any) {

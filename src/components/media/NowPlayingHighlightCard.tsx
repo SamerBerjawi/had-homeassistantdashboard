@@ -71,7 +71,12 @@ export default function NowPlayingHighlightCard({
   const rawArt = media.attributes?.media_image || media.attributes?.entity_picture;
   const { imageUrl: albumArt } = useHAImage(rawArt, serverUrl);
 
-  const palette = useAlbumArtColor(albumArt || null, {
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+  }, [albumArt, rawArt]);
+
+  const palette = useAlbumArtColor(albumArt || rawArt || null, {
     title: visual.title,
     artist: visual.subtitle,
     darkMode
@@ -177,7 +182,7 @@ export default function NowPlayingHighlightCard({
         ) : (
           <div
             className="absolute -right-8 -top-8 w-56 h-56 rounded-full blur-2xl opacity-20 pointer-events-none transition-opacity duration-700"
-            style={{ backgroundColor: palette.primary }}
+            style={{ backgroundColor: palette.isExtracted ? palette.primary : 'transparent' }}
           />
         )}
       </div>
@@ -252,10 +257,11 @@ export default function NowPlayingHighlightCard({
         <div className="flex items-center gap-4 sm:gap-5">
           {/* Artwork / App Visual */}
           <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-white/20 shadow-md shrink-0 bg-slate-800 flex items-center justify-center">
-            {albumArt ? (
+            {albumArt && !imgError ? (
               <img
                 src={albumArt}
                 alt={visual.title}
+                onError={() => setImgError(true)}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
             ) : (

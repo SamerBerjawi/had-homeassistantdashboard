@@ -41,7 +41,12 @@ export default function MediaPlayerCard({
   const rawArt = entity.attributes?.media_image || entity.attributes?.entity_picture;
   const { imageUrl: albumArt } = useHAImage(rawArt, serverUrl);
 
-  const palette = useAlbumArtColor(albumArt || null, {
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+  }, [albumArt, rawArt]);
+
+  const palette = useAlbumArtColor(albumArt || rawArt || null, {
     title,
     artist,
     darkMode: true
@@ -129,7 +134,7 @@ export default function MediaPlayerCard({
       className="relative w-full h-full flex flex-col justify-between overflow-hidden cursor-pointer"
     >
       {/* Ambient Artwork Glow */}
-      {albumArt ? (
+      {albumArt && !imgError ? (
         <div 
           className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-cover bg-center blur-xl opacity-30 pointer-events-none"
           style={{ backgroundImage: `url(${albumArt})` }}
@@ -137,7 +142,7 @@ export default function MediaPlayerCard({
       ) : (
         <div 
           className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full blur-xl opacity-20 pointer-events-none"
-          style={{ backgroundColor: palette.primary }}
+          style={{ backgroundColor: palette.isExtracted ? palette.primary : 'transparent' }}
         />
       )}
 
@@ -145,8 +150,13 @@ export default function MediaPlayerCard({
       <div className="flex items-center justify-between relative z-10">
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-white/20 shadow-md shrink-0 flex items-center justify-center bg-slate-800">
-            {albumArt ? (
-              <img src={albumArt} alt={title} className="w-full h-full object-cover" />
+            {albumArt && !imgError ? (
+              <img
+                src={albumArt}
+                alt={title}
+                onError={() => setImgError(true)}
+                className="w-full h-full object-cover"
+              />
             ) : visual.appInfo ? (
               <div 
                 className="w-full h-full flex flex-col items-center justify-center p-1"

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getActiveHAToken } from './haAuth';
+import { getStoredAuthConfig } from './authStorage';
 
 // In-memory cache for resolved Blob URLs to prevent duplicate network requests
 const blobUrlCache = new Map<string, string>();
@@ -10,21 +11,18 @@ const pendingPromises = new Map<string, Promise<string>>();
  * into a clean, valid HTTP/S base URL.
  */
 export function getHAHttpBaseUrl(serverUrl?: string | null): string {
-  if (!serverUrl) {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('ha_server_url') || localStorage.getItem('had_last_ha_url');
-      if (saved) {
-        return saved
-          .replace(/^wss:\/\//i, 'https://')
-          .replace(/^ws:\/\//i, 'http://')
-          .replace(/\/api\/websocket\/?$/i, '')
-          .replace(/\/+$/, '');
-      }
+  let target = serverUrl;
+  if (!target && typeof window !== 'undefined') {
+    const authConfig = getStoredAuthConfig();
+    target = authConfig?.httpUrl || authConfig?.serverUrl;
+    if (!target) {
+      target = localStorage.getItem('ha_server_url') || localStorage.getItem('had_last_ha_url');
     }
-    return '';
   }
 
-  return serverUrl
+  if (!target) return '';
+
+  return target
     .replace(/^wss:\/\//i, 'https://')
     .replace(/^ws:\/\//i, 'http://')
     .replace(/\/api\/websocket\/?$/i, '')
@@ -64,7 +62,7 @@ export async function loadHAImageBlob(
     return url;
   }
 
-  // External images (e.g. external CDN) don't need HA Auth headers
+  // External images (e.g. external CDN like Spotify or Apple Music) don't need HA Auth headers - return directly for <img>
   if (url.startsWith('http://') || url.startsWith('https://')) {
     const base = getHAHttpBaseUrl(serverUrl);
     const isHAHost = base && url.startsWith(base);
@@ -106,6 +104,12 @@ export async function loadHAImageBlob(
         return targetUrl;
       }
 
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType && !contentType.startsWith('image/')) {
+        // Received non-image payload (e.g. SPA HTML fallback) - return direct URL
+        return targetUrl;
+      }
+
       const blob = await response.blob();
       const objectUrl = URL.createObjectURL(blob);
       blobUrlCache.set(cacheKey, objectUrl);
@@ -130,9 +134,19 @@ export function useHAImage(
   rawUrl?: string | null,
   serverUrl?: string | null
 ): { imageUrl: string; isLoading: boolean } {
+  const isExternalUrl = (u?: string | null) => {
+    if (!u) return false;
+    if (u.startsWith('http://') || u.startsWith('https://')) {
+      const base = getHAHttpBaseUrl(serverUrl);
+      return !base || !u.startsWith(base);
+    }
+    return false;
+  };
+
   const [imageUrl, setImageUrl] = useState<string>(() => {
     if (!rawUrl) return '';
     if (rawUrl.startsWith('blob:') || rawUrl.startsWith('data:')) return rawUrl;
+    if (isExternalUrl(rawUrl)) return rawUrl;
     const targetUrl = resolveHAImageUrl(rawUrl, serverUrl);
     const activeToken = getActiveHAToken();
     const cacheKey = `${targetUrl}_${activeToken || ''}`;
@@ -148,6 +162,12 @@ export function useHAImage(
     }
 
     if (rawUrl.startsWith('blob:') || rawUrl.startsWith('data:')) {
+      setImageUrl(rawUrl);
+      setIsLoading(false);
+      return;
+    }
+
+    if (isExternalUrl(rawUrl)) {
       setImageUrl(rawUrl);
       setIsLoading(false);
       return;
