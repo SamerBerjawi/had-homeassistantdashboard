@@ -33,6 +33,10 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
     dateLabel,
     customRange,
     setCustomRange,
+    targetDate,
+    resolvedEntityIds,
+    preferences,
+    currency,
     loadState,
     isFetchingStats,
     error,
@@ -164,6 +168,12 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
             hasGrid={hasGrid}
             hasBattery={hasBattery}
             darkMode={darkMode}
+            period={period}
+            targetDate={targetDate}
+            customRange={customRange}
+            resolvedEntityIds={resolvedEntityIds}
+            preferences={preferences}
+            currency={currency}
           />
         </div>
       </div>

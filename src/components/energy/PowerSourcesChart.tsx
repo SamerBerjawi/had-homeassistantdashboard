@@ -20,10 +20,15 @@ import {
   Sun,
   Plug,
   BatteryCharging,
-  House
+  House,
+  Scales,
+  ArrowsClockwise
 } from '@phosphor-icons/react';
 import { TransformedEnergyBucket } from '../../services/energyDataTransformer';
 import { InstantaneousPowerTelemetry } from '../../utils/energyMath';
+import { EnergyHistoryPeriod } from '../../services/haEnergyStatistics';
+import { EnergyPreferences, ExtractedEnergyStatisticIds } from '../../services/haEnergyPreferences';
+import { useEnergyComparison } from '../../hooks/useEnergyComparison';
 
 export interface PowerSourcesChartProps {
   buckets: TransformedEnergyBucket[];
@@ -33,6 +38,14 @@ export interface PowerSourcesChartProps {
   hasBattery?: boolean;
   darkMode?: boolean;
   className?: string;
+
+  // Comparison context
+  period?: EnergyHistoryPeriod;
+  targetDate?: Date;
+  customRange?: { start: Date; end: Date } | null;
+  resolvedEntityIds?: ExtractedEnergyStatisticIds | null;
+  preferences?: EnergyPreferences | null;
+  currency?: string;
 }
 
 interface PowerDataPoint {
@@ -54,6 +67,12 @@ interface PowerDataPoint {
   batteryDischargeLine: number | null;
   batteryChargeLine: number | null;
   gridExportLine: number | null;
+
+  // Comparison series (when Compare Mode is active)
+  compareSolar?: number | null;
+  compareHome?: number | null;
+  compareGridImport?: number | null;
+  compareBatteryDischarge?: number | null;
 }
 
 export default function PowerSourcesChart({
@@ -63,8 +82,23 @@ export default function PowerSourcesChart({
   hasGrid = true,
   hasBattery = true,
   darkMode = true,
-  className = ''
+  className = '',
+  period,
+  targetDate,
+  customRange,
+  resolvedEntityIds,
+  preferences,
+  currency
 }: PowerSourcesChartProps) {
+  // Year-over-Year comparison data hook
+  const comparison = useEnergyComparison({
+    period: period || 'day',
+    targetDate: targetDate || new Date(),
+    customRange,
+    resolvedEntityIds,
+    preferences,
+    currency
+  });
   // Visibility toggles for each flow series
   const [showSolar, setShowSolar] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
@@ -298,13 +332,97 @@ export default function PowerSourcesChart({
       }
     }
 
+    // Map comparison series into points if Compare Mode is enabled
+    if (comparison.isCompareEnabled && comparison.compareBuckets.length > 0) {
+      if (isSingleDayView) {
+        const compFirstDate = new Date(comparison.compareBuckets[0].startMs);
+        const compDayStartMs = new Date(
+          compFirstDate.getFullYear(),
+          compFirstDate.getMonth(),
+          compFirstDate.getDate(),
+          0,
+          0,
+          0,
+          0
+        ).getTime();
+
+        const compMap = new Map<number, { solar: number; home: number; gridImport: number; batteryDischarge: number }>();
+        for (const cb of comparison.compareBuckets) {
+          const rawMin = Math.round((cb.startMs - compDayStartMs) / 60000);
+          const durHours = (cb.endMs - cb.startMs) / 3600000;
+          const toKw = (v: number) => Number((durHours > 0 ? v / durHours : v * 12).toFixed(2));
+          compMap.set(rawMin, {
+            solar: toKw(cb.solar || 0),
+            home: toKw(cb.homeConsumption || 0),
+            gridImport: toKw(cb.gridImport || 0),
+            batteryDischarge: toKw(cb.batteryDischarge || 0)
+          });
+        }
+
+        for (const pt of points) {
+          let comp = compMap.get(pt.minuteOfDay);
+          if (!comp) {
+            for (let offset = 5; offset <= 30; offset += 5) {
+              if (compMap.has(pt.minuteOfDay - offset)) {
+                comp = compMap.get(pt.minuteOfDay - offset);
+                break;
+              }
+              if (compMap.has(pt.minuteOfDay + offset)) {
+                comp = compMap.get(pt.minuteOfDay + offset);
+                break;
+              }
+            }
+          }
+          if (comp) {
+            pt.compareSolar = comp.solar;
+            pt.compareHome = comp.home;
+            pt.compareGridImport = comp.gridImport;
+            pt.compareBatteryDischarge = comp.batteryDischarge;
+          }
+        }
+      } else {
+        const compLen = comparison.compareBuckets.length;
+        points.forEach((pt, i) => {
+          let cb: TransformedEnergyBucket | undefined;
+          if (compLen === points.length) {
+            cb = comparison.compareBuckets[i];
+          } else {
+            const ptDate = pt.date;
+            cb =
+              comparison.compareBuckets.find((b) => {
+                const bDate = new Date(b.startMs);
+                return bDate.getDate() === ptDate.getDate() || bDate.getMonth() === ptDate.getMonth();
+              }) || comparison.compareBuckets[Math.min(i, compLen - 1)];
+          }
+
+          if (cb) {
+            pt.compareSolar = Number((cb.solar || 0).toFixed(2));
+            pt.compareHome = Number((cb.homeConsumption || 0).toFixed(2));
+            pt.compareGridImport = Number((cb.gridImport || 0).toFixed(2));
+            pt.compareBatteryDischarge = Number((cb.batteryDischarge || 0).toFixed(2));
+          }
+        });
+      }
+    }
+
     return {
       chartData: points,
       currentMinuteOfDay: nowMinute,
       isViewingToday: isToday,
       isSingleDay: isSingleDayView
     };
-  }, [buckets, hasSolar, showSolar, hasGrid, showGrid, hasBattery, showBattery, showHome]);
+  }, [
+    buckets,
+    hasSolar,
+    showSolar,
+    hasGrid,
+    showGrid,
+    hasBattery,
+    showBattery,
+    showHome,
+    comparison.isCompareEnabled,
+    comparison.compareBuckets
+  ]);
 
   // Aggregate period totals for toggle pills in multi-day views
   const periodTotals = useMemo(() => {
@@ -333,6 +451,63 @@ export default function PowerSourcesChart({
     };
   }, [chartData, isSingleDay]);
 
+  // Summary energy totals for current period vs comparison period
+  const comparisonSummary = useMemo(() => {
+    if (!comparison.isCompareEnabled) return null;
+
+    let currentSolar = 0;
+    let currentHome = 0;
+    let currentGrid = 0;
+    let currentBattery = 0;
+
+    for (const b of buckets) {
+      currentSolar += b.solar || 0;
+      currentHome += b.homeConsumption || 0;
+      currentGrid += b.gridImport || 0;
+      currentBattery += b.batteryDischarge || 0;
+    }
+
+    let compSolar = 0;
+    let compHome = 0;
+    let compGrid = 0;
+    let compBattery = 0;
+
+    for (const cb of comparison.compareBuckets) {
+      compSolar += cb.solar || 0;
+      compHome += cb.homeConsumption || 0;
+      compGrid += cb.gridImport || 0;
+      compBattery += cb.batteryDischarge || 0;
+    }
+
+    const calcDelta = (curr: number, prev: number) => {
+      if (prev <= 0.001) {
+        return curr > 0.001 ? 100 : 0;
+      }
+      return ((curr - prev) / prev) * 100;
+    };
+
+    return {
+      current: {
+        solar: Number(currentSolar.toFixed(2)),
+        home: Number(currentHome.toFixed(2)),
+        grid: Number(currentGrid.toFixed(2)),
+        battery: Number(currentBattery.toFixed(2))
+      },
+      compare: {
+        solar: Number(compSolar.toFixed(2)),
+        home: Number(compHome.toFixed(2)),
+        grid: Number(compGrid.toFixed(2)),
+        battery: Number(compBattery.toFixed(2))
+      },
+      deltas: {
+        solar: calcDelta(currentSolar, compSolar),
+        home: calcDelta(currentHome, compHome),
+        grid: calcDelta(currentGrid, compGrid),
+        battery: calcDelta(currentBattery, compBattery)
+      }
+    };
+  }, [comparison.isCompareEnabled, buckets, comparison.compareBuckets]);
+
   // Dynamically calculate Y-axis domain and nice step ticks based on active flow series
   const { yDomain, yTicks } = useMemo(() => {
     if (chartData.length === 0) {
@@ -347,7 +522,24 @@ export default function PowerSourcesChart({
         (hasSolar && showSolar ? p.solar : 0) +
         (hasGrid && showGrid ? p.gridImport : 0) +
         (hasBattery && showBattery ? p.batteryDischarge : 0);
-      const posVal = Math.max(posStack, showHome ? p.homeConsumption : 0);
+      let posVal = Math.max(posStack, showHome ? p.homeConsumption : 0);
+
+      // Expand headroom if comparison curves are visible
+      if (comparison.isCompareEnabled) {
+        if (hasSolar && showSolar && (p.compareSolar || 0) > posVal) {
+          posVal = p.compareSolar || 0;
+        }
+        if (showHome && (p.compareHome || 0) > posVal) {
+          posVal = p.compareHome || 0;
+        }
+        if (hasGrid && showGrid && (p.compareGridImport || 0) > posVal) {
+          posVal = p.compareGridImport || 0;
+        }
+        if (hasBattery && showBattery && (p.compareBatteryDischarge || 0) > posVal) {
+          posVal = p.compareBatteryDischarge || 0;
+        }
+      }
+
       if (posVal > maxPositive) maxPositive = posVal;
 
       const negStack =
@@ -405,7 +597,19 @@ export default function PowerSourcesChart({
       yDomain: [yMin, yMax] as [number, number],
       yTicks: ticks
     };
-  }, [chartData, hasSolar, showSolar, hasGrid, showGrid, hasBattery, showBattery, showHome, realtime, isSingleDay]);
+  }, [
+    chartData,
+    hasSolar,
+    showSolar,
+    hasGrid,
+    showGrid,
+    hasBattery,
+    showBattery,
+    showHome,
+    realtime,
+    isSingleDay,
+    comparison.isCompareEnabled
+  ]);
 
   // Real-time instantaneous badge calculations
   const liveGrid = realtime
@@ -425,7 +629,23 @@ export default function PowerSourcesChart({
     return 'preserveStartEnd'; // Year or long custom range
   }, [isSingleDay, chartData.length]);
 
-  // Custom Home Assistant Style Tooltip
+  // Helper for percentage difference rendering in comparison tooltip
+  const renderDiffBadge = (curr: number, prev: number | null | undefined) => {
+    if (prev === null || prev === undefined || Math.abs(prev) < 0.005) {
+      if (Math.abs(curr) < 0.005) return <span className="text-slate-500 font-mono">0%</span>;
+      return <span className="text-emerald-400 font-mono font-bold">+100%</span>;
+    }
+    const pct = ((curr - prev) / prev) * 100;
+    if (Math.abs(pct) < 0.5) return <span className="text-slate-400 font-mono">0%</span>;
+    const isPos = pct > 0;
+    return (
+      <span className={`font-mono font-bold ${isPos ? 'text-emerald-400' : 'text-rose-400'}`}>
+        {isPos ? `+${pct.toFixed(0)}%` : `${pct.toFixed(0)}%`}
+      </span>
+    );
+  };
+
+  // Custom Home Assistant Style Tooltip (Dual-mode: Single Period vs YoY Comparison)
   const renderTooltip = (props: any) => {
     const { active, payload } = props;
     if (!active || !payload || payload.length === 0) return null;
@@ -434,6 +654,103 @@ export default function PowerSourcesChart({
     if (!data) return null;
 
     const unit = isSingleDay ? ' kW' : ' kWh';
+
+    if (comparison.isCompareEnabled) {
+      return (
+        <div
+          className={`px-3.5 py-2.5 rounded-2xl shadow-2xl border text-xs font-sans backdrop-blur-xl ${
+            darkMode
+              ? 'bg-slate-950/95 border-white/15 text-white'
+              : 'bg-white/95 border-slate-200 text-slate-900'
+          }`}
+          style={{ minWidth: 260 }}
+        >
+          <div className="flex items-center justify-between font-bold text-[11px] mb-2 pb-1 border-b border-white/10 text-slate-400">
+            <span>{data.timeFormatted}</span>
+            <span className="font-mono text-amber-500 dark:text-amber-400 font-extrabold">
+              {comparison.currentYear} vs {comparison.compareYear}
+            </span>
+          </div>
+
+          <table className="w-full text-left font-medium text-xs">
+            <thead>
+              <tr className={`text-[10px] uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <th className="pb-1 font-semibold">Flow</th>
+                <th className="pb-1 font-semibold text-right">{comparison.currentYear}</th>
+                <th className="pb-1 font-semibold text-right">{comparison.compareYear}</th>
+                <th className="pb-1 font-semibold text-right">Diff</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {hasSolar && showSolar && (
+                <tr>
+                  <td className="py-1 flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
+                    <Sun size={12} weight="duotone" /> Solar
+                  </td>
+                  <td className="py-1 text-right font-mono font-bold text-amber-700 dark:text-amber-400">
+                    {data.solar.toFixed(2)}{unit}
+                  </td>
+                  <td className="py-1 text-right font-mono text-slate-400">
+                    {(data.compareSolar ?? 0).toFixed(2)}{unit}
+                  </td>
+                  <td className="py-1 text-right">
+                    {renderDiffBadge(data.solar, data.compareSolar)}
+                  </td>
+                </tr>
+              )}
+              {showHome && (
+                <tr>
+                  <td className="py-1 flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400 font-bold">
+                    <House size={12} weight="duotone" /> Home
+                  </td>
+                  <td className="py-1 text-right font-mono font-bold">
+                    {data.homeConsumption.toFixed(2)}{unit}
+                  </td>
+                  <td className="py-1 text-right font-mono text-slate-400">
+                    {(data.compareHome ?? 0).toFixed(2)}{unit}
+                  </td>
+                  <td className="py-1 text-right">
+                    {renderDiffBadge(data.homeConsumption, data.compareHome)}
+                  </td>
+                </tr>
+              )}
+              {hasGrid && showGrid && (
+                <tr>
+                  <td className="py-1 flex items-center gap-1.5 text-sky-600 dark:text-sky-400 font-bold">
+                    <Plug size={12} weight="duotone" /> Grid
+                  </td>
+                  <td className="py-1 text-right font-mono font-bold text-sky-700 dark:text-sky-400">
+                    {data.gridImport.toFixed(2)}{unit}
+                  </td>
+                  <td className="py-1 text-right font-mono text-slate-400">
+                    {(data.compareGridImport ?? 0).toFixed(2)}{unit}
+                  </td>
+                  <td className="py-1 text-right">
+                    {renderDiffBadge(data.gridImport, data.compareGridImport)}
+                  </td>
+                </tr>
+              )}
+              {hasBattery && showBattery && (
+                <tr>
+                  <td className="py-1 flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-bold">
+                    <BatteryCharging size={12} weight="duotone" /> Battery
+                  </td>
+                  <td className="py-1 text-right font-mono font-bold text-emerald-800 dark:text-emerald-400">
+                    {data.batteryDischarge.toFixed(2)}{unit}
+                  </td>
+                  <td className="py-1 text-right font-mono text-slate-400">
+                    {(data.compareBatteryDischarge ?? 0).toFixed(2)}{unit}
+                  </td>
+                  <td className="py-1 text-right">
+                    {renderDiffBadge(data.batteryDischarge, data.compareBatteryDischarge)}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
 
     return (
       <div
@@ -646,6 +963,7 @@ export default function PowerSourcesChart({
                     : 'bg-slate-100 border-slate-200 text-slate-400 opacity-50 line-through'
               }`}
             >
+              {/* Battery Toggle Pill */}
               <BatteryCharging size={14} weight="fill" className={showBattery ? 'text-emerald-400' : 'text-slate-500'} />
               <span>Battery</span>
               {isSingleDay && realtime && (
@@ -656,8 +974,162 @@ export default function PowerSourcesChart({
               )}
             </button>
           )}
+
+          {/* Compare Mode Toggle Pill */}
+          <button
+            type="button"
+            onClick={comparison.toggleCompare}
+            title={comparison.isCompareEnabled ? 'Disable Comparison Mode' : 'Enable Year-over-Year Comparison Mode'}
+            className={`px-3 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer select-none active:scale-95 ${
+              comparison.isCompareEnabled
+                ? darkMode
+                  ? 'bg-amber-500 text-slate-950 font-black shadow-md border-amber-400'
+                  : 'bg-amber-500 text-slate-950 font-black shadow-md border-amber-500'
+                : darkMode
+                  ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300'
+                  : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+            }`}
+          >
+            <Scales size={14} weight={comparison.isCompareEnabled ? 'bold' : 'duotone'} />
+            <span>Compare</span>
+            {comparison.isCompareEnabled && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-black/20 text-slate-950 font-extrabold font-mono">
+                {comparison.compareYear}
+              </span>
+            )}
+          </button>
         </div>
       </div>
+
+      {/* Compare Mode Sub-Bar: Side-by-side Year Selection & Metric Deltas */}
+      {comparison.isCompareEnabled && (
+        <div
+          className={`mb-3 p-3 rounded-2xl border flex flex-wrap items-center justify-between gap-3 text-xs transition-all z-10 ${
+            darkMode
+              ? 'bg-slate-900/80 border-white/10 backdrop-blur-md text-slate-200'
+              : 'bg-slate-50/95 border-slate-200 backdrop-blur-md text-slate-800'
+          }`}
+        >
+          {/* Left: 2026 vs Selected Year */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] uppercase tracking-wider font-bold text-slate-400">
+              Comparing:
+            </span>
+
+            {/* Current Year Badge */}
+            <span
+              className={`px-2.5 py-1 rounded-xl font-mono font-extrabold border text-xs ${
+                darkMode
+                  ? 'bg-white/10 border-white/15 text-white'
+                  : 'bg-white border-slate-300 text-slate-900 shadow-xs'
+              }`}
+            >
+              {comparison.currentYear} <span className="font-sans font-medium text-[10px] text-slate-400">(This Year)</span>
+            </span>
+
+            <span className="font-bold text-slate-400 px-0.5">vs</span>
+
+            {/* Year Selection Pills: 2025, 2024, 2023... */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {comparison.availableYears.map((yr) => {
+                const isSelected = yr === comparison.compareYear;
+                return (
+                  <button
+                    key={yr}
+                    type="button"
+                    onClick={() => comparison.setCompareYear(yr)}
+                    className={`px-2.5 py-1 rounded-xl font-mono text-xs transition-all cursor-pointer active:scale-95 ${
+                      isSelected
+                        ? 'bg-amber-500 text-slate-950 font-black shadow-xs ring-1 ring-amber-400'
+                        : darkMode
+                          ? 'bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300'
+                          : 'bg-white hover:bg-slate-100 border border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {yr}
+                  </button>
+                );
+              })}
+            </div>
+
+            {comparison.isLoadingCompare && (
+              <span className="flex items-center gap-1 text-[11px] font-medium text-amber-500 animate-pulse ml-2">
+                <ArrowsClockwise size={13} className="animate-spin" />
+                <span>Loading {comparison.compareYear} data…</span>
+              </span>
+            )}
+          </div>
+
+          {/* Right: Metric Summary Deltas and Legend */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {comparisonSummary && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {hasSolar && showSolar && (
+                  <div
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] ${
+                      darkMode
+                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+                        : 'bg-amber-50 border-amber-200 text-amber-800'
+                    }`}
+                  >
+                    <Sun size={12} weight="duotone" />
+                    <span>Solar:</span>
+                    <span className="font-mono font-bold">{comparisonSummary.current.solar.toFixed(1)}</span>
+                    <span className="text-slate-400">vs</span>
+                    <span className="font-mono">{comparisonSummary.compare.solar.toFixed(1)} kWh</span>
+                    <span
+                      className={`font-mono font-extrabold ${
+                        comparisonSummary.deltas.solar >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                      }`}
+                    >
+                      {comparisonSummary.deltas.solar >= 0
+                        ? `+${comparisonSummary.deltas.solar.toFixed(0)}%`
+                        : `${comparisonSummary.deltas.solar.toFixed(0)}%`}
+                    </span>
+                  </div>
+                )}
+
+                {showHome && (
+                  <div
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] ${
+                      darkMode
+                        ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300'
+                        : 'bg-cyan-50 border-cyan-200 text-cyan-800'
+                    }`}
+                  >
+                    <House size={12} weight="duotone" />
+                    <span>Home:</span>
+                    <span className="font-mono font-bold">{comparisonSummary.current.home.toFixed(1)}</span>
+                    <span className="text-slate-400">vs</span>
+                    <span className="font-mono">{comparisonSummary.compare.home.toFixed(1)} kWh</span>
+                    <span
+                      className={`font-mono font-extrabold ${
+                        comparisonSummary.deltas.home <= 0 ? 'text-emerald-400' : 'text-rose-400'
+                      }`}
+                    >
+                      {comparisonSummary.deltas.home >= 0
+                        ? `+${comparisonSummary.deltas.home.toFixed(0)}%`
+                        : `${comparisonSummary.deltas.home.toFixed(0)}%`}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Legend guide */}
+            <div className="flex items-center gap-2.5 text-[11px] font-medium text-slate-400">
+              <span className="flex items-center gap-1">
+                <span className="w-3.5 h-0.5 bg-slate-400 rounded-full" />
+                <span>{comparison.currentYear}</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3.5 h-0.5 border-b-2 border-dashed border-amber-400" />
+                <span>{comparison.compareYear} (Dashed)</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Recharts Composed Stacked Chart Area - Flexibly fills full card height */}
       <div className="w-full flex-1 min-h-[340px] relative z-10">
@@ -908,6 +1380,69 @@ export default function PowerSourcesChart({
                   dot={false}
                   isAnimationActive={false}
                 />
+              )}
+
+              {/* ───────────────────────────────────────────────────────────── */}
+              {/* YEAR-OVER-YEAR COMPARISON DASHED LINES (When Compare Mode ON) */}
+              {/* ───────────────────────────────────────────────────────────── */}
+              {comparison.isCompareEnabled && (
+                <>
+                  {hasSolar && showSolar && (
+                    <Line
+                      type="monotone"
+                      dataKey="compareSolar"
+                      name={`Solar (${comparison.compareYear})`}
+                      stroke="#f59e0b"
+                      strokeDasharray="4 4"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                      isAnimationActive={false}
+                    />
+                  )}
+
+                  {showHome && (
+                    <Line
+                      type="monotone"
+                      dataKey="compareHome"
+                      name={`Home (${comparison.compareYear})`}
+                      stroke={darkMode ? '#93c5fd' : '#2563eb'}
+                      strokeDasharray="4 4"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                      isAnimationActive={false}
+                    />
+                  )}
+
+                  {hasGrid && showGrid && (
+                    <Line
+                      type="monotone"
+                      dataKey="compareGridImport"
+                      name={`Grid (${comparison.compareYear})`}
+                      stroke="#38bdf8"
+                      strokeDasharray="4 4"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                      isAnimationActive={false}
+                    />
+                  )}
+
+                  {hasBattery && showBattery && (
+                    <Line
+                      type="monotone"
+                      dataKey="compareBatteryDischarge"
+                      name={`Battery (${comparison.compareYear})`}
+                      stroke="#34d399"
+                      strokeDasharray="4 4"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                      isAnimationActive={false}
+                    />
+                  )}
+                </>
               )}
             </ComposedChart>
           </ResponsiveContainer>
