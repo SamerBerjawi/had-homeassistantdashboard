@@ -3,15 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
 import {
+  Sun,
   SolarPanel,
   Broadcast,
   BatteryCharging,
   House,
   Fire,
   Drop,
-  Lightning
+  Lightning,
+  ArrowDown,
+  ArrowUp,
+  ArrowLeft,
+  ArrowRight
 } from '@phosphor-icons/react';
 import { TransformedEnergyTotals } from '../../services/energyDataTransformer';
 import { InstantaneousPowerTelemetry } from '../../utils/energyMath';
@@ -39,54 +43,28 @@ export default function EnergyDistributionCard({
   darkMode = true,
   className = ''
 }: EnergyDistributionCardProps) {
-  const [viewMode, setViewMode] = useState<'period' | 'live'>('period');
-
-  // Determine active flows based on selected view mode
-  const isLive = viewMode === 'live' && !!realtime;
-
-  const solarVal = isLive ? (realtime?.solarPowerKW ?? 0) : totals.solar;
-  const solarUnit = isLive ? 'kW' : 'kWh';
-
-  const gridImportVal = isLive ? (realtime?.gridImportPowerKW ?? 0) : totals.gridImport;
-  const gridExportVal = isLive ? (realtime?.gridExportPowerKW ?? 0) : totals.gridExport;
-
-  const batteryInVal = isLive ? (realtime?.batteryChargePowerKW ?? 0) : totals.batteryCharge;
-  const batteryOutVal = isLive ? (realtime?.batteryDischargePowerKW ?? 0) : totals.batteryDischarge;
-
-  // Battery SoC is only valid in Live mode. In historical period/Total Yield mode,
-  // showing live SoC mixes current instantaneous state with historical totals.
-  const batterySoc = isLive ? (realtime?.batterySoC ?? null) : null;
-
-  const homeVal = isLive ? (realtime?.homeConsumptionKW ?? 0) : totals.homeConsumption;
-
-  // Flow magnitude calculations
+  // Real-time instantaneous live power telemetry (in kW)
   const liveSolar = realtime?.solarPowerKW ?? 0;
   const liveGridExport = realtime?.gridExportPowerKW ?? 0;
   const liveBatteryCharge = realtime?.batteryChargePowerKW ?? 0;
   const liveGridImport = realtime?.gridImportPowerKW ?? 0;
   const liveBatteryDischarge = realtime?.batteryDischargePowerKW ?? 0;
+  const homeVal = realtime?.homeConsumptionKW ?? 0;
+  const batterySoc = realtime?.batterySoC ?? null;
 
   // Exact HA live flow allocation (conservation of energy)
-  const liveSolarToGrid = Math.min(liveSolar, liveGridExport);
-  const liveSolarRemaining = Math.max(0, liveSolar - liveSolarToGrid);
-  const liveSolarToBattery = Math.min(liveSolarRemaining, liveBatteryCharge);
-  const liveSolarToHome = Math.max(0, liveSolarRemaining - liveSolarToBattery);
+  const solarToGridVal = Math.min(liveSolar, liveGridExport);
+  const liveSolarRemaining = Math.max(0, liveSolar - solarToGridVal);
+  const solarToBatteryVal = Math.min(liveSolarRemaining, liveBatteryCharge);
+  const solarToHomeVal = Math.max(0, liveSolarRemaining - solarToBatteryVal);
 
-  const liveGridToBattery = Math.max(0, liveBatteryCharge - liveSolarToBattery);
-  const liveBatteryToGrid = Math.max(0, liveGridExport - liveSolarToGrid);
-  const liveBatteryToHome = Math.max(0, liveBatteryDischarge - liveBatteryToGrid);
-  const liveGridToHome = Math.max(0, liveGridImport - liveGridToBattery);
+  const gridToBatteryVal = Math.max(0, liveBatteryCharge - solarToBatteryVal);
+  const batteryToGridVal = Math.max(0, liveGridExport - solarToGridVal);
+  const batteryToHomeVal = Math.max(0, liveBatteryDischarge - batteryToGridVal);
+  const gridToHomeVal = Math.max(0, liveGridImport - gridToBatteryVal);
 
-  const solarToHomeVal = isLive ? liveSolarToHome : totals.solarToHome;
-  const solarToGridVal = isLive ? liveSolarToGrid : totals.solarToGrid;
-  const solarToBatteryVal = isLive ? liveSolarToBattery : totals.solarToBattery;
-  const gridToHomeVal = isLive ? liveGridToHome : totals.gridToHome;
-  const batteryToHomeVal = isLive ? liveBatteryToHome : totals.batteryToHome;
-  const gridToBatteryVal = isLive ? liveGridToBattery : (totals.gridToBattery ?? 0);
-  const batteryToGridVal = isLive ? liveBatteryToGrid : (totals.batteryToGrid ?? 0);
-
-  // Dynamic flow threshold: 0.01 kW (10W) in live mode, 0.05 kWh (50Wh) in period mode
-  const flowThreshold = isLive ? 0.01 : 0.05;
+  // Dynamic flow threshold: 0.01 kW (10W)
+  const flowThreshold = 0.01;
 
   // Active Flow Flags (> flowThreshold and hardware presence)
   const hasSolarToHome = hasSolar && solarToHomeVal > flowThreshold;
@@ -104,10 +82,10 @@ export default function EnergyDistributionCard({
     const trueInbound = (hasSolar ? solarToHomeVal : 0) +
                         (hasGrid ? gridToHomeVal : 0) +
                         (hasBattery ? batteryToHomeVal : 0);
-    if (Math.abs(homeVal - trueInbound) > (isLive ? 0.02 : 0.05)) {
+    if (Math.abs(homeVal - trueInbound) > 0.02) {
       console.warn(
-        `[EnergyDistributionCard] Invariant mismatch: Home node value (${homeVal.toFixed(2)}) differs from sum of inbound flows (${trueInbound.toFixed(2)}) by > ${isLive ? 0.02 : 0.05}.`,
-        { homeVal, trueInbound, isLive, totals }
+        `[EnergyDistributionCard] Invariant mismatch: Home node value (${homeVal.toFixed(2)}) differs from sum of inbound flows (${trueInbound.toFixed(2)}) by > 0.02.`,
+        { homeVal, trueInbound, totals }
       );
     }
   }
@@ -145,6 +123,44 @@ export default function EnergyDistributionCard({
   const gridArc = totalInbound > 0 ? (Math.max(0, gridToHomeVal) / safeTotalInbound) * homeCircumference : 0;
   const batteryArc = totalInbound > 0 ? (Math.max(0, batteryToHomeVal) / safeTotalInbound) * homeCircumference : 0;
 
+  // Streamlined Daily Cumulative Groups (Only values > 0.005)
+  const solarItems: { label: string; val: number; type: 'home' | 'battery' | 'grid' }[] = [];
+  if (hasSolar) {
+    if (totals.solarToHome > 0.005) solarItems.push({ label: 'Home', val: totals.solarToHome, type: 'home' });
+    if (hasBattery && totals.solarToBattery > 0.005) solarItems.push({ label: 'Battery', val: totals.solarToBattery, type: 'battery' });
+    if (hasGrid && totals.solarToGrid > 0.005) solarItems.push({ label: 'Grid', val: totals.solarToGrid, type: 'grid' });
+  }
+
+  const batteryItems: { label: string; val: number; type: 'home' | 'battery' | 'grid' }[] = [];
+  if (hasBattery) {
+    if (totals.batteryToHome > 0.005) batteryItems.push({ label: 'Home', val: totals.batteryToHome, type: 'home' });
+    if (hasGrid && (totals.batteryToGrid ?? 0) > 0.005) batteryItems.push({ label: 'Grid', val: totals.batteryToGrid, type: 'grid' });
+  }
+
+  const gridItems: { label: string; val: number; type: 'home' | 'battery' | 'grid' }[] = [];
+  if (hasGrid) {
+    if (totals.gridToHome > 0.005) gridItems.push({ label: 'Home', val: totals.gridToHome, type: 'home' });
+    if (hasBattery && (totals.gridToBattery ?? 0) > 0.005) gridItems.push({ label: 'Battery', val: totals.gridToBattery, type: 'battery' });
+  }
+
+  const hasAnyTotals =
+    solarItems.length > 0 ||
+    batteryItems.length > 0 ||
+    gridItems.length > 0 ||
+    (hasGas && totals.gasUsage > 0.005) ||
+    (hasWater && totals.waterUsage > 0.005);
+
+  const renderDestinationIcon = (type: 'home' | 'battery' | 'grid') => {
+    switch (type) {
+      case 'home':
+        return <House size={14} weight="duotone" className="shrink-0 text-amber-600 dark:text-amber-400" />;
+      case 'battery':
+        return <BatteryCharging size={14} weight="duotone" className="shrink-0 text-emerald-600 dark:text-emerald-400" />;
+      case 'grid':
+        return <Broadcast size={14} weight="duotone" className="shrink-0 text-sky-600 dark:text-sky-400" />;
+    }
+  };
+
   return (
     <div
       className={`w-full h-full rounded-3xl p-4 sm:p-6 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 relative overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex flex-col justify-between ${
@@ -163,7 +179,7 @@ export default function EnergyDistributionCard({
         }}
       />
 
-      {/* Card Header & Live/Period Toggle */}
+      {/* Card Header & Live Status Badge */}
       <div className="flex items-center justify-between gap-3 mb-1 z-10">
         <div className="flex items-center gap-2.5">
           <div
@@ -173,58 +189,35 @@ export default function EnergyDistributionCard({
                 : 'bg-amber-50 text-amber-600'
             }`}
           >
-            <Lightning size={18} weight="fill" />
+            <Lightning size={18} weight="duotone" />
           </div>
           <div>
             <h3 className={`text-base font-extrabold tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               Energy distribution
             </h3>
             <p className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              {isLive ? 'Real-time power balance' : 'Energy flows over selected period'}
+              Real-time power balance & daily distribution
             </p>
           </div>
         </div>
 
-        {/* View Mode Toggle */}
+        {/* Live Power Indicator Badge */}
         <div
-          className={`flex items-center p-1 rounded-xl text-[11px] font-bold ${
-            darkMode ? 'bg-white/5' : 'bg-slate-100'
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border ${
+            darkMode
+              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-700'
           }`}
         >
-          <button
-            type="button"
-            onClick={() => setViewMode('period')}
-            className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-              viewMode === 'period'
-                ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
-                : darkMode
-                ? 'text-slate-400 hover:text-white'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Total Yield
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('live')}
-            className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
-              viewMode === 'live'
-                ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                : darkMode
-                ? 'text-slate-400 hover:text-white'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Live Power</span>
-          </button>
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Live Flow</span>
         </div>
       </div>
 
       {/* Interactive SVG Flow Diagram (Home Assistant Rounded Cross Circuit Layout) */}
       <div className="relative w-full flex-1 min-h-[290px] flex items-center justify-center select-none my-auto py-1">
         <svg
-          viewBox="30 5 420 320"
+          viewBox="20 0 440 335"
           className="w-full h-full max-h-[340px] overflow-visible"
         >
           {/* ────────────────── FLOW PATHS (WIRES & MOVING PARTICLES) ────────────────── */}
@@ -425,19 +418,11 @@ export default function EnergyDistributionCard({
             </g>
           )}
 
-          {/* ────────────────── NODES (CIRCLES & AUTHENTIC HA LABELS) ────────────────── */}
+          {/* ────────────────── NODES (CIRCLES WITH DUOTONE ICONS) ────────────────── */}
 
           {/* 1. SOLAR PV NODE (Top Center: x=240, y=60) */}
           {hasSolar && (
             <g transform="translate(240, 60)">
-              {/* Label ABOVE circle */}
-              <text
-                y="-42"
-                textAnchor="middle"
-                className={`text-[12px] font-semibold tracking-tight ${darkMode ? 'fill-slate-300' : 'fill-slate-700'}`}
-              >
-                Solar
-              </text>
               <circle
                 r="34"
                 className={`${darkMode ? 'fill-slate-900' : 'fill-white'}`}
@@ -448,8 +433,8 @@ export default function EnergyDistributionCard({
               <foreignObject x="-32" y="-32" width="64" height="64">
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
                   <SolarPanel size={22} weight="duotone" className="text-amber-500" />
-                  <span className={`text-[12px] font-bold font-mono leading-none mt-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {solarVal.toFixed(1)} {solarUnit}
+                  <span className="text-xs font-bold font-mono leading-none mt-1 text-amber-500">
+                    {liveSolar.toFixed(2)} kW
                   </span>
                 </div>
               </foreignObject>
@@ -468,34 +453,28 @@ export default function EnergyDistributionCard({
               />
               <foreignObject x="-32" y="-32" width="64" height="64">
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
-                  <Broadcast size={18} weight="duotone" className="text-sky-500" />
-                  <div className="flex flex-col items-center justify-center mt-0.5 leading-tight">
-                    {gridExportVal > flowThreshold && (
-                      <span className="text-[10px] font-bold font-mono text-purple-500">
-                        ← {gridExportVal.toFixed(2)} {solarUnit}
-                      </span>
+                  <Broadcast size={22} weight="duotone" className="text-sky-500" />
+                  <div className="flex items-center justify-center gap-0.5 mt-1 text-[11px] font-bold font-mono text-sky-500">
+                    {liveGridExport > flowThreshold && (
+                      <>
+                        <ArrowLeft size={11} weight="bold" className="text-purple-500" />
+                        <span className="text-purple-500">{liveGridExport.toFixed(2)} kW</span>
+                      </>
                     )}
-                    {gridImportVal > flowThreshold && (
-                      <span className="text-[10px] font-bold font-mono text-sky-500">
-                        → {gridImportVal.toFixed(2)} {solarUnit}
-                      </span>
+                    {liveGridImport > flowThreshold && (
+                      <>
+                        <ArrowRight size={11} weight="bold" className="text-sky-500" />
+                        <span>{liveGridImport.toFixed(2)} kW</span>
+                      </>
                     )}
-                    {gridExportVal <= flowThreshold && gridImportVal <= flowThreshold && (
-                      <span className={`text-[10px] font-bold font-mono ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                        0.0 {solarUnit}
+                    {liveGridExport <= flowThreshold && liveGridImport <= flowThreshold && (
+                      <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}>
+                        0.00 kW
                       </span>
                     )}
                   </div>
                 </div>
               </foreignObject>
-              {/* Label BELOW circle */}
-              <text
-                y="48"
-                textAnchor="middle"
-                className={`text-[12px] font-semibold tracking-tight ${darkMode ? 'fill-slate-300' : 'fill-slate-700'}`}
-              >
-                Grid
-              </text>
             </g>
           )}
 
@@ -512,40 +491,34 @@ export default function EnergyDistributionCard({
               <foreignObject x="-32" y="-32" width="64" height="64">
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
                   <div className="flex items-center justify-center gap-1">
-                    <BatteryCharging size={16} weight="fill" className="text-emerald-500" />
+                    <BatteryCharging size={22} weight="duotone" className="text-emerald-500" />
                     {batterySoc !== null && (
                       <span className={`text-[11px] font-bold font-mono leading-none ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                        {batterySoc} %
+                        {batterySoc}%
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-col items-center justify-center mt-0.5 leading-tight">
-                    {batteryInVal > flowThreshold && (
-                      <span className="text-[10px] font-bold font-mono text-purple-500">
-                        ↓ {batteryInVal.toFixed(2)} {solarUnit}
+                  <div className="flex items-center justify-center gap-0.5 mt-1 text-[11px] font-bold font-mono">
+                    {liveBatteryCharge > flowThreshold && (
+                      <span className="flex items-center gap-0.5 text-emerald-500 dark:text-emerald-400">
+                        <ArrowDown size={11} weight="bold" />
+                        {liveBatteryCharge.toFixed(2)} kW
                       </span>
                     )}
-                    {batteryOutVal > flowThreshold && (
-                      <span className="text-[10px] font-bold font-mono text-teal-500">
-                        ↑ {batteryOutVal.toFixed(2)} {solarUnit}
+                    {liveBatteryDischarge > flowThreshold && (
+                      <span className="flex items-center gap-0.5 text-teal-500">
+                        <ArrowUp size={11} weight="bold" />
+                        {liveBatteryDischarge.toFixed(2)} kW
                       </span>
                     )}
-                    {batteryInVal <= flowThreshold && batteryOutVal <= flowThreshold && (
-                      <span className={`text-[10px] font-bold font-mono ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                        0.0 {solarUnit}
+                    {liveBatteryCharge <= flowThreshold && liveBatteryDischarge <= flowThreshold && (
+                      <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}>
+                        0.00 kW
                       </span>
                     )}
                   </div>
                 </div>
               </foreignObject>
-              {/* Label BELOW circle */}
-              <text
-                y="48"
-                textAnchor="middle"
-                className={`text-[12px] font-semibold tracking-tight ${darkMode ? 'fill-slate-300' : 'fill-slate-700'}`}
-              >
-                Battery
-              </text>
             </g>
           )}
 
@@ -609,20 +582,12 @@ export default function EnergyDistributionCard({
 
             <foreignObject x="-32" y="-32" width="64" height="64">
               <div className="w-full h-full flex flex-col items-center justify-center text-center">
-                <House size={20} weight="fill" className={darkMode ? 'text-white' : 'text-slate-800'} />
-                <span className={`text-[12px] font-bold font-mono leading-none mt-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {homeVal.toFixed(1)} {solarUnit}
+                <House size={22} weight="duotone" className={darkMode ? 'text-amber-400' : 'text-amber-600'} />
+                <span className={`text-xs font-bold font-mono leading-none mt-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {homeVal.toFixed(2)} kW
                 </span>
               </div>
             </foreignObject>
-            {/* Label BELOW circle */}
-            <text
-              y="48"
-              textAnchor="middle"
-              className={`text-[12px] font-semibold tracking-tight ${darkMode ? 'fill-slate-300' : 'fill-slate-700'}`}
-            >
-              Home
-            </text>
           </g>
 
           {/* 5. GAS NODE (if configured) */}
@@ -636,15 +601,12 @@ export default function EnergyDistributionCard({
               />
               <foreignObject x="-18" y="-18" width="36" height="36">
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
-                  <Fire size={14} weight="duotone" className="text-orange-500" />
+                  <Fire size={15} weight="duotone" className="text-orange-500" />
                   <span className={`text-[9px] font-bold font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {totals.gasUsage.toFixed(1)}
+                    {totals.gasUsage.toFixed(2)}
                   </span>
                 </div>
               </foreignObject>
-              <text x="24" y="4" textAnchor="start" className={`text-[10px] font-semibold ${darkMode ? 'fill-orange-400' : 'fill-orange-600'}`}>
-                Gas
-              </text>
             </g>
           )}
 
@@ -659,76 +621,160 @@ export default function EnergyDistributionCard({
               />
               <foreignObject x="-18" y="-18" width="36" height="36">
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
-                  <Drop size={14} weight="duotone" className="text-cyan-500" />
+                  <Drop size={15} weight="duotone" className="text-cyan-500" />
                   <span className={`text-[9px] font-bold font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {totals.waterUsage.toFixed(0)}
+                    {totals.waterUsage.toFixed(2)}
                   </span>
                 </div>
               </foreignObject>
-              <text x="24" y="4" textAnchor="start" className={`text-[10px] font-semibold ${darkMode ? 'fill-cyan-400' : 'fill-cyan-600'}`}>
-                Water
-              </text>
             </g>
           )}
         </svg>
       </div>
 
-      {/* Bottom Summary Flow Chips */}
-      <div className={`flex flex-wrap gap-x-4 gap-y-2 pt-2.5 border-t z-10 ${darkMode ? 'border-white/10' : 'border-slate-200'}`}>
-        <div className="flex flex-col min-w-[70px]">
-          <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Grid Import</span>
-          <span className="text-xs font-bold font-mono text-sky-500">
-            {gridImportVal.toFixed(2)} {solarUnit}
+      {/* Bottom Summary: Streamlined Daily Totals (Organized by Source) */}
+      <div className={`pt-3 border-t z-10 ${darkMode ? 'border-white/10' : 'border-slate-200'}`}>
+        <div className="flex items-center justify-between mb-2">
+          <span className={`text-[11px] font-semibold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            Today's Totals
           </span>
         </div>
-        {hasSolar && (
-          <div className="flex flex-col min-w-[70px]">
-            <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Solar to Home</span>
-            <span className="text-xs font-bold font-mono text-amber-500">
-              {solarToHomeVal.toFixed(2)} {solarUnit}
-            </span>
-          </div>
-        )}
-        {hasSolar && hasBattery && (isLive ? solarToBatteryVal > flowThreshold : totals.solarToBattery > 0) && (
-          <div className="flex flex-col min-w-[70px]">
-            <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Solar to Battery</span>
-            <span className="text-xs font-bold font-mono text-purple-500">
-              {solarToBatteryVal.toFixed(2)} {solarUnit}
-            </span>
-          </div>
-        )}
-        {hasSolar && (isLive ? solarToGridVal > flowThreshold : totals.solarToGrid > 0) && (
-          <div className="flex flex-col min-w-[70px]">
-            <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Solar to Grid</span>
-            <span className="text-xs font-bold font-mono text-purple-500">
-              {solarToGridVal.toFixed(2)} {solarUnit}
-            </span>
-          </div>
-        )}
-        {hasBattery && (
-          <div className="flex flex-col min-w-[70px]">
-            <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Battery to Home</span>
-            <span className="text-xs font-bold font-mono text-teal-500">
-              {batteryToHomeVal.toFixed(2)} {solarUnit}
-            </span>
-          </div>
-        )}
-        {hasGrid && hasBattery && (isLive ? gridToBatteryVal > flowThreshold : (totals.gridToBattery ?? 0) > 0) && (
-          <div className="flex flex-col min-w-[70px]">
-            <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Grid to Battery</span>
-            <span className="text-xs font-bold font-mono text-purple-500">
-              {gridToBatteryVal.toFixed(2)} {solarUnit}
-            </span>
-          </div>
-        )}
-        {hasGrid && hasBattery && (isLive ? batteryToGridVal > flowThreshold : (totals.batteryToGrid ?? 0) > 0) && (
-          <div className="flex flex-col min-w-[70px]">
-            <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Battery to Grid</span>
-            <span className="text-xs font-bold font-mono text-rose-500">
-              {batteryToGridVal.toFixed(2)} {solarUnit}
-            </span>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Solar Streamlined Pill */}
+          {solarItems.length > 0 && (
+            <div
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-colors ${
+                darkMode
+                  ? 'bg-amber-500/10 border-amber-500/20 text-slate-200'
+                  : 'bg-amber-50 border-amber-300/80 text-slate-900 shadow-sm'
+              }`}
+            >
+              <Sun size={14} weight="duotone" className="text-amber-600 dark:text-amber-400 shrink-0" />
+              <span className="font-bold text-amber-800 dark:text-amber-400">Solar:</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {solarItems.map((item, idx) => (
+                  <span key={item.label} className="flex items-center gap-1">
+                    {idx > 0 && (
+                      <span className={`mx-0.5 ${darkMode ? 'text-slate-600' : 'text-slate-300'}`}>|</span>
+                    )}
+                    <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}>→</span>
+                    {renderDestinationIcon(item.type)}
+                    <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
+                      {item.label}:
+                    </span>
+                    <span className="font-mono font-bold text-amber-700 dark:text-amber-400">
+                      {item.val.toFixed(2)} kWh
+                    </span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Battery Streamlined Pill (High-Contrast Rich Emerald Green for Light Mode) */}
+          {batteryItems.length > 0 && (
+            <div
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-colors ${
+                darkMode
+                  ? 'bg-emerald-500/10 border-emerald-500/20 text-slate-200'
+                  : 'bg-emerald-50 border-emerald-300/90 text-slate-900 shadow-sm'
+              }`}
+            >
+              <BatteryCharging size={14} weight="duotone" className="text-emerald-700 dark:text-emerald-400 shrink-0" />
+              <span className="font-bold text-emerald-800 dark:text-emerald-400">Battery:</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {batteryItems.map((item, idx) => (
+                  <span key={item.label} className="flex items-center gap-1">
+                    {idx > 0 && (
+                      <span className={`mx-0.5 ${darkMode ? 'text-slate-600' : 'text-slate-300'}`}>|</span>
+                    )}
+                    <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}>→</span>
+                    {renderDestinationIcon(item.type)}
+                    <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
+                      {item.label}:
+                    </span>
+                    <span className="font-mono font-bold text-emerald-800 dark:text-emerald-400">
+                      {item.val.toFixed(2)} kWh
+                    </span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Grid Streamlined Pill */}
+          {gridItems.length > 0 && (
+            <div
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-colors ${
+                darkMode
+                  ? 'bg-sky-500/10 border-sky-500/20 text-slate-200'
+                  : 'bg-sky-50 border-sky-300/80 text-slate-900 shadow-sm'
+              }`}
+            >
+              <Broadcast size={14} weight="duotone" className="text-sky-600 dark:text-sky-400 shrink-0" />
+              <span className="font-bold text-sky-800 dark:text-sky-400">Grid:</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {gridItems.map((item, idx) => (
+                  <span key={item.label} className="flex items-center gap-1">
+                    {idx > 0 && (
+                      <span className={`mx-0.5 ${darkMode ? 'text-slate-600' : 'text-slate-300'}`}>|</span>
+                    )}
+                    <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}>→</span>
+                    {renderDestinationIcon(item.type)}
+                    <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
+                      {item.label}:
+                    </span>
+                    <span className="font-mono font-bold text-sky-700 dark:text-sky-400">
+                      {item.val.toFixed(2)} kWh
+                    </span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Gas Pill (if configured and > 0) */}
+          {hasGas && totals.gasUsage > 0.005 && (
+            <div
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-colors ${
+                darkMode
+                  ? 'bg-orange-500/10 border-orange-500/20 text-slate-200'
+                  : 'bg-orange-50 border-orange-300/80 text-slate-900 shadow-sm'
+              }`}
+            >
+              <Fire size={14} weight="duotone" className="text-orange-600 dark:text-orange-400 shrink-0" />
+              <span className="font-bold text-orange-800 dark:text-orange-400">Gas:</span>
+              <span className="font-mono font-bold text-orange-700 dark:text-orange-400">
+                {totals.gasUsage.toFixed(2)} {totals.gasUnit || 'm³'}
+              </span>
+            </div>
+          )}
+
+          {/* Water Pill (if configured and > 0) */}
+          {hasWater && totals.waterUsage > 0.005 && (
+            <div
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-colors ${
+                darkMode
+                  ? 'bg-cyan-500/10 border-cyan-500/20 text-slate-200'
+                  : 'bg-cyan-50 border-cyan-300/80 text-slate-900 shadow-sm'
+              }`}
+            >
+              <Drop size={14} weight="duotone" className="text-cyan-600 dark:text-cyan-400 shrink-0" />
+              <span className="font-bold text-cyan-800 dark:text-cyan-400">Water:</span>
+              <span className="font-mono font-bold text-cyan-700 dark:text-cyan-400">
+                {totals.waterUsage.toFixed(2)} {totals.waterUnit || 'L'}
+              </span>
+            </div>
+          )}
+
+          {/* Fallback if no cumulative totals recorded today */}
+          {!hasAnyTotals && (
+            <div className="flex items-center gap-2 text-xs font-mono text-slate-400 py-0.5">
+              <Lightning size={14} weight="duotone" className="text-slate-400" />
+              <span>No energy distribution recorded today</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
