@@ -379,3 +379,59 @@ export function getEnergyDbStatus(): EnergyDbStatus {
     };
   }
 }
+
+export interface StoredEntitySummary {
+  statisticId: string;
+  name: string | null;
+  unit: string | null;
+  source: string | null;
+  earliestDate: string | null;
+  latestDate: string | null;
+  totalRecords: number;
+}
+
+/**
+ * Returns a list of all distinct statistic entities currently stored in the NAS database,
+ * along with their metadata, record counts, and date ranges.
+ */
+export function getStoredEntities(): StoredEntitySummary[] {
+  try {
+    const db = getDatabase();
+    const rows = db.prepare(`
+      SELECT 
+        s.statistic_id,
+        m.name,
+        m.unit_of_measurement as unit,
+        m.source,
+        MIN(s.start_ms) as minMs,
+        MAX(s.start_ms) as maxMs,
+        COUNT(*) as total_records
+      FROM energy_statistics s
+      LEFT JOIN energy_metadata m ON s.statistic_id = m.statistic_id
+      GROUP BY s.statistic_id
+      ORDER BY total_records DESC
+    `).all() as Array<{
+      statistic_id: string;
+      name: string | null;
+      unit: string | null;
+      source: string | null;
+      minMs: number | null;
+      maxMs: number | null;
+      total_records: number;
+    }>;
+
+    return rows.map((r) => ({
+      statisticId: r.statistic_id,
+      name: r.name,
+      unit: r.unit,
+      source: r.source,
+      earliestDate: r.minMs ? new Date(r.minMs).toISOString() : null,
+      latestDate: r.maxMs ? new Date(r.maxMs).toISOString() : null,
+      totalRecords: r.total_records
+    }));
+  } catch (err) {
+    console.error('[EnergyDB] getStoredEntities error:', err);
+    return [];
+  }
+}
+

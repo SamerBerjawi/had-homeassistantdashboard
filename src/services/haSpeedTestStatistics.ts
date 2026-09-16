@@ -8,6 +8,7 @@
  */
 
 import { haWebSocketService } from './haWebSocket';
+import { queryStoredStatistics, syncStoredStatistics } from './haStatisticsStorage';
 import { SpeedTestTimeseriesPoint, NetworkTimeRange } from '../types/network';
 
 export interface HAStatisticRecord {
@@ -88,18 +89,26 @@ export async function fetchSpeedTestStatistics(
   ];
   const uniqueIds = Array.from(new Set(queryIds));
 
-  // 1. Primary: Query Home Assistant Long-Term Statistics API with types: ["mean", "state", "max"]
+  // 1. Primary: Check NAS SQLite first, fallback to Home Assistant Long-Term Statistics API
   try {
-    const statsRes = await haWebSocketService.sendRequest<Record<string, HAStatisticRecord[]>>(
-      'recorder/statistics_during_period',
-      {
-        start_time: startTime,
-        end_time: endTime,
-        statistic_ids: uniqueIds,
-        period,
-        types: ['mean', 'state', 'max']
+    let statsRes = await queryStoredStatistics(uniqueIds, startTime, endTime, period);
+
+    if (!statsRes) {
+      statsRes = await haWebSocketService.sendRequest<Record<string, HAStatisticRecord[]>>(
+        'recorder/statistics_during_period',
+        {
+          start_time: startTime,
+          end_time: endTime,
+          statistic_ids: uniqueIds,
+          period,
+          types: ['mean', 'state', 'max']
+        }
+      ).catch(() => null);
+
+      if (statsRes && typeof statsRes === 'object') {
+        syncStoredStatistics(statsRes, period);
       }
-    ).catch(() => null);
+    }
 
     if (statsRes && typeof statsRes === 'object' && Object.keys(statsRes).some(k => (statsRes[k] || []).length > 0)) {
       const getSeriesList = (candidates: string[]) => {

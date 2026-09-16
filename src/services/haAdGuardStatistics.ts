@@ -14,6 +14,7 @@
  */
 
 import { haWebSocketService } from './haWebSocket';
+import { queryStoredStatistics, syncStoredStatistics } from './haStatisticsStorage';
 import {
   normalizeHATimestamp,
   fetchLiveEntityHistory
@@ -268,18 +269,26 @@ export async function fetchAdGuardStatistics(
     return generateDemoTimeseries(range, _liveMetrics);
   }
 
-  // 1. Primary: Home Assistant Long-Term Statistics (recorder/statistics_during_period)
+  // 1. Primary: Check NAS SQLite first, fallback to Home Assistant Long-Term Statistics
   try {
-    const statsRes = await haWebSocketService.sendRequest<Record<string, HAStatisticRecord[]>>(
-      'recorder/statistics_during_period',
-      {
-        start_time: startTime,
-        end_time: endTime,
-        statistic_ids: targetIds,
-        period,
-        types: ['change', 'sum', 'mean', 'state', 'max', 'min']
+    let statsRes = await queryStoredStatistics(targetIds, startTime, endTime, period);
+
+    if (!statsRes) {
+      statsRes = await haWebSocketService.sendRequest<Record<string, HAStatisticRecord[]>>(
+        'recorder/statistics_during_period',
+        {
+          start_time: startTime,
+          end_time: endTime,
+          statistic_ids: targetIds,
+          period,
+          types: ['change', 'sum', 'mean', 'state', 'max', 'min']
+        }
+      ).catch(() => null);
+
+      if (statsRes && typeof statsRes === 'object') {
+        syncStoredStatistics(statsRes, period);
       }
-    ).catch(() => null);
+    }
 
     if (statsRes && typeof statsRes === 'object') {
       const totalSlots = binStatisticRecords(statsRes[totalId] || [], canonicalSlots, stepMs);

@@ -14,6 +14,7 @@ import {
   queryStatistics,
   checkCoverage,
   getEnergyDbStatus,
+  getStoredEntities,
   normalizeTimestampMs
 } from './server/services/energyDbService';
 import { EnergySyncService } from './server/services/energySyncService';
@@ -990,11 +991,12 @@ async function startServer() {
   });
 
   // -------------------------------------------------------------
-  // NAS SQLite Embedded Energy History & Backup API
+  // NAS SQLite Embedded Statistics History & Backup API
+  // Supports ALL Home Assistant entities (Energy, Climate, System, Network, Sensors)
   // -------------------------------------------------------------
 
-  // 1. Energy Storage Status & Diagnostics Endpoint
-  app.get('/api/energy/status', (req, res) => {
+  // 1. Storage Status & Diagnostics Endpoint
+  app.get(['/api/statistics/status', '/api/energy/status'], (req, res) => {
     applyCorsHeaders(req, res, 'GET, HEAD, OPTIONS');
     try {
       const status = getEnergyDbStatus();
@@ -1004,8 +1006,19 @@ async function startServer() {
     }
   });
 
-  // 2. Fast Historical Energy Query Endpoint (Sub-10ms from NAS SQLite)
-  app.get('/api/energy/history', (req, res) => {
+  // 2. Stored Entities List & Counts Endpoint
+  app.get(['/api/statistics/entities', '/api/energy/entities'], (req, res) => {
+    applyCorsHeaders(req, res, 'GET, HEAD, OPTIONS');
+    try {
+      const entities = getStoredEntities();
+      res.json({ success: true, count: entities.length, entities });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 3. Fast Historical Query Endpoint (Sub-10ms from NAS SQLite for ANY entities)
+  app.get(['/api/statistics/history', '/api/energy/history'], (req, res) => {
     applyCorsHeaders(req, res, 'GET, HEAD, OPTIONS');
     try {
       const statisticIdsParam = (req.query.statistic_ids as string) || '';
@@ -1035,13 +1048,13 @@ async function startServer() {
         data
       });
     } catch (err: any) {
-      console.error('[Energy API] /api/energy/history error:', err);
+      console.error('[Statistics API] /api/statistics/history error:', err);
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  // 3. Energy Statistics Batch Ingestion Endpoint (Client-Assisted & Background Sync)
-  app.post('/api/energy/sync', async (req, res) => {
+  // 4. Statistics Batch Ingestion Endpoint (Client-Assisted & Background Sync)
+  app.post(['/api/statistics/sync', '/api/energy/sync'], async (req, res) => {
     applyCorsHeaders(req, res, 'POST, OPTIONS');
     try {
       const payload = req.body;
@@ -1051,7 +1064,7 @@ async function startServer() {
       }
       res.json(result);
     } catch (err: any) {
-      console.error('[Energy API] /api/energy/sync error:', err);
+      console.error('[Statistics API] /api/statistics/sync error:', err);
       res.status(500).json({ success: false, error: err.message });
     }
   });

@@ -385,64 +385,18 @@ export async function fetchHAEnergySolarForecasts(
   return null;
 }
 
-// -------------------------------------------------------------
-// NAS Embedded SQLite Query & Backup Sync Helpers
-// -------------------------------------------------------------
+import {
+  queryStoredStatistics,
+  syncStoredStatistics,
+  fetchStoredStatisticsStatus,
+  fetchStoredStatisticsEntities
+} from './haStatisticsStorage';
 
-export async function queryNasEnergyDb(
-  cleanIds: string[],
-  start: string,
-  end: string,
-  periodType: string
-): Promise<HAStatisticsResponse | null> {
-  try {
-    const params = new URLSearchParams({
-      statistic_ids: cleanIds.join(','),
-      start,
-      end,
-      period_type: periodType
-    });
-    const res = await fetch(`/api/energy/history?${params.toString()}`);
-    if (!res.ok) return null;
-    const json = await res.json();
-    if (json && json.success && json.data && json.coverage?.hasFullCoverage) {
-      return json.data as HAStatisticsResponse;
-    }
-  } catch {
-    // Non-blocking fallback to HA WebSocket
-  }
-  return null;
-}
-
-export async function syncToNasEnergyDb(
-  stats: HAStatisticsResponse,
-  periodType: string
-): Promise<void> {
-  try {
-    if (!stats || typeof stats !== 'object' || Object.keys(stats).length === 0) return;
-    await fetch('/api/energy/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        statistics: stats,
-        periodType
-      })
-    });
-  } catch {
-    // Fire-and-forget background sync
-  }
-}
-
-export async function fetchNasEnergyDbStatus(): Promise<any> {
-  try {
-    const res = await fetch('/api/energy/status');
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.status || null;
-  } catch {
-    return null;
-  }
-}
+// Re-export for backward compatibility
+export const queryNasEnergyDb = queryStoredStatistics;
+export const syncToNasEnergyDb = syncStoredStatistics;
+export const fetchNasEnergyDbStatus = fetchStoredStatisticsStatus;
+export const fetchNasEnergyDbEntities = fetchStoredStatisticsEntities;
 
 // -------------------------------------------------------------
 // WebSocket API: recorder/statistics_during_period (Optimized & Deduplicated)

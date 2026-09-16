@@ -8,6 +8,7 @@
  */
 
 import { haWebSocketService } from './haWebSocket';
+import { queryStoredStatistics, syncStoredStatistics } from './haStatisticsStorage';
 import {
   HealthTimeRange,
   HealthMetricKey,
@@ -456,16 +457,27 @@ export async function fetchHealthStatistics(
   const statisticIds = validEntries.map(([_, id]) => id);
 
   try {
-    const statsRes = await haWebSocketService.sendRequest<Record<string, HAStatisticRecord[]>>(
-      'recorder/statistics_during_period',
-      {
-        start_time: startTime,
-        end_time: endTime,
-        statistic_ids: statisticIds,
-        period,
-        types: ['mean', 'min', 'max', 'state', 'sum', 'change'],
+    // 1. Check local NAS SQLite store first (<5ms)
+    let statsRes = await queryStoredStatistics(statisticIds, startTime, endTime, period);
+
+    // 2. Fall back to Home Assistant WebSocket if not cached on NAS
+    if (!statsRes) {
+      statsRes = await haWebSocketService.sendRequest<Record<string, HAStatisticRecord[]>>(
+        'recorder/statistics_during_period',
+        {
+          start_time: startTime,
+          end_time: endTime,
+          statistic_ids: statisticIds,
+          period,
+          types: ['mean', 'min', 'max', 'state', 'sum', 'change'],
+        }
+      ).catch(() => null);
+
+      // 3. Asynchronously back up to NAS SQLite store in background
+      if (statsRes && typeof statsRes === 'object') {
+        syncStoredStatistics(statsRes, period);
       }
-    ).catch(() => null);
+    }
 
     if (statsRes && typeof statsRes === 'object') {
       for (const [key, entityId] of validEntries) {
