@@ -177,19 +177,29 @@ export function useAdGuardData() {
       rulesCount,
       avgProcessingSpeedMs,
       avgProcessingSpeedUnit,
-      safeSearchesEnforcedCount
+      safeSearchesEnforcedCount,
+      entityIds: {
+        totalId: queriesEntity?.entity_id || 'sensor.adguard_home_dns_queries',
+        blockedId: blockedEntity?.entity_id || 'sensor.adguard_home_dns_queries_blocked',
+        safeBrowsingId: safeBrowsingEntity?.entity_id || 'sensor.adguard_home_safe_browsing_blocked',
+        parentalId: parentalEntity?.entity_id || 'sensor.adguard_home_parental_control_blocked'
+      }
     };
   }, [rawStates]);
 
   const fetchHistory = useCallback(async () => {
     setIsLoadingHistory(true);
     try {
-      const points = await fetchAdGuardStatistics(timeRange, {
-        total: metrics.dnsQueriesTotal,
-        blocked: metrics.dnsQueriesBlocked,
-        safeBrowsing: metrics.safeBrowsingBlockedCount,
-        parental: metrics.parentalBlockedCount
-      });
+      const points = await fetchAdGuardStatistics(
+        timeRange,
+        {
+          total: metrics.dnsQueriesTotal,
+          blocked: metrics.dnsQueriesBlocked,
+          safeBrowsing: metrics.safeBrowsingBlockedCount,
+          parental: metrics.parentalBlockedCount
+        },
+        metrics.entityIds
+      );
       setHistoryData(points);
     } catch (e) {
       console.warn('[AdGuard Hook] Failed to load statistics history:', e);
@@ -197,7 +207,17 @@ export function useAdGuardData() {
     } finally {
       setIsLoadingHistory(false);
     }
-  }, [timeRange, metrics.dnsQueriesTotal, metrics.dnsQueriesBlocked, metrics.safeBrowsingBlockedCount, metrics.parentalBlockedCount]);
+  }, [
+    timeRange,
+    metrics.dnsQueriesTotal,
+    metrics.dnsQueriesBlocked,
+    metrics.safeBrowsingBlockedCount,
+    metrics.parentalBlockedCount,
+    metrics.entityIds?.totalId,
+    metrics.entityIds?.blockedId,
+    metrics.entityIds?.safeBrowsingId,
+    metrics.entityIds?.parentalId
+  ]);
 
   useEffect(() => {
     fetchHistory();

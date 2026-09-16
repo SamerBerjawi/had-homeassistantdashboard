@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ChartLineUp,
   SquareSplitHorizontal,
@@ -58,14 +58,14 @@ export const AdGuardTrafficHistorySection: React.FC<AdGuardTrafficHistorySection
     {
       id: 'blockedQueries',
       name: 'Blocked Queries',
-      color: '#F43F5E', // Rose
+      color: '#F97316', // Orange / Coral matching native AdGuard
       icon: Funnel,
       strokeWidth: 2.2
     },
     {
       id: 'safeBrowsingBlocked',
       name: 'Malware & Phishing',
-      color: '#F59E0B', // Amber
+      color: '#EAB308', // Amber / Yellow
       icon: ShieldWarning,
       strokeWidth: 1.8
     },
@@ -77,6 +77,17 @@ export const AdGuardTrafficHistorySection: React.FC<AdGuardTrafficHistorySection
       strokeWidth: 1.8
     }
   ];
+
+  const seriesTotal = useMemo(() => {
+    const totals: Record<string, number> = {};
+    for (const s of seriesConfig) {
+      totals[s.id] = historyData.reduce(
+        (acc, p) => acc + (Number(p[s.id as keyof AdGuardTimeseriesPoint]) || 0),
+        0
+      );
+    }
+    return totals;
+  }, [historyData, seriesConfig]);
 
   return (
     <div className="space-y-3">
@@ -185,13 +196,13 @@ export const AdGuardTrafficHistorySection: React.FC<AdGuardTrafficHistorySection
               />
               <Line
                 dataKey="blockedQueries"
-                stroke="#F43F5E"
+                stroke="#F97316"
                 strokeWidth={2.2}
                 animate
               />
               <Line
                 dataKey="safeBrowsingBlocked"
-                stroke="#F59E0B"
+                stroke="#EAB308"
                 strokeWidth={1.8}
                 animate
               />
@@ -214,12 +225,12 @@ export const AdGuardTrafficHistorySection: React.FC<AdGuardTrafficHistorySection
                   {
                     label: 'Blocked Queries',
                     value: Number(p.blockedQueries || 0).toLocaleString(),
-                    color: '#F43F5E'
+                    color: '#F97316'
                   },
                   {
                     label: 'Malware & Phishing',
                     value: Number(p.safeBrowsingBlocked || 0).toLocaleString(),
-                    color: '#F59E0B'
+                    color: '#EAB308'
                   },
                   {
                     label: 'Parental Blocks',
@@ -262,7 +273,7 @@ export const AdGuardTrafficHistorySection: React.FC<AdGuardTrafficHistorySection
                       color: s.color
                     }}
                   >
-                    {(historyData[historyData.length - 1]?.[s.id] as number || 0).toLocaleString()}
+                    {(seriesTotal[s.id] || 0).toLocaleString()}
                   </span>
                 </div>
 

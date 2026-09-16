@@ -4,7 +4,8 @@
  * 
  * AdGuardSparklineGrid Component
  * Recreates the native AdGuard Home 4-card overview sparkline row
- * driven strictly by live entity metrics and Home Assistant recorder statistics.
+ * driven strictly by live entity metrics and Home Assistant recorder statistics,
+ * rendered with interactive Recharts monotone curves, gradients, and custom tooltips.
  */
 
 import React, { useMemo } from 'react';
@@ -15,6 +16,13 @@ import {
   UserSwitch,
   Clock
 } from '@phosphor-icons/react';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  Tooltip,
+  YAxis
+} from 'recharts';
 import { AdGuardMetrics, AdGuardTimeseriesPoint, NetworkTimeRange } from '../../../../types/network';
 
 interface AdGuardSparklineGridProps {
@@ -35,66 +43,6 @@ interface SparklineItem {
   accentBadgeColor: string;
   badgeTextColor: string;
   icon: any;
-}
-
-/**
- * Generate smooth SVG path string from points using monotonic cubic interpolation
- */
-function generateSplinePath(
-  data: number[],
-  width: number,
-  height: number,
-  padBottom = 4,
-  padTop = 4
-): { path: string; areaPath: string } {
-  if (!data || data.length === 0) {
-    return { path: `M 0,${height - padBottom} L ${width},${height - padBottom}`, areaPath: `M 0,${height - padBottom} L ${width},${height - padBottom} Z` };
-  }
-
-  const maxVal = Math.max(...data, 0);
-  const domainMax = maxVal === 0 ? 5 : maxVal * 1.15;
-  const usableHeight = height - padTop - padBottom;
-
-  const pts = data.map((val, idx) => {
-    const x = data.length === 1 ? width / 2 : (idx / (data.length - 1)) * width;
-    const norm = Math.min(1, Math.max(0, val / domainMax));
-    const y = height - padBottom - norm * usableHeight;
-    return { x, y };
-  });
-
-  if (pts.length === 1) {
-    const y = pts[0].y;
-    return {
-      path: `M 0,${y} L ${width},${y}`,
-      areaPath: `M 0,${y} L ${width},${y} L ${width},${height} L 0,${height} Z`
-    };
-  }
-
-  // Build monotonic cubic curve
-  let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[Math.max(0, i - 1)];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[Math.min(pts.length - 1, i + 2)];
-
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-
-    // Constrain control points to prevent overshoot below baseline
-    const clampedCp1y = Math.min(height - padBottom, Math.max(padTop, cp1y));
-    const clampedCp2y = Math.min(height - padBottom, Math.max(padTop, cp2y));
-
-    d += ` C ${cp1x.toFixed(1)},${clampedCp1y.toFixed(1)} ${cp2x.toFixed(1)},${clampedCp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
-  }
-
-  const lastPt = pts[pts.length - 1];
-  const firstPt = pts[0];
-  const areaD = `${d} L ${lastPt.x.toFixed(1)},${height} L ${firstPt.x.toFixed(1)},${height} Z`;
-
-  return { path: d, areaPath: areaD };
 }
 
 export const AdGuardSparklineGrid: React.FC<AdGuardSparklineGridProps> = ({
@@ -128,9 +76,9 @@ export const AdGuardSparklineGrid: React.FC<AdGuardSparklineGridProps> = ({
         title: 'DNS Queries',
         footerLabel: 'DNS Queries',
         totalValue: metrics.dnsQueriesTotal,
-        color: '#818CF8', // Electric Indigo
-        accentBadgeColor: 'rgba(129, 140, 248, 0.15)',
-        badgeTextColor: '#A5B4FC',
+        color: '#6366F1', // Electric Indigo
+        accentBadgeColor: 'rgba(99, 102, 241, 0.15)',
+        badgeTextColor: '#818CF8',
         icon: Globe
       },
       {
@@ -139,7 +87,7 @@ export const AdGuardSparklineGrid: React.FC<AdGuardSparklineGridProps> = ({
         footerLabel: 'Blocked by Filters',
         totalValue: metrics.dnsQueriesBlocked,
         percentage: blockedRatio,
-        color: '#F97316', // Orange / Coral
+        color: '#F97316', // Vibrant Orange / Coral
         accentBadgeColor: 'rgba(249, 115, 22, 0.18)',
         badgeTextColor: '#FB923C',
         icon: ShieldCheck
@@ -169,9 +117,47 @@ export const AdGuardSparklineGrid: React.FC<AdGuardSparklineGridProps> = ({
     ];
   }, [metrics, blockedRatio, malwareRatio, parentalRatio]);
 
-  const cardBgStyle = darkMode
-    ? 'bg-slate-900/60 border-white/10 hover:border-white/20'
-    : 'bg-white/90 border-slate-200/90 shadow-sm hover:border-slate-300';
+  const cardBgStyle =
+    'rounded-3xl backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] hover:border-slate-300/80 dark:hover:border-white/15 ' +
+    (darkMode
+      ? 'bg-black/20 text-white'
+      : 'bg-white/20 text-slate-900');
+
+  const formatPointTime = (dateObj: Date) => {
+    if (timeRange === '24H') {
+      return dateObj.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+    if (timeRange === '7D') {
+      return dateObj.toLocaleDateString(undefined, { weekday: 'short', hour: 'numeric', hour12: true });
+    }
+    return dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
+
+  const renderTooltip = (props: any, card: SparklineItem) => {
+    const { active, payload } = props;
+    if (!active || !payload || payload.length === 0) return null;
+    const point = payload[0]?.payload;
+    if (!point) return null;
+
+    return (
+      <div
+        className={`px-3 py-2 rounded-2xl shadow-2xl border text-[11px] font-sans backdrop-blur-2xl ${
+          darkMode
+            ? 'bg-black/60 border-white/15 text-white'
+            : 'bg-white/70 border-slate-200 text-slate-900 shadow-slate-200/50'
+        }`}
+      >
+        <div className="text-[10px] font-mono text-slate-400 pb-1 border-b border-white/10">
+          {point.timeFormatted}
+        </div>
+        <div className="flex items-center gap-2 pt-1.5 font-bold">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: card.color }} />
+          <span className="font-mono">{Number(point.value || 0).toLocaleString()}</span>
+          <span className="text-[10px] text-slate-400 font-normal">queries</span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-3">
@@ -182,20 +168,20 @@ export const AdGuardSparklineGrid: React.FC<AdGuardSparklineGridProps> = ({
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
             DNS Traffic Overview
           </h2>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-400">
+          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
             AdGuard Native
           </span>
         </div>
 
         {/* Time Range Pills */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-200/50 dark:bg-white/[0.06] border border-slate-200 dark:border-white/10">
+        <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-100/50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 backdrop-blur-md">
           <Clock size={12} className="text-slate-400 ml-1 mr-0.5" />
           {timeRanges.map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => onTimeRangeChange(r)}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer select-none ${
+              className={`px-2 py-1 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer select-none ${
                 timeRange === r
                   ? 'bg-indigo-500 text-white shadow-sm'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -210,14 +196,23 @@ export const AdGuardSparklineGrid: React.FC<AdGuardSparklineGridProps> = ({
       {/* 4-Card Responsive Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         {cards.map((card) => {
-          const seriesData = historyData.map((d) => Number(d[card.id] || 0));
-          const { path, areaPath } = generateSplinePath(seriesData, 280, 56, 4, 6);
+          const Icon = card.icon;
+          const cardData = historyData.map((d) => {
+            const dateObj = d.date instanceof Date ? d.date : new Date(d.date);
+            return {
+              date: dateObj,
+              timeFormatted: formatPointTime(dateObj),
+              value: Number(d[card.id] || 0)
+            };
+          });
+
           const gradientId = `spark-grad-${card.id}`;
+          const latestVal = cardData.length > 0 ? cardData[cardData.length - 1].value : 0;
 
           return (
             <div
               key={card.id}
-              className={`relative overflow-hidden rounded-2xl border backdrop-blur-md transition-all p-4.5 flex flex-col justify-between min-h-[140px] ${cardBgStyle}`}
+              className={`relative p-4 sm:p-5 flex flex-col justify-between min-h-[155px] ${cardBgStyle}`}
             >
               {/* Top Row: Big Primary Metric + Top-Right Percentage Badge */}
               <div className="flex items-start justify-between">
@@ -240,46 +235,74 @@ export const AdGuardSparklineGrid: React.FC<AdGuardSparklineGridProps> = ({
                 )}
               </div>
 
-              {/* Middle: Sparkline SVG Chart */}
-              <div className="w-full h-[56px] my-2 relative">
-                <svg
-                  viewBox="0 0 280 56"
-                  className="w-full h-full overflow-visible"
-                  preserveAspectRatio="none"
-                >
-                  <defs>
-                    <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={card.color} stopOpacity={0.35} />
-                      <stop offset="85%" stopColor={card.color} stopOpacity={0.05} />
-                      <stop offset="100%" stopColor={card.color} stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Gradient Area Fill */}
-                  <path d={areaPath} fill={`url(#${gradientId})`} />
-
-                  {/* Spline Stroke Line */}
-                  <path
-                    d={path}
-                    fill="none"
-                    stroke={card.color}
-                    strokeWidth={2.2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+              {/* Middle: Interactive Recharts Monotone Area Chart */}
+              <div className="w-full h-[62px] my-1 relative">
+                {cardData.length === 0 ? (
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-500 font-medium">
+                    No recorded telemetry
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={cardData}
+                      margin={{ top: 4, right: 2, bottom: 0, left: 2 }}
+                    >
+                      <defs>
+                        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={card.color} stopOpacity={0.42} />
+                          <stop offset="70%" stopColor={card.color} stopOpacity={0.10} />
+                          <stop offset="100%" stopColor={card.color} stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <YAxis hide domain={[0, 'auto']} />
+                      <Tooltip
+                        content={(props) => renderTooltip(props, card)}
+                        cursor={{
+                          stroke: card.color,
+                          strokeWidth: 1.2,
+                          strokeDasharray: '2 2',
+                          opacity: 0.6
+                        }}
+                        isAnimationActive={false}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke={card.color}
+                        strokeWidth={2.2}
+                        fill={`url(#${gradientId})`}
+                        dot={false}
+                        activeDot={{
+                          r: 3.5,
+                          fill: card.color,
+                          stroke: darkMode ? '#020617' : '#ffffff',
+                          strokeWidth: 2
+                        }}
+                        isAnimationActive={false}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
               </div>
 
               {/* Bottom: Footer Label matching native AdGuard */}
-              <div className="flex items-center gap-1.5 pt-1 border-t border-slate-200/40 dark:border-white/5">
-                <span
-                  className="text-xs font-semibold"
-                  style={{
-                    color: darkMode ? (card.percentage !== undefined ? card.badgeTextColor : '#94A3B8') : '#475569'
-                  }}
-                >
-                  {card.footerLabel}
-                </span>
+              <div className="flex items-center justify-between pt-1.5 border-t border-slate-200/40 dark:border-white/5">
+                <div className="flex items-center gap-1.5">
+                  <Icon size={14} weight="duotone" style={{ color: card.color }} />
+                  <span
+                    className="text-xs font-semibold"
+                    style={{
+                      color: darkMode ? (card.percentage !== undefined ? card.badgeTextColor : '#94A3B8') : '#475569'
+                    }}
+                  >
+                    {card.footerLabel}
+                  </span>
+                </div>
+                {latestVal > 0 && (
+                  <span className="text-[10px] font-mono font-bold text-slate-400">
+                    +{latestVal.toLocaleString()}
+                  </span>
+                )}
               </div>
             </div>
           );

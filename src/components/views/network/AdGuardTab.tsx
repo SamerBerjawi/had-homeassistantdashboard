@@ -8,7 +8,6 @@ import { useAdGuardData } from '../../../hooks/useAdGuardData';
 import { AdGuardProtectionSection } from './adguard/AdGuardProtectionSection';
 import { AdGuardSparklineGrid } from './adguard/AdGuardSparklineGrid';
 import { AdGuardQueryActivitySection } from './adguard/AdGuardQueryActivitySection';
-import { AdGuardTrafficHistorySection } from './adguard/AdGuardTrafficHistorySection';
 import { AdGuardThreatSection } from './adguard/AdGuardThreatSection';
 import { AdGuardPerformanceSection } from './adguard/AdGuardPerformanceSection';
 

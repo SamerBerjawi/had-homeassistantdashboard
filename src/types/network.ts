@@ -124,6 +124,12 @@ export interface AdGuardMetrics {
   avgProcessingSpeedMs: number;      // sensor.*average_processing_speed (ms)
   avgProcessingSpeedUnit: string;    // from unit_of_measurement or 'ms'
   safeSearchesEnforcedCount: number; // sensor.*safe_searches_enforced
+  entityIds?: {
+    totalId?: string;
+    blockedId?: string;
+    safeBrowsingId?: string;
+    parentalId?: string;
+  };
 }
 
 export interface SpeedTestTimeseriesPoint {
