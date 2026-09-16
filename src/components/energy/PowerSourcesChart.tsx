@@ -38,6 +38,7 @@ export interface PowerSourcesChartProps {
 interface PowerDataPoint {
   date: Date;
   minuteOfDay: number;
+  xAxisLabel: string;
   timeFormatted: string;
   solar: number;
   gridImport: number;
@@ -70,61 +71,79 @@ export default function PowerSourcesChart({
   const [showBattery, setShowBattery] = useState(true);
   const [showHome, setShowHome] = useState(true);
 
-  // Transform 5-minute / period buckets into continuous power streams (kW)
+  // Transform 5-minute / period buckets into continuous power streams (kW) or energy flows (kWh)
   // Stack positive flows above baseline, negative flows below baseline, with dashed consumption overlay
-  const { chartData, currentMinuteOfDay, isViewingToday } = useMemo(() => {
+  const { chartData, currentMinuteOfDay, isViewingToday, isSingleDay } = useMemo(() => {
     if (buckets.length === 0) {
-      return { chartData: [], currentMinuteOfDay: 0, isViewingToday: false };
+      return { chartData: [], currentMinuteOfDay: 0, isViewingToday: false, isSingleDay: true };
     }
+
+    // 0. Detect timeline mode: Single Day (<= 28h) vs Multi-Day (Week, Month, Year, Custom)
+    const totalDurationMs = buckets.length > 0
+      ? Math.max(
+          buckets[buckets.length - 1].endMs - buckets[0].startMs,
+          buckets[0].endMs - buckets[0].startMs
+        )
+      : 0;
+    const isSingleDayView = totalDurationMs > 0 && totalDurationMs <= 28 * 3600 * 1000;
 
     const now = new Date();
     const todayStr = now.toDateString();
-    const isToday = buckets.some((b) => new Date(b.startMs).toDateString() === todayStr);
+    const isToday = isSingleDayView && buckets.some((b) => new Date(b.startMs).toDateString() === todayStr);
     const nowMinute = now.getHours() * 60 + now.getMinutes();
 
-    // 1. Establish the reference day from the dataset:
-    // For today, use today's midnight. For historic days, use the start date of the buckets.
-    const firstDate = new Date(buckets[0].startMs);
-    const dayStartMs = isToday
-      ? new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime()
-      : new Date(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate(), 0, 0, 0, 0).getTime();
-    const dayEndMs = dayStartMs + 24 * 3600 * 1000;
+    let activeBuckets: TransformedEnergyBucket[];
+    let dayStartMs = 0;
+    let dayEndMs = 0;
 
-    // Strictly cut series at current timestamp when viewing today, or within the 24h day for historic days.
-    // Never allow next-day or previous-day buckets into the 24h chart domain.
-    const nowMs = now.getTime();
-    const activeBuckets = isToday
-      ? buckets.filter((b) => b.startMs >= dayStartMs && b.startMs <= nowMs)
-      : buckets.filter((b) => b.startMs >= dayStartMs && b.startMs < dayEndMs);
+    if (isSingleDayView) {
+      // 1. Establish reference day for single-day 24h view:
+      const firstDate = new Date(buckets[0].startMs);
+      dayStartMs = isToday
+        ? new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime()
+        : new Date(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate(), 0, 0, 0, 0).getTime();
+      dayEndMs = dayStartMs + 24 * 3600 * 1000;
+
+      // Strictly cut series at current timestamp when viewing today, or within 24h for historic days
+      const nowMs = now.getTime();
+      activeBuckets = isToday
+        ? buckets.filter((b) => b.startMs >= dayStartMs && b.startMs <= nowMs)
+        : buckets.filter((b) => b.startMs >= dayStartMs && b.startMs < dayEndMs);
+    } else {
+      // Multi-Day view (Week, Month, Year, Custom): Keep all period buckets
+      activeBuckets = buckets;
+    }
 
     if (activeBuckets.length === 0) {
-      return { chartData: [], currentMinuteOfDay: nowMinute, isViewingToday: isToday };
+      return { chartData: [], currentMinuteOfDay: nowMinute, isViewingToday: isToday, isSingleDay: isSingleDayView };
     }
 
     const n = activeBuckets.length;
-    const firstDurationMs = activeBuckets[0].endMs - activeBuckets[0].startMs;
-    const is5Min = firstDurationMs < 600000; // < 10 minutes = 5-minute resolution
 
-    // Helper: Convert bucket values to power (kW)
-    // Directly plots the measured power telemetry from Home Assistant with smooth monotone interpolation
-    const computePowerSeries = (accessor: (b: TransformedEnergyBucket) => number) => {
+    // Helper: Convert bucket values to power (kW) or energy (kWh)
+    // Single Day: converts energy change to average power rate (kW)
+    // Multi-Day: preserves daily/monthly energy totals in kWh
+    const computeSeries = (accessor: (b: TransformedEnergyBucket) => number) => {
       return activeBuckets.map((b) => {
-        const durHours = (b.endMs - b.startMs) / 3600000;
-        const val = accessor(b);
-        const kw = durHours > 0 ? val / durHours : val * 12;
-        return Number(kw.toFixed(2));
+        const val = accessor(b) || 0;
+        if (isSingleDayView) {
+          const durHours = (b.endMs - b.startMs) / 3600000;
+          const kw = durHours > 0 ? val / durHours : val * 12;
+          return Number(kw.toFixed(2));
+        } else {
+          return Number(val.toFixed(2));
+        }
       });
     };
 
-    const solars = computePowerSeries((b) => b.solar || 0);
-    const gridImports = computePowerSeries((b) => b.gridImport || 0);
-    const gridExports = computePowerSeries((b) => b.gridExport || 0);
-    const batteryDischarges = computePowerSeries((b) => b.batteryDischarge || 0);
-    const batteryCharges = computePowerSeries((b) => b.batteryCharge || 0);
-    const homeConsumptions = computePowerSeries((b) => b.homeConsumption || 0);
+    const solars = computeSeries((b) => b.solar || 0);
+    const gridImports = computeSeries((b) => b.gridImport || 0);
+    const gridExports = computeSeries((b) => b.gridExport || 0);
+    const batteryDischarges = computeSeries((b) => b.batteryDischarge || 0);
+    const batteryCharges = computeSeries((b) => b.batteryCharge || 0);
+    const homeConsumptions = computeSeries((b) => b.homeConsumption || 0);
 
     // Helper to generate clean, connected contour strokes anchored to baseline/underlying series
-    // Prevents disconnected floating line segments and keeps series distinct without painting over other layers
     const computeAnchoredContour = (
       series: number[],
       baseSeries?: number[],
@@ -196,15 +215,37 @@ export default function PowerSourcesChart({
 
     const points: PowerDataPoint[] = activeBuckets.map((b, i) => {
       const d = new Date(b.startMs);
-      // Monotonic minute of day relative to dayStartMs:
-      // Strictly ranges from 0 (00:00) to 1435 (23:55). Prevents wrap-around artifact to 0.
-      const rawMinute = Math.round((b.startMs - dayStartMs) / 60000);
-      const minuteOfDay = Math.min(1440, Math.max(0, rawMinute));
-      const timeFormatted = d.toLocaleTimeString(undefined, {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
+      let minuteOfDay = 0;
+      let timeFormatted = '';
+      let xAxisLabel = '';
+
+      if (isSingleDayView) {
+        // Monotonic minute of day relative to dayStartMs:
+        // Strictly ranges from 0 (00:00) to 1435 (23:55)
+        const rawMinute = Math.round((b.startMs - dayStartMs) / 60000);
+        minuteOfDay = Math.min(1440, Math.max(0, rawMinute));
+        timeFormatted = d.toLocaleTimeString(undefined, {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+        xAxisLabel = timeFormatted;
+      } else {
+        minuteOfDay = i;
+        const bucketDurMs = b.endMs - b.startMs;
+        const isMonthlyBucket = bucketDurMs > 25 * 24 * 3600 * 1000;
+
+        if (isMonthlyBucket) {
+          xAxisLabel = d.toLocaleDateString(undefined, { month: 'short' });
+          timeFormatted = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+        } else if (activeBuckets.length <= 8) {
+          xAxisLabel = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' });
+          timeFormatted = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        } else {
+          xAxisLabel = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          timeFormatted = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        }
+      }
 
       const solar = Math.max(0, solars[i]);
       const gridImport = Math.max(0, gridImports[i]);
@@ -216,8 +257,7 @@ export default function PowerSourcesChart({
       const gridExportNegative = Number((-1 * gridExport).toFixed(2));
       const batteryChargeNegative = Number((-1 * batteryCharge).toFixed(2));
 
-      // Instantaneous Home Consumption (Dashed Line):
-      // Direct, continuous rate derived from bucket flow conservation, eliminating phase-difference jitter
+      // Instantaneous Home Consumption (Dashed Line)
       const homeConsumption = Number(Math.max(0, homeConsumptions[i]).toFixed(2));
 
       const netGrid = Number((gridImport - gridExport).toFixed(2));
@@ -226,6 +266,7 @@ export default function PowerSourcesChart({
       return {
         date: d,
         minuteOfDay,
+        xAxisLabel,
         timeFormatted,
         solar,
         gridImport,
@@ -243,15 +284,15 @@ export default function PowerSourcesChart({
       };
     });
 
-    // For historic days, extend cleanly to the 24:00 (1440) right border if the last bucket is at 23:55 (1435)
-    // Prevents incomplete cutoffs without creating any wrap-around artifact
-    if (!isToday && points.length > 0) {
+    // For historic single days, extend cleanly to the 24:00 (1440) right border
+    if (isSingleDayView && !isToday && points.length > 0) {
       const lastPoint = points[points.length - 1];
       if (lastPoint.minuteOfDay < 1440 && lastPoint.minuteOfDay >= 1430) {
         points.push({
           ...lastPoint,
           date: new Date(dayEndMs),
           minuteOfDay: 1440,
+          xAxisLabel: '12:00 AM',
           timeFormatted: '12:00 AM'
         });
       }
@@ -260,12 +301,39 @@ export default function PowerSourcesChart({
     return {
       chartData: points,
       currentMinuteOfDay: nowMinute,
-      isViewingToday: isToday
+      isViewingToday: isToday,
+      isSingleDay: isSingleDayView
     };
   }, [buckets, hasSolar, showSolar, hasGrid, showGrid, hasBattery, showBattery, showHome]);
 
+  // Aggregate period totals for toggle pills in multi-day views
+  const periodTotals = useMemo(() => {
+    if (isSingleDay || chartData.length === 0) return null;
+    let home = 0;
+    let solar = 0;
+    let gridImport = 0;
+    let gridExport = 0;
+    let batteryCharge = 0;
+    let batteryDischarge = 0;
+
+    for (const p of chartData) {
+      home += p.homeConsumption;
+      solar += p.solar;
+      gridImport += p.gridImport;
+      gridExport += Math.abs(p.gridExportNegative);
+      batteryCharge += Math.abs(p.batteryChargeNegative);
+      batteryDischarge += p.batteryDischarge;
+    }
+
+    return {
+      home: Number(home.toFixed(2)),
+      solar: Number(solar.toFixed(2)),
+      netGrid: Number((gridImport - gridExport).toFixed(2)),
+      netBattery: Number((batteryDischarge - batteryCharge).toFixed(2))
+    };
+  }, [chartData, isSingleDay]);
+
   // Dynamically calculate Y-axis domain and nice step ticks based on active flow series
-  // Eliminates hardcoded clamp/bounds (e.g. fixed -2kW to 6kW) and cleanly hugs real telemetry
   const { yDomain, yTicks } = useMemo(() => {
     if (chartData.length === 0) {
       return { yDomain: [0, 2] as [number, number], yTicks: [0, 1, 2] };
@@ -288,8 +356,8 @@ export default function PowerSourcesChart({
       if (negStack < minNegative) minNegative = negStack;
     }
 
-    // Include realtime telemetry if visible
-    if (realtime) {
+    // Include realtime telemetry if visible (only in single-day view)
+    if (isSingleDay && realtime) {
       if (hasSolar && showSolar && realtime.solarPowerKW > maxPositive) {
         maxPositive = realtime.solarPowerKW;
       }
@@ -320,6 +388,8 @@ export default function PowerSourcesChart({
     else if (span <= 3) step = 0.5;
     else if (span <= 7) step = 1;
     else if (span <= 14) step = 2;
+    else if (span <= 30) step = 5;
+    else if (span <= 70) step = 10;
     else step = Math.ceil(span / 6 / 5) * 5;
 
     const yMax = Number((Math.ceil(rawMax / step) * step).toFixed(2));
@@ -335,7 +405,7 @@ export default function PowerSourcesChart({
       yDomain: [yMin, yMax] as [number, number],
       yTicks: ticks
     };
-  }, [chartData, hasSolar, showSolar, hasGrid, showGrid, hasBattery, showBattery, showHome, realtime]);
+  }, [chartData, hasSolar, showSolar, hasGrid, showGrid, hasBattery, showBattery, showHome, realtime, isSingleDay]);
 
   // Real-time instantaneous badge calculations
   const liveGrid = realtime
@@ -345,6 +415,16 @@ export default function PowerSourcesChart({
     ? Number((realtime.batteryDischargePowerKW - realtime.batteryChargePowerKW).toFixed(2))
     : 0;
 
+  // Adaptive X-axis tick interval for multi-day views
+  const xAxisInterval = useMemo(() => {
+    if (isSingleDay) return 0;
+    const len = chartData.length;
+    if (len <= 8) return 0; // Week: show every day
+    if (len <= 14) return 1; // 2 weeks: show every 2nd day
+    if (len <= 31) return 3; // Month: show every 4th day
+    return 'preserveStartEnd'; // Year or long custom range
+  }, [isSingleDay, chartData.length]);
+
   // Custom Home Assistant Style Tooltip
   const renderTooltip = (props: any) => {
     const { active, payload } = props;
@@ -352,6 +432,8 @@ export default function PowerSourcesChart({
 
     const data: PowerDataPoint = payload[0].payload;
     if (!data) return null;
+
+    const unit = isSingleDay ? ' kW' : ' kWh';
 
     return (
       <div
@@ -372,7 +454,7 @@ export default function PowerSourcesChart({
                 <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
                 Solar:
               </span>
-              <span className="font-mono font-bold">{data.solar.toFixed(2)} kW</span>
+              <span className="font-mono font-bold">{data.solar.toFixed(2)}{unit}</span>
             </div>
           )}
 
@@ -383,7 +465,7 @@ export default function PowerSourcesChart({
                 {data.netBattery >= 0 ? 'Battery Discharge:' : 'Battery Charge:'}
               </span>
               <span className="font-mono font-bold">
-                {data.netBattery >= 0 ? `+${data.netBattery.toFixed(2)}` : data.netBattery.toFixed(2)} kW
+                {data.netBattery >= 0 ? `+${data.netBattery.toFixed(2)}` : data.netBattery.toFixed(2)}{unit}
               </span>
             </div>
           )}
@@ -395,7 +477,7 @@ export default function PowerSourcesChart({
                 {data.netGrid >= 0 ? 'Grid Import:' : 'Grid Export:'}
               </span>
               <span className="font-mono font-bold">
-                {data.netGrid >= 0 ? `+${data.netGrid.toFixed(2)}` : data.netGrid.toFixed(2)} kW
+                {data.netGrid >= 0 ? `+${data.netGrid.toFixed(2)}` : data.netGrid.toFixed(2)}{unit}
               </span>
             </div>
           )}
@@ -405,7 +487,7 @@ export default function PowerSourcesChart({
               <span className={`inline-block w-2 h-2 rounded-full border ${darkMode ? 'border-slate-300' : 'border-slate-700'}`} />
               Home Load:
             </span>
-            <span className="font-mono font-bold">{data.homeConsumption.toFixed(2)} kW</span>
+            <span className="font-mono font-bold">{data.homeConsumption.toFixed(2)}{unit}</span>
           </div>
         </div>
       </div>
@@ -457,10 +539,12 @@ export default function PowerSourcesChart({
           </div>
           <div>
             <h3 className={`text-sm font-extrabold tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-              Power Sources & Instantaneous Flow (kW)
+              {isSingleDay ? 'Power Sources & Instantaneous Flow (kW)' : 'Power Sources & Energy Flow (kWh)'}
             </h3>
             <p className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              Continuous dynamic stacked power distribution curve
+              {isSingleDay
+                ? 'Continuous dynamic stacked power distribution curve'
+                : 'Continuous dynamic stacked energy flow curve across period'}
             </p>
           </div>
         </div>
@@ -484,8 +568,11 @@ export default function PowerSourcesChart({
           >
             <House size={14} weight="fill" className={showHome ? 'text-purple-400' : 'text-slate-500'} />
             <span>Home</span>
-            {realtime && (
+            {isSingleDay && realtime && (
               <span className="font-mono">{realtime.homeConsumptionKW.toFixed(2)} kW</span>
+            )}
+            {!isSingleDay && periodTotals && (
+              <span className="font-mono">{periodTotals.home.toFixed(2)} kWh</span>
             )}
           </button>
 
@@ -507,8 +594,11 @@ export default function PowerSourcesChart({
             >
               <Sun size={14} weight="fill" className={showSolar ? 'text-amber-500' : 'text-slate-500'} />
               <span>Solar</span>
-              {realtime && (
+              {isSingleDay && realtime && (
                 <span className="font-mono">{realtime.solarPowerKW.toFixed(2)} kW</span>
+              )}
+              {!isSingleDay && periodTotals && (
+                <span className="font-mono">{periodTotals.solar.toFixed(2)} kWh</span>
               )}
             </button>
           )}
@@ -531,8 +621,11 @@ export default function PowerSourcesChart({
             >
               <Plug size={14} weight="fill" className={showGrid ? 'text-sky-400' : 'text-slate-500'} />
               <span>Grid</span>
-              {realtime && (
+              {isSingleDay && realtime && (
                 <span className="font-mono">{liveGrid >= 0 ? `+${liveGrid.toFixed(2)}` : liveGrid.toFixed(2)} kW</span>
+              )}
+              {!isSingleDay && periodTotals && (
+                <span className="font-mono">{periodTotals.netGrid >= 0 ? `+${periodTotals.netGrid.toFixed(2)}` : periodTotals.netGrid.toFixed(2)} kWh</span>
               )}
             </button>
           )}
@@ -555,8 +648,11 @@ export default function PowerSourcesChart({
             >
               <BatteryCharging size={14} weight="fill" className={showBattery ? 'text-emerald-400' : 'text-slate-500'} />
               <span>Battery</span>
-              {realtime && (
+              {isSingleDay && realtime && (
                 <span className="font-mono">{liveBattery >= 0 ? `+${liveBattery.toFixed(2)}` : liveBattery.toFixed(2)} kW</span>
+              )}
+              {!isSingleDay && periodTotals && (
+                <span className="font-mono">{periodTotals.netBattery >= 0 ? `+${periodTotals.netBattery.toFixed(2)}` : periodTotals.netBattery.toFixed(2)} kWh</span>
               )}
             </button>
           )}
@@ -572,6 +668,7 @@ export default function PowerSourcesChart({
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
+              key={isSingleDay ? 'single-day-composed' : 'multi-day-composed'}
               data={chartData}
               margin={{ top: 18, right: 16, bottom: 8, left: 4 }}
             >
@@ -625,8 +722,8 @@ export default function PowerSourcesChart({
                 strokeWidth={1.5}
               />
 
-              {/* Current time horizon vertical reference line */}
-              {isViewingToday && (
+              {/* Current time horizon vertical reference line (single-day view only) */}
+              {isSingleDay && isViewingToday && (
                 <ReferenceLine
                   x={currentMinuteOfDay}
                   stroke="#38bdf8"
@@ -635,19 +732,30 @@ export default function PowerSourcesChart({
                 />
               )}
 
-              <XAxis
-                type="number"
-                dataKey="minuteOfDay"
-                domain={[0, 1440]}
-                ticks={[0, 240, 480, 720, 960, 1200, 1440]}
-                tickFormatter={formatXAxisTick}
-                tick={{ fill: darkMode ? '#94a3b8' : '#64748b', fontSize: 11 }}
-                axisLine={{ stroke: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
-                tickLine={false}
-              />
+              {isSingleDay ? (
+                <XAxis
+                  type="number"
+                  dataKey="minuteOfDay"
+                  domain={[0, 1440]}
+                  ticks={[0, 240, 480, 720, 960, 1200, 1440]}
+                  tickFormatter={formatXAxisTick}
+                  tick={{ fill: darkMode ? '#94a3b8' : '#64748b', fontSize: 11 }}
+                  axisLine={{ stroke: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
+                  tickLine={false}
+                />
+              ) : (
+                <XAxis
+                  type="category"
+                  dataKey="xAxisLabel"
+                  interval={xAxisInterval}
+                  tick={{ fill: darkMode ? '#94a3b8' : '#64748b', fontSize: 11 }}
+                  axisLine={{ stroke: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
+                  tickLine={false}
+                />
+              )}
 
               <YAxis
-                unit=" kW"
+                unit={isSingleDay ? ' kW' : ' kWh'}
                 domain={yDomain}
                 ticks={yTicks}
                 tickFormatter={(val: number) => (val % 1 === 0 ? val.toString() : val.toFixed(1))}

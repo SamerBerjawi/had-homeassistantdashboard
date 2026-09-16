@@ -31,6 +31,8 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
     shiftPeriod,
     isAtFutureLimit,
     dateLabel,
+    customRange,
+    setCustomRange,
     loadState,
     isFetchingStats,
     error,
@@ -111,6 +113,8 @@ export default function EnergyDashboardView({ darkMode = true }: EnergyDashboard
         shiftPeriod={shiftPeriod}
         isAtFutureLimit={isAtFutureLimit}
         dateLabel={dateLabel}
+        customRange={customRange}
+        setCustomRange={setCustomRange}
         isFetchingStats={isFetchingStats}
         onRefresh={refresh}
         isLive={isLive}

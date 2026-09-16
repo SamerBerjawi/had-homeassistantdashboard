@@ -159,13 +159,17 @@ export function transformEnergyStatistics(
     periodType?: '5minute' | 'hour' | 'day' | 'month';
     daysInPeriod?: number;
     states?: Record<string, any>;
+    startTimeMs?: number;
+    endTimeMs?: number;
   } = {}
 ): TransformedEnergyModel {
   const {
     currencySymbol = '€',
     periodType = 'hour',
     daysInPeriod = 1,
-    states = {}
+    states = {},
+    startTimeMs,
+    endTimeMs
   } = options;
 
   const extracted = extractEnergyStatisticIds(prefs, states);
@@ -194,13 +198,15 @@ export function transformEnergyStatistics(
           ? (raw > 1e11 ? raw : raw * 1000)
           : new Date(raw).getTime();
         if (!isNaN(start)) {
+          if (typeof startTimeMs === 'number' && start < startTimeMs) continue;
+          if (typeof endTimeMs === 'number' && start > endTimeMs) continue;
           rawTimestamps.push(start);
         }
       }
     }
   }
 
-  // Also include forecast timestamps if available
+  // Also include forecast timestamps if available and strictly within the requested period
   const forecastWhHours: Record<string, number> = {};
   if (forecastData) {
     if ('wh_hours' in forecastData && typeof forecastData.wh_hours === 'object') {
@@ -216,10 +222,13 @@ export function transformEnergyStatistics(
       }
     }
 
-    // Include forecast timestamps so future hours of the day are present in buckets
+    // Include forecast timestamps ONLY if within the requested period window
+    // (Prevents upcoming 48-hour forecasts from leaking into past periods)
     for (const fKey of Object.keys(forecastWhHours)) {
       const fTime = new Date(fKey).getTime();
       if (!isNaN(fTime)) {
+        if (typeof startTimeMs === 'number' && fTime < startTimeMs) continue;
+        if (typeof endTimeMs === 'number' && fTime > endTimeMs) continue;
         rawTimestamps.push(fTime);
       }
     }
@@ -230,9 +239,9 @@ export function transformEnergyStatistics(
   // ---------------------------------------------------------------------------
   const sortedTimestamps: number[] = [];
 
-  if (rawTimestamps.length > 0) {
-    const minTime = Math.min(...rawTimestamps);
-    const maxTime = Math.max(...rawTimestamps);
+  if (rawTimestamps.length > 0 || (typeof startTimeMs === 'number' && typeof endTimeMs === 'number')) {
+    const minTime = rawTimestamps.length > 0 ? Math.min(...rawTimestamps) : (startTimeMs || 0);
+    const maxTime = rawTimestamps.length > 0 ? Math.max(...rawTimestamps) : (endTimeMs || 0);
 
     if (periodType === '5minute') {
       const STEP_MS = 5 * 60 * 1000;
@@ -274,27 +283,62 @@ export function transformEnergyStatistics(
         sortedTimestamps.push(t);
       }
     } else if (periodType === 'day') {
-      const dayMap = new Map<string, number>();
-      for (const ts of rawTimestamps) {
-        const d = new Date(ts);
-        const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-        if (!dayMap.has(key)) {
-          const dayMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime();
-          dayMap.set(key, dayMidnight);
+      if (typeof startTimeMs === 'number' && typeof endTimeMs === 'number' && startTimeMs < endTimeMs) {
+        // Build all consecutive days between start and end of the period
+        const s = new Date(startTimeMs);
+        s.setHours(0, 0, 0, 0);
+        const e = new Date(endTimeMs);
+        e.setHours(0, 0, 0, 0);
+        const cur = new Date(s);
+        while (cur.getTime() <= e.getTime()) {
+          sortedTimestamps.push(cur.getTime());
+          cur.setDate(cur.getDate() + 1);
         }
+      } else {
+        const dayMap = new Map<string, number>();
+        for (const ts of rawTimestamps) {
+          const d = new Date(ts);
+          const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+          if (!dayMap.has(key)) {
+            const dayMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime();
+            dayMap.set(key, dayMidnight);
+          }
+        }
+        sortedTimestamps.push(...Array.from(dayMap.values()).sort((a, b) => a - b));
       }
-      sortedTimestamps.push(...Array.from(dayMap.values()).sort((a, b) => a - b));
     } else if (periodType === 'month') {
-      const monthMap = new Map<string, number>();
-      for (const ts of rawTimestamps) {
-        const d = new Date(ts);
-        const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
-        if (!monthMap.has(key)) {
-          const monthFirst = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0).getTime();
-          monthMap.set(key, monthFirst);
+      if (typeof startTimeMs === 'number' && typeof endTimeMs === 'number' && startTimeMs < endTimeMs) {
+        const s = new Date(startTimeMs);
+        const e = new Date(endTimeMs);
+        const cur = new Date(s.getFullYear(), s.getMonth(), 1, 0, 0, 0, 0);
+        const endMonth = new Date(e.getFullYear(), e.getMonth(), 1, 0, 0, 0, 0);
+        while (cur.getTime() <= endMonth.getTime()) {
+          sortedTimestamps.push(cur.getTime());
+          cur.setMonth(cur.getMonth() + 1);
         }
+      } else {
+        const monthMap = new Map<string, number>();
+        for (const ts of rawTimestamps) {
+          const d = new Date(ts);
+          const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+          if (!monthMap.has(key)) {
+            const monthFirst = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0).getTime();
+            monthMap.set(key, monthFirst);
+          }
+        }
+        sortedTimestamps.push(...Array.from(monthMap.values()).sort((a, b) => a - b));
       }
-      sortedTimestamps.push(...Array.from(monthMap.values()).sort((a, b) => a - b));
+    }
+
+    // Safety filter: ensure no slot exceeds endTimeMs + 1 hour or precedes startTimeMs - 1 hour
+    if (typeof startTimeMs === 'number' || typeof endTimeMs === 'number') {
+      const bounded = sortedTimestamps.filter((t) => {
+        if (typeof startTimeMs === 'number' && t < startTimeMs - 3600000) return false;
+        if (typeof endTimeMs === 'number' && t > endTimeMs + 3600000) return false;
+        return true;
+      });
+      sortedTimestamps.length = 0;
+      sortedTimestamps.push(...bounded);
     }
   }
 

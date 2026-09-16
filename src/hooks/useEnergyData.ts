@@ -128,12 +128,27 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
 
   // Step backward / forward
   const shiftPeriod = useCallback((direction: -1 | 1) => {
+    if (period === 'custom' && customRange) {
+      const spanMs = customRange.end.getTime() - customRange.start.getTime();
+      const stepMs = Math.max(24 * 3600 * 1000, spanMs + 1);
+      const newStart = new Date(customRange.start.getTime() + direction * stepMs);
+      const newEnd = new Date(customRange.end.getTime() + direction * stepMs);
+      const now = new Date();
+      if (direction > 0 && newStart > now) return;
+      setCustomRangeState({ start: newStart, end: newEnd });
+      return;
+    }
     setTargetDate((prev) => shiftReferenceDate(period, prev, direction));
-  }, [period]);
+  }, [period, customRange]);
 
   const isAtFutureLimit = useMemo(() => {
+    if (period === 'custom' && customRange) {
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+      return customRange.end.getTime() >= todayEnd.getTime();
+    }
     return isPeriodAtLimit(period, targetDate);
-  }, [period, targetDate]);
+  }, [period, targetDate, customRange]);
 
   const setCustomRange = useCallback((start: Date, end: Date) => {
     setCustomRangeState({ start, end });
@@ -237,6 +252,9 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
 
         if (cancelled) return;
 
+        const startTimeMs = new Date(timeRange.start).getTime();
+        const endTimeMs = new Date(timeRange.end).getTime();
+
         // 4. Synchronous Snapshot Transformation
         const computed = transformEnergyStatistics(
           loadedPrefs,
@@ -247,7 +265,9 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
             currencySymbol: haCurrency,
             periodType: timeRange.periodType,
             daysInPeriod,
-            states: currentStates
+            states: currentStates,
+            startTimeMs,
+            endTimeMs
           }
         );
 
@@ -263,7 +283,9 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
               currencySymbol: haCurrency,
               periodType: '5minute',
               daysInPeriod,
-              states: currentStates
+              states: currentStates,
+              startTimeMs,
+              endTimeMs
             }
           );
           if (computed5min.buckets.length > 0) {
