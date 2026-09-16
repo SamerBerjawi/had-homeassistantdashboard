@@ -143,7 +143,14 @@ export default function EnergyDistributionCard({
     if (hasBattery && (totals.gridToBattery ?? 0) > 0.005) gridItems.push({ label: 'Battery', val: totals.gridToBattery, type: 'battery' });
   }
 
+  const totalSolarVal = totals.solar > 0 ? totals.solar : solarItems.reduce((acc, i) => acc + i.val, 0);
+  const totalBatteryVal = (totals.batteryDischarge > 0 ? totals.batteryDischarge : 0) || batteryItems.reduce((acc, i) => acc + i.val, 0);
+  const totalGridVal = (totals.gridImport > 0 ? totals.gridImport : 0) || gridItems.reduce((acc, i) => acc + i.val, 0);
+
   const hasAnyTotals =
+    totalSolarVal > 0.005 ||
+    totalBatteryVal > 0.005 ||
+    totalGridVal > 0.005 ||
     solarItems.length > 0 ||
     batteryItems.length > 0 ||
     gridItems.length > 0 ||
@@ -153,11 +160,11 @@ export default function EnergyDistributionCard({
   const renderDestinationIcon = (type: 'home' | 'battery' | 'grid') => {
     switch (type) {
       case 'home':
-        return <House size={14} weight="duotone" className="shrink-0 text-amber-600 dark:text-amber-400" />;
+        return <House size={14} weight="duotone" className="shrink-0 text-cyan-600 dark:text-cyan-400" title="Home" />;
       case 'battery':
-        return <BatteryCharging size={14} weight="duotone" className="shrink-0 text-emerald-600 dark:text-emerald-400" />;
+        return <BatteryCharging size={14} weight="duotone" className="shrink-0 text-emerald-600 dark:text-emerald-400" title="Battery" />;
       case 'grid':
-        return <Broadcast size={14} weight="duotone" className="shrink-0 text-sky-600 dark:text-sky-400" />;
+        return <Broadcast size={14} weight="duotone" className="shrink-0 text-sky-600 dark:text-sky-400" title="Grid" />;
     }
   };
 
@@ -632,16 +639,16 @@ export default function EnergyDistributionCard({
         </svg>
       </div>
 
-      {/* Bottom Summary: Streamlined Daily Totals (Organized by Source) */}
+      {/* Bottom Summary: Streamlined Cumulative Totals (Organized by Source) */}
       <div className={`pt-3 border-t z-10 ${darkMode ? 'border-white/10' : 'border-slate-200'}`}>
         <div className="flex items-center justify-between mb-2">
           <span className={`text-[11px] font-semibold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-            Today's Totals
+            Totals
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {/* Solar Streamlined Pill */}
-          {solarItems.length > 0 && (
+          {(solarItems.length > 0 || totalSolarVal > 0.005) && (
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-colors ${
                 darkMode
@@ -651,17 +658,17 @@ export default function EnergyDistributionCard({
             >
               <Sun size={14} weight="duotone" className="text-amber-600 dark:text-amber-400 shrink-0" />
               <span className="font-bold text-amber-800 dark:text-amber-400">Solar:</span>
+              <span className="font-mono font-extrabold text-amber-900 dark:text-amber-300 mr-0.5">
+                {totalSolarVal.toFixed(2)} kWh
+              </span>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {solarItems.map((item, idx) => (
-                  <span key={item.label} className="flex items-center gap-1">
+                  <span key={item.label} className="flex items-center gap-1" title={`${item.label}: ${item.val.toFixed(2)} kWh`}>
                     {idx > 0 && (
                       <span className={`mx-0.5 ${darkMode ? 'text-slate-600' : 'text-slate-300'}`}>|</span>
                     )}
                     <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}>→</span>
                     {renderDestinationIcon(item.type)}
-                    <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
-                      {item.label}:
-                    </span>
                     <span className="font-mono font-bold text-amber-700 dark:text-amber-400">
                       {item.val.toFixed(2)} kWh
                     </span>
@@ -672,7 +679,7 @@ export default function EnergyDistributionCard({
           )}
 
           {/* Battery Streamlined Pill (High-Contrast Rich Emerald Green for Light Mode) */}
-          {batteryItems.length > 0 && (
+          {(batteryItems.length > 0 || totalBatteryVal > 0.005) && (
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-colors ${
                 darkMode
@@ -682,17 +689,17 @@ export default function EnergyDistributionCard({
             >
               <BatteryCharging size={14} weight="duotone" className="text-emerald-700 dark:text-emerald-400 shrink-0" />
               <span className="font-bold text-emerald-800 dark:text-emerald-400">Battery:</span>
+              <span className="font-mono font-extrabold text-emerald-950 dark:text-emerald-300 mr-0.5">
+                {totalBatteryVal.toFixed(2)} kWh
+              </span>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {batteryItems.map((item, idx) => (
-                  <span key={item.label} className="flex items-center gap-1">
+                  <span key={item.label} className="flex items-center gap-1" title={`${item.label}: ${item.val.toFixed(2)} kWh`}>
                     {idx > 0 && (
                       <span className={`mx-0.5 ${darkMode ? 'text-slate-600' : 'text-slate-300'}`}>|</span>
                     )}
                     <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}>→</span>
                     {renderDestinationIcon(item.type)}
-                    <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
-                      {item.label}:
-                    </span>
                     <span className="font-mono font-bold text-emerald-800 dark:text-emerald-400">
                       {item.val.toFixed(2)} kWh
                     </span>
@@ -703,7 +710,7 @@ export default function EnergyDistributionCard({
           )}
 
           {/* Grid Streamlined Pill */}
-          {gridItems.length > 0 && (
+          {(gridItems.length > 0 || totalGridVal > 0.005) && (
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-colors ${
                 darkMode
@@ -713,17 +720,17 @@ export default function EnergyDistributionCard({
             >
               <Broadcast size={14} weight="duotone" className="text-sky-600 dark:text-sky-400 shrink-0" />
               <span className="font-bold text-sky-800 dark:text-sky-400">Grid:</span>
+              <span className="font-mono font-extrabold text-sky-950 dark:text-sky-300 mr-0.5">
+                {totalGridVal.toFixed(2)} kWh
+              </span>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {gridItems.map((item, idx) => (
-                  <span key={item.label} className="flex items-center gap-1">
+                  <span key={item.label} className="flex items-center gap-1" title={`${item.label}: ${item.val.toFixed(2)} kWh`}>
                     {idx > 0 && (
                       <span className={`mx-0.5 ${darkMode ? 'text-slate-600' : 'text-slate-300'}`}>|</span>
                     )}
                     <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}>→</span>
                     {renderDestinationIcon(item.type)}
-                    <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
-                      {item.label}:
-                    </span>
                     <span className="font-mono font-bold text-sky-700 dark:text-sky-400">
                       {item.val.toFixed(2)} kWh
                     </span>
@@ -767,11 +774,11 @@ export default function EnergyDistributionCard({
             </div>
           )}
 
-          {/* Fallback if no cumulative totals recorded today */}
+          {/* Fallback if no cumulative totals recorded for this period */}
           {!hasAnyTotals && (
             <div className="flex items-center gap-2 text-xs font-mono text-slate-400 py-0.5">
               <Lightning size={14} weight="duotone" className="text-slate-400" />
-              <span>No energy distribution recorded today</span>
+              <span>No energy distribution recorded for this period</span>
             </div>
           )}
         </div>
