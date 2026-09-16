@@ -9,6 +9,14 @@ import fs from 'fs';
 import dns from 'node:dns';
 import dotenv from 'dotenv';
 import { Agent as UndiciAgent, fetch as undiciFetch } from 'undici';
+import {
+  initEnergyDatabase,
+  queryStatistics,
+  checkCoverage,
+  getEnergyDbStatus,
+  normalizeTimestampMs
+} from './server/services/energyDbService';
+import { EnergySyncService } from './server/services/energySyncService';
 
 dotenv.config();
 
@@ -122,6 +130,13 @@ async function startServer() {
   } catch (err: any) {
     isAssetsStorageWritable = false;
     console.warn(`[NAS Storage Warning] DASHBOARD_ASSETS_DIR "${assetsDir}" is not writable or reachable: ${err.message}. Asset upload endpoints will return service unavailable errors.`);
+  }
+
+  // Initialize embedded SQLite database for NAS Energy History and Backups
+  try {
+    initEnergyDatabase();
+  } catch (err: any) {
+    console.warn('[EnergyDB Warning] Failed to initialize NAS energy SQLite database:', err.message);
   }
 
   // Payload Limit Middleware (allows asset sync, large configs, and SDP text payloads)
@@ -971,6 +986,73 @@ async function startServer() {
     } catch (err: any) {
       console.error('[NAS Assets] Error saving asset:', err);
       return res.status(500).json({ success: false, error: 'Failed to save asset to persistent volume' });
+    }
+  });
+
+  // -------------------------------------------------------------
+  // NAS SQLite Embedded Energy History & Backup API
+  // -------------------------------------------------------------
+
+  // 1. Energy Storage Status & Diagnostics Endpoint
+  app.get('/api/energy/status', (req, res) => {
+    applyCorsHeaders(req, res, 'GET, HEAD, OPTIONS');
+    try {
+      const status = getEnergyDbStatus();
+      res.json({ success: true, status });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 2. Fast Historical Energy Query Endpoint (Sub-10ms from NAS SQLite)
+  app.get('/api/energy/history', (req, res) => {
+    applyCorsHeaders(req, res, 'GET, HEAD, OPTIONS');
+    try {
+      const statisticIdsParam = (req.query.statistic_ids as string) || '';
+      const startParam = (req.query.start as string) || '';
+      const endParam = (req.query.end as string) || '';
+      const periodType = (req.query.period_type as string) || 'hour';
+
+      if (!statisticIdsParam || !startParam || !endParam) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required query parameters: statistic_ids, start, end'
+        });
+      }
+
+      const statisticIds = statisticIdsParam.split(',').map((s) => s.trim()).filter(Boolean);
+      const startMs = normalizeTimestampMs(startParam);
+      const endMs = normalizeTimestampMs(endParam);
+
+      const coverage = checkCoverage(statisticIds, startMs, endMs, periodType);
+      const data = queryStatistics(statisticIds, startMs, endMs, periodType);
+
+      res.json({
+        success: true,
+        source: 'nas_sqlite',
+        periodType,
+        coverage,
+        data
+      });
+    } catch (err: any) {
+      console.error('[Energy API] /api/energy/history error:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 3. Energy Statistics Batch Ingestion Endpoint (Client-Assisted & Background Sync)
+  app.post('/api/energy/sync', async (req, res) => {
+    applyCorsHeaders(req, res, 'POST, OPTIONS');
+    try {
+      const payload = req.body;
+      const result = await EnergySyncService.ingestBatch(payload);
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+      res.json(result);
+    } catch (err: any) {
+      console.error('[Energy API] /api/energy/sync error:', err);
+      res.status(500).json({ success: false, error: err.message });
     }
   });
 

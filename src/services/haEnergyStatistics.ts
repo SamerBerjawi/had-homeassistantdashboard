@@ -386,6 +386,65 @@ export async function fetchHAEnergySolarForecasts(
 }
 
 // -------------------------------------------------------------
+// NAS Embedded SQLite Query & Backup Sync Helpers
+// -------------------------------------------------------------
+
+export async function queryNasEnergyDb(
+  cleanIds: string[],
+  start: string,
+  end: string,
+  periodType: string
+): Promise<HAStatisticsResponse | null> {
+  try {
+    const params = new URLSearchParams({
+      statistic_ids: cleanIds.join(','),
+      start,
+      end,
+      period_type: periodType
+    });
+    const res = await fetch(`/api/energy/history?${params.toString()}`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json && json.success && json.data && json.coverage?.hasFullCoverage) {
+      return json.data as HAStatisticsResponse;
+    }
+  } catch {
+    // Non-blocking fallback to HA WebSocket
+  }
+  return null;
+}
+
+export async function syncToNasEnergyDb(
+  stats: HAStatisticsResponse,
+  periodType: string
+): Promise<void> {
+  try {
+    if (!stats || typeof stats !== 'object' || Object.keys(stats).length === 0) return;
+    await fetch('/api/energy/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        statistics: stats,
+        periodType
+      })
+    });
+  } catch {
+    // Fire-and-forget background sync
+  }
+}
+
+export async function fetchNasEnergyDbStatus(): Promise<any> {
+  try {
+    const res = await fetch('/api/energy/status');
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.status || null;
+  } catch {
+    return null;
+  }
+}
+
+// -------------------------------------------------------------
 // WebSocket API: recorder/statistics_during_period (Optimized & Deduplicated)
 // -------------------------------------------------------------
 
@@ -408,7 +467,7 @@ export async function fetchHAEnergyStatistics(
   const periodType = explicitPeriodType || timeRange.periodType;
   const cacheKey = `${periodType}_${timeRange.start}_${timeRange.end}_${cleanIds.join(',')}`;
 
-  // 1. Check in-memory cache
+  // 1. Check in-memory session cache (0ms)
   if (!bypassCache) {
     const cached = statisticsCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
@@ -425,17 +484,28 @@ export async function fetchHAEnergyStatistics(
     (!connection && haWebSocketService && !haWebSocketService.isDemo() && haWebSocketService.getStatus() === 'connected');
 
   if (isLive) {
-    // Query change, sum, mean, and state to support cumulative energy (kWh) and real-time power rate statistics (W/kW)
-    const payload = {
-      type: 'recorder/statistics_during_period',
-      start_time: timeRange.start,
-      end_time: timeRange.end,
-      statistic_ids: cleanIds,
-      period: periodType,
-      types: ['change', 'sum', 'mean', 'state', 'max', 'min']
-    };
-
     const fetchPromise = (async (): Promise<HAStatisticsResponse> => {
+      const isHistorical = new Date(timeRange.end).getTime() < (Date.now() - 3600 * 1000);
+
+      // 3. Fast NAS Embedded SQLite Check (<5ms) for historical periods
+      if (!bypassCache && isHistorical && typeof window !== 'undefined') {
+        const nasResult = await queryNasEnergyDb(cleanIds, timeRange.start, timeRange.end, periodType);
+        if (nasResult && Object.keys(nasResult).length > 0) {
+          statisticsCache.set(cacheKey, { data: nasResult, expiresAt: Date.now() + HISTORICAL_CACHE_TTL_MS });
+          return nasResult;
+        }
+      }
+
+      // 4. Fallback to Home Assistant WebSocket recorder API
+      const payload = {
+        type: 'recorder/statistics_during_period',
+        start_time: timeRange.start,
+        end_time: timeRange.end,
+        statistic_ids: cleanIds,
+        period: periodType,
+        types: ['change', 'sum', 'mean', 'state', 'max', 'min']
+      };
+
       try {
         let result: HAStatisticsResponse | null = null;
         if (connection && typeof connection.sendMessagePromise === 'function') {
@@ -447,9 +517,14 @@ export async function fetchHAEnergyStatistics(
         }
 
         if (result && typeof result === 'object') {
-          const isHistorical = new Date(timeRange.end).getTime() < (Date.now() - 3600 * 1000);
           const ttl = isHistorical ? HISTORICAL_CACHE_TTL_MS : STATS_CACHE_TTL_MS;
           statisticsCache.set(cacheKey, { data: result, expiresAt: Date.now() + ttl });
+
+          // 5. Asynchronously persist and back up to NAS SQLite database in background
+          if (typeof window !== 'undefined') {
+            syncToNasEnergyDb(result, periodType);
+          }
+
           return result;
         }
       } catch (err) {
