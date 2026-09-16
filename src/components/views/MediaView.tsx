@@ -22,7 +22,7 @@ import { useRoomsData } from '../../hooks/useRoomsData';
 import { ResolvedEntity, HAEntity } from '../../types';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import NowPlayingHighlightCard from '../media/NowPlayingHighlightCard';
-import MediaHierarchyPlayerCard from '../media/MediaHierarchyPlayerCard';
+import MediaPlayerTile from '../tiles/MediaPlayerTile';
 import MediaDetailModal from '../canvas/modals/MediaDetailModal';
 import { resolvedEntityToHAEntity } from '../../services/graphResolution';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
@@ -284,17 +284,17 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
                       </div>
                     </div>
 
-                    {/* Area Players 2-Column Mobile Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 items-stretch">
+                    {/* Area Players Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 items-stretch">
                       {area.mediaPlayers.map((player) => (
-                        <MediaHierarchyPlayerCard
-                          key={player.entity_id}
-                          media={player}
-                          darkMode={darkMode}
-                          onOpenDetail={handleOpenDetail}
-                          callHAService={callHAService}
-                          updateEntityState={updateEntityState}
-                        />
+                        <div key={player.entity_id} className="col-span-1">
+                          <MediaPlayerTile
+                            entity={player}
+                            areaName={area.name}
+                            darkMode={darkMode}
+                            onOpenDrawer={handleOpenDetail}
+                          />
+                        </div>
                       ))}
                     </div>
                   </div>

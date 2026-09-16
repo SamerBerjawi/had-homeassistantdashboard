@@ -607,8 +607,7 @@ export default function AreaDetailView({
       getId: (x) => x.id,
       layoutOverrides,
       breakpoint: activeBreakpoint,
-      isSmall: (x) => x.kind === 'vacuum',
-      isLarge: (x) => x.kind === 'media'
+      isSmall: (x) => true
     });
   }, [tileLayoutMode, sortedMediaPlayers, sortedVacuums, layoutOverrides, activeBreakpoint]);
 
@@ -622,11 +621,13 @@ export default function AreaDetailView({
 
   const getTileSpan = (id: string, spansMap?: Map<string, ComputedTileSpan>, defaultRow: GridRowSpan = 1) => {
     const s = spansMap?.get(id);
+    const rawDesktopSpan = s?.desktopColSpan ?? defaultDesktopColSpan;
+    const desktopColSpan = (rawDesktopSpan < 3 ? 3 : rawDesktopSpan) as GridColSpan;
     return {
       colSpan: s?.colSpan ?? defaultColSpan,
       rowSpan: s?.rowSpan ?? defaultRow,
       tabletColSpan: s?.tabletColSpan ?? defaultTabletColSpan,
-      desktopColSpan: s?.desktopColSpan ?? defaultDesktopColSpan,
+      desktopColSpan,
       colStart: s?.colStart,
       tabletColStart: s?.tabletColStart,
       desktopColStart: s?.desktopColStart
@@ -1379,11 +1380,11 @@ export default function AreaDetailView({
                   id={media.entity_id}
                   colSpan={isPlaying ? 4 : span.colSpan}
                   rowSpan={isPlaying ? 2 : span.rowSpan}
-                  tabletColSpan={isPlaying ? 6 : span.tabletColSpan}
-                  desktopColSpan={isPlaying ? 6 : span.desktopColSpan}
+                  tabletColSpan={span.tabletColSpan}
+                  desktopColSpan={span.desktopColSpan}
                   colStart={isPlaying ? 1 : span.colStart}
-                  tabletColStart={isPlaying ? 1 : span.tabletColStart}
-                  desktopColStart={isPlaying ? 1 : span.desktopColStart}
+                  tabletColStart={span.tabletColStart}
+                  desktopColStart={span.desktopColStart}
                   isUnavailable={isUnavailable}
                   onLongPress={() => setActiveMediaDrawerEntity(media)}
                 >

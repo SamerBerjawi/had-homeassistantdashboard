@@ -267,7 +267,7 @@ export default function MediaDetailModal({
               </div>
 
               {/* Real Audio Waveform Scrubber */}
-              <div className="w-full max-w-xs relative z-10">
+              <div className="w-full max-w-xs mx-auto relative z-10 flex justify-center">
                 <AudioWaveformScrubber
                   title={title}
                   artist={artist}

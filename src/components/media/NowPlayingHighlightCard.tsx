@@ -272,16 +272,6 @@ export default function NowPlayingHighlightCard({
                 <AppIcon size={36} weight="duotone" style={{ color: palette.light }} />
               </div>
             )}
-
-            {/* Live Audio Glow Pulse */}
-            {isPlaying && (
-              <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
-                <span
-                  className="w-3 h-3 rounded-full animate-ping"
-                  style={{ backgroundColor: palette.light }}
-                />
-              </div>
-            )}
           </div>
 
           {/* Track Info */}
@@ -311,7 +301,7 @@ export default function NowPlayingHighlightCard({
         </div>
 
         {/* Audio Waveform Scrubber */}
-        <div className="w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="w-full flex justify-center" onClick={(e) => e.stopPropagation()}>
           <AudioWaveformScrubber
             title={visual.title}
             artist={visual.subtitle}
@@ -321,7 +311,7 @@ export default function NowPlayingHighlightCard({
             onSeek={handleSeek}
             palette={palette}
             darkMode={darkMode}
-            barCount={36}
+            barCount={44}
           />
         </div>
 

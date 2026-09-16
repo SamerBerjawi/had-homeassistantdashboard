@@ -84,7 +84,7 @@ export function getTileResponsiveSpans(
   let desktopColSpan: GridColSpan = 3;
 
   if (breakpoint === 'desktop') {
-    desktopColSpan = colSpan;
+    desktopColSpan = colSpan <= 3 ? 3 : (colSpan as GridColSpan);
     tabletColSpan = colSpan >= 6 ? 6 : colSpan <= 3 ? 3 : (colSpan as GridColSpan);
     mobileColSpan = colSpan >= 6 ? 4 : 2;
   } else if (breakpoint === 'laptop') {
@@ -96,7 +96,7 @@ export function getTileResponsiveSpans(
     mobileColSpan = colSpan;
     if (colSpan === 1) {
       tabletColSpan = 2;
-      desktopColSpan = 2;
+      desktopColSpan = 3;
     } else if (colSpan === 2) {
       tabletColSpan = 3;
       desktopColSpan = 3;
@@ -110,6 +110,11 @@ export function getTileResponsiveSpans(
       tabletColSpan = 6;
       desktopColSpan = 12;
     }
+  }
+
+  // Large screens: enforce at least 3 tracks in 12-factor grid (maximum 4 columns per row: 12 / 3 = 4)
+  if (desktopColSpan < 3) {
+    desktopColSpan = 3;
   }
 
   return {

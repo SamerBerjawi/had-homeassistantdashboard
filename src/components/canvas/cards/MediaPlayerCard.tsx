@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, Pause, SkipForward, SpeakerHigh, MusicNotes, Television, Radio, Airplay } from '@phosphor-icons/react';
 import { CardConfig } from '../../../types/canvas';
 import { HAEntity } from '../../../types';

@@ -15,7 +15,7 @@
  * - Long-press or card tap opens full media modal/drawer
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Play,
   Pause,
@@ -290,7 +290,7 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
         </div>
 
         {/* Waveform Scrubber with Inline Layout */}
-        <div className="relative z-10 w-full pt-1" onClick={(e) => e.stopPropagation()}>
+        <div className="relative z-10 w-full pt-1 flex justify-center" onClick={(e) => e.stopPropagation()}>
           <AudioWaveformScrubber
             title={title}
             artist={artist}
@@ -301,7 +301,7 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
             palette={palette}
             timeTextColor={darkMode ? palette.light : (palette.badgeText || palette.dark)}
             darkMode={darkMode}
-            barCount={56}
+            barCount={44}
             layout="inline"
           />
         </div>

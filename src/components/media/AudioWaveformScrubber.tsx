@@ -93,7 +93,7 @@ export default function AudioWaveformScrubber({
   palette,
   timeTextColor: customTimeTextColor,
   darkMode = true,
-  barCount = 64,
+  barCount = 44,
   layout = 'stacked'
 }: AudioWaveformScrubberProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -278,7 +278,7 @@ export default function AudioWaveformScrubber({
 
   if (layout === 'inline') {
     return (
-      <div className="w-full flex items-center gap-2 sm:gap-2.5 select-none py-0.5">
+      <div className="w-full flex items-center justify-center gap-2 sm:gap-2.5 select-none py-0.5">
         <span
           className={`text-[11px] font-mono font-bold shrink-0 min-w-[32px] ${
             !timeTextColor ? 'text-purple-600 dark:text-purple-300' : ''
@@ -296,7 +296,7 @@ export default function AudioWaveformScrubber({
   }
 
   return (
-    <div className="w-full max-w-sm select-none my-2 space-y-1.5">
+    <div className="w-full max-w-sm mx-auto select-none my-2 space-y-1.5">
       {waveformCanvas}
       {/* Time Legend (Elapsed / Remaining / Total) */}
       <div className="flex justify-between items-center text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 px-1">

@@ -365,7 +365,7 @@ export default function MediaOverviewDrawer({
             </div>
 
             {/* REAL AUDIO WAVEFORM SCRUBBER (DYNAMIC ARTWORK ACCENT COLOR) */}
-            <div className="w-full max-w-xs z-10">
+            <div className="w-full max-w-xs mx-auto z-10 flex justify-center">
               <AudioWaveformScrubber
                 title={title}
                 artist={artist}

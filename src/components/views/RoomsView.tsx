@@ -267,6 +267,7 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
                     {sortedAreas.map((area) => {
                       const isGhosted = hiddenAreasSet.has(area.areaId);
                       const span = computedSpans.get(area.areaId) || { colSpan: 2, tabletColSpan: 3, desktopColSpan: 3, rowSpan: 1 };
+                      const desktopColSpan = (span.desktopColSpan && span.desktopColSpan >= 3 ? span.desktopColSpan : 3) as GridColSpan;
 
                       return (
                         <GridTile
@@ -277,7 +278,7 @@ export default function RoomsView({ darkMode = true }: RoomsViewProps) {
                           colSpan={span.colSpan}
                           rowSpan={span.rowSpan}
                           tabletColSpan={span.tabletColSpan}
-                          desktopColSpan={span.desktopColSpan}
+                          desktopColSpan={desktopColSpan}
                           colStart={span.colStart}
                           tabletColStart={span.tabletColStart}
                           desktopColStart={span.desktopColStart}

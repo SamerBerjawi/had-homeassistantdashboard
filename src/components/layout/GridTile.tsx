@@ -72,8 +72,8 @@ const TABLET_COL_SPAN_CLASSES: Record<GridColSpan, string> = {
 };
 
 const DESKTOP_COL_SPAN_CLASSES: Record<GridColSpan, string> = {
-  1: 'lg:col-span-1',
-  2: 'lg:col-span-2',
+  1: 'lg:col-span-3',
+  2: 'lg:col-span-3',
   3: 'lg:col-span-3',
   4: 'lg:col-span-4',
   6: 'lg:col-span-6',
@@ -305,7 +305,8 @@ export const GridTile: React.FC<GridTileProps> = ({
 
   const colClass = COL_SPAN_CLASSES[displayColSpan] || 'col-span-2';
   const tabletColClass = tabletColSpan ? TABLET_COL_SPAN_CLASSES[tabletColSpan] : '';
-  const desktopColClass = desktopColSpan ? DESKTOP_COL_SPAN_CLASSES[desktopColSpan] : '';
+  const effectiveDesktopSpan: GridColSpan = desktopColSpan ? (desktopColSpan < 3 ? 3 : desktopColSpan) : 3;
+  const desktopColClass = DESKTOP_COL_SPAN_CLASSES[effectiveDesktopSpan] || 'lg:col-span-3';
   const colStartClass = colStart ? COL_START_CLASSES[colStart] || '' : '';
   const tabletColStartClass = tabletColStart ? TABLET_COL_START_CLASSES[tabletColStart] || '' : '';
   const desktopColStartClass = desktopColStart ? DESKTOP_COL_START_CLASSES[desktopColStart] || '' : '';
