@@ -350,7 +350,10 @@ export function extractEnergyStatisticIds(
   // Auto-detect instantaneous power entities if not explicitly configured in stat_rate
   if (states) {
     if (solarPowerIds.length === 0) {
-      if (states['sensor.mppt_total_input_power']) {
+      if (states['sensor.inverter_input_power']) {
+        solarPowerIds.push('sensor.inverter_input_power');
+        allStatIdsSet.add('sensor.inverter_input_power');
+      } else if (states['sensor.mppt_total_input_power']) {
         solarPowerIds.push('sensor.mppt_total_input_power');
         allStatIdsSet.add('sensor.mppt_total_input_power');
       } else if (states['sensor.inverter_active_power']) {
@@ -392,6 +395,10 @@ export function extractEnergyStatisticIds(
         batteryPowerIds.push('sensor.battery_power');
         allStatIdsSet.add('sensor.battery_power');
       }
+    }
+
+    if (!batterySoC && states['sensor.battery_state_of_capacity']) {
+      batterySoC = 'sensor.battery_state_of_capacity';
     }
   }
 

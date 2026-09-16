@@ -49,23 +49,40 @@ export function computeInstantaneousPower(
   let waterRate: number | null = null;
 
   // 1. Direct Active Helper Sensor Check (Highest Priority)
-  // Solar Power: sensor.mppt_total_input_power or sensor.inverter_active_power
-  if (states['sensor.mppt_total_input_power']) {
+  // Solar Power:
+  // - sensor.inverter_input_power: Native Huawei Sun2000 total DC PV generation (panels -> DC bus)
+  // - sensor.mppt_total_input_power: MPPT sum
+  // - sensor.solar_power / sensor.pv_power: Generic PV power sensors
+  // - sensor.inverter_active_power: Inverter AC output power
+  let solarIsFromInverterActive = false;
+  if (states['sensor.inverter_input_power']) {
+    const v = parsePowerValueToKW(states['sensor.inverter_input_power']);
+    if (v !== null) solarPowerKW = Math.max(0, v);
+  } else if (states['sensor.mppt_total_input_power']) {
     const v = parsePowerValueToKW(states['sensor.mppt_total_input_power']);
+    if (v !== null) solarPowerKW = Math.max(0, v);
+  } else if (states['sensor.solar_power']) {
+    const v = parsePowerValueToKW(states['sensor.solar_power']);
+    if (v !== null) solarPowerKW = Math.max(0, v);
+  } else if (states['sensor.pv_power']) {
+    const v = parsePowerValueToKW(states['sensor.pv_power']);
     if (v !== null) solarPowerKW = Math.max(0, v);
   } else if (states['sensor.inverter_active_power']) {
     const v = parsePowerValueToKW(states['sensor.inverter_active_power']);
-    if (v !== null) solarPowerKW = Math.max(0, v);
+    if (v !== null) {
+      solarPowerKW = Math.max(0, v);
+      solarIsFromInverterActive = true;
+    }
   }
 
-  // Grid Power Helper: sensor.meter_active_power_inverted
-  // Grid Import (>0) = max(0, -state)
-  // Grid Export (<0) = max(0, state) * -1
+  // Grid Power Helper:
+  // - sensor.meter_active_power_inverted: Standard HA convention where positive (>0) = import from grid, negative (<0) = export to grid
+  // - sensor.meter_active_power: Native Huawei Sun2000 meter where positive (>0) = export to grid, negative (<0) = import from grid
   if (states['sensor.meter_active_power_inverted']) {
     const v = parsePowerValueToKW(states['sensor.meter_active_power_inverted']);
     if (v !== null) {
-      gridImportPowerKW = Math.max(0, -v);
-      gridExportPowerKW = Math.max(0, v);
+      gridImportPowerKW = Math.max(0, v);
+      gridExportPowerKW = Math.max(0, -v);
     }
   } else if (states['sensor.meter_active_power']) {
     // Native Huawei / Sun2000 meter: positive = export, negative = import
@@ -76,14 +93,14 @@ export function computeInstantaneousPower(
     }
   }
 
-  // Battery Power Helper: sensor.battery_charge_discharge_power_inverted
-  // Battery Discharge (>0) = max(0, -state)
-  // Battery Charge (<0) = max(0, state) * -1
+  // Battery Power Helper:
+  // - sensor.battery_charge_discharge_power_inverted: Standard HA convention where positive (>0) = discharging to home, negative (<0) = charging from solar/grid
+  // - sensor.battery_charge_discharge_power: Native Huawei Sun2000 battery where positive (>0) = charging, negative (<0) = discharging
   if (states['sensor.battery_charge_discharge_power_inverted']) {
     const v = parsePowerValueToKW(states['sensor.battery_charge_discharge_power_inverted']);
     if (v !== null) {
-      batteryDischargePowerKW = Math.max(0, -v);
-      batteryChargePowerKW = Math.max(0, v);
+      batteryDischargePowerKW = Math.max(0, v);
+      batteryChargePowerKW = Math.max(0, -v);
     }
   } else if (states['sensor.battery_charge_discharge_power']) {
     // Native Huawei / Sun2000 battery: positive = charge, negative = discharge
@@ -91,6 +108,14 @@ export function computeInstantaneousPower(
     if (v !== null) {
       batteryChargePowerKW = Math.max(0, v);
       batteryDischargePowerKW = Math.max(0, -v);
+    }
+  }
+
+  // Battery State of Charge Helper:
+  if (states['sensor.battery_state_of_capacity']) {
+    const v = parseFloat(states['sensor.battery_state_of_capacity'].state);
+    if (!isNaN(v) && v >= 0 && v <= 100) {
+      batterySoC = Math.round(v);
     }
   }
 
@@ -192,6 +217,14 @@ export function computeInstantaneousPower(
         }
       }
     }
+  }
+
+  // If solar generation was resolved solely from inverter AC output (sensor.inverter_active_power)
+  // on a hybrid DC-coupled battery system (e.g. Huawei Sun2000 + Luna2000), the battery charging
+  // power was diverted on the DC bus BEFORE the inverter converted DC to AC.
+  // Therefore: Total Solar DC Yield = Inverter AC Output + DC Battery Charge Power.
+  if (solarIsFromInverterActive && batteryChargePowerKW > 0) {
+    solarPowerKW = Number((solarPowerKW + batteryChargePowerKW).toFixed(2));
   }
 
   const gridPowerKW = gridImportPowerKW - gridExportPowerKW;
