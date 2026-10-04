@@ -48,90 +48,24 @@ export function computeInstantaneousPower(
   let gasRate: number | null = null;
   let waterRate: number | null = null;
 
-  // 1. Direct Active Helper Sensor Check (Highest Priority)
-  // Solar Power:
-  // - sensor.inverter_input_power: Native Huawei Sun2000 total DC PV generation (panels -> DC bus)
-  // - sensor.mppt_total_input_power: MPPT sum
-  // - sensor.solar_power / sensor.pv_power: Generic PV power sensors
-  // - sensor.inverter_active_power: Inverter AC output power
-  let solarIsFromInverterActive = false;
-  if (states['sensor.inverter_input_power']) {
-    const v = parsePowerValueToKW(states['sensor.inverter_input_power']);
-    if (v !== null) solarPowerKW = Math.max(0, v);
-  } else if (states['sensor.mppt_total_input_power']) {
-    const v = parsePowerValueToKW(states['sensor.mppt_total_input_power']);
-    if (v !== null) solarPowerKW = Math.max(0, v);
-  } else if (states['sensor.solar_power']) {
-    const v = parsePowerValueToKW(states['sensor.solar_power']);
-    if (v !== null) solarPowerKW = Math.max(0, v);
-  } else if (states['sensor.pv_power']) {
-    const v = parsePowerValueToKW(states['sensor.pv_power']);
-    if (v !== null) solarPowerKW = Math.max(0, v);
-  } else if (states['sensor.inverter_active_power']) {
-    const v = parsePowerValueToKW(states['sensor.inverter_active_power']);
-    if (v !== null) {
-      solarPowerKW = Math.max(0, v);
-      solarIsFromInverterActive = true;
-    }
-  }
+  let solarResolved = false;
+  let gridResolved = false;
+  let batteryResolved = false;
 
-  // Grid Power Helper:
-  // - sensor.meter_active_power_inverted: Standard HA convention where positive (>0) = import from grid, negative (<0) = export to grid
-  // - sensor.meter_active_power: Native Huawei Sun2000 meter where positive (>0) = export to grid, negative (<0) = import from grid
-  if (states['sensor.meter_active_power_inverted']) {
-    const v = parsePowerValueToKW(states['sensor.meter_active_power_inverted']);
-    if (v !== null) {
-      gridImportPowerKW = Math.max(0, v);
-      gridExportPowerKW = Math.max(0, -v);
-    }
-  } else if (states['sensor.meter_active_power']) {
-    // Native Huawei / Sun2000 meter: positive = export, negative = import
-    const v = parsePowerValueToKW(states['sensor.meter_active_power']);
-    if (v !== null) {
-      gridExportPowerKW = Math.max(0, v);
-      gridImportPowerKW = Math.max(0, -v);
-    }
-  }
-
-  // Battery Power Helper:
-  // - sensor.battery_charge_discharge_power_inverted: Standard HA convention where positive (>0) = discharging to home, negative (<0) = charging from solar/grid
-  // - sensor.battery_charge_discharge_power: Native Huawei Sun2000 battery where positive (>0) = charging, negative (<0) = discharging
-  if (states['sensor.battery_charge_discharge_power_inverted']) {
-    const v = parsePowerValueToKW(states['sensor.battery_charge_discharge_power_inverted']);
-    if (v !== null) {
-      batteryDischargePowerKW = Math.max(0, v);
-      batteryChargePowerKW = Math.max(0, -v);
-    }
-  } else if (states['sensor.battery_charge_discharge_power']) {
-    // Native Huawei / Sun2000 battery: positive = charge, negative = discharge
-    const v = parsePowerValueToKW(states['sensor.battery_charge_discharge_power']);
-    if (v !== null) {
-      batteryChargePowerKW = Math.max(0, v);
-      batteryDischargePowerKW = Math.max(0, -v);
-    }
-  }
-
-  // Battery State of Charge Helper:
-  if (states['sensor.battery_state_of_capacity']) {
-    const v = parseFloat(states['sensor.battery_state_of_capacity'].state);
-    if (!isNaN(v) && v >= 0 && v <= 100) {
-      batterySoC = Math.round(v);
-    }
-  }
-
-  // 2. Scan from configured sources in prefs if not already resolved
+  // 1. Configured sources from Home Assistant Energy Preferences (Highest Authority)
   if (prefs?.energy_sources && Array.isArray(prefs.energy_sources)) {
     for (const src of prefs.energy_sources) {
-      if (solarPowerKW === 0 && src.type === 'solar' && src.stat_rate && states[src.stat_rate]) {
+      if (src.type === 'solar' && src.stat_rate && states[src.stat_rate]) {
         const v = parsePowerValueToKW(states[src.stat_rate]);
-        if (v !== null && v >= 0) solarPowerKW += v;
+        solarPowerKW += (v !== null && v > 0) ? v : 0;
+        solarResolved = true;
       } else if (src.type === 'grid') {
-        // Multi-flow support: flow_from and flow_to rate sensors
         if (Array.isArray(src.flow_from)) {
           for (const ff of src.flow_from) {
             if (ff.stat_rate && states[ff.stat_rate]) {
               const v = parsePowerValueToKW(states[ff.stat_rate]);
               if (v !== null && v > 0) gridImportPowerKW += v;
+              gridResolved = true;
             }
           }
         }
@@ -140,14 +74,16 @@ export function computeInstantaneousPower(
             if (ft.stat_rate && states[ft.stat_rate]) {
               const v = parsePowerValueToKW(states[ft.stat_rate]);
               if (v !== null && v > 0) gridExportPowerKW += v;
+              gridResolved = true;
             }
           }
         }
-        if (gridImportPowerKW === 0 && gridExportPowerKW === 0 && src.stat_rate && states[src.stat_rate]) {
+        if (!gridResolved && src.stat_rate && states[src.stat_rate]) {
           const v = parsePowerValueToKW(states[src.stat_rate]);
           if (v !== null) {
             if (v >= 0) gridImportPowerKW += v;
             else gridExportPowerKW += Math.abs(v);
+            gridResolved = true;
           }
         }
       } else if (src.type === 'battery') {
@@ -155,47 +91,143 @@ export function computeInstantaneousPower(
           const v = parseFloat(states[src.stat_soc].state);
           if (!isNaN(v)) batterySoC = Math.round(v);
         }
-        if (batteryDischargePowerKW === 0 && batteryChargePowerKW === 0 && src.stat_rate && states[src.stat_rate]) {
+        if (src.stat_rate && states[src.stat_rate]) {
           const v = parsePowerValueToKW(states[src.stat_rate]);
           if (v !== null) {
             if (v >= 0) batteryDischargePowerKW += v;
             else batteryChargePowerKW += Math.abs(v);
+            batteryResolved = true;
           }
         }
       }
     }
   }
 
-  // 3. Fallback heuristic scanner across active states if not found via rate sensors
-  if (solarPowerKW === 0 && states) {
+  // 2. Direct Known Standard Helper Sensors Check (if not already resolved from prefs)
+  // Battery helper first so we know if battery is discharging/charging
+  if (!batteryResolved) {
+    if (states['sensor.battery_charge_discharge_power_inverted']) {
+      const v = parsePowerValueToKW(states['sensor.battery_charge_discharge_power_inverted']);
+      if (v !== null) {
+        batteryDischargePowerKW = Math.max(0, v);
+        batteryChargePowerKW = Math.max(0, -v);
+        batteryResolved = true;
+      }
+    } else if (states['sensor.battery_charge_discharge_power']) {
+      const v = parsePowerValueToKW(states['sensor.battery_charge_discharge_power']);
+      if (v !== null) {
+        batteryChargePowerKW = Math.max(0, v);
+        batteryDischargePowerKW = Math.max(0, -v);
+        batteryResolved = true;
+      }
+    }
+  }
+
+  if (batterySoC === null && states['sensor.battery_state_of_capacity']) {
+    const v = parseFloat(states['sensor.battery_state_of_capacity'].state);
+    if (!isNaN(v) && v >= 0 && v <= 100) {
+      batterySoC = Math.round(v);
+    }
+  }
+
+  // Grid Power Helper
+  if (!gridResolved) {
+    if (states['sensor.meter_active_power_inverted']) {
+      const v = parsePowerValueToKW(states['sensor.meter_active_power_inverted']);
+      if (v !== null) {
+        gridImportPowerKW = Math.max(0, v);
+        gridExportPowerKW = Math.max(0, -v);
+        gridResolved = true;
+      }
+    } else if (states['sensor.meter_active_power']) {
+      const v = parsePowerValueToKW(states['sensor.meter_active_power']);
+      if (v !== null) {
+        gridExportPowerKW = Math.max(0, v);
+        gridImportPowerKW = Math.max(0, -v);
+        gridResolved = true;
+      }
+    }
+  }
+
+  // Solar Power: Dedicated DC PV generation sensors (highest fidelity)
+  let solarIsFromInverterActive = false;
+  if (!solarResolved) {
+    if (states['sensor.inverter_input_power']) {
+      const v = parsePowerValueToKW(states['sensor.inverter_input_power']);
+      solarPowerKW = (v !== null && v > 0) ? v : 0;
+      solarResolved = true;
+    } else if (states['sensor.mppt_total_input_power']) {
+      const v = parsePowerValueToKW(states['sensor.mppt_total_input_power']);
+      solarPowerKW = (v !== null && v > 0) ? v : 0;
+      solarResolved = true;
+    } else if (states['sensor.solar_power']) {
+      const v = parsePowerValueToKW(states['sensor.solar_power']);
+      solarPowerKW = (v !== null && v > 0) ? v : 0;
+      solarResolved = true;
+    } else if (states['sensor.pv_power']) {
+      const v = parsePowerValueToKW(states['sensor.pv_power']);
+      solarPowerKW = (v !== null && v > 0) ? v : 0;
+      solarResolved = true;
+    } else if (states['sensor.inverter_active_power']) {
+      const v = parsePowerValueToKW(states['sensor.inverter_active_power']);
+      if (v !== null) {
+        // Critical: If battery is discharging, that AC power originates from battery, not solar!
+        solarPowerKW = Math.max(0, v - batteryDischargePowerKW);
+        solarIsFromInverterActive = true;
+        solarResolved = true;
+      }
+    }
+  }
+
+  // 3. Fallback heuristic scanner across active states ONLY if sensor was NOT resolved
+  if (!solarResolved && states) {
     for (const key of Object.keys(states)) {
       const ent = states[key];
+      const keyLower = key.toLowerCase();
       const name = ((ent?.attributes?.friendly_name || key) as string).toLowerCase();
+      // Strictly exclude any grid, battery, meter, load, consumption, cost, or forecast entities
       if (
-        (name.includes('solar') || name.includes('pv') || name.includes('photovoltaic') || key.includes('solar_power') || key.includes('pv_power') || key.includes('mppt')) &&
+        keyLower.includes('battery') || name.includes('battery') ||
+        keyLower.includes('grid') || name.includes('grid') ||
+        keyLower.includes('meter') || name.includes('meter') ||
+        keyLower.includes('charge') || name.includes('charge') ||
+        keyLower.includes('load') || name.includes('load') ||
+        keyLower.includes('consumption') || name.includes('consumption') ||
+        keyLower.includes('cost') || name.includes('cost') ||
+        keyLower.includes('forecast') || name.includes('forecast')
+      ) {
+        continue;
+      }
+
+      if (
+        (name.includes('solar') || name.includes('pv') || name.includes('photovoltaic') || keyLower.includes('solar_power') || keyLower.includes('pv_power') || keyLower.includes('mppt')) &&
         (ent?.attributes?.device_class === 'power' || ['w', 'kw'].includes((ent?.attributes?.unit_of_measurement || '').toLowerCase()))
       ) {
         const v = parsePowerValueToKW(ent);
         if (v !== null && v > 0) {
           solarPowerKW = v;
+          solarResolved = true;
           break;
         }
       }
     }
   }
 
-  if (gridImportPowerKW === 0 && gridExportPowerKW === 0 && states) {
+  if (!gridResolved && states) {
     for (const key of Object.keys(states)) {
       const ent = states[key];
+      const keyLower = key.toLowerCase();
       const name = ((ent?.attributes?.friendly_name || key) as string).toLowerCase();
+      if (keyLower.includes('battery') || name.includes('battery') || keyLower.includes('solar') || name.includes('solar')) continue;
       if (
-        (name.includes('grid') || name.includes('meter') || key.includes('grid_power')) &&
+        (name.includes('grid') || name.includes('meter') || keyLower.includes('grid_power')) &&
         (ent?.attributes?.device_class === 'power' || ['w', 'kw'].includes((ent?.attributes?.unit_of_measurement || '').toLowerCase()))
       ) {
         const v = parsePowerValueToKW(ent);
         if (v !== null) {
           if (v >= 0) gridImportPowerKW = v;
           else gridExportPowerKW = Math.abs(v);
+          gridResolved = true;
           break;
         }
       }
@@ -222,8 +254,8 @@ export function computeInstantaneousPower(
   // If solar generation was resolved solely from inverter AC output (sensor.inverter_active_power)
   // on a hybrid DC-coupled battery system (e.g. Huawei Sun2000 + Luna2000), the battery charging
   // power was diverted on the DC bus BEFORE the inverter converted DC to AC.
-  // Therefore: Total Solar DC Yield = Inverter AC Output + DC Battery Charge Power.
-  if (solarIsFromInverterActive && batteryChargePowerKW > 0) {
+  // Only add battery charge power if solar generation is active (> 0).
+  if (solarIsFromInverterActive && batteryChargePowerKW > 0 && solarPowerKW > 0) {
     solarPowerKW = Number((solarPowerKW + batteryChargePowerKW).toFixed(2));
   }
 

@@ -356,15 +356,15 @@ export function extractEnergyStatisticIds(
       } else if (states['sensor.mppt_total_input_power']) {
         solarPowerIds.push('sensor.mppt_total_input_power');
         allStatIdsSet.add('sensor.mppt_total_input_power');
-      } else if (states['sensor.inverter_active_power']) {
-        solarPowerIds.push('sensor.inverter_active_power');
-        allStatIdsSet.add('sensor.inverter_active_power');
       } else if (states['sensor.solar_power']) {
         solarPowerIds.push('sensor.solar_power');
         allStatIdsSet.add('sensor.solar_power');
       } else if (states['sensor.pv_power']) {
         solarPowerIds.push('sensor.pv_power');
         allStatIdsSet.add('sensor.pv_power');
+      } else if (states['sensor.inverter_active_power'] && batteryCharging.length === 0 && batteryDischarging.length === 0) {
+        solarPowerIds.push('sensor.inverter_active_power');
+        allStatIdsSet.add('sensor.inverter_active_power');
       }
     }
 

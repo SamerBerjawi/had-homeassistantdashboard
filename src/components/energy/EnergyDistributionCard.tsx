@@ -43,33 +43,38 @@ export default function EnergyDistributionCard({
   darkMode = true,
   className = ''
 }: EnergyDistributionCardProps) {
-  // Real-time instantaneous live power telemetry (in kW)
-  const liveSolar = realtime?.solarPowerKW ?? 0;
-  const liveGridExport = realtime?.gridExportPowerKW ?? 0;
-  const liveBatteryCharge = realtime?.batteryChargePowerKW ?? 0;
-  const liveGridImport = realtime?.gridImportPowerKW ?? 0;
-  const liveBatteryDischarge = realtime?.batteryDischargePowerKW ?? 0;
+  // Dynamic flow threshold: 0.01 kW (10W)
+  const flowThreshold = 0.01;
+
+  // Real-time instantaneous live power telemetry (in kW, clamped to 0 if <= flowThreshold)
+  const rawSolar = realtime?.solarPowerKW ?? 0;
+  const liveSolar = rawSolar > flowThreshold ? rawSolar : 0;
+  const rawGridExport = realtime?.gridExportPowerKW ?? 0;
+  const liveGridExport = rawGridExport > flowThreshold ? rawGridExport : 0;
+  const rawBatteryCharge = realtime?.batteryChargePowerKW ?? 0;
+  const liveBatteryCharge = rawBatteryCharge > flowThreshold ? rawBatteryCharge : 0;
+  const rawGridImport = realtime?.gridImportPowerKW ?? 0;
+  const liveGridImport = rawGridImport > flowThreshold ? rawGridImport : 0;
+  const rawBatteryDischarge = realtime?.batteryDischargePowerKW ?? 0;
+  const liveBatteryDischarge = rawBatteryDischarge > flowThreshold ? rawBatteryDischarge : 0;
   const homeVal = realtime?.homeConsumptionKW ?? 0;
   const batterySoc = realtime?.batterySoC ?? null;
 
   // Exact HA live flow allocation (conservation of energy)
-  const solarToGridVal = Math.min(liveSolar, liveGridExport);
+  const solarToGridVal = (liveSolar > 0 && hasGrid) ? Math.min(liveSolar, liveGridExport) : 0;
   const liveSolarRemaining = Math.max(0, liveSolar - solarToGridVal);
-  const solarToBatteryVal = Math.min(liveSolarRemaining, liveBatteryCharge);
-  const solarToHomeVal = Math.max(0, liveSolarRemaining - solarToBatteryVal);
+  const solarToBatteryVal = (liveSolarRemaining > 0 && hasBattery) ? Math.min(liveSolarRemaining, liveBatteryCharge) : 0;
+  const solarToHomeVal = liveSolarRemaining > 0 ? Math.max(0, liveSolarRemaining - solarToBatteryVal) : 0;
 
-  const gridToBatteryVal = Math.max(0, liveBatteryCharge - solarToBatteryVal);
-  const batteryToGridVal = Math.max(0, liveGridExport - solarToGridVal);
-  const batteryToHomeVal = Math.max(0, liveBatteryDischarge - batteryToGridVal);
-  const gridToHomeVal = Math.max(0, liveGridImport - gridToBatteryVal);
-
-  // Dynamic flow threshold: 0.01 kW (10W)
-  const flowThreshold = 0.01;
+  const gridToBatteryVal = hasBattery ? Math.max(0, liveBatteryCharge - solarToBatteryVal) : 0;
+  const batteryToGridVal = (hasBattery && hasGrid) ? Math.max(0, liveGridExport - solarToGridVal) : 0;
+  const batteryToHomeVal = hasBattery ? Math.max(0, liveBatteryDischarge - batteryToGridVal) : 0;
+  const gridToHomeVal = hasGrid ? Math.max(0, liveGridImport - gridToBatteryVal) : 0;
 
   // Active Flow Flags (> flowThreshold and hardware presence)
-  const hasSolarToHome = hasSolar && solarToHomeVal > flowThreshold;
-  const hasSolarToGrid = hasSolar && hasGrid && solarToGridVal > flowThreshold;
-  const hasSolarToBattery = hasSolar && hasBattery && solarToBatteryVal > flowThreshold;
+  const hasSolarToHome = hasSolar && liveSolar > flowThreshold && solarToHomeVal > flowThreshold;
+  const hasSolarToGrid = hasSolar && hasGrid && liveSolar > flowThreshold && solarToGridVal > flowThreshold;
+  const hasSolarToBattery = hasSolar && hasBattery && liveSolar > flowThreshold && solarToBatteryVal > flowThreshold;
   const hasGridToHome = hasGrid && gridToHomeVal > flowThreshold;
   const hasBatteryToHome = hasBattery && batteryToHomeVal > flowThreshold;
   const hasGridToBattery = hasGrid && hasBattery && gridToBatteryVal > flowThreshold;
@@ -82,9 +87,9 @@ export default function EnergyDistributionCard({
     const trueInbound = (hasSolar ? solarToHomeVal : 0) +
                         (hasGrid ? gridToHomeVal : 0) +
                         (hasBattery ? batteryToHomeVal : 0);
-    if (Math.abs(homeVal - trueInbound) > 0.02) {
+    if (Math.abs(homeVal - trueInbound) > 0.05) {
       console.warn(
-        `[EnergyDistributionCard] Invariant mismatch: Home node value (${homeVal.toFixed(2)}) differs from sum of inbound flows (${trueInbound.toFixed(2)}) by > 0.02.`,
+        `[EnergyDistributionCard] Invariant mismatch: Home node value (${homeVal.toFixed(2)}) differs from sum of inbound flows (${trueInbound.toFixed(2)}) by > 0.05.`,
         { homeVal, trueInbound, totals }
       );
     }
@@ -115,13 +120,19 @@ export default function EnergyDistributionCard({
 
   // Home Node Segmented Donut Ring (proportional source arcs)
   const homeCircumference = 2 * Math.PI * 34; // ~213.63
-  const totalInbound = (solarToHomeVal > 0 ? solarToHomeVal : 0) +
-                       (gridToHomeVal > 0 ? gridToHomeVal : 0) +
-                       (batteryToHomeVal > 0 ? batteryToHomeVal : 0);
+  const totalInbound = (solarToHomeVal > flowThreshold ? solarToHomeVal : 0) +
+                       (gridToHomeVal > flowThreshold ? gridToHomeVal : 0) +
+                       (batteryToHomeVal > flowThreshold ? batteryToHomeVal : 0);
   const safeTotalInbound = totalInbound > 0 ? totalInbound : 1;
-  const solarArc = totalInbound > 0 ? (Math.max(0, solarToHomeVal) / safeTotalInbound) * homeCircumference : 0;
-  const gridArc = totalInbound > 0 ? (Math.max(0, gridToHomeVal) / safeTotalInbound) * homeCircumference : 0;
-  const batteryArc = totalInbound > 0 ? (Math.max(0, batteryToHomeVal) / safeTotalInbound) * homeCircumference : 0;
+  const solarArc = (solarToHomeVal > flowThreshold && totalInbound > 0)
+    ? (solarToHomeVal / safeTotalInbound) * homeCircumference
+    : 0;
+  const gridArc = (gridToHomeVal > flowThreshold && totalInbound > 0)
+    ? (gridToHomeVal / safeTotalInbound) * homeCircumference
+    : 0;
+  const batteryArc = (batteryToHomeVal > flowThreshold && totalInbound > 0)
+    ? (batteryToHomeVal / safeTotalInbound) * homeCircumference
+    : 0;
 
   // Streamlined Daily Cumulative Groups (Only values > 0.005)
   const solarItems: { label: string; val: number; type: 'home' | 'battery' | 'grid' }[] = [];
@@ -433,14 +444,24 @@ export default function EnergyDistributionCard({
               <circle
                 r="34"
                 className={`${darkMode ? 'fill-slate-900' : 'fill-white'}`}
-                stroke="#f59e0b"
-                strokeWidth="2.5"
-                filter="drop-shadow(0 2px 8px rgba(245, 158, 11, 0.2))"
+                stroke={liveSolar > flowThreshold ? '#f59e0b' : (darkMode ? '#334155' : '#cbd5e1')}
+                strokeWidth={liveSolar > flowThreshold ? '2.5' : '1.5'}
+                filter={liveSolar > flowThreshold ? 'drop-shadow(0 2px 8px rgba(245, 158, 11, 0.2))' : undefined}
               />
               <foreignObject x="-32" y="-32" width="64" height="64">
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
-                  <SolarPanel size={22} weight="duotone" className="text-amber-500" />
-                  <span className="text-xs font-bold font-mono leading-none mt-1 text-amber-500">
+                  <SolarPanel
+                    size={22}
+                    weight="duotone"
+                    className={liveSolar > flowThreshold ? 'text-amber-500' : (darkMode ? 'text-amber-500/50' : 'text-amber-600/50')}
+                  />
+                  <span
+                    className={`text-xs font-bold font-mono leading-none mt-1 ${
+                      liveSolar > flowThreshold
+                        ? 'text-amber-500'
+                        : (darkMode ? 'text-slate-400' : 'text-slate-500')
+                    }`}
+                  >
                     {liveSolar.toFixed(2)} kW
                   </span>
                 </div>
