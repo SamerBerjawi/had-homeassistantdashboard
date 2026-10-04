@@ -73,7 +73,7 @@ export default function ArmAwayConfirmModal({
           />
 
           {/* Centering Wrapper with pointer-events-none so backdrop gets outside clicks */}
-          <div className="fixed inset-0 z-20 flex items-center justify-center p-4 pointer-events-none">
+          <div className="fixed inset-0 z-20 flex items-center justify-center p-4 pointer-events-none modal-safe-viewport">
             {/* Modal Card - pointer-events-auto restores clicks */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}

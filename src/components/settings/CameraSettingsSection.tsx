@@ -49,6 +49,7 @@ export default function CameraSettingsSection({
   const [testingCameraId, setTestingCameraId] = useState<string | null>(null);
   const [go2rtcOnline, setGo2rtcOnline] = useState<boolean | null>(null);
   const [isCheckingGo2rtc, setIsCheckingGo2rtc] = useState<boolean>(false);
+  const [isDevDisabled, setIsDevDisabled] = useState<boolean>(false);
 
   // Filter available Home Assistant camera entities
   const haCameraEntities = entities.filter(e => e.entity_id.startsWith('camera.'));
@@ -61,11 +62,14 @@ export default function CameraSettingsSection({
       if (res.ok) {
         const data = await res.json();
         setGo2rtcOnline(Boolean(data.go2rtcOnline));
+        setIsDevDisabled(Boolean(data.devDisabled));
       } else {
         setGo2rtcOnline(false);
+        setIsDevDisabled(false);
       }
     } catch {
       setGo2rtcOnline(false);
+      setIsDevDisabled(false);
     } finally {
       setIsCheckingGo2rtc(false);
     }
@@ -205,18 +209,26 @@ export default function CameraSettingsSection({
 
         <div className="flex items-center gap-3 self-stretch md:self-auto justify-end">
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold ${
-            go2rtcOnline === true
+            isDevDisabled
+              ? 'bg-slate-500/10 text-slate-400 border-slate-500/30'
+              : go2rtcOnline === true
               ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
               : go2rtcOnline === false
               ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
               : 'bg-slate-500/10 text-slate-400 border-slate-500/30'
           }`}>
             <span className={`w-2 h-2 rounded-full ${
-              go2rtcOnline === true ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
+              isDevDisabled
+                ? 'bg-slate-400'
+                : go2rtcOnline === true
+                ? 'bg-emerald-400 animate-pulse'
+                : 'bg-amber-400'
             }`} />
             <span>
               {isCheckingGo2rtc
                 ? 'Probing go2rtc...'
+                : isDevDisabled
+                ? 'go2rtc Disabled in Dev'
                 : go2rtcOnline === true
                 ? 'go2rtc Sidecar Connected'
                 : 'go2rtc Sidecar Standby'}

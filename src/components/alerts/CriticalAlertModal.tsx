@@ -104,7 +104,7 @@ export const CriticalAlertModal: React.FC<CriticalAlertModalProps> = ({ onNaviga
       <div
         role="alertdialog"
         aria-modal="true"
-        className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6"
+        className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 modal-safe-viewport"
       >
         {/* Deep Backdrop with Hazard Pulse */}
         <motion.div

@@ -151,6 +151,12 @@ export default function IntegrationDetailDrawer({
       <div className={`relative w-full max-w-xl h-full flex flex-col z-10 shadow-2xl overflow-hidden transition-transform animate-slideInRight ${
         darkMode ? 'bg-slate-900/95 text-white border-l border-white/10' : 'bg-slate-50/95 text-slate-900 border-l border-slate-200'
       }`}>
+        {/* Status Bar Safe-Area Clearance (PWA / Mobile) */}
+        <div
+          className="w-full shrink-0"
+          style={{ height: 'env(safe-area-inset-top, 0px)' }}
+          aria-hidden="true"
+        />
         
         {/* Header Bar */}
         <div className={`px-6 py-5 flex items-center justify-between border-b ${
@@ -270,7 +276,7 @@ export default function IntegrationDetailDrawer({
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 drawer-safe-bottom">
           
           {/* TAB 1: OVERVIEW & ACTIONS */}
           {activeTab === 'overview' && (

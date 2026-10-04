@@ -106,7 +106,7 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto overflow-x-hidden backdrop-blur-2xl bg-slate-950/80 transition-all duration-300">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto overflow-x-hidden backdrop-blur-2xl bg-slate-950/80 transition-all duration-300 modal-safe-viewport">
         {/* Ambient Glows */}
         <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-sky-500/20 blur-[120px] pointer-events-none" />
         <div className="absolute bottom-1/4 right-1/4 w-[450px] h-[450px] rounded-full bg-cyan-500/15 blur-[140px] pointer-events-none" />

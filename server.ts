@@ -1181,9 +1181,14 @@ async function startServer() {
   });
 
   // -------------------------------------------------------------
+  // -------------------------------------------------------------
   // Camera RTSP Streaming & go2rtc Proxy Layer
   // -------------------------------------------------------------
-  const GO2RTC_URL = (process.env.GO2RTC_URL || 'http://127.0.0.1:1984').replace(/\/+$/, '');
+  const isDev = process.env.NODE_ENV !== 'production';
+  const hasExplicitGo2RtcUrl = Boolean(process.env.GO2RTC_URL);
+  // In development environments, do not attempt to contact or proxy go2rtc unless explicitly configured
+  const GO2RTC_ENABLED = !isDev || hasExplicitGo2RtcUrl;
+  const GO2RTC_URL = (process.env.GO2RTC_URL || (isDev ? '' : 'http://127.0.0.1:1984')).replace(/\/+$/, '');
   const registeredGo2RtcStreams = new Map<string, string>(); // streamName -> rtspUrl
 
   function getCameraStreamName(cameraId: string): string {
@@ -1209,6 +1214,7 @@ async function startServer() {
 
   let lastGo2RtcWarnTime = 0;
   function logGo2RtcUnreachable(errMessage: string) {
+    if (!GO2RTC_ENABLED) return;
     const now = Date.now();
     if (now - lastGo2RtcWarnTime > 30000) {
       lastGo2RtcWarnTime = now;
@@ -1217,6 +1223,9 @@ async function startServer() {
   }
 
   async function ensureGo2RtcStream(streamName: string, rtspUrl: string): Promise<boolean> {
+    if (!GO2RTC_ENABLED || !GO2RTC_URL) {
+      return false;
+    }
     if (registeredGo2RtcStreams.get(streamName) === rtspUrl) {
       return true;
     }
@@ -1246,6 +1255,14 @@ async function startServer() {
 
   // Camera streaming status check
   app.get('/api/cameras/status', requireHAAuth, async (req, res) => {
+    if (!GO2RTC_ENABLED || !GO2RTC_URL) {
+      return res.json({
+        success: true,
+        go2rtcOnline: false,
+        devDisabled: true,
+        error: 'go2rtc is disabled in development environment'
+      });
+    }
     try {
       const ping = await fetch(`${GO2RTC_URL}/api/streams`, { signal: AbortSignal.timeout(3000) });
       if (ping.ok) {
@@ -1261,6 +1278,13 @@ async function startServer() {
   // WebRTC WHEP signaling proxy
   app.post('/api/cameras/:cameraId/webrtc', requireHAAuth, async (req, res) => {
     const { cameraId } = req.params;
+    if (!GO2RTC_ENABLED || !GO2RTC_URL) {
+      return res.status(503).json({
+        success: false,
+        devDisabled: true,
+        error: 'go2rtc streaming is disabled in development environment'
+      });
+    }
     const config = getCameraRtspConfig(cameraId);
     if (!config) {
       return res.status(404).json({
@@ -1316,6 +1340,9 @@ async function startServer() {
   // HLS stream and media segment proxy
   app.all('/api/cameras/:cameraId/hls*', requireHAAuth, async (req, res) => {
     const { cameraId } = req.params;
+    if (!GO2RTC_ENABLED || !GO2RTC_URL) {
+      return res.status(503).send('go2rtc streaming is disabled in development environment');
+    }
     const config = getCameraRtspConfig(cameraId);
     if (!config) {
       return res.status(404).json({
@@ -1389,14 +1416,16 @@ async function startServer() {
         delete currentConfig.cameras.sources[cameraId];
 
         // Remove stream from go2rtc memory if running
-        try {
-          await fetch(`${GO2RTC_URL}/api/streams?src=${encodeURIComponent(streamName)}`, {
-            method: 'DELETE',
-            signal: AbortSignal.timeout(3000)
-          });
-          console.log(`[Camera API] Removed stream "${streamName}" from go2rtc`);
-        } catch (err: any) {
-          console.warn(`[Camera API] Could not delete stream "${streamName}" from go2rtc:`, err?.message);
+        if (GO2RTC_ENABLED && GO2RTC_URL) {
+          try {
+            await fetch(`${GO2RTC_URL}/api/streams?src=${encodeURIComponent(streamName)}`, {
+              method: 'DELETE',
+              signal: AbortSignal.timeout(3000)
+            });
+            console.log(`[Camera API] Removed stream "${streamName}" from go2rtc`);
+          } catch (err: any) {
+            console.warn(`[Camera API] Could not delete stream "${streamName}" from go2rtc:`, err?.message);
+          }
         }
         registeredGo2RtcStreams.delete(streamName);
 

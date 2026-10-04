@@ -112,6 +112,11 @@ type TabKey = typeof VALID_TABS[number];
 
 function getTabFromUrl(): TabKey {
   if (typeof window === 'undefined') return 'overview';
+  const searchParams = new URLSearchParams(window.location.search);
+  const tabParam = searchParams.get('tab')?.toLowerCase();
+  if (tabParam && VALID_TABS.includes(tabParam as TabKey)) {
+    return tabParam as TabKey;
+  }
   const rawPath = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
   if (VALID_TABS.includes(rawPath as TabKey)) {
     return rawPath as TabKey;
@@ -544,7 +549,7 @@ export default function App() {
 
   return (
     <div className={`fixed inset-0 flex w-full overflow-hidden font-sans select-none ${darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
-      } [padding-top:env(safe-area-inset-top,0px)] [padding-bottom:env(safe-area-inset-bottom,0px)] [padding-left:env(safe-area-inset-left,0px)] [padding-right:env(safe-area-inset-right,0px)]`}>
+      } safe-x`}>
       {/* Ambient background decoration with distinct page accent glows */}
       {backgroundStyle === 'glow' && (
         <AmbientBackground
@@ -568,7 +573,9 @@ export default function App() {
         {/* Persistent Demo Mode Status Banner */}
         <DemoBanner />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container px-4 pt-3 pb-24 sm:px-6 sm:pt-4 sm:pb-8 lg:px-8 lg:pt-8 lg:pb-8 flex flex-col">
+        <main className={`flex-1 overflow-y-auto overflow-x-hidden touch-scroll-container px-4 sm:px-6 lg:px-8 flex flex-col ${
+          authState?.isDemo ? 'main-viewport-padding-demo' : 'main-viewport-padding'
+        }`}>
           {/* Header Bar - Title & Actions Top Row, 100% Full-Width Sentence Below */}
           <header className="mb-6 flex flex-col gap-3 pb-1 w-full">
             {/* Top Row: Title on Left, Global Action Controls on Right */}

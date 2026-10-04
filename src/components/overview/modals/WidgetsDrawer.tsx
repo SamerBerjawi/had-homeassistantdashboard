@@ -87,9 +87,9 @@ export const WIDGET_CATALOG: WidgetCatalogItem[] = [
     id: 'switches',
     title: 'Smart Switches',
     description: 'Control connected smart plugs, power relays, and appliances',
-    category: 'Lighting',
+    category: 'Switches',
     icon: ToggleRight,
-    color: '#8b5cf6',
+    color: '#10b981',
     defaultSize: '1x'
   },
   {
@@ -242,6 +242,7 @@ export const CATEGORIES = [
   'All',
   'Energy',
   'Lighting',
+  'Switches',
   'Security',
   'Climate',
   'Weather',

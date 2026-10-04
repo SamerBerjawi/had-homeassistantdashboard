@@ -201,7 +201,7 @@ export default function Sidebar({
       {/* DESKTOP SIDEBAR - Collapsible Left Vertical Navbar */}
       <nav 
         id="sidebar-desktop" 
-        className={`hidden md:flex flex-col h-screen py-5 px-3 transition-all duration-300 shrink-0 sticky top-0 left-0 bottom-0 z-40 ${
+        className={`hidden md:flex flex-col h-full py-5 px-3 transition-all duration-300 shrink-0 sticky top-0 left-0 bottom-0 z-40 safe-top safe-bottom ${
           isCollapsed ? 'w-20 items-center' : 'w-64'
         } ${
           darkMode 
@@ -432,11 +432,15 @@ export default function Sidebar({
       {showMoreMenu && (
         <div 
           id="sidebar-more-menu"
-          className={`md:hidden fixed bottom-[4.75rem] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto rounded-3xl p-4 shadow-[4px_6px_16px_rgba(0,0,0,0.25)] z-50 animate-fadeIn backdrop-blur-md ${
+          className={`md:hidden fixed left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto rounded-3xl p-4 shadow-[4px_6px_16px_rgba(0,0,0,0.25)] z-50 animate-fadeIn backdrop-blur-md ${
             darkMode 
               ? 'bg-slate-900/90 border border-white/10 text-white' 
               : 'bg-white/90 border border-slate-200/80 text-slate-900'
           }`}
+          style={{
+            bottom: 'calc(4.75rem + env(safe-area-inset-bottom, 0px))',
+            maxHeight: 'calc(100dvh - 6rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))'
+          }}
         >
           {/* Sheet Header */}
           <div className={`flex items-center justify-between pb-3 mb-3 border-b ${
@@ -542,11 +546,14 @@ export default function Sidebar({
       {/* MOBILE BOTTOM NAVIGATION */}
       <nav 
         id="sidebar-mobile" 
-        className={`md:hidden fixed bottom-0 left-0 right-0 z-50 pt-2 pb-3 px-3 sm:px-6 transition-all border-t shadow-[0_-4px_20px_rgba(0,0,0,0.2)] ${
+        className={`md:hidden fixed bottom-0 left-0 right-0 z-50 pt-2 px-3 sm:px-6 transition-all border-t shadow-[0_-4px_20px_rgba(0,0,0,0.2)] ${
           darkMode 
             ? 'bg-slate-950/80 backdrop-blur-xl border-white/10 text-white' 
             : 'bg-white/80 backdrop-blur-xl border-slate-200/80 text-slate-900'
         }`}
+        style={{
+          paddingBottom: 'max(0.75rem, calc(0.75rem + env(safe-area-inset-bottom, 0px)))'
+        }}
       >
         <div className="w-full max-w-lg mx-auto flex items-center justify-around">
           {mobilePrimaryItems.map((item) => {

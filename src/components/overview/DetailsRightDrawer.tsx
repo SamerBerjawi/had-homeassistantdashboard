@@ -160,7 +160,7 @@ export default function DetailsRightDrawer({
 
               {/* Optional Footer */}
               {footerActions && (
-                <div className="p-4 sm:p-5 flex justify-end gap-3 border-t border-slate-200/80 dark:border-white/5 bg-slate-50/90 dark:bg-black/20 backdrop-blur-md shrink-0">
+                <div className="p-4 sm:p-5 flex justify-end gap-3 border-t border-slate-200/80 dark:border-white/5 bg-slate-50/90 dark:bg-black/20 backdrop-blur-md shrink-0 drawer-safe-bottom">
                   {footerActions}
                 </div>
               )}

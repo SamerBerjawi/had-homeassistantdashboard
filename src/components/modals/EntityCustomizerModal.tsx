@@ -219,7 +219,7 @@ export default function EntityCustomizerModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden modal-safe-viewport">
         {/* Backdrop Scrim: Crystal / Apple HIG gentle scrim in light, OLED scrim in dark */}
         <motion.div
           initial={{ opacity: 0 }}

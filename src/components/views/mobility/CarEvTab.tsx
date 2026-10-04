@@ -186,7 +186,7 @@ export function CarEvTab({
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="fixed top-20 right-6 z-50 px-4 py-2.5 rounded-2xl bg-slate-950/90 text-white border border-cyan-500/40 backdrop-blur-md shadow-2xl flex items-center gap-2.5 text-xs font-bold"
+            className="fixed toast-safe-top right-4 sm:right-6 z-50 px-4 py-2.5 rounded-2xl bg-slate-950/90 text-white border border-cyan-500/40 backdrop-blur-md shadow-2xl flex items-center gap-2.5 text-xs font-bold"
           >
             <Sparkle size={16} weight="duotone" className="text-cyan-400 animate-spin" />
             <span>{actionFeedback}</span>

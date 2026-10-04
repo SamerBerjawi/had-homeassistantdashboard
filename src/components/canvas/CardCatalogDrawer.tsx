@@ -237,6 +237,13 @@ export default function CardCatalogDrawer({
             transition={{ type: 'spring', damping: 26, stiffness: 300 }}
             className="relative w-full max-w-xl h-full bg-slate-900/95 backdrop-blur-md border-l border-white/15 shadow-2xl text-white flex flex-col z-10"
           >
+            {/* Status Bar Safe-Area Clearance (PWA / Mobile) */}
+            <div
+              className="w-full shrink-0"
+              style={{ height: 'env(safe-area-inset-top, 0px)' }}
+              aria-hidden="true"
+            />
+
             {/* Drawer Header */}
             <div className="flex items-center justify-between p-5 border-b border-white/10">
               <div className="flex items-center gap-3">
@@ -388,7 +395,7 @@ export default function CardCatalogDrawer({
             </div>
 
             {/* Drawer Footer Action */}
-            <div className="p-5 border-t border-white/10 bg-slate-950/60 flex items-center justify-between gap-3">
+            <div className="p-5 border-t border-white/10 bg-slate-950/60 flex items-center justify-between gap-3 drawer-safe-bottom">
               <button
                 onClick={onClose}
                 className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-bold transition-all cursor-pointer"

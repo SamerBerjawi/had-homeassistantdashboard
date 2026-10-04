@@ -16,7 +16,12 @@ export default function DemoBanner() {
   if (!authState.isDemo) return null;
 
   return (
-    <div className="w-full bg-gradient-to-r from-amber-500/15 via-amber-500/20 to-orange-500/15 border-b border-amber-500/30 px-3.5 py-1.5 backdrop-blur-md text-amber-200 text-xs flex items-center justify-between gap-2 shadow-sm z-30 shrink-0 select-none">
+    <div
+      className="w-full bg-gradient-to-r from-amber-500/15 via-amber-500/20 to-orange-500/15 border-b border-amber-500/30 px-3.5 py-1.5 backdrop-blur-md text-amber-200 text-xs flex items-center justify-between gap-2 shadow-sm z-30 shrink-0 select-none"
+      style={{
+        paddingTop: 'max(0.375rem, calc(env(safe-area-inset-top, 0px) + 0.375rem))'
+      }}
+    >
       <div className="flex items-center gap-2 min-w-0">
         <span className="flex h-2 w-2 relative shrink-0">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>

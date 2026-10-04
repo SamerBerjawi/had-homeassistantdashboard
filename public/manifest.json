@@ -2,15 +2,20 @@
   "name": "HAD - Home Assistant Dashboard",
   "short_name": "HAD",
   "description": "HAD - Modern smart home dashboard for monitoring and controlling Home Assistant.",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone"],
-  "orientation": "portrait",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ],
+  "orientation": "any",
   "background_color": "#020617",
   "theme_color": "#020617",
   "categories": ["smart home", "utilities", "lifestyle"],
-  "id": "had-homeassistantdashboard",
+  "id": "/?source=pwa",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -45,6 +50,36 @@
       "src": "/favicon-16x16.png",
       "sizes": "16x16",
       "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Overview",
+      "short_name": "Overview",
+      "description": "Smart Home Overview Dashboard",
+      "url": "/?tab=overview&source=pwa",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Rooms",
+      "short_name": "Rooms",
+      "description": "Browse Rooms & Areas",
+      "url": "/?tab=rooms&source=pwa",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Energy",
+      "short_name": "Energy",
+      "description": "Real-Time Energy & Solar Monitoring",
+      "url": "/?tab=energy&source=pwa",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Security",
+      "short_name": "Security",
+      "description": "Alarm, Cameras & Home Security",
+      "url": "/?tab=security&source=pwa",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     }
   ]
 }

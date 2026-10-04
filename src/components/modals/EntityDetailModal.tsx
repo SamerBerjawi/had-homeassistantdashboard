@@ -588,7 +588,7 @@ export default function EntityDetailModal() {
             </div>
 
             {/* Sticky Drawer Footer matching Health page outer container tokens */}
-            <div className="p-4 sm:p-5 border-t border-slate-200/80 dark:border-white/5 bg-slate-50/90 dark:bg-black/35 backdrop-blur-xl flex items-center justify-between gap-3 shrink-0">
+            <div className="p-4 sm:p-5 border-t border-slate-200/80 dark:border-white/5 bg-slate-50/90 dark:bg-black/35 backdrop-blur-xl flex items-center justify-between gap-3 shrink-0 drawer-safe-bottom">
               <button
                 type="button"
                 onClick={() => setShowDiagnostics(!showDiagnostics)}

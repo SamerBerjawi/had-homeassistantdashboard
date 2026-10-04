@@ -817,6 +817,78 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
 }
 
 /* ==========================================================================
+   Universal Safe-Area Inset Utilities
+   Uses CSS env(safe-area-inset-*, 0px) with 0px fallbacks for desktop.
+   ========================================================================== */
+.safe-top    { padding-top:    env(safe-area-inset-top, 0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-left   { padding-left:   env(safe-area-inset-left, 0px); }
+.safe-right  { padding-right:  env(safe-area-inset-right, 0px); }
+.safe-x      { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.safe-y      { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Margin variants */
+.m-safe-bottom { margin-bottom: env(safe-area-inset-bottom, 0px); }
+.m-safe-top    { margin-top:    env(safe-area-inset-top, 0px); }
+.m-safe-left   { margin-left:   env(safe-area-inset-left, 0px); }
+.m-safe-right  { margin-right:  env(safe-area-inset-right, 0px); }
+
+/* Fixed bottom clearance */
+.fixed-bottom-safe {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Touch feedback — Apple HIG active state */
+.touch-feedback {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.touch-feedback:active {
+  transform: scale(0.97);
+  opacity: 0.88;
+  transition: transform 80ms ease-out, opacity 80ms ease-out;
+}
+
+/* Main Viewport Safe-Area Layout */
+.main-viewport-padding {
+  padding-top: max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.75rem));
+  padding-bottom: max(6rem, calc(6rem + env(safe-area-inset-bottom, 0px)));
+}
+
+.main-viewport-padding-demo {
+  padding-top: 0.75rem;
+  padding-bottom: max(6rem, calc(6rem + env(safe-area-inset-bottom, 0px)));
+}
+
+@media (min-width: 768px) {
+  .main-viewport-padding,
+  .main-viewport-padding-demo {
+    padding-top: max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1rem));
+    padding-bottom: max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem));
+  }
+}
+
+@media (min-width: 1024px) {
+  .main-viewport-padding,
+  .main-viewport-padding-demo {
+    padding-top: max(2rem, calc(env(safe-area-inset-top, 0px) + 1.5rem));
+    padding-bottom: max(2rem, calc(env(safe-area-inset-bottom, 0px) + 2rem));
+  }
+}
+
+/* Drawer & Modal Safe-Area Helpers */
+.drawer-safe-bottom {
+  padding-bottom: max(1rem, calc(1rem + env(safe-area-inset-bottom, 0px))) !important;
+}
+
+.modal-safe-viewport {
+  padding-top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.75rem)) !important;
+  padding-bottom: max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem)) !important;
+  padding-left: max(1rem, calc(env(safe-area-inset-left, 0px) + 0.75rem)) !important;
+  padding-right: max(1rem, calc(env(safe-area-inset-right, 0px) + 0.75rem)) !important;
+}
+
+/* ==========================================================================
    PWA Standalone Mode Styling (Scoped specifically to installed app mode)
    Standard browser tab visits are completely unaffected.
    ========================================================================== */

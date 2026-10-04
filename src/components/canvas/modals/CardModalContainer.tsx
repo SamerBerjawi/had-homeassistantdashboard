@@ -42,7 +42,7 @@ export default function CardModalContainer({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto modal-safe-viewport">
           {/* Scrim / Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}

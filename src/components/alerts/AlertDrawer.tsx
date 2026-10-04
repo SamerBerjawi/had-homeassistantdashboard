@@ -79,6 +79,13 @@ export const AlertDrawer: React.FC<AlertDrawerProps> = ({ isOpen, onClose }) => 
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
             className="relative z-10 w-full max-w-md h-full bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl flex flex-col overflow-hidden text-white"
           >
+            {/* Status Bar Safe-Area Clearance (PWA / Mobile) */}
+            <div
+              className="w-full shrink-0"
+              style={{ height: 'env(safe-area-inset-top, 0px)' }}
+              aria-hidden="true"
+            />
+
             {/* Drawer Header */}
             <div className="p-5 border-b border-white/10 flex items-center justify-between gap-3 bg-slate-900/50">
               <div className="flex items-center gap-2.5">
@@ -206,7 +213,7 @@ export const AlertDrawer: React.FC<AlertDrawerProps> = ({ isOpen, onClose }) => 
             </div>
 
             {/* Footer Status */}
-            <div className="p-4 border-t border-white/10 bg-slate-900/40 text-center">
+            <div className="p-4 border-t border-white/10 bg-slate-900/40 text-center drawer-safe-bottom">
               <span className="text-[11px] text-slate-500 font-mono">
                 Dismissing persistent alerts syncs directly to Home Assistant
               </span>

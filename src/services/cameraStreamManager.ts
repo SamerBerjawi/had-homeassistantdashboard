@@ -331,6 +331,20 @@ class CameraStreamManager {
       });
 
       if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        if (res.status === 503 && (errJson?.devDisabled || errJson?.error?.includes('disabled in development'))) {
+          // In development environments, go2rtc is disabled by default: fallback cleanly to snapshot poster without retrying
+          session.state = {
+            status: 'idle',
+            streamType: 'snapshot',
+            mediaStream: null,
+            hlsUrl: null,
+            error: null,
+            retrySecondsLeft: 0
+          };
+          this.broadcast(session);
+          return;
+        }
         throw new Error(`WebRTC negotiation returned HTTP ${res.status}`);
       }
 
