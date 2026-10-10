@@ -47,12 +47,19 @@ html, body {
   height: 100dvh;
   min-height: -webkit-fill-available;
   width: 100%;
+  /* Match the app background so any area outside #root can never show as a white bar */
+  background-color: #f8fafc;
   margin: 0;
   padding: 0;
   overflow: hidden;
   overscroll-behavior: none;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+html.dark,
+html.dark body {
+  background-color: #020617;
 }
 
 #root {
@@ -63,6 +70,24 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+}
+
+/* iOS home-screen app bug: at launch, position:fixed/inset:0, dvh and -webkit-fill-available
+   resolve against a viewport that excludes the home-indicator strip until the device is
+   rotated. In standalone mode the large viewport is the whole screen, so size from it. */
+@media (display-mode: standalone) {
+  html,
+  body {
+    height: 100vh;
+    height: 100lvh;
+    min-height: 0;
+  }
+
+  #root {
+    bottom: auto;
+    height: 100vh;
+    height: 100lvh;
+  }
 }
 
 

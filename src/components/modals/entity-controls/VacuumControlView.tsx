@@ -14,6 +14,7 @@ import {
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { formatRelativeTime } from '../../../lib/utils';
 import {
   detectVacuumCapabilities,
@@ -27,7 +28,7 @@ interface VacuumControlViewProps {
 }
 
 export default function VacuumControlView({ entity, darkMode = true, customIcon }: VacuumControlViewProps) {
-  const { callHAService, updateEntityState } = useAutoLayoutStore();
+  const { callHAService, updateEntityState } = useAutoLayoutStore(useShallow((s) => ({ callHAService: s.callHAService, updateEntityState: s.updateEntityState })));
   const [isOperating, setIsOperating] = useState<string | null>(null);
 
   const caps: VacuumCapabilities = useMemo(() => {

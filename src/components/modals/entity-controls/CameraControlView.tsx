@@ -19,6 +19,7 @@ import {
 } from '@phosphor-icons/react';
 import { HAEntity, ResolvedEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { formatRelativeTime } from '../../../lib/utils';
 import CameraFeed from '../../camera/CameraFeed';
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
@@ -40,7 +41,7 @@ interface CameraControlViewProps {
 }
 
 export default function CameraControlView({ entity, darkMode = true, customIcon }: CameraControlViewProps) {
-  const { serverUrl, domainGroups } = useAutoLayoutStore();
+  const { serverUrl, domainGroups } = useAutoLayoutStore(useShallow((s) => ({ serverUrl: s.serverUrl, domainGroups: s.domainGroups })));
   const [isMicActive, setIsMicActive] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isSnapshotting, setIsSnapshotting] = useState(false);

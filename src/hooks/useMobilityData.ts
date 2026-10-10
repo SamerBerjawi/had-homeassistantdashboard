@@ -5,6 +5,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useUserConfig } from './useUserConfig';
 import { haWebSocketService } from '../services/haWebSocket';
 import { getAuthHeaders } from '../services/configStorageService';
@@ -170,7 +171,7 @@ function generateSpeedTimeseries(currentSpeed: number): Array<{ date: Date; spee
 }
 
 export function useMobilityData() {
-  const { states, resolvedZones, isLiveMode } = useAutoLayoutStore();
+  const { states, resolvedZones, isLiveMode } = useAutoLayoutStore(useShallow((s) => ({ states: s.states, resolvedZones: s.resolvedZones, isLiveMode: s.isLiveMode })));
   const { config, updateConfig, flushPendingSave, uploadVehicleAsset } = useUserConfig();
 
   const effectiveCarImage = config.mobility?.car?.vehicleImageUrl;

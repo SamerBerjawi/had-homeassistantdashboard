@@ -6,7 +6,7 @@
  * Wires to active AuthState and persists remotely (HA/NAS) or locally (LocalStorage)
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   UserDashboardConfig, 
   DeepPartial,
@@ -470,7 +470,8 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const isSyncingRemote = driverType === 'remote_ha' || driverType === 'remote_nas';
 
-  const contextValue: ConfigContextType = {
+  // Memoized so the ~30 consumers only re-render when config or sync state changes
+  const contextValue = useMemo<ConfigContextType>(() => ({
     config,
     isLoading,
     isSaving,
@@ -488,7 +489,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     resetConfig,
     exportConfigJson,
     importConfigJson
-  };
+  }), [config, isLoading, isSaving, lastSaved, driverType, driverName, isSyncingRemote, syncStatus, lastSuccessfulSync, isDragActive, setDragActive, updateConfig, flushPendingSave, uploadVehicleAsset, resetConfig, exportConfigJson, importConfigJson]);
 
   return (
     <ConfigContext.Provider value={contextValue}>

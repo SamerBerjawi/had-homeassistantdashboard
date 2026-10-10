@@ -38,6 +38,64 @@ export interface GraphResolutionResult {
   metrics: AutoLayoutMetrics;
 }
 
+const isSameArray = (a: unknown, b: unknown): boolean =>
+  Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
+
+/**
+ * True when a freshly resolved entity carries exactly the same values as the previous one.
+ * Fields are compared by identity: attributes, device, area and floor are references into
+ * the HA state and registries, so they only change when the underlying data changed.
+ */
+function isSameResolvedEntity(prev: ResolvedEntity, next: ResolvedEntity): boolean {
+  const prevKeys = Object.keys(prev);
+  if (prevKeys.length !== Object.keys(next).length) return false;
+  for (const key of prevKeys) {
+    const a = (prev as any)[key];
+    const b = (next as any)[key];
+    if (Object.is(a, b)) continue;
+    if (key === 'labels' && isSameArray(a, b)) continue;
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Returns `next` with every unchanged branch replaced by the matching branch of `prev`, so
+ * selectors and React.memo see stable references for anything a state event didn't touch.
+ * Resolved entities are compared by identity only (resolveHAGraph already reuses unchanged ones).
+ */
+export function shareGraphStructure<T>(prev: unknown, next: T): T {
+  if (Object.is(prev, next)) return next;
+  if (!prev || !next || typeof prev !== 'object' || typeof next !== 'object') return next;
+
+  if (Array.isArray(next)) {
+    if (!Array.isArray(prev)) return next;
+    let same = prev.length === next.length;
+    const out = next.map((item, i) => {
+      const shared = shareGraphStructure(prev[i], item);
+      if (!Object.is(shared, prev[i])) same = false;
+      return shared;
+    });
+    return (same ? prev : out) as T;
+  }
+
+  if (Array.isArray(prev)) return next;
+  const nextObj = next as Record<string, unknown>;
+  const prevObj = prev as Record<string, unknown>;
+  // Entities and HA data objects are leaves: identity is what matters
+  if ('entity_id' in nextObj || Object.getPrototypeOf(nextObj) !== Object.prototype) return next;
+
+  const nextKeys = Object.keys(nextObj);
+  let same = nextKeys.length === Object.keys(prevObj).length;
+  const out: Record<string, unknown> = {};
+  for (const key of nextKeys) {
+    const shared = shareGraphStructure(prevObj[key], nextObj[key]);
+    out[key] = shared;
+    if (!Object.is(shared, prevObj[key])) same = false;
+  }
+  return (same ? prev : out) as T;
+}
+
 const AREA_ICON_MAP: Record<string, string> = {
   living_room: 'Tv',
   bedroom: 'Bed',
@@ -64,6 +122,8 @@ export function resolveHAGraph(
   options: { 
     includeDiagnostics?: boolean;
     entityOverrides?: Record<string, { customName?: string; hidden?: boolean; customIcon?: string; icon?: string }>;
+    /** Previous result's entities; unchanged ones are reused so their identity stays stable. */
+    previousEntities?: Record<string, ResolvedEntity>;
   } = {}
 ): GraphResolutionResult {
   const areaMap = new Map<string, HAArea>(areas.map(a => [a.area_id, a]));
@@ -287,7 +347,7 @@ export function resolveHAGraph(
     const isDisabled = Boolean(regEntry?.disabled_by);
     const finalFriendlyName = customOverride?.customName || friendlyName;
 
-    const resolved: ResolvedEntity = {
+    let resolved: ResolvedEntity = {
       entity_id: entityId,
       domain,
       name: finalFriendlyName,
@@ -311,6 +371,11 @@ export function resolveHAGraph(
       last_changed: (liveState as any).last_changed,
       last_updated: (liveState as any).last_updated
     };
+
+    const previous = options.previousEntities?.[entityId];
+    if (previous && isSameResolvedEntity(previous, resolved)) {
+      resolved = previous;
+    }
 
     resolvedEntities[entityId] = resolved;
 

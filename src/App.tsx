@@ -22,7 +22,6 @@ import { hasConfiguredHACredentials } from './store/useAutoLayoutStore';
 import { PAGE_THEMES } from './config/pageThemes';
 import AmbientBackground from './components/common/AmbientBackground';
 import DynamicPhosphorIcon from './components/ui/DynamicPhosphorIcon';
-import { useRoomsData } from './hooks/useRoomsData';
 import { haWebSocketService } from './services/haWebSocket';
 import { alertService } from './services/alertService';
 import { useAlertStore } from './store/useAlertStore';
@@ -110,6 +109,13 @@ const VALID_TABS = [
 ] as const;
 
 type TabKey = typeof VALID_TABS[number];
+
+const EMPTY_RESOLVED_ENTITIES: Record<string, never> = {};
+
+function hasAnyKey(obj: Record<string, unknown>): boolean {
+  for (const _ in obj) return true;
+  return false;
+}
 
 function getTabFromUrl(): TabKey {
   if (typeof window === 'undefined') return 'overview';
@@ -315,6 +321,8 @@ export default function App() {
 
   const isNotificationOpen = isNotificationDrawerOpen || isAlertDrawerOpen;
   const handleOpenNotifications = () => {
+    // Mount the drawer in the same render instead of waiting for the effect below
+    setHasOpenedNotifications(true);
     setIsNotificationDrawerOpen(true);
     setAlertDrawerOpen(true);
   };
@@ -329,6 +337,38 @@ export default function App() {
   const { isAuthModalOpen } = useAuth();
 
   const [hasOpenedNotifications, setHasOpenedNotifications] = useState(false);
+
+  // Load frequently opened drawers while the app is idle. The notification drawer is then
+  // mounted closed (it does no work while closed): opening a lazy component that hasn't
+  // rendered yet suspends, and React holds back revealing suspended content for ~300ms.
+  useEffect(() => {
+    let cancelled = false;
+    const prefetch = () => {
+      import('./components/notifications/NotificationDrawer')
+        .then(() => {
+          if (!cancelled) setHasOpenedNotifications(true);
+        })
+        .catch(() => {});
+      import('./components/modals/EntityDetailModal')
+        .then(() => {
+          if (!cancelled) setHasOpenedEntityDetail(true);
+        })
+        .catch(() => {});
+    };
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number };
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(prefetch, { timeout: 5000 });
+      return () => {
+        cancelled = true;
+        (window as any).cancelIdleCallback?.(id);
+      };
+    }
+    const timer = setTimeout(prefetch, 3000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, []);
   const [hasOpenedWeather, setHasOpenedWeather] = useState(false);
   const [hasOpenedAuth, setHasOpenedAuth] = useState(false);
   const [hasCriticalAlert, setHasCriticalAlert] = useState(false);
@@ -358,21 +398,24 @@ export default function App() {
   const { authState, enterDemoMode, isInitializing: isAuthInitializing } = useAuth();
 
   // Auto-Layout Graph Store
+  // App renders the shell around every page, so it must not subscribe to entity data that
+  // changes on every Home Assistant state event; each view subscribes to what it shows.
   const {
     init: initAutoLayout,
-    resolvedEntities,
     isLiveMode,
     connectionStatus,
     connectionError,
     serverUrl
   } = useAutoLayoutStore(useShallow(s => ({
     init: s.init,
-    resolvedEntities: s.resolvedEntities,
     isLiveMode: s.isLiveMode,
     connectionStatus: s.connectionStatus,
     connectionError: s.connectionError,
     serverUrl: s.serverUrl
   })));
+  const hasResolvedEntities = useAutoLayoutStore(s => hasAnyKey(s.resolvedEntities));
+  // Only the settings page uses the legacy entity list
+  const resolvedEntities = useAutoLayoutStore(s => activeTab === 'settings' ? s.resolvedEntities : EMPTY_RESOLVED_ENTITIES);
 
   useEffect(() => {
     initAutoLayout();
@@ -380,9 +423,7 @@ export default function App() {
   }, [initAutoLayout]);
 
   // Entity & Room State
-  const [entities, setEntities] = useState<HAEntity[]>(() => {
-    return Object.values(resolvedEntities).map(resolvedEntityToHAEntity);
-  });
+  const [entities, setEntities] = useState<HAEntity[]>([]);
 
   useEffect(() => {
     const arr = Object.values(resolvedEntities).map(resolvedEntityToHAEntity);
@@ -422,10 +463,8 @@ export default function App() {
   };
 
   // Primary User & Dynamic Greeting
-  const domainGroups = useAutoLayoutStore(s => s.domainGroups);
-  const personEntities = domainGroups['person'] || [];
-  const primaryPerson = personEntities[0];
-  const userName = primaryPerson?.name?.split(' ')[0] || 'Samer';
+  const primaryPersonName = useAutoLayoutStore(s => s.domainGroups['person']?.[0]?.name);
+  const userName = primaryPersonName?.split(' ')[0] || 'Samer';
 
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
@@ -443,8 +482,6 @@ export default function App() {
   const currentSelectedArea = (activeTab === 'rooms' && selectedAreaId) ? rawAreas.find((a) => a.area_id === selectedAreaId) : null;
   const currentSettingsMeta = (activeTab === 'settings' && selectedSettingsSection) ? SETTINGS_SECTIONS_META[selectedSettingsSection] : null;
 
-  const { areasDataList, toggleAreaLights, toggleAreaLocks, turnOffAllAreaEntities } = useRoomsData();
-  const activeRoomData = (activeTab === 'rooms' && selectedAreaId) ? areasDataList.find((a) => a.areaId === selectedAreaId) : null;
 
   const currentTheme = PAGE_THEMES[activeTab] || PAGE_THEMES['overview'];
   const PageIcon = currentTheme.icon;
@@ -460,10 +497,10 @@ export default function App() {
   const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
 
   useEffect(() => {
-    if (connectionStatus === 'connected' && Object.keys(resolvedEntities).length > 0) {
+    if (connectionStatus === 'connected' && hasResolvedEntities) {
       setHasInitialLoaded(true);
     }
-  }, [connectionStatus, resolvedEntities]);
+  }, [connectionStatus, hasResolvedEntities]);
 
   const [hasStartupTimeoutElapsed, setHasStartupTimeoutElapsed] = useState(false);
 
@@ -549,7 +586,7 @@ export default function App() {
   }
 
   return (
-    <div className={`fixed inset-0 flex w-full overflow-hidden font-sans select-none ${darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
+    <div className={`absolute inset-0 flex w-full overflow-hidden font-sans select-none ${darkMode ? 'bg-slate-950 text-white dark' : 'bg-[#f8fafc] text-slate-900'
       } safe-x`}>
       {/* Ambient background decoration with distinct page accent glows */}
       {backgroundStyle === 'glow' && (

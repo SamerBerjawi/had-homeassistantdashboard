@@ -16,6 +16,7 @@ import { ResolvedEntity } from '../../../types';
 import CameraStreamModal from './CameraStreamModal';
 import CameraFeed from '../../camera/CameraFeed';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { getCameraMotionStatus, captureAndDownloadSnapshot } from '../../../services/cameraIntegrationService';
 import CameraNoSignalPlaceholder from '../../ui/CameraNoSignalPlaceholder';
 import { isSurveillanceCamera } from '../../../lib/entityClassifiers';
@@ -31,7 +32,7 @@ export default function CameraFeedSection({
   cameraEntities = [],
   columns = 4
 }: CameraFeedSectionProps) {
-  const { domainGroups, serverUrl, areasMap } = useAutoLayoutStore();
+  const { domainGroups, serverUrl, areasMap } = useAutoLayoutStore(useShallow((s) => ({ domainGroups: s.domainGroups, serverUrl: s.serverUrl, areasMap: s.areasMap })));
   const [selectedCamera, setSelectedCamera] = useState<ResolvedEntity | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [areaFilter, setAreaFilter] = useState<string>('all');

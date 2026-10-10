@@ -25,7 +25,7 @@ import {
   HANativeRepairIssue
 } from '../types';
 
-import { resolveHAGraph, resolvedEntityToHAEntity } from '../services/graphResolution';
+import { resolveHAGraph, resolvedEntityToHAEntity, shareGraphStructure } from '../services/graphResolution';
 import { haWebSocketService, HAConnectionStatus } from '../services/haWebSocket';
 import { 
   startHAOAuthFlow, 
@@ -518,24 +518,29 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   },
 
   recomputeGraph: () => {
-    const { areas, devices, entityRegistry, floors, labels, states, showDiagnosticEntities, entityCustomizations } = get();
+    const prev = get();
+    const { areas, devices, entityRegistry, floors, labels, states, showDiagnosticEntities, entityCustomizations } = prev;
     const result = resolveHAGraph(areas, devices, entityRegistry, floors, states, labels, {
       includeDiagnostics: showDiagnosticEntities,
-      entityOverrides: entityCustomizations
+      entityOverrides: entityCustomizations,
+      previousEntities: prev.resolvedEntities
     });
 
+    // Keep references for everything a state event didn't change, so components subscribed to
+    // other slices (or other entities) don't re-render. A single light changing only replaces
+    // that entity, its area/domain arrays and the summaries it affects.
     set({
-      resolvedEntities: result.resolvedEntities,
-      resolvedAreas: result.resolvedAreas,
-      areasMap: result.areasMap,
-      resolvedFloors: result.resolvedFloors,
-      resolvedZones: result.resolvedZones,
-      labels: result.labels,
-      unassignedEntities: result.unassignedEntities,
-      domainGroups: result.domainGroups,
-      securityOverview: result.securityOverview,
-      overviewSummary: result.overviewSummary,
-      metrics: result.metrics
+      resolvedEntities: shareGraphStructure(prev.resolvedEntities, result.resolvedEntities),
+      resolvedAreas: shareGraphStructure(prev.resolvedAreas, result.resolvedAreas),
+      areasMap: shareGraphStructure(prev.areasMap, result.areasMap),
+      resolvedFloors: shareGraphStructure(prev.resolvedFloors, result.resolvedFloors),
+      resolvedZones: shareGraphStructure(prev.resolvedZones, result.resolvedZones),
+      labels: shareGraphStructure(prev.labels, result.labels),
+      unassignedEntities: shareGraphStructure(prev.unassignedEntities, result.unassignedEntities),
+      domainGroups: shareGraphStructure(prev.domainGroups, result.domainGroups),
+      securityOverview: shareGraphStructure(prev.securityOverview, result.securityOverview),
+      overviewSummary: shareGraphStructure(prev.overviewSummary, result.overviewSummary),
+      metrics: shareGraphStructure(prev.metrics, result.metrics)
     });
   },
 

@@ -12,7 +12,7 @@ interface AnimatedWeatherBackdropProps {
   className?: string;
 }
 
-export default function AnimatedWeatherBackdrop({
+function AnimatedWeatherBackdrop({
   condition,
   isNight = false,
   darkMode = true,
@@ -216,3 +216,6 @@ export default function AnimatedWeatherBackdrop({
     </div>
   );
 }
+
+// Memoized: rendered inside pages that re-render on every Home Assistant state event
+export default React.memo(AnimatedWeatherBackdrop);

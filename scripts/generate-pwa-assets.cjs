@@ -151,16 +151,35 @@ async function run() {
     { name: 'splash-2048x2732.png', w: 2048, h: 2732 },
     { name: 'splash-1668x2388.png', w: 1668, h: 2388 },
     { name: 'splash-1620x2160.png', w: 1620, h: 2160 },
+    // iPhone 16 Pro / 17 / 17 Pro, 16 Pro Max / 17 Pro Max, iPhone Air
+    { name: 'splash-1206x2622.png', w: 1206, h: 2622 },
+    { name: 'splash-1320x2868.png', w: 1320, h: 2868 },
+    { name: 'splash-1260x2736.png', w: 1260, h: 2736 },
+    // iPad Pro 13" (M4) / Air 13", iPad Pro 11" (M4), iPad Air 11" / iPad 10th gen, iPad mini
+    { name: 'splash-2064x2752.png', w: 2064, h: 2752 },
+    { name: 'splash-1668x2420.png', w: 1668, h: 2420 },
+    { name: 'splash-1640x2360.png', w: 1640, h: 2360 },
+    { name: 'splash-1488x2266.png', w: 1488, h: 2266 },
+    // iPad landscape (wall-mounted tablets are often launched in landscape)
+    { name: 'splash-2732x2048.png', w: 2732, h: 2048 },
+    { name: 'splash-2752x2064.png', w: 2752, h: 2064 },
+    { name: 'splash-2388x1668.png', w: 2388, h: 1668 },
+    { name: 'splash-2420x1668.png', w: 2420, h: 1668 },
+    { name: 'splash-2360x1640.png', w: 2360, h: 1640 },
+    { name: 'splash-2160x1620.png', w: 2160, h: 1620 },
+    { name: 'splash-2266x1488.png', w: 2266, h: 1488 },
   ];
 
   for (const s of splashScreens) {
     const iconSize = Math.round(Math.min(s.w, s.h) * 0.26);
     const iconX = Math.round((s.w - iconSize) / 2);
     const iconY = Math.round((s.h - iconSize) / 2 - s.h * 0.04);
-    const textY = iconY + iconSize + Math.round(s.h * 0.055);
-    const subTextY = textY + Math.max(22, Math.round(s.w * 0.032));
-    const titleFontSize = Math.max(28, Math.round(s.w * 0.048));
-    const subFontSize = Math.max(12, Math.round(s.w * 0.019));
+    const textY = iconY + iconSize + Math.round(Math.max(s.w, s.h) * 0.055 * (s.h >= s.w ? 1 : 0.75));
+    // Scale text from the short side so landscape splashes match their portrait counterparts
+    const shortSide = Math.min(s.w, s.h);
+    const subTextY = textY + Math.max(22, Math.round(shortSide * 0.032));
+    const titleFontSize = Math.max(28, Math.round(shortSide * 0.048));
+    const subFontSize = Math.max(12, Math.round(shortSide * 0.019));
 
     // Resize emblem icon for splash
     const emblem = await sharp(masterBuffer)

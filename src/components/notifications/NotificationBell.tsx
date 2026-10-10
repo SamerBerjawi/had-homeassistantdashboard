@@ -3,13 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useMemo } from 'react';
+import React from 'react';
+import { useHANotificationSummary } from '../../hooks/useHANotifications';
 import { Bell, ShieldWarning, ArrowUpRight } from '@phosphor-icons/react';
-import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
-import { useShallow } from 'zustand/react/shallow';
-import { extractHANotifications } from '../../services/notificationsService';
 
-import { useAlertStore } from '../../store/useAlertStore';
 
 interface NotificationBellProps {
   darkMode?: boolean;
@@ -24,61 +21,8 @@ export default function NotificationBell({
   className = '',
   variant = 'icon-button'
 }: NotificationBellProps) {
-  const {
-    domainGroups,
-    states,
-    entityRegistry,
-    nativeNotifications,
-    nativeRepairs,
-    dismissedNotificationIds,
-    callHAService,
-    dismissNotification,
-    updateEntityState,
-    installUpdate,
-    skipUpdate,
-    clearSkippedUpdate
-  } = useAutoLayoutStore(useShallow(s => ({
-    domainGroups: s.domainGroups,
-    states: s.states,
-    entityRegistry: s.entityRegistry,
-    nativeNotifications: s.nativeNotifications,
-    nativeRepairs: s.nativeRepairs,
-    dismissedNotificationIds: s.dismissedNotificationIds,
-    callHAService: s.callHAService,
-    dismissNotification: s.dismissNotification,
-    updateEntityState: s.updateEntityState,
-    installUpdate: s.installUpdate,
-    skipUpdate: s.skipUpdate,
-    clearSkippedUpdate: s.clearSkippedUpdate
-  })));
-
-  const alertStoreAlerts = useAlertStore(s => s.alerts);
-
-  const notifications = useMemo(() => {
-    return extractHANotifications({
-      domainGroups,
-      states,
-      entityRegistry,
-      nativeNotifications,
-      nativeRepairs,
-      dismissedNotificationIds,
-      callHAService,
-      dismissNotification,
-      updateEntityState,
-      installUpdate,
-      skipUpdate,
-      clearSkippedUpdate,
-      storeAlerts: alertStoreAlerts
-    });
-  }, [domainGroups, states, entityRegistry, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate, alertStoreAlerts]);
-
-  // Combined count from HA notifications, updates, repairs, sensors and alert store
-  const totalCount = notifications.length;
-
-  const hasCritical = notifications.some(n => n.severity === 'critical');
-  const hasWarning = notifications.some(n => n.severity === 'warning' || n.severity === 'error');
-  const hasUpdates = notifications.some(n => n.category === 'update' && !n.skippedVersion);
-  const updatesCount = notifications.filter(n => n.category === 'update' && !n.skippedVersion).length;
+  const { total: totalCount, updates: updatesCount, hasCritical, hasWarning } = useHANotificationSummary();
+  const hasUpdates = updatesCount > 0;
 
   // Highest severity color determination
   const badgeColorClass = hasCritical

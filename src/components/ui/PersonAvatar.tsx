@@ -73,7 +73,7 @@ export const SIZE_CONFIGS = {
   }
 };
 
-export default function PersonAvatar({
+function PersonAvatar({
   name,
   entity_picture,
   state,
@@ -183,3 +183,6 @@ export default function PersonAvatar({
     </div>
   );
 }
+
+// Memoized: rendered inside pages that re-render on every Home Assistant state event
+export default React.memo(PersonAvatar);

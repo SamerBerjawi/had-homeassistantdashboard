@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark" style="height: 100%; height: 100dvh; width: 100%;">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -19,6 +19,23 @@
     <meta name="theme-color" content="#020617" id="theme-color-meta" />
     <meta name="color-scheme" content="dark light" />
     <link rel="manifest" href="/manifest.json" />
+
+    <!-- Critical viewport CSS, applied before the app stylesheet loads. Kept in a style block
+         (not inline style attributes) so the standalone rules below can override it. -->
+    <style>
+      html { height: 100%; height: 100dvh; width: 100%; background-color: #020617; }
+      html:not(.dark) { background-color: #f8fafc; }
+      body { margin: 0; padding: 0; width: 100%; background-color: inherit; }
+      #root { position: fixed; inset: 0; width: 100%; height: 100%; }
+      /* iOS home-screen app bug: at launch, position:fixed/inset:0 and dvh resolve against a
+         viewport that excludes the home-indicator strip until the device is rotated, leaving a
+         bar at the bottom. In standalone mode the large viewport is the whole screen, so size
+         the root from it instead. */
+      @media (display-mode: standalone) {
+        html, body { height: 100vh; height: 100lvh; }
+        #root { bottom: auto; height: 100vh; height: 100lvh; }
+      }
+    </style>
     <link rel="redirect_uri" href="/" />
 
     <!-- Google Fonts Preconnect & Stylesheet -->
@@ -56,9 +73,32 @@
     <link rel="apple-touch-startup-image" href="/splash/splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
     <!-- iPad 10.2" (810x1080 pt @2x = 1620x2160) -->
     <link rel="apple-touch-startup-image" href="/splash/splash-1620x2160.png" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <!-- iPhone 17 / 17 Pro / 16 Pro (402x874 pt @3x) -->
+    <link rel="apple-touch-startup-image" href="/splash/splash-1206x2622.png" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+    <!-- iPhone 17 Pro Max / 16 Pro Max (440x956 pt @3x) -->
+    <link rel="apple-touch-startup-image" href="/splash/splash-1320x2868.png" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+    <!-- iPhone Air (420x912 pt @3x) -->
+    <link rel="apple-touch-startup-image" href="/splash/splash-1260x2736.png" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+    <!-- iPad Pro 13" (M4) / iPad Air 13" (1032x1376 pt @2x) -->
+    <link rel="apple-touch-startup-image" href="/splash/splash-2064x2752.png" media="(device-width: 1032px) and (device-height: 1376px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <!-- iPad Pro 11" (M4) (834x1210 pt @2x) -->
+    <link rel="apple-touch-startup-image" href="/splash/splash-1668x2420.png" media="(device-width: 834px) and (device-height: 1210px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <!-- iPad Air 11" / iPad 10th gen (820x1180 pt @2x) -->
+    <link rel="apple-touch-startup-image" href="/splash/splash-1640x2360.png" media="(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <!-- iPad mini 6/7 (744x1133 pt @2x) -->
+    <link rel="apple-touch-startup-image" href="/splash/splash-1488x2266.png" media="(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+
+    <!-- iOS Apple Touch Startup Splash Screens (iPad Landscape) -->
+    <link rel="apple-touch-startup-image" href="/splash/splash-2732x2048.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" />
+    <link rel="apple-touch-startup-image" href="/splash/splash-2752x2064.png" media="(device-width: 1032px) and (device-height: 1376px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" />
+    <link rel="apple-touch-startup-image" href="/splash/splash-2388x1668.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" />
+    <link rel="apple-touch-startup-image" href="/splash/splash-2420x1668.png" media="(device-width: 834px) and (device-height: 1210px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" />
+    <link rel="apple-touch-startup-image" href="/splash/splash-2360x1640.png" media="(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" />
+    <link rel="apple-touch-startup-image" href="/splash/splash-2160x1620.png" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" />
+    <link rel="apple-touch-startup-image" href="/splash/splash-2266x1488.png" media="(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" />
   </head>
-  <body style="margin: 0; padding: 0; width: 100%;">
-    <div id="root" style="position: fixed; inset: 0; width: 100%; height: 100%;"></div>
+  <body>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

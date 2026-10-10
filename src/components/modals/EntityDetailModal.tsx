@@ -28,6 +28,7 @@ import {
 import { useEntityPopup } from '../../contexts/EntityPopupContext';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { HAEntity } from '../../types';
 import { formatRelativeTime } from '../../lib/utils';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
@@ -79,7 +80,17 @@ export default function EntityDetailModal() {
   const { isOpen, selectedEntityId, closeEntityDetails } = useEntityPopup();
   const { config } = useUserConfig();
   const darkMode = config?.theme?.mode !== 'light';
-  const { states, entityRegistry, devices, areas, floors, resolvedEntities, entityCustomizations } = useAutoLayoutStore();
+  // Subscribe to the selected entity only, so the modal (kept mounted between opens) doesn't
+  // re-render on every Home Assistant state event
+  const { selectedState, selectedResolved, entityRegistry, devices, areas, floors, entityCustomizations } = useAutoLayoutStore(useShallow((s) => ({
+    selectedState: selectedEntityId ? s.states[selectedEntityId] : undefined,
+    selectedResolved: selectedEntityId ? s.resolvedEntities[selectedEntityId] : undefined,
+    entityRegistry: s.entityRegistry,
+    devices: s.devices,
+    areas: s.areas,
+    floors: s.floors,
+    entityCustomizations: s.entityCustomizations
+  })));
 
   const [copied, setCopied] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
@@ -109,15 +120,15 @@ export default function EntityDetailModal() {
   // Fallback entity if states not yet hydrated
   const entity: HAEntity | null = useMemo(() => {
     if (!selectedEntityId) return null;
-    if (states && states[selectedEntityId]) {
-      return states[selectedEntityId] as unknown as HAEntity;
+    if (selectedState) {
+      return selectedState as unknown as HAEntity;
     }
     return {
       entity_id: selectedEntityId,
       state: 'unknown',
       attributes: { friendly_name: selectedEntityId }
     };
-  }, [selectedEntityId, states]);
+  }, [selectedEntityId, selectedState]);
 
   const domain = selectedEntityId ? selectedEntityId.split('.')[0] : 'sensor';
 
@@ -130,12 +141,12 @@ export default function EntityDetailModal() {
       config?.entities?.iconOverrides?.[selectedEntityId] ||
       entityCustomizations?.[selectedEntityId]?.customIcon ||
       entityCustomizations?.[selectedEntityId]?.icon ||
-      resolvedEntities?.[selectedEntityId]?.icon ||
+      selectedResolved?.icon ||
       (entity as any)?.icon ||
       entity?.attributes?.icon ||
       null
     );
-  }, [selectedEntityId, config, entityCustomizations, resolvedEntities, entity]);
+  }, [selectedEntityId, config, entityCustomizations, selectedResolved, entity]);
 
   // Safe Metadata resolution
   const metadata = useMemo(() => {

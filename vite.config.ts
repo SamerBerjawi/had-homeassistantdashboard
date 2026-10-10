@@ -27,12 +27,14 @@ export default defineConfig(() => {
           'app-icon.png',
           'icon.png',
           'icons/*.png',
-          'splash/*.png',
         ],
         manifest: false,
         workbox: {
           maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MiB to cache full app shell and icon bundle
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
+          // iOS fetches startup images itself when the app is added to the home screen;
+          // precaching every device's splash would make each install download all of them
+          globIgnores: ['**/splash/**'],
           clientsClaim: true,
           cleanupOutdatedCaches: true,
           // Explicitly exclude API, WebSocket, auth, and media assets from Workbox navigation & runtime caching

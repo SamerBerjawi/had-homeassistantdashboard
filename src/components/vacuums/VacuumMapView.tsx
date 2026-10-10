@@ -37,6 +37,7 @@ import {
 } from '@phosphor-icons/react';
 import { VacuumDeviceData, VacuumMapItem } from '../../types/vacuum';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useHAImage } from '../../services/haImageService';
 
 interface VacuumMapViewProps {
@@ -45,7 +46,7 @@ interface VacuumMapViewProps {
 }
 
 export default function VacuumMapView({ vacuums, darkMode = true }: VacuumMapViewProps) {
-  const { callHAService, updateEntityState } = useAutoLayoutStore();
+  const { callHAService, updateEntityState } = useAutoLayoutStore(useShallow((s) => ({ callHAService: s.callHAService, updateEntityState: s.updateEntityState })));
 
   const [selectedVacuumId, setSelectedVacuumId] = useState<string>(vacuums[0]?.entityId || '');
   const [isOperating, setIsOperating] = useState<string | null>(null);

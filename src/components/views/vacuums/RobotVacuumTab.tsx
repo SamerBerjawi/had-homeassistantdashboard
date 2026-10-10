@@ -35,6 +35,7 @@ import {
 } from '@phosphor-icons/react';
 import { VacuumDeviceData, VacuumMapItem } from '../../../types/vacuum';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useEntityPopup } from '../../../contexts/EntityPopupContext';
 import { useHAImage } from '../../../services/haImageService';
 import { useUserConfig } from '../../../contexts/ConfigContext';
@@ -49,7 +50,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
   vacuums,
   darkMode = true
 }) => {
-  const { callHAService } = useAutoLayoutStore();
+  const { callHAService } = useAutoLayoutStore(useShallow((s) => ({ callHAService: s.callHAService })));
   const { openEntityDetails } = useEntityPopup();
   const { config, updateConfig, uploadVehicleAsset } = useUserConfig();
 

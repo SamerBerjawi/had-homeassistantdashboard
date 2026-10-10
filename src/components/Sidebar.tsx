@@ -25,8 +25,7 @@ import {
 import { AnimatedThemeToggler } from './ui/animated-theme-toggler';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { useShallow } from 'zustand/react/shallow';
-import { extractHANotifications } from '../services/notificationsService';
-import { useAlertStore } from '../store/useAlertStore';
+import { useHANotificationSummary } from '../hooks/useHANotifications';
 
 import { PAGE_THEMES } from '../config/pageThemes';
 import { useUserConfig } from '../contexts/ConfigContext';
@@ -46,61 +45,14 @@ export default function Sidebar({
   toggleDarkMode,
   onOpenNotifications
 }: SidebarProps) {
-  const {
-    domainGroups,
-    states,
-    entityRegistry,
-    nativeNotifications,
-    nativeRepairs,
-    dismissedNotificationIds,
-    callHAService,
-    dismissNotification,
-    updateEntityState,
-    installUpdate,
-    skipUpdate,
-    clearSkippedUpdate,
-    isLiveMode,
-    connectionStatus,
-    haCoreVersion
-  } = useAutoLayoutStore(useShallow(s => ({
-    domainGroups: s.domainGroups,
-    states: s.states,
-    entityRegistry: s.entityRegistry,
-    nativeNotifications: s.nativeNotifications,
-    nativeRepairs: s.nativeRepairs,
-    dismissedNotificationIds: s.dismissedNotificationIds,
-    callHAService: s.callHAService,
-    dismissNotification: s.dismissNotification,
-    updateEntityState: s.updateEntityState,
-    installUpdate: s.installUpdate,
-    skipUpdate: s.skipUpdate,
-    clearSkippedUpdate: s.clearSkippedUpdate,
+  const { isLiveMode, connectionStatus, haCoreVersion } = useAutoLayoutStore(useShallow(s => ({
     isLiveMode: s.isLiveMode,
     connectionStatus: s.connectionStatus,
     haCoreVersion: s.haCoreVersion
   })));
 
-  const alertStoreAlerts = useAlertStore(s => s.alerts);
-
-  const notifications = useMemo(() => {
-    return extractHANotifications({
-      domainGroups,
-      states,
-      entityRegistry,
-      nativeNotifications,
-      nativeRepairs,
-      dismissedNotificationIds,
-      callHAService,
-      dismissNotification,
-      updateEntityState,
-      installUpdate,
-      skipUpdate,
-      clearSkippedUpdate,
-      storeAlerts: alertStoreAlerts
-    });
-  }, [domainGroups, states, entityRegistry, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate, alertStoreAlerts]);
-
-  const totalNotifications = notifications.length;
+  // Count only: the sidebar re-renders when the badge changes, not on every state event
+  const { total: totalNotifications } = useHANotificationSummary();
 
   const telemetry = useMemo(() => {
     if (!isLiveMode) {
@@ -419,7 +371,7 @@ export default function Sidebar({
       {showMoreMenu && (
         <div 
           id="mobile-more-backdrop"
-          className={`md:hidden fixed inset-0 z-40 transition-all duration-300 ${
+          className={`md:hidden absolute inset-0 z-40 transition-all duration-300 ${
             darkMode 
               ? 'bg-gradient-to-t from-black/80 via-black/40 to-black/10 backdrop-blur-xs' 
               : 'bg-gradient-to-t from-slate-950/25 via-slate-900/10 to-transparent backdrop-blur-xs'
@@ -432,7 +384,7 @@ export default function Sidebar({
       {showMoreMenu && (
         <div 
           id="sidebar-more-menu"
-          className={`md:hidden fixed left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto rounded-3xl p-4 shadow-[4px_6px_16px_rgba(0,0,0,0.25)] z-50 animate-fadeIn backdrop-blur-md ${
+          className={`md:hidden absolute left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto rounded-3xl p-4 shadow-[4px_6px_16px_rgba(0,0,0,0.25)] z-50 animate-fadeIn backdrop-blur-md ${
             darkMode 
               ? 'bg-slate-900/90 border border-white/10 text-white' 
               : 'bg-white/90 border border-slate-200/80 text-slate-900'
@@ -546,7 +498,7 @@ export default function Sidebar({
       {/* MOBILE BOTTOM NAVIGATION */}
       <nav 
         id="sidebar-mobile" 
-        className={`md:hidden fixed bottom-0 left-0 right-0 z-50 pt-2 px-3 sm:px-6 transition-all border-t shadow-[0_-4px_20px_rgba(0,0,0,0.2)] ${
+        className={`md:hidden absolute bottom-0 left-0 right-0 z-50 pt-2 px-3 sm:px-6 transition-all border-t shadow-[0_-4px_20px_rgba(0,0,0,0.2)] ${
           darkMode 
             ? 'bg-slate-950/80 backdrop-blur-xl border-white/10 text-white' 
             : 'bg-white/80 backdrop-blur-xl border-slate-200/80 text-slate-900'

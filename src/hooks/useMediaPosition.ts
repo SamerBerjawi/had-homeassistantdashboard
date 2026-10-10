@@ -77,7 +77,9 @@ export function useMediaPosition(
       const elapsedSecs = Math.max(0, (now - updatedAtMs) / 1000);
       const exactPos = basePos + elapsedSecs;
       const clamped = duration > 0 ? Math.min(duration, exactPos) : exactPos;
-      setDisplayPosition(clamped);
+      // Tick often for accuracy, but only re-render when the displayed second changes:
+      // setState with an unchanged value is a no-op, so this is ~1 render/s instead of 4.
+      setDisplayPosition(Math.floor(clamped));
     };
 
     // Immediate initial tick

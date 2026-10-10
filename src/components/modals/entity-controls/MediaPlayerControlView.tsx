@@ -25,6 +25,7 @@ import {
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useHAImage } from '../../../services/haImageService';
 import { formatRelativeTime } from '../../../lib/utils';
 import { detectMediaCapabilities, MediaCapabilities } from '../../../services/mediaClassification';
@@ -43,7 +44,7 @@ export default function MediaPlayerControlView({
   darkMode = true,
   customIcon
 }: MediaPlayerControlViewProps) {
-  const { callHAService, updateEntityState, serverUrl } = useAutoLayoutStore();
+  const { callHAService, updateEntityState, serverUrl } = useAutoLayoutStore(useShallow((s) => ({ callHAService: s.callHAService, updateEntityState: s.updateEntityState, serverUrl: s.serverUrl })));
 
   const caps: MediaCapabilities = useMemo(() => {
     return detectMediaCapabilities(entity);

@@ -87,7 +87,7 @@ export default function FullScreenLoadingPage({
         paddingTop: 'max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
         paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem))'
       }}
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-between p-6 sm:p-10 select-none overflow-hidden transition-colors duration-300 ${
+      className={`absolute inset-0 z-50 flex flex-col items-center justify-between p-6 sm:p-10 select-none overflow-hidden transition-colors duration-300 ${
         isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
       }`}
     >

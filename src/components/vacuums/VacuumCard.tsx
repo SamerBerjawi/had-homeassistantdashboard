@@ -36,6 +36,7 @@ import {
 } from '@phosphor-icons/react';
 import { VacuumDeviceData, VacuumMapItem } from '../../types/vacuum';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useEntityPopup } from '../../contexts/EntityPopupContext';
 import { useHAImage } from '../../services/haImageService';
 
@@ -46,7 +47,7 @@ interface VacuumCardProps {
 }
 
 export default function VacuumCard({ vacuum, darkMode = true, showMap = false }: VacuumCardProps) {
-  const { callHAService, updateEntityState } = useAutoLayoutStore();
+  const { callHAService, updateEntityState } = useAutoLayoutStore(useShallow((s) => ({ callHAService: s.callHAService, updateEntityState: s.updateEntityState })));
   const { openEntityDetails } = useEntityPopup();
 
   const [isOperating, setIsOperating] = useState<string | null>(null);

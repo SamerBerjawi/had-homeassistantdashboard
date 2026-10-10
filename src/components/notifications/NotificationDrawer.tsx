@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   Bell,
   ArrowsClockwise,
@@ -29,7 +29,8 @@ import {
 import DetailsRightDrawer from '../overview/DetailsRightDrawer';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { useShallow } from 'zustand/react/shallow';
-import { extractHANotifications, formatTimeAgo } from '../../services/notificationsService';
+import { formatTimeAgo } from '../../services/notificationsService';
+import { useHANotifications } from '../../hooks/useHANotifications';
 import { HANotificationItem, NotificationCategory, HANotificationAction } from '../../types/notifications';
 import { haWebSocketService } from '../../services/haWebSocket';
 import { useAlertStore } from '../../store/useAlertStore';
@@ -52,62 +53,32 @@ export default function NotificationDrawer({
   darkMode = true
 }: NotificationDrawerProps) {
   const {
-    domainGroups,
-    states,
-    entityRegistry,
-    serverUrl,
-    nativeNotifications,
-    nativeRepairs,
-    dismissedNotificationIds,
     callHAService,
     dismissNotification,
     clearAllNotifications,
     updateEntityState,
     installUpdate,
-    skipUpdate,
-    clearSkippedUpdate
+    serverUrl
   } = useAutoLayoutStore(useShallow(s => ({
-    domainGroups: s.domainGroups,
-    states: s.states,
-    entityRegistry: s.entityRegistry,
-    serverUrl: s.serverUrl,
-    nativeNotifications: s.nativeNotifications,
-    nativeRepairs: s.nativeRepairs,
-    dismissedNotificationIds: s.dismissedNotificationIds,
     callHAService: s.callHAService,
     dismissNotification: s.dismissNotification,
     clearAllNotifications: s.clearAllNotifications,
     updateEntityState: s.updateEntityState,
     installUpdate: s.installUpdate,
-    skipUpdate: s.skipUpdate,
-    clearSkippedUpdate: s.clearSkippedUpdate
+    serverUrl: s.serverUrl
   })));
-
-  const alertStoreAlerts = useAlertStore(s => s.alerts);
 
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoadingIds, setActionLoadingIds] = useState<Record<string, boolean>>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Extract all consolidated notifications
-  const allNotifications = useMemo(() => {
-    return extractHANotifications({
-      domainGroups,
-      states,
-      entityRegistry,
-      nativeNotifications,
-      nativeRepairs,
-      dismissedNotificationIds,
-      callHAService,
-      dismissNotification,
-      updateEntityState,
-      installUpdate,
-      skipUpdate,
-      clearSkippedUpdate,
-      storeAlerts: alertStoreAlerts
-    });
-  }, [domainGroups, states, entityRegistry, nativeNotifications, nativeRepairs, dismissedNotificationIds, callHAService, dismissNotification, updateEntityState, installUpdate, skipUpdate, clearSkippedUpdate, alertStoreAlerts]);
+  // The drawer stays mounted after its first open; only track the live list while it's open,
+  // and keep showing the last list during the closing animation.
+  const liveNotifications = useHANotifications(isOpen);
+  const lastNotificationsRef = useRef(liveNotifications);
+  if (isOpen) lastNotificationsRef.current = liveNotifications;
+  const allNotifications = isOpen ? liveNotifications : lastNotificationsRef.current;
 
   // Counts by category
   const counts = useMemo(() => {
@@ -461,7 +432,7 @@ export default function NotificationDrawer({
               </div>
             </div>
           ) : (
-            <AnimatedList delay={50} className="w-full gap-2">
+            <AnimatedList delay={50} animateLayout={false} className="w-full gap-2">
               {filteredNotifications.map((item) => {
                 const visuals = getCategoryVisuals(item);
                 const isProgress = item.inProgress;

@@ -8,6 +8,7 @@ import {
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { formatRelativeTime } from '../../../lib/utils';
 import {
   detectSwitchCapabilities,
@@ -21,7 +22,7 @@ interface SwitchControlViewProps {
 }
 
 export default function SwitchControlView({ entity, darkMode = true, customIcon }: SwitchControlViewProps) {
-  const { callHAService, updateEntityState } = useAutoLayoutStore();
+  const { callHAService, updateEntityState } = useAutoLayoutStore(useShallow((s) => ({ callHAService: s.callHAService, updateEntityState: s.updateEntityState })));
 
   const caps: SwitchCapabilities = useMemo(() => {
     return detectSwitchCapabilities(entity);

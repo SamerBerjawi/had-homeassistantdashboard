@@ -13,6 +13,7 @@ import {
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import {
   detectLightCapabilities,
   kelvinToRgb,
@@ -89,7 +90,7 @@ interface TabOption {
 }
 
 export default function LightControlView({ entity, darkMode = true, customIcon }: LightControlViewProps) {
-  const { callHAService, updateEntityState } = useAutoLayoutStore();
+  const { callHAService, updateEntityState } = useAutoLayoutStore(useShallow((s) => ({ callHAService: s.callHAService, updateEntityState: s.updateEntityState })));
 
   const caps: LightCapabilities = useMemo(() => {
     return detectLightCapabilities(entity);

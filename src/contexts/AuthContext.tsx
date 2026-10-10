@@ -7,7 +7,7 @@
  * Handles proactive silent token refresh, resilient network reconnection, and persistent storage.
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AuthState, AuthContextType, AuthUser, AuthTokens } from '../types/auth';
 import { 
   handleHAOAuthCallback, 
@@ -560,7 +560,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
   }, [clearRefreshTimer]);
 
-  const contextValue: AuthContextType = {
+  // Memoized so consumers only re-render when auth state actually changes
+  const contextValue = useMemo<AuthContextType>(() => ({
     authState,
     isLoading,
     isInitializing,
@@ -573,7 +574,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     enterDemoMode,
     logout,
     clearError
-  };
+  }), [authState, isLoading, isInitializing, error, isAuthModalOpen, openAuthModal, closeAuthModal, loginOAuth, loginLLAT, enterDemoMode, logout, clearError]);
 
   return (
     <AuthContext.Provider value={contextValue}>

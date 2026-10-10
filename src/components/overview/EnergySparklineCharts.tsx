@@ -5,6 +5,7 @@
 
 import React, { useMemo } from 'react';
 import { TransformedEnergyBucket } from '../../services/energyDataTransformer';
+import { arePropsShallowEqualWithArrays } from '../../lib/memoCompare';
 
 // ---------------------------------------------------------------------------
 // Smooth Bezier Curve Helper
@@ -59,7 +60,7 @@ interface MinimalistPowerFlowChartProps {
   lastHours?: number;
 }
 
-export function MinimalistPowerFlowChart({
+function MinimalistPowerFlowChartImpl({
   buckets = [],
   darkMode = true,
   className = '',
@@ -391,7 +392,7 @@ interface MinimalistEnergyUsageChartProps {
   showTimeLabels?: boolean;
 }
 
-export function MinimalistEnergyUsageChart({
+function MinimalistEnergyUsageChartImpl({
   buckets = [],
   darkMode = true,
   className = '',
@@ -662,7 +663,7 @@ interface MinimalistSolarProductionChartProps {
   className?: string;
 }
 
-export function MinimalistSolarProductionChart({
+function MinimalistSolarProductionChartImpl({
   buckets = [],
   forecastTotal,
   darkMode = true,
@@ -831,3 +832,9 @@ export function MinimalistSolarProductionChart({
   );
 }
 
+
+// The overview re-renders on every Home Assistant state event and re-filters `buckets` each time;
+// skip re-rendering these SVG charts unless the bucket data actually changed.
+export const MinimalistPowerFlowChart = React.memo(MinimalistPowerFlowChartImpl, arePropsShallowEqualWithArrays);
+export const MinimalistEnergyUsageChart = React.memo(MinimalistEnergyUsageChartImpl, arePropsShallowEqualWithArrays);
+export const MinimalistSolarProductionChart = React.memo(MinimalistSolarProductionChartImpl, arePropsShallowEqualWithArrays);

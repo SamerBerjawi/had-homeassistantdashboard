@@ -33,6 +33,7 @@ import {
 } from '@phosphor-icons/react';
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import {
   detectFanCapabilities,
@@ -56,7 +57,7 @@ const getPresetIcon = (name: string) => {
 };
 
 export default function FanControlView({ entity, darkMode = true, customIcon }: FanControlViewProps) {
-  const { callHAService, updateEntityState } = useAutoLayoutStore();
+  const { callHAService, updateEntityState } = useAutoLayoutStore(useShallow((s) => ({ callHAService: s.callHAService, updateEntityState: s.updateEntityState })));
 
   const caps: FanCapabilities = useMemo(() => {
     return detectFanCapabilities(entity as any);

@@ -9,6 +9,7 @@ import {
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { formatRelativeTime } from '../../../lib/utils';
 import {
   detectCoverCapabilities,
@@ -23,7 +24,7 @@ interface CoverControlViewProps {
 }
 
 export default function CoverControlView({ entity, darkMode = true, customIcon }: CoverControlViewProps) {
-  const { callHAService, updateEntityState } = useAutoLayoutStore();
+  const { callHAService, updateEntityState } = useAutoLayoutStore(useShallow((s) => ({ callHAService: s.callHAService, updateEntityState: s.updateEntityState })));
 
   const caps: CoverCapabilities = useMemo(() => {
     return detectCoverCapabilities(entity);

@@ -33,6 +33,7 @@ import {
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import {
   detectClimateCapabilities,
   ClimateCapabilities
@@ -114,7 +115,7 @@ const MODE_DEFINITIONS: Record<string, ModeDefinition> = {
 };
 
 export default function ClimateControlView({ entity, darkMode = true, customIcon: _customIcon }: ClimateControlViewProps) {
-  const { callHAService, updateEntityState, states } = useAutoLayoutStore();
+  const { callHAService, updateEntityState, states } = useAutoLayoutStore(useShallow((s) => ({ callHAService: s.callHAService, updateEntityState: s.updateEntityState, states: s.states })));
 
   const caps: ClimateCapabilities = useMemo(() => {
     return detectClimateCapabilities(entity);

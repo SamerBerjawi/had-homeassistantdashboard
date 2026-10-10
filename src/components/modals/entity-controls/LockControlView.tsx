@@ -12,6 +12,7 @@ import {
 import DynamicPhosphorIcon from '../../ui/DynamicPhosphorIcon';
 import { HAEntity } from '../../../types';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { formatRelativeTime } from '../../../lib/utils';
 import {
   detectLockCapabilities,
@@ -25,7 +26,7 @@ interface LockControlViewProps {
 }
 
 export default function LockControlView({ entity, darkMode = true, customIcon }: LockControlViewProps) {
-  const { callHAService, updateEntityState } = useAutoLayoutStore();
+  const { callHAService, updateEntityState } = useAutoLayoutStore(useShallow((s) => ({ callHAService: s.callHAService, updateEntityState: s.updateEntityState })));
 
   const caps: LockCapabilities = useMemo(() => {
     return detectLockCapabilities(entity);

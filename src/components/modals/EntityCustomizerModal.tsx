@@ -24,6 +24,7 @@ import IconFinderModal from '../ui/IconFinderModal';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { normalizePhosphorIconName } from '../../lib/phosphorIconData';
 
 export interface EntityCustomizerModalProps {
@@ -64,7 +65,7 @@ export default function EntityCustomizerModal({
   addToast
 }: EntityCustomizerModalProps) {
   const { config, updateConfig, flushPendingSave } = useUserConfig();
-  const { resolvedEntities, entityCustomizations, setEntityHidden } = useAutoLayoutStore();
+  const { resolvedEntities, entityCustomizations, setEntityHidden } = useAutoLayoutStore(useShallow((s) => ({ resolvedEntities: s.resolvedEntities, entityCustomizations: s.entityCustomizations, setEntityHidden: s.setEntityHidden })));
 
   const resolved = entityId ? resolvedEntities[entityId] : null;
   const storeCustom = entityId ? entityCustomizations[entityId] : null;

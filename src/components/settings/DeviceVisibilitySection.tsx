@@ -74,6 +74,7 @@ import {
 } from '@phosphor-icons/react';
 import { HAEntity, HAArea, HAFloor, HALabel, HAZone, HADevice, ResolvedEntity } from '../../types';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import DynamicPhosphorIcon from '../ui/DynamicPhosphorIcon';
 import IconPickerField from '../ui/IconPickerField';
@@ -276,7 +277,7 @@ export default function DeviceVisibilitySection({
   addLog
 }: DeviceVisibilitySectionProps) {
   const { config, updateConfig, flushPendingSave } = useUserConfig();
-  const { setEntityHidden, bulkSetEntitiesHidden, updateLabel } = useAutoLayoutStore();
+  const { setEntityHidden, bulkSetEntitiesHidden, updateLabel } = useAutoLayoutStore(useShallow((s) => ({ setEntityHidden: s.setEntityHidden, bulkSetEntitiesHidden: s.bulkSetEntitiesHidden, updateLabel: s.updateLabel })));
 
   // Master set of hidden entity IDs combining remote config hiddenEntityIds, customizations, and store
   const hiddenEntityIdsSet = useMemo(() => {

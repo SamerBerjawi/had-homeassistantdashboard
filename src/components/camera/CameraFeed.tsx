@@ -35,7 +35,7 @@ export interface CameraFeedProps {
   onGoLive?: () => void;
 }
 
-export default function CameraFeed({
+function CameraFeed({
   camera,
   mode = 'preview',
   darkMode = true,
@@ -279,3 +279,6 @@ export default function CameraFeed({
     </div>
   );
 }
+
+// Memoized: rendered inside pages that re-render on every Home Assistant state event
+export default React.memo(CameraFeed);
