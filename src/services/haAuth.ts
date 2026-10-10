@@ -258,6 +258,7 @@ export async function refreshHAOAuthTokenWithStatus(tokens?: HAAuthTokens): Prom
   if (!current || !current.refresh_token || current.auth_type !== 'oauth') {
     return { success: false, isFatal: false, error: 'No OAuth refresh token available' };
   }
+  const refreshToken = current.refresh_token;
 
   // Reuse in-flight refresh promise to prevent duplicate simultaneous token exchange requests
   if (inFlightRefreshPromise) {
@@ -277,7 +278,7 @@ export async function refreshHAOAuthTokenWithStatus(tokens?: HAAuthTokens): Prom
     try {
       const bodyParams = new URLSearchParams();
       bodyParams.append('grant_type', 'refresh_token');
-      bodyParams.append('refresh_token', current.refresh_token);
+      bodyParams.append('refresh_token', refreshToken);
       bodyParams.append('client_id', clientId);
 
       const tokenEndpoint = `${httpUrl}/auth/token`;

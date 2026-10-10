@@ -69,7 +69,7 @@ export default function PerimeterAttentionCard({
     }
   };
 
-  const getAreaName = (areaId?: string) => {
+  const getAreaName = (areaId?: string | null) => {
     if (!areaId) return 'Perimeter';
     return areasMap[areaId]?.name || areaId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   };

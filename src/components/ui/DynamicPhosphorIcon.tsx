@@ -8,7 +8,7 @@ import type { IconProps } from '@phosphor-icons/react';
 import { HouseLine } from '@phosphor-icons/react';
 import { normalizePhosphorIconName } from '../../lib/phosphorIconData';
 
-interface DynamicPhosphorIconProps extends IconProps {
+interface DynamicPhosphorIconProps extends Omit<IconProps, 'name'> {
   name?: string | null;
   fallback?: React.ComponentType<IconProps>;
 }

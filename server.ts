@@ -1107,6 +1107,16 @@ async function startServer() {
     }
   });
 
+  const STATISTICS_PERIOD_MS: Record<string, number> = {
+    '5minute': 5 * 60 * 1000,
+    hour: 60 * 60 * 1000,
+    day: 24 * 60 * 60 * 1000,
+    week: 7 * 24 * 60 * 60 * 1000,
+    month: 28 * 24 * 60 * 60 * 1000
+  };
+  const MAX_HISTORY_STATISTIC_IDS = 200;
+  const MAX_HISTORY_ROWS = 250_000;
+
   // 3. Fast Historical Query Endpoint (Sub-10ms from NAS SQLite for ANY entities)
   app.get(['/api/statistics/history', '/api/energy/history'], requireHAAuth, (req, res) => {
     applyCorsHeaders(req, res, 'GET, HEAD, OPTIONS');
@@ -1123,9 +1133,26 @@ async function startServer() {
         });
       }
 
-      const statisticIds = statisticIdsParam.split(',').map((s) => s.trim()).filter(Boolean);
+      const statisticIds = [...new Set(statisticIdsParam.split(',').map((s) => s.trim()).filter(Boolean))];
       const startMs = normalizeTimestampMs(startParam);
       const endMs = normalizeTimestampMs(endParam);
+
+      // SQLite queries here are synchronous, so bound the work per request to keep the event loop
+      // (camera proxying, SSE, API) responsive. Callers fall back to Home Assistant on a 400.
+      const periodMs = STATISTICS_PERIOD_MS[periodType];
+      if (!periodMs) {
+        return res.status(400).json({ success: false, error: `Unsupported period_type: ${periodType}` });
+      }
+      if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs < startMs) {
+        return res.status(400).json({ success: false, error: 'Invalid start/end range' });
+      }
+      if (statisticIds.length > MAX_HISTORY_STATISTIC_IDS) {
+        return res.status(400).json({ success: false, error: `Too many statistic_ids (max ${MAX_HISTORY_STATISTIC_IDS})` });
+      }
+      const estimatedRows = statisticIds.length * Math.ceil((endMs - startMs) / periodMs + 1);
+      if (estimatedRows > MAX_HISTORY_ROWS) {
+        return res.status(400).json({ success: false, error: `Requested range is too large (~${estimatedRows} rows, max ${MAX_HISTORY_ROWS})` });
+      }
 
       const coverage = checkCoverage(statisticIds, startMs, endMs, periodType);
       const data = queryStatistics(statisticIds, startMs, endMs, periodType);

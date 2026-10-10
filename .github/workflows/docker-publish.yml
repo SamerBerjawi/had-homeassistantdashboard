@@ -34,8 +34,11 @@ jobs:
       - name: Install dependencies & build
         run: |
           npm ci
+          npm run lint
+          npm test
           npm run build
           npm run check:bundle
+          npm run test:integration
           npm prune --omit=dev
 
       # 3. Docker buildx setup (QEMU only for arm64 if binary execution occurs)

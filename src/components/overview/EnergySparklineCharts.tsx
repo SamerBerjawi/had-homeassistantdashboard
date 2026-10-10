@@ -658,7 +658,7 @@ function MinimalistEnergyUsageChartImpl({
 // ---------------------------------------------------------------------------
 interface MinimalistSolarProductionChartProps {
   buckets: TransformedEnergyBucket[];
-  forecastTotal?: number;
+  forecastTotal?: number | null;
   darkMode?: boolean;
   className?: string;
 }

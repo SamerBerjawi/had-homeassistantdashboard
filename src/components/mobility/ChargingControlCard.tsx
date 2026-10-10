@@ -57,6 +57,9 @@ export function ChargingControlCard({
     (!isInProgress && !isPaused && !isStationNotDetected && isPluggedIn);
 
   // Local target SoC slider state
+  // Sensors may be missing for some vehicles; treat unknown values as 0 rather than NaN
+  const soc = metrics.soc ?? 0;
+  const chargingPowerKW = metrics.chargingPowerKW ?? 0;
   const currentTargetSoc = metrics.targetSocPercent || 80;
   const [targetSoc, setTargetSoc] = useState<number>(currentTargetSoc);
   const [isSavingSoc, setIsSavingSoc] = useState(false);
@@ -69,28 +72,28 @@ export function ChargingControlCard({
 
   // Color mapping for gauge
   const socColor =
-    metrics.soc < 20
+    soc < 20
       ? '#EF4444'
-      : metrics.soc < 40
+      : soc < 40
       ? '#F59E0B'
-      : metrics.soc < 80
+      : soc < 80
       ? '#06B6D4'
       : '#10B981';
 
   // Estimate time remaining to reach target SoC
   const timeRemainingEstimate = React.useMemo(() => {
-    if (!isInProgress || metrics.chargingPowerKW <= 0 || metrics.soc >= targetSoc) {
+    if (!isInProgress || chargingPowerKW <= 0 || soc >= targetSoc) {
       return null;
     }
     const batteryCapacity = 75;
-    const socNeeded = (targetSoc - metrics.soc) / 100;
+    const socNeeded = (targetSoc - soc) / 100;
     const kwhNeeded = socNeeded * batteryCapacity;
-    const hours = kwhNeeded / metrics.chargingPowerKW;
+    const hours = kwhNeeded / chargingPowerKW;
     const hrs = Math.floor(hours);
     const mins = Math.round((hours - hrs) * 60);
     if (hrs === 0) return `${mins}m`;
     return `${hrs}h ${mins}m`;
-  }, [isInProgress, metrics.chargingPowerKW, metrics.soc, targetSoc]);
+  }, [isInProgress, chargingPowerKW, soc, targetSoc]);
 
   const handleSliderCommit = async (newVal: number) => {
     setTargetSoc(newVal);
@@ -212,9 +215,9 @@ export function ChargingControlCard({
           </span>
         </div>
 
-        {isInProgress && metrics.chargingPowerKW > 0 && (
+        {isInProgress && chargingPowerKW > 0 && (
           <span className="font-mono font-black text-emerald-600 dark:text-emerald-400">
-            {formatDecimal(metrics.chargingPowerKW)} kW
+            {formatDecimal(chargingPowerKW)} kW
           </span>
         )}
       </div>
@@ -223,8 +226,8 @@ export function ChargingControlCard({
       <div className="relative py-1 flex flex-col items-center justify-center z-10">
         <div className="w-[190px] sm:w-[220px] max-w-full h-[140px] sm:h-[160px] mx-auto flex items-center justify-center relative">
           <Gauge
-            value={roundToDecimals(metrics.soc)}
-            centerValue={roundToDecimals(metrics.soc)}
+            value={roundToDecimals(soc)}
+            centerValue={roundToDecimals(soc)}
             defaultLabel="BATTERY SOC"
             suffix="%"
             activeFill={socColor}
@@ -253,7 +256,7 @@ export function ChargingControlCard({
                 : 'text-slate-400'
             }
           />
-          <span>{isInProgress ? `${formatDecimal(metrics.chargingPowerKW)} kW Throughput` : '0.0 kW Standby'}</span>
+          <span>{isInProgress ? `${formatDecimal(chargingPowerKW)} kW Throughput` : '0.0 kW Standby'}</span>
           {timeRemainingEstimate && (
             <>
               <span className="text-slate-400">•</span>

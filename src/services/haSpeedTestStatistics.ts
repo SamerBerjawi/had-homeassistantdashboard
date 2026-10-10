@@ -13,7 +13,7 @@ import { SpeedTestTimeseriesPoint, NetworkTimeRange } from '../types/network';
 
 export interface HAStatisticRecord {
   start: number | string;
-  end: number | string;
+  end?: number | string;
   mean?: number | null;
   state?: number | null;
   max?: number | null;

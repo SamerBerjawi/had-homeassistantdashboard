@@ -40,7 +40,7 @@ export default function MobilityView({ darkMode = true }: MobilityViewProps) {
     return Boolean(
       config.mobility?.bike?.customName ||
       config.mobility?.bike?.bikeImageUrl ||
-      (bikeMetrics && bikeMetrics.batteryPercent > 0)
+      (bikeMetrics && (bikeMetrics.batteryPercent ?? 0) > 0)
     );
   }, [config.mobility?.bike, bikeMetrics]);
 
@@ -82,7 +82,7 @@ export default function MobilityView({ darkMode = true }: MobilityViewProps) {
                 <Car size={16} weight={activeAsset === 'car' ? 'fill' : 'bold'} />
                 <span>Electric Car</span>
                 <span className="text-[10px] font-mono opacity-85">
-                  {Math.round(carMetrics.soc)}%
+                  {carMetrics.soc != null ? `${Math.round(carMetrics.soc)}%` : '—'}
                 </span>
               </button>
 
@@ -102,7 +102,7 @@ export default function MobilityView({ darkMode = true }: MobilityViewProps) {
                 <Bicycle size={16} weight={activeAsset === 'bike' ? 'fill' : 'bold'} />
                 <span>Electric Bike</span>
                 <span className="text-[10px] font-mono opacity-85">
-                  {Math.round(bikeMetrics.batteryPercent)}%
+                  {bikeMetrics.batteryPercent != null ? `${Math.round(bikeMetrics.batteryPercent)}%` : '—'}
                 </span>
               </button>
             </div>

@@ -15,6 +15,8 @@ export interface FlowFromGridSourceEnergy {
   stat_cost?: string | null;
   entity_energy_price?: string | null;
   number_energy_price?: number | null;
+  /** Power sensor for this flow, when configured */
+  stat_rate?: string;
 }
 
 export interface FlowToGridSourceEnergy {
@@ -22,6 +24,8 @@ export interface FlowToGridSourceEnergy {
   stat_compensation?: string | null;
   entity_energy_price?: string | null;
   number_energy_price?: number | null;
+  /** Power sensor for this flow, when configured */
+  stat_rate?: string;
 }
 
 export interface GridSource {

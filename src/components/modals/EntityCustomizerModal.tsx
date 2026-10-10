@@ -70,9 +70,9 @@ export default function EntityCustomizerModal({
   const resolved = entityId ? resolvedEntities[entityId] : null;
   const storeCustom = entityId ? entityCustomizations[entityId] : null;
 
-  const currentConfigCustom = entityId && config?.entities?.customizations?.[entityId];
-  const currentConfigIcon = entityId && config?.entities?.iconOverrides?.[entityId];
-  const currentConfigName = entityId && config?.entities?.nameOverrides?.[entityId];
+  const currentConfigCustom = entityId ? config?.entities?.customizations?.[entityId] : undefined;
+  const currentConfigIcon = entityId ? config?.entities?.iconOverrides?.[entityId] : undefined;
+  const currentConfigName = entityId ? config?.entities?.nameOverrides?.[entityId] : undefined;
 
   const initialName =
     currentConfigCustom?.customName ||

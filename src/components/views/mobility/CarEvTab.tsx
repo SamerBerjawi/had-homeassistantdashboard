@@ -108,11 +108,11 @@ export function CarEvTab({
     ' p-5 sm:p-6 flex flex-col justify-between';
 
   const socColor =
-    metrics.soc < 20
+    (metrics.soc ?? 0) < 20
       ? '#EF4444'
-      : metrics.soc < 40
+      : (metrics.soc ?? 0) < 40
       ? '#F59E0B'
-      : metrics.soc < 80
+      : (metrics.soc ?? 0) < 80
       ? '#06B6D4'
       : '#10B981';
 
@@ -436,7 +436,7 @@ export function CarEvTab({
           <div className="py-2 flex flex-col items-center justify-center">
             <div className="w-[190px] sm:w-[220px] max-w-full h-[140px] sm:h-[160px] mx-auto flex items-center justify-center relative">
               <Gauge
-                value={metrics.soc}
+                value={metrics.soc ?? 0}
                 centerValue={metrics.soc}
                 defaultLabel="BATTERY SOC"
                 suffix="%"
@@ -476,7 +476,7 @@ export function CarEvTab({
                 <Lightning size={16} weight="fill" className={isCharging ? 'text-emerald-500 animate-pulse' : 'text-slate-400'} />
               </div>
               <div className={`text-sm sm:text-base font-black truncate ${isCharging ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                {isCharging && metrics.chargingPowerKW > 0 ? `${metrics.chargingState} (${metrics.chargingPowerKW} kW)` : metrics.chargingState}
+                {isCharging && (metrics.chargingPowerKW ?? 0) > 0 ? `${metrics.chargingState} (${metrics.chargingPowerKW} kW)` : metrics.chargingState}
               </div>
             </div>
 

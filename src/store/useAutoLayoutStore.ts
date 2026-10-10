@@ -103,7 +103,8 @@ export interface AutoLayoutStoreState {
 
   // Graph & State Mutators
   recomputeGraph: () => void;
-  updateEntityState: (entityId: string, newState: string, newAttributes?: Record<string, any>) => void;
+  /** Local-only state write. Pass undefined/null as newState to change attributes only. */
+  updateEntityState: (entityId: string, newState?: string | null, newAttributes?: Record<string, any>) => void;
   callHAService: (domain: string, service: string, serviceData?: Record<string, any>, target?: any) => Promise<void>;
   reassignEntityArea: (entityId: string, newAreaId: string | null) => void;
   

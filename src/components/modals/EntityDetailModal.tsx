@@ -617,7 +617,7 @@ export default function EntityDetailModal() {
                   title="Copy Entity ID"
                 >
                   {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                  <span className="font-mono text-[11px]">{copied ? 'Copied' : selectedEntityId.split('.')[1] || 'Entity ID'}</span>
+                  <span className="font-mono text-[11px]">{copied ? 'Copied' : selectedEntityId?.split('.')[1] || 'Entity ID'}</span>
                 </button>
                 <button
                   type="button"
@@ -641,8 +641,8 @@ export default function EntityDetailModal() {
         defaultName={entityTitle || ''}
         defaultIcon={customIcon || (entity as any)?.icon || entity?.attributes?.icon || ''}
         domain={domain}
-        areaName={metadata?.areaName}
-        floorName={metadata?.floorName}
+        areaName={metadata?.areaName ?? undefined}
+        floorName={metadata?.floorName ?? undefined}
       />
     </AnimatePresence>
   );

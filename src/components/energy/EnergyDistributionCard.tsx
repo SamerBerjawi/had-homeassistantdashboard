@@ -171,11 +171,11 @@ export default function EnergyDistributionCard({
   const renderDestinationIcon = (type: 'home' | 'battery' | 'grid') => {
     switch (type) {
       case 'home':
-        return <House size={14} weight="duotone" className="shrink-0 text-cyan-600 dark:text-cyan-400" title="Home" />;
+        return <House size={14} weight="duotone" className="shrink-0 text-cyan-600 dark:text-cyan-400" alt="Home" />;
       case 'battery':
-        return <BatteryCharging size={14} weight="duotone" className="shrink-0 text-emerald-600 dark:text-emerald-400" title="Battery" />;
+        return <BatteryCharging size={14} weight="duotone" className="shrink-0 text-emerald-600 dark:text-emerald-400" alt="Battery" />;
       case 'grid':
-        return <Broadcast size={14} weight="duotone" className="shrink-0 text-sky-600 dark:text-sky-400" title="Grid" />;
+        return <Broadcast size={14} weight="duotone" className="shrink-0 text-sky-600 dark:text-sky-400" alt="Grid" />;
     }
   };
 

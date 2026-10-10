@@ -187,7 +187,7 @@ function computeWeatherData(activeEntity?: ResolvedEntity) {
     const futureHour = upcomingHours[2] || upcomingHours[1];
     const futureTemp = futureHour?.temperature !== undefined ? Math.round(futureHour.temperature) : undefined;
 
-    if (futureTemp !== undefined && futureTemp - temp >= 2) {
+    if (futureTemp !== undefined && temp !== undefined && futureTemp - temp >= 2) {
       trend = {
         prefix: 'temperatures are expected to',
         icon: <TrendUp size={14} weight="bold" className="text-amber-500 dark:text-amber-400" />,
@@ -195,7 +195,7 @@ function computeWeatherData(activeEntity?: ResolvedEntity) {
         keywordClass: 'text-amber-600 dark:text-amber-300 font-bold',
         suffix: `to ${futureTemp}${tempUnit} in the next 3 hours`
       };
-    } else if (futureTemp !== undefined && temp - futureTemp >= 2) {
+    } else if (futureTemp !== undefined && temp !== undefined && temp - futureTemp >= 2) {
       trend = {
         prefix: 'temperatures are expected to',
         icon: <TrendDown size={14} weight="bold" className="text-sky-500 dark:text-sky-400" />,
@@ -203,7 +203,7 @@ function computeWeatherData(activeEntity?: ResolvedEntity) {
         keywordClass: 'text-sky-600 dark:text-sky-300 font-bold',
         suffix: `to ${futureTemp}${tempUnit} in the next 3 hours`
       };
-    } else if (highTemp > temp && !isNight) {
+    } else if (highTemp !== undefined && temp !== undefined && highTemp > temp && !isNight) {
       trend = {
         prefix: 'temperatures will',
         icon: <TrendUp size={14} weight="bold" className="text-amber-500 dark:text-amber-400" />,

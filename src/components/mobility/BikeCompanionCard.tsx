@@ -91,14 +91,14 @@ export function BikeCompanionCard({
           <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
             <span className="text-[9px] font-bold text-slate-400 uppercase block">Battery</span>
             <div className="text-lg font-black font-mono text-amber-400">
-              {Math.round(metrics.batteryPercent)}%
+              {metrics.batteryPercent != null ? `${Math.round(metrics.batteryPercent)}%` : '—'}
             </div>
           </div>
 
           <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
             <span className="text-[9px] font-bold text-slate-400 uppercase block">Range</span>
             <div className="text-lg font-black font-mono text-white">
-              {Math.round(metrics.remainingRangeKm)} <span className="text-xs text-slate-400">km</span>
+              {metrics.remainingRangeKm != null ? Math.round(metrics.remainingRangeKm) : '—'} <span className="text-xs text-slate-400">km</span>
             </div>
           </div>
         </div>

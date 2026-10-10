@@ -204,7 +204,7 @@ export interface ResolvedArea {
   entities: ResolvedEntity[];
   entitiesByDomain: Record<string, ResolvedEntity[]>;
   summary: ResolvedAreaSummary;
-  bannerImage: string;
+  bannerImage: string | null;
   labels?: string[];
 }
 
@@ -288,7 +288,7 @@ export interface Room {
   humidity: number;
   devicesCount: number;
   entityIds: string[];
-  bannerImage: string;
+  bannerImage: string | null;
 }
 
 export interface LogMessage {

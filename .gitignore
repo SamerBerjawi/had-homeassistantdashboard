@@ -9,3 +9,4 @@ coverage/
 /data/
 had-homeassistantdashboard/data/
 dev-dist/
+scratch/test-*/

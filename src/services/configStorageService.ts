@@ -86,7 +86,12 @@ export function mergeDelta(
   base: Partial<UserDashboardConfig>,
   delta: Partial<UserDashboardConfig>
 ): Partial<UserDashboardConfig> {
-  const result: any = { ...base };
+  return mergePlainDelta(base, delta) as Partial<UserDashboardConfig>;
+}
+
+// Recursive worker: nested sections are plain objects, not whole configs
+function mergePlainDelta(base: Record<string, any>, delta: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = { ...base };
 
   for (const [key, value] of Object.entries(delta)) {
     if (value === undefined) continue;
@@ -103,7 +108,7 @@ export function mergeDelta(
         result[key] !== null && typeof result[key] === 'object' && !Array.isArray(result[key])
           ? result[key]
           : {};
-      result[key] = mergeDelta(baseVal, value);
+      result[key] = mergePlainDelta(baseVal, value);
     } else {
       result[key] = value;
     }

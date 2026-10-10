@@ -40,7 +40,7 @@ export interface WidgetCatalogItem {
   id: string;
   title: string;
   description: string;
-  category: 'All' | 'Energy' | 'Lighting' | 'Security' | 'Climate' | 'Weather' | 'Media' | 'Cleaners';
+  category: (typeof CATEGORIES)[number];
   icon: React.ComponentType<any>;
   color: string;
   defaultSize: '1x' | '2x';

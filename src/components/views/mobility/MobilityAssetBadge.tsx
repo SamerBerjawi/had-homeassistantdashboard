@@ -83,6 +83,9 @@ export function MobilityAssetBadge({
       isAtHome,
       customVehicleImage
     } = carMetrics;
+    // Missing sensors: compare as 0 for badge colours, but display them as unknown
+    const socLevel = soc ?? 0;
+    const rangeLevel = range ?? 0;
 
     const resolvedCarImage = resolveAssetUrl(customVehicleImage, config?.updatedAt);
     const isCharging = chargingState.toLowerCase().includes('charge');
@@ -154,11 +157,11 @@ export function MobilityAssetBadge({
         {/* 3. Charge Level Badge */}
         <div
           className={`h-9 px-3 rounded-full border text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs ${
-            soc < 20
+            socLevel < 20
               ? darkMode
                 ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
                 : 'bg-rose-50 text-rose-800 border-rose-300'
-              : soc < 50
+              : socLevel < 50
               ? darkMode
                 ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                 : 'bg-amber-50 text-amber-800 border-amber-300'
@@ -169,22 +172,22 @@ export function MobilityAssetBadge({
         >
           {isCharging ? (
             <BatteryCharging size={16} weight="duotone" className="text-emerald-500 shrink-0 animate-pulse" />
-          ) : soc < 20 ? (
+          ) : socLevel < 20 ? (
             <BatteryWarning size={16} weight="duotone" className="text-rose-500 shrink-0" />
           ) : (
             <BatteryHigh size={16} weight="duotone" className="text-emerald-500 shrink-0" />
           )}
-          <span>{Math.round(soc)}% SoC</span>
+          <span>{soc != null ? `${Math.round(soc)}%` : '—'} SoC</span>
         </div>
 
         {/* 4. Range Badge (from sensor.fordpass_*_elveh) */}
         <div
           className={`h-9 px-3 rounded-full border text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs ${
-            range < 50
+            rangeLevel < 50
               ? darkMode
                 ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
                 : 'bg-rose-50 text-rose-800 border-rose-300'
-              : range < 120
+              : rangeLevel < 120
               ? darkMode
                 ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                 : 'bg-amber-50 text-amber-800 border-amber-300'
@@ -194,7 +197,7 @@ export function MobilityAssetBadge({
           }`}
         >
           <GasPump size={16} weight="duotone" className="text-cyan-500 shrink-0" />
-          <span>{range} {rangeUnit} Range</span>
+          <span>{range ?? '—'} {rangeUnit} Range</span>
         </div>
 
         {/* 5. Door Lock State Badge */}
@@ -240,7 +243,7 @@ export function MobilityAssetBadge({
           }`}
         >
           <GaugeIcon size={16} weight="duotone" className="text-sky-500 shrink-0" />
-          <span>{odometer.toLocaleString()} {odometerUnit}</span>
+          <span>{odometer != null ? odometer.toLocaleString() : '—'} {odometerUnit}</span>
         </div>
 
         {/* 9. Alarm Status Badge */}
@@ -262,7 +265,7 @@ export function MobilityAssetBadge({
         {/* 10. Cabin Temperature Badge */}
         <div
           className={`h-9 px-3 rounded-full border text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs ${
-            cabinTemp >= 18 && cabinTemp <= 24
+            cabinTemp != null && cabinTemp >= 18 && cabinTemp <= 24
               ? darkMode
                 ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
                 : 'bg-cyan-50 text-cyan-800 border-cyan-300'
@@ -272,7 +275,7 @@ export function MobilityAssetBadge({
           }`}
         >
           <Thermometer size={16} weight="duotone" className="text-cyan-500 shrink-0" />
-          <span>Cabin: {cabinTemp.toFixed(1)}{cabinTempUnit}</span>
+          <span>Cabin: {cabinTemp != null ? `${cabinTemp.toFixed(1)}${cabinTempUnit}` : '—'}</span>
         </div>
 
         {/* 11. Indicators Badge */}
@@ -308,7 +311,7 @@ export function MobilityAssetBadge({
           }`}
         >
           <Circuitry size={16} weight="duotone" className="text-emerald-500 shrink-0" />
-          <span>12V: {battery12V}{String(battery12V).includes(battery12VUnit) ? '' : battery12VUnit}</span>
+          <span>12V: {battery12V}{battery12VUnit && !String(battery12V).includes(battery12VUnit) ? battery12VUnit : ''}</span>
         </div>
       </div>
     );
@@ -328,6 +331,7 @@ export function MobilityAssetBadge({
       isAtHome,
       customBikeImage
     } = bikeMetrics;
+    const batteryLevel = batteryPercent ?? 0;
 
     const resolvedBikeImage = resolveAssetUrl(customBikeImage, config?.updatedAt);
 
@@ -369,11 +373,11 @@ export function MobilityAssetBadge({
         {/* 2. Battery */}
         <div
           className={`h-9 px-3 rounded-full border text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs ${
-            batteryPercent < 20
+            batteryLevel < 20
               ? darkMode
                 ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
                 : 'bg-rose-50 text-rose-800 border-rose-300'
-              : batteryPercent < 50
+              : batteryLevel < 50
               ? darkMode
                 ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                 : 'bg-amber-50 text-amber-800 border-amber-300'
@@ -383,7 +387,7 @@ export function MobilityAssetBadge({
           }`}
         >
           <BatteryCharging size={16} weight="duotone" className="text-emerald-500 shrink-0" />
-          <span>{Math.round(batteryPercent)}% Battery</span>
+          <span>{batteryPercent != null ? `${Math.round(batteryPercent)}%` : '—'} Battery</span>
         </div>
 
         {/* 3. Range */}
@@ -423,7 +427,7 @@ export function MobilityAssetBadge({
           }`}
         >
           <GaugeIcon size={16} weight="duotone" className="text-sky-500 shrink-0" />
-          <span>{mileageKm.toLocaleString()} km</span>
+          <span>{mileageKm != null ? mileageKm.toLocaleString() : '—'} km</span>
         </div>
 
         {/* 6. PCB Battery */}

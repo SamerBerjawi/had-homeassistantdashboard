@@ -19,6 +19,34 @@ export interface IngestStatsPayload {
   }>;
 }
 
+// Rows written per transaction. Inserts are synchronous, so large batches are split and the
+// event loop gets a turn between chunks instead of blocking for the whole upload.
+const INGEST_CHUNK_ROWS = 5000;
+
+const yieldToEventLoop = () => new Promise<void>((resolve) => setImmediate(resolve));
+
+function* chunkStatistics(
+  statistics: Record<string, HAStatisticEntry[]>,
+  maxRows: number
+): Generator<Record<string, HAStatisticEntry[]>> {
+  let chunk: Record<string, HAStatisticEntry[]> = {};
+  let rows = 0;
+  for (const [statisticId, entries] of Object.entries(statistics)) {
+    if (!Array.isArray(entries)) continue;
+    for (let i = 0; i < entries.length; i += maxRows) {
+      const slice = entries.slice(i, i + maxRows);
+      if (rows > 0 && rows + slice.length > maxRows) {
+        yield chunk;
+        chunk = {};
+        rows = 0;
+      }
+      chunk[statisticId] = [...(chunk[statisticId] || []), ...slice];
+      rows += slice.length;
+    }
+  }
+  if (rows > 0) yield chunk;
+}
+
 export class EnergySyncService {
   private static isIngesting = false;
 
@@ -39,7 +67,16 @@ export class EnergySyncService {
     const periodType = payload.periodType || 'hour';
 
     try {
-      const { totalInserted, entitiesUpdated } = upsertStatisticsBatch(payload.statistics, periodType);
+      let totalInserted = 0;
+      const updatedIds = new Set<string>();
+      let first = true;
+      for (const chunk of chunkStatistics(payload.statistics, INGEST_CHUNK_ROWS)) {
+        if (!first) await yieldToEventLoop();
+        first = false;
+        totalInserted += upsertStatisticsBatch(chunk, periodType).totalInserted;
+        for (const id of Object.keys(chunk)) updatedIds.add(id);
+      }
+      const entitiesUpdated = updatedIds.size;
 
       // Save metadata if provided
       if (payload.metadata && typeof payload.metadata === 'object') {

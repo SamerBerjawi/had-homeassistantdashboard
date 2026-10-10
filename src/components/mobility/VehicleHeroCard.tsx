@@ -67,7 +67,7 @@ export function VehicleHeroCard({
   const vehicleName = config.mobility?.car?.customName || 'Electric Vehicle';
 
   const isCharging = isCarCharging(metrics.chargingState);
-  const isDriving = metrics.isMoving || metrics.speed > 0;
+  const isDriving = metrics.isMoving || (metrics.speed ?? 0) > 0;
   const isPluggedIn = metrics.isPluggedIn;
   const isPortOpen = Boolean(metrics.chargePortOpen);
 
@@ -216,7 +216,7 @@ export function VehicleHeroCard({
               {isDriving
                 ? 'Driving'
                 : isCharging
-                ? metrics.chargingPowerKW > 0
+                ? (metrics.chargingPowerKW ?? 0) > 0
                   ? `Charging • ${metrics.chargingPowerKW} kW`
                   : 'Charging'
                 : 'Parked'}

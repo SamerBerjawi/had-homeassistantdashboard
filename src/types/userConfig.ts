@@ -113,15 +113,17 @@ export interface UserDashboardConfig {
     areaSortOrder?: string[];
     tileLayout?: TileLayoutMode;
     fullWidthTiles?: boolean;
+    // null clears an override (HA registries use null for "not set", and the config merge
+    // deletes keys set to null)
     areaOverrides: Record<string, {
-      customName?: string;
-      name?: string;
-      customIcon?: string;
-      icon?: string;
-      customColor?: string;
-      color?: string;
-      backgroundImageUrl?: string;
-      picture?: string;
+      customName?: string | null;
+      name?: string | null;
+      customIcon?: string | null;
+      icon?: string | null;
+      customColor?: string | null;
+      color?: string | null;
+      backgroundImageUrl?: string | null;
+      picture?: string | null;
       order?: number;
     }>;
   };
@@ -171,18 +173,18 @@ export interface UserDashboardConfig {
     avatar?: string;
   };
   areas?: Record<string, {
-    icon?: string;
-    customIcon?: string;
-    color?: string;
-    customColor?: string;
-    name?: string;
-    customName?: string;
+    icon?: string | null;
+    customIcon?: string | null;
+    color?: string | null;
+    customColor?: string | null;
+    name?: string | null;
+    customName?: string | null;
     picture?: string;
     backgroundImageUrl?: string;
     order?: number;
   }>;
-  floors?: Record<string, { icon?: string; color?: string; name?: string; order?: number; level?: number }>;
-  labels?: Record<string, { icon?: string; color?: string; name?: string; description?: string }>;
+  floors?: Record<string, { icon?: string | null; color?: string | null; name?: string | null; order?: number; level?: number }>;
+  labels?: Record<string, { icon?: string | null; color?: string | null; name?: string | null; description?: string | null }>;
   canvas?: {
     profiles?: Record<string, any>;
     activeProfileId?: string;

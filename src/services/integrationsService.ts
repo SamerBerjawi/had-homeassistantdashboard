@@ -1187,7 +1187,7 @@ class IntegrationsService {
       const domain = extractHacsDomain(dev);
       if (isHelper(domain)) return;
 
-      const friendlyName = formatIntegrationName(domain, dev.name || dev.name_by_user);
+      const friendlyName = formatIntegrationName(domain, dev.name || dev.name_by_user || undefined);
 
       // Find matching update entity
       const updateEntity = 

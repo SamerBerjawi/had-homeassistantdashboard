@@ -134,7 +134,7 @@ export function detectFanCapabilities(
     (e.entity_id.includes(fan.entity_id.replace('fan.', '')) || (fan.area?.area_id && e.area?.area_id === fan.area?.area_id && e.attributes?.device_class === 'temperature'))
   );
 
-  const currentTemperature = tempAttr ?? (typeof pairedTempEntity?.attributes?.temperature === 'number' ? pairedTempEntity.attributes.temperature : (typeof pairedTempEntity?.state === 'number' || !isNaN(Number(pairedTempEntity?.state))) ? Number(pairedTempEntity.state) : (brandKind === 'duux' ? 22 : undefined));
+  const currentTemperature = tempAttr ?? (typeof pairedTempEntity?.attributes?.temperature === 'number' ? pairedTempEntity.attributes.temperature : pairedTempEntity && (typeof pairedTempEntity.state === 'number' || !isNaN(Number(pairedTempEntity.state))) ? Number(pairedTempEntity.state) : (brandKind === 'duux' ? 22 : undefined));
   const targetTemperature = targetTempAttr ?? (brandKind === 'duux' ? 21 : undefined);
   const supportsTemperature = currentTemperature !== undefined || targetTemperature !== undefined;
   const temperatureUnit = attrs.temperature_unit || '°C';

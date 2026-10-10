@@ -130,7 +130,7 @@ function AreaTileComponent({
       <div
         {...tileLongPressHandlers}
         style={{
-          touchAction: 'pan-y',
+          // touchAction: 'pan-y' comes from the long-press handlers
           ...tileLongPressHandlers.style
         }}
         className={`group relative flex flex-col items-center justify-center text-center rounded-3xl p-3 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 cursor-pointer overflow-hidden isolate shadow-sm min-h-[84px] ${
@@ -197,7 +197,7 @@ function AreaTileComponent({
     <div
       {...tileLongPressHandlers}
       style={{
-        touchAction: 'pan-y',
+        // touchAction: 'pan-y' comes from the long-press handlers
         ...tileLongPressHandlers.style
       }}
       className={`group relative flex flex-col justify-between rounded-3xl p-4 sm:p-5 backdrop-blur-xl border border-slate-200/50 dark:border-white/5 transition-all duration-300 cursor-pointer overflow-hidden isolate shadow-[4px_6px_12px_rgba(0,0,0,0.15)] ${

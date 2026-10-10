@@ -23,7 +23,7 @@ import ViewEmptyState from '../ui/ViewEmptyState';
 import ViewLoadingState from '../ui/ViewLoadingState';
 import VirtualGrid from '../layout/VirtualGrid';
 import SortableGrid from '../layout/SortableGrid';
-import GridTile from '../layout/GridTile';
+import GridTile, { GridColSpan } from '../layout/GridTile';
 import { sortTilesForBento, getComputedTileSpans, sortItemsForHybrid, TileLayoutMode } from '../../utils/bentoLayout';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { useEditMode } from '../../contexts/EditModeContext';

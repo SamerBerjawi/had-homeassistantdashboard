@@ -5,6 +5,7 @@
 
 import React, { useMemo } from 'react';
 import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout';
+import type { Layout } from 'react-grid-layout';
 import { useCanvasStore } from '../../store/useCanvasStore';
 import { HAEntity } from '../../types';
 
@@ -117,7 +118,7 @@ export default function TunetCanvasView({
   }, [currentProfile.layout]);
 
   // Handle grid drag / resize complete
-  const handleLayoutChange = (newLayout: any[]) => {
+  const handleLayoutChange = (newLayout: Layout) => {
     if (!isEditMode) return;
     updateLayout(newLayout.map(item => ({
       i: item.i,
