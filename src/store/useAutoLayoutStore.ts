@@ -41,6 +41,7 @@ import {
   StoredAuthConfig
 } from '../services/authStorage';
 import { MOCK_AREAS, MOCK_DEVICES, MOCK_ENTITY_REGISTRY, MOCK_FLOORS, MOCK_LABELS, MOCK_STATES } from '../data/mockRegistries';
+import { useAlertStore } from './useAlertStore';
 
 export interface AutoLayoutStoreState {
   // Connection & Config
@@ -234,6 +235,64 @@ const scheduleRecompute = (get: any) => {
   }
 };
 
+// Last state reported by Home Assistant for each entity. Optimistic writes from updateEntityState
+// never touch this, so a failed service call can restore what HA actually said.
+const confirmedStates = new Map<string, HAState>();
+
+const rememberConfirmedStates = (statesList: Iterable<HAState>) => {
+  for (const s of statesList) {
+    if (s?.entity_id) confirmedStates.set(s.entity_id, s);
+  }
+};
+
+// In live mode these entities only ever show state reported by Home Assistant. Guessing
+// "unlocked" or "disarmed" when the call may have failed (wrong code, jammed bolt) is unsafe.
+const isSecurityCriticalEntity = (entityId: string) =>
+  entityId.startsWith('lock.') || entityId.startsWith('alarm_control_panel.');
+
+const collectServiceEntityIds = (serviceData: Record<string, any>, target: any): string[] => {
+  const ids = new Set<string>();
+  for (const raw of [target?.entity_id, serviceData?.entity_id]) {
+    if (!raw) continue;
+    for (const id of Array.isArray(raw) ? raw : [raw]) {
+      if (typeof id === 'string') ids.add(id);
+    }
+  }
+  return [...ids];
+};
+
+// HA rejects with plain { code, message } objects; normalize so callers can rely on err.message.
+const toServiceError = (err: any): Error => {
+  if (err instanceof Error) return err;
+  const error = new Error(err?.message || String(err || 'Service call failed'));
+  if (err?.code) (error as any).code = err.code;
+  return error;
+};
+
+const restoreConfirmedStates = (set: any, get: any, entityIds: string[]) => {
+  const restored: Record<string, HAState> = {};
+  for (const id of entityIds) {
+    const confirmed = confirmedStates.get(id);
+    if (confirmed) restored[id] = confirmed;
+  }
+  if (Object.keys(restored).length === 0) return;
+  set((prev: AutoLayoutStoreState) => ({
+    states: { ...prev.states, ...restored },
+    rawStates: { ...prev.rawStates, ...restored }
+  }));
+  scheduleRecompute(get);
+};
+
+const reportServiceFailure = (domain: string, service: string, err: Error) => {
+  useAlertStore.getState().addToast({
+    id: `ha_service_error_${domain}_${service}`,
+    title: 'Home Assistant action failed',
+    message: `${domain}.${service}: ${err.message}`,
+    severity: 'warning',
+    category: 'system'
+  });
+};
+
 function clearAllStoredHACredentials() {
   clearStoredAuthConfig();
 }
@@ -355,6 +414,8 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         return null;
       },
       onRegistriesLoaded: (payload) => {
+        confirmedStates.clear();
+        rememberConfirmedStates(Object.values(payload.states || {}));
         const detectedVersion = payload.haVersion || payload.states?.['update.home_assistant_core_update']?.attributes?.installed_version || payload.states?.['update.home_assistant_core']?.attributes?.installed_version || get().haCoreVersion;
         set({
           haCoreVersion: detectedVersion || get().haCoreVersion || null,
@@ -391,6 +452,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         });
       },
       onStatesBatchUpdated: (statesList) => {
+        rememberConfirmedStates(statesList);
         const map: Record<string, HAState> = {};
         for (const s of statesList) {
           if (s?.entity_id) map[s.entity_id] = s;
@@ -402,6 +464,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         scheduleRecompute(get);
       },
       onStateChanged: (entityId, newState) => {
+        confirmedStates.set(entityId, newState);
         set(prev => ({
           states: {
             ...prev.states,
@@ -579,6 +642,8 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   },
 
   updateEntityState: (entityId: string, newState?: string | null, newAttributes?: Record<string, any>) => {
+    if (isSecurityCriticalEntity(entityId) && !haWebSocketService.isDemo()) return;
+
     set(prev => {
       const existing = prev.states[entityId] || {
         entity_id: entityId,
@@ -616,17 +681,16 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
 
 
   callHAService: async (domain: string, service: string, serviceData: Record<string, any> = {}, target: any = {}) => {
-    try {
-      await haWebSocketService.callService(domain, service, serviceData, target);
-    } catch (err: any) {
-      console.warn(`[HA WebSocket] Service call failed: ${domain}.${service}`, err);
-    }
+    const isDemo = haWebSocketService.isDemo();
 
-    // Comprehensive optimistic local state update
+    // Optimistic local update, applied before the call: by the time HA answers, its real
+    // state_changed event has usually arrived and must not be overwritten. Relative services
+    // (toggle, play/pause, volume steps) are computed from the last HA-confirmed state so a
+    // caller's own optimistic write isn't applied twice.
     if (target?.entity_id) {
       const entityIds = Array.isArray(target.entity_id) ? target.entity_id : [target.entity_id];
       for (const eid of entityIds) {
-        const current = get().states[eid];
+        const current = (!isDemo && confirmedStates.get(eid)) || get().states[eid];
         const currentState = current?.state;
         const currentAttrs = current?.attributes || {};
 
@@ -657,7 +721,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         } else if (service === 'media_play' || service === 'media_play_pause') {
           const isCurrentlyPlaying = currentState === 'playing';
           const nextState = service === 'media_play_pause' && isCurrentlyPlaying ? 'paused' : 'playing';
-          const isFreshPlay = nextState === 'playing' && (currentState === 'idle' || currentState === 'off' || currentState === 'standby' || !currentAttrs.media_title);
+          const isFreshPlay = isDemo && nextState === 'playing' && (currentState === 'idle' || currentState === 'off' || currentState === 'standby' || !currentAttrs.media_title);
           
           get().updateEntityState(eid, nextState, {
             ...currentAttrs,
@@ -731,7 +795,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           });
         } else if (domain === 'fan' && service === 'set_target_temperature') {
           get().updateEntityState(eid, currentState || 'on', { target_temperature: serviceData.temperature || serviceData.target_temperature });
-        } else if (domain === 'update') {
+        } else if (domain === 'update' && isDemo) {
           if (service === 'install') {
             get().updateEntityState(eid, 'off', { in_progress: false, installed_version: currentAttrs.latest_version || currentAttrs.installed_version });
           } else if (service === 'skip') {
@@ -759,6 +823,16 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           get().updateEntityState(eid, String(serviceData.option));
         }
       }
+    }
+
+    try {
+      await haWebSocketService.callService(domain, service, serviceData, target);
+    } catch (rawErr) {
+      const err = toServiceError(rawErr);
+      console.warn(`[HA WebSocket] Service call failed: ${domain}.${service}`, err);
+      restoreConfirmedStates(set, get, collectServiceEntityIds(serviceData, target));
+      reportServiceFailure(domain, service, err);
+      throw err;
     }
   },
 
@@ -1174,11 +1248,18 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
     // Send the live service call to Home Assistant (both service_data and target for wide HA version support)
     try {
       await haWebSocketService.callService('update', 'install', { backup: false, entity_id: entityId }, { entity_id: entityId });
-    } catch (e) {
-      console.warn('[HA Update] Service call caught:', e);
+    } catch (rawErr) {
+      const err = toServiceError(rawErr);
+      console.warn('[HA Update] Install failed:', err);
+      restoreConfirmedStates(set, get, [entityId]);
+      reportServiceFailure('update', 'install', err);
+      return;
     }
 
-    // Step 2: Animated progress sequence for rich feedback
+    // In live mode, progress and completion come from Home Assistant's own update entity events
+    if (!haWebSocketService.isDemo()) return;
+
+    // Step 2 (demo): Animated progress sequence for rich feedback
     setTimeout(() => {
       const st = get().states[entityId];
       if (st?.attributes?.in_progress || st?.state === 'installing') {
@@ -1224,12 +1305,18 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
     const current = get().states[entityId];
     const latest = current?.attributes?.latest_version || 'skipped';
     get().updateEntityState(entityId, 'off', { skipped_version: latest, in_progress: false });
-    await haWebSocketService.callService('update', 'skip', { entity_id: entityId }, { entity_id: entityId }).catch(() => {});
+    await haWebSocketService.callService('update', 'skip', { entity_id: entityId }, { entity_id: entityId }).catch((rawErr) => {
+      restoreConfirmedStates(set, get, [entityId]);
+      reportServiceFailure('update', 'skip', toServiceError(rawErr));
+    });
   },
 
   clearSkippedUpdate: async (entityId: string) => {
     get().updateEntityState(entityId, 'on', { skipped_version: null, in_progress: false });
-    await haWebSocketService.callService('update', 'clear_skipped', { entity_id: entityId }, { entity_id: entityId }).catch(() => {});
+    await haWebSocketService.callService('update', 'clear_skipped', { entity_id: entityId }, { entity_id: entityId }).catch((rawErr) => {
+      restoreConfirmedStates(set, get, [entityId]);
+      reportServiceFailure('update', 'clear_skipped', toServiceError(rawErr));
+    });
   },
 
   setSelectedFloorId: (floorId: string | 'all') => set({ selectedFloorId: floorId }),

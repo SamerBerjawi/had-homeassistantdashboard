@@ -20,7 +20,20 @@ if (typeof window !== 'undefined') {
     });
   }
 
-  window.addEventListener('vite:preloadError', () => {
+  // Reload once to pick up a new deployment's chunks. If that didn't fix it, let the error reach
+  // the error boundary instead of reloading forever.
+  const PRELOAD_RELOAD_KEY = 'had_preload_error_reload_at';
+  window.addEventListener('vite:preloadError', (event) => {
+    let lastReloadAt = 0;
+    try {
+      lastReloadAt = Number(sessionStorage.getItem(PRELOAD_RELOAD_KEY) || 0);
+      if (Date.now() - lastReloadAt < 30_000) return;
+      sessionStorage.setItem(PRELOAD_RELOAD_KEY, String(Date.now()));
+    } catch {
+      // Without storage we can't tell a first failure from a loop, so don't auto-reload
+      return;
+    }
+    event.preventDefault();
     window.location.reload();
   });
 }

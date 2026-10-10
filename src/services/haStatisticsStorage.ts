@@ -8,6 +8,8 @@
  * to the local NAS SQLite embedded database for sub-10ms queries and disaster recovery.
  */
 
+import { getAuthHeadersAsync } from './configStorageService';
+
 export interface HAStatisticRecord {
   start: number | string;
   end?: number | string;
@@ -65,7 +67,7 @@ export async function queryStoredStatistics(
       period_type: periodType
     });
 
-    const res = await fetch(`/api/statistics/history?${params.toString()}`);
+    const res = await fetch(`/api/statistics/history?${params.toString()}`, { headers: await getAuthHeadersAsync() });
     if (!res.ok) return null;
 
     const json: StoredStatisticsResponse = await res.json();
@@ -94,7 +96,7 @@ export async function syncStoredStatistics(
   try {
     await fetch('/api/statistics/sync', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getAuthHeadersAsync(),
       body: JSON.stringify({
         statistics,
         periodType,
@@ -112,7 +114,7 @@ export async function syncStoredStatistics(
 export async function fetchStoredStatisticsStatus(): Promise<any> {
   if (typeof window === 'undefined') return null;
   try {
-    const res = await fetch('/api/statistics/status');
+    const res = await fetch('/api/statistics/status', { headers: await getAuthHeadersAsync() });
     if (!res.ok) return null;
     const json = await res.json();
     return json.status || null;
@@ -127,7 +129,7 @@ export async function fetchStoredStatisticsStatus(): Promise<any> {
 export async function fetchStoredStatisticsEntities(): Promise<StoredEntitySummary[]> {
   if (typeof window === 'undefined') return [];
   try {
-    const res = await fetch('/api/statistics/entities');
+    const res = await fetch('/api/statistics/entities', { headers: await getAuthHeadersAsync() });
     if (!res.ok) return [];
     const json = await res.json();
     return json.entities || [];

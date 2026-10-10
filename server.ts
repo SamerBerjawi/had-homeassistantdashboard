@@ -446,15 +446,52 @@ async function startServer() {
   const tokenValidationCache = new Map<string, { valid: boolean; expiresAt: number }>();
   let lastAuthErrorLog = 0;
 
-  function resolveTargetHaBase(clientHaUrl?: string): string {
-    let haBase = (
-      process.env.HASS_URL ||
-      process.env.HA_URL ||
-      process.env.HOME_ASSISTANT_URL ||
-      process.env.HOMEASSISTANT_URL ||
-      clientHaUrl ||
-      'http://homeassistant.local:8123'
-    ).trim();
+  // The Home Assistant instance that validates dashboard tokens must not be chosen by the client:
+  // anyone could point X-HA-URL at a server that accepts any token. It comes from the env var or,
+  // failing that, is pinned on the first successful sign-in (trust on first use) and persisted.
+  const envHaUrl = (
+    process.env.HASS_URL ||
+    process.env.HA_URL ||
+    process.env.HOME_ASSISTANT_URL ||
+    process.env.HOMEASSISTANT_URL ||
+    ''
+  ).trim();
+  const pinnedHaInstancePath = path.join(configDir, 'ha-instance.json');
+  let pinnedHaBase: string | null = null;
+  if (!envHaUrl) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(pinnedHaInstancePath, 'utf-8'));
+      if (typeof raw?.haUrl === 'string' && raw.haUrl) {
+        pinnedHaBase = raw.haUrl;
+        console.log(`[Auth] Validating tokens against pinned Home Assistant instance ${pinnedHaBase}`);
+      }
+    } catch {
+      // Not pinned yet
+    }
+  }
+
+  function getTrustedHaBase(): string | null {
+    return envHaUrl ? resolveTargetHaBase(envHaUrl) : pinnedHaBase;
+  }
+
+  async function pinHaBase(haBase: string) {
+    if (envHaUrl || pinnedHaBase) return;
+    pinnedHaBase = haBase;
+    console.log(
+      `[Auth] Pinned Home Assistant instance ${haBase} for token validation. ` +
+      `To change it, set HASS_URL or delete ${pinnedHaInstancePath} and restart.`
+    );
+    try {
+      const tempFile = `${pinnedHaInstancePath}.tmp.${process.pid}`;
+      await fs.promises.writeFile(tempFile, JSON.stringify({ haUrl: haBase, pinnedAt: new Date().toISOString() }, null, 2), 'utf-8');
+      await fs.promises.rename(tempFile, pinnedHaInstancePath);
+    } catch (err: any) {
+      console.warn(`[Auth] Could not persist pinned Home Assistant instance (kept in memory only): ${err?.message || err}`);
+    }
+  }
+
+  function resolveTargetHaBase(haUrl?: string): string {
+    let haBase = (haUrl || 'http://homeassistant.local:8123').trim();
 
     // Convert ws:// to http:// and wss:// to https://
     if (haBase.startsWith('ws://')) {
@@ -479,12 +516,15 @@ async function startServer() {
       return true;
     }
 
-    const cached = tokenValidationCache.get(token);
+    // Before an instance is pinned, the client's URL is only used to bootstrap the first sign-in
+    const trustedBase = getTrustedHaBase();
+    const haBase = trustedBase || resolveTargetHaBase(clientHaUrl);
+
+    const cacheKey = `${haBase}|${token}`;
+    const cached = tokenValidationCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       return cached.valid;
     }
-
-    const haBase = resolveTargetHaBase(clientHaUrl);
     const targetUrl = `${haBase}/api/`;
     const authHeader = forwardedAuthHeader || `Bearer ${token}`;
 
@@ -503,13 +543,15 @@ async function startServer() {
       // Home Assistant returns 200 OK on GET /api/ when token is valid
       const isValid = haRes.status === 200;
 
-      tokenValidationCache.set(token, {
+      tokenValidationCache.set(cacheKey, {
         valid: isValid,
         expiresAt: Date.now() + (isValid ? 10 * 60 * 1000 : 30 * 1000)
       });
 
       if (!isValid) {
         console.warn(`[Auth Middleware] Token validation rejected by Home Assistant (HTTP ${haRes.status}) at ${targetUrl}`);
+      } else if (!trustedBase) {
+        await pinHaBase(haBase);
       }
 
       return isValid;
@@ -531,7 +573,7 @@ async function startServer() {
             signal: AbortSignal.timeout(5000)
           });
           const isValid = retryRes.status === 200;
-          tokenValidationCache.set(token, {
+          tokenValidationCache.set(cacheKey, {
             valid: isValid,
             expiresAt: Date.now() + (isValid ? 10 * 60 * 1000 : 30 * 1000)
           });
@@ -543,7 +585,7 @@ async function startServer() {
 
       // If token was previously verified and valid, grant a temporary grace period during network interruptions
       if (cached && cached.valid) {
-        tokenValidationCache.set(token, {
+        tokenValidationCache.set(cacheKey, {
           valid: true,
           expiresAt: now + 60 * 1000 // 1 minute grace period
         });
@@ -555,7 +597,7 @@ async function startServer() {
       }
 
       // Cache the unreachable state briefly (10s) to prevent hammering the upstream endpoint
-      tokenValidationCache.set(token, {
+      tokenValidationCache.set(cacheKey, {
         valid: false,
         expiresAt: now + 10 * 1000
       });
@@ -584,8 +626,20 @@ async function startServer() {
   }
 
   function isPrivateOrLocalHost(hostname: string): boolean {
-    const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
-    if (host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '0.0.0.0') {
+    let host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    // IPv4-mapped IPv6 must be judged by its IPv4 part. The URL parser normalizes
+    // [::ffff:10.0.0.1] to the hex form [::ffff:a00:1], so handle both.
+    if (host.startsWith('::ffff:') && host.includes('.')) {
+      host = host.slice(7);
+    } else {
+      const mappedHex = host.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+      if (mappedHex) {
+        const hi = parseInt(mappedHex[1], 16);
+        const lo = parseInt(mappedHex[2], 16);
+        host = `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
+      }
+    }
+    if (host === 'localhost' || host.endsWith('.localhost') || host === '::1' || host === '::' || host === '0.0.0.0') {
       return true;
     }
     if (host === '169.254.169.254' || host.startsWith('169.254.')) {
@@ -600,8 +654,10 @@ async function startServer() {
       if (octet1 === 192 && octet2 === 168) return true;
       if (octet1 === 127) return true;
       if (octet1 === 0) return true;
+      if (octet1 === 100 && octet2 >= 64 && octet2 <= 127) return true; // CGNAT / Tailscale
     }
-    if (host.startsWith('fe80:') || host.startsWith('fc00:') || host.startsWith('fd00:')) {
+    // Link-local fe80::/10 and unique-local fc00::/7
+    if (/^fe[89ab][0-9a-f]:/.test(host) || /^f[cd][0-9a-f]{2}:/.test(host)) {
       return true;
     }
     return false;
@@ -1002,7 +1058,7 @@ async function startServer() {
   // -------------------------------------------------------------
 
   // 1. Storage Status & Diagnostics Endpoint
-  app.get(['/api/statistics/status', '/api/energy/status'], (req, res) => {
+  app.get(['/api/statistics/status', '/api/energy/status'], requireHAAuth, (req, res) => {
     applyCorsHeaders(req, res, 'GET, HEAD, OPTIONS');
     try {
       const status = getEnergyDbStatus();
@@ -1013,7 +1069,7 @@ async function startServer() {
   });
 
   // 2. Stored Entities List & Counts Endpoint
-  app.get(['/api/statistics/entities', '/api/energy/entities'], (req, res) => {
+  app.get(['/api/statistics/entities', '/api/energy/entities'], requireHAAuth, (req, res) => {
     applyCorsHeaders(req, res, 'GET, HEAD, OPTIONS');
     try {
       const entities = getStoredEntities();
@@ -1024,7 +1080,7 @@ async function startServer() {
   });
 
   // 3. Fast Historical Query Endpoint (Sub-10ms from NAS SQLite for ANY entities)
-  app.get(['/api/statistics/history', '/api/energy/history'], (req, res) => {
+  app.get(['/api/statistics/history', '/api/energy/history'], requireHAAuth, (req, res) => {
     applyCorsHeaders(req, res, 'GET, HEAD, OPTIONS');
     try {
       const statisticIdsParam = (req.query.statistic_ids as string) || '';
@@ -1060,7 +1116,7 @@ async function startServer() {
   });
 
   // 4. Statistics Batch Ingestion Endpoint (Client-Assisted & Background Sync)
-  app.post(['/api/statistics/sync', '/api/energy/sync'], async (req, res) => {
+  app.post(['/api/statistics/sync', '/api/energy/sync'], requireHAAuth, async (req, res) => {
     applyCorsHeaders(req, res, 'POST, OPTIONS');
     try {
       const payload = req.body;
@@ -1076,106 +1132,133 @@ async function startServer() {
   });
 
   // Universal Image Proxy to bypass CORS / Private Network restrictions for artwork color extraction
+  const MAX_PROXY_IMAGE_BYTES = 10 * 1024 * 1024;
+  const MAX_PROXY_REDIRECTS = 3;
+
+  // Resolves DNS itself and refuses private addresses, so a public hostname that resolves (or
+  // re-resolves via DNS rebinding) to a LAN or cloud-metadata IP can't be reached through the proxy.
+  const publicOnlyDispatcher = new UndiciAgent({
+    connect: {
+      lookup: (hostname, opts, cb) => {
+        dns.lookup(hostname, opts as dns.LookupOptions, (err, address: any, family) => {
+          if (err) return cb(err, address, family);
+          const addresses: string[] = Array.isArray(address) ? address.map((a: dns.LookupAddress) => a.address) : [address];
+          if (addresses.some((a) => isPrivateOrLocalHost(a))) {
+            const blocked = Object.assign(new Error(`Refusing to proxy ${hostname}: resolves to a private address`), { code: 'EPRIVATEADDR' });
+            return cb(blocked, address, family);
+          }
+          cb(null, address, family);
+        });
+      }
+    }
+  });
+
   app.options('/api/image-proxy', (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, x-ha-url');
+    applyCorsHeaders(req, res, 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
     res.sendStatus(204);
   });
 
-  app.get('/api/image-proxy', async (req, res) => {
+  app.get('/api/image-proxy', requireHAAuth, async (req, res) => {
+    applyCorsHeaders(req, res, 'GET, OPTIONS');
+
     const rawUrl = (req.query.url as string) || '';
     if (!rawUrl) {
       return res.status(400).json({ error: 'Missing url parameter' });
     }
 
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    const token: string = (req as any).haToken;
+    const haBase = getTrustedHaBase() || resolveTargetHaBase((req as any).clientHaUrl);
 
-    let token = '';
-    const rawAuthHeader = req.headers.authorization;
-    if (rawAuthHeader && rawAuthHeader.startsWith('Bearer ')) {
-      token = rawAuthHeader.slice(7).trim();
-    } else if (req.query.token && typeof req.query.token === 'string') {
-      token = req.query.token.trim();
-    }
-
-    // Determine configured/client Home Assistant URL
-    const clientHaUrl = (req as any).clientHaUrl || (req.headers['x-ha-url'] as string) || (req.query.haUrl as string) || process.env.DASHBOARD_HA_URL || process.env.HA_URL || '';
-
-    let fullUrl = rawUrl;
-    if (fullUrl.startsWith('/')) {
-      if (clientHaUrl) {
-        fullUrl = `${clientHaUrl.replace(/\/+$/, '')}${fullUrl}`;
-      } else {
-        const fallbackHa = resolveTargetHaBase();
-        fullUrl = `${fallbackHa.replace(/\/+$/, '')}${fullUrl}`;
-      }
-    }
-
-    let parsedUrl: URL;
+    let currentUrl: URL;
     try {
-      parsedUrl = new URL(fullUrl);
+      // Relative paths (/api/media_player_proxy/..., /local/...) resolve against Home Assistant
+      currentUrl = new URL(rawUrl, `${haBase}/`);
     } catch {
       return res.status(400).json({ error: 'Invalid URL provided' });
     }
 
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-      return res.status(400).json({ error: 'Only http and https protocols are supported' });
-    }
-
-    const isTargetHa = clientHaUrl ? isSameOriginHost(fullUrl, clientHaUrl) : false;
-
-    // SSRF Guard: block private/internal/cloud-metadata IPs unless it is explicitly the target Home Assistant instance
-    if (!isTargetHa && isPrivateOrLocalHost(parsedUrl.hostname)) {
-      return res.status(403).json({ error: 'Access to private, local, or cloud metadata network addresses is prohibited' });
-    }
-
-    // If target is Home Assistant, verify authentication
-    if (isTargetHa) {
-      if (!token) {
-        return res.status(401).json({ error: 'Unauthorized: Missing Home Assistant authentication token' });
-      }
-      const authHeader = rawAuthHeader && rawAuthHeader.startsWith('Bearer ') ? rawAuthHeader : `Bearer ${token}`;
-      const isValid = await verifyHAToken(token, clientHaUrl, authHeader);
-      if (!isValid) {
-        return res.status(401).json({ error: 'Unauthorized: Invalid Home Assistant authentication token' });
-      }
-    }
-
     try {
-      const headers: Record<string, string> = {
-        'User-Agent': 'HomeAssistantDashboard/1.0',
-        Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-      };
+      let response: Awaited<ReturnType<typeof undiciFetch>>;
+      let isTargetHa = false;
 
-      // ONLY forward Home Assistant Authorization header to the Home Assistant instance itself
-      if (isTargetHa && token) {
-        headers['Authorization'] = `Bearer ${token}`;
+      // Follow redirects manually so every hop gets the same protocol and private-network checks
+      for (let hop = 0; ; hop++) {
+        if (currentUrl.protocol !== 'http:' && currentUrl.protocol !== 'https:') {
+          return res.status(400).json({ error: 'Only http and https protocols are supported' });
+        }
+
+        isTargetHa = isSameOriginHost(currentUrl.toString(), haBase);
+        if (!isTargetHa && isPrivateOrLocalHost(currentUrl.hostname)) {
+          return res.status(403).json({ error: 'Access to private, local, or cloud metadata network addresses is prohibited' });
+        }
+
+        const headers: Record<string, string> = {
+          'User-Agent': 'HomeAssistantDashboard/1.0',
+          Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+        };
+        // ONLY forward the Home Assistant token to the Home Assistant instance itself
+        if (isTargetHa) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        response = await undiciFetch(currentUrl.toString(), {
+          headers,
+          redirect: 'manual',
+          dispatcher: isTargetHa ? haDispatcher : publicOnlyDispatcher,
+          signal: AbortSignal.timeout(6000),
+        });
+
+        const location = response.headers.get('location');
+        if (response.status >= 300 && response.status < 400 && location) {
+          await response.body?.cancel().catch(() => {});
+          if (hop >= MAX_PROXY_REDIRECTS) {
+            return res.status(502).json({ error: 'Too many redirects' });
+          }
+          currentUrl = new URL(location, currentUrl);
+          continue;
+        }
+        break;
       }
-
-      const response = await fetch(parsedUrl.toString(), {
-        headers,
-        signal: AbortSignal.timeout(6000),
-      });
 
       if (!response.ok) {
+        await response.body?.cancel().catch(() => {});
         return res.status(response.status).json({ error: `Remote image fetch failed with status ${response.status}` });
       }
 
       const contentType = response.headers.get('content-type') || '';
       if (!contentType.startsWith('image/')) {
+        await response.body?.cancel().catch(() => {});
         return res.status(400).json({ error: 'Remote URL did not return an image content-type' });
       }
 
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
+      const declaredLength = Number(response.headers.get('content-length') || 0);
+      if (declaredLength > MAX_PROXY_IMAGE_BYTES) {
+        await response.body?.cancel().catch(() => {});
+        return res.status(413).json({ error: 'Remote image is too large' });
+      }
+
+      const chunks: Buffer[] = [];
+      let totalBytes = 0;
+      if (response.body) {
+        for await (const chunk of response.body) {
+          totalBytes += chunk.length;
+          if (totalBytes > MAX_PROXY_IMAGE_BYTES) {
+            return res.status(413).json({ error: 'Remote image is too large' });
+          }
+          chunks.push(Buffer.from(chunk));
+        }
+      }
 
       res.setHeader('Content-Type', contentType);
       res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
-      return res.send(buffer);
+      // Only reachable with a valid token, so keep it out of shared caches
+      res.setHeader('Cache-Control', 'private, max-age=86400, stale-while-revalidate=604800');
+      return res.send(Buffer.concat(chunks, totalBytes));
     } catch (err: any) {
+      if (err?.cause?.code === 'EPRIVATEADDR' || err?.code === 'EPRIVATEADDR') {
+        return res.status(403).json({ error: 'Access to private, local, or cloud metadata network addresses is prohibited' });
+      }
       return res.status(502).json({ error: 'Failed to proxy image: ' + (err?.message || 'Network error') });
     }
   });
@@ -1481,6 +1564,11 @@ async function startServer() {
       }
     }));
     app.get('*', (req, res) => {
+      // A missing file (e.g. a chunk from a previous deployment) must 404, not get index.html
+      // with a 200: the browser would fail on the HTML as a script and the client would reload in a loop.
+      if (req.path.startsWith('/assets/') || /\.[a-z0-9]+$/i.test(req.path)) {
+        return res.status(404).end();
+      }
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
       res.setHeader('Pragma', 'no-cache');
       res.sendFile(path.join(distPath, 'index.html'));
