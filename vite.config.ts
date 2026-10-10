@@ -34,7 +34,8 @@ export default defineConfig(() => {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
           // iOS fetches startup images itself when the app is added to the home screen;
           // precaching every device's splash would make each install download all of them
-          globIgnores: ['**/splash/**'],
+          // Lazily loaded per-icon chunks (~1,500) are cached on first use instead (see below)
+          globIgnores: ['**/splash/**', '**/assets/icons/**'],
           clientsClaim: true,
           cleanupOutdatedCaches: true,
           // Explicitly exclude API, WebSocket, auth, and media assets from Workbox navigation & runtime caching
@@ -80,6 +81,21 @@ export default defineConfig(() => {
                 url.pathname.startsWith('/auth') ||
                 url.pathname.startsWith('/websocket'),
               handler: 'NetworkOnly',
+            },
+            {
+              // Per-icon Phosphor chunks: content-hashed, so cache forever once fetched
+              urlPattern: ({ url }) => url.pathname.startsWith('/assets/icons/'),
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'had-icon-chunks',
+                expiration: {
+                  maxEntries: 500,
+                  maxAgeSeconds: 60 * 60 * 24 * 365,
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
             },
             {
               // 4. External web font stylesheets
@@ -138,6 +154,12 @@ export default defineConfig(() => {
     build: {
       rollupOptions: {
         output: {
+          // Keep the lazily loaded per-icon chunks in their own folder so the service worker can
+          // skip precaching them
+          chunkFileNames: (chunk) =>
+            chunk.facadeModuleId?.includes('/@phosphor-icons/react/dist/csr/')
+              ? 'assets/icons/[name]-[hash].js'
+              : 'assets/[name]-[hash].js',
           manualChunks: {
             'vendor-react': ['react', 'react-dom'],
             'vendor-motion': ['motion'],

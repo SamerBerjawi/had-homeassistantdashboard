@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "vite build && node scripts/compress-dist.cjs && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "pwa:assets": "node scripts/generate-pwa-assets.cjs"
+    "pwa:assets": "node scripts/generate-pwa-assets.cjs",
+    "check:bundle": "node scripts/check-bundle-size.cjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

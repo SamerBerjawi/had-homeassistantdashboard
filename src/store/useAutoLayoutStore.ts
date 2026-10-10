@@ -40,7 +40,7 @@ import {
   isTokenExpired,
   StoredAuthConfig
 } from '../services/authStorage';
-import { MOCK_AREAS, MOCK_DEVICES, MOCK_ENTITY_REGISTRY, MOCK_FLOORS, MOCK_LABELS, MOCK_STATES } from '../data/mockRegistries';
+import { loadMockRegistries } from '../data/loadMockRegistries';
 import { useAlertStore } from './useAlertStore';
 
 export interface AutoLayoutStoreState {
@@ -306,19 +306,20 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  rawAreas: [...MOCK_AREAS],
-  rawDevices: [...MOCK_DEVICES],
-  rawEntityRegistry: [...MOCK_ENTITY_REGISTRY],
-  rawFloors: [...MOCK_FLOORS],
-  rawLabels: [...MOCK_LABELS],
-  rawStates: { ...MOCK_STATES },
+  // Empty until Home Assistant (or, in demo mode, the lazily loaded sample data) fills them
+  rawAreas: [],
+  rawDevices: [],
+  rawEntityRegistry: [],
+  rawFloors: [],
+  rawLabels: [],
+  rawStates: {},
 
-  areas: [...MOCK_AREAS],
-  devices: [...MOCK_DEVICES],
-  entityRegistry: [...MOCK_ENTITY_REGISTRY],
-  floors: [...MOCK_FLOORS],
-  labels: [...MOCK_LABELS],
-  states: { ...MOCK_STATES },
+  areas: [],
+  devices: [],
+  entityRegistry: [],
+  floors: [],
+  labels: [],
+  states: {},
 
   resolvedEntities: {},
   resolvedAreas: [],
@@ -423,13 +424,13 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           devices: payload.devices,
           entityRegistry: payload.entityRegistry,
           floors: payload.floors,
-          labels: payload.labels && payload.labels.length > 0 ? payload.labels : [...MOCK_LABELS],
+          labels: payload.labels || [],
           states: payload.states,
           rawAreas: payload.areas,
           rawDevices: payload.devices,
           rawEntityRegistry: payload.entityRegistry,
           rawFloors: payload.floors,
-          rawLabels: payload.labels && payload.labels.length > 0 ? payload.labels : [...MOCK_LABELS],
+          rawLabels: payload.labels || [],
           rawStates: payload.states,
           nativeNotifications: payload.nativeNotifications || [],
           nativeRepairs: payload.nativeRepairs || [],
@@ -495,7 +496,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       });
     } else {
       set({ authType: 'demo' });
-      get().recomputeGraph();
+      get().reloadDemoData();
     }
   },
 
@@ -626,24 +627,30 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   },
 
   reloadDemoData: () => {
-    set({
-      areas: [...MOCK_AREAS],
-      devices: [...MOCK_DEVICES],
-      entityRegistry: [...MOCK_ENTITY_REGISTRY],
-      floors: [...MOCK_FLOORS],
-      labels: [...MOCK_LABELS],
-      rawAreas: [...MOCK_AREAS],
-      rawDevices: [...MOCK_DEVICES],
-      rawEntityRegistry: [...MOCK_ENTITY_REGISTRY],
-      rawFloors: [...MOCK_FLOORS],
-      rawLabels: [...MOCK_LABELS],
-      states: { ...MOCK_STATES },
-      rawStates: { ...MOCK_STATES },
-      haCoreVersion: '2026.8.0',
-      connectionStatus: 'connected',
-      connectionError: null
-    });
-    get().recomputeGraph();
+    loadMockRegistries()
+      .then(({ MOCK_AREAS, MOCK_DEVICES, MOCK_ENTITY_REGISTRY, MOCK_FLOORS, MOCK_LABELS, MOCK_STATES }) => {
+        // The user may have signed in to a live instance while the sample data was loading
+        if (get().isLiveMode && !haWebSocketService.isDemo()) return;
+        set({
+          areas: [...MOCK_AREAS],
+          devices: [...MOCK_DEVICES],
+          entityRegistry: [...MOCK_ENTITY_REGISTRY],
+          floors: [...MOCK_FLOORS],
+          labels: [...MOCK_LABELS],
+          rawAreas: [...MOCK_AREAS],
+          rawDevices: [...MOCK_DEVICES],
+          rawEntityRegistry: [...MOCK_ENTITY_REGISTRY],
+          rawFloors: [...MOCK_FLOORS],
+          rawLabels: [...MOCK_LABELS],
+          states: { ...MOCK_STATES },
+          rawStates: { ...MOCK_STATES },
+          haCoreVersion: '2026.8.0',
+          connectionStatus: 'connected',
+          connectionError: null
+        });
+        get().recomputeGraph();
+      })
+      .catch((err) => console.error('[AutoLayout] Failed to load demo data:', err));
   },
 
   updateEntityState: (entityId: string, newState?: string | null, newAttributes?: Record<string, any>) => {

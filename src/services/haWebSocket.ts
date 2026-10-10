@@ -18,7 +18,7 @@ import {
   HANativePersistentNotification,
   HANativeRepairIssue
 } from '../types';
-import { MOCK_AREAS, MOCK_DEVICES, MOCK_ENTITY_REGISTRY, MOCK_FLOORS, MOCK_STATES } from '../data/mockRegistries';
+import { loadMockRegistries } from '../data/loadMockRegistries';
 import { getStoredAuthConfig, isTokenExpired } from './authStorage';
 import { alertService } from './alertService';
 
@@ -69,6 +69,67 @@ export function normalizeHAWebSocketUrl(rawUrl: string): string {
   return url;
 }
 
+// Compressed entity state from `subscribe_entities`: s=state, a=attributes, c=context,
+// lc=last_changed, lu=last_updated (epoch seconds; lu omitted when equal to lc)
+interface CompressedState {
+  s: string;
+  a?: Record<string, any>;
+  c?: string | { id: string; parent_id?: string | null; user_id?: string | null };
+  lc: number;
+  lu?: number;
+}
+
+interface CompressedStateDiff {
+  '+'?: Partial<CompressedState>;
+  '-'?: { a?: string[] };
+}
+
+interface EntitiesMessage {
+  a?: Record<string, CompressedState>;
+  c?: Record<string, CompressedStateDiff>;
+  r?: string[];
+}
+
+const toIsoTime = (epochSeconds: number) => new Date(epochSeconds * 1000).toISOString();
+const toContext = (c: CompressedState['c']) =>
+  typeof c === 'string' ? { id: c, parent_id: null, user_id: null } : c;
+
+function expandCompressedState(entityId: string, cs: CompressedState): HAState {
+  return {
+    entity_id: entityId,
+    state: cs.s,
+    attributes: cs.a || {},
+    last_changed: toIsoTime(cs.lc),
+    last_updated: toIsoTime(cs.lu ?? cs.lc),
+    ...(cs.c !== undefined ? { context: toContext(cs.c) } : {})
+  } as HAState;
+}
+
+function applyCompressedDiff(previous: HAState, diff: CompressedStateDiff): HAState {
+  const added = diff['+'];
+  const removedAttrs = diff['-']?.a;
+  const next: any = { ...previous };
+
+  // Keep the attributes object when they didn't change, so downstream identity checks hold
+  if (added?.a || removedAttrs?.length) {
+    const attributes = { ...previous.attributes, ...(added?.a || {}) };
+    for (const key of removedAttrs || []) delete attributes[key];
+    next.attributes = attributes;
+  }
+  if (added) {
+    if (added.s !== undefined) next.state = added.s;
+    if (added.c !== undefined) next.context = toContext(added.c);
+    if (added.lc !== undefined) {
+      next.last_changed = next.last_updated = toIsoTime(added.lc);
+    } else if (added.lu !== undefined) {
+      next.last_updated = toIsoTime(added.lu);
+    }
+  }
+  return next;
+}
+
+const ENTITY_SNAPSHOT_TIMEOUT_MS = 20000;
+
 const HEARTBEAT_INTERVAL_MS = 30000;
 const HEARTBEAT_TIMEOUT_MS = 10000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 60000;
@@ -103,6 +164,11 @@ class HAWebSocketClient {
   private weatherStates = new Map<string, HAState>();
   private weatherForecasts = new Map<string, { daily?: any[]; hourly?: any[] }>();
   private forecastSubscriptions = new Set<string>();
+  // Current entity states maintained from subscribe_entities diffs
+  private liveStates = new Map<string, HAState>();
+  // Entity updates are applied but not emitted until registries are loaded, so the snapshot
+  // handed to onRegistriesLoaded is never older than an update already emitted
+  private emitEntityUpdates = false;
 
   constructor() {
     this.attachNetworkLifecycleListeners();
@@ -240,6 +306,14 @@ class HAWebSocketClient {
     this.haVersion = '2026.8.0';
     this.emitStatus('connected');
     this.callbacks?.onVersionLoaded?.('2026.8.0');
+    loadMockRegistries()
+      .then((mocks) => {
+        if (this.isDemoMode) this.emitDemoRegistries(mocks);
+      })
+      .catch((err) => console.error('[haWebSocket] Failed to load demo data:', err));
+  }
+
+  private emitDemoRegistries({ MOCK_AREAS, MOCK_DEVICES, MOCK_ENTITY_REGISTRY, MOCK_FLOORS, MOCK_STATES }: typeof import('../data/mockRegistries')) {
     this.callbacks?.onLogMessage('info', 'Loaded Home Assistant Registries from Auto-Layout Graph Ingestion Engine (Demo/Simulated Mode)');
     this.callbacks?.onRegistriesLoaded({
       areas: [...MOCK_AREAS],
@@ -619,19 +693,83 @@ class HAWebSocketClient {
       const oldState = data?.old_state;
 
       if (entityId && newState) {
-        if (entityId.startsWith('weather.')) {
-          this.weatherStates.set(entityId, newState);
-          newState = this.withForecast(newState);
-        }
-        this.callbacks?.onStateChanged(entityId, newState);
-        this.callbacks?.onLogMessage('state_changed', `State updated: ${entityId} -> ${newState.state}`, newState.attributes);
-        try {
-          alertService.evaluateStateChange(entityId, newState, oldState);
-        } catch (alertErr) {
-          console.error('[AlertService] Error evaluating state change:', alertErr);
-        }
+        this.emitStateChange(entityId, newState, oldState);
       }
     }
+  }
+
+  /** Single path for every live state update, whichever subscription it came from. */
+  private emitStateChange(entityId: string, newState: HAState, oldState?: HAState) {
+    if (entityId.startsWith('weather.')) {
+      this.weatherStates.set(entityId, newState);
+      newState = this.withForecast(newState);
+    }
+    this.callbacks?.onStateChanged(entityId, newState);
+    this.callbacks?.onLogMessage('state_changed', `State updated: ${entityId} -> ${newState.state}`, newState.attributes);
+    try {
+      alertService.evaluateStateChange(entityId, newState, oldState);
+    } catch (alertErr) {
+      console.error('[AlertService] Error evaluating state change:', alertErr);
+    }
+  }
+
+  private applyEntitiesMessage(msg: EntitiesMessage) {
+    if (msg.a) {
+      for (const [entityId, cs] of Object.entries(msg.a)) {
+        const previous = this.liveStates.get(entityId);
+        const next = expandCompressedState(entityId, cs);
+        this.liveStates.set(entityId, next);
+        if (this.emitEntityUpdates) this.emitStateChange(entityId, next, previous);
+      }
+    }
+    if (msg.c) {
+      for (const [entityId, diff] of Object.entries(msg.c)) {
+        const previous = this.liveStates.get(entityId);
+        if (!previous) continue;
+        const next = applyCompressedDiff(previous, diff);
+        this.liveStates.set(entityId, next);
+        if (this.emitEntityUpdates) this.emitStateChange(entityId, next, previous);
+      }
+    }
+    if (msg.r) {
+      // Removed entities: drop our copy (the legacy path ignored removals too)
+      for (const entityId of msg.r) this.liveStates.delete(entityId);
+    }
+  }
+
+  /**
+   * Subscribes to compressed entity states. Resolves once the initial snapshot is in
+   * (liveStates populated), or false if the server doesn't support it or it times out.
+   */
+  private subscribeToEntities(): Promise<boolean> {
+    this.liveStates.clear();
+    this.emitEntityUpdates = false;
+    return new Promise((resolve) => {
+      let settled = false;
+      let unsubscribe: (() => void) | null = null;
+      const finish = (ok: boolean) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (!ok) {
+          unsubscribe?.();
+          this.liveStates.clear();
+        }
+        resolve(ok);
+      };
+      const timer = setTimeout(() => finish(false), ENTITY_SNAPSHOT_TIMEOUT_MS);
+
+      this.subscribeMessage<EntitiesMessage>((msg) => {
+        this.applyEntitiesMessage(msg);
+        // The first event is the full snapshot
+        finish(true);
+      }, { type: 'subscribe_entities' })
+        .then((unsub) => {
+          unsubscribe = unsub;
+          if (settled && this.liveStates.size === 0) unsub();
+        })
+        .catch(() => finish(false));
+    });
   }
 
   private failAuth(errorMsg?: string) {
@@ -706,17 +844,25 @@ class HAWebSocketClient {
     try {
       this.callbacks?.onLogMessage('info', 'Querying Home Assistant Area, Device, Entity, Floor, Label registries, native persistent notifications, and repairs...');
       
-      const [areas, devices, entityRegistry, floors, labels, statesList, nativeNotifications, repairsRes, haConfig] = await Promise.all([
+      // Compressed entity subscription: a consistent snapshot plus small diffs afterwards,
+      // instead of get_states + full old/new state per state_changed event
+      const entitySnapshot = this.subscribeToEntities();
+
+      const [areas, devices, entityRegistry, floors, labels, nativeNotifications, repairsRes, haConfig] = await Promise.all([
         this.sendRequest<HAArea[]>('config/area_registry/list').catch(() => []),
         this.sendRequest<HADevice[]>('config/device_registry/list').catch(() => []),
         this.sendRequest<HAEntityRegistryEntry[]>('config/entity_registry/list').catch(() => []),
         this.sendRequest<HAFloor[]>('config/floor_registry/list').catch(() => []),
         this.sendRequest<HALabel[]>('config/label_registry/list').catch(() => []),
-        this.sendRequest<HAState[]>('get_states').catch(() => []),
         this.sendRequest<HANativePersistentNotification[]>('persistent_notification/get').catch(() => []),
         this.sendRequest<{ issues?: HANativeRepairIssue[] }>('repairs/list_issues').catch(() => ({ issues: [] })),
         this.sendRequest<any>('get_config').catch(() => null)
       ]);
+
+      const usingEntitySubscription = await entitySnapshot;
+      const statesList: HAState[] = usingEntitySubscription
+        ? [...this.liveStates.values()]
+        : await this.sendRequest<HAState[]>('get_states').catch(() => []);
 
       if (haConfig?.version) {
         this.haVersion = String(haConfig.version);
@@ -746,8 +892,13 @@ class HAWebSocketClient {
         alertService.syncNativePersistentNotifications(Array.isArray(nativeNotifications) ? nativeNotifications : []);
       } catch {}
 
-      // Subscribe to live events
-      this.sendRequest('subscribe_events', { event_type: 'state_changed' });
+      if (usingEntitySubscription) {
+        this.emitEntityUpdates = true;
+      } else {
+        // Older Home Assistant: fall back to full state_changed events
+        this.callbacks?.onLogMessage('warning', 'subscribe_entities unavailable; falling back to state_changed events');
+        this.sendRequest('subscribe_events', { event_type: 'state_changed' });
+      }
       this.startStatePolling();
 
       // Subscribe to live forecasts for weather entities

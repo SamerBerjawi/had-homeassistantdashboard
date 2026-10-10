@@ -6,5 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
-data/
+/data/
+had-homeassistantdashboard/data/
 dev-dist/

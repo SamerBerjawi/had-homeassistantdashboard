@@ -13,34 +13,56 @@ interface DynamicPhosphorIconProps extends IconProps {
   fallback?: React.ComponentType<IconProps>;
 }
 
-// Module-level cache so icons resolve synchronously once loaded
-let phosphorModulePromise: Promise<Record<string, any>> | null = null;
-let phosphorIconsRecord: Record<string, any> | null = null;
+type IconComponent = React.ComponentType<IconProps>;
 
-function loadPhosphorIcons(): Promise<Record<string, any>> {
-  if (!phosphorModulePromise) {
-    phosphorModulePromise = import('@phosphor-icons/react').then((mod) => {
-      phosphorIconsRecord = mod;
-      return mod;
+// One lazy chunk per icon: showing a user-chosen icon loads a few KB instead of the whole
+// ~4 MB Phosphor library. Icons the app imports statically stay in the main bundle.
+let iconLoadersPromise: Promise<typeof import('../../lib/phosphorIconLoaders')> | null = null;
+const loadIconLoaders = () => {
+  if (!iconLoadersPromise) {
+    iconLoadersPromise = import('../../lib/phosphorIconLoaders').catch((err) => {
+      iconLoadersPromise = null;
+      throw err;
     });
   }
-  return phosphorModulePromise;
-}
+  return iconLoadersPromise;
+};
 
-function isValidIconComponent(comp: any): boolean {
+// Module-level caches so an icon resolves synchronously once loaded anywhere in the app
+const resolvedIcons = new Map<string, IconComponent | null>();
+const pendingIcons = new Map<string, Promise<IconComponent | null>>();
+
+function isValidIconComponent(comp: unknown): comp is IconComponent {
   if (!comp) return false;
   if (typeof comp === 'function') return true;
-  if (
-    typeof comp === 'object' &&
-    comp.$$typeof &&
-    (comp.$$typeof === Symbol.for('react.forward_ref') ||
-     comp.$$typeof === Symbol.for('react.memo') ||
-     (typeof comp.$$typeof === 'symbol' && comp.$$typeof.toString().includes('react.forward_ref')) ||
-     (typeof comp.$$typeof === 'symbol' && comp.$$typeof.toString().includes('react.memo')))
-  ) {
-    return true;
-  }
-  return false;
+  const type = (comp as { $$typeof?: symbol }).$$typeof;
+  return type === Symbol.for('react.forward_ref') || type === Symbol.for('react.memo');
+}
+
+function loadIcon(iconName: string): Promise<IconComponent | null> {
+  if (resolvedIcons.has(iconName)) return Promise.resolve(resolvedIcons.get(iconName)!);
+  const pending = pendingIcons.get(iconName);
+  if (pending) return pending;
+
+  const promise = loadIconLoaders()
+    .then(({ getPhosphorIconLoader }) => {
+      const loader = getPhosphorIconLoader(iconName);
+      return loader ? loader() : null;
+    })
+    .then((mod) => {
+      if (!mod) {
+        resolvedIcons.set(iconName, null);
+        return null;
+      }
+      const comp = mod[iconName] ?? mod[`${iconName}Icon`];
+      const icon = isValidIconComponent(comp) ? comp : null;
+      resolvedIcons.set(iconName, icon);
+      return icon;
+    })
+    .catch(() => null) // Don't cache failures (e.g. offline); retry on next mount
+    .finally(() => pendingIcons.delete(iconName));
+  pendingIcons.set(iconName, promise);
+  return promise;
 }
 
 export default function DynamicPhosphorIcon({
@@ -51,36 +73,22 @@ export default function DynamicPhosphorIcon({
   const FallbackComponent = fallback;
 
   const normalized = name && typeof name === 'string' ? normalizePhosphorIconName(name) || name : null;
-  const synchronousIcon = normalized && phosphorIconsRecord ? (phosphorIconsRecord[normalized] || phosphorIconsRecord[name!]) : null;
-  const [loadedIcon, setLoadedIcon] = useState<any>(synchronousIcon);
+  const cachedIcon = normalized ? resolvedIcons.get(normalized) : undefined;
+  const [loadedIcon, setLoadedIcon] = useState<{ name: string; icon: IconComponent | null } | null>(null);
 
   useEffect(() => {
-    if (!normalized) return;
-    if (synchronousIcon && isValidIconComponent(synchronousIcon)) return;
-
+    if (!normalized || cachedIcon !== undefined) return;
     let isMounted = true;
-    loadPhosphorIcons().then((mod) => {
-      if (!isMounted) return;
-      const comp = mod[normalized] || mod[name!];
-      if (isValidIconComponent(comp)) {
-        setLoadedIcon(() => comp);
-      }
-    }).catch(() => {
-      // Fallback handled by return
+    loadIcon(normalized).then((icon) => {
+      if (isMounted) setLoadedIcon({ name: normalized, icon });
     });
-
     return () => {
       isMounted = false;
     };
-  }, [normalized, name, synchronousIcon]);
+  }, [normalized, cachedIcon]);
 
-  if (!name || typeof name !== 'string') {
-    return <FallbackComponent {...props} />;
-  }
-
-  const ActiveComponent = synchronousIcon && isValidIconComponent(synchronousIcon)
-    ? synchronousIcon
-    : (loadedIcon && isValidIconComponent(loadedIcon) ? loadedIcon : null);
+  const ActiveComponent =
+    cachedIcon ?? (loadedIcon && loadedIcon.name === normalized ? loadedIcon.icon : null);
 
   if (ActiveComponent) {
     return <ActiveComponent {...props} />;

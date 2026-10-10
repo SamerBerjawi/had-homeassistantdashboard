@@ -13,7 +13,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { VideoCamera, WarningCircle, Broadcast, ArrowsClockwise, ArrowClockwise, WifiSlash } from '@phosphor-icons/react';
-import Hls from 'hls.js';
+import { loadHls } from '../../lib/loadHls';
 import { ResolvedEntity, HAEntity } from '../../types';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -115,7 +115,20 @@ function CameraFeed({
       }
     } else if (streamState.streamType === 'hls' && streamState.hlsUrl) {
       // Fallback for browsers where captureStream is not supported
-      if (Hls.isSupported()) {
+      const hlsUrl = streamState.hlsUrl;
+      let cancelled = false;
+      let destroyHls: (() => void) | null = null;
+      loadHls().then((Hls) => {
+        if (cancelled) return;
+        if (!Hls.isSupported()) {
+          if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = hlsUrl;
+            if (autoPlay) {
+              video.play().catch(() => {});
+            }
+          }
+          return;
+        }
         const hls = new Hls({
           xhrSetup: (xhr) => {
             if (token) {
@@ -126,22 +139,24 @@ function CameraFeed({
           lowLatencyMode: true,
           backBufferLength: 60
         });
-        hls.loadSource(streamState.hlsUrl);
+        hls.loadSource(hlsUrl);
         hls.attachMedia(video);
         if (autoPlay) {
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
             video.play().catch(() => {});
           });
         }
-        return () => {
-          hls.destroy();
-        };
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = streamState.hlsUrl;
-        if (autoPlay) {
-          video.play().catch(() => {});
+        destroyHls = () => hls.destroy();
+      }).catch(() => {
+        // Without the HLS player, fall back to native playback where the browser supports it
+        if (!cancelled && video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = hlsUrl;
         }
-      }
+      });
+      return () => {
+        cancelled = true;
+        destroyHls?.();
+      };
     } else {
       video.srcObject = null;
       video.removeAttribute('src');

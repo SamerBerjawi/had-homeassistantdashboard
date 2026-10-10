@@ -11,7 +11,8 @@
  * 5. Reference counting with 7s graceful teardown to avoid thrashing on fast navigations / modal transitions
  */
 
-import Hls from 'hls.js';
+import type Hls from 'hls.js';
+import { loadHls } from '../lib/loadHls';
 
 export type StreamType = 'webrtc' | 'hls' | 'snapshot';
 export type StreamStatus = 'idle' | 'connecting' | 'streaming' | 'error';
@@ -44,6 +45,8 @@ interface StreamSession {
   countdownInterval: any;
   hls: Hls | null;
   masterVideo: HTMLVideoElement | null;
+  /** Bumped on every HLS attempt and cleanup, so a slow hls.js load can't attach to a stale session. */
+  hlsAttempt: number;
 }
 
 class CameraStreamManager {
@@ -106,7 +109,8 @@ class CameraStreamManager {
         retryTimer: null,
         countdownInterval: null,
         hls: null,
-        masterVideo: null
+        masterVideo: null,
+        hlsAttempt: 0
       };
       this.sessions.set(streamId, session);
     } else {
@@ -221,6 +225,7 @@ class CameraStreamManager {
   }
 
   private cleanupActiveConnection(session: StreamSession): void {
+    session.hlsAttempt++;
     this.cleanupPeerConnection(session);
     this.cleanupHls(session);
     session.state.mediaStream = null;
@@ -382,7 +387,21 @@ class CameraStreamManager {
 
     const hlsUrl = `/api/cameras/${encodeURIComponent(session.streamId)}/hls/stream.m3u8?mp4`;
     const token = session.options.token;
+    const attempt = session.hlsAttempt;
 
+    loadHls()
+      .then((Hls) => {
+        if (this.sessions.get(session.streamId) !== session || session.hlsAttempt !== attempt) return;
+        this.attachHls(session, Hls, hlsUrl, token);
+      })
+      .catch((err) => {
+        if (this.sessions.get(session.streamId) !== session || session.hlsAttempt !== attempt) return;
+        console.warn(`[CameraStreamManager] Could not load HLS player for ${session.streamId}:`, err);
+        this.scheduleReconnect(session, 'HLS player failed to load');
+      });
+  }
+
+  private attachHls(session: StreamSession, Hls: typeof import('hls.js').default, hlsUrl: string, token?: string): void {
     if (Hls.isSupported()) {
       const masterVideo = document.createElement('video');
       masterVideo.muted = true;
