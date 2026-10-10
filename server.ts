@@ -980,6 +980,9 @@ async function startServer() {
       // Broadcast real-time SSE event to all connected devices if write succeeded
       if (result.statusCode === 200 && result.payload?.serverVersion) {
         broadcastConfigUpdate(result.payload.serverVersion);
+        if (targetConfig.cameras?.sources !== undefined) {
+          void prewarmCameraStreams();
+        }
       }
 
       return res.status(result.statusCode).json(result.payload);
@@ -1350,6 +1353,25 @@ async function startServer() {
     return { streamName, rtspUrl: String(entry.rtspUrl).trim() };
   }
 
+  /**
+   * Registers every configured camera with go2rtc ahead of time, so the first viewer's WebRTC
+   * request doesn't also pay for stream registration. Runs at startup and after config saves.
+   */
+  async function prewarmCameraStreams(): Promise<void> {
+    if (!GO2RTC_ENABLED || !GO2RTC_URL) return;
+    if (!cachedServerConfig) {
+      await readPersistentConfig().catch(() => null);
+    }
+    const sources = (cachedServerConfig as any)?.cameras?.sources;
+    if (!sources || typeof sources !== 'object') return;
+    await Promise.all(
+      Object.entries(sources).map(([key, entry]: [string, any]) => {
+        if (!entry?.rtspUrl) return Promise.resolve(false);
+        return ensureGo2RtcStream(getCameraStreamName(entry.id || key), String(entry.rtspUrl).trim());
+      })
+    );
+  }
+
   let lastGo2RtcWarnTime = 0;
   function logGo2RtcUnreachable(errMessage: string) {
     if (!GO2RTC_ENABLED) return;
@@ -1691,6 +1713,8 @@ async function startServer() {
     console.log(`  \x1b[32m➜\x1b[0m  \x1b[1mLocal:\x1b[0m   \x1b[36mhttp://localhost:${PORT}/\x1b[0m`);
     console.log(`  \x1b[32m➜\x1b[0m  \x1b[1mNetwork:\x1b[0m \x1b[36mhttp://0.0.0.0:${PORT}/\x1b[0m (accessible by wall tablets on LAN)\n`);
   });
+  void prewarmCameraStreams().catch((err) => console.warn('[go2rtc Proxy] Camera prewarm failed:', err?.message || err));
+
   httpServer.on('error', (err) => {
     console.error('[HAD Server] HTTP server error:', err);
     process.exit(1);

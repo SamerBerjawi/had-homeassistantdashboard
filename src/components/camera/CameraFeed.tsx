@@ -18,6 +18,8 @@ import { ResolvedEntity, HAEntity } from '../../types';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { cameraStreamManager, CameraStreamState } from '../../services/cameraStreamManager';
+import { resolveHAImageUrl } from '../../services/haImageService';
+import { useIsOnScreen } from '../../hooks/useIsOnScreen';
 
 export type CameraEngine = 'auto' | 'webrtc' | 'hls' | 'snapshot';
 
@@ -49,6 +51,9 @@ function CameraFeed({
   onGoLive
 }: CameraFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  // Only stream cameras that are (nearly) on screen; off-screen tiles show the snapshot
+  const isOnScreen = useIsOnScreen(containerRef);
   const { config } = useUserConfig();
   const { authState } = useAuth();
   const token = authState.tokens?.access_token || '';
@@ -60,7 +65,10 @@ function CameraFeed({
     'Camera';
   const state = String(camera.state || 'idle').toLowerCase();
   const isUnavailable = state === 'unavailable' || state === 'off';
-  const entityPicture = camera.attributes?.entity_picture;
+  // entity_picture is a path on the Home Assistant server (/api/camera_proxy/...?token=...)
+  const entityPicture = camera.attributes?.entity_picture
+    ? resolveHAImageUrl(camera.attributes.entity_picture)
+    : undefined;
 
   // Check if camera has an RTSP source configured
   const configuredSource =
@@ -83,6 +91,7 @@ function CameraFeed({
   // Subscribe to centralized camera stream pool
   useEffect(() => {
     onReady?.();
+    if (!isOnScreen) return;
     const unsubscribe = cameraStreamManager.subscribe(
       targetStreamId,
       {
@@ -99,7 +108,14 @@ function CameraFeed({
     return () => {
       unsubscribe();
     };
-  }, [targetStreamId, rtspUrl, token, effectiveProtocol, isUnavailable, onReady]);
+  }, [targetStreamId, rtspUrl, token, effectiveProtocol, isUnavailable, onReady, isOnScreen]);
+
+  // Keep the snapshot up until video frames are actually rendering, so tiles don't flash black
+  // between the stream connecting and its first decoded frame
+  const [hasFirstFrame, setHasFirstFrame] = useState(false);
+  useEffect(() => {
+    setHasFirstFrame(false);
+  }, [streamState.mediaStream, streamState.hlsUrl]);
 
   // Bind video element to shared MediaStream or direct HLS fallback
   useEffect(() => {
@@ -172,8 +188,10 @@ function CameraFeed({
     }
   }, [streamState.status, streamState.error, onGoLive, onError]);
 
-  const isStreaming = streamState.status === 'streaming';
-  const isConnecting = streamState.status === 'connecting';
+  const isStreamConnected = streamState.status === 'streaming';
+  // "Streaming" for display purposes means frames are on screen
+  const isStreaming = isStreamConnected && hasFirstFrame;
+  const isConnecting = streamState.status === 'connecting' || (isStreamConnected && !hasFirstFrame);
   const streamError = streamState.error;
   const retrySecondsLeft = streamState.retrySecondsLeft;
   const streamType = streamState.streamType;
@@ -186,6 +204,7 @@ function CameraFeed({
 
   return (
     <div
+      ref={containerRef}
       className={`relative w-full h-full flex items-center justify-center overflow-hidden bg-slate-950 select-none ${className}`}
       onClick={mode === 'preview' ? onGoLive : undefined}
     >
@@ -196,8 +215,14 @@ function CameraFeed({
         muted={muted}
         playsInline
         controls={showControls && mode === 'live' && isStreaming}
+        onPlaying={() => setHasFirstFrame(true)}
+        onLoadedData={() => setHasFirstFrame(true)} // first frame decoded, even if autoplay is blocked
         className={`w-full h-full object-cover transition-opacity duration-300 ${
-          isStreaming ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none hidden'
+          isStreaming
+            ? 'opacity-100 z-10'
+            : isStreamConnected
+              ? 'absolute inset-0 opacity-0 pointer-events-none' // decoding, not yet shown
+              : 'opacity-0 pointer-events-none hidden'
         }`}
       />
 
@@ -206,6 +231,7 @@ function CameraFeed({
         <img
           src={entityPicture}
           alt={cameraName}
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover opacity-80 z-0"
           onError={() => onError?.('Failed to load snapshot')}
         />

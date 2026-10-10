@@ -41,6 +41,7 @@ import {
   StoredAuthConfig
 } from '../services/authStorage';
 import { loadMockRegistries } from '../data/loadMockRegistries';
+import { loadDashboardSnapshot, saveDashboardSnapshot, clearDashboardSnapshots, DashboardSnapshot } from '../services/dashboardSnapshot';
 import { useAlertStore } from './useAlertStore';
 
 export interface AutoLayoutStoreState {
@@ -52,6 +53,10 @@ export interface AutoLayoutStoreState {
   connectionStatus: HAConnectionStatus;
   connectionError: string | null;
   haCoreVersion: string | null;
+  /** Whether a cached snapshot from the last session is being read ('pending') or shown */
+  snapshotStatus: 'pending' | 'hydrated' | 'none';
+  /** True while the dashboard shows last-session data that live Home Assistant data hasn't replaced yet */
+  showingCachedSnapshot: boolean;
   isLoading: boolean;
   error: string | null;
 
@@ -294,8 +299,61 @@ const reportServiceFailure = (domain: string, service: string, err: Error) => {
   });
 };
 
+// --- Cached snapshot for instant start -------------------------------------------------------
+const SNAPSHOT_SAVE_INTERVAL_MS = 2 * 60 * 1000;
+const SNAPSHOT_READ_BUDGET_MS = 400;
+let hasLiveRegistries = false;
+let lastSnapshotSaveAt = 0;
+let snapshotSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+// Start reading the cache as soon as the app loads, before React mounts
+const earlySnapshot: Promise<DashboardSnapshot | null> = hasConfiguredHACredentialsAtLoad()
+  ? loadDashboardSnapshot(getCachedServerUrl()).catch(() => null)
+  : Promise.resolve(null);
+
+function hasConfiguredHACredentialsAtLoad(): boolean {
+  try {
+    return typeof window !== 'undefined' && Boolean(getStoredAuthConfig()?.tokens?.access_token);
+  } catch {
+    return false;
+  }
+}
+
+function saveSnapshotNow(get: () => AutoLayoutStoreState) {
+  if (snapshotSaveTimer) {
+    clearTimeout(snapshotSaveTimer);
+    snapshotSaveTimer = null;
+  }
+  const s = get();
+  if (!hasLiveRegistries || !s.isLiveMode || haWebSocketService.isDemo() || !s.serverUrl) return;
+  lastSnapshotSaveAt = Date.now();
+  void saveDashboardSnapshot({
+    serverUrl: s.serverUrl,
+    haVersion: s.haCoreVersion,
+    areas: s.rawAreas,
+    devices: s.rawDevices,
+    entityRegistry: s.rawEntityRegistry,
+    floors: s.rawFloors,
+    labels: s.rawLabels,
+    states: s.rawStates
+  }).catch(() => {});
+}
+
+/** Throttled: state events are frequent, but the snapshot only needs to be roughly current. */
+function scheduleSnapshotSave(get: () => AutoLayoutStoreState) {
+  if (snapshotSaveTimer) return;
+  const wait = Math.max(0, SNAPSHOT_SAVE_INTERVAL_MS - (Date.now() - lastSnapshotSaveAt));
+  snapshotSaveTimer = setTimeout(() => saveSnapshotNow(get), wait);
+}
+
 function clearAllStoredHACredentials() {
   clearStoredAuthConfig();
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') saveSnapshotNow(useAutoLayoutStore.getState);
+  });
 }
 
 export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
@@ -357,6 +415,8 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
 
   authType: 'demo',
   haCoreVersion: getCachedLiveMode() ? (haWebSocketService.getVersion() || null) : '2026.8.0',
+  snapshotStatus: hasConfiguredHACredentialsAtLoad() ? 'pending' : 'none',
+  showingCachedSnapshot: false,
 
   init: async () => {
     haWebSocketService.init({
@@ -416,6 +476,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         return null;
       },
       onRegistriesLoaded: (payload) => {
+        hasLiveRegistries = true;
         confirmedStates.clear();
         rememberConfirmedStates(Object.values(payload.states || {}));
         const detectedVersion = payload.haVersion || payload.states?.['update.home_assistant_core_update']?.attributes?.installed_version || payload.states?.['update.home_assistant_core']?.attributes?.installed_version || get().haCoreVersion;
@@ -436,8 +497,11 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           nativeNotifications: payload.nativeNotifications || [],
           nativeRepairs: payload.nativeRepairs || [],
           isLoading: false,
-          error: null
+          error: null,
+          showingCachedSnapshot: false,
+          snapshotStatus: 'none'
         });
+        if (!haWebSocketService.isDemo()) saveSnapshotNow(get);
         // Check if cached config has custom area/floor/entity overrides
         try {
           const cached = typeof window !== 'undefined' ? localStorage.getItem('had_user_dashboard_config_v1') : null;
@@ -464,6 +528,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           rawStates: { ...prev.rawStates, ...map }
         }));
         scheduleRecompute(get);
+        scheduleSnapshotSave(get);
       },
       onStateChanged: (entityId, newState) => {
         confirmedStates.set(entityId, newState);
@@ -478,6 +543,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           }
         }));
         scheduleRecompute(get);
+        scheduleSnapshotSave(get);
       },
       onLogMessage: (type, msg, details) => {
         if (typeof window !== 'undefined') {
@@ -495,6 +561,41 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         haToken: stored.tokens.access_token,
         authType: stored.authMethod
       });
+
+      // Show the last session's data right away; live registries replace it when they arrive.
+      // If the cache is slow, stop waiting (the loader shows) but still use it if it lands first.
+      const readBudget = setTimeout(() => {
+        if (get().snapshotStatus === 'pending') set({ snapshotStatus: 'none' });
+      }, SNAPSHOT_READ_BUDGET_MS);
+      void earlySnapshot.then((snapshot) => {
+        clearTimeout(readBudget);
+        if (!snapshot || hasLiveRegistries || haWebSocketService.isDemo()) {
+          if (get().snapshotStatus === 'pending') set({ snapshotStatus: 'none' });
+          return;
+        }
+        set({
+          areas: snapshot.areas,
+          devices: snapshot.devices,
+          entityRegistry: snapshot.entityRegistry,
+          floors: snapshot.floors,
+          labels: snapshot.labels,
+          states: snapshot.states,
+          rawAreas: snapshot.areas,
+          rawDevices: snapshot.devices,
+          rawEntityRegistry: snapshot.entityRegistry,
+          rawFloors: snapshot.floors,
+          rawLabels: snapshot.labels,
+          rawStates: snapshot.states,
+          haCoreVersion: snapshot.haVersion || get().haCoreVersion,
+          snapshotStatus: 'hydrated',
+          showingCachedSnapshot: true
+        });
+        try {
+          const cachedConfig = localStorage.getItem('had_user_dashboard_config_v1');
+          if (cachedConfig) get().applyConfigCustomizations(JSON.parse(cachedConfig));
+        } catch {}
+        get().recomputeGraph();
+      });
     } else {
       set({ authType: 'demo' });
       get().reloadDemoData();
@@ -507,6 +608,8 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
 
   logoutHA: () => {
     clearAllStoredHACredentials();
+    hasLiveRegistries = false;
+    void clearDashboardSnapshots();
     haWebSocketService.disconnect();
     set({
       isLiveMode: false,

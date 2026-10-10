@@ -14,6 +14,33 @@
 import type Hls from 'hls.js';
 import { loadHls } from '../lib/loadHls';
 
+// When WebRTC media can't get through on this network (e.g. remote access via a tunnel that
+// blocks UDP), every camera would wait for the 4.5s watchdog before falling back. Remember it
+// and go straight to HLS for a while; cleared on a successful WebRTC stream or network change.
+const WEBRTC_UNREACHABLE_KEY = 'had_webrtc_unreachable_until';
+const WEBRTC_UNREACHABLE_MS = 30 * 60 * 1000;
+// Stop streaming when the page has been hidden (screen off, app in background) for this long
+const HIDDEN_PAUSE_DELAY_MS = 15000;
+// Send the WebRTC offer this long after the first local ICE candidate instead of waiting for
+// public STUN servers; host candidates are enough to reach go2rtc on the LAN
+const ICE_GATHER_GRACE_MS = 150;
+const ICE_GATHER_MAX_MS = 1000;
+
+function isWebRtcKnownUnreachable(): boolean {
+  try {
+    return Number(localStorage.getItem(WEBRTC_UNREACHABLE_KEY) || 0) > Date.now();
+  } catch {
+    return false;
+  }
+}
+
+function setWebRtcUnreachable(unreachable: boolean) {
+  try {
+    if (unreachable) localStorage.setItem(WEBRTC_UNREACHABLE_KEY, String(Date.now() + WEBRTC_UNREACHABLE_MS));
+    else localStorage.removeItem(WEBRTC_UNREACHABLE_KEY);
+  } catch {}
+}
+
 export type StreamType = 'webrtc' | 'hls' | 'snapshot';
 export type StreamStatus = 'idle' | 'connecting' | 'streaming' | 'error';
 
@@ -52,6 +79,49 @@ interface StreamSession {
 class CameraStreamManager {
   private sessions = new Map<string, StreamSession>();
   private teardownTimers = new Map<string, any>();
+  private hiddenPauseTimer: ReturnType<typeof setTimeout> | null = null;
+  private pausedForHidden = new Set<StreamSession>();
+
+  constructor() {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
+    }
+    if (typeof window !== 'undefined') {
+      // A different network may let WebRTC through again
+      window.addEventListener('online', () => setWebRtcUnreachable(false));
+    }
+  }
+
+  /** Pause streams while nobody can see them, and resume when the page is visible again. */
+  private handleVisibilityChange(): void {
+    if (document.visibilityState === 'hidden') {
+      if (this.hiddenPauseTimer) return;
+      this.hiddenPauseTimer = setTimeout(() => {
+        this.hiddenPauseTimer = null;
+        for (const session of this.sessions.values()) {
+          if (session.state.status === 'idle') continue;
+          this.clearTimers(session);
+          this.cleanupActiveConnection(session);
+          session.state = { ...session.state, status: 'idle', streamType: 'snapshot', error: null, retrySecondsLeft: 0 };
+          this.pausedForHidden.add(session);
+          this.broadcast(session);
+        }
+      }, HIDDEN_PAUSE_DELAY_MS);
+      return;
+    }
+
+    if (this.hiddenPauseTimer) {
+      clearTimeout(this.hiddenPauseTimer);
+      this.hiddenPauseTimer = null;
+    }
+    for (const session of this.pausedForHidden) {
+      if (this.sessions.get(session.streamId) === session && session.subscribers.size > 0 && session.state.status === 'idle') {
+        session.retryCount = 0;
+        this.initiateConnection(session);
+      }
+    }
+    this.pausedForHidden.clear();
+  }
 
   /**
    * Get current state of a stream session, or default idle state
@@ -247,7 +317,7 @@ class CameraStreamManager {
     if (protocol === 'snapshot') {
       return;
     }
-    if (protocol === 'hls') {
+    if (protocol === 'hls' || (protocol === 'auto' && isWebRtcKnownUnreachable())) {
       this.connectHls(session);
     } else {
       this.connectWebRtc(session);
@@ -273,7 +343,10 @@ class CameraStreamManager {
       pc.addTransceiver('video', { direction: 'recvonly' });
       pc.addTransceiver('audio', { direction: 'recvonly' });
 
+      let mediaArrived = false;
       pc.ontrack = (event) => {
+        mediaArrived = true;
+        setWebRtcUnreachable(false);
         if (session.iceTimeoutId) {
           clearTimeout(session.iceTimeoutId);
           session.iceTimeoutId = null;
@@ -296,6 +369,9 @@ class CameraStreamManager {
       pc.oniceconnectionstatechange = () => {
         if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
           console.warn(`[CameraStreamManager] WebRTC ICE failed on ${session.streamId}. Failing over to HLS.`);
+          // Only a connection that never delivered media says this network blocks WebRTC;
+          // a working one that drops (Wi-Fi blip) doesn't
+          if (!mediaArrived) setWebRtcUnreachable(true);
           this.cleanupPeerConnection(session);
           this.connectHls(session);
         }
@@ -304,23 +380,30 @@ class CameraStreamManager {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // Wait for local ICE gathering with 1000ms safety timeout
+      // Wait briefly for local ICE candidates (go2rtc's WHEP endpoint isn't trickle): until
+      // gathering completes, a short grace after the first candidate, or the overall cap
       await new Promise<void>((resolve) => {
         if (pc.iceGatheringState === 'complete') {
           resolve();
-        } else {
-          const checkIce = () => {
-            if (pc.iceGatheringState === 'complete') {
-              pc.removeEventListener('icegatheringstatechange', checkIce);
-              resolve();
-            }
-          };
-          pc.addEventListener('icegatheringstatechange', checkIce);
-          setTimeout(() => {
-            pc.removeEventListener('icegatheringstatechange', checkIce);
-            resolve();
-          }, 1000);
+          return;
         }
+        let graceTimer: ReturnType<typeof setTimeout> | null = null;
+        const finish = () => {
+          pc.removeEventListener('icegatheringstatechange', onStateChange);
+          pc.removeEventListener('icecandidate', onCandidate);
+          if (graceTimer) clearTimeout(graceTimer);
+          clearTimeout(maxTimer);
+          resolve();
+        };
+        const onStateChange = () => {
+          if (pc.iceGatheringState === 'complete') finish();
+        };
+        const onCandidate = (event: RTCPeerConnectionIceEvent) => {
+          if (event.candidate && !graceTimer) graceTimer = setTimeout(finish, ICE_GATHER_GRACE_MS);
+        };
+        const maxTimer = setTimeout(finish, ICE_GATHER_MAX_MS);
+        pc.addEventListener('icegatheringstatechange', onStateChange);
+        pc.addEventListener('icecandidate', onCandidate);
       });
 
       const sdpPayload = pc.localDescription?.sdp || offer.sdp;
@@ -368,6 +451,7 @@ class CameraStreamManager {
       session.iceTimeoutId = setTimeout(() => {
         if (pc.connectionState !== 'connected') {
           console.info(`[CameraStreamManager] WebRTC ICE check timed out after 4.5s on ${session.streamId}. Failing over to HLS.`);
+          if (!mediaArrived) setWebRtcUnreachable(true);
           this.cleanupPeerConnection(session);
           this.connectHls(session);
         }

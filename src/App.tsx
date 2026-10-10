@@ -414,6 +414,8 @@ export default function App() {
     serverUrl: s.serverUrl
   })));
   const hasResolvedEntities = useAutoLayoutStore(s => hasAnyKey(s.resolvedEntities));
+  const snapshotStatus = useAutoLayoutStore(s => s.snapshotStatus);
+  const showingCachedSnapshot = useAutoLayoutStore(s => s.showingCachedSnapshot);
   // Only the settings page uses the legacy entity list
   const resolvedEntities = useAutoLayoutStore(s => activeTab === 'settings' ? s.resolvedEntities : EMPTY_RESOLVED_ENTITIES);
 
@@ -514,7 +516,8 @@ export default function App() {
 
   const isConnectingToHA = !hasStartupTimeoutElapsed && (isLiveMode || hasConfiguredHACredentials()) && connectionStatus !== 'connected' && connectionStatus !== 'auth_failed';
   const isInitialSyncPending = !hasStartupTimeoutElapsed && isLiveMode && !hasInitialLoaded && connectionStatus !== 'auth_failed';
-  const isAppLoading = !authState.isDemo && (isConnectingToHA || isInitialSyncPending || (isAuthInitializing && hasConfiguredHACredentials()));
+  // With last session's data on screen, there's nothing to block on: live data replaces it
+  const isAppLoading = !authState.isDemo && !showingCachedSnapshot && (isConnectingToHA || isInitialSyncPending || (isAuthInitializing && hasConfiguredHACredentials()));
 
   const [loadingProgress, setLoadingProgress] = useState<number>(15);
 
@@ -563,6 +566,11 @@ export default function App() {
       setTimeout(() => setIsManualRefreshing(false), 600);
     }
   };
+
+  // Briefly wait for the cached snapshot (a few ms from IndexedDB) instead of flashing the loader
+  if (isAppLoading && snapshotStatus === 'pending') {
+    return <div className={`fixed inset-0 ${darkMode ? 'bg-slate-950' : 'bg-[#f8fafc]'}`} aria-busy="true" />;
+  }
 
   // Full-Screen Loading Page — Prevents rendering the demo environment while connecting
   if (isAppLoading) {
@@ -670,6 +678,17 @@ export default function App() {
 
               {/* Global Header Action Controls (Sync, Offline Fallback Pill, Manual Refresh, Notifications) */}
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {/* Last-session data shown while the live connection catches up */}
+                {showingCachedSnapshot && (
+                  <div
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/30 text-sky-600 dark:text-sky-400 text-xs font-semibold backdrop-blur-sm"
+                    title="Showing data from your last session while connecting to Home Assistant"
+                  >
+                    <ArrowsClockwise size={14} className="animate-spin" />
+                    <span className="hidden sm:inline">{connectionStatus === 'connected' ? 'Updating…' : 'Connecting…'}</span>
+                  </div>
+                )}
+
                 {/* Offline Fallback Cache Indicator */}
                 {syncStatus === 'offline_fallback' && (
                   <div

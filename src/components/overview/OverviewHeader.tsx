@@ -413,7 +413,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
     : (activeWeather?.attributes?.forecast?.[0]?.templow ?? Math.round(currentTemp - 4));
   const humidity = activeWeather?.attributes?.humidity ?? 55;
 
-  const isAlarmArmed = alarmEntity?.state && alarmEntity.state !== 'disarmed';
+  // Armed-like states only; unknown/unavailable is neither armed nor disarmed
+  const isAlarmArmed = Boolean(
+    alarmEntity?.state &&
+      (alarmEntity.state.startsWith('armed_') || ['triggered', 'arming', 'pending'].includes(alarmEntity.state))
+  );
   const isPlayingMedia = playingMediaEntities.length > 0;
   const singlePlayingMedia = playingMediaEntities.length === 1 ? playingMediaEntities[0] : null;
   const playingSongTitle = singlePlayingMedia?.attributes?.media_title || singlePlayingMedia?.attributes?.app_name || singlePlayingMedia?.name;
@@ -698,9 +702,17 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
         return { label: 'Armed Away', bg: 'bg-rose-500/15', text: 'text-rose-700 dark:text-rose-300' };
       case 'armed_night':
         return { label: 'Armed Night', bg: 'bg-indigo-500/15', text: 'text-indigo-700 dark:text-indigo-300' };
+      case 'triggered':
+        return { label: 'Triggered', bg: 'bg-rose-600/20', text: 'text-rose-700 dark:text-rose-300' };
+      case 'arming':
+      case 'pending':
+        return { label: 'Arming…', bg: 'bg-sky-500/15', text: 'text-sky-700 dark:text-sky-300' };
       case 'disarmed':
-      default:
         return { label: 'Disarmed', bg: 'bg-amber-500/15', text: 'text-amber-600 dark:text-amber-400' };
+      default:
+        // Unknown, unavailable, or no state yet (e.g. before Home Assistant reports it): never
+        // claim "Disarmed" without Home Assistant saying so
+        return { label: 'Unavailable', bg: 'bg-slate-500/15', text: 'text-slate-600 dark:text-slate-300' };
     }
   };
 
