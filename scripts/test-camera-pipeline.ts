@@ -347,7 +347,12 @@ async function runCameraPipelineTests() {
   }
 }
 
-runCameraPipelineTests().catch((err) => {
-  console.error('Camera pipeline test failed:', err);
-  process.exit(1);
-});
+runCameraPipelineTests()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error('Camera pipeline test failed:', err);
+    process.exit(1);
+  });
+

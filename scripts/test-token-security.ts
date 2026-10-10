@@ -247,7 +247,9 @@ async function runServerSecurityTests() {
 
 runServerSecurityTests().then(() => {
   console.log('\n🎉 ALL TOKEN SECURITY, CORS, AND CSP AUDIT TESTS PASSED!\n');
+  process.exit(0);
 }).catch((err) => {
   console.error('Security test failed:', err);
   process.exit(1);
 });
+

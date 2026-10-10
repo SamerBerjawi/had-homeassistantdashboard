@@ -15,7 +15,7 @@ import fs from 'fs';
 import path from 'path';
 import assert from 'assert';
 import net from 'net';
-import { spawn, ChildProcess } from 'child_process';
+import { fork, ChildProcess } from 'child_process';
 
 console.log('🧪 Starting End-to-End Persistence & Container-Restart Regression Suite...\n');
 
@@ -50,21 +50,34 @@ async function waitForServer(port: number, timeoutMs = 15000): Promise<void> {
 
 // Helper to spawn a HAD server instance
 function spawnServer(port: number, configDir: string, assetsDir: string): ChildProcess {
-  const child = spawn(
-    'npx',
-    ['tsx', 'server.ts'],
-    {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        PORT: String(port),
-        DASHBOARD_CONFIG_DIR: configDir,
-        DASHBOARD_ASSETS_DIR: assetsDir,
-        NODE_ENV: 'test'
-      },
-      stdio: ['ignore', 'pipe', 'pipe']
-    }
-  );
+  const compiledServer = path.join(process.cwd(), 'dist', 'server.cjs');
+  const serverPath = fs.existsSync(compiledServer) ? compiledServer : 'server.ts';
+
+  const child = serverPath.endsWith('.cjs')
+    ? fork(serverPath, [], {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          PORT: String(port),
+          DASHBOARD_CONFIG_DIR: configDir,
+          DASHBOARD_ASSETS_DIR: assetsDir,
+          NODE_ENV: 'test',
+          ALLOW_MOCK_TOKENS: 'true'
+        },
+        stdio: ['ignore', 'pipe', 'pipe', 'ipc']
+      })
+    : fork(path.resolve('node_modules/tsx/dist/cli.mjs'), ['server.ts'], {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          PORT: String(port),
+          DASHBOARD_CONFIG_DIR: configDir,
+          DASHBOARD_ASSETS_DIR: assetsDir,
+          NODE_ENV: 'test',
+          ALLOW_MOCK_TOKENS: 'true'
+        },
+        stdio: ['ignore', 'pipe', 'pipe', 'ipc']
+      });
 
   child.stderr?.on('data', (d) => {
     const str = d.toString();
@@ -80,22 +93,34 @@ function spawnServer(port: number, configDir: string, assetsDir: string): ChildP
 async function stopServer(child: ChildProcess): Promise<void> {
   if (!child || child.killed) return;
   return new Promise((resolve) => {
+    const cleanup = () => {
+      try {
+        child.stdout?.destroy();
+        child.stderr?.destroy();
+      } catch {}
+      resolve();
+    };
+
     const timeout = setTimeout(() => {
       try {
         child.kill('SIGKILL');
       } catch {}
-      resolve();
+      cleanup();
     }, 4000);
 
     child.once('exit', () => {
       clearTimeout(timeout);
-      resolve();
+      cleanup();
     });
 
     try {
+      if (child.connected) {
+        child.disconnect();
+      }
       child.kill('SIGTERM');
     } catch {
-      resolve();
+      clearTimeout(timeout);
+      cleanup();
     }
   });
 }
@@ -286,7 +311,12 @@ async function runRegressionSuite() {
   }
 }
 
-runRegressionSuite().catch((err) => {
-  console.error('\n❌ Regression test failed:', err);
-  process.exit(1);
-});
+runRegressionSuite()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error('\n❌ Regression test failed:', err);
+    process.exit(1);
+  });
+
