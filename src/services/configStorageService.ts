@@ -21,6 +21,15 @@ import { getStoredAuthConfig } from './authStorage';
 const STORAGE_KEY_CONFIG = 'had_dashboard_config';
 const STORAGE_KEY_SERVER_VERSION = 'had_last_server_version';
 const STORAGE_KEY_SHADOW_CACHE = 'had_shadow_config_mirror_v1';
+// Write-ahead record of changes not yet confirmed by the NAS, replayed on the next load
+const STORAGE_KEY_UNSYNCED = 'had_unsynced_config_delta_v1';
+// Browsers cap keepalive request bodies at 64KB in total
+const KEEPALIVE_BODY_LIMIT_BYTES = 60 * 1024;
+
+interface UnsyncedRecord {
+  seq: number;
+  delta: Partial<UserDashboardConfig>;
+}
 const HA_USER_DATA_KEY = 'had_dashboard_config';
 
 import { optimizeImageForUpload } from '../utils/imageOptimizer';
@@ -434,6 +443,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
   private localFallback = new LocalStorageDriver();
   private lastKnownServerVersion: number | null = null;
   private lastSavedSignature: string | null = null;
+  private isReplaying = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -588,6 +598,76 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
     return this.localFallback.loadConfig();
   }
 
+  private readUnsynced(): UnsyncedRecord | null {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_UNSYNCED);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (parsed && typeof parsed.seq === 'number' && parsed.delta && typeof parsed.delta === 'object') {
+        return parsed;
+      }
+    } catch {}
+    return null;
+  }
+
+  /** Records a change before sending it, so it survives a failed request or a closed tab. */
+  private recordUnsynced(partial: Partial<UserDashboardConfig>): number {
+    const existing = this.readUnsynced();
+    const record: UnsyncedRecord = {
+      seq: (existing?.seq ?? 0) + 1,
+      delta: mergeDelta(existing?.delta || {}, partial)
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY_UNSYNCED, JSON.stringify(record));
+    } catch {}
+    return record.seq;
+  }
+
+  /** Clears the record unless a newer change was recorded while this save was in flight. */
+  private clearUnsynced(seq: number) {
+    if (this.readUnsynced()?.seq === seq) {
+      try {
+        localStorage.removeItem(STORAGE_KEY_UNSYNCED);
+      } catch {}
+    }
+  }
+
+  public getUnsyncedChanges(): Partial<UserDashboardConfig> | null {
+    return this.readUnsynced()?.delta || null;
+  }
+
+  public async replayUnsyncedChanges(): Promise<UserDashboardConfig | null> {
+    const record = this.readUnsynced();
+    if (!record || this.isReplaying) return null;
+    this.isReplaying = true;
+    try {
+      console.info('[RemoteStorageDriver] Replaying configuration changes that had not reached the NAS...');
+      return await this.saveConfig(record.delta, { attempts: 1 });
+    } finally {
+      this.isReplaying = false;
+    }
+  }
+
+  public saveConfigOnUnload(partial: Partial<UserDashboardConfig>): void {
+    this.recordUnsynced(partial);
+    try {
+      const cached = this.getCachedConfig() || DEFAULT_USER_CONFIG;
+      localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(mergeConfig(cached, partial)));
+    } catch {}
+
+    // Send only the delta (merged server-side) so it fits the keepalive limit. If it's too large
+    // or never arrives, the unsynced record is replayed on the next load.
+    const body = JSON.stringify({ config: partial, partial: true });
+    if (typeof fetch === 'undefined' || body.length > KEEPALIVE_BODY_LIMIT_BYTES) return;
+    try {
+      void fetch('/api/config', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body,
+        keepalive: true
+      }).catch(() => {});
+    } catch {}
+  }
+
   public getCachedConfig(): UserDashboardConfig | null {
     if (typeof window === 'undefined') return null;
     try {
@@ -625,6 +705,9 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
       return updated;
     }
 
+    const unsyncedSeq = this.recordUnsynced(partial);
+    let nasSaved = false;
+
     // 1. Persist to NAS REST backend (/api/config) with exponential backoff retries
     if (typeof fetch !== 'undefined') {
       const maxAttempts = Math.max(1, options?.attempts ?? 3);
@@ -652,6 +735,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
               } catch {}
             }
             this.lastSavedSignature = payloadSignature;
+            nasSaved = true;
             break;
           } else if (response.status === 401) {
             console.warn('[RemoteStorageDriver] Access token rejected (HTTP 401) during save. Refreshing token...');
@@ -663,6 +747,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
             const errData = await response.json().catch(() => ({}));
             if (errData?.materialGuard) {
               console.warn('[RemoteStorageDriver] Server rejected empty config save due to material data safeguard.');
+              this.clearUnsynced(unsyncedSeq);
               return current;
             }
 
@@ -720,6 +805,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
                 }
                 updated = reMerged;
                 this.lastSavedSignature = JSON.stringify(updated);
+                nasSaved = true;
               } else {
                 console.warn(
                   '[RemoteStorageDriver] Retry save also encountered a conflict. Accepting server configuration.'
@@ -730,12 +816,15 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
                 } catch {}
                 updated = baseConfig;
                 this.lastSavedSignature = JSON.stringify(updated);
+                nasSaved = true;
               }
             } catch (retryErr) {
               console.warn('[RemoteStorageDriver] Retry request failed:', retryErr);
               updated = reMerged;
             }
             break;
+          } else {
+            throw new Error(`NAS responded with HTTP ${response.status}`);
           }
         } catch (restErr) {
           console.warn(`[RemoteStorageDriver] NAS save attempt ${attempt}/${maxAttempts} notice:`, restErr);
@@ -765,10 +854,20 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
       }
     }
 
+    if (nasSaved) {
+      this.clearUnsynced(unsyncedSeq);
+    } else {
+      console.warn('[RemoteStorageDriver] Change kept locally; it will be re-sent when the NAS is reachable.');
+    }
+
     // 3. Always keep local backup & shadow mirror cache up to date
+    let previousSync = '';
+    try {
+      previousSync = JSON.parse(localStorage.getItem(STORAGE_KEY_SHADOW_CACHE) || 'null')?.last_successful_sync || '';
+    } catch {}
     const shadowRecord: ShadowCacheRecord = {
       config: updated,
-      last_successful_sync: new Date().toISOString(),
+      last_successful_sync: nasSaved ? new Date().toISOString() : previousSync,
       serverVersion: this.lastKnownServerVersion ?? undefined
     };
     try {
@@ -786,7 +885,9 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
         }
         window.dispatchEvent(new CustomEvent('had_config_updated', { detail: updated }));
         window.dispatchEvent(new CustomEvent('had_sync_status_changed', {
-          detail: { status: 'synced', lastSync: shadowRecord.last_successful_sync }
+          detail: nasSaved
+            ? { status: 'synced', lastSync: shadowRecord.last_successful_sync }
+            : { status: 'offline_fallback', lastSync: shadowRecord.last_successful_sync || undefined }
         }));
       } catch {}
     }

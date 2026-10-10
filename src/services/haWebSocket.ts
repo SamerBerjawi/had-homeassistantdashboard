@@ -69,10 +69,19 @@ export function normalizeHAWebSocketUrl(rawUrl: string): string {
   return url;
 }
 
+const HEARTBEAT_INTERVAL_MS = 30000;
+const HEARTBEAT_TIMEOUT_MS = 10000;
+const DEFAULT_REQUEST_TIMEOUT_MS = 60000;
+
+// Weather entity feature bits (WeatherEntityFeature)
+const WEATHER_FORECAST_DAILY = 1;
+const WEATHER_FORECAST_HOURLY = 2;
+const WEATHER_FORECAST_TWICE_DAILY = 4;
+
 class HAWebSocketClient {
   private socket: WebSocket | null = null;
   private messageId = 1;
-  private pendingRequests = new Map<number, { resolve: (res: any) => void; reject: (err: any) => void }>();
+  private pendingRequests = new Map<number, { resolve: (res: any) => void; reject: (err: any) => void; timer?: ReturnType<typeof setTimeout> }>();
   private subscriptions = new Map<number, (event: any) => void>();
   private callbacks: HAWebSocketCallbacks | null = null;
   private status: HAConnectionStatus = 'disconnected';
@@ -87,6 +96,13 @@ class HAWebSocketClient {
   private pollTimer: any = null;
   private visibilityHandler: (() => void) | null = null;
   private haVersion: string | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private isCheckingHealth = false;
+  // Latest weather states and their subscribed forecasts. HA no longer includes forecasts in
+  // weather state attributes, so they're re-attached to every weather state update.
+  private weatherStates = new Map<string, HAState>();
+  private weatherForecasts = new Map<string, { daily?: any[]; hourly?: any[] }>();
+  private forecastSubscriptions = new Set<string>();
 
   constructor() {
     this.attachNetworkLifecycleListeners();
@@ -131,7 +147,10 @@ class HAWebSocketClient {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           if (!this.isDemoMode && !this.isExplicitDisconnect && this.currentUrl && this.currentToken) {
-            if (this.status !== 'connected' && this.status !== 'connecting') {
+            if (this.status === 'connected') {
+              // After a tablet sleeps, the socket often still looks open but is dead
+              void this.checkConnectionHealth();
+            } else if (this.status !== 'connecting') {
               this.reconnectAttempts = 0;
               this.connect(this.currentUrl, this.currentToken, true);
             }
@@ -327,10 +346,13 @@ class HAWebSocketClient {
     this.callbacks?.onLogMessage('warning', `Live connection dropped. Auto-reconnecting in ${(delay / 1000).toFixed(1)}s (attempt ${this.reconnectAttempts})...`);
 
     this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
       if (
         !this.isDemoMode &&
         !this.isExplicitDisconnect &&
-        this.status !== 'auth_failed'
+        this.status !== 'auth_failed' &&
+        this.status !== 'connected' &&
+        this.status !== 'connecting'
       ) {
         this.connect(this.currentUrl, this.currentToken, true);
       }
@@ -357,16 +379,15 @@ class HAWebSocketClient {
     this.currentToken = token;
     this.isExplicitDisconnect = false;
 
-    if (this.socket) {
-      this.socket.onopen = null;
-      this.socket.onmessage = null;
-      this.socket.onerror = null;
-      this.socket.onclose = null;
-      try {
-        this.socket.close();
-      } catch {}
-      this.socket = null;
+    // A retry scheduled before this connect (e.g. while the tablet slept) would otherwise
+    // fire later and tear down this connection once it's healthy
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
     }
+
+    this.detachSocket();
+    this.rejectAllPending(new Error('WebSocket reconnecting'));
 
     this.emitStatus('connecting');
     this.callbacks?.onLogMessage('info', `Connecting to WebSocket: ${normalizedUrl}`);
@@ -394,23 +415,7 @@ class HAWebSocketClient {
       };
 
       this.socket.onclose = () => {
-        for (const [, pending] of this.pendingRequests.entries()) {
-          pending.reject(new Error('WebSocket closed'));
-        }
-        this.pendingRequests.clear();
-        this.subscriptions.clear();
-
-        if (this.status === 'auth_failed') {
-          return;
-        }
-
-        if (this.status !== 'disconnected') {
-          this.emitStatus('disconnected');
-          this.callbacks?.onLogMessage('warning', 'WebSocket connection closed');
-          if (!this.isExplicitDisconnect) {
-            this.scheduleReconnect();
-          }
-        }
+        this.handleSocketLost('WebSocket connection closed');
       };
     } catch (err: any) {
       this.emitStatus('error', err.message);
@@ -429,6 +434,15 @@ class HAWebSocketClient {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
+    this.detachSocket();
+    this.rejectAllPending(new Error('WebSocket disconnected'));
+    this.stopStatePolling();
+    this.emitStatus('disconnected');
+  }
+
+  /** Detaches handlers and closes the current socket without triggering reconnect logic. */
+  private detachSocket() {
+    this.stopHeartbeat();
     if (this.socket) {
       this.socket.onopen = null;
       this.socket.onmessage = null;
@@ -439,13 +453,65 @@ class HAWebSocketClient {
       } catch {}
       this.socket = null;
     }
+  }
+
+  private rejectAllPending(error: Error) {
     for (const [, pending] of this.pendingRequests.entries()) {
-      pending.reject(new Error('WebSocket disconnected'));
+      if (pending.timer) clearTimeout(pending.timer);
+      pending.reject(error);
     }
     this.pendingRequests.clear();
     this.subscriptions.clear();
-    this.stopStatePolling();
+    this.forecastSubscriptions.clear();
+  }
+
+  /** Socket closed or found dead: clean up and schedule a reconnect. */
+  private handleSocketLost(reason: string) {
+    this.detachSocket();
+    this.rejectAllPending(new Error(reason));
+
+    if (this.status === 'auth_failed' || this.status === 'disconnected') {
+      return;
+    }
     this.emitStatus('disconnected');
+    this.callbacks?.onLogMessage('warning', reason);
+    if (!this.isExplicitDisconnect) {
+      this.scheduleReconnect();
+    }
+  }
+
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatTimer = setInterval(() => {
+      void this.checkConnectionHealth();
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
+  /**
+   * Sends a ping and drops the connection if no pong arrives in time. Detects half-open
+   * sockets (Wi-Fi drops, sleeping tablets) that never fire onclose on their own.
+   */
+  private async checkConnectionHealth(): Promise<void> {
+    if (this.isCheckingHealth || this.status !== 'connected' || !this.socket) return;
+    this.isCheckingHealth = true;
+    const socketAtStart = this.socket;
+    try {
+      await this.sendRequest('ping', {}, { timeoutMs: HEARTBEAT_TIMEOUT_MS });
+    } catch {
+      if (this.socket === socketAtStart && this.status === 'connected') {
+        this.reconnectAttempts = 0;
+        this.handleSocketLost('No heartbeat response from Home Assistant. Reconnecting...');
+      }
+    } finally {
+      this.isCheckingHealth = false;
+    }
   }
 
   private handleIncomingMessage(msg: any) {
@@ -467,6 +533,7 @@ class HAWebSocketClient {
         this.callbacks?.onVersionLoaded?.(liveVersion);
       }
       this.callbacks?.onLogMessage('info', `Authentication successful! Home Assistant version: ${liveVersion || '2026.x'}`);
+      this.startHeartbeat();
       this.fetchAllRegistries();
       return;
     }
@@ -515,10 +582,21 @@ class HAWebSocketClient {
       return;
     }
 
+    if (msg.type === 'pong') {
+      const pending = this.pendingRequests.get(msg.id);
+      if (pending) {
+        this.pendingRequests.delete(msg.id);
+        if (pending.timer) clearTimeout(pending.timer);
+        pending.resolve(null);
+      }
+      return;
+    }
+
     if (msg.type === 'result') {
       const pending = this.pendingRequests.get(msg.id);
       if (pending) {
         this.pendingRequests.delete(msg.id);
+        if (pending.timer) clearTimeout(pending.timer);
         if (msg.success) {
           pending.resolve(msg.result);
         } else {
@@ -537,10 +615,14 @@ class HAWebSocketClient {
 
       const data = msg.event?.data || msg.data;
       const entityId = data?.entity_id || msg.event?.entity_id;
-      const newState = data?.new_state || data?.state || msg.event?.new_state;
+      let newState = data?.new_state || data?.state || msg.event?.new_state;
       const oldState = data?.old_state;
 
       if (entityId && newState) {
+        if (entityId.startsWith('weather.')) {
+          this.weatherStates.set(entityId, newState);
+          newState = this.withForecast(newState);
+        }
         this.callbacks?.onStateChanged(entityId, newState);
         this.callbacks?.onLogMessage('state_changed', `State updated: ${entityId} -> ${newState.state}`, newState.attributes);
         try {
@@ -554,16 +636,7 @@ class HAWebSocketClient {
 
   private failAuth(errorMsg?: string) {
     this.isExplicitDisconnect = true;
-    if (this.socket) {
-      this.socket.onopen = null;
-      this.socket.onmessage = null;
-      this.socket.onerror = null;
-      this.socket.onclose = null;
-      try {
-        this.socket.close();
-      } catch {}
-      this.socket = null;
-    }
+    this.detachSocket();
     this.emitStatus('auth_failed', errorMsg || 'Session expired. Please sign in again.');
     this.callbacks?.onLogMessage('error', `Authentication failed: ${errorMsg || 'Invalid Access Token'}`);
   }
@@ -595,13 +668,15 @@ class HAWebSocketClient {
   public async refreshStates(): Promise<void> {
     if (this.isDemoMode || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
     try {
-      const [statesList, nativeNotifications, repairsRes] = await Promise.all([
+      let [statesList, nativeNotifications, repairsRes] = await Promise.all([
         this.sendRequest<HAState[]>('get_states').catch(() => []),
         this.sendRequest<HANativePersistentNotification[]>('persistent_notification/get').catch(() => []),
         this.sendRequest<{ issues?: HANativeRepairIssue[] }>('repairs/list_issues').catch(() => ({ issues: [] }))
       ]);
 
       if (Array.isArray(statesList) && statesList.length > 0) {
+        this.trackWeatherStates(statesList);
+        statesList = statesList.map((s) => this.withForecast(s));
         if (this.callbacks?.onStatesBatchUpdated) {
           this.callbacks.onStatesBatchUpdated(statesList);
         } else {
@@ -648,9 +723,10 @@ class HAWebSocketClient {
         this.callbacks?.onVersionLoaded?.(this.haVersion);
       }
 
+      this.trackWeatherStates(statesList);
       const statesMap: Record<string, HAState> = {};
       for (const s of statesList) {
-        statesMap[s.entity_id] = s;
+        statesMap[s.entity_id] = this.withForecast(s);
       }
 
       const nativeRepairs = Array.isArray(repairsRes?.issues) ? repairsRes.issues : [];
@@ -674,10 +750,9 @@ class HAWebSocketClient {
       this.sendRequest('subscribe_events', { event_type: 'state_changed' });
       this.startStatePolling();
 
-      // Ingest live forecasts for weather entities
-      const weatherEntities = statesList.filter(s => s?.entity_id?.startsWith('weather.'));
-      for (const w of weatherEntities) {
-        this.fetchWeatherForecast(w.entity_id);
+      // Subscribe to live forecasts for weather entities
+      for (const entityId of this.weatherStates.keys()) {
+        void this.fetchWeatherForecast(entityId);
       }
 
       this.callbacks?.onLogMessage('info', `Ingested ${areas.length} areas, ${devices.length} devices, ${entityRegistry.length} entities, ${labels?.length || 0} labels, ${nativeNotifications?.length || 0} notifications, and ${statesList.length} live states.`);
@@ -686,34 +761,61 @@ class HAWebSocketClient {
     }
   }
 
-  public async fetchWeatherForecast(entityId: string): Promise<void> {
-    if (this.isDemoMode || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
-    try {
-      const res = await this.sendRequest('call_service', {
-        domain: 'weather',
-        service: 'get_forecasts',
-        service_data: { type: 'daily' },
-        target: { entity_id: entityId },
-        return_response: true
-      });
-
-      const forecastList = res?.response?.[entityId]?.forecast;
-      if (Array.isArray(forecastList) && forecastList.length > 0) {
-        const statesList = await this.sendRequest<HAState[]>('get_states').catch(() => []);
-        const stateObj = Array.isArray(statesList) ? statesList.find(s => s?.entity_id === entityId) : null;
-        if (stateObj) {
-          this.callbacks?.onStateChanged(entityId, {
-            ...stateObj,
-            attributes: {
-              ...stateObj.attributes,
-              forecast: forecastList
-            }
-          });
-        }
+  private trackWeatherStates(statesList: HAState[]) {
+    for (const s of statesList) {
+      if (s?.entity_id?.startsWith('weather.')) {
+        this.weatherStates.set(s.entity_id, s);
       }
-    } catch {
-      // ignore
     }
+  }
+
+  private withForecast(state: HAState): HAState {
+    const cached = state?.entity_id ? this.weatherForecasts.get(state.entity_id) : undefined;
+    if (!cached) return state;
+    return {
+      ...state,
+      attributes: {
+        ...state.attributes,
+        ...(cached.daily ? { forecast: cached.daily } : {}),
+        ...(cached.hourly ? { hourly_forecast: cached.hourly } : {})
+      }
+    };
+  }
+
+  /**
+   * Subscribes to live daily and hourly forecasts for a weather entity (once per connection).
+   * HA pushes a fresh forecast whenever the integration updates it.
+   */
+  public async fetchWeatherForecast(entityId: string): Promise<void> {
+    if (this.isDemoMode || this.status !== 'connected' || this.forecastSubscriptions.has(entityId)) return;
+    this.forecastSubscriptions.add(entityId);
+
+    const features = Number(this.weatherStates.get(entityId)?.attributes?.supported_features);
+    const knowsFeatures = Number.isFinite(features);
+    const forecastTypes: Array<{ type: 'daily' | 'twice_daily' | 'hourly'; slot: 'daily' | 'hourly' }> = [];
+    if (!knowsFeatures || features & WEATHER_FORECAST_DAILY) {
+      forecastTypes.push({ type: 'daily', slot: 'daily' });
+    } else if (features & WEATHER_FORECAST_TWICE_DAILY) {
+      forecastTypes.push({ type: 'twice_daily', slot: 'daily' });
+    }
+    if (knowsFeatures && features & WEATHER_FORECAST_HOURLY) {
+      forecastTypes.push({ type: 'hourly', slot: 'hourly' });
+    }
+
+    await Promise.all(forecastTypes.map(({ type, slot }) =>
+      this.subscribeMessage<{ forecast?: any[] | null }>((event) => {
+        if (!Array.isArray(event?.forecast)) return;
+        const cached = this.weatherForecasts.get(entityId) || {};
+        this.weatherForecasts.set(entityId, { ...cached, [slot]: event.forecast });
+        const base = this.weatherStates.get(entityId);
+        if (base) {
+          this.callbacks?.onStateChanged(entityId, this.withForecast(base));
+        }
+      }, { type: 'weather/subscribe_forecast', entity_id: entityId, forecast_type: type })
+        .catch((err) => {
+          console.debug(`[haWebSocket] ${type} forecast subscription unavailable for ${entityId}:`, err);
+        })
+    ));
   }
 
   public async ignoreRepairIssue(domain: string, issueId: string, ignore = true): Promise<void> {
@@ -729,7 +831,15 @@ class HAWebSocketClient {
     }
   }
 
-  public sendRequest<T = any>(type: string, extra: Record<string, any> = {}): Promise<T> {
+  /**
+   * Sends a request and resolves with its result. Rejects after `timeoutMs` (0 = no timeout)
+   * so callers can't hang forever on a socket that stopped answering.
+   */
+  public sendRequest<T = any>(
+    type: string,
+    extra: Record<string, any> = {},
+    options: { timeoutMs?: number } = {}
+  ): Promise<T> {
     return new Promise((resolve, reject) => {
       if (this.isDemoMode) {
         resolve(null as any);
@@ -743,8 +853,22 @@ class HAWebSocketClient {
 
       const id = this.messageId++;
       const payload = { id, type, ...extra };
-      this.pendingRequests.set(id, { resolve, reject });
-      this.socket.send(JSON.stringify(payload));
+      const timeoutMs = options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+      const timer = timeoutMs > 0
+        ? setTimeout(() => {
+            if (this.pendingRequests.delete(id)) {
+              reject(new Error(`Home Assistant did not respond to ${type} within ${Math.round(timeoutMs / 1000)}s`));
+            }
+          }, timeoutMs)
+        : undefined;
+      this.pendingRequests.set(id, { resolve, reject, timer });
+      try {
+        this.socket.send(JSON.stringify(payload));
+      } catch (err) {
+        if (timer) clearTimeout(timer);
+        this.pendingRequests.delete(id);
+        reject(err);
+      }
     });
   }
 
@@ -822,12 +946,14 @@ class HAWebSocketClient {
       return Promise.resolve({ success: true });
     }
 
+    // No timeout: calling a script directly blocks until it finishes, which can legitimately take
+    // minutes. A dead connection is still caught by the heartbeat, which rejects pending calls.
     return this.sendRequest('call_service', {
       domain,
       service,
       service_data: serviceData,
       target
-    });
+    }, { timeoutMs: 0 });
   }
 
   /**

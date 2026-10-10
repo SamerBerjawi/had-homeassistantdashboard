@@ -24,6 +24,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useEditMode, BREAKPOINT_ALLOWED_COLUMNS, LayoutBreakpoint } from '../../contexts/EditModeContext';
 import { formatTileSize, formatTileHorizontalSize } from '../../utils/bentoLayout';
+import ErrorBoundary from '../common/ErrorBoundary';
 
 export type GridColSpan = 1 | 2 | 3 | 4 | 6 | 8 | 12;
 export type GridRowSpan = 1 | 2 | 3 | 4;
@@ -578,7 +579,7 @@ export const GridTile: React.FC<GridTileProps> = ({
             </div>
           </div>
         ) : (
-          children
+          <ErrorBoundary variant="card">{children}</ErrorBoundary>
         )}
       </div>
     </div>

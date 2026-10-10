@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { DotsSixVertical, Trash, Copy, Faders, ArrowsOut } from '@phosphor-icons/react';
 import { CardConfig } from '../../types/canvas';
+import ErrorBoundary from '../common/ErrorBoundary';
 
 interface CardShellProps {
   config: CardConfig;
@@ -99,7 +100,7 @@ export default function CardShell({
         }}
         className="w-full h-full p-4 sm:p-5 flex flex-col justify-between cursor-pointer"
       >
-        {children}
+        <ErrorBoundary variant="card">{children}</ErrorBoundary>
       </div>
     </div>
   );

@@ -15,11 +15,22 @@ import {
   checkCoverage,
   getEnergyDbStatus,
   getStoredEntities,
-  normalizeTimestampMs
+  normalizeTimestampMs,
+  closeEnergyDatabase
 } from './server/services/energyDbService';
 import { EnergySyncService } from './server/services/energySyncService';
 
 dotenv.config();
+
+// Log instead of dying silently on a stray rejected promise. An uncaught exception leaves the
+// process in an unknown state, so exit and let the container restart policy bring it back.
+process.on('unhandledRejection', (reason) => {
+  console.error('[Process] Unhandled promise rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Process] Uncaught exception, exiting:', err);
+  process.exit(1);
+});
 
 // Ensure Node resolver favors IPv4 in dual-stack and Docker bridge network environments
 if (typeof dns.setDefaultResultOrder === 'function') {
@@ -444,6 +455,19 @@ async function startServer() {
   // Home Assistant Token Authentication & Security Gatekeeper
   // -------------------------------------------------------------
   const tokenValidationCache = new Map<string, { valid: boolean; expiresAt: number }>();
+  const TOKEN_CACHE_MAX_ENTRIES = 500;
+  // Entries are keyed by token, so without a bound every refreshed OAuth token stays forever
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of tokenValidationCache) {
+      if (entry.expiresAt <= now) tokenValidationCache.delete(key);
+    }
+    // Maps iterate in insertion order, so this drops the oldest entries first
+    for (const key of tokenValidationCache.keys()) {
+      if (tokenValidationCache.size <= TOKEN_CACHE_MAX_ENTRIES) break;
+      tokenValidationCache.delete(key);
+    }
+  }, 60 * 1000).unref();
   let lastAuthErrorLog = 0;
 
   // The Home Assistant instance that validates dashboard tokens must not be chosen by the client:
@@ -848,12 +872,16 @@ async function startServer() {
     }
 
     const allowEmpty = Boolean(body.allowEmpty);
+    // A partial save is a delta merged onto the current config (e.g. sent with keepalive while the
+    // page unloads). Merging can't wipe sections, so the empty-payload and version guards don't apply.
+    const isPartialMerge = body.partial === true && !allowEmpty;
 
     // Extract target config object and client's last-known version
     const targetConfig = (body.config && typeof body.config === 'object') ? { ...body.config } : { ...body };
     delete (targetConfig as any).expectedVersion;
     delete (targetConfig as any).serverVersion;
     delete (targetConfig as any).allowEmpty;
+    delete (targetConfig as any).partial;
 
     const clientExpectedVersion = body.expectedVersion !== undefined 
       ? Number(body.expectedVersion) 
@@ -875,7 +903,7 @@ async function startServer() {
 
         // Material Data Safeguard (Refuse empty payload overwriting material config unless allowEmpty is explicitly set)
         const isExplicitCameraSourcesUpdate = targetConfig.cameras?.sources !== undefined;
-        if (!allowEmpty && !isExplicitCameraSourcesUpdate && currentConfig && hasMaterialDashboardConfig(currentConfig) && !hasMaterialDashboardConfig(targetConfig)) {
+        if (!isPartialMerge && !allowEmpty && !isExplicitCameraSourcesUpdate && currentConfig && hasMaterialDashboardConfig(currentConfig) && !hasMaterialDashboardConfig(targetConfig)) {
           return {
             conflict: true,
             statusCode: 409,
@@ -890,7 +918,7 @@ async function startServer() {
         }
 
         // Real conflict check: client's version is older than server's current version
-        if (currentConfig && clientExpectedVersion !== undefined && !isNaN(clientExpectedVersion)) {
+        if (!isPartialMerge && currentConfig && clientExpectedVersion !== undefined && !isNaN(clientExpectedVersion)) {
           if (clientExpectedVersion < currentServerVersion) {
             console.warn(`[NAS Config Conflict] Write rejected: client expected v${clientExpectedVersion} < server current v${currentServerVersion}`);
             return {
@@ -1575,13 +1603,54 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log('\n  \x1b[36m\x1b[1mHAD - Home Assistant Dashboard\x1b[0m');
     console.log(`  \x1b[32m➜\x1b[0m  \x1b[1mLocal:\x1b[0m   \x1b[36mhttp://localhost:${PORT}/\x1b[0m`);
     console.log(`  \x1b[32m➜\x1b[0m  \x1b[1mNetwork:\x1b[0m \x1b[36mhttp://0.0.0.0:${PORT}/\x1b[0m (accessible by wall tablets on LAN)\n`);
   });
+  httpServer.on('error', (err) => {
+    console.error('[HAD Server] HTTP server error:', err);
+    process.exit(1);
+  });
+
+  // Graceful shutdown: `docker stop` sends SIGTERM and kills after 10s. Stop accepting requests,
+  // let in-flight config writes finish, end SSE streams, and close SQLite cleanly.
+  let isShuttingDown = false;
+  const shutdown = async (signal: string) => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log(`[HAD Server] ${signal} received, shutting down...`);
+    const forceExit = setTimeout(() => {
+      console.warn('[HAD Server] Shutdown timed out, forcing exit');
+      process.exit(1);
+    }, 8000);
+    forceExit.unref();
+
+    httpServer.close();
+    for (const client of sseClients) {
+      try {
+        client.end();
+      } catch {}
+    }
+    sseClients.clear();
+    httpServer.closeIdleConnections?.();
+
+    try {
+      await configWriteQueue;
+    } catch {}
+    try {
+      closeEnergyDatabase();
+    } catch (err) {
+      console.warn('[HAD Server] Error closing statistics database:', err);
+    }
+    process.exit(0);
+  };
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
 }
 
 startServer().catch(err => {
   console.error('Failed to start HAD server:', err);
+  // Exit so the container restarts instead of idling half-initialized (timers keep the loop alive)
+  process.exit(1);
 });

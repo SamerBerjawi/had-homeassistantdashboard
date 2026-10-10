@@ -217,6 +217,12 @@ export interface IConfigStorageDriver {
     options?: SaveConfigOptions
   ): Promise<UserDashboardConfig>;
   uploadAsset?(fileOrDataUrl: File | string, key: string): Promise<string>;
+  /** Fire-and-forget save that survives page unload (keepalive). Must not await anything. */
+  saveConfigOnUnload?(config: DeepPartial<UserDashboardConfig> | Partial<UserDashboardConfig>): void;
+  /** Changes saved locally that haven't reached the server yet, if any. */
+  getUnsyncedChanges?(): Partial<UserDashboardConfig> | null;
+  /** Retries sending unsynced changes. Resolves with the saved config, or null if nothing was sent. */
+  replayUnsyncedChanges?(): Promise<UserDashboardConfig | null>;
 }
 
 export type StorageDriverType = 'remote_ha' | 'remote_nas' | 'local_storage';

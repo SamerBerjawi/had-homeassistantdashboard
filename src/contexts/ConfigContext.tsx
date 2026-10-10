@@ -96,10 +96,17 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setLastSuccessfulSync(new Date().toISOString());
             return;
           }
-          // Reconcile pending in-flight local edits on top of remote config
-          // to prevent incoming SSE broadcasts or sync polls from reverting active user edits
+          // Reconcile local edits on top of remote config so incoming SSE broadcasts or sync polls
+          // don't revert them: changes that never reached the NAS, then in-flight debounced edits
+          const unsynced = driver.getUnsyncedChanges?.() || null;
+          const withUnsynced = unsynced ? mergeConfig(loaded, unsynced) : loaded;
           const hasPendingDelta = pendingDeltaRef.current && Object.keys(pendingDeltaRef.current).length > 0;
-          const merged = hasPendingDelta ? mergeConfig(loaded, pendingDeltaRef.current) : loaded;
+          const merged = hasPendingDelta ? mergeConfig(withUnsynced, pendingDeltaRef.current) : withUnsynced;
+          if (unsynced) {
+            void driver.replayUnsyncedChanges?.().catch((err) => {
+              console.warn('[ConfigProvider] Replaying unsynced changes failed:', err);
+            });
+          }
           latestConfigRef.current = merged;
           setConfig(merged);
           setLastSaved(loaded.updatedAt);
@@ -223,6 +230,14 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [authState, isInitializing, isProduction, setDragActive]);
 
   const pendingDeltaRef = useRef<Partial<UserDashboardConfig>>({});
+  // Callers awaiting updateConfig whose debounced save hasn't run yet; all settle together
+  const pendingResolversRef = useRef<Array<(config: UserDashboardConfig) => void>>([]);
+
+  const settlePendingResolvers = useCallback((result: UserDashboardConfig) => {
+    const resolvers = pendingResolversRef.current;
+    pendingResolversRef.current = [];
+    for (const resolve of resolvers) resolve(result);
+  }, []);
 
   // Update Config (Debounced Remote Persistence)
   const updateConfig = useCallback(async (
@@ -257,6 +272,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     return new Promise((resolve) => {
+      pendingResolversRef.current.push(resolve);
       // 800ms debounce to prevent NAS disk thrashing and concurrency collisions
       pendingSaveTimeoutRef.current = setTimeout(async () => {
         pendingSaveTimeoutRef.current = null;
@@ -275,31 +291,47 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           if (!hasMorePending) {
             setIsSaving(false);
           }
-          resolve(saved);
+          settlePendingResolvers(saved);
         } catch (err) {
           console.error('[ConfigProvider] Failed to save config:', err);
           setIsSaving(false);
-          resolve(merged);
+          settlePendingResolvers(latestConfigRef.current);
         }
       }, 800);
     });
-  }, []);
+  }, [settlePendingResolvers]);
 
-  // Guarantee persistence before tab closes or reloads (keepalive: true)
+  // Persist pending edits when the page is hidden or unloaded. iOS and kiosk browsers often skip
+  // beforeunload, and a hidden tablet page may be frozen or discarded before the debounce fires.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const handleBeforeUnload = () => {
-      if (pendingSaveTimeoutRef.current && Object.keys(pendingDeltaRef.current).length > 0) {
-        clearTimeout(pendingSaveTimeoutRef.current);
-        pendingSaveTimeoutRef.current = null;
-        const deltaToSave = { ...pendingDeltaRef.current };
-        pendingDeltaRef.current = {};
-        void activeDriverRef.current.saveConfig(deltaToSave, { keepalive: true });
+    const flushOnHide = () => {
+      if (!pendingSaveTimeoutRef.current || Object.keys(pendingDeltaRef.current).length === 0) return;
+      clearTimeout(pendingSaveTimeoutRef.current);
+      pendingSaveTimeoutRef.current = null;
+      const deltaToSave = { ...pendingDeltaRef.current };
+      pendingDeltaRef.current = {};
+      const driver = activeDriverRef.current;
+      if (driver.saveConfigOnUnload) {
+        driver.saveConfigOnUnload(deltaToSave);
+      } else {
+        void driver.saveConfig(deltaToSave, { keepalive: true });
       }
+      setIsSaving(false);
+      settlePendingResolvers(latestConfigRef.current);
     };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, []);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flushOnHide();
+    };
+    window.addEventListener('pagehide', flushOnHide);
+    window.addEventListener('beforeunload', flushOnHide);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('pagehide', flushOnHide);
+      window.removeEventListener('beforeunload', flushOnHide);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [settlePendingResolvers]);
 
   // Immediate Force Flush of Any Pending Debounced Config Save
   const flushPendingSave = useCallback(async (): Promise<UserDashboardConfig> => {
@@ -318,13 +350,15 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setConfig(saved);
       setLastSaved(saved.updatedAt);
       setIsSaving(false);
+      settlePendingResolvers(saved);
       return saved;
     } catch (err) {
       console.error('[ConfigProvider] Failed to flush save config:', err);
       setIsSaving(false);
+      settlePendingResolvers(latestConfigRef.current);
       return latestConfigRef.current;
     }
-  }, []);
+  }, [settlePendingResolvers]);
 
   // Upload Custom Vehicle PNGs or Brand Logos
   const uploadVehicleAsset = useCallback(async (fileOrDataUrl: File | string, key: string): Promise<string> => {

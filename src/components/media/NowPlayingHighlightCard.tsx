@@ -109,8 +109,12 @@ export default function NowPlayingHighlightCard({
   const handleSeek = async (seconds: number) => {
     setSeekOverride(seconds);
     setIsSeeking(false);
-    await callHAService('media_player', 'media_seek', { seek_position: seconds }, { entity_id: media.entity_id });
-    setTimeout(() => setSeekOverride(null), 800);
+    try {
+      await callHAService('media_player', 'media_seek', { seek_position: seconds }, { entity_id: media.entity_id });
+    } finally {
+      // Release the override even if the seek failed, or the scrubber stays pinned
+      setTimeout(() => setSeekOverride(null), 800);
+    }
   };
 
   const handlePlayPause = (e: React.MouseEvent) => {

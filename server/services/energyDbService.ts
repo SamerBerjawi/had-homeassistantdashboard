@@ -133,6 +133,16 @@ export function initEnergyDatabase(customDataDir?: string): DatabaseSync {
   return db;
 }
 
+/** Closes the database (on shutdown) so pending WAL data is checkpointed cleanly. */
+export function closeEnergyDatabase(): void {
+  if (!dbInstance) return;
+  try {
+    dbInstance.close();
+  } finally {
+    dbInstance = null;
+  }
+}
+
 export function getDatabase(): DatabaseSync {
   if (!dbInstance) {
     return initEnergyDatabase();

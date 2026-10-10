@@ -150,11 +150,14 @@ export default function MediaOverviewDrawer({
     setSeekOverride(newSecs);
     setIsSeeking(false);
     if (!currentMedia) return;
-    await callHAService('media_player', 'media_seek', { seek_position: newSecs }, { entity_id: currentMedia.entity_id });
-    // Clear seek override after a short debounce to allow HA to acknowledge
-    setTimeout(() => {
-      setSeekOverride(null);
-    }, 800);
+    try {
+      await callHAService('media_player', 'media_seek', { seek_position: newSecs }, { entity_id: currentMedia.entity_id });
+    } finally {
+      // Clear seek override after a short debounce to allow HA to acknowledge (or after a failure)
+      setTimeout(() => {
+        setSeekOverride(null);
+      }, 800);
+    }
   };
 
   // Handle Playback Services

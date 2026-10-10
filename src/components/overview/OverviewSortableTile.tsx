@@ -19,6 +19,7 @@ import {
   SquaresFour
 } from '@phosphor-icons/react';
 import type { OverviewTileVisibilityMode } from '../../types/userConfig';
+import ErrorBoundary from '../common/ErrorBoundary';
 
 export interface OverviewSortableTileProps {
   id: string;
@@ -108,7 +109,7 @@ export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
         onClick={isEditMode || isOverlay ? undefined : onClick}
         className={`w-full h-full ${isEditMode ? 'cursor-default' : ''}`}
       >
-        {children}
+        <ErrorBoundary variant="card">{children}</ErrorBoundary>
       </div>
 
       {/* Edit Mode Controls Overlay - Entire surface is draggable */}

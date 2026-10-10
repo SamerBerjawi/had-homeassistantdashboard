@@ -27,6 +27,7 @@ import { haWebSocketService } from './services/haWebSocket';
 import { alertService } from './services/alertService';
 import { useAlertStore } from './store/useAlertStore';
 import ToastContainer from './components/alerts/ToastContainer';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import { useEntityPopup } from './contexts/EntityPopupContext';
 
 // Lazy-loaded drawers and modals (loaded on demand)
@@ -707,6 +708,7 @@ export default function App() {
 
             {/* Dynamic Weather / Area Telemetry Sentence (100% Full Width across Page) */}
             <div className="w-full pt-0.5">
+              <ErrorBoundary variant="silent" label="Header" resetKeys={[activeTab]}>
               <Suspense fallback={null}>
                 {activeTab === 'overview' ? (
                   <WeatherHeaderSentence
@@ -731,6 +733,7 @@ export default function App() {
                   </p>
                 )}
               </Suspense>
+              </ErrorBoundary>
             </div>
           </header>
 
@@ -767,6 +770,7 @@ export default function App() {
 
           {/* PAGE ROUTING (Views lazy-loaded on first visit) */}
           <div className="flex-1 flex flex-col">
+            <ErrorBoundary variant="view" label={currentTheme.title} resetKeys={[activeTab, selectedAreaId, selectedSettingsSection]}>
             {activeTab === 'overview' && <OverviewView darkMode={darkMode} />}
             <Suspense fallback={<div className="flex-1 flex items-center justify-center opacity-40 text-sm">Loading...</div>}>
               {activeTab === 'rooms' && <RoomsView darkMode={darkMode} />}
@@ -800,6 +804,7 @@ export default function App() {
                 />
               )}
             </Suspense>
+            </ErrorBoundary>
           </div>
 
         </main>
@@ -807,24 +812,28 @@ export default function App() {
 
       {/* Global Notification & Alert Center Drawer */}
       {hasOpenedNotifications && (
-        <Suspense fallback={null}>
-          <NotificationDrawer
-            isOpen={isNotificationOpen}
-            onClose={handleCloseNotifications}
-            darkMode={darkMode}
-          />
-        </Suspense>
+        <ErrorBoundary variant="silent" label="Notification drawer" resetKeys={[isNotificationOpen]}>
+          <Suspense fallback={null}>
+            <NotificationDrawer
+              isOpen={isNotificationOpen}
+              onClose={handleCloseNotifications}
+              darkMode={darkMode}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
       {/* Global Weather Overview Drawer */}
       {hasOpenedWeather && (
-        <Suspense fallback={null}>
-          <WeatherOverviewDrawer
-            isOpen={isWeatherDrawerOpen}
-            onClose={() => setIsWeatherDrawerOpen(false)}
-            darkMode={darkMode}
-          />
-        </Suspense>
+        <ErrorBoundary variant="silent" label="Weather drawer" resetKeys={[isWeatherDrawerOpen]}>
+          <Suspense fallback={null}>
+            <WeatherOverviewDrawer
+              isOpen={isWeatherDrawerOpen}
+              onClose={() => setIsWeatherDrawerOpen(false)}
+              darkMode={darkMode}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
       {/* Real-Time Glassmorphic Toast Alerts */}

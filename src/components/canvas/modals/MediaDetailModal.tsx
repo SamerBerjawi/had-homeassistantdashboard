@@ -101,10 +101,14 @@ export default function MediaDetailModal({
   const handleSeekCommit = async (newSecs: number) => {
     setSeekOverride(newSecs);
     setIsSeeking(false);
-    await callHAService('media_player', 'media_seek', { seek_position: newSecs }, { entity_id: entity.entity_id });
-    setTimeout(() => {
-      setSeekOverride(null);
-    }, 800);
+    try {
+      await callHAService('media_player', 'media_seek', { seek_position: newSecs }, { entity_id: entity.entity_id });
+    } finally {
+      // Release the override even if the seek failed, or the scrubber stays pinned
+      setTimeout(() => {
+        setSeekOverride(null);
+      }, 800);
+    }
   };
 
   const handlePlayPause = async () => {
