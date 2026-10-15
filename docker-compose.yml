@@ -11,6 +11,10 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - GO2RTC_URL=http://go2rtc:1984
+      # Required: the Home Assistant instance that validates dashboard tokens (SEC-001).
+      # Existing installs that already pinned an instance (data/config/ha-instance.json) keep working.
+      # Set ALLOW_TOFU_PIN=true only for a one-time first-run pin.
+      - HASS_URL=${HASS_URL:-}
     # Persistent storage volume for dashboard config JSON and uploaded vehicle assets
     volumes:
       - ./data:/app/data
@@ -31,11 +35,12 @@ services:
     image: alexxit/go2rtc:latest
     container_name: go2rtc
     restart: unless-stopped
+    # The go2rtc HTTP API (1984) and RTSP (8554) are intentionally NOT published: the dashboard
+    # reaches them on the compose network (http://go2rtc:1984). Publishing 1984 exposes an
+    # unauthenticated management API to the LAN (SEC-004).
     ports:
-      - "1984:1984"       # API, WebRTC signaling (WHEP), HLS, MSE
       - "8555:8555/tcp"   # WebRTC media transport TCP
       - "8555:8555/udp"   # WebRTC media transport UDP
-      - "8554:8554"       # RTSP server (optional)
     volumes:
       - ./data/go2rtc:/config
     environment:

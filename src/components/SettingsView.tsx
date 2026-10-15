@@ -441,7 +441,8 @@ export default function SettingsView({
     }
 
     const incomingPin = parsed.pinCode !== undefined ? parsed.pinCode : parsed.canvas?.pinCode;
-    if (typeof incomingPin === 'string') {
+    // The server never exposes the real PIN: ignore its marker and any stored hash
+    if (typeof incomingPin === 'string' && incomingPin !== '__pin_set__' && !incomingPin.startsWith('scrypt$')) {
       setPinCode(incomingPin);
     }
 

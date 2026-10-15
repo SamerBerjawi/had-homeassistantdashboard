@@ -253,7 +253,7 @@ export default function NotificationChangelog({
                     Official release announcement & full changelog
                   </span>
                   <a
-                    href={item.releaseUrl}
+                    href={sanitizeSafeUrl(item.releaseUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => {

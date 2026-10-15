@@ -19,6 +19,16 @@ import {
   closeEnergyDatabase
 } from './server/services/energyDbService';
 import { EnergySyncService } from './server/services/energySyncService';
+import {
+  HLS_FORWARDED_QUERY_KEYS,
+  applyPinOnWrite,
+  redactConfigForClient,
+  redactCredentialsInText,
+  resolveHlsSubpath,
+  restoreRedactedCameraUrls,
+  validateCameraSourceUrl,
+  validateDashboardConfigShape
+} from './server/lib/security';
 
 dotenv.config();
 
@@ -456,6 +466,8 @@ async function startServer() {
   // -------------------------------------------------------------
   const tokenValidationCache = new Map<string, { valid: boolean; expiresAt: number }>();
   const TOKEN_CACHE_MAX_ENTRIES = 500;
+  // SEC-010: a revoked HA token must stop working here quickly, so cache successes briefly
+  const VALID_TOKEN_CACHE_MS = 60 * 1000;
   // Entries are keyed by token, so without a bound every refreshed OAuth token stays forever
   setInterval(() => {
     const now = Date.now();
@@ -498,6 +510,26 @@ async function startServer() {
     return envHaUrl ? resolveTargetHaBase(envHaUrl) : pinnedHaBase;
   }
 
+  // SEC-001: without HASS_URL or an existing pin, the first client must not become the authority for
+  // "valid token". Trust-on-first-use is therefore opt-in (ALLOW_TOFU_PIN=true).
+  const allowTofuPin = process.env.ALLOW_TOFU_PIN === 'true';
+  // SEC-007: the mock-token bypass is opt-in only; a missing NODE_ENV no longer enables it.
+  const allowMockTokens = process.env.ALLOW_MOCK_TOKENS === 'true';
+  if (allowMockTokens) {
+    console.warn('[Auth] WARNING: ALLOW_MOCK_TOKENS=true. Tokens starting with test_ or mock_ bypass Home Assistant validation. Never enable this in production.');
+  }
+  if (!envHaUrl && !pinnedHaBase && !allowTofuPin) {
+    console.warn('[Auth] No HASS_URL and no pinned Home Assistant instance: authenticated API routes will refuse requests until HASS_URL is set (or ALLOW_TOFU_PIN=true for first-run pinning).');
+  }
+
+  function isMockToken(token: string): boolean {
+    return allowMockTokens && (token.startsWith('test_') || token.startsWith('mock_'));
+  }
+
+  function isHaTrustConfigured(): boolean {
+    return Boolean(getTrustedHaBase()) || allowTofuPin;
+  }
+
   async function pinHaBase(haBase: string) {
     if (envHaUrl || pinnedHaBase) return;
     pinnedHaBase = haBase;
@@ -535,13 +567,14 @@ async function startServer() {
   async function verifyHAToken(token: string, clientHaUrl?: string, forwardedAuthHeader?: string): Promise<boolean> {
     if (!token) return false;
 
-    // Fast-path: allow test tokens in non-production test harnesses or when explicitly enabled for testing
-    if ((process.env.NODE_ENV !== 'production' || process.env.ALLOW_MOCK_TOKENS === 'true') && (token.startsWith('test_') || token.startsWith('mock_'))) {
+    // Fast-path: test tokens, only when ALLOW_MOCK_TOKENS=true
+    if (isMockToken(token)) {
       return true;
     }
 
-    // Before an instance is pinned, the client's URL is only used to bootstrap the first sign-in
+    // The client's URL is only used to bootstrap the first sign-in, and only with ALLOW_TOFU_PIN=true
     const trustedBase = getTrustedHaBase();
+    if (!trustedBase && !allowTofuPin) return false;
     const haBase = trustedBase || resolveTargetHaBase(clientHaUrl);
 
     const cacheKey = `${haBase}|${token}`;
@@ -569,7 +602,7 @@ async function startServer() {
 
       tokenValidationCache.set(cacheKey, {
         valid: isValid,
-        expiresAt: Date.now() + (isValid ? 10 * 60 * 1000 : 30 * 1000)
+        expiresAt: Date.now() + (isValid ? VALID_TOKEN_CACHE_MS : 30 * 1000)
       });
 
       if (!isValid) {
@@ -599,7 +632,7 @@ async function startServer() {
           const isValid = retryRes.status === 200;
           tokenValidationCache.set(cacheKey, {
             valid: isValid,
-            expiresAt: Date.now() + (isValid ? 10 * 60 * 1000 : 30 * 1000)
+            expiresAt: Date.now() + (isValid ? VALID_TOKEN_CACHE_MS : 30 * 1000)
           });
           return isValid;
         } catch {
@@ -765,6 +798,13 @@ async function startServer() {
       ? rawAuthHeader
       : `Bearer ${token}`;
 
+    if (!isMockToken(token) && !isHaTrustConfigured()) {
+      return res.status(503).json({
+        success: false,
+        error: 'Server is not configured: set HASS_URL to the Home Assistant instance that validates tokens'
+      });
+    }
+
     const isValid = await verifyHAToken(token, clientHaUrl, authHeader);
     if (!isValid) {
       return res.status(401).json({
@@ -839,7 +879,7 @@ async function startServer() {
       if (persisted) {
         return res.json({
           success: true,
-          config: persisted.config,
+          config: redactConfigForClient(persisted.config),
           serverVersion: persisted.serverVersion
         });
       }
@@ -893,6 +933,13 @@ async function startServer() {
         error: 'Invalid config payload: expected JSON object with dashboard configuration structure'
       });
     }
+    const shapeError = validateDashboardConfigShape(targetConfig);
+    if (shapeError) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid config payload: ${shapeError}`
+      });
+    }
 
     try {
       const result = await withConfigWriteLock(async () => {
@@ -912,7 +959,7 @@ async function startServer() {
               error: 'Refusing to overwrite existing dashboard configuration with an empty or uninitialized payload',
               materialGuard: true,
               serverVersion: currentServerVersion,
-              config: currentConfig
+              config: redactConfigForClient(currentConfig)
             }
           };
         }
@@ -929,13 +976,17 @@ async function startServer() {
                 error: 'Conflict: Server configuration has been modified by another client',
                 conflict: true,
                 serverVersion: currentServerVersion,
-                config: currentConfig
+                config: redactConfigForClient(currentConfig)
               }
             };
           }
         }
 
         const nextServerVersion = currentServerVersion + 1;
+
+        // Clients only see redacted camera URLs and a PIN marker; put the stored secrets back
+        restoreRedactedCameraUrls(targetConfig, currentConfig);
+        applyPinOnWrite(targetConfig, currentConfig);
 
         // Deep merge targetConfig onto currentConfig (unless allowEmpty is explicitly set)
         // to prevent partial payloads from silently wiping out unmentioned sections
@@ -971,7 +1022,7 @@ async function startServer() {
           statusCode: 200,
           payload: {
             success: true,
-            config: finalConfig,
+            config: redactConfigForClient(finalConfig),
             serverVersion: nextServerVersion
           }
         };
@@ -1389,6 +1440,12 @@ async function startServer() {
     if (registeredGo2RtcStreams.get(streamName) === rtspUrl) {
       return true;
     }
+    // Defense in depth for configs saved before server-side validation existed (SEC-003)
+    const sourceError = validateCameraSourceUrl(rtspUrl);
+    if (sourceError) {
+      console.warn(`[go2rtc Proxy] Refusing to register stream "${streamName}": ${sourceError}`);
+      return false;
+    }
     try {
       const targetUrl = `${GO2RTC_URL}/api/streams?name=${encodeURIComponent(streamName)}&src=${encodeURIComponent(rtspUrl)}`;
       let res = await fetch(targetUrl, {
@@ -1426,7 +1483,7 @@ async function startServer() {
     try {
       const ping = await fetch(`${GO2RTC_URL}/api/streams`, { signal: AbortSignal.timeout(3000) });
       if (ping.ok) {
-        const streams = await ping.json();
+        const streams = JSON.parse(redactCredentialsInText(JSON.stringify(await ping.json())));
         return res.json({ success: true, go2rtcOnline: true, streams });
       }
       return res.json({ success: true, go2rtcOnline: false, error: `go2rtc returned status ${ping.status}` });
@@ -1499,6 +1556,11 @@ async function startServer() {
 
   // HLS stream and media segment proxy
   app.all('/api/cameras/:cameraId/hls*', requireHAAuth, async (req, res) => {
+    // Playlist and segment fetches only (SEC-002): never relay other methods to go2rtc
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      res.setHeader('Allow', 'GET, HEAD');
+      return res.status(405).json({ success: false, error: 'Method not allowed' });
+    }
     const { cameraId } = req.params;
     if (!GO2RTC_ENABLED || !GO2RTC_URL) {
       return res.status(503).send('go2rtc streaming is disabled in development environment');
@@ -1514,14 +1576,15 @@ async function startServer() {
     await ensureGo2RtcStream(config.streamName, config.rtspUrl);
 
     try {
-      let subpath = req.params[0] || '/stream.m3u8';
-      if (!subpath.startsWith('/')) subpath = `/${subpath}`;
-      if (subpath === '/' || subpath === '') subpath = '/stream.m3u8';
+      const subpath = resolveHlsSubpath(req.params[0]);
+      if (!subpath) {
+        return res.status(400).json({ success: false, error: 'Invalid HLS resource path' });
+      }
 
       const urlObj = new URL(`${GO2RTC_URL}/api${subpath}`);
       urlObj.searchParams.set('src', config.streamName);
       for (const [k, v] of Object.entries(req.query)) {
-        if (k !== 'src' && typeof v === 'string') {
+        if (HLS_FORWARDED_QUERY_KEYS.has(k) && typeof v === 'string') {
           urlObj.searchParams.set(k, v);
         }
       }
@@ -1566,16 +1629,31 @@ async function startServer() {
     const { cameraId } = req.params;
     console.log(`[Camera API] Deleting camera stream source "${cameraId}"...`);
 
-    const result = await withConfigWriteLock(async () => {
-      const existing = await readPersistentConfig();
-      const currentConfig = existing?.config || cachedServerConfig || null;
-      const currentServerVersion = existing?.serverVersion || cachedServerVersion || 1;
+    try {
+      const result = await withConfigWriteLock(async () => {
+        const existing = await readPersistentConfig();
+        const baseConfig = existing?.config || cachedServerConfig || null;
+        const currentServerVersion = existing?.serverVersion || cachedServerVersion || 1;
 
-      if (currentConfig?.cameras?.sources && currentConfig.cameras.sources[cameraId]) {
+        if (!baseConfig?.cameras?.sources || !baseConfig.cameras.sources[cameraId]) {
+          return { nextVersion: null as number | null, removed: false };
+        }
+
+        // Work on a copy so a failed write leaves the cached config untouched (REL-002)
+        const nextConfig = JSON.parse(JSON.stringify(baseConfig));
+        delete nextConfig.cameras.sources[cameraId];
+
+        const nextVersion = currentServerVersion + 1;
+        await writeConfigFileAtomic(
+          configFilePath,
+          JSON.stringify({ serverVersion: nextVersion, config: nextConfig }, null, 2)
+        );
+        cachedServerConfig = nextConfig;
+        cachedServerVersion = nextVersion;
+
+        // Only after the config is durable: drop the stream from go2rtc
         const streamName = getCameraStreamName(cameraId);
-        delete currentConfig.cameras.sources[cameraId];
-
-        // Remove stream from go2rtc memory if running
+        registeredGo2RtcStreams.delete(streamName);
         if (GO2RTC_ENABLED && GO2RTC_URL) {
           try {
             await fetch(`${GO2RTC_URL}/api/streams?src=${encodeURIComponent(streamName)}`, {
@@ -1587,32 +1665,21 @@ async function startServer() {
             console.warn(`[Camera API] Could not delete stream "${streamName}" from go2rtc:`, err?.message);
           }
         }
-        registeredGo2RtcStreams.delete(streamName);
 
-        // Atomically persist config
-        const nextVersion = currentServerVersion + 1;
-        const diskPayload = {
-          serverVersion: nextVersion,
-          config: currentConfig
-        };
-        await writeConfigFileAtomic(configFilePath, JSON.stringify(diskPayload, null, 2));
-        cachedServerConfig = currentConfig;
-        cachedServerVersion = nextVersion;
+        return { nextVersion, removed: true };
+      });
 
-        return { nextVersion };
+      if (result.nextVersion) {
+        broadcastConfigUpdate(result.nextVersion);
       }
-      return { nextVersion: currentServerVersion };
-    });
 
-    if (result.nextVersion) {
-      broadcastConfigUpdate(result.nextVersion);
+      applyCorsHeaders(req, res, 'DELETE, OPTIONS');
+      return res.json({ success: true, cameraId, removed: result.removed });
+    } catch (err: any) {
+      console.error(`[Camera API] Failed to delete camera "${cameraId}":`, err);
+      return res.status(500).json({ success: false, error: 'Failed to delete camera source' });
     }
-
-    applyCorsHeaders(req, res, 'DELETE, OPTIONS');
-    return res.json({ success: true, cameraId });
   });
-
-
 
   // Vite middleware for development vs static build in production
   if (process.env.NODE_ENV !== 'production') {

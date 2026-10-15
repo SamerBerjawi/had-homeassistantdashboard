@@ -13,7 +13,8 @@ import {
   handleHAOAuthCallback, 
   startHAOAuthFlow, 
   refreshHAOAuthTokenWithStatus,
-  normalizeHAUrl 
+  normalizeHAUrl,
+  revokeStoredRefreshToken
 } from '../services/haAuth';
 import { 
   getStoredAuthConfig, 
@@ -225,6 +226,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {}
 
     const handleWindowMessage = (event: MessageEvent) => {
+      // SEC-008: only our own origin may deliver OAuth tokens (the popup/PWA posts to window.location.origin)
+      if (event.origin !== window.location.origin) return;
       if (event?.data?.type === 'HA_OAUTH_SUCCESS' && event.data.tokens) {
         const tokens: AuthTokens = event.data.tokens;
         haWebSocketService.setDemoMode(false);
@@ -543,6 +546,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 4. Clean Sign Out
   const logout = useCallback(() => {
     clearRefreshTimer();
+    // Must read the stored tokens before they are cleared
+    revokeStoredRefreshToken();
     clearStoredAuthConfig();
 
     haWebSocketService.disconnect();

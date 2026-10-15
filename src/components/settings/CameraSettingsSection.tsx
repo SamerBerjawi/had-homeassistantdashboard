@@ -58,7 +58,11 @@ export default function CameraSettingsSection({
   const checkGo2rtcHealth = async () => {
     setIsCheckingGo2rtc(true);
     try {
-      const res = await fetch('/api/cameras/status');
+      // The route requires a valid HA token (REL-007); an unauthorized response is not "offline"
+      const res = await fetch('/api/cameras/status', {
+        headers: getAuthHeaders(),
+        signal: AbortSignal.timeout(8000)
+      });
       if (res.ok) {
         const data = await res.json();
         setGo2rtcOnline(Boolean(data.go2rtcOnline));

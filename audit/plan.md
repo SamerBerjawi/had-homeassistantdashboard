@@ -4,6 +4,30 @@ Built 2026-10-15 from `findings-security.md`, `findings-reliability.md`, `findin
 
 Tests referenced: `npm run lint`, `npm test` (vitest), `npm run test:integration` (scripts/test-*.ts), `npx playwright test` (tests/e2e, desktop+mobile, dev server). **New tests are called out where none exist today.**
 
+## 0. Implementation status
+
+Updated as packages land. Findings listed as done are fixed and covered by the tests named in the note.
+
+| Package / item | Status | What changed |
+|---|---|---|
+| P1-1 SEC-001, SEC-007 | Done | Auth refuses until HASS_URL/pin (503) unless ALLOW_TOFU_PIN=true; mock tokens only with ALLOW_MOCK_TOKENS=true; `start` sets NODE_ENV=production. Tests: scripts/test-auth-trust.ts, e2e A/H. |
+| P1-2 SEC-002, SEC-004 | Done | HLS proxy GET/HEAD only, strict playlist/segment path allow-list, query allow-list; compose no longer publishes go2rtc 1984/8554. Tests: tests/serverSecurity.test.ts, e2e H. |
+| P1-3 SEC-003, REL-003 | Done | server/lib/security.ts validates section types and camera source scheme on POST /api/config and before go2rtc registration. Tests: serverSecurity.test.ts, e2e H. |
+| P1-4 SEC-006 | Done | GET/POST/409 responses and /api/cameras/status redact URL credentials; redacted echo-back preserves stored URL; kiosk PIN scrypt-hashed and returned as marker. Tests: serverSecurity.test.ts, e2e H. |
+| P1-5 REL-001 | Done | Conflict retry only accepts server config on a second 409; other failures keep the edit queued. Tests: tests/configStorage.test.ts. |
+| P1-6 REL-002 | Done | DELETE /api/cameras/:id wrapped in try/catch, works on a copy, persists before cache/go2rtc. Tests: e2e H (idempotent delete). |
+| QA-A-001 (P2-2) | Done | validateHaUrl blocks malformed URLs for OAuth and LLAT with an inline alert. Tests: tests/haUrlValidation.test.ts, e2e A. |
+| SEC-008 (P2-2) | Done | postMessage handler ignores other origins. |
+| SEC-010 (P2-2) | Done | Logout revokes the stored OAuth refresh token; server positive token cache cut to 60 s. |
+| UI-004 (AuthModal part of P4-2) | Partial | AuthModal URL and token inputs have htmlFor/id; token toggle has aria-label. Other forms remain. |
+| REL-007 (P2-4) | Done | Camera settings go2rtc status call sends auth header and a timeout. |
+| SEC-012 (P2-6) | Done | releaseUrl href goes through sanitizeSafeUrl. |
+| SEC-016 (P2-8) | Done | `npm audit fix`: 0 vulnerabilities; CI runs `npm audit --omit=dev --audit-level=high`. |
+| PERF-002, PERF-001 (P3-1) | Done | vendor-react chunk populated (entry 1128 KB to 912 KB raw); bundle check measures the static-import startup graph (278 KB br, budget 320 KB). |
+| PERF-011 (P3-4) | Done | Removed unreferenced 1.2 MB JPGs from public/. |
+| UI-001 (P4) | Done | Viewport no longer blocks pinch-zoom (per decision C10). |
+| UI-014 (P4-4) | Done | Fixed `----chart-*` theme aliases. |
+
 ## 1. De-duplication
 
 58 raw findings (16 SEC, 12 REL, 12 PERF, 16 UI, 2 QA) become **54 unique issues**. No finding is rated Critical in the source reports.

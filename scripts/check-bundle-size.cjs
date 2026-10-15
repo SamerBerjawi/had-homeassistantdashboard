@@ -13,7 +13,8 @@ const assetsDir = path.join(distDir, 'assets');
 const KB = 1024;
 
 const BUDGETS = {
-  mainJs: 280 * KB, // entry chunk loaded on every start
+  mainJs: 280 * KB, // entry chunk alone
+  startupJs: 320 * KB, // entry plus every chunk it imports statically (278 KB measured after PERF-002, ~15% headroom)
   mainCss: 45 * KB,
   anyChunk: 200 * KB, // any single lazily loaded chunk
   precache: 2 * 1024 * KB, // everything the service worker downloads on install
@@ -44,6 +45,31 @@ checkBudget(`main JS (${path.basename(entryJs)})`, brotliSize(path.join(distDir,
 if (entryCss) {
   checkBudget(`main CSS (${path.basename(entryCss)})`, brotliSize(path.join(distDir, entryCss)), BUDGETS.mainCss);
 }
+
+// Everything reachable from the entry through static imports is on the critical path (PERF-001).
+// Dynamic import("...") calls are lazy and not followed.
+const staticImports = (file) => {
+  const code = fs.readFileSync(file, 'utf-8');
+  const found = new Set();
+  for (const m of code.matchAll(/(?:^|[;}\s])(?:import|export)\s*(?:[^'"()]*?\bfrom\s*)?["'](\.\/[^"']+\.js)["']/g)) {
+    found.add(m[1]);
+  }
+  return [...found];
+};
+const startupFiles = new Set([entryJs]);
+const queue = [entryJs];
+while (queue.length) {
+  const current = queue.pop();
+  for (const rel of staticImports(path.join(distDir, current))) {
+    const resolved = path.posix.join(path.posix.dirname(current), rel);
+    if (!startupFiles.has(resolved) && fs.existsSync(path.join(distDir, resolved))) {
+      startupFiles.add(resolved);
+      queue.push(resolved);
+    }
+  }
+}
+const startupSize = [...startupFiles].reduce((sum, f) => sum + brotliSize(path.join(distDir, f)), 0);
+checkBudget(`startup JS (${startupFiles.size} chunks)`, startupSize, BUDGETS.startupJs);
 
 let largest = { name: '', size: 0 };
 for (const name of fs.readdirSync(assetsDir)) {

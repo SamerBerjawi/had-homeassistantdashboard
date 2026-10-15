@@ -790,7 +790,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
             try {
               const retryRes = await fetch('/api/config', {
                 method: 'POST',
-                headers: getAuthHeaders(),
+                headers: await getAuthHeadersAsync(),
                 body: JSON.stringify({
                   config: reMerged,
                   expectedVersion: serverVersion,
@@ -811,6 +811,20 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
                 updated = reMerged;
                 this.lastSavedSignature = JSON.stringify(updated);
                 nasSaved = true;
+              } else if (retryRes.status !== 409) {
+                // REL-001: a 401/5xx/503 on the retry is not a conflict. Keep the merged edit and
+                // leave nasSaved false so it stays in the unsynced queue and is re-sent later.
+                console.warn(
+                  `[RemoteStorageDriver] Conflict retry failed with HTTP ${retryRes.status}; keeping local change queued.`
+                );
+                if (retryRes.status === 401) {
+                  void refreshHAOAuthToken().catch(() => null);
+                }
+                this.lastKnownServerVersion = serverVersion;
+                try {
+                  localStorage.setItem(STORAGE_KEY_SERVER_VERSION, String(serverVersion));
+                } catch {}
+                updated = reMerged;
               } else {
                 console.warn(
                   '[RemoteStorageDriver] Retry save also encountered a conflict. Accepting server configuration.'

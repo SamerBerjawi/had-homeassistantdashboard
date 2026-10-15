@@ -26,7 +26,7 @@ import {
   X
 } from '@phosphor-icons/react';
 import { useAuth } from '../../contexts/AuthContext';
-import { isStandalonePWA } from '../../services/haAuth';
+import { isStandalonePWA, validateHaUrl } from '../../services/haAuth';
 
 interface AuthModalProps {
   darkMode?: boolean;
@@ -67,6 +67,7 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
   const [showLlatToken, setShowLlatToken] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [llatError, setLlatError] = useState<string | null>(null);
+  const [oauthError, setOauthError] = useState<string | null>(null);
 
   // Modal is strictly un-dismissible if user has neither authenticated nor entered demo mode
   const canClose = authState.isAuthenticated || authState.isDemo;
@@ -82,6 +83,12 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
   const handleOAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
+    const urlError = validateHaUrl(haUrl);
+    if (urlError) {
+      setOauthError(urlError);
+      return;
+    }
+    setOauthError(null);
     loginOAuth(haUrl);
   };
 
@@ -90,6 +97,11 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
     setLlatError(null);
     clearError();
 
+    const urlError = validateHaUrl(haUrl);
+    if (urlError) {
+      setLlatError(urlError);
+      return;
+    }
     if (!llatToken.trim()) {
       setLlatError('Please enter your Long-Lived Access Token');
       return;
@@ -211,14 +223,18 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
 
           {/* HA Host URL Input (Shared) */}
           <div className="space-y-1.5 mb-5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+            <label htmlFor="had-ha-url" className="block text-xs font-bold uppercase tracking-wider text-slate-300">
               Home Assistant Instance URL
             </label>
             <div className="relative">
               <input
+                id="had-ha-url"
                 type="text"
                 value={haUrl}
-                onChange={(e) => setHaUrl(e.target.value)}
+                onChange={(e) => {
+                  setHaUrl(e.target.value);
+                  setOauthError(null);
+                }}
                 placeholder="http://homeassistant.local:8123 or https://your-nabu-casa.ui.nabu.casa"
                 className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all font-mono"
               />
@@ -231,6 +247,11 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
           {/* TAB 1: OAUTH2 FLOW */}
           {authMethodTab === 'oauth' && (
             <form onSubmit={handleOAuthSubmit} className="space-y-4 mb-5">
+              {oauthError && (
+                <div role="alert" className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-200 text-xs">
+                  {oauthError}
+                </div>
+              )}
               {isIpTarget && (
                 <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-200 text-xs flex items-start gap-2">
                   <Info size={16} weight="fill" className="shrink-0 text-sky-400 mt-0.5" />
@@ -264,11 +285,12 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
           {authMethodTab === 'llat' && (
             <form onSubmit={handleLLATSubmit} className="space-y-4 mb-5">
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <label htmlFor="had-llat-token" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
                   Long-Lived Access Token
                 </label>
                 <div className="relative">
                   <input
+                    id="had-llat-token"
                     type={showLlatToken ? 'text' : 'password'}
                     value={llatToken}
                     onChange={(e) => setLlatToken(e.target.value)}
@@ -279,6 +301,7 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
                   <button
                     type="button"
                     onClick={() => setShowLlatToken(!showLlatToken)}
+                    aria-label={showLlatToken ? 'Hide token' : 'Show token'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer p-1"
                   >
                     {showLlatToken ? <EyeSlash size={16} /> : <Eye size={16} />}
