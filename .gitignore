@@ -10,3 +10,7 @@ coverage/
 had-homeassistantdashboard/data/
 dev-dist/
 scratch/test-*/
+
+# Playwright
+test-results/
+playwright-report/
