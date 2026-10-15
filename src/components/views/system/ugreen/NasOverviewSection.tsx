@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import DialogShell from '../../../ui/DialogShell';
 import React, { useState } from 'react';
 import {
   HardDrives,
@@ -985,12 +986,9 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
 
       {/* Universal Action Confirmation Modal for Power & Hardware Actions */}
       {activeConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div
-            className={`max-w-md w-full rounded-2xl border p-5 sm:p-6 shadow-2xl space-y-4 ${
+        <DialogShell label={activeConfirm.title} onClose={() => setActiveConfirm(null)} overlayClassName="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" className={`max-w-md w-full rounded-2xl border p-5 sm:p-6 shadow-2xl space-y-4 ${
               darkMode ? 'bg-neutral-900 border-white/15 text-white' : 'bg-white border-slate-200 text-slate-900'
-            }`}
-          >
+            }`}>
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center shrink-0">
                 {activeConfirm.icon}
@@ -1032,8 +1030,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 {activeConfirm.confirmLabel}
               </button>
             </div>
-          </div>
-        </div>
+          </DialogShell>
       )}
     </div>
   );

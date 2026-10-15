@@ -9,6 +9,7 @@
  * Can be rendered embedded (inside a parent modal like EntityCustomizerModal) or as a portal.
  */
 
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -94,6 +95,7 @@ export default function IconFinderModal({
   accentColor = '#0ea5e9',
   embedded = false
 }: IconFinderModalProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('popular');
   const [selectedWeight, setSelectedWeight] = useState<IconWeight>('duotone');
@@ -419,7 +421,7 @@ export default function IconFinderModal({
         />
 
         {/* Modal Window */}
-        <motion.div
+        <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Choose an icon" tabIndex={-1}
           initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 12 }}

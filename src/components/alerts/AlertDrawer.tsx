@@ -6,6 +6,7 @@
  * Displays active events, alerts, and Home Assistant persistent notifications.
  */
 
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -31,6 +32,7 @@ interface AlertDrawerProps {
 type FilterTab = 'all' | 'critical' | 'warning' | 'persistent_notification';
 
 export const AlertDrawer: React.FC<AlertDrawerProps> = ({ isOpen, onClose }) => {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   const { alerts, dismissAlert, clearAllAlerts, markAllAsRead } = useAlertStore();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
 
@@ -72,7 +74,7 @@ export const AlertDrawer: React.FC<AlertDrawerProps> = ({ isOpen, onClose }) => 
           />
 
           {/* Slide-over Drawer Panel */}
-          <motion.div
+          <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Alerts" tabIndex={-1}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}

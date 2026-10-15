@@ -7,6 +7,7 @@
  * update changelogs, and official documentation links.
  */
 
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React, { useState, useMemo } from 'react';
 import { 
   X, 
@@ -50,6 +51,7 @@ export default function IntegrationDetailDrawer({
   onClose,
   darkMode = true
 }: IntegrationDetailDrawerProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   const [activeTab, setActiveTab] = useState<DetailTab>('overview');
   const [deviceSearch, setDeviceSearch] = useState('');
   const [entitySearch, setEntitySearch] = useState('');
@@ -148,7 +150,7 @@ export default function IntegrationDetailDrawer({
       />
 
       {/* Drawer Panel */}
-      <div className={`relative w-full max-w-xl h-full flex flex-col z-10 shadow-2xl overflow-hidden transition-transform animate-slideInRight ${
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Integration details" tabIndex={-1} className={`relative w-full max-w-xl h-full flex flex-col z-10 shadow-2xl overflow-hidden transition-transform animate-slideInRight ${
         darkMode ? 'bg-slate-900/95 text-white border-l border-white/10' : 'bg-slate-50/95 text-slate-900 border-l border-slate-200'
       }`}>
         {/* Status Bar Safe-Area Clearance (PWA / Mobile) */}

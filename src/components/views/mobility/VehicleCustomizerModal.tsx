@@ -1,3 +1,4 @@
+import { useDialogA11y } from '../../../hooks/useDialogA11y';
 import React, { useState, useRef, ChangeEvent, DragEvent } from 'react';
 import { X, UploadSimple, Trash, Sparkle, Car, Bicycle, Check, Sliders, BatteryCharging, Lightning, Warning } from '@phosphor-icons/react';
 import { resolveAssetUrl } from '../../../utils/assetUrl';
@@ -51,6 +52,7 @@ export function VehicleCustomizerModal({
   onResetAssets,
   darkMode = true
 }: VehicleCustomizerModalProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   const [activeTab, setActiveTab] = useState<'car' | 'bike'>(initialTarget);
   const [carNameDraft, setCarNameDraft] = useState<string>(currentCarName);
   const [carTargetSocDraft, setCarTargetSocDraft] = useState<number>(currentCarTargetSoc);
@@ -192,7 +194,7 @@ export function VehicleCustomizerModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Customize vehicle" tabIndex={-1}
         className={`w-full max-w-xl rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-all ${
           darkMode
             ? 'bg-slate-900/95 border-white/15 text-white shadow-black/80'

@@ -42,7 +42,10 @@ export function useDialogA11y<T extends HTMLElement = HTMLDivElement>({
       }
       if (event.key !== 'Tab' || !container) return;
       const focusables = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-        (el) => el.offsetParent !== null || el === document.activeElement
+        (el) => {
+          const style = getComputedStyle(el);
+          return !el.hidden && style.display !== 'none' && style.visibility !== 'hidden';
+        }
       );
       if (focusables.length === 0) {
         event.preventDefault();

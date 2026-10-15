@@ -13,6 +13,7 @@
  * - Floor & Area Styling, Labels, and Zones management
  */
 
+import DialogShell from '../ui/DialogShell';
 import React, { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -2241,8 +2242,7 @@ export default function DeviceVisibilitySection({
 
       {/* Modals for Floor, Area, and Label Style Editing */}
       {editingFloor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 space-y-4 shadow-2xl">
+        <DialogShell label="Edit floor style" onClose={() => setEditingFloor(null)} overlayClassName="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 space-y-4 shadow-2xl">
             <h4 className="text-base font-bold text-slate-900 dark:text-white">Edit Floor Style: {editingFloor.name}</h4>
             <div className="space-y-3">
               <IconPickerField
@@ -2297,13 +2297,11 @@ export default function DeviceVisibilitySection({
                 Save
               </button>
             </div>
-          </div>
-        </div>
+          </DialogShell>
       )}
 
       {editingArea && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 space-y-4 shadow-2xl">
+        <DialogShell label="Edit area style" onClose={() => setEditingArea(null)} overlayClassName="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 space-y-4 shadow-2xl">
             <h4 className="text-base font-bold text-slate-900 dark:text-white">Edit Area Style: {editingArea.name}</h4>
             <div className="space-y-3">
               <IconPickerField
@@ -2374,13 +2372,11 @@ export default function DeviceVisibilitySection({
                 Save
               </button>
             </div>
-          </div>
-        </div>
+          </DialogShell>
       )}
 
       {editingLabel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 space-y-4 shadow-2xl">
+        <DialogShell label="Edit label style" onClose={() => setEditingLabel(null)} overlayClassName="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 space-y-4 shadow-2xl">
             <h4 className="text-base font-bold text-slate-900 dark:text-white">Edit Label Style: {editingLabel.name}</h4>
             <div className="space-y-3">
               <IconPickerField
@@ -2435,8 +2431,7 @@ export default function DeviceVisibilitySection({
                 Save
               </button>
             </div>
-          </div>
-        </div>
+          </DialogShell>
       )}
 
       {/* Entity Customizer Modal with Phosphor Icon Finder */}

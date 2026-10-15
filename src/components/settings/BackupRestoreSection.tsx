@@ -6,6 +6,7 @@
  * Clean, mobile-optimized, zero-bulk layout matching ThemeCustomizationSection.
  */
 
+import DialogShell from '../ui/DialogShell';
 import React, { useRef } from 'react';
 import {
   DownloadSimple,
@@ -207,8 +208,7 @@ export default function BackupRestoreSection({
 
       {/* Confirmation Modal for Reset */}
       {showResetConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 p-5 shadow-2xl space-y-3.5 text-center">
+        <DialogShell label="Reset dashboard defaults" onClose={() => setShowResetConfirm(false)} overlayClassName="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 p-5 shadow-2xl space-y-3.5 text-center">
             <div className="w-11 h-11 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto border border-rose-500/30">
               <Warning size={24} weight="duotone" />
             </div>
@@ -232,8 +232,7 @@ export default function BackupRestoreSection({
                 Confirm Reset
               </button>
             </div>
-          </div>
-        </div>
+          </DialogShell>
       )}
     </div>
   );

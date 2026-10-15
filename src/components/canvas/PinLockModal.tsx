@@ -1,3 +1,4 @@
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lock, LockOpen, X, Key, ShieldWarning, Check, Backspace } from '@phosphor-icons/react';
@@ -17,6 +18,7 @@ export default function PinLockModal({
   onUnlock,
   onSetPin
 }: PinLockModalProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   const [pin, setPin] = useState<string>('');
   const [error, setError] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
@@ -89,7 +91,7 @@ export default function PinLockModal({
       />
 
       {/* PIN Card Shell */}
-      <motion.div
+      <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Enter PIN" tabIndex={-1}
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}

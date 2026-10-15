@@ -63,6 +63,7 @@ export function useAdGuardData() {
   const [timeRange, setTimeRange] = useState<NetworkTimeRange>('24H');
   const [historyData, setHistoryData] = useState<AdGuardTimeseriesPoint[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   const metrics: AdGuardMetrics = useMemo(() => {
     // 1. Protection Switches (Master & Sub-toggles)
@@ -189,6 +190,7 @@ export function useAdGuardData() {
 
   const fetchHistory = useCallback(async () => {
     setIsLoadingHistory(true);
+    setHistoryError(null);
     try {
       const points = await fetchAdGuardStatistics(
         timeRange,
@@ -204,6 +206,7 @@ export function useAdGuardData() {
     } catch (e) {
       console.warn('[AdGuard Hook] Failed to load statistics history:', e);
       setHistoryData([]);
+      setHistoryError('Could not load AdGuard statistics history.');
     } finally {
       setIsLoadingHistory(false);
     }
@@ -244,6 +247,7 @@ export function useAdGuardData() {
     timeRange,
     setTimeRange,
     isLoadingHistory,
+    historyError,
     refreshHistory: fetchHistory,
     toggleSwitch,
     isLiveMode

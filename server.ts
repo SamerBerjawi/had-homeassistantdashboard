@@ -20,6 +20,7 @@ import {
   closeEnergyDatabase
 } from './server/services/energyDbService';
 import { EnergySyncService } from './server/services/energySyncService';
+import type { JsonObject, PersistedConfig, ServerConfig } from './server/lib/configTypes';
 import {
   HLS_FORWARDED_QUERY_KEYS,
   applyPinOnWrite,
@@ -153,7 +154,7 @@ async function startServer() {
   const configBackupsDir = path.join(configDir, 'backups');
 
   // In-memory cache for fast read-through and NAS drive spin-down support
-  let cachedServerConfig: any = null;
+  let cachedServerConfig: ServerConfig | null = null;
   let cachedServerVersion = 0;
   // mtime of the config file the cache was filled from; a different mtime means it changed on disk
   let cachedConfigMtimeMs = -1;
@@ -265,8 +266,8 @@ async function startServer() {
   }
 
   // Server-side recursive deep merge utility for plain objects (arrays are wholesale replaced, undefined skipped)
-  function deepMergeConfig(base: any = {}, partial: any = {}): any {
-    const result: any = { ...(base || {}) };
+  function deepMergeConfig(base: JsonObject = {}, partial: JsonObject = {}): JsonObject {
+    const result: JsonObject = { ...(base || {}) };
     for (const [key, value] of Object.entries(partial || {})) {
       if (value === undefined) continue;
       if (value === null) {
@@ -277,11 +278,12 @@ async function startServer() {
         // Wholesale replace camera sources dictionary so deleted sources are not resurrected
         result[key] = { ...value };
       } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-        const baseVal =
-          result[key] !== null && typeof result[key] === 'object' && !Array.isArray(result[key])
-            ? result[key]
+        const existing = result[key];
+        const baseVal: JsonObject =
+          existing !== null && typeof existing === 'object' && !Array.isArray(existing)
+            ? (existing as JsonObject)
             : {};
-        result[key] = deepMergeConfig(baseVal, value);
+        result[key] = deepMergeConfig(baseVal, value as JsonObject);
       } else {
         result[key] = value;
       }
@@ -290,7 +292,7 @@ async function startServer() {
   }
 
   // Config validation helper
-  function isValidDashboardConfig(body: any): boolean {
+  function isValidDashboardConfig(body: any): body is ServerConfig {
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return false;
     }
@@ -426,7 +428,7 @@ async function startServer() {
   }
 
   // Self-healing configuration reader: reads primary file with automatic fallback to .bak and snapshots
-  async function readPersistentConfig(): Promise<{ config: any; serverVersion: number } | null> {
+  async function readPersistentConfig(): Promise<PersistedConfig | null> {
     // 1. Try reading primary config file
     if (fs.existsSync(configFilePath)) {
       try {
@@ -1002,7 +1004,7 @@ async function startServer() {
 
     try {
       // PERF-007: serve from memory while the file on disk is the one the cache was filled from
-      let persisted: { config: any; serverVersion: number } | null = null;
+      let persisted: PersistedConfig | null = null;
       if (cachedServerConfig && cachedServerVersion > 0) {
         try {
           if (fs.statSync(configFilePath).mtimeMs === cachedConfigMtimeMs) {
@@ -1061,10 +1063,11 @@ async function startServer() {
 
     // Extract target config object and client's last-known version
     const targetConfig = (body.config && typeof body.config === 'object') ? { ...body.config } : { ...body };
-    delete (targetConfig as any).expectedVersion;
-    delete (targetConfig as any).serverVersion;
-    delete (targetConfig as any).allowEmpty;
-    delete (targetConfig as any).partial;
+    const configPayload: JsonObject = targetConfig;
+    delete configPayload.expectedVersion;
+    delete configPayload.serverVersion;
+    delete configPayload.allowEmpty;
+    delete configPayload.partial;
 
     const clientExpectedVersion = body.expectedVersion !== undefined 
       ? Number(body.expectedVersion) 
@@ -1567,7 +1570,7 @@ async function startServer() {
   }
 
   function getCameraRtspConfig(cameraId: string): { streamName: string; rtspUrl: string } | null {
-    const sources = (cachedServerConfig as any)?.cameras?.sources;
+    const sources = cachedServerConfig?.cameras?.sources;
     if (!sources || typeof sources !== 'object') return null;
     const entry =
       sources[cameraId] ||
@@ -1592,7 +1595,7 @@ async function startServer() {
     if (!cachedServerConfig) {
       await readPersistentConfig().catch(() => null);
     }
-    const sources = (cachedServerConfig as any)?.cameras?.sources;
+    const sources = cachedServerConfig?.cameras?.sources;
     if (!sources || typeof sources !== 'object') return;
     await Promise.all(
       Object.entries(sources).map(([key, entry]: [string, any]) => {

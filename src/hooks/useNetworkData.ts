@@ -694,6 +694,7 @@ export function useAdGuardHome() {
   const [timeRange, setTimeRange] = useState<NetworkTimeRange>('1D');
   const [historyData, setHistoryData] = useState<AdGuardTimeseriesPoint[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   const metrics: AdGuardMetrics = useMemo(() => {
     // 1. Dynamic Switches Resolution
@@ -810,6 +811,7 @@ export function useAdGuardHome() {
 
   const fetchHistory = useCallback(async () => {
     setIsLoadingHistory(true);
+    setHistoryError(null);
     try {
       const points = await fetchAdGuardStatistics(timeRange, {
         total: metrics.dnsQueriesTotal,
@@ -820,6 +822,7 @@ export function useAdGuardHome() {
       setHistoryData(points);
     } catch {
       setHistoryData([]);
+      setHistoryError('Could not load AdGuard statistics history.');
     } finally {
       setIsLoadingHistory(false);
     }
@@ -850,6 +853,7 @@ export function useAdGuardHome() {
     timeRange,
     setTimeRange,
     isLoadingHistory,
+    historyError,
     refreshHistory: fetchHistory,
     toggleSwitch,
     isLiveMode

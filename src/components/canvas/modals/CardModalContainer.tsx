@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useDialogA11y } from '../../../hooks/useDialogA11y';
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from '@phosphor-icons/react';
@@ -28,6 +29,7 @@ export default function CardModalContainer({
   maxWidth = 'max-w-xl',
   footerActions
 }: CardModalContainerProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   // Close modal on Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -54,7 +56,7 @@ export default function CardModalContainer({
           />
 
           {/* Dialog Card */}
-          <motion.div
+          <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Card details" tabIndex={-1}
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 20 }}

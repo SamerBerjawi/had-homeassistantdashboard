@@ -7,6 +7,7 @@
  * and visibility preferences. Synced to remote config and live auto-layout store.
  */
 
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -64,6 +65,7 @@ export default function EntityCustomizerModal({
   floorName,
   addToast
 }: EntityCustomizerModalProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   const { config, updateConfig, flushPendingSave } = useUserConfig();
   const { resolvedEntities, entityCustomizations, setEntityHidden } = useAutoLayoutStore(useShallow((s) => ({ resolvedEntities: s.resolvedEntities, entityCustomizations: s.entityCustomizations, setEntityHidden: s.setEntityHidden })));
 
@@ -232,7 +234,7 @@ export default function EntityCustomizerModal({
         />
 
         {/* Modal Card: Luminous frosted glass in light mode, deep dark glass in dark mode */}
-        <motion.div
+        <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Customize entity" tabIndex={-1}
           initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 12 }}

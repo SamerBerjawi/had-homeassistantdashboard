@@ -13,3 +13,5 @@ Items found during remediation that are outside the work packages. Not fixed.
 | NEW-007 | Low | SettingsHub desktop and mobile layouts are duplicated markup, which is how the titles drifted. Drive both from one list. | `src/components/settings/SettingsHub.tsx` |
 | NEW-008 | Low | The admin check opens a Home Assistant WebSocket per token every 60 s. If HA is unreachable, admin actions are denied (403) rather than allowed; consider a clearer UI message. | `server.ts` (`isHaAdmin`) |
 | NEW-009 | Info | The 11 px floor (UI-007) changed ~926 class names; layouts were only checked by the overflow smoke tests at 375 and 1440 px. A visual pass is advisable. | `src/**` |
+| NEW-010 | Low | Unlock (swipe slider) and Arm-Away (delay choices) confirmations are not ConfirmDialog consumers because their interaction differs; consider a ConfirmDialog `body` slot if more variants appear. | `src/components/mobility/UnlockConfirmModal.tsx`, `src/components/overview/modals/ArmAwayConfirmModal.tsx` |
+| NEW-011 | Info | `package.json` gained `jsdom`, `@testing-library/react` and `@testing-library/user-event` as dev dependencies for tests/dom. | `package.json` |

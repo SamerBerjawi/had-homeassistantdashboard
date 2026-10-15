@@ -6,6 +6,7 @@
  * Streamlined camera modal with clean responsive light/dark styling.
  */
 
+import { useDialogA11y } from '../../../hooks/useDialogA11y';
 import React from 'react';
 import { X, VideoCamera } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
@@ -24,6 +25,7 @@ export default function CameraStreamModal({
   camera,
   darkMode = true
 }: CameraStreamModalProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   if (!isOpen || !camera) return null;
 
   const cameraName = camera.name || camera.attributes?.friendly_name || 'Camera Feed';
@@ -33,7 +35,7 @@ export default function CameraStreamModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/40 dark:bg-black/75 backdrop-blur-md animate-in fade-in duration-150 modal-safe-viewport"
       onClick={onClose}
     >
-      <div
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Camera stream" tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className={`relative w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border flex flex-col transition-colors duration-200 ${
           darkMode 

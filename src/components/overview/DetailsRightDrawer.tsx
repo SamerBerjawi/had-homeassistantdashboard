@@ -8,6 +8,7 @@
  * - Mobile: Native full-width sheet with top drag handle, safe-area insets, and bottom nav clearance (pb-32)
  */
 
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -34,6 +35,7 @@ export default function DetailsRightDrawer({
   footerActions,
   darkMode = true
 }: DetailsRightDrawerProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   // Prevent body scrolling when open without layout shifts
   useEffect(() => {
     if (!isOpen) return;
@@ -74,7 +76,7 @@ export default function DetailsRightDrawer({
 
           {/* Slide-over Container: Full width on mobile, right-aligned on tablet/desktop */}
           <div className="fixed inset-y-0 right-0 flex max-w-full w-full sm:w-auto pointer-events-none z-10 pl-0 sm:pl-10">
-            <motion.div
+            <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Details" tabIndex={-1}
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}

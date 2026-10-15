@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import DialogShell from '../../../ui/DialogShell';
 import React, { useState } from 'react';
 import {
   Globe,
@@ -259,14 +260,11 @@ export const TpLinkOverviewSection: React.FC<TpLinkOverviewSectionProps> = ({
 
       {/* Reboot Confirm Modal */}
       {showRebootModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div
-            className={`relative w-full max-w-md p-6 rounded-3xl border shadow-2xl ${
+        <DialogShell label="Reboot router" onClose={() => setShowRebootModal(false)} overlayClassName="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn" className={`relative w-full max-w-md p-6 rounded-3xl border shadow-2xl ${
               darkMode
                 ? 'bg-slate-900 border-white/10 text-white'
                 : 'bg-white border-slate-200 text-slate-900'
-            }`}
-          >
+            }`}>
             <div className="flex items-center gap-3 pb-3 border-b border-slate-200/50 dark:border-white/10">
               <div className="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
                 <Power size={22} weight="bold" />
@@ -319,8 +317,7 @@ export const TpLinkOverviewSection: React.FC<TpLinkOverviewSectionProps> = ({
                 )}
               </button>
             </div>
-          </div>
-        </div>
+          </DialogShell>
       )}
     </div>
   );

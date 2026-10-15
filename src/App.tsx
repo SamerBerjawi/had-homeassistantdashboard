@@ -1,4 +1,5 @@
 import ViewErrorState from './components/ui/ViewErrorState';
+import ViewLoadingState from './components/ui/ViewLoadingState';
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -848,7 +849,7 @@ export default function App() {
           <div className="flex-1 flex flex-col">
             <ErrorBoundary variant="view" label={currentTheme.title} resetKeys={[activeTab, selectedAreaId, selectedSettingsSection]}>
             {activeTab === 'overview' && <OverviewView darkMode={darkMode} />}
-            <Suspense fallback={<div className="flex-1 flex items-center justify-center opacity-40 text-sm">Loading...</div>}>
+            <Suspense fallback={<ViewLoadingState title="Loading..." subtitle="" darkMode={darkMode} />}>
               {activeTab === 'rooms' && <RoomsView darkMode={darkMode} />}
               {activeTab === 'energy' && <EnergyView darkMode={darkMode} />}
               {activeTab === 'security' && <SecurityView darkMode={darkMode} />}

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { enterDemo, openTab } from '../helpers/app';
+import { enterDemo, openTab, ctl } from '../helpers/app';
 
 // Accessibility regressions: UI-001, UI-002, UI-003, UI-004, UI-005, UI-006, UI-007, UI-009
 test.describe('I. Accessibility', () => {
@@ -118,5 +118,25 @@ test.describe('I. Accessibility', () => {
       return d;
     });
     expect(parseFloat(duration)).toBeLessThan(0.01);
+  });
+
+  test('UI-002 inline confirmation (factory reset) is a dialog and Escape cancels it', async ({ page }) => {
+    await openTab(page, 'settings');
+    await page.getByText(/Backup & Restore/).locator('visible=true').first().click();
+    await page.getByRole('button', { name: 'Reset', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Reset dashboard defaults' });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+  });
+
+  test('UI-012 mobility confirmation uses the shared ConfirmDialog', async ({ page }) => {
+    await openTab(page, 'mobility');
+    await ctl(page, /Start climate preconditioning/).first().click();
+    const dialog = page.getByRole('dialog', { name: /Preconditioning/ });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(dialog).toHaveCount(0);
   });
 });
