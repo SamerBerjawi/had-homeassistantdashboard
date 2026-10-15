@@ -52,13 +52,13 @@ export function BikeCompanionCard({
           </div>
           <div>
             <h3 className="text-sm font-black tracking-tight">{bikeName}</h3>
-            <p className="text-[10px] text-slate-400 font-medium">Secondary Fleet Asset</p>
+            <p className="text-[11px] text-slate-400 font-medium">Secondary Fleet Asset</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <span
-            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+            className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
               metrics.isLocked
                 ? 'bg-slate-800 border-white/10 text-slate-300'
                 : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
@@ -89,14 +89,14 @@ export function BikeCompanionCard({
         {/* Battery & Range Stats */}
         <div className="space-y-2">
           <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-            <span className="text-[9px] font-bold text-slate-400 uppercase block">Battery</span>
+            <span className="text-[11px] font-bold text-slate-400 uppercase block">Battery</span>
             <div className="text-lg font-black font-mono text-amber-400">
               {metrics.batteryPercent != null ? `${Math.round(metrics.batteryPercent)}%` : '—'}
             </div>
           </div>
 
           <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-            <span className="text-[9px] font-bold text-slate-400 uppercase block">Range</span>
+            <span className="text-[11px] font-bold text-slate-400 uppercase block">Range</span>
             <div className="text-lg font-black font-mono text-white">
               {metrics.remainingRangeKm != null ? Math.round(metrics.remainingRangeKm) : '—'} <span className="text-xs text-slate-400">km</span>
             </div>

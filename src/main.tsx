@@ -1,4 +1,5 @@
 import { StrictMode } from 'react';
+import { MotionConfig } from 'motion/react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 // Self-hosted variable fonts (same origin, precached) instead of a render-blocking Google Fonts request
@@ -10,6 +11,16 @@ import { ConfigProvider } from './contexts/ConfigContext';
 import { EntityPopupProvider } from './contexts/EntityPopupContext';
 import { EditModeProvider } from './contexts/EditModeContext';
 import RootErrorBoundary from './components/RootErrorBoundary';
+// Surface errors that no boundary can catch (async code, event handlers) in the console (REL-010)
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    console.error('[Global] Unhandled promise rejection:', event.reason);
+  });
+  window.addEventListener('error', (event) => {
+    console.error('[Global] Uncaught error:', event.error || event.message);
+  });
+}
+
 // Automatically reload when a new service worker version is installed and takes control,
 // or when stale asset chunks fail to load after a deployment
 if (typeof window !== 'undefined') {
@@ -44,15 +55,17 @@ if (typeof window !== 'undefined') {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <RootErrorBoundary>
-      <AuthProvider>
-        <ConfigProvider>
-          <EditModeProvider>
-            <EntityPopupProvider>
-              <App />
-            </EntityPopupProvider>
-          </EditModeProvider>
-        </ConfigProvider>
-      </AuthProvider>
+      <MotionConfig reducedMotion="user">
+        <AuthProvider>
+          <ConfigProvider>
+            <EditModeProvider>
+              <EntityPopupProvider>
+                <App />
+              </EntityPopupProvider>
+            </EditModeProvider>
+          </ConfigProvider>
+        </AuthProvider>
+      </MotionConfig>
     </RootErrorBoundary>
   </StrictMode>,
 );

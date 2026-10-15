@@ -12,6 +12,7 @@
 
 import { getStoredHAAuth, getActiveHAToken } from './haAuth';
 import { getStoredAuthConfig } from './authStorage';
+import { SseParser } from '../lib/sseParser';
 
 export type SyncConnectionState = 'connected' | 'connecting' | 'reconnecting' | 'disconnected';
 
@@ -26,7 +27,8 @@ const HEARTBEAT_TIMEOUT_MS = 30000;
 const WATCHDOG_INTERVAL_MS = 5000;
 
 class ConfigSyncService {
-  private eventSource: EventSource | null = null;
+  // fetch-based SSE so the token travels in the Authorization header, not the URL (SEC-013)
+  private streamAbort: AbortController | null = null;
   private broadcastChannel: BroadcastChannel | null = null;
   private listeners: Set<ConfigSyncEventListener> = new Set();
 
@@ -128,69 +130,62 @@ class ConfigSyncService {
   }
 
   /**
-   * Opens the SSE EventSource connection
+   * Opens the SSE stream (fetch + ReadableStream, authenticated with the Authorization header)
    */
   private connect() {
-    if (typeof window === 'undefined' || !('EventSource' in window)) return;
+    if (typeof window === 'undefined' || typeof fetch === 'undefined') return;
     if (!this.isEnabled) return;
 
     this.closeEventSource();
     this.setStatus(this.retryCount === 0 ? 'connecting' : 'reconnecting');
 
-    try {
-      const token = getActiveHAToken();
-      const auth = getStoredHAAuth();
-      const storedConfig = getStoredAuthConfig();
-      const serverUrl = auth?.server_url || storedConfig?.httpUrl || storedConfig?.serverUrl;
-      const params = new URLSearchParams();
-      if (token) {
-        params.set('token', token);
-      }
-      if (serverUrl) {
-        params.set('haUrl', serverUrl);
-      }
+    const controller = new AbortController();
+    this.streamAbort = controller;
+    this.lastActivityTimestamp = Date.now();
 
-      const streamUrl = `/api/config/stream${params.toString() ? `?${params.toString()}` : ''}`;
-      const es = new EventSource(streamUrl);
-      this.eventSource = es;
-      this.lastActivityTimestamp = Date.now();
+    const token = getActiveHAToken();
+    const auth = getStoredHAAuth();
+    const storedConfig = getStoredAuthConfig();
+    const serverUrl = auth?.server_url || storedConfig?.httpUrl || storedConfig?.serverUrl;
+    const headers: Record<string, string> = { Accept: 'text/event-stream' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (serverUrl) headers['X-HA-URL'] = serverUrl;
 
-      es.onopen = () => {
+    const fail = (err: unknown) => {
+      if (controller.signal.aborted || this.streamAbort !== controller) return;
+      console.warn('[ConfigSyncService] SSE stream error:', err);
+      this.lastActivityTimestamp = 0;
+      this.closeEventSource();
+      this.scheduleReconnect();
+    };
+
+    void (async () => {
+      try {
+        const res = await fetch('/api/config/stream', { headers, signal: controller.signal, cache: 'no-store' });
+        if (!res.ok || !res.body) throw new Error(`SSE responded with HTTP ${res.status}`);
         this.retryCount = 0;
         this.lastActivityTimestamp = Date.now();
         this.setStatus('connected');
-      };
 
-      // Configuration update event
-      es.addEventListener('config_updated', (event: MessageEvent) => {
-        this.lastActivityTimestamp = Date.now();
-        let payload: any = null;
-        try {
-          payload = event.data ? JSON.parse(event.data) : null;
-        } catch {}
-        this.notifyConfigChanged(payload);
-      });
-
-      // Server heartbeat ping event
-      es.addEventListener('ping', () => {
-        this.lastActivityTimestamp = Date.now();
-      });
-
-      // Generic message event
-      es.onmessage = () => {
-        this.lastActivityTimestamp = Date.now();
-      };
-
-      es.onerror = (err) => {
-        console.warn('[ConfigSyncService] SSE stream error:', err);
-        this.lastActivityTimestamp = 0;
-        this.closeEventSource();
-        this.scheduleReconnect();
-      };
-    } catch (err) {
-      console.warn('[ConfigSyncService] Error initializing EventSource:', err);
-      this.scheduleReconnect();
-    }
+        const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+        const parser = new SseParser();
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) throw new Error('SSE stream closed by server');
+          this.lastActivityTimestamp = Date.now();
+          for (const message of parser.push(value)) {
+            if (message.event !== 'config_updated') continue;
+            let payload: any = null;
+            try {
+              payload = message.data ? JSON.parse(message.data) : null;
+            } catch {}
+            this.notifyConfigChanged(payload);
+          }
+        }
+      } catch (err) {
+        fail(err);
+      }
+    })();
   }
 
   /**
@@ -260,11 +255,11 @@ class ConfigSyncService {
   }
 
   private closeEventSource() {
-    if (this.eventSource) {
+    if (this.streamAbort) {
       try {
-        this.eventSource.close();
+        this.streamAbort.abort();
       } catch {}
-      this.eventSource = null;
+      this.streamAbort = null;
     }
   }
 

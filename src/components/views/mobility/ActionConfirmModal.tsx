@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useDialogA11y } from '../../../hooks/useDialogA11y';
 import React from 'react';
 import { X, WarningCircle, CheckCircle, SpinnerGap } from '@phosphor-icons/react';
 
@@ -33,6 +34,8 @@ export function ActionConfirmModal({
   darkMode = true,
   isLoading = false
 }: ActionConfirmModalProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
+
   if (!isOpen) return null;
 
   const colorStyles = {
@@ -71,6 +74,11 @@ export function ActionConfirmModal({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Confirm action"
+        tabIndex={-1}
         className={`w-full max-w-md rounded-3xl border shadow-2xl overflow-hidden flex flex-col transition-all ${
           darkMode
             ? 'bg-slate-900/95 border-white/15 text-white shadow-black/80'
@@ -108,7 +116,7 @@ export function ActionConfirmModal({
               </div>
             </div>
 
-            <button
+            <button aria-label="Close"
               type="button"
               onClick={onClose}
               disabled={isLoading}

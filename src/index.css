@@ -979,3 +979,26 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
 .leaflet-control-attribution {
   display: none !important;
 }
+/* ---------------------------------------------------------------------------
+   Accessibility baselines
+   --------------------------------------------------------------------------- */
+
+/* UI-006: a visible keyboard focus indicator everywhere. Components that suppress the default
+   outline with `outline-none` still get this ring, because it is applied on :focus-visible with
+   !important only for keyboard-modality focus. */
+:where(a, button, input, select, textarea, summary, [role="button"], [role="tab"], [role="switch"], [tabindex]):focus-visible {
+  outline: 2px solid #38bdf8 !important;
+  outline-offset: 2px !important;
+}
+
+/* UI-009: respect the OS "reduce motion" setting for decorative and looping animation */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

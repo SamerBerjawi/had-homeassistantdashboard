@@ -229,7 +229,7 @@ export function CarEvTab({
           <div className="flex items-center justify-between gap-2 z-10">
             <div className="flex items-center gap-3">
               {resolvedCarLogo && !logoError ? (
-                <img
+                <img loading="lazy" decoding="async"
                   src={resolvedCarLogo}
                   alt="Logo"
                   className="h-8 max-w-[120px] object-contain drop-shadow-md"
@@ -238,7 +238,7 @@ export function CarEvTab({
               ) : (
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
                   <span className="text-xs font-black tracking-widest uppercase">FORDPASS</span>
-                  <span className="text-[10px] font-mono opacity-80">WF0TK1EM3PMA07438</span>
+                  <span className="text-[11px] font-mono opacity-80">WF0TK1EM3PMA07438</span>
                 </div>
               )}
             </div>
@@ -261,7 +261,7 @@ export function CarEvTab({
               )}
 
               {resolvedCarImage && !imageError ? (
-                <img
+                <img loading="lazy" decoding="async"
                   src={resolvedCarImage}
                   alt="Vehicle Render"
                   className="max-h-52 max-w-full object-contain mx-auto drop-shadow-[0_20px_25px_rgba(0,0,0,0.5)]"
@@ -323,25 +323,25 @@ export function CarEvTab({
 
             <div className="grid grid-cols-4 gap-2 text-center">
               <div className="p-2 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold uppercase">Front Left</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold uppercase">Front Left</span>
                 <span className="text-xs font-black text-slate-900 dark:text-white font-mono">
                   {metrics.tirePressure.frontLeft} {metrics.tirePressure.unit}
                 </span>
               </div>
               <div className="p-2 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold uppercase">Front Right</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold uppercase">Front Right</span>
                 <span className="text-xs font-black text-slate-900 dark:text-white font-mono">
                   {metrics.tirePressure.frontRight} {metrics.tirePressure.unit}
                 </span>
               </div>
               <div className="p-2 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold uppercase">Rear Left</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold uppercase">Rear Left</span>
                 <span className="text-xs font-black text-slate-900 dark:text-white font-mono">
                   {metrics.tirePressure.rearLeft} {metrics.tirePressure.unit}
                 </span>
               </div>
               <div className="p-2 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold uppercase">Rear Right</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-bold uppercase">Rear Right</span>
                 <span className="text-xs font-black text-slate-900 dark:text-white font-mono">
                   {metrics.tirePressure.rearRight} {metrics.tirePressure.unit}
                 </span>
@@ -420,7 +420,7 @@ export function CarEvTab({
               <BatteryCharging size={22} weight="duotone" className="text-emerald-500 dark:text-emerald-400" />
               <div>
                 <h4 className="text-xs font-black uppercase tracking-wider">Section 2: Charging</h4>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Power & High-Voltage Battery Telemetry</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Power & High-Voltage Battery Telemetry</p>
               </div>
             </div>
 
@@ -453,7 +453,7 @@ export function CarEvTab({
           {/* Estimated Range Banner (from sensor.fordpass_*_elveh) */}
           <div className="p-3.5 rounded-2xl bg-slate-100/90 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-between">
             <div className="space-y-0.5">
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                 Estimated Range (Electric)
               </span>
               <div className="text-xl sm:text-2xl font-black text-cyan-600 dark:text-cyan-400 font-mono">
@@ -470,7 +470,7 @@ export function CarEvTab({
             {/* Charging Status Tile */}
             <div className="p-3.5 rounded-2xl bg-slate-100/90 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                   Charging Status
                 </span>
                 <Lightning size={16} weight="fill" className={isCharging ? 'text-emerald-500 animate-pulse' : 'text-slate-400'} />
@@ -483,7 +483,7 @@ export function CarEvTab({
             {/* Last Charging Session Log Tile */}
             <div className="p-3.5 rounded-2xl bg-slate-100/90 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                   Last Session
                 </span>
                 <BatteryCharging size={16} weight="duotone" className="text-emerald-500" />
@@ -542,7 +542,7 @@ export function CarEvTab({
               <NavigationArrow size={22} weight="duotone" className="text-cyan-500" />
               <div>
                 <h4 className="text-xs font-black uppercase tracking-wider">Section 3: Live GPS & Telemetry</h4>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                   {metrics.locationZone} • Last Trip {metrics.lastTripEnergy} {metrics.lastTripEnergyUnit}
                 </p>
               </div>
@@ -602,7 +602,7 @@ export function CarEvTab({
               <CloudArrowUp size={22} weight="duotone" className="text-indigo-500 dark:text-indigo-400" />
               <div>
                 <h4 className="text-xs font-black uppercase tracking-wider">Section 4: Software Update</h4>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Ford Power-Up & OTA Firmware</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Ford Power-Up & OTA Firmware</p>
               </div>
             </div>
 
@@ -624,7 +624,7 @@ export function CarEvTab({
           {/* Software Update Stats Grid */}
           <div className="grid grid-cols-2 gap-3 py-1">
             <div className="p-3 rounded-2xl bg-slate-100/90 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-1">
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                 Firmware Status
               </span>
               <div className="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate">
@@ -633,7 +633,7 @@ export function CarEvTab({
             </div>
 
             <div className="p-3 rounded-2xl bg-slate-100/90 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-1">
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                 OTA Readiness
               </span>
               <div className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400 truncate">
@@ -642,7 +642,7 @@ export function CarEvTab({
             </div>
 
             <div className="p-3 rounded-2xl bg-slate-100/90 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-1">
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                 Last Firmware Update
               </span>
               <div className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200 truncate">
@@ -651,7 +651,7 @@ export function CarEvTab({
             </div>
 
             <div className="p-3 rounded-2xl bg-slate-100/90 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-1">
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                 Next OTA Schedule
               </span>
               <div className="text-xs sm:text-sm font-black text-indigo-600 dark:text-indigo-400 truncate">

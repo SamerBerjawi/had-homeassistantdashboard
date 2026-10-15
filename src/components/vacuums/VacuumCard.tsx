@@ -241,7 +241,7 @@ export default function VacuumCard({ vacuum, darkMode = true, showMap = false }:
         <div className="relative rounded-2xl overflow-hidden bg-slate-950/80 border border-white/10 h-44 flex items-center justify-center text-center group">
           {/* Intelligently Rendered Map Image or Live Radar Fallback */}
           {resolvedMapUrl && !imgLoadFailed ? (
-            <img
+            <img loading="lazy" decoding="async"
               src={resolvedMapUrl}
               alt={activeMap?.name || 'Cleaning Map'}
               onError={() => setImgLoadFailed(true)}
@@ -319,21 +319,21 @@ export default function VacuumCard({ vacuum, darkMode = true, showMap = false }:
       {/* ------------------------------------------------------------- */}
       <div className="grid grid-cols-3 gap-2 p-3 rounded-2xl bg-white/5 border border-white/10 text-center">
         <div>
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Time</div>
+          <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Time</div>
           <div className="text-base font-black font-mono text-white mt-0.5">
             {vacuum.cleaningTimeMinutes || 0}
-            <span className="text-[10px] font-normal text-slate-400 ml-0.5">min</span>
+            <span className="text-[11px] font-normal text-slate-400 ml-0.5">min</span>
           </div>
         </div>
         <div className="border-x border-white/10">
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Area Cleaned</div>
+          <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Area Cleaned</div>
           <div className="text-base font-black font-mono text-white mt-0.5">
             {vacuum.cleanedAreaM2 || 0}
-            <span className="text-[10px] font-normal text-slate-400 ml-0.5">m²</span>
+            <span className="text-[11px] font-normal text-slate-400 ml-0.5">m²</span>
           </div>
         </div>
         <div>
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Current Room</div>
+          <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Current Room</div>
           <div className="text-xs font-bold text-teal-300 truncate mt-1" title={vacuum.currentRoom || 'Whole House'}>
             {vacuum.currentRoom || 'Whole House'}
           </div>
@@ -486,13 +486,13 @@ export default function VacuumCard({ vacuum, darkMode = true, showMap = false }:
               <Wrench size={14} weight="duotone" className="text-amber-400" />
               <span>Consumables & Wear Lifespans</span>
             </span>
-            <span className="text-[10px] text-slate-400 font-mono">Sensors: {vacuum.consumables.sensorCleanPercent || 100}% Clean</span>
+            <span className="text-[11px] text-slate-400 font-mono">Sensors: {vacuum.consumables.sensorCleanPercent || 100}% Clean</span>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
             {/* Main Brush */}
             <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-center">
-              <div className="text-[10px] text-slate-400">Main Brush</div>
+              <div className="text-[11px] text-slate-400">Main Brush</div>
               <div className="text-sm font-black font-mono text-white mt-0.5">
                 {vacuum.consumables.mainBrushPercent ?? 84}%
               </div>
@@ -508,7 +508,7 @@ export default function VacuumCard({ vacuum, darkMode = true, showMap = false }:
 
             {/* Side Brush */}
             <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-center">
-              <div className="text-[10px] text-slate-400">Side Brush</div>
+              <div className="text-[11px] text-slate-400">Side Brush</div>
               <div className="text-sm font-black font-mono text-white mt-0.5">
                 {vacuum.consumables.sideBrushPercent ?? 92}%
               </div>
@@ -524,7 +524,7 @@ export default function VacuumCard({ vacuum, darkMode = true, showMap = false }:
 
             {/* HEPA Filter */}
             <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-center">
-              <div className="text-[10px] text-slate-400">HEPA Filter</div>
+              <div className="text-[11px] text-slate-400">HEPA Filter</div>
               <div className="text-sm font-black font-mono text-white mt-0.5">
                 {vacuum.consumables.filterPercent ?? 78}%
               </div>

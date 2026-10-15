@@ -168,7 +168,7 @@ export default function IntegrationsView({ darkMode = true }: ViewProps) {
           darkMode ? 'bg-black/20 border-white/5 shadow-xs' : 'bg-white/50 border-slate-200/80 shadow-xs'
         } backdrop-blur-xl`}>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Installed</span>
+            <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Installed</span>
             <div className="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
               <PuzzlePiece size={18} weight="duotone" />
             </div>
@@ -188,7 +188,7 @@ export default function IntegrationsView({ darkMode = true }: ViewProps) {
           darkMode ? 'bg-black/20 border-white/5 shadow-xs' : 'bg-white/50 border-slate-200/80 shadow-xs'
         } backdrop-blur-xl`}>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Hardware Devices</span>
+            <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Hardware Devices</span>
             <div className="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center">
               <HardDrives size={18} weight="duotone" />
             </div>
@@ -208,7 +208,7 @@ export default function IntegrationsView({ darkMode = true }: ViewProps) {
           darkMode ? 'bg-black/20 border-white/5 shadow-xs' : 'bg-white/50 border-slate-200/80 shadow-xs'
         } backdrop-blur-xl`}>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Telemetry Entities</span>
+            <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Telemetry Entities</span>
             <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center">
               <Cpu size={18} weight="duotone" />
             </div>
@@ -230,7 +230,7 @@ export default function IntegrationsView({ darkMode = true }: ViewProps) {
             : darkMode ? 'bg-black/20 border-white/5' : 'bg-white/50 border-slate-200/80'
         } backdrop-blur-xl`}>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400">Pending Updates</span>
+            <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400">Pending Updates</span>
             <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
               <DownloadSimple size={18} weight="bold" />
             </div>
@@ -324,7 +324,7 @@ export default function IntegrationsView({ darkMode = true }: ViewProps) {
             <table className="w-full text-left text-xs border-collapse">
               <thead className={`border-b ${
                 darkMode ? 'border-white/10 bg-white/5 text-slate-400' : 'border-slate-200 bg-slate-50/80 text-slate-500'
-              } font-extrabold uppercase tracking-wider text-[10px]`}>
+              } font-extrabold uppercase tracking-wider text-[11px]`}>
                 <tr>
                   <th className="py-3.5 px-4 sm:px-5">Component</th>
                   <th className="py-3.5 px-4">Category</th>
@@ -366,12 +366,12 @@ export default function IntegrationsView({ darkMode = true }: ViewProps) {
                                 {item.name}
                               </span>
                               {item.entriesCount && item.entriesCount > 1 && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/20">
+                                <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/20">
                                   {item.entriesCount} entries
                                 </span>
                               )}
                               {item.isCustom && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300">
+                                <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300">
                                   Custom
                                 </span>
                               )}
@@ -393,7 +393,7 @@ export default function IntegrationsView({ darkMode = true }: ViewProps) {
 
                       {/* Category Badge */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+                        <span className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${
                           isOfficial
                             ? 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30'
                             : isHacs
@@ -454,7 +454,7 @@ export default function IntegrationsView({ darkMode = true }: ViewProps) {
                             {item.version ? `v${item.version}` : '—'}
                           </span>
                           {item.hasUpdate && (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 flex items-center gap-1 animate-pulse">
+                            <span className="px-2 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 flex items-center gap-1 animate-pulse">
                               <DownloadSimple size={10} weight="bold" />
                               Update
                             </span>

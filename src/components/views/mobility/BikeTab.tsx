@@ -242,7 +242,7 @@ export function BikeTab({
             <div className="relative z-10 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 {resolvedBikeLogo && !logoError ? (
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={resolvedBikeLogo}
                     alt="Brand Logo"
                     className="h-7 sm:h-8 max-w-[110px] object-contain drop-shadow-sm"
@@ -290,7 +290,7 @@ export function BikeTab({
                 className="relative max-w-full flex items-center justify-center group"
               >
                 {resolvedBikeImage && !imageError ? (
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={resolvedBikeImage}
                     alt={bikeName}
                     className="max-h-56 sm:max-h-64 w-auto object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.35)] dark:drop-shadow-[0_25px_35px_rgba(0,0,0,0.7)] select-none transition-transform duration-500 group-hover:scale-[1.02]"
@@ -339,9 +339,9 @@ export function BikeTab({
                     <span className={`text-xl sm:text-2xl font-black tracking-tight font-mono ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                       {metrics.remainingRangeKm !== undefined ? formatDecimal(metrics.remainingRangeKm) : '--'}
                     </span>
-                    <span className="text-[10px] sm:text-xs font-bold text-cyan-500">km range</span>
+                    <span className="text-[11px] sm:text-xs font-bold text-cyan-500">km range</span>
                   </div>
-                  <span className={`text-[10px] font-mono block ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span className={`text-[11px] font-mono block ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     Battery Optimal
                   </span>
                 </div>
@@ -374,7 +374,7 @@ export function BikeTab({
                       {metrics.mileageKm !== undefined ? `${formatDecimal(metrics.mileageKm)} km` : '--'}
                     </span>
                     <span
-                      className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider truncate ${
+                      className={`text-[11px] sm:text-[11px] font-semibold uppercase tracking-wider truncate ${
                         darkMode ? 'text-slate-400' : 'text-slate-500'
                       }`}
                     >
@@ -408,7 +408,7 @@ export function BikeTab({
                       {metrics.distanceTodayKm !== undefined ? `${formatDecimal(metrics.distanceTodayKm)} km` : '--'}
                     </span>
                     <span
-                      className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider truncate ${
+                      className={`text-[11px] sm:text-[11px] font-semibold uppercase tracking-wider truncate ${
                         darkMode ? 'text-slate-400' : 'text-slate-500'
                       }`}
                     >
@@ -452,7 +452,7 @@ export function BikeTab({
                       {metrics.isLocked ? 'Motor Locked' : 'Ready to Ride'}
                     </span>
                     <span
-                      className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider truncate ${
+                      className={`text-[11px] sm:text-[11px] font-semibold uppercase tracking-wider truncate ${
                         darkMode ? 'text-slate-400' : 'text-slate-500'
                       }`}
                     >
@@ -659,7 +659,7 @@ export function BikeTab({
               }`}
             >
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className={`uppercase tracking-wider text-[10px] ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                <span className={`uppercase tracking-wider text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                   Daily Ride Goal (20 km)
                 </span>
                 <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
@@ -696,7 +696,7 @@ export function BikeTab({
                   <span className="font-mono text-xs font-black block truncate text-emerald-600 dark:text-emerald-400">
                     {metrics.totalSavedCo2Kg !== undefined ? `${formatDecimal(metrics.totalSavedCo2Kg)} kg` : '--'}
                   </span>
-                  <span className={`text-[10px] font-semibold truncate block ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span className={`text-[11px] font-semibold truncate block ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     Total CO₂ Saved
                   </span>
                 </div>
@@ -715,7 +715,7 @@ export function BikeTab({
                   <span className="font-mono text-xs font-black block truncate text-amber-600 dark:text-amber-400">
                     {metrics.lastTrip?.caloriesBurned !== undefined ? `${formatDecimal(metrics.lastTrip.caloriesBurned)} kcal` : '--'}
                   </span>
-                  <span className={`text-[10px] font-semibold truncate block ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span className={`text-[11px] font-semibold truncate block ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     Last Trip Cal
                   </span>
                 </div>
@@ -795,11 +795,11 @@ export function BikeTab({
                 <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none gap-2 z-[400]">
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950/85 backdrop-blur-md text-white text-[11px] font-bold shadow-lg pointer-events-auto">
                     <Globe size={13} weight="duotone" className="text-emerald-400 shrink-0" />
-                    <span className="font-mono text-[10px]">
+                    <span className="font-mono text-[11px]">
                       {lat.toFixed(4)}°, {lon.toFixed(4)}°
                     </span>
                     <span
-                      className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wider ${
+                      className={`text-[11px] px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wider ${
                         cartoApiKey
                           ? 'bg-sky-500/25 text-sky-300 border border-sky-500/30'
                           : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
@@ -830,7 +830,7 @@ export function BikeTab({
                       href={osmDirectUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="h-7 px-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase transition-colors shadow-md"
+                      className="h-7 px-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase transition-colors shadow-md"
                     >
                       <span>Map</span>
                       <NavigationArrow size={10} weight="bold" />
@@ -840,7 +840,7 @@ export function BikeTab({
 
                 {/* Bottom map footer */}
                 <div className="absolute bottom-2.5 left-2.5 z-[400] pointer-events-none">
-                  <div className="px-2 py-0.5 rounded-lg bg-slate-950/85 backdrop-blur-md text-[9px] font-mono text-slate-300">
+                  <div className="px-2 py-0.5 rounded-lg bg-slate-950/85 backdrop-blur-md text-[11px] font-mono text-slate-300">
                     Last seen: {formatLastUpdated(metrics.lastSeen)}
                   </div>
                 </div>
@@ -862,7 +862,7 @@ export function BikeTab({
               }`}
             >
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className={`uppercase tracking-wider text-[10px] flex items-center gap-1.5 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                <span className={`uppercase tracking-wider text-[11px] flex items-center gap-1.5 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                   <Pulse size={14} weight="duotone" className="text-emerald-500 animate-pulse" />
                   <span>Hardware & Telemetry</span>
                 </span>
@@ -875,19 +875,19 @@ export function BikeTab({
               {/* 4 Status Chips */}
               <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
                 <div className={`p-2.5 rounded-xl flex items-center justify-between ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
-                  <span className="text-slate-500 font-bold uppercase text-[9px]">Auto-Lock</span>
+                  <span className="text-slate-500 font-bold uppercase text-[11px]">Auto-Lock</span>
                   <span className="font-bold">{metrics.autoLockStatus.split(' ')[0]}</span>
                 </div>
                 <div className={`p-2.5 rounded-xl flex items-center justify-between ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
-                  <span className="text-slate-500 font-bold uppercase text-[9px]">Speed Limit</span>
+                  <span className="text-slate-500 font-bold uppercase text-[11px]">Speed Limit</span>
                   <span className="font-bold">{formatDecimal(metrics.speedLimitKmh)} km/h</span>
                 </div>
                 <div className={`p-2.5 rounded-xl flex items-center justify-between ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
-                  <span className="text-slate-500 font-bold uppercase text-[9px]">Internal PCB</span>
+                  <span className="text-slate-500 font-bold uppercase text-[11px]">Internal PCB</span>
                   <span className="font-bold">{formatDecimal(metrics.internalPcbBattery)}%</span>
                 </div>
                 <div className={`p-2.5 rounded-xl flex items-center justify-between ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
-                  <span className="text-slate-500 font-bold uppercase text-[9px]">Crash Sensor</span>
+                  <span className="text-slate-500 font-bold uppercase text-[11px]">Crash Sensor</span>
                   <span className="font-bold text-emerald-500">Armed</span>
                 </div>
               </div>

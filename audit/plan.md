@@ -4,6 +4,7 @@ Built 2026-10-15 from `findings-security.md`, `findings-reliability.md`, `findin
 
 Tests referenced: `npm run lint`, `npm test` (vitest), `npm run test:integration` (scripts/test-*.ts), `npx playwright test` (tests/e2e, desktop+mobile, dev server). **New tests are called out where none exist today.**
 
+
 ## 0. Implementation status
 
 Updated as packages land. Findings listed as done are fixed and covered by the tests named in the note.
@@ -27,6 +28,24 @@ Updated as packages land. Findings listed as done are fixed and covered by the t
 | PERF-011 (P3-4) | Done | Removed unreferenced 1.2 MB JPGs from public/. |
 | UI-001 (P4) | Done | Viewport no longer blocks pinch-zoom (per decision C10). |
 | UI-014 (P4-4) | Done | Fixed `----chart-*` theme aliases. |
+| P2-1 SEC-005 (decision C3) | Done | Camera-source changes, /api/assets, /api/statistics/sync and DELETE /api/cameras require HA is_admin (WebSocket auth/current_user, cached 60 s); layout saves stay open. Tests: scripts/test-auth-trust.ts (fake HA ws), e2e H. |
+| P2-4 REL-006, REL-009 | Done | fetchWithTimeout on statistics, history, image, webrtc, album-art and camera calls; statistics sync checks the result and retries once; server reports partial ingests. Tests: tests/fetchWithTimeout.test.ts. |
+| P2-3 REL-004, REL-010 | Partial | Backups validated before apply (src/lib/backupValidation.ts), busy guards on restore/import/reset, failed reset leaves local state, crash-screen reset needs a second click, global error/rejection logging. NOT done: single atomic apply of a restore; silent boundaries around remaining shell components. Tests: tests/backupValidation.test.ts, e2e G. |
+| P2-5 REL-005, UI-013 | Partial | Shared ViewErrorState plus an app-wide retryable banner when the live connection drops. NOT done: per-hook error/retry for network/NAS/AdGuard hooks; replacing the ~51 inline spinners. Tests: tests/viewErrorState.test.tsx. |
+| P2-6 SEC-009, SEC-011, SEC-014, SEC-015, REL-011 | Done | No CORS headers without an allow-list; CSP connect-src scoped to the trusted HA once known (C5), Permissions-Policy, HSTS behind HTTPS; generic 5xx/502 messages; failed-auth rate limit, ingest period/id/row limits; recovery paths log and 500 on unreadable config. Tests: e2e H. |
+| P2-7 SEC-013 | Done | Query-string tokens removed from the server; config stream is fetch+ReadableStream with Authorization header (src/lib/sseParser.ts); album-art proxy uses the header only. Tests: tests/sseParser.test.ts, e2e H. Note: PWAs running the old client need the new build to reconnect the stream. |
+| P2-8 REL-008 | Partial | @vitest/coverage-v8 with thresholds (CI runs test:coverage) and new tests for every fix. NOT done: jsdom suites for AuthContext/views; broad component coverage. |
+| P2-9 REL-012 | Partial | Typed Express request fields instead of `(req as any)`. NOT done: schema/types for config and backup payloads (281 `any` remain). |
+| P3-2 PERF-004, PERF-006 | Done | Status/entities cached and invalidated on write; unused idx_energy_range dropped (confirmed with EXPLAIN QUERY PLAN). Tests: tests/energyDbCache.test.ts. |
+| P3-3 PERF-007, PERF-008, PERF-009 | Partial | GET /api/config served from memory with mtime invalidation; timestamped snapshots at most once a minute; HLS proxy streams bodies. NOT done: image-proxy still buffers (bounded by its size cap). Tests: scripts/test-config-cache.ts, test-camera-pipeline.ts. |
+| P3-4 PERF-010 | Done | loading="lazy" decoding="async" added to all <img> tags (50 changed). |
+| P3-1 PERF-003, PERF-012 | Not done | PERF-003 (lazy services/icons) skipped: entry is 173 KB br and startup 278 KB against a 320 KB budget. PERF-012: precache budget deliberately left at 2 MB (87% used). |
+| P3 PERF-005 | Not done | History query over-fetch / worker thread not changed. |
+| P4-1 UI-002, QA-B-001 (UI-012 not done) | Partial | useDialogA11y hook (focus move, Tab trap, Escape, focus restore) plus role=dialog/aria-modal on the entity drawer, auth gate and the four confirm modals. QA-B-001 passes. NOT done: migrating the remaining overlays; merging the four confirm modals (UI-012). Tests: e2e I, e2e B. |
+| P4-2 UI-003, UI-004, UI-005 | Done | 25 icon-only buttons named; AuthModal labels; 44 clickable div/span got role=button, tabIndex and Enter/Space handling (39 backdrop/stopPropagation elements intentionally skipped). Tests: e2e I. |
+| P4-3 UI-006, UI-007, UI-008, UI-009 | Done | Global :focus-visible ring; micro text (8-10 px, 926 uses) raised to 11 px; auth placeholder contrast; prefers-reduced-motion in CSS and MotionConfig. Tests: e2e I. |
+| P4-4 UI-010, UI-011, UI-015 | Partial | Removed 4 unused primitives (ui/button, scroll-progress, DotSlider, battery-card); design-rules example fixed. NOT done: migrating 739 hex colours to tokens (UI-010); one primitive layer (UI-011). |
+| P4-5 UI-016 | Done | Desktop and mobile settings hub use the same titles; cameras entry added to SETTINGS_SECTIONS_META; consistent 'Connect with token' / 'Connect Home Assistant' / 'Home Assistant URL'. Tests: e2e A, G. |
 
 ## 1. De-duplication
 

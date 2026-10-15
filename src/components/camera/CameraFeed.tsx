@@ -207,7 +207,7 @@ function CameraFeed({
       ref={containerRef}
       className={`relative w-full h-full flex items-center justify-center overflow-hidden bg-slate-950 select-none ${className}`}
       onClick={mode === 'preview' ? onGoLive : undefined}
-    >
+     role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
       {/* 1. Live Video Viewport */}
       <video
         ref={videoRef}
@@ -228,7 +228,7 @@ function CameraFeed({
 
       {/* 2. Snapshot Poster Fallback (rendered while connecting or if no RTSP stream configured) */}
       {(!isStreaming || isConnecting) && entityPicture && !isUnavailable && (
-        <img
+        <img loading="lazy"
           src={entityPicture}
           alt={cameraName}
           decoding="async"
@@ -300,7 +300,7 @@ function CameraFeed({
           )}
 
           {mode === 'preview' && (
-            <span className="mt-0.5 text-[10px] text-slate-400 font-medium px-2 py-0.5 rounded-md bg-white/5 border border-white/10 font-mono">
+            <span className="mt-0.5 text-[11px] text-slate-400 font-medium px-2 py-0.5 rounded-md bg-white/5 border border-white/10 font-mono">
               {camera.entity_id}
             </span>
           )}
@@ -309,7 +309,7 @@ function CameraFeed({
 
       {/* 4. Live Protocol Badge in top corner when streaming in live mode */}
       {isStreaming && mode === 'live' && (
-        <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white shadow-lg">
+        <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-bold text-white shadow-lg">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="uppercase tracking-wider">{streamType === 'webrtc' ? 'LIVE • WebRTC' : 'LIVE • HLS'}</span>
         </div>

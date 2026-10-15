@@ -107,8 +107,9 @@ export function initEnergyDatabase(customDataDir?: string): DatabaseSync {
     CREATE INDEX IF NOT EXISTS idx_energy_query 
       ON energy_statistics (statistic_id, period_type, start_ms, end_ms);
 
-    CREATE INDEX IF NOT EXISTS idx_energy_range 
-      ON energy_statistics (period_type, start_ms);
+    -- PERF-006: idx_energy_range (period_type, start_ms) served no lookup (only full-scan
+    -- aggregates, which are cached) and cost a second index write per row. Dropped.
+    DROP INDEX IF EXISTS idx_energy_range;
 
     CREATE TABLE IF NOT EXISTS energy_sync_state (
       statistic_id TEXT NOT NULL,
@@ -229,6 +230,7 @@ export function upsertStatisticsBatch(
     }
 
     db.exec('COMMIT;');
+    markEnergyDataChanged();
   } catch (err) {
     db.exec('ROLLBACK;');
     console.error('[EnergyDB] Error in upsertStatisticsBatch transaction:', err);
@@ -344,7 +346,25 @@ export function checkCoverage(
 /**
  * Returns overall statistics database health and metrics.
  */
+// PERF-004: status/entities scan the whole table. Cache them and invalidate on every write.
+let energyDataVersion = 0;
+let statusCache: { version: number; value: EnergyDbStatus } | null = null;
+let entitiesCache: { version: number; value: StoredEntitySummary[] } | null = null;
+
+/** Call after any write to energy_statistics or energy_metadata. */
+export function markEnergyDataChanged(): void {
+  energyDataVersion++;
+}
+
 export function getEnergyDbStatus(): EnergyDbStatus {
+  if (statusCache && statusCache.version === energyDataVersion) return statusCache.value;
+  const value = computeEnergyDbStatus();
+  // Only cache a successful read; a not-ready status should be retried
+  if (value.isReady) statusCache = { version: energyDataVersion, value };
+  return value;
+}
+
+function computeEnergyDbStatus(): EnergyDbStatus {
   try {
     const db = getDatabase();
 
@@ -405,6 +425,13 @@ export interface StoredEntitySummary {
  * along with their metadata, record counts, and date ranges.
  */
 export function getStoredEntities(): StoredEntitySummary[] {
+  if (entitiesCache && entitiesCache.version === energyDataVersion) return entitiesCache.value;
+  const value = computeStoredEntities();
+  entitiesCache = { version: energyDataVersion, value };
+  return value;
+}
+
+function computeStoredEntities(): StoredEntitySummary[] {
   try {
     const db = getDatabase();
     const rows = db.prepare(`

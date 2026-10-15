@@ -79,7 +79,7 @@ export default function SwitchPlugCard({
       </div>
 
       {/* Bottom info */}
-      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
+      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
         <span className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
           <Lightning size={13} weight="duotone" className={isOn ? 'text-amber-400 animate-pulse' : 'text-slate-500'} />
           {isOn ? (caps.hasPowerMonitoring ? 'Drawing Power' : 'Active') : 'Standby'}

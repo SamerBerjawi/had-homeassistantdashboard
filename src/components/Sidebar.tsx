@@ -167,8 +167,8 @@ export default function Sidebar({
             onClick={() => setActiveTab('overview')}
             className="flex items-center gap-3 cursor-pointer group"
             title="HAD - Home Assistant Dashboard"
-          >
-            <img 
+           role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
+            <img loading="lazy" decoding="async" 
               src="/app-icon.png" 
               alt="HAD" 
               className="w-10 h-10 shrink-0 transition-transform group-hover:scale-105 object-contain" 
@@ -176,7 +176,7 @@ export default function Sidebar({
             {!isCollapsed && (
               <div className="min-w-0">
                 <h2 className={`text-sm font-black tracking-tight leading-none ${darkMode ? 'text-white' : 'text-slate-900'}`}>HAD</h2>
-                <p className={`text-[10px] font-semibold tracking-wider uppercase mt-0.5 ${darkMode ? 'text-sky-400' : 'text-sky-600'}`}>Home Assistant</p>
+                <p className={`text-[11px] font-semibold tracking-wider uppercase mt-0.5 ${darkMode ? 'text-sky-400' : 'text-sky-600'}`}>Home Assistant</p>
               </div>
             )}
           </div>
@@ -283,7 +283,7 @@ export default function Sidebar({
                 className={`${totalNotifications > 0 ? (darkMode ? 'text-amber-400' : 'text-amber-600') : (darkMode ? 'text-slate-400' : 'text-slate-500')}`}
               />
               {isCollapsed && totalNotifications > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-slate-950">
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[11px] font-black flex items-center justify-center ring-2 ring-slate-950">
                   {totalNotifications > 9 ? '9+' : totalNotifications}
                 </span>
               )}
@@ -293,7 +293,7 @@ export default function Sidebar({
               <>
                 <span className="text-xs font-semibold tracking-tight text-slate-700 dark:text-slate-200">Notifications</span>
                 {totalNotifications > 0 && (
-                  <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                  <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[11px] font-black flex items-center justify-center shadow-xs">
                     {totalNotifications > 99 ? '99+' : totalNotifications}
                   </span>
                 )}
@@ -325,7 +325,7 @@ export default function Sidebar({
                   {telemetry.label}
                 </span>
               </div>
-              <span className={`text-[10px] font-mono shrink-0 ml-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <span className={`text-[11px] font-mono shrink-0 ml-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 {telemetry.version}
               </span>
             </div>
@@ -404,7 +404,7 @@ export default function Sidebar({
                 <h3 className={`font-extrabold text-sm tracking-tight leading-none ${darkMode ? 'text-white' : 'text-slate-900'}`}>Navigation Hub</h3>
               </div>
             </div>
-            <button 
+            <button aria-label="Close" 
               onClick={() => setShowMoreMenu(false)}
               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
                 darkMode ? 'bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white' : 'bg-slate-100/70 hover:bg-slate-200/80 text-slate-600 hover:text-slate-900'
@@ -473,7 +473,7 @@ export default function Sidebar({
               <span className="text-xs font-bold">Notifications & Alerts</span>
             </div>
             {totalNotifications > 0 && (
-              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center">
+              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[11px] font-black flex items-center justify-center">
                 {totalNotifications}
               </span>
             )}

@@ -311,7 +311,7 @@ export default function NotificationDrawer({
                     }`}
                 >
                   <span>{tab.label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${isActive ? 'bg-white/20 text-white' : darkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-200 text-slate-700'
+                  <span className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${isActive ? 'bg-white/20 text-white' : darkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-200 text-slate-700'
                     }`}>
                     {tab.count}
                   </span>
@@ -394,7 +394,7 @@ export default function NotificationDrawer({
                 }`}
             />
             {searchQuery && (
-              <button
+              <button aria-label="Close"
                 type="button"
                 onClick={() => setSearchQuery('')}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
@@ -481,11 +481,11 @@ export default function NotificationDrawer({
                                   : 'px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-300 active:scale-95'
                           : isDanger
                             ? darkMode
-                              ? 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 active:scale-95'
-                              : 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 active:scale-95'
+                              ? 'px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 active:scale-95'
+                              : 'px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 active:scale-95'
                             : darkMode
-                              ? 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/5 active:scale-95'
-                              : 'px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 active:scale-95'
+                              ? 'px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/5 active:scale-95'
+                              : 'px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 active:scale-95'
                         }`}
                     >
                       {isLoading ? (
@@ -536,12 +536,12 @@ export default function NotificationDrawer({
                               {item.title}
                             </h4>
 
-                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded shrink-0 ${visuals.badgeBg.replace(/border[^\s]*/g, '')}`}>
+                            <span className={`text-[11px] font-bold uppercase px-1.5 py-0.2 rounded shrink-0 ${visuals.badgeBg.replace(/border[^\s]*/g, '')}`}>
                               {visuals.label}
                             </span>
 
                             {item.areaName && (
-                              <span className="flex items-center gap-0.5 text-[9px] font-medium text-slate-500 dark:text-slate-400 shrink-0">
+                              <span className="flex items-center gap-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 shrink-0">
                                 <HouseLine size={10} />
                                 {item.areaName}
                               </span>
@@ -579,14 +579,14 @@ export default function NotificationDrawer({
                       {/* Software Update Version Badge */}
                       {item.category === 'update' && (
                         <div className="flex items-center gap-1.5 flex-wrap font-semibold">
-                          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/5 font-mono text-[10px] text-slate-700 dark:text-slate-300">
+                          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/5 font-mono text-[11px] text-slate-700 dark:text-slate-300">
                             <span>{item.installedVersion || 'Current'}</span>
                             <span className="text-slate-400">➔</span>
                             <span className="font-bold text-sky-700 dark:text-sky-400">{item.latestVersion || 'New'}</span>
                           </div>
 
                           {item.skippedVersion && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-300/80 dark:border-amber-500/20">
+                            <span className="text-[11px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-300/80 dark:border-amber-500/20">
                               Skipped
                             </span>
                           )}
@@ -611,7 +611,7 @@ export default function NotificationDrawer({
                       {/* In Progress Visual Bar */}
                       {isProgress && (
                         <div className="space-y-1 pt-1">
-                          <div className="flex items-center justify-between text-[10px] font-bold text-sky-500">
+                          <div className="flex items-center justify-between text-[11px] font-bold text-sky-500">
                             <span className="flex items-center gap-1">
                               <ArrowsClockwise size={11} className="animate-spin" />
                               Installing update...

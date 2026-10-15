@@ -169,7 +169,7 @@ function ToastItem({ toast, onDismiss, darkMode }: ToastItemProps) {
               {toast.title}
             </h4>
             {toast.timestamp && (
-              <span className="text-[9px] text-slate-400 font-mono shrink-0">
+              <span className="text-[11px] text-slate-400 font-mono shrink-0">
                 {toast.timestamp}
               </span>
             )}
@@ -192,7 +192,7 @@ function ToastItem({ toast, onDismiss, darkMode }: ToastItemProps) {
                 toast.action?.onClick();
                 onDismiss(toast.id);
               }}
-              className="mt-2 text-[10px] font-black uppercase tracking-wider text-brand-purple hover:underline cursor-pointer"
+              className="mt-2 text-[11px] font-black uppercase tracking-wider text-brand-purple hover:underline cursor-pointer"
             >
               {toast.action.label} &rarr;
             </button>

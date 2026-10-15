@@ -73,7 +73,7 @@ export default function EVChargingCard({
           </div>
           <div className="text-right">
             <p className="text-xs font-black text-slate-900 dark:text-white font-mono">368 km</p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">Total Range</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">Total Range</p>
           </div>
         </div>
 
@@ -97,7 +97,7 @@ export default function EVChargingCard({
       </div>
 
       {/* Bottom row: Time left & Rate */}
-      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
+      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
         <span className="flex items-center gap-1 text-slate-750 dark:text-slate-300">
           <Clock size={12} weight="duotone" className="text-emerald-500" />
           {isCharging ? '1h 15m to 80%' : 'Target: 80%'}

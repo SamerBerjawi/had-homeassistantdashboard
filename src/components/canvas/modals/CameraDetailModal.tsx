@@ -41,7 +41,7 @@ export default function CameraDetailModal({
             showControls={false}
           />
         ) : snapshotUrl ? (
-          <img
+          <img loading="lazy" decoding="async"
             src={snapshotUrl}
             alt={cameraName}
             className="w-full h-full object-cover"

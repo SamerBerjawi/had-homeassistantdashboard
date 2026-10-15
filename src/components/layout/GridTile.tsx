@@ -448,7 +448,7 @@ export const GridTile: React.FC<GridTileProps> = ({
               {effectiveIsGhosted ? (
                 <>
                   <EyeSlash size={13} weight="bold" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider pr-0.5">Hidden</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider pr-0.5">Hidden</span>
                 </>
               ) : (
                 <Eye size={13} weight="bold" />

@@ -75,14 +75,14 @@ export const SpeedTestComplianceSection: React.FC<SpeedTestComplianceSectionProp
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white truncate">
                     Download Plan Compliance
                   </h3>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Provisioned speed tier vs observed throughput
                   </p>
                 </div>
               </div>
 
               <span
-                className={`text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded-full border ${downStatus.badgeBg} ${downStatus.badgeText} ${downStatus.badgeBorder}`}
+                className={`text-[11px] font-mono font-black uppercase px-2 py-0.5 rounded-full border ${downStatus.badgeBg} ${downStatus.badgeText} ${downStatus.badgeBorder}`}
               >
                 {downStatus.label}
               </span>
@@ -99,7 +99,7 @@ export const SpeedTestComplianceSection: React.FC<SpeedTestComplianceSectionProp
                     : 'Live Measured Download Speed'}
                 </div>
               </div>
-              <div className="text-right text-[10px] font-mono text-slate-500 dark:text-slate-400">
+              <div className="text-right text-[11px] font-mono text-slate-500 dark:text-slate-400">
                 <span>{downCompliance > 0 ? 'Peak Target: 100%' : 'Direct Telemetry'}</span>
               </div>
             </div>
@@ -134,14 +134,14 @@ export const SpeedTestComplianceSection: React.FC<SpeedTestComplianceSectionProp
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white truncate">
                     Upload Plan Compliance
                   </h3>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Upstream throughput delivery ratio
                   </p>
                 </div>
               </div>
 
               <span
-                className={`text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded-full border ${upStatus.badgeBg} ${upStatus.badgeText} ${upStatus.badgeBorder}`}
+                className={`text-[11px] font-mono font-black uppercase px-2 py-0.5 rounded-full border ${upStatus.badgeBg} ${upStatus.badgeText} ${upStatus.badgeBorder}`}
               >
                 {upStatus.label}
               </span>
@@ -158,7 +158,7 @@ export const SpeedTestComplianceSection: React.FC<SpeedTestComplianceSectionProp
                     : 'Live Measured Upload Speed'}
                 </div>
               </div>
-              <div className="text-right text-[10px] font-mono text-slate-500 dark:text-slate-400">
+              <div className="text-right text-[11px] font-mono text-slate-500 dark:text-slate-400">
                 <span>{upCompliance > 0 ? 'Peak Target: 100%' : 'Direct Telemetry'}</span>
               </div>
             </div>

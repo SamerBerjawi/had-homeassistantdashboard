@@ -249,7 +249,7 @@ export default function VacuumMapView({ vacuums, darkMode = true }: VacuumMapVie
       <div className="relative w-full h-[520px] sm:h-[65vh] min-h-[460px] rounded-3xl overflow-hidden backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/10 flex items-center justify-center isolate select-none shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
         {/* Map Rendering or Live Fallback */}
         {resolvedMapUrl && !imgLoadFailed ? (
-          <img
+          <img loading="lazy" decoding="async"
             src={resolvedMapUrl}
             alt={activeMap?.name || 'Cleaning Map'}
             onError={() => setImgLoadFailed(true)}
@@ -299,29 +299,29 @@ export default function VacuumMapView({ vacuums, darkMode = true }: VacuumMapVie
         <div className="absolute top-3 left-3 z-20 flex flex-col gap-2 pointer-events-none">
           <div className="pointer-events-auto p-3 rounded-2xl bg-black/75 backdrop-blur-xl border border-white/15 shadow-xl flex items-center gap-4 text-left">
             <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Duration</span>
+              <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">Duration</span>
               <div className="text-sm font-black font-mono text-white mt-0.5 flex items-center gap-1">
                 <Clock size={13} className="text-teal-400" />
                 <span>{activeVacuum.cleaningTimeMinutes || 0}</span>
-                <span className="text-[10px] font-normal text-slate-400">min</span>
+                <span className="text-[11px] font-normal text-slate-400">min</span>
               </div>
             </div>
 
             <div className="w-[1px] h-6 bg-white/15" />
 
             <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Area Cleaned</span>
+              <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">Area Cleaned</span>
               <div className="text-sm font-black font-mono text-white mt-0.5 flex items-center gap-1">
                 <Gauge size={13} className="text-sky-400" />
                 <span>{activeVacuum.cleanedAreaM2 || 0}</span>
-                <span className="text-[10px] font-normal text-slate-400">m²</span>
+                <span className="text-[11px] font-normal text-slate-400">m²</span>
               </div>
             </div>
 
             <div className="w-[1px] h-6 bg-white/15" />
 
             <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Room</span>
+              <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">Room</span>
               <span className="text-xs font-bold text-teal-300 block truncate max-w-[120px] mt-0.5">
                 {activeVacuum.currentRoom || 'Whole House'}
               </span>

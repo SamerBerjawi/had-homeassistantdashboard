@@ -144,7 +144,7 @@ export default function BackupRestoreSection({
                   <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                     {snap.name}
                   </div>
-                  <div className="text-[10px] font-mono text-slate-400 truncate">
+                  <div className="text-[11px] font-mono text-slate-400 truncate">
                     {snap.timestamp} • {snap.profileCount} profiles
                   </div>
                 </div>
@@ -190,7 +190,7 @@ export default function BackupRestoreSection({
             <div className="text-xs font-bold text-rose-700 dark:text-rose-300 truncate">
               Factory Reset Dashboard
             </div>
-            <div className="text-[10px] text-rose-600/80 dark:text-rose-300/70 truncate">
+            <div className="text-[11px] text-rose-600/80 dark:text-rose-300/70 truncate">
               Wipe custom canvas and restore defaults
             </div>
           </div>

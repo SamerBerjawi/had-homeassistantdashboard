@@ -85,41 +85,41 @@ export const TpLinkConnectedClientsSection: React.FC<TpLinkConnectedClientsSecti
     const t = (type || '2.4G').toUpperCase();
     if (t.includes('WIRE') || t.includes('LAN') || t.includes('ETH')) {
       return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 flex items-center gap-1">
+        <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 flex items-center gap-1">
           <HardDrives size={11} /> Wired LAN
         </span>
       );
     }
     if (t.includes('6G') || t.includes('6GHZ') || t.includes('6E')) {
       return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+        <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
           <WifiHigh size={11} /> 6 GHz (6E)
         </span>
       );
     }
     if (t.includes('5G') || t.includes('5GHZ')) {
       return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-sky-500/15 text-sky-400 border border-sky-500/20 flex items-center gap-1">
+        <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-sky-500/15 text-sky-400 border border-sky-500/20 flex items-center gap-1">
           <WifiHigh size={11} /> 5 GHz
         </span>
       );
     }
     if (t.includes('GUEST')) {
       return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+        <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20 flex items-center gap-1">
           <WifiHigh size={11} /> Guest Wi-Fi
         </span>
       );
     }
     if (t.includes('IOT')) {
       return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-purple-500/15 text-purple-400 border border-purple-500/20 flex items-center gap-1">
+        <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-purple-500/15 text-purple-400 border border-purple-500/20 flex items-center gap-1">
           <DeviceMobile size={11} /> IoT 2.4G
         </span>
       );
     }
     return (
-      <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-500/15 text-slate-400 border border-slate-500/20 flex items-center gap-1">
+      <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-slate-500/15 text-slate-400 border border-slate-500/20 flex items-center gap-1">
         <WifiHigh size={11} /> 2.4 GHz
       </span>
     );
@@ -145,7 +145,7 @@ export const TpLinkConnectedClientsSection: React.FC<TpLinkConnectedClientsSecti
           {!countMatches && (
             <span
               title={`Discovered ${clients.length} trackers, but Section 3 sensors report ${expectedSum} total clients.`}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25 cursor-help"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25 cursor-help"
             >
               <WarningCircle size={12} weight="bold" />
               <span>Count Mismatch ({clients.length} vs {expectedSum})</span>
@@ -183,7 +183,7 @@ export const TpLinkConnectedClientsSection: React.FC<TpLinkConnectedClientsSecti
             <p className="text-xs font-bold text-slate-600 dark:text-slate-300">
               {searchQuery ? 'No connected clients match your search' : 'No clients currently connected'}
             </p>
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[11px] text-slate-400">
               {searchQuery
                 ? 'Try searching with a different device name or IP address'
                 : 'Any device authenticated to this router will automatically appear here'}
@@ -193,7 +193,7 @@ export const TpLinkConnectedClientsSection: React.FC<TpLinkConnectedClientsSecti
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[550px]">
               <thead>
-                <tr className="border-b border-slate-200/60 dark:border-white/10 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <tr className="border-b border-slate-200/60 dark:border-white/10 text-[11px] font-black uppercase tracking-wider text-slate-400">
                   <th className="pb-2.5 font-bold">Device Name</th>
                   <th className="pb-2.5 font-bold">IP Address</th>
                   <th className="pb-2.5 font-bold">Connection Type</th>
@@ -219,7 +219,7 @@ export const TpLinkConnectedClientsSection: React.FC<TpLinkConnectedClientsSecti
                             <div className="font-bold text-slate-900 dark:text-white truncate">
                               {client.name}
                             </div>
-                            <div className="text-[10px] font-mono text-slate-400 truncate">
+                            <div className="text-[11px] font-mono text-slate-400 truncate">
                               {client.mac || client.entityId}
                             </div>
                           </div>
@@ -244,7 +244,7 @@ export const TpLinkConnectedClientsSection: React.FC<TpLinkConnectedClientsSecti
                           <Circle size={8} weight="fill" className="text-emerald-400" />
                           <span className="font-bold text-emerald-400 text-xs">Online</span>
                         </div>
-                        <div className="text-[9px] text-slate-400 flex items-center justify-end gap-1 mt-0.5">
+                        <div className="text-[11px] text-slate-400 flex items-center justify-end gap-1 mt-0.5">
                           <Clock size={10} />
                           <span>{client.lastSeen || 'Active now'}</span>
                         </div>

@@ -137,7 +137,7 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
                     Master Protection
                   </h3>
                   <span
-                    className={`text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full inline-flex items-center gap-1 mt-0.5 ${
+                    className={`text-[11px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full inline-flex items-center gap-1 mt-0.5 ${
                       isMasterOn
                         ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
                         : 'bg-rose-500/15 text-rose-400 border border-rose-500/25'
@@ -160,7 +160,7 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
               {isMasterOn ? 'Enabled for all clients' : 'Shields Down'}
             </span>
 
-            <button
+            <button aria-label="Toggle AdGuard protection"
               type="button"
               role="switch"
               aria-checked={isMasterOn}
@@ -191,7 +191,7 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
                 <Warning size={20} weight="fill" className="shrink-0" />
                 <div className="text-left text-xs font-bold">
                   <div>Inactive — Master Protection Disabled</div>
-                  <div className="text-[10px] font-normal text-amber-300/80">
+                  <div className="text-[11px] font-normal text-amber-300/80">
                     Enable Master Protection to activate individual filtering policies.
                   </div>
                 </div>
@@ -205,12 +205,12 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
                   Security &amp; Privacy Policies
                 </h3>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Granular control over specific DNS inspection and blocking layers
                 </p>
               </div>
 
-              <span className="text-[10px] font-mono font-bold text-slate-500">
+              <span className="text-[11px] font-mono font-bold text-slate-500">
                 {subSwitches.filter((s) => s.enabled).length}/{subSwitches.length} Active
               </span>
             </div>
@@ -246,7 +246,7 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
                             {item.title}
                           </span>
                           <span
-                            className={`text-[8px] font-mono font-bold px-1 rounded uppercase ${
+                            className={`text-[11px] font-mono font-bold px-1 rounded uppercase ${
                               isEnabled
                                 ? 'bg-emerald-500/15 text-emerald-400'
                                 : 'bg-slate-500/15 text-slate-400'
@@ -255,13 +255,13 @@ export const AdGuardProtectionSection: React.FC<AdGuardProtectionSectionProps> =
                             {isEnabled ? 'ON' : 'OFF'}
                           </span>
                         </div>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                           {item.desc}
                         </p>
                       </div>
                     </div>
 
-                    <button
+                    <button aria-label="Toggle AdGuard protection"
                       type="button"
                       role="switch"
                       disabled={!isMasterOn}

@@ -210,7 +210,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
               />
               {robotImage ? (
                 <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex items-center justify-center">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={robotImage}
                     alt="Robot Vacuum"
                     className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
@@ -242,7 +242,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                   title="Upload Robot Vacuum Image"
                 >
                   <Camera size={20} weight="duotone" className="group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-bold">Upload</span>
+                  <span className="text-[11px] font-bold">Upload</span>
                 </button>
               )}
             </div>
@@ -306,7 +306,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                   style={{ width: `${activeVacuum?.batteryLevel || 100}%` }}
                 />
               </div>
-              <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">
+              <span className="text-[11px] font-mono font-bold text-slate-400 uppercase">
                 {activeVacuum?.areaName || 'Home'}
               </span>
             </div>
@@ -325,7 +325,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                 }`}
             >
               {isCleaning ? <Pause size={18} weight="fill" /> : <Play size={18} weight="fill" />}
-              <span className="text-[10px] font-black">{isCleaning ? 'Pause' : 'Clean'}</span>
+              <span className="text-[11px] font-black">{isCleaning ? 'Pause' : 'Clean'}</span>
             </button>
 
             {/* Action 2: Return to Dock */}
@@ -339,7 +339,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                 }`}
             >
               <ArrowArcLeft size={18} weight="bold" />
-              <span className="text-[10px] font-bold">Dock</span>
+              <span className="text-[11px] font-bold">Dock</span>
             </button>
 
             {/* Action 3: Spot Clean */}
@@ -350,7 +350,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
               className="py-3 px-2 rounded-2xl bg-white/20 dark:bg-white/10 hover:bg-white/30 text-slate-900 dark:text-white flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
             >
               <Sparkle size={18} weight="bold" />
-              <span className="text-[10px] font-bold">Spot</span>
+              <span className="text-[11px] font-bold">Spot</span>
             </button>
 
             {/* Action 4: Locate */}
@@ -361,14 +361,14 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
               className="py-3 px-2 rounded-2xl bg-white/20 dark:bg-white/10 hover:bg-white/30 text-slate-900 dark:text-white flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
             >
               <SpeakerHigh size={18} weight="bold" />
-              <span className="text-[10px] font-bold">Locate</span>
+              <span className="text-[11px] font-bold">Locate</span>
             </button>
           </div>
 
           {/* Suction Speed Selector */}
           <div className="relative z-10 space-y-2">
             <div className="flex items-center justify-between text-xs px-1">
-              <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
+              <span className="text-slate-400 font-bold uppercase tracking-wider text-[11px] flex items-center gap-1">
                 <Fan size={13} weight="bold" />
                 <span>Suction Fan Power</span>
               </span>
@@ -404,7 +404,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                 <Gauge size={16} weight="bold" />
               </div>
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                   Area Cleaned
                 </span>
                 <span className="text-sm font-black font-mono text-slate-900 dark:text-white">
@@ -418,7 +418,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                 <Clock size={16} weight="bold" />
               </div>
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                   Clean Duration
                 </span>
                 <span className="text-sm font-black font-mono text-slate-900 dark:text-white">
@@ -491,7 +491,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
           {/* Map Viewer Canvas - Doubled Size */}
           <div className="relative z-10 w-full h-[520px] sm:h-[580px] min-h-[460px] rounded-2xl overflow-hidden border border-slate-200/50 dark:border-white/10 bg-transparent flex items-center justify-center p-0">
             {resolvedMapUrl ? (
-              <img
+              <img loading="lazy" decoding="async"
                 src={resolvedMapUrl}
                 alt={activeMap?.name || 'Cleaning Map'}
                 className="w-full h-full object-contain filter contrast-105 p-0"
@@ -516,7 +516,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                   <circle cx="140" cy="115" r="4" fill="#38bdf8" />
                 </svg>
 
-                <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-xl bg-white/20 dark:bg-black/40 border border-slate-200/40 dark:border-white/10 text-[10px] font-mono text-slate-700 dark:text-slate-300 backdrop-blur-md flex items-center gap-1.5">
+                <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-xl bg-white/20 dark:bg-black/40 border border-slate-200/40 dark:border-white/10 text-[11px] font-mono text-slate-700 dark:text-slate-300 backdrop-blur-md flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span>LiDAR Stream Active</span>
                 </div>
@@ -525,7 +525,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
 
             {/* Live Scanning Pulse HUD if Active */}
             {isCleaning && (
-              <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold backdrop-blur-md">
+              <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold backdrop-blur-md">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                 <span>Live Mapping</span>
               </div>
@@ -537,7 +537,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
             <div className="flex items-center gap-2">
               <NavigationArrow size={18} weight="duotone" className="text-cyan-400" />
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                   Current Target Zone
                 </span>
                 <span className="text-xs font-extrabold text-slate-900 dark:text-white">
@@ -667,7 +667,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                   <Drop size={14} weight="fill" className="text-sky-400" />
                   <span>Clean Water</span>
                 </div>
-                <span className="font-mono font-bold text-[10px] text-emerald-400">Full</span>
+                <span className="font-mono font-bold text-[11px] text-emerald-400">Full</span>
               </div>
 
               <div className="p-2.5 rounded-xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between">
@@ -675,7 +675,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                   <Drop size={14} weight="bold" className="text-amber-400" />
                   <span>Dirty Water</span>
                 </div>
-                <span className="font-mono font-bold text-[10px] text-slate-400">Empty</span>
+                <span className="font-mono font-bold text-[11px] text-slate-400">Empty</span>
               </div>
 
               <div className="p-2.5 rounded-xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between">
@@ -683,7 +683,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                   <CheckCircle size={14} weight="fill" className="text-emerald-500" />
                   <span>Dustbin</span>
                 </div>
-                <span className="font-mono font-bold text-[10px] text-emerald-400">
+                <span className="font-mono font-bold text-[11px] text-emerald-400">
                   {activeVacuum?.consumables?.dustbinStatus || 'Installed'}
                 </span>
               </div>
@@ -693,7 +693,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                   <Sparkle size={14} weight="fill" className="text-indigo-400" />
                   <span>Mop Pad</span>
                 </div>
-                <span className="font-mono font-bold text-[10px] text-indigo-400">
+                <span className="font-mono font-bold text-[11px] text-indigo-400">
                   {activeVacuum?.consumables?.mopAttached ? 'Attached' : 'Detached'}
                 </span>
               </div>

@@ -130,7 +130,7 @@ export default function ThemeCustomizationSection({
         <div className="space-y-1.5">
           <div className="flex items-center justify-between px-0.5">
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Tile Width <span className="text-[10px] font-normal text-slate-400">(Mobile)</span>
+              Tile Width <span className="text-[11px] font-normal text-slate-400">(Mobile)</span>
             </span>
             <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 capitalize">
               {activeTileMode === 'compact'
@@ -290,7 +290,7 @@ export default function ThemeCustomizationSection({
                 <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <span>CartoDB Minimalist Tiles</span>
                   <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
                       cartoApiKey
                         ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
                         : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'

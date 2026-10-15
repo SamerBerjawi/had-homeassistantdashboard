@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 import { useState, useEffect } from 'react';
 import { getActiveHAToken } from './haAuth';
 import { getStoredAuthConfig } from './authStorage';
@@ -94,10 +95,10 @@ export async function loadHAImageBlob(
         headers['Authorization'] = `Bearer ${activeToken}`;
       }
 
-      const response = await fetch(targetUrl, {
+      const response = await fetchWithTimeout(targetUrl, {
         headers,
         mode: 'cors'
-      });
+      }, 10000);
 
       if (!response.ok) {
         // If authenticated fetch fails with 404 or 401, return direct URL as fallback

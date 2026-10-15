@@ -28,7 +28,7 @@ export default function CameraCard({
     <div 
       onClick={onOpenModal}
       className="relative w-full h-full flex flex-col justify-between overflow-hidden rounded-2xl cursor-pointer group bg-black"
-    >
+     role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
       {/* Live Stream or Snapshot Background */}
       {entity ? (
         <div className="absolute inset-0 w-full h-full">
@@ -43,7 +43,7 @@ export default function CameraCard({
         </div>
       ) : snapshotUrl ? (
         <>
-          <img
+          <img loading="lazy" decoding="async"
             src={snapshotUrl}
             alt={title}
             className="absolute inset-0 w-full h-full object-cover brightness-[0.75] group-hover:scale-105 transition-transform duration-500"
@@ -65,7 +65,7 @@ export default function CameraCard({
           <span className="text-xs font-bold text-white drop-shadow-md truncate">{title}</span>
         </div>
 
-        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan-500/80 backdrop-blur-md text-slate-950 text-[10px] font-black uppercase tracking-wider shrink-0 shadow-md">
+        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan-500/80 backdrop-blur-md text-slate-950 text-[11px] font-black uppercase tracking-wider shrink-0 shadow-md">
           <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping" />
           <span>Live Feed</span>
         </div>
@@ -76,7 +76,7 @@ export default function CameraCard({
         <span className="flex items-center gap-1 font-semibold text-emerald-300">
           <Broadcast size={14} weight="duotone" className="text-emerald-400" /> Motion Cleared
         </span>
-        <span className="text-[10px] text-slate-300 bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-md border border-white/10">
+        <span className="text-[11px] text-slate-300 bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-md border border-white/10">
           Tap to Open
         </span>
       </div>

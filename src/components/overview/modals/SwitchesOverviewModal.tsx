@@ -156,7 +156,7 @@ export default function SwitchesOverviewModal({
                       className="flex items-center gap-3 min-w-0 cursor-pointer group"
                       onClick={() => openEntityDetails(sw.entity_id)}
                       title="Click to open switch details"
-                    >
+                     role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                       <button
                         type="button"
                         onClick={(e) => {
@@ -271,7 +271,7 @@ export default function SwitchesOverviewModal({
                             {areaGroup.areaName}
                           </span>
                         </div>
-                        <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                        <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
                           {areaGroup.entities.filter((e) => e.state === 'on').length}/{areaGroup.entities.length} on
                         </span>
                       </div>
@@ -298,8 +298,8 @@ export default function SwitchesOverviewModal({
                               className="flex items-center gap-3 min-w-0 cursor-pointer group"
                               onClick={() => openEntityDetails(sw.entity_id)}
                               title="Click to view details"
-                            >
-                              <button
+                             role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
+                              <button aria-label="Toggle switch"
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();

@@ -11,6 +11,7 @@
  * 5. Reference counting with 7s graceful teardown to avoid thrashing on fast navigations / modal transitions
  */
 
+import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 import type Hls from 'hls.js';
 import { loadHls } from '../lib/loadHls';
 
@@ -409,14 +410,14 @@ class CameraStreamManager {
       const sdpPayload = pc.localDescription?.sdp || offer.sdp;
       const token = session.options.token;
 
-      const res = await fetch(`/api/cameras/${encodeURIComponent(session.streamId)}/webrtc`, {
+      const res = await fetchWithTimeout(`/api/cameras/${encodeURIComponent(session.streamId)}/webrtc`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ sdp: sdpPayload, type: 'offer' })
-      });
+      }, 12000);
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => null);

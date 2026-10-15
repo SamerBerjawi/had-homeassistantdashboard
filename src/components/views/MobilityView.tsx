@@ -81,7 +81,7 @@ export default function MobilityView({ darkMode = true }: MobilityViewProps) {
               >
                 <Car size={16} weight={activeAsset === 'car' ? 'fill' : 'bold'} />
                 <span>Electric Car</span>
-                <span className="text-[10px] font-mono opacity-85">
+                <span className="text-[11px] font-mono opacity-85">
                   {carMetrics.soc != null ? `${Math.round(carMetrics.soc)}%` : '—'}
                 </span>
               </button>
@@ -101,7 +101,7 @@ export default function MobilityView({ darkMode = true }: MobilityViewProps) {
               >
                 <Bicycle size={16} weight={activeAsset === 'bike' ? 'fill' : 'bold'} />
                 <span>Electric Bike</span>
-                <span className="text-[10px] font-mono opacity-85">
+                <span className="text-[11px] font-mono opacity-85">
                   {bikeMetrics.batteryPercent != null ? `${Math.round(bikeMetrics.batteryPercent)}%` : '—'}
                 </span>
               </button>

@@ -268,10 +268,10 @@ export default function MediaView({ darkMode = true }: MediaViewProps) {
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         {area.picture ? (
-                          <img src={area.picture} alt={area.name} className="w-5 h-5 rounded-md object-cover" />
+                          <img loading="lazy" decoding="async" src={area.picture} alt={area.name} className="w-5 h-5 rounded-md object-cover" />
                         ) : (
                           <div
-                            className={`w-5 h-5 rounded-md flex items-center justify-center font-bold text-[10px] ${
+                            className={`w-5 h-5 rounded-md flex items-center justify-center font-bold text-[11px] ${
                               darkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-200 text-slate-700'
                             }`}
                           >

@@ -63,13 +63,13 @@ test.describe('C. Rooms & security', () => {
 
   test('W26 camera settings section loads', async ({ page }) => {
     await openTab(page, 'settings');
-    await page.getByText(/Cameras & Video|Cameras & RTSP/).locator('visible=true').first().click();
+    await page.getByText(/Cameras & RTSP/).locator('visible=true').first().click();
     await expect(page.getByText(/go2rtc/i).first()).toBeVisible();
   });
 
   test('W26 camera settings shows go2rtc status banner', async ({ page }) => {
     await openTab(page, 'settings');
-    await page.getByText(/Cameras & Video|Cameras & RTSP/).locator('visible=true').first().click();
+    await page.getByText(/Cameras & RTSP/).locator('visible=true').first().click();
     await page.waitForTimeout(1500);
     const txt = (await page.locator('body').innerText()).toLowerCase();
     expect(/online|offline|unreachable|not configured|connected|standby/.test(txt)).toBe(true);

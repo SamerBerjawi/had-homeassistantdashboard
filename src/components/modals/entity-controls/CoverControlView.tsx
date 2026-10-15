@@ -124,7 +124,7 @@ export default function CoverControlView({ entity, darkMode = true, customIcon }
             )}
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
               {entity.attributes.room || entity.attributes.area || 'SHADES & COVERS'}
             </span>
             <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white truncate max-w-[180px] sm:max-w-xs">
@@ -218,7 +218,7 @@ export default function CoverControlView({ entity, darkMode = true, customIcon }
           </div>
 
           <div className="z-10 w-full text-center py-1 mt-auto">
-            <span className="text-[10px] font-mono font-black text-slate-800 dark:text-white drop-shadow-xs">
+            <span className="text-[11px] font-mono font-black text-slate-800 dark:text-white drop-shadow-xs">
               {position === 0 ? 'Closed' : position === 100 ? 'Fully Open' : `${position}% Open`}
             </span>
           </div>
@@ -299,7 +299,7 @@ export default function CoverControlView({ entity, darkMode = true, customIcon }
       {caps.supportsPosition && (
         <div className={`p-4 sm:p-5 rounded-3xl space-y-3 ${bentoStaticCardStyle}`}>
           <div className="flex items-center justify-between px-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
               <SlidersHorizontal size={14} weight="duotone" className="text-sky-500" />
               <span>Target Position</span>
             </span>
@@ -351,7 +351,7 @@ export default function CoverControlView({ entity, darkMode = true, customIcon }
       {caps.supportsTilt && (
         <div className={`p-4 sm:p-5 rounded-3xl space-y-3 ${bentoStaticCardStyle}`}>
           <div className="flex items-center justify-between px-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
               <ArrowsVertical size={14} weight="duotone" className="text-teal-500" />
               <span>Slat Tilt Angle</span>
             </span>
@@ -376,7 +376,7 @@ export default function CoverControlView({ entity, darkMode = true, customIcon }
           />
 
           <div
-            className={`flex justify-between text-[10px] font-mono px-1 ${
+            className={`flex justify-between text-[11px] font-mono px-1 ${
               darkMode ? 'text-slate-400' : 'text-slate-500'
             }`}
           >

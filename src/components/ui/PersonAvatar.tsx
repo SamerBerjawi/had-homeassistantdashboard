@@ -42,8 +42,8 @@ function getGradientForName(name: string): string {
 
 export const SIZE_CONFIGS = {
   xs: {
-    container: 'w-6 h-6 text-[10px]',
-    text: 'text-[10px]',
+    container: 'w-6 h-6 text-[11px]',
+    text: 'text-[11px]',
     dot: 'w-2 h-2 bottom-0 right-0 ring-1',
     iconSize: 12
   },
@@ -156,7 +156,7 @@ function PersonAvatar({
   return (
     <div className={`relative shrink-0 select-none ${config.container} ${className}`} title={`${name}${state ? ` (${state})` : ''}`}>
       {imageSrc && !hasImageError ? (
-        <img
+        <img loading="lazy" decoding="async"
           src={imageSrc}
           alt={name}
           className={`w-full h-full rounded-full object-cover ring-2 ring-offset-1 dark:ring-offset-black transition-all ${ringClass}`}

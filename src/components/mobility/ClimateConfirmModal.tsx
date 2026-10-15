@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Fan, X, Check, Thermometer, Clock } from '@phosphor-icons/react';
@@ -28,6 +29,8 @@ export function ClimateConfirmModal({
   vehicleName = 'Electric Vehicle',
   darkMode = true
 }: ClimateConfirmModalProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
+
   if (!isOpen) return null;
 
   return (
@@ -44,6 +47,11 @@ export function ClimateConfirmModal({
 
         {/* Modal Card */}
         <motion.div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={isActive ? 'Stop preconditioning' : 'Start preconditioning'}
+          tabIndex={-1}
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -59,7 +67,7 @@ export function ClimateConfirmModal({
           />
 
           {/* Close button */}
-          <button
+          <button aria-label="Close"
             type="button"
             onClick={onClose}
             className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
@@ -94,7 +102,7 @@ export function ClimateConfirmModal({
             <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2">
               <Thermometer size={18} weight="duotone" className="text-cyan-400" />
               <div>
-                <span className="text-[9px] uppercase tracking-wider text-slate-400 block font-semibold">Target</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-400 block font-semibold">Target</span>
                 <span className="text-sm font-bold font-mono text-white">{targetTemp}°C</span>
               </div>
             </div>
@@ -102,7 +110,7 @@ export function ClimateConfirmModal({
             <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2">
               <Clock size={18} weight="duotone" className="text-amber-400" />
               <div>
-                <span className="text-[9px] uppercase tracking-wider text-slate-400 block font-semibold">Duration</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-400 block font-semibold">Duration</span>
                 <span className="text-sm font-bold font-mono text-white">15 Minutes</span>
               </div>
             </div>

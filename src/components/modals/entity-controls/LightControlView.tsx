@@ -475,7 +475,7 @@ export default function LightControlView({ entity, darkMode = true, customIcon }
         className={`relative overflow-hidden rounded-3xl p-4 flex flex-col items-center justify-center min-h-[210px] transition-all duration-500 cursor-pointer ${glassCardStyle}`}
         onClick={handleToggle}
         title={isOn ? 'Click lamp to turn off' : 'Click lamp to turn on'}
-      >
+       role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
         {/* Ambient background bloom */}
         <div
           className="absolute -top-10 inset-x-0 h-48 rounded-full blur-3xl transition-opacity duration-700 pointer-events-none"
@@ -815,10 +815,10 @@ export default function LightControlView({ entity, darkMode = true, customIcon }
                     }}
                   >
                     {/* Embedded Kelvin Range Labels */}
-                    <span className="text-[10px] font-black uppercase text-amber-950/80 pointer-events-none drop-shadow-xs">
+                    <span className="text-[11px] font-black uppercase text-amber-950/80 pointer-events-none drop-shadow-xs">
                       Warm
                     </span>
-                    <span className="ml-auto text-[10px] font-black uppercase text-sky-950/80 pointer-events-none drop-shadow-xs">
+                    <span className="ml-auto text-[11px] font-black uppercase text-sky-950/80 pointer-events-none drop-shadow-xs">
                       Cool
                     </span>
                   </div>
@@ -1019,7 +1019,7 @@ export default function LightControlView({ entity, darkMode = true, customIcon }
                           </div>
                           <div>
                             <span className="text-xs font-black block">{scene.name}</span>
-                            <span className="text-[10px] text-slate-600 dark:text-slate-400 font-semibold block">
+                            <span className="text-[11px] text-slate-600 dark:text-slate-400 font-semibold block">
                               {scene.desc}
                             </span>
                           </div>

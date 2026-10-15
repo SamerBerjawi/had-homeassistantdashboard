@@ -166,7 +166,7 @@ export default function VacuumsOverviewDrawer({
           </div>
 
           <span
-            className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full ${
+            className={`text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full ${
               activeCleaning.length > 0
                 ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
                 : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300'
@@ -290,7 +290,7 @@ export default function VacuumsOverviewDrawer({
                               </div>
 
                               <span
-                                className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shrink-0 ${status.color}`}
+                                className={`text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full shrink-0 ${status.color}`}
                               >
                                 {status.badge}
                               </span>

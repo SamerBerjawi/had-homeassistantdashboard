@@ -112,7 +112,7 @@ export function MobilityAssetBadge({
         >
           <div className="w-7 h-7 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 overflow-hidden">
             {resolvedCarImage && !carImgError ? (
-              <img
+              <img loading="lazy" decoding="async"
                 src={resolvedCarImage}
                 alt="Car"
                 className="w-5 h-5 object-contain"
@@ -352,7 +352,7 @@ export function MobilityAssetBadge({
         >
           <div className="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 overflow-hidden">
             {resolvedBikeImage && !bikeImgError ? (
-              <img
+              <img loading="lazy" decoding="async"
                 src={resolvedBikeImage}
                 alt="Bike"
                 className="w-5 h-5 object-contain"

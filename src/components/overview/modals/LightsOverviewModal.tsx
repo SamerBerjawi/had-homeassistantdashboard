@@ -202,7 +202,7 @@ export default function LightsOverviewModal({
                         className="flex items-center gap-3 min-w-0 cursor-pointer group"
                         onClick={() => openEntityDetails(light.entity_id)}
                         title="Click to open detailed controls"
-                      >
+                       role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -261,7 +261,7 @@ export default function LightsOverviewModal({
                           onChange={(e) => handleBrightnessChange(light, parseInt(e.target.value, 10))}
                           className="w-full h-1.5 rounded-lg appearance-none bg-slate-200 dark:bg-white/20 accent-amber-500 cursor-pointer"
                         />
-                        <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 w-7 text-right">
+                        <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 w-7 text-right">
                           {caps.brightnessPct}%
                         </span>
                       </div>
@@ -339,7 +339,7 @@ export default function LightsOverviewModal({
                             {areaGroup.areaName}
                           </span>
                         </div>
-                        <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                        <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
                           {areaGroup.entities.filter((e) => e.state === 'on').length}/{areaGroup.entities.length} on
                         </span>
                       </div>
@@ -366,8 +366,8 @@ export default function LightsOverviewModal({
                                 className="flex items-center gap-3 min-w-0 cursor-pointer group"
                                 onClick={() => openEntityDetails(light.entity_id)}
                                 title="Click to view details"
-                              >
-                                <button
+                               role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
+                                <button aria-label="Toggle light"
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -435,7 +435,7 @@ export default function LightsOverviewModal({
                                   onChange={(e) => handleBrightnessChange(light, parseInt(e.target.value, 10))}
                                   className="w-full h-1.5 rounded-lg appearance-none bg-slate-200 dark:bg-white/20 accent-amber-500 cursor-pointer"
                                 />
-                                <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 w-7 text-right">
+                                <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 w-7 text-right">
                                   {caps.brightnessPct}%
                                 </span>
                               </div>

@@ -172,7 +172,7 @@ export default function FansOverviewModal({
                     <button
                       type="button"
                       onClick={() => handleToggleFan(fan)}
-                      className="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 text-[10px] font-extrabold uppercase hover:bg-rose-500/20 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
+                      className="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 text-[11px] font-extrabold uppercase hover:bg-rose-500/20 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
                     >
                       Turn Off
                     </button>
@@ -249,7 +249,7 @@ export default function FansOverviewModal({
                             {areaGroup.areaName}
                           </span>
                         </div>
-                        <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                        <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
                           {areaGroup.entities.filter((e) => e.state === 'on').length}/{areaGroup.entities.length} running
                         </span>
                       </div>
@@ -291,12 +291,12 @@ export default function FansOverviewModal({
                                   <div className="flex items-center gap-1.5">
                                     <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{fan.name}</h4>
                                     {caps.brandKind === 'dreo' && (
-                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                                      <span className="px-1.5 py-0.2 rounded text-[11px] font-extrabold bg-blue-500/15 text-blue-600 dark:text-blue-400">
                                         DREO
                                       </span>
                                     )}
                                     {caps.brandKind === 'duux' && (
-                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-purple-500/15 text-purple-600 dark:text-purple-400">
+                                      <span className="px-1.5 py-0.2 rounded text-[11px] font-extrabold bg-purple-500/15 text-purple-600 dark:text-purple-400">
                                         Duux
                                       </span>
                                     )}
@@ -317,7 +317,7 @@ export default function FansOverviewModal({
                               </div>
 
                               {/* Power State Badge */}
-                              <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shrink-0 ${
+                              <span className={`text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full shrink-0 ${
                                 isOn
                                   ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300'
                                   : 'bg-white/80 dark:bg-white/5 text-slate-600 dark:text-slate-400'

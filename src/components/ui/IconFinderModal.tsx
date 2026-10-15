@@ -251,7 +251,7 @@ export default function IconFinderModal({
                 <X size={13} weight="bold" />
               </button>
             )}
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-white/40 dark:bg-white/10 text-slate-700 dark:text-slate-400 border border-white/40 dark:border-white/10">
+            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-white/40 dark:bg-white/10 text-slate-700 dark:text-slate-400 border border-white/40 dark:border-white/10">
               {matchedIcons.length}
             </span>
           </div>

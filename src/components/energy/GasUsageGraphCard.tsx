@@ -82,19 +82,19 @@ export default function GasUsageGraphCard({
               {/* Left Y-Axis Scale */}
               <div className="w-10 sm:w-12 flex-shrink-0 flex flex-col justify-between select-none relative pointer-events-none pb-5">
                 {/* Y-Axis Label / Unit */}
-                <div className={`text-[10px] font-bold uppercase tracking-wider text-right pr-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <div className={`text-[11px] font-bold uppercase tracking-wider text-right pr-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                   {gasUnit}
                 </div>
 
                 {/* Y-Axis Ticks */}
                 <div className="flex-1 relative flex flex-col justify-between">
-                  <span className={`text-[9px] sm:text-[10px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span className={`text-[11px] sm:text-[11px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     {maxGas >= 10 ? maxGas.toFixed(0) : maxGas.toFixed(1)}
                   </span>
-                  <span className={`text-[9px] sm:text-[10px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <span className={`text-[11px] sm:text-[11px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                     {(maxGas * 0.5) >= 10 ? (maxGas * 0.5).toFixed(0) : (maxGas * 0.5).toFixed(1)}
                   </span>
-                  <span className={`text-[9px] sm:text-[10px] font-mono font-bold text-right pr-1 leading-none ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                  <span className={`text-[11px] sm:text-[11px] font-mono font-bold text-right pr-1 leading-none ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                     0.0
                   </span>
                 </div>
@@ -131,7 +131,7 @@ export default function GasUsageGraphCard({
                         {/* X-Axis Tick Label */}
                         {(buckets.length <= 12 || idx % Math.ceil(buckets.length / 10) === 0) && (
                           <span
-                            className={`absolute -bottom-5 text-[9px] font-mono font-bold whitespace-nowrap ${
+                            className={`absolute -bottom-5 text-[11px] font-mono font-bold whitespace-nowrap ${
                               darkMode ? 'text-slate-400' : 'text-slate-600'
                             }`}
                           >
@@ -146,7 +146,7 @@ export default function GasUsageGraphCard({
             </div>
 
             {/* X-Axis Label */}
-            <div className={`w-full text-center text-[10px] font-bold uppercase tracking-wider select-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            <div className={`w-full text-center text-[11px] font-bold uppercase tracking-wider select-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               Time
             </div>
           </div>

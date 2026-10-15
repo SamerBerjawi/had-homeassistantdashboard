@@ -81,7 +81,7 @@ export const TpLinkOverviewSection: React.FC<TpLinkOverviewSectionProps> = ({
             Router Overview &amp; Gateway
           </h2>
           <span
-            className={`text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 ${
+            className={`text-[11px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 ${
               isWanConnected
                 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
                 : 'bg-rose-500/15 text-rose-400 border border-rose-500/20'
@@ -135,27 +135,27 @@ export const TpLinkOverviewSection: React.FC<TpLinkOverviewSectionProps> = ({
           {/* 1. Connection Protocol */}
           <div className={`${tileStyle} space-y-1`}>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <span className="text-[11px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <ArrowsLeftRight size={12} className="text-indigo-400" /> Protocol
               </span>
-              <span className="text-[10px] font-mono font-bold text-emerald-500">Active</span>
+              <span className="text-[11px] font-mono font-bold text-emerald-500">Active</span>
             </div>
             <div className="text-sm font-black font-mono text-slate-900 dark:text-white">
               {metrics.connectionType || 'Dynamic IP'}
             </div>
-            <div className="text-[9px] text-slate-400">WAN Connection Type</div>
+            <div className="text-[11px] text-slate-400">WAN Connection Type</div>
           </div>
 
           {/* 2. Public IP Address */}
           <div className={`${tileStyle} space-y-1`}>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <span className="text-[11px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <Globe size={12} className="text-sky-400" /> Public IP
               </span>
               <button
                 type="button"
                 onClick={() => handleCopyIp(metrics.publicIp || '84.115.182.49')}
-                className="flex items-center gap-0.5 text-[9px] font-mono font-bold text-sky-400 hover:text-sky-300 transition-colors cursor-pointer"
+                className="flex items-center gap-0.5 text-[11px] font-mono font-bold text-sky-400 hover:text-sky-300 transition-colors cursor-pointer"
                 title="Click to copy Public IP"
               >
                 {copiedIp === (metrics.publicIp || '84.115.182.49') ? (
@@ -174,35 +174,35 @@ export const TpLinkOverviewSection: React.FC<TpLinkOverviewSectionProps> = ({
             <div className="text-sm font-black font-mono text-slate-900 dark:text-white truncate">
               {metrics.publicIp || '84.115.182.49'}
             </div>
-            <div className="text-[9px] text-slate-400">External Internet IP</div>
+            <div className="text-[11px] text-slate-400">External Internet IP</div>
           </div>
 
           {/* 3. WAN IPv4 Address */}
           <div className={`${tileStyle} space-y-1`}>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <span className="text-[11px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <Globe size={12} className="text-cyan-400" /> WAN IPv4
               </span>
-              <span className="text-[9px] font-mono font-bold text-cyan-400">Gateway</span>
+              <span className="text-[11px] font-mono font-bold text-cyan-400">Gateway</span>
             </div>
             <div className="text-sm font-black font-mono text-slate-900 dark:text-white truncate">
               {metrics.wanIpv4 || 'Unavailable'}
             </div>
-            <div className="text-[9px] text-slate-400">ISP Uplink Gateway IP</div>
+            <div className="text-[11px] text-slate-400">ISP Uplink Gateway IP</div>
           </div>
 
           {/* 4. LAN IPv4 Address */}
           <div className={`${tileStyle} space-y-1`}>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <span className="text-[11px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <ShieldCheck size={12} className="text-amber-400" /> LAN IPv4
               </span>
-              <span className="text-[9px] font-mono font-bold text-slate-400">/24</span>
+              <span className="text-[11px] font-mono font-bold text-slate-400">/24</span>
             </div>
             <div className="text-sm font-black font-mono text-slate-900 dark:text-white truncate">
               {metrics.lanIpv4 || '192.168.68.1'}
             </div>
-            <div className="text-[9px] text-slate-400">Router Subnet IP</div>
+            <div className="text-[11px] text-slate-400">Router Subnet IP</div>
           </div>
 
           {/* 5. Live Data Fetching Toggle Switch with Active Glow */}
@@ -214,11 +214,11 @@ export const TpLinkOverviewSection: React.FC<TpLinkOverviewSectionProps> = ({
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <span className="text-[11px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <Broadcast size={12} className={isDataFetchingOn ? 'text-emerald-400' : 'text-slate-400'} /> Polling
               </span>
               <span
-                className={`text-[9px] font-mono font-bold uppercase ${
+                className={`text-[11px] font-mono font-bold uppercase ${
                   isDataFetchingOn ? 'text-emerald-400' : 'text-slate-400'
                 }`}
               >
@@ -230,7 +230,7 @@ export const TpLinkOverviewSection: React.FC<TpLinkOverviewSectionProps> = ({
               <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">
                 Live Polling
               </span>
-              <button
+              <button aria-label="Toggle live polling"
                 type="button"
                 role="switch"
                 aria-checked={isDataFetchingOn}

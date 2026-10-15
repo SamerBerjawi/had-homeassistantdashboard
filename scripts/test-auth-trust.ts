@@ -7,6 +7,8 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
+import type { Duplex } from 'node:stream';
 import { fork, type ChildProcess } from 'node:child_process';
 
 const GOOD_TOKEN = 'good-ha-token';
@@ -21,9 +23,48 @@ function startFakeHa(port: number): Promise<{ server: http.Server; hits: string[
   return new Promise((resolve) => server.listen(port, '127.0.0.1', () => resolve({ server, hits })));
 }
 
-function request(port: number, pathName: string, headers: Record<string, string> = {}): Promise<number> {
+/** Minimal Home Assistant: REST /api/ for two tokens plus the websocket auth + auth/current_user flow. */
+function startFakeHaWithWs(port: number): Promise<http.Server> {
+  const roles: Record<string, boolean> = { 'admin-tok': true, 'user-tok': false };
+  const server = http.createServer((req, res) => {
+    const token = String(req.headers.authorization || '').replace('Bearer ', '');
+    res.statusCode = token in roles ? 200 : 401;
+    res.end('{}');
+  });
+  const frame = (obj: unknown) => {
+    const payload = Buffer.from(JSON.stringify(obj));
+    return Buffer.concat([Buffer.from([0x81, payload.length]), payload]); // payloads here are < 126 bytes
+  };
+  const readText = (buf: Buffer): string => {
+    const len = buf[1] & 0x7f;
+    const mask = buf.subarray(2, 6);
+    const data = buf.subarray(6, 6 + len);
+    return Buffer.from(data.map((b, i) => b ^ mask[i % 4])).toString('utf-8');
+  };
+  server.on('upgrade', (req, socket: Duplex) => {
+    const key = String(req.headers['sec-websocket-key']);
+    const accept = crypto.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
+    socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
+    socket.write(frame({ type: 'auth_required' }));
+    let token = '';
+    socket.on('data', (buf: Buffer) => {
+      let msg: any;
+      try { msg = JSON.parse(readText(buf)); } catch { return; }
+      if (msg.type === 'auth') {
+        token = msg.access_token;
+        socket.write(frame(token in roles ? { type: 'auth_ok' } : { type: 'auth_invalid' }));
+      } else if (msg.type === 'auth/current_user') {
+        socket.write(frame({ id: msg.id, type: 'result', success: true, result: { is_admin: roles[token] } }));
+      }
+    });
+    socket.on('error', () => undefined);
+  });
+  return new Promise((resolve) => server.listen(port, '127.0.0.1', () => resolve(server)));
+}
+
+function request(port: number, pathName: string, headers: Record<string, string> = {}, method = 'GET'): Promise<number> {
   return new Promise((resolve, reject) => {
-    const req = http.request({ host: '127.0.0.1', port, path: pathName, headers }, (res) => {
+    const req = http.request({ host: '127.0.0.1', port, path: pathName, headers, method }, (res) => {
       res.resume();
       res.on('end', () => resolve(res.statusCode || 0));
     });
@@ -118,6 +159,19 @@ async function main() {
     assert.strictEqual(evil.hits.length, before, 'after pinning the client URL is ignored');
   });
   console.log('✓ opt-in TOFU pins once');
+
+  console.log('--- 5. Admin-only writes use the real HA is_admin flag (SEC-005) ---');
+  const haWs = await startFakeHaWithWs(19873);
+  await withServer(19886, { HASS_URL: 'http://127.0.0.1:19873' }, async () => {
+    const json = { 'Content-Type': 'application/json' };
+    const asUser = await request(19886, '/api/assets', { ...json, Authorization: 'Bearer user-tok' }, 'POST');
+    assert.strictEqual(asUser, 403, 'non-admin must not upload assets');
+    const asAdmin = await request(19886, '/api/assets', { ...json, Authorization: 'Bearer admin-tok' }, 'POST');
+    assert.ok(asAdmin !== 403 && asAdmin !== 401, `admin should pass the role check, got ${asAdmin}`);
+    assert.strictEqual(await request(19886, '/api/config', { Authorization: 'Bearer user-tok' }), 404, 'non-admin can still read');
+  });
+  haWs.close();
+  console.log('✓ admin role comes from HA auth/current_user');
 
   fake.server.close();
   evil.server.close();

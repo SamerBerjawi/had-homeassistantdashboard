@@ -88,7 +88,7 @@ export default function VacuumCard({
       </div>
 
       {/* Bottom stats */}
-      <div className="flex items-center justify-between text-[10px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
+      <div className="flex items-center justify-between text-[11px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
         <span className="flex items-center gap-1 text-slate-750 dark:text-slate-300">
           <Sparkle size={12} weight="duotone" className="text-amber-500 dark:text-amber-400" /> Bin Filter: OK
         </span>

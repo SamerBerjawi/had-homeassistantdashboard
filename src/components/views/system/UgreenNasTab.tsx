@@ -34,7 +34,7 @@ export const UgreenNasTab: React.FC<UgreenNasTabProps> = ({ darkMode = true }) =
       {/* Top Toolbar: Time Range Selector & Refresh */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-1">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Telemetry Window:
           </span>
           <div className="flex items-center gap-1 bg-slate-200/50 dark:bg-white/5 p-0.5 rounded-xl border border-slate-200/60 dark:border-white/5">

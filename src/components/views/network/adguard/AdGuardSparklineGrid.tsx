@@ -147,13 +147,13 @@ export const AdGuardSparklineGrid: React.FC<AdGuardSparklineGridProps> = ({
             : 'bg-white/70 border-slate-200 text-slate-900 shadow-slate-200/50'
         }`}
       >
-        <div className="text-[10px] font-mono text-slate-400 pb-1 border-b border-white/10">
+        <div className="text-[11px] font-mono text-slate-400 pb-1 border-b border-white/10">
           {point.timeFormatted}
         </div>
         <div className="flex items-center gap-2 pt-1.5 font-bold">
           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: card.color }} />
           <span className="font-mono">{Number(point.value || 0).toLocaleString()}</span>
-          <span className="text-[10px] text-slate-400 font-normal">queries</span>
+          <span className="text-[11px] text-slate-400 font-normal">queries</span>
         </div>
       </div>
     );
@@ -168,7 +168,7 @@ export const AdGuardSparklineGrid: React.FC<AdGuardSparklineGridProps> = ({
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
             DNS Traffic Overview
           </h2>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+          <span className="text-[11px] font-mono font-bold px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
             AdGuard Native
           </span>
         </div>
@@ -181,7 +181,7 @@ export const AdGuardSparklineGrid: React.FC<AdGuardSparklineGridProps> = ({
               key={r}
               type="button"
               onClick={() => onTimeRangeChange(r)}
-              className={`px-2 py-1 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer select-none ${
+              className={`px-2 py-1 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer select-none ${
                 timeRange === r
                   ? 'bg-indigo-500 text-white shadow-sm'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -238,7 +238,7 @@ export const AdGuardSparklineGrid: React.FC<AdGuardSparklineGridProps> = ({
               {/* Middle: Interactive Recharts Monotone Area Chart */}
               <div className="w-full h-[62px] my-1 relative">
                 {cardData.length === 0 ? (
-                  <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-500 font-medium">
+                  <div className="w-full h-full flex items-center justify-center text-[11px] text-slate-500 font-medium">
                     No recorded telemetry
                   </div>
                 ) : (
@@ -299,7 +299,7 @@ export const AdGuardSparklineGrid: React.FC<AdGuardSparklineGridProps> = ({
                   </span>
                 </div>
                 {latestVal > 0 && (
-                  <span className="text-[10px] font-mono font-bold text-slate-400">
+                  <span className="text-[11px] font-mono font-bold text-slate-400">
                     +{latestVal.toLocaleString()}
                   </span>
                 )}

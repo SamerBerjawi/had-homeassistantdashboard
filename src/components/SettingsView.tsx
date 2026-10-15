@@ -7,6 +7,7 @@
  * Single unified header architecture (matches Rooms & Area detail views).
  */
 
+import { validateBackupShape } from '../lib/backupValidation';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { HAEntity, Room, LogMessage, ToastNotification } from '../types';
@@ -424,10 +425,13 @@ export default function SettingsView({
     };
   };
 
+  const [isBackupBusy, setIsBackupBusy] = useState(false);
+
   // 2. Comprehensive Restore Engine (Shared by file import & local snapshots)
   const performComprehensiveRestore = async (parsed: any, sourceName: string) => {
-    if (!parsed || typeof parsed !== 'object') {
-      throw new Error('Invalid backup data');
+    const shapeError = validateBackupShape(parsed);
+    if (shapeError) {
+      throw new Error(shapeError);
     }
 
     const restoredParts: string[] = [];
@@ -596,15 +600,19 @@ export default function SettingsView({
   };
 
   const handleRestoreSnapshot = async (snap: LocalSnapshot) => {
+    if (isBackupBusy) return;
+    setIsBackupBusy(true);
     try {
       const parsed = JSON.parse(snap.data);
       await performComprehensiveRestore(parsed, snap.name);
-    } catch (err) {
+    } catch (err: any) {
       addToast?.({
         type: 'warning',
         title: 'Restore Failed',
-        message: 'Could not restore snapshot data.'
+        message: err?.message ? `Could not restore snapshot: ${err.message}` : 'Could not restore snapshot data.'
       });
+    } finally {
+      setIsBackupBusy(false);
     }
   };
 
@@ -663,19 +671,26 @@ export default function SettingsView({
     if (!file) return;
 
     const fileName = file.name;
+    if (isBackupBusy) return;
+    setIsBackupBusy(true);
     const reader = new FileReader();
+    reader.onerror = () => {
+      setIsBackupBusy(false);
+      addToast?.({ type: 'warning', title: 'Import Error', message: 'Could not read the selected file.' });
+    };
     reader.onload = async (ev) => {
       try {
         const text = ev.target?.result as string;
         const parsed = JSON.parse(text);
         await performComprehensiveRestore(parsed, fileName);
-      } catch (err) {
+      } catch (err: any) {
         addToast?.({
           type: 'warning',
           title: 'Import Error',
-          message: 'Invalid JSON backup file format.'
+          message: err instanceof SyntaxError ? 'Invalid JSON backup file format.' : (err?.message || 'Could not import the backup.')
         });
       } finally {
+        setIsBackupBusy(false);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -685,7 +700,22 @@ export default function SettingsView({
   };
 
   const handleFactoryReset = async () => {
-    await resetDashboardConfig();
+    if (isBackupBusy) return;
+    setIsBackupBusy(true);
+    try {
+      await resetDashboardConfig();
+    } catch (err: any) {
+      // Leave local state untouched: resetting only this device would silently diverge from the server
+      setIsBackupBusy(false);
+      setShowResetConfirm(false);
+      addToast?.({
+        type: 'warning',
+        title: 'Factory Reset Failed',
+        message: err?.message ? `Could not reset the dashboard: ${err.message}` : 'Could not reset the dashboard. Nothing was changed.'
+      });
+      return;
+    }
+    setIsBackupBusy(false);
     resetToDefaults();
     setTempUnit('C');
     setClockFormat('24h');

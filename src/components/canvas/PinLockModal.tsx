@@ -101,7 +101,7 @@ export default function PinLockModal({
         <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
 
         {/* Close button */}
-        <button
+        <button aria-label="Close"
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
         >

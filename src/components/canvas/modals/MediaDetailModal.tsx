@@ -208,7 +208,7 @@ export default function MediaDetailModal({
               {/* Blurred Album Backdrop covering the entire tile */}
               {albumArt && !imgError && (
                 <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={albumArt}
                     alt=""
                     onError={() => setImgError(true)}
@@ -220,7 +220,7 @@ export default function MediaDetailModal({
 
               {/* Top Bar: State Badge & Power Button */}
               <div className="w-full flex items-center justify-between gap-2 relative z-10">
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-white/10 text-slate-300 border border-white/10">
+                <span className="text-[11px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-white/10 text-slate-300 border border-white/10">
                   {entity.state}
                 </span>
 
@@ -237,7 +237,7 @@ export default function MediaDetailModal({
               {/* Actual Unblurred Album Artwork / App Visual */}
               <div className="relative w-44 h-44 rounded-2xl overflow-hidden shadow-2xl border border-white/20 z-10 group flex items-center justify-center bg-slate-900">
                 {albumArt && !imgError ? (
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={albumArt}
                     alt={title}
                     onError={() => setImgError(true)}

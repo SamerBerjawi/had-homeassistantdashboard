@@ -8,6 +8,7 @@
  * to the local NAS SQLite embedded database for sub-10ms queries and disaster recovery.
  */
 
+import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 import { getAuthHeadersAsync } from './configStorageService';
 
 export interface HAStatisticRecord {
@@ -67,7 +68,7 @@ export async function queryStoredStatistics(
       period_type: periodType
     });
 
-    const res = await fetch(`/api/statistics/history?${params.toString()}`, { headers: await getAuthHeadersAsync() });
+    const res = await fetchWithTimeout(`/api/statistics/history?${params.toString()}`, { headers: await getAuthHeadersAsync() }, 15000);
     if (!res.ok) return null;
 
     const json: StoredStatisticsResponse = await res.json();
@@ -93,18 +94,23 @@ export async function syncStoredStatistics(
   if (typeof window === 'undefined') return;
   if (!statistics || typeof statistics !== 'object' || Object.keys(statistics).length === 0) return;
 
-  try {
-    await fetch('/api/statistics/sync', {
-      method: 'POST',
-      headers: await getAuthHeadersAsync(),
-      body: JSON.stringify({
-        statistics,
-        periodType,
-        metadata
-      })
-    });
-  } catch {
-    // Non-blocking fire-and-forget sync
+  // REL-009: the server commits per chunk, so a failure can be partial. Check the result and retry
+  // once; ingestion is idempotent (INSERT OR REPLACE), so re-sending is safe.
+  const body = JSON.stringify({ statistics, periodType, metadata });
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetchWithTimeout('/api/statistics/sync', {
+        method: 'POST',
+        headers: await getAuthHeadersAsync(),
+        body
+      }, 30000);
+      if (res.ok) return;
+      console.warn(`[haStatisticsStorage] Statistics sync attempt ${attempt} failed with HTTP ${res.status}`);
+      // 4xx will not succeed on retry
+      if (res.status >= 400 && res.status < 500) return;
+    } catch (err) {
+      console.warn(`[haStatisticsStorage] Statistics sync attempt ${attempt} failed:`, err);
+    }
   }
 }
 
@@ -114,7 +120,7 @@ export async function syncStoredStatistics(
 export async function fetchStoredStatisticsStatus(): Promise<any> {
   if (typeof window === 'undefined') return null;
   try {
-    const res = await fetch('/api/statistics/status', { headers: await getAuthHeadersAsync() });
+    const res = await fetchWithTimeout('/api/statistics/status', { headers: await getAuthHeadersAsync() });
     if (!res.ok) return null;
     const json = await res.json();
     return json.status || null;
@@ -129,7 +135,7 @@ export async function fetchStoredStatisticsStatus(): Promise<any> {
 export async function fetchStoredStatisticsEntities(): Promise<StoredEntitySummary[]> {
   if (typeof window === 'undefined') return [];
   try {
-    const res = await fetch('/api/statistics/entities', { headers: await getAuthHeadersAsync() });
+    const res = await fetchWithTimeout('/api/statistics/entities', { headers: await getAuthHeadersAsync() });
     if (!res.ok) return [];
     const json = await res.json();
     return json.entities || [];

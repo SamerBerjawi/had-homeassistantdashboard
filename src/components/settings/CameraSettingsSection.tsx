@@ -25,6 +25,7 @@ import { HAEntity, ToastNotification } from '../../types';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { CameraSourceConfig } from '../../types/userConfig';
 import { getAuthHeaders } from '../../services/configStorageService';
+import { fetchWithTimeout } from '../../lib/fetchWithTimeout';
 import CameraFeed from '../camera/CameraFeed';
 
 interface CameraSettingsSectionProps {
@@ -167,7 +168,7 @@ export default function CameraSettingsSection({
 
     // Notify backend endpoint to clean up stream and persistent config immediately
     try {
-      await fetch(`/api/cameras/${encodeURIComponent(id)}`, {
+      await fetchWithTimeout(`/api/cameras/${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -321,7 +322,7 @@ export default function CameraSettingsSection({
           <div className="flex flex-col gap-1.5 md:col-span-2">
             <label className="text-xs font-semibold text-slate-400 flex items-center justify-between">
               <span>RTSP Source Stream URL</span>
-              <span className="text-[10px] text-slate-500 font-normal">
+              <span className="text-[11px] text-slate-500 font-normal">
                 Supported: rtsp://, rtsps://, http:// (HLS/FLV/MJPEG)
               </span>
             </label>
@@ -362,7 +363,7 @@ export default function CameraSettingsSection({
                   }`}
                 >
                   <span className="text-xs font-bold">{opt.title}</span>
-                  <span className="text-[10px] text-slate-400 leading-snug">{opt.desc}</span>
+                  <span className="text-[11px] text-slate-400 leading-snug">{opt.desc}</span>
                 </button>
               ))}
             </div>
@@ -434,7 +435,7 @@ export default function CameraSettingsSection({
                           <span className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                             {src.name || src.id}
                           </span>
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-400 uppercase tracking-wider">
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-400 uppercase tracking-wider">
                             {src.liveType || 'auto'}
                           </span>
                         </div>

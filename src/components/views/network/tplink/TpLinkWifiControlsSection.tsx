@@ -166,14 +166,14 @@ export const TpLinkWifiControlsSection: React.FC<TpLinkWifiControlsSectionProps>
                     <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
                       {group.title}
                     </h3>
-                    <p className="text-[9px] text-slate-500 dark:text-slate-400">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       {group.subtitle}
                     </p>
                   </div>
                 </div>
 
                 <span
-                  className={`text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full border ${group.badgeBg} ${group.badgeText} ${group.badgeBorder}`}
+                  className={`text-[11px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full border ${group.badgeBg} ${group.badgeText} ${group.badgeBorder}`}
                 >
                   {activeCount}/3 Active
                 </span>
@@ -220,7 +220,7 @@ export const TpLinkWifiControlsSection: React.FC<TpLinkWifiControlsSectionProps>
                               {bandItem.band} Radio
                             </span>
                             <span
-                              className={`text-[8px] font-mono font-bold px-1 rounded uppercase ${
+                              className={`text-[11px] font-mono font-bold px-1 rounded uppercase ${
                                 isEnabled
                                   ? 'bg-emerald-500/15 text-emerald-400'
                                   : 'bg-slate-500/15 text-slate-400'
@@ -229,14 +229,14 @@ export const TpLinkWifiControlsSection: React.FC<TpLinkWifiControlsSectionProps>
                               {isEnabled ? 'ON' : 'OFF'}
                             </span>
                           </div>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate">
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
                             {ssid}
                           </p>
                         </div>
                       </div>
 
                       {/* Toggle Switch */}
-                      <button
+                      <button aria-label="Toggle Wi-Fi setting"
                         type="button"
                         role="switch"
                         aria-checked={isEnabled}

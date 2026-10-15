@@ -55,7 +55,7 @@ test.describe('A. Auth & session', () => {
   test('W3 LLAT submit with empty token does not authenticate', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: /Long-Lived Token/ }).first().click({ timeout: 15_000 });
-    await page.getByRole('button', { name: /Connect via LLAT/ }).click();
+    await page.getByRole('button', { name: /Connect with token/ }).click();
     await expect(page.getByText('HAD Security Gate')).toBeVisible();
   });
 
@@ -65,7 +65,7 @@ test.describe('A. Auth & session', () => {
     const url = page.locator('input[type="url"], input[type="text"]').first();
     await url.fill('http://127.0.0.1:9');
     await page.locator('input[type="password"]').first().fill('bad_token_value');
-    await page.getByRole('button', { name: /Connect via LLAT/ }).click();
+    await page.getByRole('button', { name: /Connect with token/ }).click();
     await expect(page.getByText('HAD Security Gate')).toBeVisible({ timeout: 20_000 });
   });
 
@@ -93,16 +93,16 @@ test.describe('A. Auth & session', () => {
     expect(errors).toEqual([]);
   });
 
-  test('W6 demo profile offers Switch User and header offers Connect Live HA', async ({ page }) => {
+  test('W6 demo profile offers Switch User and header offers Connect Home Assistant', async ({ page }) => {
     await enterDemo(page, '/settings');
-    await expect(page.getByRole('button', { name: /Connect Live HA/ })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByRole('button', { name: /Connect Home Assistant/ })).toBeVisible({ timeout: 8000 });
     await page.getByText(/Home Owner|User Profile/).locator('visible=true').first().click();
     await expect(page.getByRole('button', { name: /Switch User/ })).toBeVisible();
   });
 
-  test('W6 Connect Live HA reopens the auth modal', async ({ page }) => {
+  test('W6 Connect Home Assistant reopens the auth modal', async ({ page }) => {
     await enterDemo(page);
-    await page.getByRole('button', { name: /Connect Live HA/ }).click();
+    await page.getByRole('button', { name: /Connect Home Assistant/ }).click();
     await expect(page.getByText('HAD Security Gate')).toBeVisible();
   });
 

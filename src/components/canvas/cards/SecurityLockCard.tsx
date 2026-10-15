@@ -67,7 +67,7 @@ export default function SecurityLockCard({
       </div>
 
       {/* Bottom row */}
-      <div className="flex items-center justify-between text-[10px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
+      <div className="flex items-center justify-between text-[11px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
         <span className="text-slate-750 dark:text-slate-300 font-mono">Battery {battery}%</span>
         <span className="text-slate-500 dark:text-slate-400">Z-Wave Plus S2</span>
       </div>

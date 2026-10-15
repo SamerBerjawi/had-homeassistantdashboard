@@ -80,7 +80,7 @@ export default function SwitchControlView({ entity, darkMode = true, customIcon 
             )}
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
               {entity.attributes.room || entity.attributes.area || (isOutlet ? 'POWER OUTLET' : 'SWITCH')}
             </span>
             <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white truncate max-w-[180px] sm:max-w-xs">
@@ -197,7 +197,7 @@ export default function SwitchControlView({ entity, darkMode = true, customIcon 
       {/* ========================================================================= */}
       {(caps.hasPowerMonitoring || caps.hasEnergyMonitoring || caps.voltage !== undefined || caps.currentAmps !== undefined) && (
         <div className={`p-4 sm:p-5 rounded-3xl space-y-3 ${bentoStaticCardStyle}`}>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block px-0.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block px-0.5">
             Telemetry & Power Analytics
           </span>
 
@@ -215,7 +215,7 @@ export default function SwitchControlView({ entity, darkMode = true, customIcon 
                   <Lightning size={20} weight="duotone" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
+                  <div className="text-[11px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
                     Current Power
                   </div>
                   <div className="text-sm font-black font-mono mt-0.5 truncate text-slate-900 dark:text-white">
@@ -238,7 +238,7 @@ export default function SwitchControlView({ entity, darkMode = true, customIcon 
                   <Gauge size={20} weight="duotone" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
+                  <div className="text-[11px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
                     Total Energy
                   </div>
                   <div className="text-sm font-black font-mono mt-0.5 truncate text-slate-900 dark:text-white">
@@ -261,7 +261,7 @@ export default function SwitchControlView({ entity, darkMode = true, customIcon 
                   <Lightning size={20} weight="duotone" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
+                  <div className="text-[11px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
                     Line Voltage
                   </div>
                   <div className="text-sm font-black font-mono mt-0.5 truncate text-slate-900 dark:text-white">
@@ -284,7 +284,7 @@ export default function SwitchControlView({ entity, darkMode = true, customIcon 
                   <Gauge size={20} weight="duotone" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
+                  <div className="text-[11px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
                     Current Flow
                   </div>
                   <div className="text-sm font-black font-mono mt-0.5 truncate text-slate-900 dark:text-white">

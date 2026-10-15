@@ -145,9 +145,9 @@ export default function IntegrationIcon({
 
   // Sizing definitions
   const sizeClasses = {
-    sm: 'w-8 h-8 rounded-lg text-[8px]',
-    md: 'w-10 h-10 sm:w-11 sm:h-11 rounded-xl text-[9px]',
-    lg: 'w-12 h-12 rounded-xl text-[10px]'
+    sm: 'w-8 h-8 rounded-lg text-[11px]',
+    md: 'w-10 h-10 sm:w-11 sm:h-11 rounded-xl text-[11px]',
+    lg: 'w-12 h-12 rounded-xl text-[11px]'
   }[size];
 
   // If image loaded or attempting to load
@@ -156,7 +156,7 @@ export default function IntegrationIcon({
       <div
         className={`shrink-0 overflow-hidden flex items-center justify-center p-0 m-0 select-none bg-transparent ${sizeClasses} ${className}`}
       >
-        <img
+        <img decoding="async"
           src={imageUrl}
           alt={normalizedDomain || title || 'Integration'}
           loading="lazy"
@@ -175,10 +175,10 @@ export default function IntegrationIcon({
         className={`shrink-0 flex flex-col items-center justify-center p-0 m-0 select-none border border-slate-300/50 dark:border-white/10 bg-slate-200/80 dark:bg-white/[0.08] text-center leading-none ${sizeClasses} ${className}`}
         title={`Integration icon not available for: ${domain || normalizedDomain}`}
       >
-        <span className="text-[8px] font-medium text-slate-500 dark:text-slate-400">
+        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
           icon not
         </span>
-        <span className="text-[8px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
           available
         </span>
       </div>

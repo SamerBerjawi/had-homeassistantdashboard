@@ -95,7 +95,7 @@ export default function IconPickerField({
       {/* Optional Quick Presets row */}
       {quickPresets.length > 0 && (
         <div className="space-y-1.5">
-          <span className="text-[10px] font-black text-slate-700 dark:text-slate-400 block uppercase tracking-wider">
+          <span className="text-[11px] font-black text-slate-700 dark:text-slate-400 block uppercase tracking-wider">
             Quick Suggestions
           </span>
           <div className="flex flex-wrap gap-1.5">

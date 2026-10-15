@@ -278,7 +278,7 @@ export default function EntityCustomizerModal({
                   </div>
                 </div>
 
-                <button
+                <button aria-label="Close"
                   type="button"
                   onClick={onClose}
                   className="w-8 h-8 rounded-xl bg-white/40 hover:bg-white/60 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white border border-white/50 dark:border-white/10 flex items-center justify-center transition-all cursor-pointer shadow-xs"

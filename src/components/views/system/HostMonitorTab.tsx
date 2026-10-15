@@ -33,7 +33,7 @@ export function HostMonitorTab({ darkMode = true }: HostMonitorTabProps) {
       {/* Top Toolbar: Time range selector & Refresh */}
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Telemetry Window:
           </span>
           <div className="flex items-center gap-1 bg-slate-900/[0.04] dark:bg-white/5 p-0.5 rounded-xl border border-slate-900/[0.08] dark:border-white/5">

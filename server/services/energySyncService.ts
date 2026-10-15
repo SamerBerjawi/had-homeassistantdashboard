@@ -7,7 +7,7 @@
  * manages client-assisted batch commits, and maintains database health.
  */
 
-import { upsertStatisticsBatch, HAStatisticEntry, getDatabase } from './energyDbService';
+import { upsertStatisticsBatch, HAStatisticEntry, getDatabase, markEnergyDataChanged } from './energyDbService';
 
 export interface IngestStatsPayload {
   statistics: Record<string, HAStatisticEntry[]>;
@@ -66,8 +66,8 @@ export class EnergySyncService {
 
     const periodType = payload.periodType || 'hour';
 
+    let totalInserted = 0;
     try {
-      let totalInserted = 0;
       const updatedIds = new Set<string>();
       let first = true;
       for (const chunk of chunkStatistics(payload.statistics, INGEST_CHUNK_ROWS)) {
@@ -102,6 +102,7 @@ export class EnergySyncService {
             now
           );
         }
+        markEnergyDataChanged();
       }
 
       return {
@@ -111,11 +112,14 @@ export class EnergySyncService {
       };
     } catch (err: any) {
       console.error('[EnergySyncService] Failed to ingest statistics batch:', err);
+      // Earlier chunks are already committed (REL-009): report them so the client can retry the rest
       return {
         success: false,
-        insertedCount: 0,
+        insertedCount: totalInserted,
         entitiesUpdated: 0,
-        message: err.message || 'Internal database error during ingestion'
+        message: totalInserted > 0
+          ? 'Partial ingest: some rows were stored before an error occurred'
+          : 'Internal database error during ingestion'
       };
     }
   }

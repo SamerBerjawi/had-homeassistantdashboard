@@ -13,16 +13,18 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  confirmingReset: boolean;
 }
 
 export default class RootErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    error: null
+    error: null,
+    confirmingReset: false
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error, confirmingReset: false };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -46,6 +48,11 @@ export default class RootErrorBoundary extends Component<Props, State> {
   };
 
   private handleClearCacheAndReset = () => {
+    // REL-010: this wipes every local setting and signs the user out, so it needs a second click
+    if (!this.state.confirmingReset) {
+      this.setState({ confirmingReset: true });
+      return;
+    }
     try {
       localStorage.clear();
       sessionStorage.clear();
@@ -94,7 +101,11 @@ export default class RootErrorBoundary extends Component<Props, State> {
                 className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-transparent hover:bg-rose-500/10 text-rose-400 font-medium text-xs transition-all active:scale-95 cursor-pointer"
               >
                 <Trash size={14} />
-                <span>Reset Stored Cache & Re-login</span>
+                <span>
+                  {this.state.confirmingReset
+                    ? 'Click again to confirm: clears local settings and signs you out'
+                    : 'Reset Stored Cache & Re-login'}
+                </span>
               </button>
             </div>
           </div>

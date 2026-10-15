@@ -107,7 +107,7 @@ export function MobilityTabBar({
                 />
                 {tab.badge && (
                   <span
-                    className={`absolute -top-1.5 -right-3 text-[9px] font-bold px-1 rounded-full font-mono shadow-xs ${
+                    className={`absolute -top-1.5 -right-3 text-[11px] font-bold px-1 rounded-full font-mono shadow-xs ${
                       tab.badgeHighlight
                         ? 'bg-emerald-500 text-slate-950 animate-pulse'
                         : darkMode
@@ -120,7 +120,7 @@ export function MobilityTabBar({
                 )}
               </div>
 
-              <span className="relative text-[10px] font-bold tracking-tight truncate max-w-[90px]">
+              <span className="relative text-[11px] font-bold tracking-tight truncate max-w-[90px]">
                 {tab.label}
               </span>
             </button>

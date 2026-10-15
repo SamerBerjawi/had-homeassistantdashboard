@@ -7,6 +7,7 @@
  * Optimized for Desktop, Mobile Web, and installed PWA standalone environments
  */
 
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -72,6 +73,8 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
   // Modal is strictly un-dismissible if user has neither authenticated nor entered demo mode
   const canClose = authState.isAuthenticated || authState.isDemo;
 
+  const dialogRef = useDialogA11y({ open: isAuthModalOpen, onClose: closeAuthModal, closeOnEscape: canClose });
+
   if (!isAuthModalOpen) return null;
 
   // Pre-flight validation helpers
@@ -128,11 +131,16 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 10 }}
           transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Sign in to Home Assistant"
+          tabIndex={-1}
           className="relative w-full max-w-xl rounded-3xl border border-white/15 bg-slate-900/90 dark:bg-slate-900/95 text-white shadow-2xl shadow-cyan-950/40 p-6 sm:p-8 backdrop-blur-xl overflow-hidden"
         >
           {/* Close button if allowed */}
           {canClose && (
-            <button
+            <button aria-label="Close"
               type="button"
               onClick={closeAuthModal}
               className="absolute top-6 right-6 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer"
@@ -143,13 +151,13 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
 
           {/* Header Brand */}
           <div className="flex items-center gap-3.5 mb-5">
-            <img src="/app-icon.png" alt="HAD" className="w-12 h-12 shrink-0 object-contain shadow-lg shadow-sky-500/20" />
+            <img loading="lazy" decoding="async" src="/app-icon.png" alt="HAD" className="w-12 h-12 shrink-0 object-contain shadow-lg shadow-sky-500/20" />
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
                   HAD Security Gate
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-sky-500/20 text-sky-300 border border-sky-500/30">
                   Auth Subsystem
                 </span>
               </div>
@@ -214,7 +222,7 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
               <Key size={16} weight="duotone" />
               <span>Long-Lived Token (LLAT)</span>
               {isPWA && (
-                <span className="text-[9px] uppercase px-1.5 py-0.5 rounded-full bg-white/20 text-white font-extrabold ml-1">
+                <span className="text-[11px] uppercase px-1.5 py-0.5 rounded-full bg-white/20 text-white font-extrabold ml-1">
                   PWA
                 </span>
               )}
@@ -224,7 +232,7 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
           {/* HA Host URL Input (Shared) */}
           <div className="space-y-1.5 mb-5">
             <label htmlFor="had-ha-url" className="block text-xs font-bold uppercase tracking-wider text-slate-300">
-              Home Assistant Instance URL
+              Home Assistant URL
             </label>
             <div className="relative">
               <input
@@ -236,7 +244,7 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
                   setOauthError(null);
                 }}
                 placeholder="http://homeassistant.local:8123 or https://your-nabu-casa.ui.nabu.casa"
-                className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all font-mono"
+                className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all font-mono"
               />
             </div>
             <p className="text-[11px] text-slate-400">
@@ -295,7 +303,7 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
                     value={llatToken}
                     onChange={(e) => setLlatToken(e.target.value)}
                     placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    className="w-full pl-4 pr-11 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-600 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono"
+                    className="w-full pl-4 pr-11 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono"
                     required
                   />
                   <button
@@ -307,7 +315,7 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
                     {showLlatToken ? <EyeSlash size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[11px] text-slate-400">
                   Generate in Home Assistant: <em>Your Profile → Security → Long-Lived Access Tokens → Create Token</em>.
                 </p>
               </div>
@@ -325,7 +333,7 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
                 ) : (
                   <>
                     <LockKey size={18} weight="bold" />
-                    <span>Connect via LLAT</span>
+                    <span>Connect with token</span>
                   </>
                 )}
               </button>
@@ -350,7 +358,7 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
               <Sparkle size={16} weight="fill" className="text-amber-400 group-hover:scale-110 transition-transform" />
               <span>Explore Demo Dashboard (Isolated Sandbox)</span>
             </button>
-            <p className="text-center text-[10px] text-slate-500 mt-2">
+            <p className="text-center text-[11px] text-slate-500 mt-2">
               Demo mode simulates real Home Assistant entity telemetry using browser storage only.
             </p>
           </div>

@@ -138,7 +138,7 @@ export default function WeatherDetailModal({
                 </div>
               </div>
 
-              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border backdrop-blur-md ${conditionInfo.badgeBg}`}>
+              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border backdrop-blur-md ${conditionInfo.badgeBg}`}>
                 {state.toUpperCase()}
               </span>
             </div>
@@ -172,7 +172,7 @@ export default function WeatherDetailModal({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-left">
           <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
             <div className="flex items-center justify-between text-slate-400 mb-0.5">
-              <span className="text-[10px] font-bold">Humidity</span>
+              <span className="text-[11px] font-bold">Humidity</span>
               <Drop size={14} weight="duotone" className="text-blue-400" />
             </div>
             <p className="text-sm font-extrabold text-white font-mono">{humidity}%</p>
@@ -180,7 +180,7 @@ export default function WeatherDetailModal({
 
           <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
             <div className="flex items-center justify-between text-slate-400 mb-0.5">
-              <span className="text-[10px] font-bold">Wind</span>
+              <span className="text-[11px] font-bold">Wind</span>
               <Wind size={14} weight="duotone" className="text-teal-400" />
             </div>
             <p className="text-sm font-extrabold text-white font-mono">{windSpeed} {windSpeedUnit}</p>
@@ -188,7 +188,7 @@ export default function WeatherDetailModal({
 
           <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
             <div className="flex items-center justify-between text-slate-400 mb-0.5">
-              <span className="text-[10px] font-bold">Pressure</span>
+              <span className="text-[11px] font-bold">Pressure</span>
               <Gauge size={14} weight="duotone" className="text-purple-400" />
             </div>
             <p className="text-sm font-extrabold text-white font-mono">{pressure}</p>
@@ -196,7 +196,7 @@ export default function WeatherDetailModal({
 
           <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
             <div className="flex items-center justify-between text-slate-400 mb-0.5">
-              <span className="text-[10px] font-bold">UV</span>
+              <span className="text-[11px] font-bold">UV</span>
               <SunHorizon size={14} weight="duotone" className="text-amber-400" />
             </div>
             <p className="text-sm font-extrabold text-white font-mono">{uvIndex.toFixed(1)}</p>
@@ -221,12 +221,12 @@ export default function WeatherDetailModal({
                   <div key={f.datetime || idx} className="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-2">
                     <div className="w-20">
                       <p className="text-xs font-bold text-white">{formatForecastDate(f.datetime, idx)}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{dayCond.name}</p>
+                      <p className="text-[11px] text-slate-400 truncate">{dayCond.name}</p>
                     </div>
                     <div className="flex items-center gap-1.5">
                       {dayCond.icon}
                       {rainProb > 0 && (
-                        <span className="text-[10px] font-bold text-blue-400 flex items-center gap-0.5">
+                        <span className="text-[11px] font-bold text-blue-400 flex items-center gap-0.5">
                           <Drop size={9} weight="fill" />
                           {rainProb}%
                         </span>

@@ -47,7 +47,7 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
           <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
             {totalQueries.toLocaleString()} Total
           </span>
-          <span className="text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400">
+          <span className="text-[11px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400">
             Active Filter
           </span>
         </div>
@@ -79,12 +79,12 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
               <div className="w-5 h-5 rounded-md bg-cyan-500/10 text-cyan-500 dark:text-cyan-400 flex items-center justify-center shrink-0">
                 <GlobeHemisphereWest size={12} weight="duotone" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">Total</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">Total</span>
             </div>
             <span className="text-sm sm:text-base font-black font-mono text-slate-900 dark:text-white truncate">
               {totalQueries.toLocaleString()}
             </span>
-            <span className="text-[9px] font-medium text-slate-500 dark:text-slate-400 truncate">
+            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
               100% Inbound
             </span>
           </div>
@@ -95,12 +95,12 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
               <div className="w-5 h-5 rounded-md bg-indigo-500/15 text-indigo-400 flex items-center justify-center shrink-0">
                 <Prohibit size={12} weight="duotone" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-400 truncate">Blocked</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400 truncate">Blocked</span>
             </div>
             <span className="text-sm sm:text-base font-black font-mono text-indigo-900 dark:text-indigo-200 truncate">
               {blockedQueries.toLocaleString()}
             </span>
-            <span className="text-[9px] font-mono font-extrabold text-indigo-700 dark:text-indigo-400 truncate">
+            <span className="text-[11px] font-mono font-extrabold text-indigo-700 dark:text-indigo-400 truncate">
               {blockedRatio.toFixed(1)}% Filtered
             </span>
           </div>
@@ -111,12 +111,12 @@ export const AdGuardQueryActivitySection: React.FC<AdGuardQueryActivitySectionPr
               <div className="w-5 h-5 rounded-md bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 flex items-center justify-center shrink-0">
                 <CheckCircle size={12} weight="duotone" />
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 truncate">Allowed</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 truncate">Allowed</span>
             </div>
             <span className="text-sm sm:text-base font-black font-mono text-emerald-950 dark:text-emerald-200 truncate">
               {allowedQueries.toLocaleString()}
             </span>
-            <span className="text-[9px] font-mono font-extrabold text-emerald-700 dark:text-emerald-400 truncate">
+            <span className="text-[11px] font-mono font-extrabold text-emerald-700 dark:text-emerald-400 truncate">
               {(100 - blockedRatio).toFixed(1)}% Passed
             </span>
           </div>

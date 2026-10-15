@@ -140,7 +140,7 @@ export const TpLinkClientsBreakdownSection: React.FC<TpLinkClientsBreakdownSecti
                     {cat.label}
                   </span>
                 </div>
-                <span className={`text-[10px] font-mono font-bold ${cat.textColor}`}>
+                <span className={`text-[11px] font-mono font-bold ${cat.textColor}`}>
                   {percent}%
                 </span>
               </div>
@@ -149,7 +149,7 @@ export const TpLinkClientsBreakdownSection: React.FC<TpLinkClientsBreakdownSecti
                 <span className="text-lg font-black font-mono text-slate-900 dark:text-white">
                   {cat.value}
                 </span>
-                <span className="text-[9px] font-medium text-slate-500 dark:text-slate-400">
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
                   {cat.desc}
                 </span>
               </div>

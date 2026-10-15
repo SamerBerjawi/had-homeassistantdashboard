@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { openTab, noHorizontalOverflow, AUTH, ctl } from '../helpers/app';
 
-const SECTIONS = [/Devices & Entity|Navigation & Entity/, /Theme & Customization/, /WebSocket|Connection & Home Assistant/, /Backup, Snapshots|Backup & Restore/, /Cameras & Video|Cameras & RTSP/];
+const SECTIONS = [/Navigation & Entity/, /Theme & Customization/, /Connection & Home Assistant/, /Backup & Restore/, /Cameras & RTSP/];
 
 test.describe('G. Settings, config & sync', () => {
   for (const [i, sec] of SECTIONS.entries()) {
@@ -16,7 +16,7 @@ test.describe('G. Settings, config & sync', () => {
 
   test('W21 devices section search with no match and very long input', async ({ page }) => {
     const errors = await openTab(page, 'settings');
-    await page.getByText(/Devices & Entity|Navigation & Entity/).locator('visible=true').first().click();
+    await page.getByText(/Navigation & Entity/).locator('visible=true').first().click();
     const s = page.locator('input:visible').first();
     test.skip(!(await s.isVisible({ timeout: 4000 }).catch(() => false)), 'No search input visible in devices section');
     await s.fill('zzzz-none');
@@ -40,7 +40,7 @@ test.describe('G. Settings, config & sync', () => {
 
   test('W25 factory reset requires confirmation', async ({ page }) => {
     await openTab(page, 'settings');
-    await page.getByText(/Backup, Snapshots|Backup & Restore/).locator('visible=true').first().click();
+    await page.getByText(/Backup & Restore/).locator('visible=true').first().click();
     await page.getByRole('button', { name: 'Reset', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Confirm Reset' })).toBeVisible({ timeout: 4000 });
     await page.getByRole('button', { name: 'Cancel' }).click();
@@ -49,7 +49,7 @@ test.describe('G. Settings, config & sync', () => {
 
   test('W25 import of invalid JSON file is handled', async ({ page }) => {
     const errors = await openTab(page, 'settings');
-    await page.getByText(/Backup, Snapshots|Backup & Restore/).locator('visible=true').first().click();
+    await page.getByText(/Backup & Restore/).locator('visible=true').first().click();
     const f = page.locator('input[type="file"]').first();
     if (await f.count()) {
       await f.setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{not json') });

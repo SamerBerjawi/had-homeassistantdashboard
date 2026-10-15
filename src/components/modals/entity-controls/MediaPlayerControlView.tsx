@@ -198,7 +198,7 @@ export default function MediaPlayerControlView({
             )}
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
               {entity.attributes.room || entity.attributes.area || (isTv ? 'TELEVISION & VIDEO' : 'AUDIO & MEDIA')}
             </span>
             <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white truncate max-w-[180px] sm:max-w-xs">
@@ -301,7 +301,7 @@ export default function MediaPlayerControlView({
                 }}
               >
                 {albumArtUrl && !imgError ? (
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={albumArtUrl}
                     alt={caps.mediaTitle || 'Album Art'}
                     onError={() => setImgError(true)}
@@ -454,7 +454,7 @@ export default function MediaPlayerControlView({
                 >
                   {caps.isMuted ? <SpeakerSimpleSlash size={16} weight="bold" /> : <SpeakerHigh size={16} weight="bold" />}
                 </button>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                   Speaker Volume
                 </span>
               </div>
@@ -533,7 +533,7 @@ export default function MediaPlayerControlView({
               <span className="text-xs font-bold text-slate-900 dark:text-white mt-1 truncate max-w-full">
                 {!caps.isOff ? caps.currentSource || caps.appName || 'TV Active' : 'Powered Off'}
               </span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
                 {!caps.isOff ? `Vol ${volume}%` : 'Standby'}
               </span>
             </div>
@@ -676,7 +676,7 @@ export default function MediaPlayerControlView({
                 {caps.isMuted ? <SpeakerSimpleSlash size={16} weight="bold" /> : <SpeakerHigh size={16} weight="bold" />}
               </button>
               <div className="min-w-0">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
                   TV Volume
                 </span>
                 <span className="text-xs font-mono font-black text-slate-900 dark:text-white">
@@ -713,10 +713,10 @@ export default function MediaPlayerControlView({
       {caps.sourceList.length > 0 && (
         <div className={`p-4 sm:p-5 rounded-3xl space-y-3 ${bentoStaticCardStyle}`}>
           <div className="flex items-center justify-between px-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
               Input Source
             </span>
-            <span className="font-mono text-[10px] font-bold text-slate-400">
+            <span className="font-mono text-[11px] font-bold text-slate-400">
               {caps.sourceList.length} sources
             </span>
           </div>

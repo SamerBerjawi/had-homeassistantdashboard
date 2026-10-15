@@ -108,7 +108,7 @@ export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
       <div
         onClick={isEditMode || isOverlay ? undefined : onClick}
         className={`w-full h-full ${isEditMode ? 'cursor-default' : ''}`}
-      >
+       role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
         <ErrorBoundary variant="card">{children}</ErrorBoundary>
       </div>
 
@@ -176,7 +176,7 @@ export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
                     onToggleHiddenFromAll();
                   }
                 }}
-                className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg text-[10px] sm:text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 ${
+                className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 ${
                   currentMode === 'tab_only'
                     ? 'bg-amber-500/30 border border-amber-500/50 text-amber-300'
                     : 'bg-emerald-500/25 border border-emerald-500/40 text-emerald-300'
@@ -197,7 +197,7 @@ export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
                   e.stopPropagation();
                   onToggleSize();
                 }}
-                className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] sm:text-xs font-black tracking-wider transition-all cursor-pointer active:scale-95 flex items-center gap-1 ${
+                className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[11px] sm:text-xs font-black tracking-wider transition-all cursor-pointer active:scale-95 flex items-center gap-1 ${
                   is2x
                     ? 'bg-sky-500 text-white shadow-xs'
                     : 'bg-white/15 text-slate-300 hover:bg-white/25 hover:text-white'
@@ -229,14 +229,14 @@ export const OverviewSortableTile: React.FC<OverviewSortableTileProps> = ({
           {/* Bottom badge indicating active visibility mode */}
           {currentMode === 'tab_only' && (
             <div className="w-full flex justify-center pointer-events-none pb-0.5">
-              <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black tracking-wider uppercase bg-amber-500 text-slate-950 shadow-md">
+              <span className="px-2 py-0.5 rounded-full text-[11px] sm:text-[11px] font-black tracking-wider uppercase bg-amber-500 text-slate-950 shadow-md">
                 Category Tab Only
               </span>
             </div>
           )}
           {currentMode === 'all_off' && (
             <div className="w-full flex justify-center pointer-events-none pb-0.5">
-              <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black tracking-wider uppercase bg-rose-500 text-white shadow-md">
+              <span className="px-2 py-0.5 rounded-full text-[11px] sm:text-[11px] font-black tracking-wider uppercase bg-rose-500 text-white shadow-md">
                 All Off (Hidden)
               </span>
             </div>

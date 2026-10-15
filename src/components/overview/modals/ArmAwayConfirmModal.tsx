@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useDialogA11y } from '../../../hooks/useDialogA11y';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -50,6 +51,8 @@ export default function ArmAwayConfirmModal({
     };
   }, [isOpen, onClose]);
 
+  const dialogRef = useDialogA11y({ open: isOpen, onClose, closeOnEscape: false });
+
   if (typeof document === 'undefined') return null;
 
   return createPortal(
@@ -76,6 +79,11 @@ export default function ArmAwayConfirmModal({
           <div className="fixed inset-0 z-20 flex items-center justify-center p-4 pointer-events-none modal-safe-viewport">
             {/* Modal Card - pointer-events-auto restores clicks */}
             <motion.div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Confirm arm away"
+              tabIndex={-1}
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -145,10 +153,10 @@ export default function ArmAwayConfirmModal({
                     </div>
                     <div className="text-left">
                       <div className="text-xs sm:text-sm font-black tracking-tight">Arm Right Away</div>
-                      <div className="text-[10px] text-white/80 font-medium">Instant arming • No exit delay</div>
+                      <div className="text-[11px] text-white/80 font-medium">Instant arming • No exit delay</div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-white/20 text-white shrink-0">
+                  <span className="text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-white/20 text-white shrink-0">
                     0s
                   </span>
                 </button>
@@ -174,13 +182,13 @@ export default function ArmAwayConfirmModal({
                     </div>
                     <div className="text-left">
                       <div className="text-xs sm:text-sm font-bold tracking-tight">Delay 30 Seconds</div>
-                      <div className={`text-[10px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <div className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                         Standard grace period to exit & lock
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                    <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full ${
                       darkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-200 text-slate-700'
                     }`}>
                       30s
@@ -210,13 +218,13 @@ export default function ArmAwayConfirmModal({
                     </div>
                     <div className="text-left">
                       <div className="text-xs sm:text-sm font-bold tracking-tight">Delay 1 Minute</div>
-                      <div className={`text-[10px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <div className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                         Extended delay for garage or family exit
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                    <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full ${
                       darkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-200 text-slate-700'
                     }`}>
                       60s

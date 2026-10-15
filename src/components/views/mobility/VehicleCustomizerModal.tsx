@@ -331,7 +331,7 @@ export function VehicleCustomizerModal({
                       ? 'border-cyan-500/50 bg-cyan-500/5'
                       : 'border-slate-300 dark:border-white/15 hover:border-cyan-500/50 bg-slate-50 dark:bg-white/[0.02]'
                   }`}
-                >
+                 role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                   <input
                     ref={carImgInputRef}
                     type="file"
@@ -341,7 +341,7 @@ export function VehicleCustomizerModal({
                   />
                   {carImageDraft ? (
                     <div className="space-y-2">
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={resolveAssetUrl(carImageDraft)}
                         alt="Car Preview"
                         className="max-h-28 max-w-full object-contain mx-auto drop-shadow-xl"
@@ -354,7 +354,7 @@ export function VehicleCustomizerModal({
                       <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
                         Click to browse or drag & drop PNG/JPG/WebP
                       </p>
-                      <p className="text-[10px] text-slate-500">Supports transparent Mach-E / Taycan / Model Y cutouts</p>
+                      <p className="text-[11px] text-slate-500">Supports transparent Mach-E / Taycan / Model Y cutouts</p>
                     </div>
                   )}
                 </div>
@@ -386,7 +386,7 @@ export function VehicleCustomizerModal({
                       ? 'border-cyan-500/50 bg-cyan-500/5'
                       : 'border-slate-300 dark:border-white/15 hover:border-cyan-500/50 bg-slate-50 dark:bg-white/[0.02]'
                   }`}
-                >
+                 role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                   <input
                     ref={carLogoInputRef}
                     type="file"
@@ -396,7 +396,7 @@ export function VehicleCustomizerModal({
                   />
                   {carLogoDraft ? (
                     <div className="space-y-2">
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={resolveAssetUrl(carLogoDraft)}
                         alt="Logo Preview"
                         className="max-h-12 max-w-[120px] object-contain mx-auto drop-shadow-md"
@@ -455,7 +455,7 @@ export function VehicleCustomizerModal({
                       ? 'border-amber-500/50 bg-amber-500/5'
                       : 'border-slate-300 dark:border-white/15 hover:border-amber-500/50 bg-slate-50 dark:bg-white/[0.02]'
                   }`}
-                >
+                 role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                   <input
                     ref={bikeImgInputRef}
                     type="file"
@@ -465,7 +465,7 @@ export function VehicleCustomizerModal({
                   />
                   {bikeImageDraft ? (
                     <div className="space-y-2">
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={resolveAssetUrl(bikeImageDraft)}
                         alt="Bike Preview"
                         className="max-h-28 max-w-full object-contain mx-auto drop-shadow-xl"
@@ -509,7 +509,7 @@ export function VehicleCustomizerModal({
                       ? 'border-amber-500/50 bg-amber-500/5'
                       : 'border-slate-300 dark:border-white/15 hover:border-amber-500/50 bg-slate-50 dark:bg-white/[0.02]'
                   }`}
-                >
+                 role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                   <input
                     ref={bikeLogoInputRef}
                     type="file"
@@ -519,7 +519,7 @@ export function VehicleCustomizerModal({
                   />
                   {bikeLogoDraft ? (
                     <div className="space-y-2">
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={resolveAssetUrl(bikeLogoDraft)}
                         alt="Logo Preview"
                         className="max-h-12 max-w-[120px] object-contain mx-auto drop-shadow-md"

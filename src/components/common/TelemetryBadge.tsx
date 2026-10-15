@@ -61,7 +61,7 @@ export const TelemetryLine: React.FC<TelemetryLineProps> = ({ items, className =
           return (
             <React.Fragment key={idx}>
               <span className="shrink-0">{item}</span>
-              {!isLast && <span className="opacity-40 text-[9px] shrink-0">•</span>}
+              {!isLast && <span className="opacity-40 text-[11px] shrink-0">•</span>}
             </React.Fragment>
           );
         }
@@ -96,7 +96,7 @@ export const TelemetryLine: React.FC<TelemetryLineProps> = ({ items, className =
                 </>
               )}
             </span>
-            {!isLast && <span className="opacity-40 text-[9px] shrink-0">•</span>}
+            {!isLast && <span className="opacity-40 text-[11px] shrink-0">•</span>}
           </React.Fragment>
         );
       })}

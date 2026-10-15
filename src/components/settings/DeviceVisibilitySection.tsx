@@ -1096,7 +1096,7 @@ export default function DeviceVisibilitySection({
                     {entity.name || entity.attributes?.friendly_name || entity.entity_id}
                   </span>
                   {!isOnline && (
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">
+                    <span className="px-1.5 py-0.2 rounded text-[11px] font-mono font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">
                       Offline
                     </span>
                   )}
@@ -1135,7 +1135,7 @@ export default function DeviceVisibilitySection({
                   title={!isHidden ? 'Click to hide entity' : 'Click to make entity visible'}
                 >
                   <span
-                    className={`pointer-events-none inline-flex items-center justify-center h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out text-[10px] ${
+                    className={`pointer-events-none inline-flex items-center justify-center h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out text-[11px] ${
                       !isHidden ? 'translate-x-5 text-emerald-600' : 'translate-x-0 text-slate-400'
                     }`}
                   >
@@ -1321,7 +1321,7 @@ export default function DeviceVisibilitySection({
                               {page.label}
                             </h4>
                             {isMandatory && (
-                              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-200/70 dark:bg-white/10 text-slate-600 dark:text-slate-300 border border-slate-300/40 dark:border-white/10">
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold bg-slate-200/70 dark:bg-white/10 text-slate-600 dark:text-slate-300 border border-slate-300/40 dark:border-white/10">
                                 <Lock size={10} weight="bold" />
                                 Required
                               </span>
@@ -1390,7 +1390,7 @@ export default function DeviceVisibilitySection({
                       </span>
                     </span>
 
-                    <span className="text-slate-400 dark:text-slate-500 font-mono text-[10px]">
+                    <span className="text-slate-400 dark:text-slate-500 font-mono text-[11px]">
                       {isMandatory ? 'Permanent' : isHidden ? 'Inactive' : 'Active'}
                     </span>
                   </div>
@@ -1458,7 +1458,7 @@ export default function DeviceVisibilitySection({
                       style={{ color: isSelected ? undefined : cat.color }}
                     />
                     <span>{cat.label}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono font-bold ${
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] sm:text-[11px] font-mono font-bold ${
                       isSelected
                         ? 'bg-white/20 dark:bg-black/20 text-white dark:text-black'
                         : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400'
@@ -1504,7 +1504,7 @@ export default function DeviceVisibilitySection({
                       >
                         <SubIcon size={14} weight={isSubSelected ? 'bold' : 'duotone'} />
                         <span>{sub.label}</span>
-                        <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono ${
+                        <span className={`px-1.5 py-0.2 rounded-md text-[11px] font-mono ${
                           isSubSelected ? 'bg-black/20 text-white font-bold' : 'bg-slate-100 dark:bg-white/10 text-slate-500'
                         }`}>
                           {subVis}/{count}
@@ -1550,7 +1550,7 @@ export default function DeviceVisibilitySection({
                       >
                         <SubIcon size={14} weight={isSubSelected ? 'bold' : 'duotone'} />
                         <span>{sub.label}</span>
-                        <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono ${
+                        <span className={`px-1.5 py-0.2 rounded-md text-[11px] font-mono ${
                           isSubSelected ? 'bg-black/20 text-white font-bold' : 'bg-slate-100 dark:bg-white/10 text-slate-500'
                         }`}>
                           {subVis}/{count}
@@ -1578,7 +1578,7 @@ export default function DeviceVisibilitySection({
                   className="w-full pl-9 pr-9 py-2.5 rounded-2xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/15 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-sky-500 shadow-xs"
                 />
                 {searchQuery && (
-                  <button
+                  <button aria-label="Close"
                     type="button"
                     onClick={() => setSearchQuery('')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
@@ -1856,7 +1856,7 @@ export default function DeviceVisibilitySection({
                           <div
                             onClick={() => setCollapsedGroups(prev => ({ ...prev, [group.id]: !prev[group.id] }))}
                             className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none min-w-0 flex-1 group"
-                          >
+                           role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                             <button type="button" className="text-slate-400 group-hover:text-slate-700 dark:group-hover:text-white transition-transform shrink-0">
                               {isCollapsed ? <CaretRight size={18} weight="bold" /> : <CaretDown size={18} weight="bold" />}
                             </button>

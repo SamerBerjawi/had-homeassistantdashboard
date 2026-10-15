@@ -1322,7 +1322,7 @@ export default function AreaDetailView({
                           onClick={() => openEntityDetails(cover.entity_id)}
                           className="p-1.5 -mr-1 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
                           title="Open Device Details"
-                        >
+                         role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                           <CaretRight size={16} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
                         </div>
                       </div>
@@ -1489,7 +1489,7 @@ export default function AreaDetailView({
                   <div
                     onClick={() => openEntityDetails(cam.entity_id)}
                     className="relative w-full aspect-video rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-950 border border-white/10 shadow-lg group cursor-pointer isolate hover:border-blue-500/40 transition-all duration-300"
-                  >
+                   role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                     <CameraFeed
                       camera={cam}
                       mode="preview"
@@ -1527,7 +1527,7 @@ export default function AreaDetailView({
                           <span className="text-[11px] sm:text-xs font-bold text-white truncate drop-shadow-sm">
                             {displayName}
                           </span>
-                          <span className="text-[9px] text-slate-300 truncate">
+                          <span className="text-[11px] text-slate-300 truncate">
                             {isUnavailable ? 'Offline' : lastChanged ? `Active • ${lastChanged}` : 'Live'}
                           </span>
                         </div>

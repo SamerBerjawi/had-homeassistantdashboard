@@ -148,15 +148,15 @@ export default function VacuumDetailModal({
           <span className="text-xs font-bold text-slate-300 block">Maintenance & Parts Health</span>
           <div className="grid grid-cols-3 gap-3">
             <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-center">
-              <span className="text-[10px] text-slate-400 block mb-1">HEPA Filter</span>
+              <span className="text-[11px] text-slate-400 block mb-1">HEPA Filter</span>
               <span className="text-sm font-black text-amber-400 font-mono">92% Wear</span>
             </div>
             <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-center">
-              <span className="text-[10px] text-slate-400 block mb-1">Main Roller</span>
+              <span className="text-[11px] text-slate-400 block mb-1">Main Roller</span>
               <span className="text-sm font-black text-emerald-400 font-mono">35% Wear</span>
             </div>
             <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-center">
-              <span className="text-[10px] text-slate-400 block mb-1">Side Brush</span>
+              <span className="text-[11px] text-slate-400 block mb-1">Side Brush</span>
               <span className="text-sm font-black text-emerald-400 font-mono">22% Wear</span>
             </div>
           </div>

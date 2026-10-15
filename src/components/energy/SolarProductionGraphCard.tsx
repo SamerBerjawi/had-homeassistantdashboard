@@ -248,19 +248,19 @@ export default function SolarProductionGraphCard({
           {/* Left Y-Axis Scale */}
           <div className="w-10 sm:w-12 flex-shrink-0 flex flex-col justify-between select-none relative pointer-events-none pb-7">
             {/* Y-Axis Label / Unit */}
-            <div className={`text-[10px] font-bold uppercase tracking-wider text-right pr-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            <div className={`text-[11px] font-bold uppercase tracking-wider text-right pr-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               kWh
             </div>
 
             {/* Y-Axis Ticks */}
             <div className="flex-1 relative flex flex-col justify-between">
-              <span className={`text-[9px] sm:text-[10px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <span className={`text-[11px] sm:text-[11px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 {maxSolar >= 10 ? maxSolar.toFixed(0) : maxSolar.toFixed(1)}
               </span>
-              <span className={`text-[9px] sm:text-[10px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+              <span className={`text-[11px] sm:text-[11px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                 {(maxSolar * 0.5) >= 10 ? (maxSolar * 0.5).toFixed(0) : (maxSolar * 0.5).toFixed(1)}
               </span>
-              <span className={`text-[9px] sm:text-[10px] font-mono font-bold text-right pr-1 leading-none ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+              <span className={`text-[11px] sm:text-[11px] font-mono font-bold text-right pr-1 leading-none ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                 0.0
               </span>
             </div>
@@ -338,7 +338,7 @@ export default function SolarProductionGraphCard({
               {xTicks.map((tick) => (
                 <span
                   key={tick.label}
-                  className={`absolute top-1 text-[9px] sm:text-[10px] font-mono font-bold whitespace-nowrap ${
+                  className={`absolute top-1 text-[11px] sm:text-[11px] font-mono font-bold whitespace-nowrap ${
                     tick.pos
                   } ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}
                 >
@@ -350,7 +350,7 @@ export default function SolarProductionGraphCard({
         </div>
 
         {/* X-Axis Footer Title */}
-        <div className={`w-full text-center text-[10px] font-bold uppercase tracking-wider select-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+        <div className={`w-full text-center text-[11px] font-bold uppercase tracking-wider select-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
           Time (24 Hours)
         </div>
       </div>

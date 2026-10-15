@@ -264,7 +264,7 @@ export default function EnergyPeriodSelector({
                     <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Custom energy analytics period</p>
                   </div>
                 </div>
-                <button
+                <button aria-label="Close"
                   type="button"
                   onClick={() => setIsPickerOpen(false)}
                   className={`p-1.5 rounded-xl transition-all cursor-pointer ${

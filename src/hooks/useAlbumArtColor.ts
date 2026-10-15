@@ -7,6 +7,7 @@
  * without CORS or tainted canvas errors, and applies vibrant perceptual color scoring.
  */
 
+import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 import { useState, useEffect } from 'react';
 
 export interface AlbumArtPalette {
@@ -373,10 +374,11 @@ async function extractPaletteFromUrl(url: string): Promise<{ h: number; s: numbe
   // Tier 2: Proxy fallback to bypass strict CORS / tainted canvas restrictions
   try {
     const activeToken = getActiveHAToken();
-    const proxyEndpoint = `/api/image-proxy?url=${encodeURIComponent(url)}${activeToken ? `&token=${encodeURIComponent(activeToken)}` : ''}`;
-    const proxyRes = await fetch(proxyEndpoint, {
+    // The token goes in the Authorization header only, never the URL (SEC-013)
+    const proxyEndpoint = `/api/image-proxy?url=${encodeURIComponent(url)}`;
+    const proxyRes = await fetchWithTimeout(proxyEndpoint, {
       headers: activeToken ? { Authorization: `Bearer ${activeToken}` } : {},
-    });
+    }, 10000);
 
     if (!proxyRes.ok) {
       if (process.env.NODE_ENV !== 'production') {

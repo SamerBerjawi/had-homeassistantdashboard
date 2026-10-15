@@ -254,7 +254,7 @@ export default function CardCatalogDrawer({
                 </div>
               </div>
 
-              <button
+              <button aria-label="Close"
                 onClick={onClose}
                 className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
               >

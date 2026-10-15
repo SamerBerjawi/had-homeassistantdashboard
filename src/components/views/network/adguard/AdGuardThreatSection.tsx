@@ -104,14 +104,14 @@ export const AdGuardThreatSection: React.FC<AdGuardThreatSectionProps> = ({
                       <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
                         {card.title}
                       </h3>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
                         {card.subtitle}
                       </p>
                     </div>
                   </div>
 
                   <span
-                    className={`text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full border ${card.badgeBg} ${card.badgeText} ${card.badgeBorder}`}
+                    className={`text-[11px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full border ${card.badgeBg} ${card.badgeText} ${card.badgeBorder}`}
                   >
                     Active Policy
                   </span>

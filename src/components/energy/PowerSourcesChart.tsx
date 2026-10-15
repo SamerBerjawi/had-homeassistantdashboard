@@ -674,7 +674,7 @@ export default function PowerSourcesChart({
 
           <table className="w-full text-left font-medium text-xs">
             <thead>
-              <tr className={`text-[10px] uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <tr className={`text-[11px] uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 <th className="pb-1 font-semibold">Flow</th>
                 <th className="pb-1 font-semibold text-right">{comparison.currentYear}</th>
                 <th className="pb-1 font-semibold text-right">{comparison.compareYear}</th>
@@ -993,7 +993,7 @@ export default function PowerSourcesChart({
             <Scales size={14} weight={comparison.isCompareEnabled ? 'bold' : 'duotone'} />
             <span>Compare</span>
             {comparison.isCompareEnabled && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-black/20 text-slate-950 font-extrabold font-mono">
+              <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-black/20 text-slate-950 font-extrabold font-mono">
                 {comparison.compareYear}
               </span>
             )}
@@ -1024,7 +1024,7 @@ export default function PowerSourcesChart({
                   : 'bg-white border-slate-300 text-slate-900 shadow-xs'
               }`}
             >
-              {comparison.currentYear} <span className="font-sans font-medium text-[10px] text-slate-400">(This Year)</span>
+              {comparison.currentYear} <span className="font-sans font-medium text-[11px] text-slate-400">(This Year)</span>
             </span>
 
             <span className="font-bold text-slate-400 px-0.5">vs</span>

@@ -80,7 +80,7 @@ export const TpLinkDisconnectedClientsSection: React.FC<TpLinkDisconnectedClient
       <div
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900/[0.04] dark:bg-white/5 border border-slate-900/[0.08] dark:border-white/10 cursor-pointer hover:bg-slate-900/[0.08] dark:hover:bg-white/10 transition-all"
-      >
+       role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
         <div className="flex items-center gap-2">
           <ClockCounterClockwise size={18} weight="duotone" className="text-slate-400" />
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">
@@ -133,7 +133,7 @@ export const TpLinkDisconnectedClientsSection: React.FC<TpLinkDisconnectedClient
               <p className="text-xs font-bold text-slate-600 dark:text-slate-300">
                 {searchQuery ? 'No offline devices match your search' : 'No disconnected clients found'}
               </p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[11px] text-slate-400">
                 All registered network devices are currently connected and active.
               </p>
             </div>
@@ -141,7 +141,7 @@ export const TpLinkDisconnectedClientsSection: React.FC<TpLinkDisconnectedClient
             <div className="overflow-x-auto pt-2">
               <table className="w-full text-left border-collapse min-w-[550px]">
                 <thead>
-                  <tr className="border-b border-slate-200/60 dark:border-white/10 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  <tr className="border-b border-slate-200/60 dark:border-white/10 text-[11px] font-black uppercase tracking-wider text-slate-400">
                     <th className="pb-2.5 font-bold">Device Name</th>
                     <th className="pb-2.5 font-bold">Last Known IP</th>
                     <th className="pb-2.5 font-bold">Previous Network</th>
@@ -167,7 +167,7 @@ export const TpLinkDisconnectedClientsSection: React.FC<TpLinkDisconnectedClient
                               <div className="font-bold text-slate-800 dark:text-slate-200 truncate">
                                 {client.name}
                               </div>
-                              <div className="text-[10px] font-mono text-slate-500 truncate">
+                              <div className="text-[11px] font-mono text-slate-500 truncate">
                                 {client.mac || client.entityId}
                               </div>
                             </div>
@@ -183,7 +183,7 @@ export const TpLinkDisconnectedClientsSection: React.FC<TpLinkDisconnectedClient
 
                         {/* Previous Connection */}
                         <td className="py-3 px-3">
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-500/10 text-slate-400 border border-slate-500/15">
+                          <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-slate-500/10 text-slate-400 border border-slate-500/15">
                             {client.connectionType || 'Wi-Fi'}
                           </span>
                         </td>
@@ -194,7 +194,7 @@ export const TpLinkDisconnectedClientsSection: React.FC<TpLinkDisconnectedClient
                             <Clock size={12} className="text-amber-400/80" />
                             <span>{client.lastSeen || 'Unknown'}</span>
                           </div>
-                          <div className="text-[9px] text-slate-500 flex items-center justify-end gap-1 mt-0.5">
+                          <div className="text-[11px] text-slate-500 flex items-center justify-end gap-1 mt-0.5">
                             <CircleDashed size={9} />
                             <span>Disconnected</span>
                           </div>

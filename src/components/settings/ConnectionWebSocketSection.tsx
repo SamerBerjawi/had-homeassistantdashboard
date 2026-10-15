@@ -109,7 +109,7 @@ export default function ConnectionWebSocketSection({
               <span className="text-xs font-black text-slate-900 dark:text-white truncate">
                 {isConnected ? 'Connected to Home Assistant' : 'Connecting / Demo Mode'}
               </span>
-              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
                 isConnected
                   ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
                   : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30'
@@ -292,14 +292,14 @@ export default function ConnectionWebSocketSection({
           </button>
         </div>
 
-        <div className="p-2.5 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 max-h-40 overflow-y-auto font-mono text-[10px] space-y-1 touch-scroll-container">
+        <div className="p-2.5 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 max-h-40 overflow-y-auto font-mono text-[11px] space-y-1 touch-scroll-container">
           {logs.length === 0 ? (
             <div className="text-slate-400 text-center py-3">No connection events recorded yet.</div>
           ) : (
             logs.slice(0, 15).map((log, idx) => (
               <div key={idx} className="flex items-start gap-2 text-slate-600 dark:text-slate-300">
                 <span className="text-slate-400 shrink-0">{log.timestamp.split('T')[1]?.split('.')[0] || log.timestamp}</span>
-                <span className={`px-1 rounded-sm text-[9px] uppercase font-bold shrink-0 ${
+                <span className={`px-1 rounded-sm text-[11px] uppercase font-bold shrink-0 ${
                   log.type === 'error' ? 'bg-rose-500/20 text-rose-400' : (log.type as string) === 'warning' || (log.type as string) === 'warn' ? 'bg-amber-500/20 text-amber-400' : 'bg-sky-500/20 text-sky-400'
                 }`}>{log.type}</span>
                 <span className="truncate">{log.message}</span>

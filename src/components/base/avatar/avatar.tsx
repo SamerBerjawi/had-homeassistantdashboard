@@ -98,7 +98,7 @@ export const Avatar = ({
 
     const renderMainContent = () => {
         if (canShowImage) {
-            return <img data-avatar-img className="size-full object-cover" src={src} alt={alt} onError={() => setIsFailed(true)} />;
+            return <img loading="lazy" decoding="async" data-avatar-img className="size-full object-cover" src={src} alt={alt} onError={() => setIsFailed(true)} />;
         }
 
         if (initials) {

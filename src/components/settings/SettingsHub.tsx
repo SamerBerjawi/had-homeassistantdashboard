@@ -202,7 +202,7 @@ export default function SettingsHub({
         <div 
           onClick={() => onSelectCategory('user_profile')}
           className="p-4 rounded-3xl bg-white/20 dark:bg-black/20 backdrop-blur-sm shadow-[4px_6px_12px_rgba(0,0,0,0.15)] flex items-center justify-between cursor-pointer active:scale-98 transition-all"
-        >
+         role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="w-12 h-12 rounded-2xl bg-linear-to-tr from-sky-500 to-indigo-600 text-white font-black text-lg flex items-center justify-center shadow-md shadow-sky-500/20 shrink-0">
               {profileData.avatarInitials || 'AM'}
@@ -236,14 +236,14 @@ export default function SettingsHub({
             <div
               onClick={() => onSelectCategory('devices_rooms')}
               className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 dark:active:bg-white/10 transition-colors"
-            >
+             role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                   <SlidersHorizontal size={20} weight="duotone" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-slate-900 dark:text-white">
-                    Devices & Entity Visibility
+                    Navigation & Entity Visibility
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">
                     {visibleEntitiesCount} of {totalEntitiesCount} entities active
@@ -266,7 +266,7 @@ export default function SettingsHub({
             <div
               onClick={() => onSelectCategory('theme_customization')}
               className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 dark:active:bg-white/10 transition-colors"
-            >
+             role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="w-10 h-10 rounded-2xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
                   <Palette size={20} weight="duotone" />
@@ -292,14 +292,14 @@ export default function SettingsHub({
             <div
               onClick={() => onSelectCategory('cameras')}
               className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 dark:active:bg-white/10 transition-colors"
-            >
+             role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
                   <VideoCamera size={20} weight="duotone" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-slate-900 dark:text-white">
-                    Cameras & Video Streams
+                    Cameras & RTSP Feeds
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">
                     go2rtc WebRTC & HLS conversion
@@ -330,14 +330,14 @@ export default function SettingsHub({
             <div
               onClick={() => onSelectCategory('connection_websocket')}
               className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 dark:active:bg-white/10 transition-colors"
-            >
+             role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="w-10 h-10 rounded-2xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                   <WifiHigh size={20} weight="duotone" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-slate-900 dark:text-white">
-                    Home Assistant WebSocket
+                    Connection & Home Assistant
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">
                     {authType === 'oauth' ? 'OAuth2 Authentication' : authType === 'llat' ? 'Token Session' : 'Demo Session'}
@@ -360,14 +360,14 @@ export default function SettingsHub({
             <div
               onClick={() => onSelectCategory('backup_restore')}
               className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 dark:active:bg-white/10 transition-colors"
-            >
+             role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                   <DownloadSimple size={20} weight="duotone" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-slate-900 dark:text-white">
-                    Backup, Snapshots & Reset
+                    Backup & Restore
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">
                     Export JSON backups & rollbacks
@@ -454,7 +454,7 @@ export default function SettingsHub({
                       key={i}
                       className="p-2 rounded-xl bg-slate-900/[0.03] dark:bg-white/[0.04] text-center min-w-0"
                     >
-                      <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase truncate">
+                      <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase truncate">
                         {m.label}
                       </div>
                       <div className="text-xs sm:text-sm font-mono font-black text-slate-900 dark:text-white truncate mt-0.5">

@@ -10,7 +10,15 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.{ts,tsx}'],
     restoreMocks: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text-summary', 'json-summary'],
+      // Measure the code that the unit tests are written for: server helpers, services, libs
+      // Floor set just under the measured baseline so coverage cannot silently regress (REL-008)
+      thresholds: { statements: 35, lines: 35, branches: 55, functions: 55 },
+      include: ['server/lib/**', 'src/lib/**', 'src/services/configStorageService.ts', 'src/services/haAuth.ts'],
+    },
   },
 });

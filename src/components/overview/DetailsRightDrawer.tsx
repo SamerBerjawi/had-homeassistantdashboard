@@ -111,7 +111,7 @@ export default function DetailsRightDrawer({
               <div className="p-5 sm:p-6 border-b border-slate-200/80 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-sky-500/5 to-transparent shrink-0 backdrop-blur-xs">
                 <div className="flex items-center gap-3.5 min-w-0">
                   {/* Mobile Back button */}
-                  <button
+                  <button aria-label="Back"
                     type="button"
                     onClick={onClose}
                     className="sm:hidden p-1.5 -ml-1 rounded-xl bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/20 active:scale-95 transition-all"

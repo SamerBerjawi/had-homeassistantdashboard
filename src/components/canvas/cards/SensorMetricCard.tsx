@@ -41,7 +41,7 @@ export default function SensorMetricCard({
           </div>
         </div>
 
-        <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-transparent text-[10px] font-mono text-slate-650 dark:text-slate-300">
+        <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-transparent text-[11px] font-mono text-slate-650 dark:text-slate-300">
           Active
         </span>
       </div>
@@ -57,7 +57,7 @@ export default function SensorMetricCard({
       </div>
 
       {/* Bottom Sparkline / Trend Status */}
-      <div className="flex items-center justify-between text-[10px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
+      <div className="flex items-center justify-between text-[11px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
         <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
           <TrendUp size={13} weight="duotone" /> Normal Range
         </span>

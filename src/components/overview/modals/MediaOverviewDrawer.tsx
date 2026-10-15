@@ -206,41 +206,41 @@ export default function MediaOverviewDrawer({
   const renderDeviceKindBadge = (kind: string, isApple: boolean) => {
     if (kind === 'apple_tv') {
       return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 flex items-center gap-1">
+        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 flex items-center gap-1">
           <Television size={11} weight="duotone" /> Apple TV 4K
         </span>
       );
     }
     if (kind === 'homepod') {
       return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
           <Radio size={11} weight="duotone" /> HomePod AirPlay
         </span>
       );
     }
     if (kind === 'sonos') {
       return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 flex items-center gap-1">
+        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 flex items-center gap-1">
           <SpeakerHigh size={11} weight="duotone" /> Sonos Arc Hi-Fi
         </span>
       );
     }
     if (kind === 'cast') {
       return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
           <Airplay size={11} weight="duotone" /> Google Cast
         </span>
       );
     }
     if (kind === 'smart_tv') {
       return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 flex items-center gap-1">
+        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 flex items-center gap-1">
           <Television size={11} weight="duotone" /> Smart TV
         </span>
       );
     }
     return (
-      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10">
+      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10">
         Media Output
       </span>
     );
@@ -303,7 +303,7 @@ export default function MediaOverviewDrawer({
             {/* Blurred Album Artwork covering the entire tile */}
             {albumArt ? (
               <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none z-0">
-                <img
+                <img loading="lazy" decoding="async"
                   src={albumArt}
                   alt=""
                   className={`w-full h-full object-cover scale-110 blur-xl transition-opacity duration-700 ${
@@ -343,7 +343,7 @@ export default function MediaOverviewDrawer({
             {/* Actual Unblurred Album Artwork */}
             <div className="relative w-44 h-44 rounded-3xl overflow-hidden shadow-2xl ring-2 ring-white/20 dark:ring-white/10 mb-4 shrink-0 z-10 group">
               {albumArt ? (
-                <img
+                <img loading="lazy" decoding="async"
                   src={albumArt}
                   alt={title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -572,7 +572,7 @@ export default function MediaOverviewDrawer({
                                   {areaGroup.areaName}
                                 </span>
                               </div>
-                              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                              <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
                                 {areaGroup.entities.filter(e => e.state === 'playing').length}/{areaGroup.entities.length} playing
                               </span>
                             </div>
@@ -596,11 +596,11 @@ export default function MediaOverviewDrawer({
                                       ? 'bg-purple-500/20 text-white shadow-md'
                                       : 'bg-slate-100/90 dark:bg-white/[0.04] hover:bg-slate-200/80 dark:hover:bg-white/[0.08]'
                                   }`}
-                                >
+                                 role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                                   <div className="flex items-center gap-3 min-w-0">
                                     <div className="w-10 h-10 rounded-xl overflow-hidden bg-purple-100 dark:bg-purple-950/60 flex items-center justify-center shrink-0">
                                       {playerArt ? (
-                                        <img src={playerArt} alt={player.name} className="w-full h-full object-cover" />
+                                        <img loading="lazy" decoding="async" src={playerArt} alt={player.name} className="w-full h-full object-cover" />
                                       ) : playerClass.isApple ? (
                                         <Television size={20} weight="duotone" className="text-sky-500 dark:text-sky-300" />
                                       ) : player.attributes?.device_class === 'tv' ? (

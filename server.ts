@@ -7,6 +7,7 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import dns from 'node:dns';
+import { Readable } from 'node:stream';
 import dotenv from 'dotenv';
 import { Agent as UndiciAgent, fetch as undiciFetch } from 'undici';
 import {
@@ -29,6 +30,14 @@ import {
   validateCameraSourceUrl,
   validateDashboardConfigShape
 } from './server/lib/security';
+
+// Request fields set by requireHAAuth (REL-012: typed instead of `(req as any)`)
+declare module 'express-serve-static-core' {
+  interface Request {
+    haToken?: string;
+    clientHaUrl?: string;
+  }
+}
 
 dotenv.config();
 
@@ -81,11 +90,28 @@ async function startServer() {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), payment=(), usb=(), interest-cohort=()');
+    if (req.secure || String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https') {
+      res.setHeader('Strict-Transport-Security', 'max-age=15552000');
+    }
 
     // Content-Security-Policy (CSP) Defense-in-Depth:
     // Restrict script execution to 'self' to minimize XSS blast radius.
     // In dev mode, Vite requires 'unsafe-inline' and 'unsafe-eval' for HMR modules.
     const isProd = process.env.NODE_ENV === 'production';
+    // Once a Home Assistant instance is trusted, the browser only needs to reach it and ourselves
+    // (SEC-011). Before that (opt-in first-run pinning) the policy has to stay open.
+    const trustedHa = getTrustedHaBase();
+    let connectSrc = "connect-src 'self' ws: wss: https: http:";
+    if (trustedHa) {
+      try {
+        const u = new URL(trustedHa);
+        const wsOrigin = `${u.protocol === 'https:' ? 'wss:' : 'ws:'}//${u.host}`;
+        connectSrc = `connect-src 'self' ${u.origin} ${wsOrigin}`;
+      } catch {
+        // keep the open policy if the configured URL cannot be parsed
+      }
+    }
     const scriptSrc = isProd ? "'self'" : "'self' 'unsafe-inline' 'unsafe-eval'";
     const csp = [
       "default-src 'self'",
@@ -93,7 +119,7 @@ async function startServer() {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https: http:",
-      "connect-src 'self' ws: wss: https: http:",
+      connectSrc,
       "media-src 'self' data: blob: https: http:",
       "worker-src 'self' blob:",
       "object-src 'none'",
@@ -129,6 +155,19 @@ async function startServer() {
   // In-memory cache for fast read-through and NAS drive spin-down support
   let cachedServerConfig: any = null;
   let cachedServerVersion = 0;
+  // mtime of the config file the cache was filled from; a different mtime means it changed on disk
+  let cachedConfigMtimeMs = -1;
+  // PERF-008: timestamped snapshots are rate limited; the single .bak copy still happens on every save
+  const SNAPSHOT_MIN_INTERVAL_MS = 60 * 1000;
+  let lastSnapshotAt = 0;
+
+  function recordConfigMtime() {
+    try {
+      cachedConfigMtimeMs = fs.statSync(configFilePath).mtimeMs;
+    } catch {
+      cachedConfigMtimeMs = -1;
+    }
+  }
 
   // Check and initialize persistent NAS storage folders with one-time warnings on failure
   let isConfigStorageWritable = true;
@@ -184,11 +223,8 @@ async function startServer() {
         res.setHeader('Access-Control-Allow-Methods', allowMethods);
         res.setHeader('Vary', 'Origin');
       }
-    } else {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Access-Control-Allow-Methods', allowMethods);
-      res.setHeader('Vary', 'Origin');
     }
+    // No allow-list: same-origin deployment, so no CORS headers at all (SEC-009)
   };
 
   // Static Assets Directory for NAS uploaded vehicle PNGs / brand logos
@@ -328,6 +364,8 @@ async function startServer() {
     return false;
   }
 
+  class SnapshotThrottled extends Error {}
+
   // Database-grade atomic file persistence with fsync to guarantee flush to physical NAS media
   async function writeConfigFileAtomic(filePath: string, dataString: string): Promise<void> {
     const dir = path.dirname(filePath);
@@ -353,7 +391,12 @@ async function startServer() {
       try {
         await fs.promises.copyFile(filePath, configBackupPath);
 
-        // Keep up to 5 rolling snapshots in backups/
+        // Keep up to 5 rolling snapshots in backups/, at most one per minute
+        const now = Date.now();
+        if (now - lastSnapshotAt < SNAPSHOT_MIN_INTERVAL_MS) {
+          throw new SnapshotThrottled();
+        }
+        lastSnapshotAt = now;
         if (!fs.existsSync(configBackupsDir)) {
           await fs.promises.mkdir(configBackupsDir, { recursive: true });
         }
@@ -371,12 +414,15 @@ async function startServer() {
           }
         }
       } catch (backupErr) {
-        console.warn('[NAS Config] Backup rotation notice:', backupErr);
+        if (!(backupErr instanceof SnapshotThrottled)) {
+          console.warn('[NAS Config] Backup rotation notice:', backupErr);
+        }
       }
     }
 
     // Atomic filesystem rename
     await fs.promises.rename(tempFile, filePath);
+    if (filePath === configFilePath) recordConfigMtime();
   }
 
   // Self-healing configuration reader: reads primary file with automatic fallback to .bak and snapshots
@@ -392,6 +438,7 @@ async function startServer() {
             const conf = parsed.serverVersion !== undefined ? parsed.config : parsed;
             cachedServerConfig = conf;
             cachedServerVersion = version;
+            recordConfigMtime();
             return { config: conf, serverVersion: version };
           }
         }
@@ -441,9 +488,13 @@ async function startServer() {
               cachedServerVersion = version;
               return { config: conf, serverVersion: version };
             }
-          } catch {}
+          } catch (snapshotErr: any) {
+            console.warn(`[NAS Config] Snapshot ${file} unreadable: ${snapshotErr?.message || snapshotErr}`);
+          }
         }
-      } catch {}
+      } catch (dirErr: any) {
+        console.warn(`[NAS Config] Could not read backups directory: ${dirErr?.message || dirErr}`);
+      }
     }
 
     // 4. Legacy fallback check for ./data/config.json if migrating
@@ -455,7 +506,9 @@ async function startServer() {
         cachedServerConfig = parsed;
         cachedServerVersion = 1;
         return { config: parsed, serverVersion: 1 };
-      } catch {}
+      } catch (legacyErr: any) {
+        console.warn(`[NAS Config] Legacy config.json unreadable: ${legacyErr?.message || legacyErr}`);
+      }
     }
 
     return null;
@@ -756,34 +809,42 @@ async function startServer() {
     return false;
   }
 
+  // SEC-015: throttle clients that keep presenting invalid tokens (each unknown token costs an
+  // outbound request to Home Assistant)
+  const AUTH_FAIL_WINDOW_MS = 60_000;
+  const AUTH_FAIL_LIMIT = 30;
+  const authFailures = new Map<string, { count: number; resetAt: number }>();
+  function authFailureKey(req: express.Request): string {
+    return req.ip || req.socket?.remoteAddress || 'unknown';
+  }
+  function isAuthRateLimited(req: express.Request): boolean {
+    const entry = authFailures.get(authFailureKey(req));
+    return Boolean(entry && entry.resetAt > Date.now() && entry.count >= AUTH_FAIL_LIMIT);
+  }
+  function recordAuthFailure(req: express.Request) {
+    const key = authFailureKey(req);
+    const now = Date.now();
+    const entry = authFailures.get(key);
+    if (!entry || entry.resetAt <= now) {
+      if (authFailures.size > 1000) authFailures.clear();
+      authFailures.set(key, { count: 1, resetAt: now + AUTH_FAIL_WINDOW_MS });
+    } else {
+      entry.count++;
+    }
+  }
+
   async function requireHAAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
+    if (isAuthRateLimited(req)) {
+      res.setHeader('Retry-After', '60');
+      return res.status(429).json({ success: false, error: 'Too many failed authentication attempts' });
+    }
     let token = '';
     const rawAuthHeader = req.headers.authorization;
     if (rawAuthHeader && rawAuthHeader.startsWith('Bearer ')) {
       token = rawAuthHeader.slice(7).trim();
-    } else if (
-      req.path === '/api/config/stream' || req.originalUrl?.startsWith('/api/config/stream') ||
-      req.path === '/api/image-proxy' || req.originalUrl?.startsWith('/api/image-proxy')
-    ) {
-      /**
-       * SSE & Image Proxy Route Query String Token Fallback:
-       * Browser EventSource and HTML image tags / canvas fetch may provide the bearer token via
-       * query parameter (?token=...) as a strictly-scoped fallback.
-       *
-       * Security mitigations:
-       * 1. Scoped EXCLUSIVELY to /api/config/stream and /api/image-proxy. REST endpoints
-       *    must ALWAYS provide the Authorization: Bearer <token> header and will reject query tokens.
-       * 2. The token is immediately deleted from req.query and redacted from req.url so it
-       *    never leaks into server/reverse-proxy access logs or downstream middleware.
-       */
-      if (req.query.token && typeof req.query.token === 'string') {
-        token = req.query.token.trim();
-        delete req.query.token;
-        if (req.url) {
-          req.url = req.url.replace(/([?&])token=[^&]*(&|$)/, '$1').replace(/[?&]$/, '');
-        }
-      }
     }
+    // SEC-013: tokens are accepted from the Authorization header only. The SSE stream and the image
+    // proxy used to take ?token=, which ends up in proxy access logs and browser history.
 
     const clientHaUrl = (req.headers['x-ha-url'] as string) || (req.query.haUrl as string) || '';
 
@@ -807,16 +868,81 @@ async function startServer() {
 
     const isValid = await verifyHAToken(token, clientHaUrl, authHeader);
     if (!isValid) {
+      recordAuthFailure(req);
       return res.status(401).json({
         success: false,
         error: 'Unauthorized: Invalid or expired Home Assistant authentication token'
       });
     }
 
-    (req as any).clientHaUrl = clientHaUrl;
-    (req as any).haToken = token;
+    req.clientHaUrl = clientHaUrl;
+    req.haToken = token;
 
     next();
+  }
+
+  // SEC-005: camera sources, asset uploads and statistics sync are admin-only. Any other valid
+  // HA user may still read everything and save layout/preferences.
+  const adminCache = new Map<string, { admin: boolean; expiresAt: number }>();
+
+  function queryHaIsAdmin(haBase: string, token: string): Promise<boolean | null> {
+    return new Promise((resolve) => {
+      let settled = false;
+      let ws: WebSocket | null = null;
+      const finish = (value: boolean | null) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        try { ws?.close(); } catch { /* ignore */ }
+        resolve(value);
+      };
+      const timer = setTimeout(() => finish(null), 5000);
+      try {
+        ws = new WebSocket(`${haBase.replace(/^http/i, 'ws')}/api/websocket`);
+      } catch {
+        return finish(null);
+      }
+      ws.onerror = () => finish(null);
+      ws.onclose = () => finish(null);
+      ws.onmessage = (ev: MessageEvent) => {
+        let msg: any;
+        try { msg = JSON.parse(String(ev.data)); } catch { return; }
+        if (msg.type === 'auth_required') {
+          ws!.send(JSON.stringify({ type: 'auth', access_token: token }));
+        } else if (msg.type === 'auth_ok') {
+          ws!.send(JSON.stringify({ id: 1, type: 'auth/current_user' }));
+        } else if (msg.type === 'auth_invalid') {
+          finish(false);
+        } else if (msg.id === 1 && msg.type === 'result') {
+          finish(msg.success ? Boolean(msg.result?.is_admin) : null);
+        }
+      };
+    });
+  }
+
+  async function isHaAdmin(token: string): Promise<boolean> {
+    // Mock tokens are admins unless they say otherwise, so tests can exercise both roles
+    if (isMockToken(token)) return !/^(test|mock)_nonadmin/.test(token);
+    const base = getTrustedHaBase();
+    if (!base) return false;
+    const key = `${base}|${token}`;
+    const cached = adminCache.get(key);
+    if (cached && cached.expiresAt > Date.now()) return cached.admin;
+    const result = await queryHaIsAdmin(base, token);
+    // Unknown (HA unreachable) is denied but not cached for long
+    adminCache.set(key, { admin: result === true, expiresAt: Date.now() + (result === null ? 10_000 : 60_000) });
+    if (adminCache.size > TOKEN_CACHE_MAX_ENTRIES) {
+      adminCache.delete(adminCache.keys().next().value as string);
+    }
+    return result === true;
+  }
+
+  async function requireHAAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
+    if (await isHaAdmin(req.haToken ?? '')) return next();
+    return res.status(403).json({
+      success: false,
+      error: 'Forbidden: this action requires a Home Assistant administrator'
+    });
   }
 
   // Set to track connected SSE clients for real-time push configuration updates
@@ -875,13 +1001,30 @@ async function startServer() {
     }
 
     try {
-      const persisted = await readPersistentConfig();
+      // PERF-007: serve from memory while the file on disk is the one the cache was filled from
+      let persisted: { config: any; serverVersion: number } | null = null;
+      if (cachedServerConfig && cachedServerVersion > 0) {
+        try {
+          if (fs.statSync(configFilePath).mtimeMs === cachedConfigMtimeMs) {
+            persisted = { config: cachedServerConfig, serverVersion: cachedServerVersion };
+          }
+        } catch {
+          // file vanished: fall through to the self-healing reader
+        }
+      }
+      if (!persisted) persisted = await readPersistentConfig();
       if (persisted) {
         return res.json({
           success: true,
           config: redactConfigForClient(persisted.config),
           serverVersion: persisted.serverVersion
         });
+      }
+
+      if (fs.existsSync(configFilePath)) {
+        // The file is there but neither it nor any snapshot could be read: that is an error, not a first run
+        console.error('[NAS Config] Config file exists but could not be read or recovered');
+        return res.status(500).json({ success: false, error: 'Failed to read persistent config' });
       }
 
       // First run: file not found
@@ -988,6 +1131,22 @@ async function startServer() {
         restoreRedactedCameraUrls(targetConfig, currentConfig);
         applyPinOnWrite(targetConfig, currentConfig);
 
+        // Only a change to the camera sources needs admin rights; ordinary saves echo them back
+        if (targetConfig.cameras?.sources !== undefined) {
+          const before = JSON.stringify(currentConfig?.cameras?.sources ?? {});
+          const after = JSON.stringify(targetConfig.cameras.sources ?? {});
+          if (before !== after && !(await isHaAdmin(req.haToken ?? ''))) {
+            return {
+              conflict: false,
+              statusCode: 403,
+              payload: {
+                success: false,
+                error: 'Forbidden: changing camera sources requires a Home Assistant administrator'
+              }
+            };
+          }
+        }
+
         // Deep merge targetConfig onto currentConfig (unless allowEmpty is explicitly set)
         // to prevent partial payloads from silently wiping out unmentioned sections
         let finalConfig = targetConfig;
@@ -1046,7 +1205,7 @@ async function startServer() {
   // NAS Custom Asset Upload API (vehicle PNGs / brand logos)
   const MAX_ASSET_SIZE_BYTES = 5 * 1024 * 1024; // 5MB limit
 
-  app.post('/api/assets', requireHAAuth, async (req, res) => {
+  app.post('/api/assets', requireHAAuth, requireHAAdmin, async (req, res) => {
     if (!isAssetsStorageWritable) {
       return res.status(503).json({
         success: false,
@@ -1146,7 +1305,7 @@ async function startServer() {
       const status = getEnergyDbStatus();
       res.json({ success: true, status });
     } catch (err: any) {
-      res.status(500).json({ success: false, error: err.message });
+      res.status(500).json({ success: false, error: 'Internal server error' });
     }
   });
 
@@ -1157,10 +1316,11 @@ async function startServer() {
       const entities = getStoredEntities();
       res.json({ success: true, count: entities.length, entities });
     } catch (err: any) {
-      res.status(500).json({ success: false, error: err.message });
+      res.status(500).json({ success: false, error: 'Internal server error' });
     }
   });
 
+  const MAX_INGEST_ROWS_PER_REQUEST = 200_000;
   const STATISTICS_PERIOD_MS: Record<string, number> = {
     '5minute': 5 * 60 * 1000,
     hour: 60 * 60 * 1000,
@@ -1220,15 +1380,33 @@ async function startServer() {
       });
     } catch (err: any) {
       console.error('[Statistics API] /api/statistics/history error:', err);
-      res.status(500).json({ success: false, error: err.message });
+      res.status(500).json({ success: false, error: 'Internal server error' });
     }
   });
 
   // 4. Statistics Batch Ingestion Endpoint (Client-Assisted & Background Sync)
-  app.post(['/api/statistics/sync', '/api/energy/sync'], requireHAAuth, async (req, res) => {
+  app.post(['/api/statistics/sync', '/api/energy/sync'], requireHAAuth, requireHAAdmin, async (req, res) => {
     applyCorsHeaders(req, res, 'POST, OPTIONS');
     try {
       const payload = req.body;
+      // SEC-015: bound what an authenticated client may push into the history database
+      const periodType = payload?.periodType ?? 'hour';
+      if (typeof periodType !== 'string' || STATISTICS_PERIOD_MS[periodType] === undefined) {
+        return res.status(400).json({ success: false, error: `Unsupported periodType: ${String(periodType).slice(0, 32)}` });
+      }
+      const stats = payload?.statistics;
+      if (stats && typeof stats === 'object') {
+        let rows = 0;
+        for (const [id, entries] of Object.entries(stats)) {
+          if (id.length > 255) {
+            return res.status(400).json({ success: false, error: 'statistic id too long' });
+          }
+          if (Array.isArray(entries)) rows += entries.length;
+        }
+        if (rows > MAX_INGEST_ROWS_PER_REQUEST) {
+          return res.status(413).json({ success: false, error: `Too many rows (max ${MAX_INGEST_ROWS_PER_REQUEST})` });
+        }
+      }
       const result = await EnergySyncService.ingestBatch(payload);
       if (!result.success) {
         return res.status(400).json(result);
@@ -1236,7 +1414,7 @@ async function startServer() {
       res.json(result);
     } catch (err: any) {
       console.error('[Statistics API] /api/statistics/sync error:', err);
-      res.status(500).json({ success: false, error: err.message });
+      res.status(500).json({ success: false, error: 'Internal server error' });
     }
   });
 
@@ -1276,8 +1454,8 @@ async function startServer() {
       return res.status(400).json({ error: 'Missing url parameter' });
     }
 
-    const token: string = (req as any).haToken;
-    const haBase = getTrustedHaBase() || resolveTargetHaBase((req as any).clientHaUrl);
+    const token: string = req.haToken ?? '';
+    const haBase = getTrustedHaBase() || resolveTargetHaBase(req.clientHaUrl);
 
     let currentUrl: URL;
     try {
@@ -1368,7 +1546,8 @@ async function startServer() {
       if (err?.cause?.code === 'EPRIVATEADDR' || err?.code === 'EPRIVATEADDR') {
         return res.status(403).json({ error: 'Access to private, local, or cloud metadata network addresses is prohibited' });
       }
-      return res.status(502).json({ error: 'Failed to proxy image: ' + (err?.message || 'Network error') });
+      console.warn('[Image Proxy] Upstream fetch failed:', err?.message || err);
+      return res.status(502).json({ error: 'Failed to proxy image' });
     }
   });
 
@@ -1488,7 +1667,7 @@ async function startServer() {
       }
       return res.json({ success: true, go2rtcOnline: false, error: `go2rtc returned status ${ping.status}` });
     } catch (err: any) {
-      return res.json({ success: true, go2rtcOnline: false, error: err?.message || 'go2rtc unreachable' });
+      return res.json({ success: true, go2rtcOnline: false, error: 'go2rtc unreachable' });
     }
   });
 
@@ -1533,9 +1712,9 @@ async function startServer() {
       });
 
       if (!go2rtcRes.ok) {
-        const errText = await go2rtcRes.text();
+        console.warn(`[go2rtc Proxy] WebRTC signaling failed (${go2rtcRes.status}): ${(await go2rtcRes.text()).slice(0, 200)}`);
         return res.status(go2rtcRes.status).json({
-          error: `go2rtc WebRTC signaling failed (${go2rtcRes.status}): ${errText}`
+          error: `go2rtc WebRTC signaling failed (${go2rtcRes.status})`
         });
       }
 
@@ -1549,7 +1728,7 @@ async function startServer() {
     } catch (err: any) {
       logGo2RtcUnreachable(err?.message);
       return res.status(502).json({
-        error: 'Failed to negotiate WebRTC stream with go2rtc: ' + (err?.message || 'Unknown error')
+        error: 'Failed to negotiate WebRTC stream with go2rtc'
       });
     }
   });
@@ -1614,18 +1793,24 @@ async function startServer() {
         res.setHeader('Cache-Control', 'public, max-age=3600');
       }
 
-      const buffer = Buffer.from(await go2rtcRes.arrayBuffer());
-      return res.send(buffer);
+      // PERF-009: stream the upstream body instead of buffering whole segments in memory
+      if (req.method === 'HEAD' || !go2rtcRes.body) {
+        return res.end();
+      }
+      const upstream = Readable.fromWeb(go2rtcRes.body as any);
+      upstream.on('error', () => res.destroy());
+      res.on('close', () => upstream.destroy());
+      return void upstream.pipe(res);
     } catch (err: any) {
       logGo2RtcUnreachable(err?.message);
       return res.status(502).json({
-        error: 'Failed to fetch HLS stream from go2rtc: ' + (err?.message || 'Unknown error')
+        error: 'Failed to fetch HLS stream from go2rtc'
       });
     }
   });
 
   // Delete camera source endpoint
-  app.delete('/api/cameras/:cameraId', requireHAAuth, async (req, res) => {
+  app.delete('/api/cameras/:cameraId', requireHAAuth, requireHAAdmin, async (req, res) => {
     const { cameraId } = req.params;
     console.log(`[Camera API] Deleting camera stream source "${cameraId}"...`);
 

@@ -1,3 +1,4 @@
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React, { useState, useMemo, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -78,6 +79,8 @@ class ControlErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
 export default function EntityDetailModal() {
   const { isOpen, selectedEntityId, closeEntityDetails } = useEntityPopup();
+  // Escape is already handled below; the hook adds focus management and the Tab trap
+  const dialogRef = useDialogA11y({ open: isOpen, onClose: closeEntityDetails, closeOnEscape: false });
   const { config } = useUserConfig();
   const darkMode = config?.theme?.mode !== 'light';
   // Subscribe to the selected entity only, so the modal (kept mounted between opens) doesn't
@@ -317,6 +320,11 @@ export default function EntityDetailModal() {
           {/* Sidebar Drawer Container: Luminous frosted glass in light mode, deep dark glass in dark mode */}
           <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10 pointer-events-none z-10">
             <motion.div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${entityTitle || 'Entity'} details`}
+              tabIndex={-1}
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -490,7 +498,7 @@ export default function EntityDetailModal() {
                             darkMode ? 'bg-black/20 border-white/5 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)]' : 'bg-white/80 border-slate-200/80 text-slate-900 shadow-xs'
                           }`}
                         >
-                          <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                          <div className={`flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                             <Tag size={12} weight="bold" />
                             <span>Entity ID</span>
                           </div>
@@ -504,7 +512,7 @@ export default function EntityDetailModal() {
                             darkMode ? 'bg-black/20 border-white/5 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)]' : 'bg-white/80 border-slate-200/80 text-slate-900 shadow-xs'
                           }`}
                         >
-                          <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                          <div className={`flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                             <Cpu size={12} weight="bold" />
                             <span>Hardware Device</span>
                           </div>
@@ -518,7 +526,7 @@ export default function EntityDetailModal() {
                             darkMode ? 'bg-black/20 border-white/5 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)]' : 'bg-white/80 border-slate-200/80 text-slate-900 shadow-xs'
                           }`}
                         >
-                          <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                          <div className={`flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                             <Buildings size={12} weight="bold" />
                             <span>Manufacturer</span>
                           </div>
@@ -532,7 +540,7 @@ export default function EntityDetailModal() {
                             darkMode ? 'bg-black/20 border-white/5 text-white shadow-[4px_6px_12px_rgba(0,0,0,0.15)]' : 'bg-white/80 border-slate-200/80 text-slate-900 shadow-xs'
                           }`}
                         >
-                          <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                          <div className={`flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                             <Clock size={12} weight="bold" />
                             <span>Last Changed</span>
                           </div>
@@ -565,7 +573,7 @@ export default function EntityDetailModal() {
 
                         {/* Raw Attributes Table (without friendly_name) */}
                         <div
-                          className={`max-h-40 overflow-y-auto rounded-2xl border p-2 space-y-1 font-mono text-[10px] scrollbar-thin backdrop-blur-md ${
+                          className={`max-h-40 overflow-y-auto rounded-2xl border p-2 space-y-1 font-mono text-[11px] scrollbar-thin backdrop-blur-md ${
                             darkMode
                               ? 'border-white/5 bg-black/30 scrollbar-thumb-white/10 text-slate-300'
                               : 'border-slate-200/80 bg-white/70 scrollbar-thumb-slate-300 text-slate-800'

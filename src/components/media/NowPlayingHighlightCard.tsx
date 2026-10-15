@@ -175,7 +175,7 @@ export default function NowPlayingHighlightCard({
           ? 'bg-black/20 hover:bg-black/30 text-white'
           : 'bg-white/20 hover:bg-white/30 text-slate-900'
       }`}
-    >
+     role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
       {/* Ambient background bloom with strict containment */}
       <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
         {albumArt ? (
@@ -262,7 +262,7 @@ export default function NowPlayingHighlightCard({
           {/* Artwork / App Visual */}
           <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-white/20 shadow-md shrink-0 bg-slate-800 flex items-center justify-center">
             {albumArt && !imgError ? (
-              <img
+              <img loading="lazy" decoding="async"
                 src={albumArt}
                 alt={visual.title}
                 onError={() => setImgError(true)}
@@ -298,7 +298,7 @@ export default function NowPlayingHighlightCard({
                 {visual.album}
               </p>
             )}
-            <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 truncate">
+            <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1 truncate">
               {media.attributes?.friendly_name || media.name}
             </p>
           </div>

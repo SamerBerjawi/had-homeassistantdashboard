@@ -9,7 +9,10 @@ Each row is one spec, run at both widths unless noted. Result = Pass only if it 
 - Most UI specs are **smoke-level**: the action can be performed, no uncaught page error, no horizontal overflow. They do not assert resulting device state (demo data is local).
 - Not covered at all: OAuth callback (`/?code=`), W5 session-expiry banner, W27 SSE/BroadcastChannel sync, W28 PWA install/update toast, camera live/HLS, map interactions, drag/resize in edit mode, drag-guard.
 
-## Totals (spec x viewport runs)
+## Update 2026-10-15 (after remediation)
+QA-A-001 and QA-B-001 are fixed and their specs pass; the suite now also has tests/e2e/h-hardening and tests/e2e/i-accessibility. Full run: 218 passed, 16 skipped (API specs on the mobile project, plus the 2 blocked items below), 0 failed.
+
+## Totals at the time of the original QA run (spec x viewport runs)
 180 runs: **174 pass, 4 fail, 2 blocked (skipped)**. Distinct bugs: 2.
 
 | Chunk | Pass | Fail | Blocked |

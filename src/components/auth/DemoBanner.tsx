@@ -43,7 +43,7 @@ export default function DemoBanner() {
           className="px-2.5 py-1 rounded-lg bg-amber-500/25 hover:bg-amber-500/40 border border-amber-500/40 text-amber-100 font-bold text-[11px] transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 shadow-sm"
         >
           <SignIn size={13} weight="bold" />
-          <span>Connect Live HA</span>
+          <span>Connect Home Assistant</span>
         </button>
       </div>
     </div>
