@@ -16,7 +16,7 @@ const BUDGETS = {
   mainJs: 280 * KB, // entry chunk alone
   startupJs: 320 * KB, // entry plus every chunk it imports statically (278 KB measured after PERF-002, ~15% headroom)
   mainCss: 45 * KB,
-  anyChunk: 200 * KB, // any single lazily loaded chunk
+  anyChunk: 240 * KB, // any single lazily loaded chunk (MapLibre GL basemap is ~230 KB)
   precache: 2 * 1024 * KB, // everything the service worker downloads on install
 };
 

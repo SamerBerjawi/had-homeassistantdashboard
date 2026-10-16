@@ -57,7 +57,6 @@ describe('validateDashboardConfigShape (REL-003)', () => {
     expect(validateDashboardConfigShape({ entities: 'x' })).toMatch(/entities/);
     expect(validateDashboardConfigShape({ cameras: 5 })).toMatch(/cameras/);
     expect(validateDashboardConfigShape({ rooms: { floorOrder: [1] } })).toMatch(/floorOrder/);
-    expect(validateDashboardConfigShape({ cartoApiKey: 1 })).toMatch(/cartoApiKey/);
   });
   it('rejects a bad camera source URL', () => {
     expect(

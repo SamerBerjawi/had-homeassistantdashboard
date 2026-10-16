@@ -5,10 +5,11 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Globe, NavigationArrow, Car, Bicycle, MapPin, MagnifyingGlassPlus, MagnifyingGlassMinus } from '@phosphor-icons/react';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useCartoBasemap } from '../../../hooks/useCartoBasemap';
+import { useBasemap } from '../../../hooks/useBasemap';
+import { BasemapLayer } from '../../map/BasemapLayer';
 import { formatLastUpdated } from '../../../utils/dateFormat';
 
 interface MobilityMapProps {
@@ -43,7 +44,7 @@ export function MobilityMap({
   className = ''
 }: MobilityMapProps) {
   const [zoom, setZoom] = useState<number>(16);
-  const { tileUrl, attribution, isCarto, cartoApiKey } = useCartoBasemap(darkMode);
+  const { styleUrl } = useBasemap(darkMode);
 
   const osmDirectUrl = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=${zoom}/${latitude}/${longitude}`;
 
@@ -82,11 +83,7 @@ export function MobilityMap({
     >
       {/* Map Tile Layer */}
       <div
-        className={`w-full h-full min-h-[220px] sm:min-h-[260px] ${
-          !isCarto && darkMode
-            ? '[&_.leaflet-tile]:invert-[.9] [&_.leaflet-tile]:hue-rotate-180 [&_.leaflet-tile]:brightness-[.88] [&_.leaflet-tile]:contrast-[.98]'
-            : ''
-        }`}
+        className="w-full h-full min-h-[220px] sm:min-h-[260px]"
       >
         <MapContainer
           center={[latitude, longitude]}
@@ -96,8 +93,7 @@ export function MobilityMap({
           className="w-full h-full min-h-[220px] sm:min-h-[260px] z-0"
           style={{ width: '100%', height: '100%', minHeight: '220px' }}
         >
-          {/* Key prop forces remount on theme/URL change */}
-          <TileLayer attribution={attribution} key={tileUrl} url={tileUrl} />
+          <BasemapLayer styleUrl={styleUrl} />
           <Marker position={[latitude, longitude]} icon={markerIcon} />
           <MapController center={[latitude, longitude]} zoom={zoom} />
         </MapContainer>
@@ -109,13 +105,9 @@ export function MobilityMap({
           <Globe size={14} weight="duotone" className="text-emerald-400 shrink-0" />
           <span className="truncate max-w-[130px] sm:max-w-[180px]">{title}</span>
           <span
-            className={`text-[11px] px-1.5 py-0.2 rounded font-mono font-bold uppercase tracking-wider ${
-              cartoApiKey
-                ? 'bg-sky-500/25 text-sky-300 border border-sky-500/30'
-                : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-            }`}
+            className="text-[11px] px-1.5 py-0.2 rounded font-mono font-bold uppercase tracking-wider bg-sky-500/25 text-sky-300 border border-sky-500/30"
           >
-            {cartoApiKey ? 'CARTO' : 'OSM'}
+            OFM
           </span>
           {isMoving && (
             <span className="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 text-[11px] font-black uppercase tracking-wider animate-pulse">
