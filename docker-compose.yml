@@ -1,6 +1,7 @@
 services:
   homz-dashboard:
     image: ghcr.io/samerberjawi/had-homeassistantdashboard:latest
+    # To test an open pull request, use its tag instead, e.g. :pr-12 (published by the PR workflow)
     # Uncomment the 'build' line below if you prefer building locally instead of pulling from GitHub Container Registry:
     # build: .
     container_name: homz-dashboard
