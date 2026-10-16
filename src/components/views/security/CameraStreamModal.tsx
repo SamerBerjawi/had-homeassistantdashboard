@@ -7,8 +7,9 @@
  */
 
 import { useDialogA11y } from '../../../hooks/useDialogA11y';
-import React from 'react';
-import { X, VideoCamera } from '@phosphor-icons/react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { X, VideoCamera, CornersOut, CornersIn } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../../types';
 import CameraFeed from '../../camera/CameraFeed';
 
@@ -26,18 +27,37 @@ export default function CameraStreamModal({
   darkMode = true
 }: CameraStreamModalProps) {
   const dialogRef = useDialogA11y({ open: isOpen, onClose });
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(document.fullscreenElement === dialogRef.current);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange);
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    };
+  }, [dialogRef]);
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      dialogRef.current?.requestFullscreen?.().catch(() => {});
+    }
+  };
+
   if (!isOpen || !camera) return null;
 
   const cameraName = camera.name || camera.attributes?.friendly_name || 'Camera Feed';
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/40 dark:bg-black/75 backdrop-blur-md animate-in fade-in duration-150 modal-safe-viewport"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-slate-900/40 dark:bg-black/75 backdrop-blur-md animate-in fade-in duration-150 modal-safe-viewport"
       onClick={onClose}
     >
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Camera stream" tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className={`relative w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border flex flex-col transition-colors duration-200 ${
+        className={`relative w-full ${isFullscreen ? 'h-full max-w-none rounded-none' : 'max-w-4xl rounded-3xl'} overflow-hidden shadow-2xl border flex flex-col transition-colors duration-200 ${
           darkMode 
             ? 'bg-slate-900 border-white/10 shadow-black/60' 
             : 'bg-white border-slate-200 shadow-slate-900/20'
@@ -69,6 +89,18 @@ export default function CameraStreamModal({
             </div>
           </div>
 
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
+              className={`p-2 rounded-full transition-colors cursor-pointer ${
+                darkMode 
+                  ? 'text-slate-400 hover:text-white bg-white/5 hover:bg-white/10' 
+                  : 'text-slate-500 hover:text-slate-900 bg-slate-100 hover:bg-slate-200'
+              }`}>
+              {isFullscreen ? <CornersIn size={18} weight="bold" /> : <CornersOut size={18} weight="bold" />}
+            </button>
           <button
             type="button"
             onClick={onClose}
@@ -81,10 +113,11 @@ export default function CameraStreamModal({
           >
             <X size={18} weight="bold" />
           </button>
+          </div>
         </div>
 
         {/* Video Viewport Container */}
-        <div className="relative w-full aspect-video bg-black overflow-hidden flex items-center justify-center">
+        <div className={`relative w-full bg-black ${isFullscreen ? 'flex-1 min-h-0' : 'aspect-video'} overflow-hidden flex items-center justify-center`}>
           <CameraFeed
             camera={camera}
             mode="live"
@@ -93,6 +126,7 @@ export default function CameraStreamModal({
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
