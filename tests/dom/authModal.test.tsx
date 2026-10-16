@@ -92,6 +92,8 @@ describe('AuthModal with the real AuthProvider', () => {
     fireEvent.change(screen.getByLabelText('Long-Lived Access Token'), { target: { value: 'tok' } });
     fireEvent.click(screen.getByText('Connect with token'));
     await waitFor(() => expect(screen.getByText(/valid Home Assistant URL/i)).toBeTruthy());
-    expect(fetchMock).not.toHaveBeenCalled();
+    // The only request allowed is the login screen's HASS_URL prefill
+    const urls = (fetchMock.mock.calls as unknown[][]).map((c) => String(c[0]));
+    expect(urls.filter((u) => u !== '/api/public-config')).toEqual([]);
   });
 });

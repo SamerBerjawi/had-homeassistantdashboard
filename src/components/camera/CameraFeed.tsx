@@ -117,6 +117,14 @@ function CameraFeed({
     setHasFirstFrame(false);
   }, [streamState.mediaStream, streamState.hlsUrl]);
 
+  // If the stream is connected but no frame event ever fires (autoplay quirks, captureStream gaps),
+  // reveal the video anyway rather than spinning on "Connecting" forever
+  useEffect(() => {
+    if (streamState.status !== 'streaming' || hasFirstFrame) return;
+    const t = setTimeout(() => setHasFirstFrame(true), 4000);
+    return () => clearTimeout(t);
+  }, [streamState.status, streamState.mediaStream, streamState.hlsUrl, hasFirstFrame]);
+
   // Bind video element to shared MediaStream or direct HLS fallback
   useEffect(() => {
     const video = videoRef.current;

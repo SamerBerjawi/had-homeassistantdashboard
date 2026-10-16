@@ -345,6 +345,8 @@ class CameraStreamManager {
       pc.addTransceiver('audio', { direction: 'recvonly' });
 
       let mediaArrived = false;
+      // go2rtc's answer often carries no msid, so event.streams is empty; collect tracks ourselves
+      let fallbackStream: MediaStream | null = null;
       pc.ontrack = (event) => {
         mediaArrived = true;
         setWebRtcUnreachable(false);
@@ -352,7 +354,12 @@ class CameraStreamManager {
           clearTimeout(session.iceTimeoutId);
           session.iceTimeoutId = null;
         }
-        const incomingStream = event.streams[0];
+        let incomingStream = event.streams[0];
+        if (!incomingStream) {
+          fallbackStream = fallbackStream ?? new MediaStream();
+          fallbackStream.addTrack(event.track);
+          incomingStream = fallbackStream;
+        }
         if (incomingStream) {
           session.retryCount = 0;
           session.state = {
