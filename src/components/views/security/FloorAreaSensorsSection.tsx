@@ -251,7 +251,7 @@ export default function FloorAreaSensorsSection({
                 <div className="flex items-center justify-between gap-3 pb-1">
                   <div className="flex items-center gap-2.5">
                     {area.picture ? (
-                      <img src={area.picture} alt={area.name} className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg object-cover shrink-0" />
+                      <img loading="lazy" decoding="async" src={area.picture} alt={area.name} className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg object-cover shrink-0" />
                     ) : (
                       <div
                         className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${

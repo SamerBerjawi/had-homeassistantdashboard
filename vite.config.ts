@@ -4,6 +4,16 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const VENDOR_CHUNKS: Record<string, string[]> = {
+  'vendor-motion': ['motion', 'motion-dom', 'motion-utils', 'framer-motion'],
+  'vendor-visx': [
+    '@visx/shape', '@visx/scale', '@visx/curve', '@visx/gradient', '@visx/grid', '@visx/group',
+    '@visx/pattern', '@visx/responsive', '@visx/sankey', '@visx/event'
+  ],
+  'vendor-zustand': ['zustand'],
+  'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities']
+};
+
 export default defineConfig(() => {
   return {
     plugins: [
@@ -160,23 +170,15 @@ export default defineConfig(() => {
             chunk.facadeModuleId?.includes('/@phosphor-icons/react/dist/csr/')
               ? 'assets/icons/[name]-[hash].js'
               : 'assets/[name]-[hash].js',
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom'],
-            'vendor-motion': ['motion'],
-            'vendor-visx': [
-              '@visx/shape',
-              '@visx/scale',
-              '@visx/curve',
-              '@visx/gradient',
-              '@visx/grid',
-              '@visx/group',
-              '@visx/pattern',
-              '@visx/responsive',
-              '@visx/sankey',
-              '@visx/event',
-            ],
-            'vendor-zustand': ['zustand'],
-            'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+          // Function form: the object form left 'vendor-react' empty because react-dom was pulled
+          // into the entry chunk through other modules (PERF-002)
+          manualChunks(id: string) {
+            if (!id.includes('/node_modules/')) return undefined;
+            if (/\/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'vendor-react';
+            for (const [chunk, packages] of Object.entries(VENDOR_CHUNKS)) {
+              if (packages.some((pkg) => id.includes(`/node_modules/${pkg}/`))) return chunk;
+            }
+            return undefined;
           },
         },
       },

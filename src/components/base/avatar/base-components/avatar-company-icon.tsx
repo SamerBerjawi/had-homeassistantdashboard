@@ -16,7 +16,7 @@ interface AvatarCompanyIconProps {
 }
 
 export const AvatarCompanyIcon = ({ size, src, alt }: AvatarCompanyIconProps) => (
-    <img
+    <img loading="lazy" decoding="async"
         src={src}
         alt={alt}
         className={cx("absolute -right-0.5 -bottom-0.5 rounded-full bg-brand-50 object-cover ring-[1.5px] ring-bg-primary", sizes[size])}

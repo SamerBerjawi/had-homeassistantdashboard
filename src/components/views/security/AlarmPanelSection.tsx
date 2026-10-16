@@ -320,7 +320,7 @@ export default function AlarmPanelSection({
               <button
                 type="button"
                 onClick={() => setIsBypassMode(!isBypassMode)}
-                className={`px-2.5 py-1 rounded-xl font-bold uppercase text-[10px] transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-xl font-bold uppercase text-[11px] transition-all cursor-pointer ${
                   isBypassMode
                     ? 'bg-amber-500 text-slate-950 font-black'
                     : darkMode
@@ -541,7 +541,7 @@ export default function AlarmPanelSection({
               </button>
 
               {/* Backspace */}
-              <button
+              <button aria-label="Delete last digit"
                 type="button"
                 onClick={handleBackspace}
                 className={`h-11 rounded-2xl text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center ${

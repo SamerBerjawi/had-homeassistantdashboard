@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lock, LockOpen, X, ArrowRight, ShieldCheck } from '@phosphor-icons/react';
@@ -34,6 +35,8 @@ export function UnlockConfirmModal({
       setIsSubmitting(false);
     }
   }, [isOpen]);
+
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
 
   if (!isOpen) return null;
 
@@ -78,6 +81,11 @@ export function UnlockConfirmModal({
 
         {/* Modal Card */}
         <motion.div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Unlock ${vehicleName}`}
+          tabIndex={-1}
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -93,7 +101,7 @@ export function UnlockConfirmModal({
           />
 
           {/* Close button */}
-          <button
+          <button aria-label="Close"
             type="button"
             onClick={onClose}
             className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"

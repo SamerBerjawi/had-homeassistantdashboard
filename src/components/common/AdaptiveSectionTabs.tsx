@@ -162,7 +162,7 @@ export const AdaptiveSectionTabs: React.FC<AdaptiveSectionTabsProps> = ({
               {/* Counter / Status Badge: On mobile (< sm), only show on active tab */}
               {tab.badge !== undefined && tab.badge !== '' && (
                 <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-lg font-mono font-bold shrink-0 ${
+                  className={`text-[11px] px-1.5 py-0.5 rounded-lg font-mono font-bold shrink-0 ${
                     showBadgeOnMobile ? 'inline-flex' : 'hidden sm:inline-flex'
                   } ${
                     isActive

@@ -195,7 +195,7 @@ export default function AudioWaveformScrubber({
       {/* Playhead Hover Tooltip */}
       {hoverPosition !== null && (
         <div
-          className="absolute -top-7 -translate-x-1/2 px-2 py-0.5 rounded-lg bg-slate-900/90 text-white text-[10px] font-mono font-bold shadow-xl border border-white/10 pointer-events-none z-20 whitespace-nowrap backdrop-blur-md"
+          className="absolute -top-7 -translate-x-1/2 px-2 py-0.5 rounded-lg bg-slate-900/90 text-white text-[11px] font-mono font-bold shadow-xl border border-white/10 pointer-events-none z-20 whitespace-nowrap backdrop-blur-md"
           style={{
             left: `${Math.max(20, Math.min(containerRef.current ? containerRef.current.clientWidth - 20 : 0, (hoverPosition / effectiveDuration) * (containerRef.current ? containerRef.current.clientWidth : 0)))}px`
           }}
@@ -299,7 +299,7 @@ export default function AudioWaveformScrubber({
     <div className="w-full max-w-sm mx-auto select-none my-2 space-y-1.5">
       {waveformCanvas}
       {/* Time Legend (Elapsed / Remaining / Total) */}
-      <div className="flex justify-between items-center text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 px-1">
+      <div className="flex justify-between items-center text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 px-1">
         <span
           className={`font-bold ${!timeTextColor ? 'text-purple-600 dark:text-purple-300' : ''}`}
           style={timeTextColor ? { color: timeTextColor } : undefined}

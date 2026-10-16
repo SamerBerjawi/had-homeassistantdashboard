@@ -127,7 +127,7 @@ export default function HuaweiSolarImpactTiles({ darkMode = true }: HuaweiSolarI
                 <Tree size={20} weight="duotone" />
               </div>
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                   Solar Afforestation
                 </span>
                 <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -160,7 +160,7 @@ export default function HuaweiSolarImpactTiles({ darkMode = true }: HuaweiSolarI
           </div>
 
           {/* Bottom Accent Pill */}
-          <div className="mt-3 pt-2.5 border-t border-emerald-500/15 dark:border-emerald-500/10 flex items-center justify-between text-[10px]">
+          <div className="mt-3 pt-2.5 border-t border-emerald-500/15 dark:border-emerald-500/10 flex items-center justify-between text-[11px]">
             <span className="text-slate-500 dark:text-slate-400 font-medium">Lifetime Yield</span>
             <span className="font-bold text-emerald-600 dark:text-emerald-300 flex items-center gap-1">
               <Plant size={12} weight="bold" /> Green Impact
@@ -192,7 +192,7 @@ export default function HuaweiSolarImpactTiles({ darkMode = true }: HuaweiSolarI
                 <CloudCheck size={20} weight="duotone" />
               </div>
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                <span className="text-[11px] font-black uppercase tracking-wider text-teal-600 dark:text-teal-400">
                   Clean Atmosphere
                 </span>
                 <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -225,7 +225,7 @@ export default function HuaweiSolarImpactTiles({ darkMode = true }: HuaweiSolarI
           </div>
 
           {/* Bottom Accent Pill */}
-          <div className="mt-3 pt-2.5 border-t border-teal-500/15 dark:border-teal-500/10 flex items-center justify-between text-[10px]">
+          <div className="mt-3 pt-2.5 border-t border-teal-500/15 dark:border-teal-500/10 flex items-center justify-between text-[11px]">
             <span className="text-slate-500 dark:text-slate-400 font-medium">Lifetime Yield</span>
             <span className="font-bold text-teal-600 dark:text-teal-300 flex items-center gap-1">
               <Sparkle size={12} weight="bold" /> Clean Air
@@ -257,7 +257,7 @@ export default function HuaweiSolarImpactTiles({ darkMode = true }: HuaweiSolarI
                 <Flame size={20} weight="duotone" />
               </div>
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                <span className="text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
                   Fossil Replacement
                 </span>
                 <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -290,7 +290,7 @@ export default function HuaweiSolarImpactTiles({ darkMode = true }: HuaweiSolarI
           </div>
 
           {/* Bottom Accent Pill */}
-          <div className="mt-3 pt-2.5 border-t border-amber-500/15 dark:border-amber-500/10 flex items-center justify-between text-[10px]">
+          <div className="mt-3 pt-2.5 border-t border-amber-500/15 dark:border-amber-500/10 flex items-center justify-between text-[11px]">
             <span className="text-slate-500 dark:text-slate-400 font-medium">Lifetime Yield</span>
             <span className="font-bold text-amber-600 dark:text-amber-300 flex items-center gap-1">
               <Flame size={12} weight="bold" /> Coal Saved

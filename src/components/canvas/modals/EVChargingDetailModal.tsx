@@ -77,7 +77,7 @@ export default function EVChargingDetailModal({
             onChange={(e) => setTargetLimit(parseInt(e.target.value))}
             className="w-full h-3 bg-black/40 rounded-lg appearance-none cursor-pointer accent-amber-400 border border-white/10"
           />
-          <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+          <div className="flex justify-between text-[11px] text-slate-500 font-mono">
             <span>50% Daily</span>
             <span>80% Recommended</span>
             <span>100% Roadtrip</span>
@@ -109,15 +109,15 @@ export default function EVChargingDetailModal({
         {/* Session Stats Grid */}
         <div className="grid grid-cols-3 gap-3 pt-2">
           <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center">
-            <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Added Energy</span>
+            <span className="text-[11px] text-slate-400 uppercase font-bold block mb-1">Added Energy</span>
             <span className="text-lg font-black text-white font-mono">+18.4 kWh</span>
           </div>
           <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center">
-            <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Time to Target</span>
+            <span className="text-[11px] text-slate-400 uppercase font-bold block mb-1">Time to Target</span>
             <span className="text-lg font-black text-white font-mono">1h 12m</span>
           </div>
           <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center">
-            <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Session Cost</span>
+            <span className="text-[11px] text-slate-400 uppercase font-bold block mb-1">Session Cost</span>
             <span className="text-lg font-black text-emerald-400 font-mono">$2.42</span>
           </div>
         </div>

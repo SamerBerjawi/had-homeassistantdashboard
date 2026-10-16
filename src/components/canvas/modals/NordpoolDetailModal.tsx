@@ -64,7 +64,7 @@ export default function NordpoolDetailModal({
               <span className="text-2xl font-black text-amber-400 font-mono">
                 {(FULL_DAY_PRICES[currentHour].price * 100).toFixed(1)}
               </span>
-              <span className="text-[10px] text-slate-400">c/kWh</span>
+              <span className="text-[11px] text-slate-400">c/kWh</span>
             </div>
           </div>
 
@@ -74,7 +74,7 @@ export default function NordpoolDetailModal({
               <span className="text-2xl font-black text-emerald-400 font-mono">
                 {(minPrice * 100).toFixed(1)}
               </span>
-              <span className="text-[10px] text-emerald-300">c/kWh</span>
+              <span className="text-[11px] text-emerald-300">c/kWh</span>
             </div>
           </div>
 
@@ -84,7 +84,7 @@ export default function NordpoolDetailModal({
               <span className="text-2xl font-black text-rose-400 font-mono">
                 {(maxPrice * 100).toFixed(1)}
               </span>
-              <span className="text-[10px] text-rose-300">c/kWh</span>
+              <span className="text-[11px] text-rose-300">c/kWh</span>
             </div>
           </div>
 
@@ -94,7 +94,7 @@ export default function NordpoolDetailModal({
               <span className="text-2xl font-black text-slate-200 font-mono">
                 {(avgPrice * 100).toFixed(1)}
               </span>
-              <span className="text-[10px] text-slate-400">c/kWh</span>
+              <span className="text-[11px] text-slate-400">c/kWh</span>
             </div>
           </div>
         </div>
@@ -124,7 +124,7 @@ export default function NordpoolDetailModal({
                   key={idx}
                   onClick={() => setSelectedHour(idx)}
                   className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer"
-                >
+                 role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                   <div
                     className={`w-full rounded-t-md transition-all duration-200 ${
                       isSelected
@@ -143,7 +143,7 @@ export default function NordpoolDetailModal({
                     }`}
                     style={{ height: `${heightPct}%` }}
                   />
-                  <span className={`text-[8px] mt-1 font-mono ${isSelected ? 'text-white font-bold' : 'text-slate-500'}`}>
+                  <span className={`text-[11px] mt-1 font-mono ${isSelected ? 'text-white font-bold' : 'text-slate-500'}`}>
                     {idx % 3 === 0 ? idx : ''}
                   </span>
                 </div>

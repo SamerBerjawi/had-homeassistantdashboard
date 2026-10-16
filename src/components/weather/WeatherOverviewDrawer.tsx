@@ -144,7 +144,7 @@ export default function WeatherOverviewDrawer({
                 <MapPin size={14} weight="duotone" className="text-sky-400" />
                 Active Weather Provider
               </span>
-              <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+              <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
                 {weatherEntities.length} sources available
               </span>
             </div>
@@ -187,7 +187,7 @@ export default function WeatherOverviewDrawer({
                 </div>
               </div>
 
-              <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-sky-500/15 text-sky-600 dark:text-sky-300 backdrop-blur-md shadow-xs">
+              <span className="text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-sky-500/15 text-sky-600 dark:text-sky-300 backdrop-blur-md shadow-xs">
                 Live Station
               </span>
             </div>
@@ -253,7 +253,7 @@ export default function WeatherOverviewDrawer({
                         {Math.round(h.temperature)}°
                       </p>
                       {rain > 0 && (
-                        <p className="text-[10px] font-bold text-blue-500 dark:text-blue-400 flex items-center justify-center gap-0.5 mt-0.5">
+                        <p className="text-[11px] font-bold text-blue-500 dark:text-blue-400 flex items-center justify-center gap-0.5 mt-0.5">
                           <Drop size={8} weight="fill" />
                           {rain}%
                         </p>
@@ -285,7 +285,7 @@ export default function WeatherOverviewDrawer({
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
                 {apparentTemp !== undefined ? `${apparentTemp.toFixed(1)}${tempUnit}` : '--'}
               </p>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Apparent Temp</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Apparent Temp</span>
             </div>
 
             {/* 2. Humidity */}
@@ -297,7 +297,7 @@ export default function WeatherOverviewDrawer({
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
                 {humidity !== undefined ? `${humidity}%` : '--'}
               </p>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 {dewPoint !== undefined ? `Dew pt: ${dewPoint.toFixed(1)}°` : 'Dew pt: --'}
               </span>
             </div>
@@ -311,7 +311,7 @@ export default function WeatherOverviewDrawer({
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono flex items-center gap-1">
                 {windSpeed !== undefined ? windSpeed : '--'} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{windSpeed !== undefined ? windSpeedUnit : ''}</span>
               </p>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
                 {windBearing !== undefined ? (
                   <>
                     <Compass size={11} weight="bold" style={{ transform: `rotate(${windBearing}deg)` }} />
@@ -332,7 +332,7 @@ export default function WeatherOverviewDrawer({
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
                 {pressure !== undefined ? pressure : '--'}
               </p>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 {pressure !== undefined ? `${pressureUnit} Barometer` : 'Barometer'}
               </span>
             </div>
@@ -347,11 +347,11 @@ export default function WeatherOverviewDrawer({
                 {uvIndex !== undefined ? uvIndex.toFixed(1) : '--'}
               </p>
               {uvBadge ? (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md w-max mt-0.5 ${uvBadge.color}`}>
+                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md w-max mt-0.5 ${uvBadge.color}`}>
                   {uvBadge.label}
                 </span>
               ) : (
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">UV Rating</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">UV Rating</span>
               )}
             </div>
 
@@ -364,7 +364,7 @@ export default function WeatherOverviewDrawer({
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
                 {cloudCoverage !== undefined ? `${cloudCoverage}%` : '--'}
               </p>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Sky Cover</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Sky Cover</span>
             </div>
 
             {/* 7. Visibility */}
@@ -376,7 +376,7 @@ export default function WeatherOverviewDrawer({
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
                 {visibility !== undefined ? visibility : '--'} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{visibility !== undefined ? visibilityUnit : ''}</span>
               </p>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Clear Sight</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Clear Sight</span>
             </div>
 
             {/* 8. Dew Point */}
@@ -388,7 +388,7 @@ export default function WeatherOverviewDrawer({
               <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
                 {dewPoint !== undefined ? `${dewPoint.toFixed(1)}${tempUnit}` : '--'}
               </p>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Moisture Sat.</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Moisture Sat.</span>
             </div>
           </div>
         </div>
@@ -418,7 +418,7 @@ export default function WeatherOverviewDrawer({
                     <p className="text-xs font-extrabold text-slate-900 dark:text-white">
                       {formatForecastDate(f.datetime, idx)}
                     </p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                       {dayCond.name}
                     </p>
                   </div>

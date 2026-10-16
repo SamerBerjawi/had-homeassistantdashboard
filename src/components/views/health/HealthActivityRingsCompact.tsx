@@ -160,7 +160,7 @@ export const HealthActivityRingsCompact: React.FC<HealthActivityRingsCompactProp
             <span className="text-xs font-black text-[#FF2D55]">
               {move.current.toLocaleString()}
             </span>
-            <span className="text-[10px] font-medium text-slate-400">
+            <span className="text-[11px] font-medium text-slate-400">
               /{move.goal} {move.unit}
             </span>
           </div>
@@ -176,7 +176,7 @@ export const HealthActivityRingsCompact: React.FC<HealthActivityRingsCompactProp
             <span className="text-xs font-black text-[#A3F900]">
               {exercise.current}
             </span>
-            <span className="text-[10px] font-medium text-slate-400">
+            <span className="text-[11px] font-medium text-slate-400">
               /{exercise.goal} {exercise.unit}
             </span>
           </div>
@@ -192,7 +192,7 @@ export const HealthActivityRingsCompact: React.FC<HealthActivityRingsCompactProp
             <span className="text-xs font-black text-[#04C7DD]">
               {steps.current.toLocaleString()}
             </span>
-            <span className="text-[10px] font-medium text-slate-400">
+            <span className="text-[11px] font-medium text-slate-400">
               /{steps.goal.toLocaleString()}
             </span>
           </div>

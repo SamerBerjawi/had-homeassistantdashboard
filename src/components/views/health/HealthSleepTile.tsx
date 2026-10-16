@@ -171,7 +171,7 @@ export const HealthSleepDurationCard: React.FC<HealthSleepCardsProps> = ({
             <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
               {parsedDuration.formatted !== '—' ? parsedDuration.formatted : '—'}
             </span>
-            <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 mt-1 truncate">
+            <span className="text-[11px] font-bold text-indigo-500 dark:text-indigo-400 mt-1 truncate">
               {goalPct > 0 ? `${goalPct}% of 8h goal` : '/ 8h goal'}
             </span>
           </div>
@@ -391,7 +391,7 @@ export const HealthSleepStagesCard: React.FC<HealthSleepCardsProps> = ({
                     {st.time}
                   </span>
                   <span
-                    className="text-[9.5px] font-bold tabular-nums w-6 text-right"
+                    className="text-[11px] font-bold tabular-nums w-6 text-right"
                     style={{ color: st.color }}
                   >
                     {st.pct}%

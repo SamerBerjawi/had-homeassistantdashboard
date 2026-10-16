@@ -1,3 +1,5 @@
+import ViewErrorState from './components/ui/ViewErrorState';
+import ViewLoadingState from './components/ui/ViewLoadingState';
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -66,6 +68,12 @@ const SETTINGS_SECTIONS_META: Record<string, { title: string; subtitle: string; 
     subtitle: 'Configuration export, snapshots, and recovery options.',
     icon: DownloadSimple,
     color: 'text-amber-400'
+  },
+  cameras: {
+    title: 'Cameras & RTSP Feeds',
+    subtitle: 'go2rtc status and RTSP camera sources for WebRTC and HLS playback.',
+    icon: SlidersHorizontal,
+    color: 'text-cyan-400'
   }
 };
 
@@ -824,11 +832,24 @@ export default function App() {
             </div>
           )}
 
+          {/* Live connection lost: one shared, retryable error state for every page (REL-005) */}
+          {isLiveMode && hasStartupTimeoutElapsed && (connectionStatus === 'disconnected' || connectionStatus === 'error') && (
+            <ViewErrorState
+              inline
+              darkMode={darkMode}
+              title="Not connected to Home Assistant"
+              message={connectionError || 'Live data is unavailable. Showing the last known state.'}
+              onRetry={() => {
+                void haWebSocketService.refreshStates();
+              }}
+            />
+          )}
+
           {/* PAGE ROUTING (Views lazy-loaded on first visit) */}
           <div className="flex-1 flex flex-col">
             <ErrorBoundary variant="view" label={currentTheme.title} resetKeys={[activeTab, selectedAreaId, selectedSettingsSection]}>
             {activeTab === 'overview' && <OverviewView darkMode={darkMode} />}
-            <Suspense fallback={<div className="flex-1 flex items-center justify-center opacity-40 text-sm">Loading...</div>}>
+            <Suspense fallback={<ViewLoadingState title="Loading..." subtitle="" darkMode={darkMode} />}>
               {activeTab === 'rooms' && <RoomsView darkMode={darkMode} />}
               {activeTab === 'energy' && <EnergyView darkMode={darkMode} />}
               {activeTab === 'security' && <SecurityView darkMode={darkMode} />}

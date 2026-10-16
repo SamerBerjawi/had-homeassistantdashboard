@@ -37,7 +37,7 @@ export function HostMemorySection({
           <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
             System Memory (RAM)
           </h3>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-800 dark:text-indigo-400 border-indigo-500/25">
+          <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded border bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-800 dark:text-indigo-400 border-indigo-500/25">
             Section 3
           </span>
         </div>
@@ -54,7 +54,7 @@ export function HostMemorySection({
             Memory Utilization
           </span>
           <span
-            className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md"
+            className="text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-md"
             style={{
               backgroundColor: `${memUsageColor}1A`,
               color: memUsageColor
@@ -86,7 +86,7 @@ export function HostMemorySection({
             {/* Used Memory */}
             <div className="p-2.5 rounded-xl bg-indigo-500/10 flex items-center justify-between">
               <div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-400 block">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400 block">
                   Used Memory
                 </span>
                 <span className="text-sm font-black font-mono text-indigo-900 dark:text-indigo-200">
@@ -101,7 +101,7 @@ export function HostMemorySection({
             {/* Free Memory */}
             <div className="p-2.5 rounded-xl bg-slate-900/[0.02] dark:bg-white/[0.03] flex items-center justify-between">
               <div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
                   Free Memory
                 </span>
                 <span className="text-sm font-black font-mono text-slate-800 dark:text-slate-200">

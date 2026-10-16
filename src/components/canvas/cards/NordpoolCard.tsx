@@ -71,7 +71,7 @@ export default function NordpoolCard({
 
         {/* Dynamic Status Pill */}
         <span
-          className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold uppercase tracking-wide border backdrop-blur-md ${
+          className={`px-2.5 py-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wide border backdrop-blur-md ${
             isCheap
               ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
               : isExpensive
@@ -130,7 +130,7 @@ export default function NordpoolCard({
       </div>
 
       {/* Bottom info: Optimal charging window */}
-      <div className="flex items-center justify-between text-[10px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
+      <div className="flex items-center justify-between text-[11px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
         <span className="flex items-center gap-1 text-slate-750 dark:text-slate-300">
           <Clock size={12} weight="duotone" className="text-amber-500 dark:text-amber-400" /> Best Window: 02:00 - 05:00
         </span>

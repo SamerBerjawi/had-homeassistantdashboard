@@ -172,11 +172,11 @@ export function VehicleTelemetryMap({
           <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none gap-2 z-[400]">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950/85 backdrop-blur-md text-white text-[11px] font-bold shadow-lg pointer-events-auto">
               <Globe size={13} weight="duotone" className="text-emerald-400 shrink-0" />
-              <span className="font-mono text-[10px]">
+              <span className="font-mono text-[11px]">
                 {lat.toFixed(4)}°, {lon.toFixed(4)}°
               </span>
               <span
-                className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wider ${
+                className={`text-[11px] px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wider ${
                   cartoApiKey
                     ? 'bg-sky-500/25 text-sky-300 border border-sky-500/30'
                     : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
@@ -207,7 +207,7 @@ export function VehicleTelemetryMap({
                 href={osmDirectUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="h-7 px-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase transition-colors shadow-md"
+                className="h-7 px-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase transition-colors shadow-md"
               >
                 <span>Map</span>
                 <NavigationArrow size={10} weight="bold" />
@@ -217,7 +217,7 @@ export function VehicleTelemetryMap({
 
           {/* Bottom map footer */}
           <div className="absolute bottom-2.5 left-2.5 z-[400] pointer-events-none">
-            <div className="px-2 py-0.5 rounded-lg bg-slate-950/85 backdrop-blur-md text-[9px] font-mono text-slate-300">
+            <div className="px-2 py-0.5 rounded-lg bg-slate-950/85 backdrop-blur-md text-[11px] font-mono text-slate-300">
               {formatLastUpdated(metrics.lastRefreshed)}
             </div>
           </div>
@@ -239,7 +239,7 @@ export function VehicleTelemetryMap({
         }`}
       >
         <div className="flex items-center justify-between text-xs font-bold">
-          <span className={`flex items-center gap-1.5 uppercase tracking-wider text-[10px] ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+          <span className={`flex items-center gap-1.5 uppercase tracking-wider text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
             <Pulse size={15} weight="bold" className="text-cyan-500 animate-pulse" />
             <span>24-Hour Speed History</span>
           </span>
@@ -277,7 +277,7 @@ export function VehicleTelemetryMap({
         </div>
 
         {/* Time labels below chart */}
-        <div className={`flex items-center justify-between text-[10px] font-mono px-1 ${darkMode ? 'text-slate-500' : 'text-slate-500 font-semibold'}`}>
+        <div className={`flex items-center justify-between text-[11px] font-mono px-1 ${darkMode ? 'text-slate-500' : 'text-slate-500 font-semibold'}`}>
           <span>24h ago</span>
           <span>18h</span>
           <span>12h</span>
@@ -293,7 +293,7 @@ export function VehicleTelemetryMap({
         }`}
       >
         <div className="flex items-center justify-between text-xs font-bold">
-          <span className={`uppercase tracking-wider text-[10px] flex items-center gap-1.5 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+          <span className={`uppercase tracking-wider text-[11px] flex items-center gap-1.5 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
             <GaugeIcon size={14} weight="duotone" className="text-sky-500" />
             <span>Tire Pressure Monitor (TPMS)</span>
           </span>
@@ -307,33 +307,33 @@ export function VehicleTelemetryMap({
         <div className="grid grid-cols-2 gap-2">
           {/* Front Left */}
           <div className={`p-2.5 rounded-xl flex items-center justify-between shadow-xs ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
-            <div className="text-[10px] text-slate-500 font-bold uppercase">Front Left</div>
+            <div className="text-[11px] text-slate-500 font-bold uppercase">Front Left</div>
             <div className={`font-mono text-xs font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-              {formatDecimal(tpms.frontLeft)} <span className="text-[10px] text-slate-400 font-normal">{tpms.unit}</span>
+              {formatDecimal(tpms.frontLeft)} <span className="text-[11px] text-slate-400 font-normal">{tpms.unit}</span>
             </div>
           </div>
 
           {/* Front Right */}
           <div className={`p-2.5 rounded-xl flex items-center justify-between shadow-xs ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
-            <div className="text-[10px] text-slate-500 font-bold uppercase">Front Right</div>
+            <div className="text-[11px] text-slate-500 font-bold uppercase">Front Right</div>
             <div className={`font-mono text-xs font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-              {formatDecimal(tpms.frontRight)} <span className="text-[10px] text-slate-400 font-normal">{tpms.unit}</span>
+              {formatDecimal(tpms.frontRight)} <span className="text-[11px] text-slate-400 font-normal">{tpms.unit}</span>
             </div>
           </div>
 
           {/* Rear Left */}
           <div className={`p-2.5 rounded-xl flex items-center justify-between shadow-xs ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
-            <div className="text-[10px] text-slate-500 font-bold uppercase">Rear Left</div>
+            <div className="text-[11px] text-slate-500 font-bold uppercase">Rear Left</div>
             <div className={`font-mono text-xs font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-              {formatDecimal(tpms.rearLeft)} <span className="text-[10px] text-slate-400 font-normal">{tpms.unit}</span>
+              {formatDecimal(tpms.rearLeft)} <span className="text-[11px] text-slate-400 font-normal">{tpms.unit}</span>
             </div>
           </div>
 
           {/* Rear Right */}
           <div className={`p-2.5 rounded-xl flex items-center justify-between shadow-xs ${darkMode ? 'bg-white/10 text-white' : 'bg-white/60 text-slate-900'}`}>
-            <div className="text-[10px] text-slate-500 font-bold uppercase">Rear Right</div>
+            <div className="text-[11px] text-slate-500 font-bold uppercase">Rear Right</div>
             <div className={`font-mono text-xs font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-              {formatDecimal(tpms.rearRight)} <span className="text-[10px] text-slate-400 font-normal">{tpms.unit}</span>
+              {formatDecimal(tpms.rearRight)} <span className="text-[11px] text-slate-400 font-normal">{tpms.unit}</span>
             </div>
           </div>
         </div>

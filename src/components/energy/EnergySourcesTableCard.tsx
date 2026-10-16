@@ -73,7 +73,7 @@ export default function EnergySourcesTableCard({
       <div className="w-full overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className={`border-b font-bold uppercase text-[10px] ${darkMode ? 'border-white/10 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
+            <tr className={`border-b font-bold uppercase text-[11px] ${darkMode ? 'border-white/10 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
               <th className="pb-2.5">Energy Source</th>
               <th className="pb-2.5 text-right">Energy / Volume</th>
               <th className="pb-2.5 text-right">Cost / Compensation</th>

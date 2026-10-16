@@ -65,13 +65,13 @@ export const AdGuardPerformanceSection: React.FC<AdGuardPerformanceSectionProps>
                   <h3 className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white truncate">
                     Filter Rules
                   </h3>
-                  <p className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 hidden sm:block">
+                  <p className="text-[11px] sm:text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
                     Compiled blocklists &amp; allowlists
                   </p>
                 </div>
               </div>
 
-              <span className="text-[8px] sm:text-[9px] font-mono font-extrabold uppercase px-1.5 sm:px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+              <span className="text-[11px] sm:text-[11px] font-mono font-extrabold uppercase px-1.5 sm:px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
                 In-Memory
               </span>
             </div>
@@ -81,11 +81,11 @@ export const AdGuardPerformanceSection: React.FC<AdGuardPerformanceSectionProps>
                 <span className="text-2xl sm:text-4xl font-black font-mono tracking-tight text-slate-900 dark:text-white">
                   {rulesCount.toLocaleString()}
                 </span>
-                <span className="text-[10px] sm:text-xs font-mono font-bold text-indigo-400">
+                <span className="text-[11px] sm:text-xs font-mono font-bold text-indigo-400">
                   Active
                 </span>
               </div>
-              <p className="text-[10px] sm:text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-0.5">
+              <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-0.5">
                 Evaluated with sub-millisecond lookup trees.
               </p>
             </div>
@@ -103,14 +103,14 @@ export const AdGuardPerformanceSection: React.FC<AdGuardPerformanceSectionProps>
                 <h3 className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white truncate">
                   Processing Speed
                 </h3>
-                <p className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 hidden sm:block">
+                <p className="text-[11px] sm:text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
                   DNS engine resolution latency
                 </p>
               </div>
             </div>
 
             <span
-              className="text-[8px] sm:text-[9px] font-mono font-extrabold uppercase px-1.5 sm:px-2 py-0.5 rounded-full"
+              className="text-[11px] sm:text-[11px] font-mono font-extrabold uppercase px-1.5 sm:px-2 py-0.5 rounded-full"
               style={{
                 backgroundColor: `${speedColor}1A`,
                 color: speedColor

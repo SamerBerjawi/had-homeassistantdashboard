@@ -37,7 +37,7 @@ export function HostDiskSection({
           <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
             Primary Storage (Disk)
           </h3>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border bg-blue-500/10 dark:bg-blue-500/15 text-blue-800 dark:text-blue-400 border-blue-500/25">
+          <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded border bg-blue-500/10 dark:bg-blue-500/15 text-blue-800 dark:text-blue-400 border-blue-500/25">
             Section 4
           </span>
         </div>
@@ -54,7 +54,7 @@ export function HostDiskSection({
             Disk Utilization
           </span>
           <span
-            className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md"
+            className="text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-md"
             style={{
               backgroundColor: `${diskUsageColor}1A`,
               color: diskUsageColor
@@ -86,7 +86,7 @@ export function HostDiskSection({
             {/* Used Storage */}
             <div className="p-2.5 rounded-xl bg-blue-500/10 flex items-center justify-between">
               <div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-blue-400 block">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-400 block">
                   Used Storage
                 </span>
                 <span className="text-sm font-black font-mono text-blue-900 dark:text-blue-200">
@@ -101,7 +101,7 @@ export function HostDiskSection({
             {/* Free Storage */}
             <div className="p-2.5 rounded-xl bg-slate-900/[0.02] dark:bg-white/[0.03] flex items-center justify-between">
               <div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
                   Free Storage
                 </span>
                 <span className="text-sm font-black font-mono text-slate-800 dark:text-slate-200">

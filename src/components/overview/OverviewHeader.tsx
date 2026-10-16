@@ -1555,7 +1555,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
             <div>
               <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Customize Overview Tiles</span>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-300">
+                <span className="text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-300">
                   Edit Mode
                 </span>
               </div>
@@ -1576,7 +1576,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
               <PlusCircle size={14} weight="bold" />
               <span>Add Widgets</span>
               {hiddenTilesSet.size > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[10px] font-black">
+                <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[11px] font-black">
                   +{hiddenTilesSet.size}
                 </span>
               )}
@@ -1690,7 +1690,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                       <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                         Weather
                                       </h4>
-                                      <p className="text-[10px] text-slate-600 dark:text-slate-300 font-medium capitalize truncate">
+                                      <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium capitalize truncate">
                                         {weatherCondition.replace(/_/g, ' ')}
                                       </p>
                                     </div>
@@ -1701,7 +1701,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none">
                                       {Math.round(currentTemp)}{tempUnit}
                                     </span>
-                                    <div className="flex flex-col text-[10px] font-mono font-bold leading-tight">
+                                    <div className="flex flex-col text-[11px] font-mono font-bold leading-tight">
                                       <span className="text-amber-500 flex items-center gap-0.5">
                                         <ArrowUp size={10} weight="bold" />{Math.round(weatherHigh)}°
                                       </span>
@@ -1712,7 +1712,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   </div>
 
                                   {/* Bottom: Live Telemetry Row */}
-                                  <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                                  <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] font-bold text-slate-700 dark:text-slate-200">
                                     <span className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-white/50 dark:bg-black/30 backdrop-blur-xs border border-white/30 dark:border-white/10 shrink-0">
                                       <Drop size={11} weight="fill" className="text-sky-400 shrink-0" />
                                       <span>{humidity}%</span>
@@ -1738,7 +1738,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 <div className="flex-[1.1] sm:flex-[1.2] flex flex-col justify-between min-w-0 pl-1">
                                   {/* Header: Forecast label + CaretRight */}
                                   <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                                    <span className="text-[10px] font-extrabold uppercase tracking-wider">
+                                    <span className="text-[11px] font-extrabold uppercase tracking-wider">
                                       3-Day Forecast
                                     </span>
                                     <div className="flex items-center gap-0.5 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
@@ -1761,7 +1761,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                           key={f.datetime || i}
                                           className="flex-1 min-w-0 py-1.5 px-0.5 sm:px-1 rounded-2xl bg-white/40 dark:bg-white/[0.06] hover:bg-white/60 dark:hover:bg-white/[0.1] backdrop-blur-md border border-white/40 dark:border-white/10 flex flex-col items-center justify-between text-center transition-all shadow-2xs group/card"
                                         >
-                                          <span className="text-[9px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-tight truncate w-full">
+                                          <span className="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-tight truncate w-full">
                                             {i === 0 ? (
                                               <>
                                                 <span className="hidden sm:inline">Tomorrow</span>
@@ -1774,9 +1774,9 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                           <div className="my-1 scale-90 sm:scale-100 flex items-center justify-center">
                                             {dayIcon}
                                           </div>
-                                          <div className="flex items-center gap-0.5 sm:gap-1 font-mono text-[10px] sm:text-[11px] leading-tight font-bold">
+                                          <div className="flex items-center gap-0.5 sm:gap-1 font-mono text-[11px] sm:text-[11px] leading-tight font-bold">
                                             <span className="text-slate-900 dark:text-white font-black">{high}°</span>
-                                            <span className="text-slate-400 dark:text-slate-500 text-[9px] sm:text-[10px]">{low}°</span>
+                                            <span className="text-slate-400 dark:text-slate-500 text-[11px] sm:text-[11px]">{low}°</span>
                                           </div>
                                         </div>
                                       );
@@ -1784,7 +1784,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   </div>
 
                                   {/* Mini summary footer */}
-                                  <div className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate flex items-center justify-between">
+                                  <div className="text-[11px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate flex items-center justify-between">
                                     <span>{dailyForecast.length > 3 ? '7-day outlook' : 'Daily forecast'}</span>
                                     <span className="text-sky-500 dark:text-sky-400 font-bold">Details →</span>
                                   </div>
@@ -1806,7 +1806,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 {weatherCondInfo.icon}
                               </div>
 
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full backdrop-blur-md border shadow-2xs ${weatherCondInfo.badgeBg}`}>
+                              <span className={`text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full backdrop-blur-md border shadow-2xs ${weatherCondInfo.badgeBg}`}>
                                 {weatherCondInfo.name}
                               </span>
                             </div>
@@ -1874,7 +1874,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                       <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                         Weather
                                       </h4>
-                                      <p className="text-[10px] text-slate-600 dark:text-slate-300 font-medium capitalize truncate">
+                                      <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium capitalize truncate">
                                         {weatherCondition.replace(/_/g, ' ')}
                                       </p>
                                     </div>
@@ -1885,7 +1885,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none">
                                       {Math.round(currentTemp)}{tempUnit}
                                     </span>
-                                    <div className="flex flex-col text-[10px] font-mono font-bold leading-tight">
+                                    <div className="flex flex-col text-[11px] font-mono font-bold leading-tight">
                                       <span className="text-amber-500 flex items-center gap-0.5">
                                         <ArrowUp size={10} weight="bold" />{Math.round(weatherHigh)}°
                                       </span>
@@ -1896,7 +1896,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   </div>
 
                                   {/* Bottom: Live Telemetry Row */}
-                                  <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                                  <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] font-bold text-slate-700 dark:text-slate-200">
                                     <span className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-white/50 dark:bg-black/30 backdrop-blur-xs border border-white/30 dark:border-white/10 shrink-0">
                                       <Drop size={11} weight="fill" className="text-sky-400 shrink-0" />
                                       <span>{humidity}%</span>
@@ -1922,7 +1922,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 <div className="flex-[1.1] sm:flex-[1.2] flex flex-col justify-between min-w-0 pl-1">
                                   {/* Header: Hourly Forecast label + CaretRight */}
                                   <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                                    <span className="text-[10px] font-extrabold uppercase tracking-wider">
+                                    <span className="text-[11px] font-extrabold uppercase tracking-wider">
                                       Hourly Forecast
                                     </span>
                                     <div className="flex items-center gap-0.5 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
@@ -1953,18 +1953,18 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                           key={h.datetime || i}
                                           className="flex-1 min-w-0 py-1.5 px-0.5 sm:px-1 rounded-2xl bg-white/40 dark:bg-white/[0.06] hover:bg-white/60 dark:hover:bg-white/[0.1] backdrop-blur-md border border-white/40 dark:border-white/10 flex flex-col items-center justify-between text-center transition-all shadow-2xs group/card"
                                         >
-                                          <span className="text-[9px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-tight truncate w-full">
+                                          <span className="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-tight truncate w-full">
                                             {timeLabel}
                                           </span>
                                           <div className="my-1 scale-90 sm:scale-100 flex items-center justify-center">
                                             {hourIcon}
                                           </div>
                                           <div className="flex flex-col items-center leading-none">
-                                            <span className="text-slate-900 dark:text-white font-mono text-[10px] sm:text-[11px] font-black">
+                                            <span className="text-slate-900 dark:text-white font-mono text-[11px] sm:text-[11px] font-black">
                                               {temp}°
                                             </span>
                                             {typeof rain === 'number' && rain > 0 && (
-                                              <span className="text-[8px] font-bold text-sky-500 dark:text-sky-400 flex items-center gap-0.5 mt-0.5">
+                                              <span className="text-[11px] font-bold text-sky-500 dark:text-sky-400 flex items-center gap-0.5 mt-0.5">
                                                 <Drop size={7} weight="fill" />
                                                 {rain}%
                                               </span>
@@ -1976,7 +1976,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   </div>
 
                                   {/* Mini summary footer */}
-                                  <div className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate flex items-center justify-between">
+                                  <div className="text-[11px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate flex items-center justify-between">
                                     <span>{hourlyForecast.length > 0 ? 'Upcoming hours' : 'Hourly forecast'}</span>
                                     <span className="text-sky-500 dark:text-sky-400 font-bold">Details →</span>
                                   </div>
@@ -1998,7 +1998,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 {weatherCondInfo.icon}
                               </div>
 
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full backdrop-blur-md border shadow-2xs ${weatherCondInfo.badgeBg}`}>
+                              <span className={`text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full backdrop-blur-md border shadow-2xs ${weatherCondInfo.badgeBg}`}>
                                 {weatherCondInfo.name}
                               </span>
                             </div>
@@ -2057,7 +2057,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
                                       Family Presence
                                     </div>
-                                    <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                    <div className="text-[11px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
                                       {userEntities.length === 0
                                         ? 'No members tracked'
                                         : `${userEntities.length} member${userEntities.length === 1 ? '' : 's'} • ${homeUsers.length} at home`}
@@ -2067,19 +2067,19 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   {homeUsers.length > 0 && (
-                                    <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shadow-2xs">
+                                    <span className="inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shadow-2xs">
                                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                       {homeUsers.length} Home
                                     </span>
                                   )}
                                   {activeZoneUsers.length > homeUsers.length && (
-                                    <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/20 shadow-2xs">
+                                    <span className="inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/20 shadow-2xs">
                                       <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
                                       {activeZoneUsers.length - homeUsers.length} Zone
                                     </span>
                                   )}
                                   {homeUsers.length === 0 && activeZoneUsers.length === 0 && (
-                                    <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/20 shadow-2xs">
+                                    <span className="inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/20 shadow-2xs">
                                       <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                                       Away
                                     </span>
@@ -2145,24 +2145,24 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                             </div>
                                             <div className="flex items-center gap-1 mt-0.5">
                                               {isHome ? (
-                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 truncate">
+                                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 truncate">
                                                   <HouseLine size={11} weight="bold" className="shrink-0" />
                                                   <span className="truncate">Home</span>
                                                 </span>
                                               ) : isInKnownZone ? (
-                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-600 dark:text-sky-400 truncate">
+                                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-600 dark:text-sky-400 truncate">
                                                   <MapPin size={11} weight="fill" className="shrink-0" />
                                                   <span className="truncate">{zoneName}</span>
                                                 </span>
                                               ) : (
-                                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
                                                   <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
                                                   <span className="truncate">Away</span>
                                                 </span>
                                               )}
                                             </div>
                                             {typeof battery === 'number' && (
-                                              <div className="flex items-center gap-1 text-[9px] font-mono font-semibold text-slate-400 dark:text-slate-400 mt-0.5">
+                                              <div className="flex items-center gap-1 text-[11px] font-mono font-semibold text-slate-400 dark:text-slate-400 mt-0.5">
                                                 {isCharging ? (
                                                   <BatteryCharging size={11} weight="fill" className="text-emerald-500 shrink-0" />
                                                 ) : battery <= 20 ? (
@@ -2192,7 +2192,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                         title="View all family members"
                                       >
                                         <span className="text-xs font-black">+{userEntities.length - 4}</span>
-                                        <span className="text-[9px] font-medium text-slate-400">more</span>
+                                        <span className="text-[11px] font-medium text-slate-400">more</span>
                                       </button>
                                     )}
                                   </>
@@ -2200,7 +2200,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               </div>
 
                               {/* Bottom Summary Bar */}
-                              <div className="relative z-10 flex items-center justify-between text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 border-t border-black/5 dark:border-white/5 pt-1.5 mt-0.5">
+                              <div className="relative z-10 flex items-center justify-between text-[11px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 border-t border-black/5 dark:border-white/5 pt-1.5 mt-0.5">
                                 <span className="truncate">
                                   {activeZoneUsers.length === 0
                                     ? 'All members away from home'
@@ -2212,7 +2212,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                         return isHome ? `${fn} (Home)` : `${fn} (${zoneName})`;
                                       }).join(' • ')}
                                 </span>
-                                <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 shrink-0 ml-2 group-hover:underline flex items-center gap-0.5">
+                                <span className="text-[11px] font-bold text-indigo-500 dark:text-indigo-400 shrink-0 ml-2 group-hover:underline flex items-center gap-0.5">
                                   Map & Details
                                   <CaretRight size={10} weight="bold" />
                                 </span>
@@ -2242,17 +2242,17 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               </div>
 
                               {homeUsers.length > 0 ? (
-                                <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shadow-2xs">
+                                <span className="inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shadow-2xs">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                   {homeUsers.length} Home
                                 </span>
                               ) : activeZoneUsers.length > 0 ? (
-                                <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/20 shadow-2xs">
+                                <span className="inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/20 shadow-2xs">
                                   <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
                                   {activeZoneUsers.length} Zone
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/20 shadow-2xs">
+                                <span className="inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/20 shadow-2xs">
                                   <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                                   All Away
                                 </span>
@@ -2289,7 +2289,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 })}
                                 {userEntities.length > 3 && (
                                   <div
-                                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 ring-2 ring-white dark:ring-slate-900 text-[10px] sm:text-[11px] font-black flex items-center justify-center shadow-xs z-0"
+                                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 ring-2 ring-white dark:ring-slate-900 text-[11px] sm:text-[11px] font-black flex items-center justify-center shadow-xs z-0"
                                     title={`${userEntities.length - 3} more members`}
                                   >
                                     +{userEntities.length - 3}
@@ -2375,7 +2375,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                         <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                           Lighting
                                         </div>
-                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
                                           {isAnyLightOn ? `${onLightsCount} active` : 'All off'}
                                         </div>
                                       </div>
@@ -2406,7 +2406,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                       </span>
                                     </div>
                                     {isAnyLightOn && avgBrightnessPct !== null && (
-                                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                                      <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                                         <Sun size={10} weight="fill" className="text-amber-500" />
                                         {avgBrightnessPct}%
                                       </span>
@@ -2421,7 +2421,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                         style={{ width: `${Math.max(onRatio * 100, isAnyLightOn ? 8 : 0)}%` }}
                                       />
                                     </div>
-                                    <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                                    <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                                       <span>Manage all</span>
                                       <CaretRight size={11} weight="bold" className="group-hover:translate-x-0.5 group-hover:text-amber-500 transition-all" />
                                     </div>
@@ -2433,11 +2433,11 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   {isAnyLightOn ? (
                                     <>
                                       <div className="flex items-center justify-between mb-1">
-                                        <span className="text-[10px] font-semibold tracking-wider uppercase text-slate-500 dark:text-slate-400">
+                                        <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-500 dark:text-slate-400">
                                           Active Lamps
                                         </span>
                                         {onLights.length > 2 && (
-                                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-300">
+                                          <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-300">
                                             +{onLights.length - 2} more
                                           </span>
                                         )}
@@ -2470,7 +2470,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                               </div>
                                               <div className="flex items-center gap-1 shrink-0">
                                                 {lightBrightness !== null && (
-                                                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                                                  <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
                                                     {lightBrightness}%
                                                   </span>
                                                 )}
@@ -2483,7 +2483,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                         })}
                                       </div>
 
-                                      <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate pt-1 text-right">
+                                      <div className="text-[11px] text-slate-400 dark:text-slate-500 truncate pt-1 text-right">
                                         Tap chip to toggle
                                       </div>
                                     </>
@@ -2495,7 +2495,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                       <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                                         All Lights Off
                                       </div>
-                                      <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                                      <div className="text-[11px] text-slate-400 dark:text-slate-500">
                                         {totalLightsCount} lamps ready
                                       </div>
                                     </div>
@@ -2561,7 +2561,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 </span>
                               </div>
                               {isAnyLightOn && avgBrightnessPct !== null && (
-                                <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                                <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                                   <Sun size={10} weight="fill" className="text-amber-500" />
                                   {avgBrightnessPct}%
                                 </span>
@@ -2610,7 +2610,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
                               <div className="flex items-center gap-2">
                                 {is2x && onSwitches.length > 0 && (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 hidden sm:inline truncate max-w-[120px]">
+                                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 hidden sm:inline truncate max-w-[120px]">
                                     {onSwitches[0].name.replace(/switch/gi, '').trim()}
                                   </span>
                                 )}
@@ -2686,7 +2686,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
 
                               {activeRoom && (
                                 <span
-                                  className={`inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full border shadow-2xs truncate max-w-[140px] sm:max-w-[160px] ${
+                                  className={`inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full border shadow-2xs truncate max-w-[140px] sm:max-w-[160px] ${
                                     isCleaning
                                       ? darkMode
                                         ? 'bg-teal-500/20 text-teal-300 border-teal-500/30'
@@ -2831,7 +2831,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               {/* Dynamic Blurred Album Artwork Background */}
                               {mediaArt && (
                                 <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none z-0">
-                                  <img
+                                  <img loading="lazy" decoding="async"
                                     src={mediaArt}
                                     alt=""
                                     className="w-full h-full object-cover scale-125 filter blur-2xl opacity-40 dark:opacity-45 transition-opacity duration-700"
@@ -2851,7 +2851,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               <div className="flex items-center justify-end gap-2 relative z-10 shrink-0">
                                 {isPlayingMedia && (
                                   <div
-                                    className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[10px] font-black uppercase tracking-wider transition-colors"
+                                    className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-black uppercase tracking-wider transition-colors"
                                     style={{
                                       backgroundColor: mediaPalette.badgeBg,
                                       borderColor: mediaPalette.badgeBorder,
@@ -2884,7 +2884,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     style={{ borderColor: hasActiveMedia ? mediaPalette.badgeBorder : undefined }}
                                   >
                                     {mediaArt ? (
-                                      <img
+                                      <img loading="lazy" decoding="async"
                                         src={mediaArt}
                                         alt="Album artwork"
                                         className="w-full h-full object-cover"
@@ -2999,7 +2999,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                             {/* Dynamic Blurred Album Artwork Background */}
                             {mediaArt && (
                               <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none z-0">
-                                <img
+                                <img loading="lazy" decoding="async"
                                   src={mediaArt}
                                   alt=""
                                   className="w-full h-full object-cover scale-125 filter blur-2xl opacity-40 dark:opacity-45 transition-opacity duration-700"
@@ -3022,7 +3022,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 style={{ borderColor: hasActiveMedia ? mediaPalette.badgeBorder : undefined }}
                               >
                                 {mediaArt ? (
-                                  <img
+                                  <img loading="lazy" decoding="async"
                                     src={mediaArt}
                                     alt="Album artwork"
                                     className="w-full h-full object-cover"
@@ -3159,7 +3159,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                       <div className="text-xs font-bold text-rose-600 dark:text-rose-300 truncate">
                                         Exit Delay • Arming Away
                                       </div>
-                                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                                      <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                                         Please exit and close all doors
                                       </div>
                                     </div>
@@ -3233,7 +3233,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 )}
                               </div>
 
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${alarmDetails.bg} ${alarmDetails.text} border-current/20`}>
+                              <span className={`text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${alarmDetails.bg} ${alarmDetails.text} border-current/20`}>
                                 {alarmDetails.label}
                               </span>
                             </div>
@@ -3246,14 +3246,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <span className="relative z-10">{armAwayCountdown}s</span>
                                     <span className="absolute inset-0 rounded-lg bg-rose-400 animate-ping opacity-30" />
                                   </div>
-                                  <div className="text-[10px] font-bold text-rose-600 dark:text-rose-300 truncate">
+                                  <div className="text-[11px] font-bold text-rose-600 dark:text-rose-300 truncate">
                                     Exit Delay
                                   </div>
                                 </div>
                                 <button
                                   type="button"
                                   onClick={handleCancelCountdown}
-                                  className="px-2 py-1 rounded-lg bg-white/60 dark:bg-white/10 hover:bg-white/90 dark:hover:bg-white/20 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-all border border-black/5 dark:border-white/10 cursor-pointer active:scale-95 shrink-0"
+                                  className="px-2 py-1 rounded-lg bg-white/60 dark:bg-white/10 hover:bg-white/90 dark:hover:bg-white/20 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition-all border border-black/5 dark:border-white/10 cursor-pointer active:scale-95 shrink-0"
                                 >
                                   Cancel
                                 </button>
@@ -3323,14 +3323,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
                                       Power Sources Flow
                                     </div>
-                                    <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                    <div className="text-[11px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
                                       Instantaneous continuous flow • {selfSufficiencyPct}% self-powered
                                     </div>
                                   </div>
                                 </div>
 
                                 <div className="flex items-center gap-1.5 shrink-0">
-                                  <span className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border shadow-2xs ${
+                                  <span className={`inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full border shadow-2xs ${
                                     isExporting
                                       ? 'bg-indigo-100 text-indigo-900 border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/20'
                                       : isSolarActive
@@ -3358,12 +3358,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="w-5 h-5 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
                                       <Sun size={12} weight="fill" />
                                     </div>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                    <span className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                       Solar
                                     </span>
                                   </div>
                                   <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
-                                    {solarKW.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                    {solarKW.toFixed(2)} <span className="text-[11px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
                                   </div>
                                 </div>
 
@@ -3377,14 +3377,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     }`}>
                                       <Plug size={12} weight="fill" />
                                     </div>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                    <span className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                       {isExporting ? 'Export' : 'Grid'}
                                     </span>
                                   </div>
                                   <div className={`text-xs sm:text-sm font-black font-mono whitespace-nowrap ${
                                     isExporting ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-white'
                                   }`}>
-                                    {isExporting ? `-${gridExportKW.toFixed(2)}` : `+${gridImportKW.toFixed(2)}`} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                    {isExporting ? `-${gridExportKW.toFixed(2)}` : `+${gridImportKW.toFixed(2)}`} <span className="text-[11px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
                                   </div>
                                 </div>
 
@@ -3397,12 +3397,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                       <div className="w-5 h-5 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
                                         <BatteryCharging size={12} weight="fill" />
                                       </div>
-                                      <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                      <span className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                         Battery {typeof batterySoc === 'number' ? `(${batterySoc}%)` : ''}
                                       </span>
                                     </div>
                                     <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
-                                      {batteryDischargeKW > 0.05 ? `+${batteryDischargeKW.toFixed(2)}` : batteryChargeKW > 0.05 ? `-${batteryChargeKW.toFixed(2)}` : '0.00'} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                      {batteryDischargeKW > 0.05 ? `+${batteryDischargeKW.toFixed(2)}` : batteryChargeKW > 0.05 ? `-${batteryChargeKW.toFixed(2)}` : '0.00'} <span className="text-[11px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
                                     </div>
                                   </div>
                                 )}
@@ -3415,12 +3415,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="w-5 h-5 rounded-lg bg-purple-500/15 text-purple-500 flex items-center justify-center shrink-0">
                                       <House size={12} weight="fill" />
                                     </div>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                    <span className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                       Home Load
                                     </span>
                                   </div>
                                   <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
-                                    {homeKW.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                    {homeKW.toFixed(2)} <span className="text-[11px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
                                   </div>
                                 </div>
                               </div>
@@ -3437,7 +3437,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 <Lightning size={19} weight="fill" />
                               </div>
 
-                              <span className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${
+                              <span className={`inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${
                                 selfSufficiencyPct >= 100
                                   ? darkMode ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-100 text-amber-900 border-amber-300'
                                   : selfSufficiencyPct > 50
@@ -3455,19 +3455,19 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
                               }`}>
                                 <Sun size={11} weight="fill" className="text-amber-500 shrink-0" />
-                                <span className="font-mono text-[10.5px] font-bold truncate">{solarKW.toFixed(1)} kW</span>
+                                <span className="font-mono text-[11px] font-bold truncate">{solarKW.toFixed(1)} kW</span>
                               </div>
                               <div className={`flex items-center gap-1 px-1.5 py-1 rounded-xl min-w-0 ${
                                 darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
                               }`}>
                                 <House size={11} weight="fill" className="text-purple-500 shrink-0" />
-                                <span className="font-mono text-[10.5px] font-bold truncate">{homeKW.toFixed(1)} kW</span>
+                                <span className="font-mono text-[11px] font-bold truncate">{homeKW.toFixed(1)} kW</span>
                               </div>
                               <div className={`flex items-center gap-1 px-1.5 py-1 rounded-xl min-w-0 ${
                                 darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
                               }`}>
                                 <Plug size={11} weight="fill" className="text-sky-500 shrink-0" />
-                                <span className="font-mono text-[10.5px] font-bold truncate">
+                                <span className="font-mono text-[11px] font-bold truncate">
                                   {isExporting ? `-${gridExportKW.toFixed(1)}` : `+${gridImportKW.toFixed(1)}`}
                                 </span>
                               </div>
@@ -3475,7 +3475,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
                               }`}>
                                 <BatteryCharging size={11} weight="fill" className="text-emerald-500 shrink-0" />
-                                <span className="font-mono text-[10.5px] font-bold truncate">
+                                <span className="font-mono text-[11px] font-bold truncate">
                                   {typeof batterySoc === 'number' ? `${batterySoc}%` : `${batteryDischargeKW.toFixed(1)} kW`}
                                 </span>
                               </div>
@@ -3537,7 +3537,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                         <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
                                           Power Sources Flow
                                         </div>
-                                        <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                        <div className="text-[11px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
                                           Home • Solar • Grid • Battery
                                         </div>
                                       </div>
@@ -3549,28 +3549,28 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className={`p-1.5 rounded-xl transition-all ${
                                       darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
                                     }`}>
-                                      <div className="text-[9px] sm:text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                      <div className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                                         <Sun size={11} weight="fill" className="text-amber-500 shrink-0" /> Solar
                                       </div>
                                       <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white truncate">
-                                        {solarKW.toFixed(2)} <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                        {solarKW.toFixed(2)} <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
                                       </div>
                                     </div>
 
                                     <div className={`p-1.5 rounded-xl transition-all ${
                                       darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
                                     }`}>
-                                      <div className="text-[9px] sm:text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                      <div className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                                         <House size={11} weight="fill" className="text-purple-500 shrink-0" /> Home Load
                                       </div>
                                       <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white truncate">
-                                        {homeKW.toFixed(2)} <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                        {homeKW.toFixed(2)} <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
                                       </div>
                                     </div>
                                   </div>
 
                                   {/* Subtitle / summary */}
-                                  <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate flex items-center gap-2 shrink-0">
+                                  <div className="text-[11px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate flex items-center gap-2 shrink-0">
                                     <span>Grid: {isExporting ? `-${gridExportKW.toFixed(1)} kW` : `+${gridImportKW.toFixed(1)} kW`}</span>
                                     {typeof batterySoc === 'number' && (
                                       <>
@@ -3661,14 +3661,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
                                       Energy Usage & Return
                                     </div>
-                                    <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                    <div className="text-[11px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
                                       Today's consumption • {gridExport > 0 ? `${gridExport.toFixed(1)} kWh returned` : 'No grid return'}
                                     </div>
                                   </div>
                                 </div>
 
                                 <div className="flex items-center gap-1.5 shrink-0">
-                                  <span className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${
+                                  <span className={`inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${
                                     netGrid <= 0
                                       ? darkMode ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-indigo-100 text-indigo-900 border-indigo-300'
                                       : darkMode ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-purple-100 text-purple-900 border-purple-300'
@@ -3694,12 +3694,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="w-5 h-5 rounded-lg bg-purple-500/15 text-purple-500 flex items-center justify-center shrink-0">
                                       <House size={12} weight="fill" />
                                     </div>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                    <span className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                       Total Use
                                     </span>
                                   </div>
                                   <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
-                                    {homeConsumption.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                    {homeConsumption.toFixed(2)} <span className="text-[11px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
                                   </div>
                                 </div>
 
@@ -3711,12 +3711,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="w-5 h-5 rounded-lg bg-sky-500/15 text-sky-500 flex items-center justify-center shrink-0">
                                       <Plug size={12} weight="fill" />
                                     </div>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                    <span className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                       Grid Import
                                     </span>
                                   </div>
                                   <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
-                                    {gridImport.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                    {gridImport.toFixed(2)} <span className="text-[11px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
                                   </div>
                                 </div>
 
@@ -3728,12 +3728,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="w-5 h-5 rounded-lg bg-indigo-500/15 text-indigo-500 flex items-center justify-center shrink-0">
                                       <ArrowArcLeft size={12} weight="bold" />
                                     </div>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                    <span className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                       Grid Return
                                     </span>
                                   </div>
                                   <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
-                                    {gridExport.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                    {gridExport.toFixed(2)} <span className="text-[11px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
                                   </div>
                                 </div>
 
@@ -3745,7 +3745,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="w-5 h-5 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
                                       <Sun size={12} weight="fill" />
                                     </div>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                    <span className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                       Solar Offset
                                     </span>
                                   </div>
@@ -3767,7 +3767,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 <ChartBar size={19} weight="fill" />
                               </div>
 
-                              <span className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${
+                              <span className={`inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${
                                 solarOffset >= 100
                                   ? darkMode ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-100 text-amber-900 border-amber-300'
                                   : solarOffset > 0
@@ -3785,25 +3785,25 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
                               }`}>
                                 <House size={11} weight="fill" className="text-purple-500 shrink-0" />
-                                <span className="font-mono text-[10.5px] font-bold truncate">{homeConsumption.toFixed(1)} kWh</span>
+                                <span className="font-mono text-[11px] font-bold truncate">{homeConsumption.toFixed(1)} kWh</span>
                               </div>
                               <div className={`flex items-center gap-1 px-1.5 py-1 rounded-xl min-w-0 ${
                                 darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
                               }`}>
                                 <Plug size={11} weight="fill" className="text-sky-500 shrink-0" />
-                                <span className="font-mono text-[10.5px] font-bold truncate">{gridImport.toFixed(1)} kWh</span>
+                                <span className="font-mono text-[11px] font-bold truncate">{gridImport.toFixed(1)} kWh</span>
                               </div>
                               <div className={`flex items-center gap-1 px-1.5 py-1 rounded-xl min-w-0 ${
                                 darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
                               }`}>
                                 <ArrowArcLeft size={11} weight="bold" className="text-indigo-500 shrink-0" />
-                                <span className="font-mono text-[10.5px] font-bold truncate">{gridExport.toFixed(1)} kWh</span>
+                                <span className="font-mono text-[11px] font-bold truncate">{gridExport.toFixed(1)} kWh</span>
                               </div>
                               <div className={`flex items-center gap-1 px-1.5 py-1 rounded-xl min-w-0 ${
                                 darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
                               }`}>
                                 <Sun size={11} weight="fill" className="text-amber-500 shrink-0" />
-                                <span className="font-mono text-[10.5px] font-bold truncate">{solarOffset}%</span>
+                                <span className="font-mono text-[11px] font-bold truncate">{solarOffset}%</span>
                               </div>
                             </div>
 
@@ -3846,7 +3846,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                         <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
                                           Energy Usage & Return
                                         </div>
-                                        <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                        <div className="text-[11px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
                                           Today's Energy Balance
                                         </div>
                                       </div>
@@ -3858,28 +3858,28 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className={`p-1.5 rounded-xl transition-all ${
                                       darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
                                     }`}>
-                                      <div className="text-[9px] sm:text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                      <div className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                                         <House size={11} weight="fill" className="text-purple-500 shrink-0" /> Total Use
                                       </div>
                                       <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white truncate">
-                                        {homeConsumption.toFixed(2)} <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                        {homeConsumption.toFixed(2)} <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
                                       </div>
                                     </div>
 
                                     <div className={`p-1.5 rounded-xl transition-all ${
                                       darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
                                     }`}>
-                                      <div className="text-[9px] sm:text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                      <div className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                                         <ArrowArcLeft size={11} weight="bold" className="text-indigo-500 shrink-0" /> Grid Return
                                       </div>
                                       <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white truncate">
-                                        {gridExport.toFixed(2)} <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                        {gridExport.toFixed(2)} <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
                                       </div>
                                     </div>
                                   </div>
 
                                   {/* Subtitle / summary (Non-redundant) */}
-                                  <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate flex items-center gap-2 shrink-0">
+                                  <div className="text-[11px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate flex items-center gap-2 shrink-0">
                                     <span>Import: {gridImport.toFixed(1)} kWh</span>
                                     <span>•</span>
                                     <span>Solar: {solarConsumed.toFixed(1)} kWh</span>
@@ -3955,14 +3955,14 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
                                       Solar Production & Forecast
                                     </div>
-                                    <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                    <div className="text-[11px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
                                       {forecastTotal ? `${forecastTotal.toFixed(1)} kWh daily target` : 'Solar PV generation'}
                                     </div>
                                   </div>
                                 </div>
 
                                 <div className="flex items-center gap-1.5 shrink-0">
-                                  <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/20 shadow-2xs">
+                                  <span className="inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/20 shadow-2xs">
                                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                                     {forecastPct ? `${forecastPct}% Target` : `${solarYield.toFixed(1)} kWh Yield`}
                                   </span>
@@ -3984,12 +3984,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="w-5 h-5 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
                                       <Lightning size={12} weight="fill" />
                                     </div>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                    <span className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                       Current Power
                                     </span>
                                   </div>
                                   <div className="text-xs sm:text-sm font-black font-mono text-amber-500 dark:text-amber-400 whitespace-nowrap">
-                                    {solarPowerKW.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                    {solarPowerKW.toFixed(2)} <span className="text-[11px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
                                   </div>
                                 </div>
 
@@ -4001,12 +4001,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="w-5 h-5 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
                                       <Sun size={12} weight="fill" />
                                     </div>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                    <span className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                       Today's Yield
                                     </span>
                                   </div>
                                   <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
-                                    {solarYield.toFixed(2)} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                    {solarYield.toFixed(2)} <span className="text-[11px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
                                   </div>
                                 </div>
 
@@ -4018,12 +4018,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="w-5 h-5 rounded-lg bg-sky-500/15 text-sky-500 flex items-center justify-center shrink-0">
                                       <CloudSun size={12} weight="duotone" />
                                     </div>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                    <span className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                       Forecast Target
                                     </span>
                                   </div>
                                   <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white whitespace-nowrap">
-                                    {forecastTotal ? `${forecastTotal.toFixed(2)}` : 'N/A'} <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">{forecastTotal ? 'kWh' : ''}</span>
+                                    {forecastTotal ? `${forecastTotal.toFixed(2)}` : 'N/A'} <span className="text-[11px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400">{forecastTotal ? 'kWh' : ''}</span>
                                   </div>
                                 </div>
                               </div>
@@ -4040,7 +4040,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 <Sun size={19} weight="fill" />
                               </div>
 
-                              <span className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${
+                              <span className={`inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full border shadow-2xs ${
                                 darkMode ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-100 text-amber-900 border-amber-300'
                               }`}>
                                 <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
@@ -4053,22 +4053,22 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               <div className={`p-1.5 rounded-xl min-w-0 ${
                                 darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
                               }`}>
-                                <div className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-0.5">
+                                <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-0.5">
                                   <Lightning size={11} weight="fill" className="text-amber-500 shrink-0" /> Live Power
                                 </div>
                                 <div className="font-mono text-xs font-black text-amber-500 dark:text-amber-400 truncate">
-                                  {solarPowerKW.toFixed(2)} <span className="text-[9px] font-medium text-slate-400">kW</span>
+                                  {solarPowerKW.toFixed(2)} <span className="text-[11px] font-medium text-slate-400">kW</span>
                                 </div>
                               </div>
 
                               <div className={`p-1.5 rounded-xl min-w-0 ${
                                 darkMode ? 'bg-white/5 text-slate-200' : 'bg-white/80 text-slate-900 shadow-2xs'
                               }`}>
-                                <div className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-0.5">
+                                <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-0.5">
                                   <Sun size={11} weight="fill" className="text-amber-500 shrink-0" /> Today's Yield
                                 </div>
                                 <div className="font-mono text-xs font-black text-slate-900 dark:text-white truncate">
-                                  {solarYield.toFixed(1)} <span className="text-[9px] font-medium text-slate-400">kWh</span>
+                                  {solarYield.toFixed(1)} <span className="text-[11px] font-medium text-slate-400">kWh</span>
                                 </div>
                               </div>
                             </div>
@@ -4109,7 +4109,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                         <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
                                           Solar Production & Forecast
                                         </div>
-                                        <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                        <div className="text-[11px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
                                           {forecastTotal ? `${forecastTotal.toFixed(1)} kWh daily target` : 'Solar PV generation'}
                                         </div>
                                       </div>
@@ -4121,28 +4121,28 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className={`p-1.5 rounded-xl transition-all ${
                                       darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
                                     }`}>
-                                      <div className="text-[9px] sm:text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                      <div className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                                         <Lightning size={11} weight="fill" className="text-amber-500 shrink-0" /> Live Power
                                       </div>
                                       <div className="text-xs sm:text-sm font-black font-mono text-amber-500 dark:text-amber-400 truncate">
-                                        {solarPowerKW.toFixed(2)} <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
+                                        {solarPowerKW.toFixed(2)} <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">kW</span>
                                       </div>
                                     </div>
 
                                     <div className={`p-1.5 rounded-xl transition-all ${
                                       darkMode ? 'bg-white/5' : 'bg-white/80 shadow-2xs'
                                     }`}>
-                                      <div className="text-[9px] sm:text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                      <div className="text-[11px] sm:text-[11px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                                         <Sun size={11} weight="fill" className="text-amber-500 shrink-0" /> Today's Yield
                                       </div>
                                       <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white truncate">
-                                        {solarYield.toFixed(2)} <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
+                                        {solarYield.toFixed(2)} <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">kWh</span>
                                       </div>
                                     </div>
                                   </div>
 
                                   {/* Subtitle / summary (Non-redundant, kWh generated removed) */}
-                                  <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate flex items-center gap-2 shrink-0">
+                                  <div className="text-[11px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate flex items-center gap-2 shrink-0">
                                     <span>Peak: {solarPowerKW.toFixed(2)} kW</span>
                                     {forecastPct !== null && (
                                       <>
@@ -4230,7 +4230,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 </div>
 
                                 <div className="flex items-center gap-1 shrink-0">
-                                  <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                                  <span className={`text-[11px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
                                     openDoors.length > 0
                                       ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
                                       : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
@@ -4282,7 +4282,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 {openDoors.length > 0 ? <DoorOpen size={19} weight="duotone" /> : <Door size={19} weight="duotone" />}
                               </div>
 
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
+                              <span className={`text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
                                 openDoors.length > 0
                                   ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30'
                                   : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
@@ -4344,7 +4344,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 </div>
 
                                 <div className="flex items-center gap-1 shrink-0">
-                                  <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                                  <span className={`text-[11px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
                                     openWindows.length > 0
                                       ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
                                       : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
@@ -4398,7 +4398,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 <FrameCorners size={19} weight="duotone" className={openWindows.length > 0 ? 'text-amber-500' : 'text-emerald-500'} />
                               </div>
 
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
+                              <span className={`text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
                                 openWindows.length > 0
                                   ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30'
                                   : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
@@ -4460,7 +4460,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 </div>
 
                                 <div className="flex items-center gap-1 shrink-0">
-                                  <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                                  <span className={`text-[11px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
                                     activeMotion.length > 0
                                       ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
                                       : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
@@ -4512,7 +4512,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 <PersonSimpleWalk size={19} weight="duotone" />
                               </div>
 
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
+                              <span className={`text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
                                 activeMotion.length > 0
                                   ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30'
                                   : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
@@ -4572,7 +4572,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 </div>
 
                                 <div className="flex items-center gap-1 shrink-0">
-                                  <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                                  <span className={`text-[11px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
                                     activeLeaks.length > 0
                                       ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
                                       : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
@@ -4624,7 +4624,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 <Drop size={19} weight="duotone" />
                               </div>
 
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
+                              <span className={`text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
                                 activeLeaks.length > 0
                                   ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/30'
                                   : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
@@ -4686,7 +4686,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 </div>
 
                                 <div className="flex items-center gap-1 shrink-0">
-                                  <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                                  <span className={`text-[11px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
                                     activeSmoke.length > 0
                                       ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
                                       : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
@@ -4738,7 +4738,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 <Flame size={19} weight="duotone" />
                               </div>
 
-                              <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
+                              <span className={`text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-2xs border ${
                                 activeSmoke.length > 0
                                   ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/30'
                                   : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
@@ -4842,12 +4842,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     <div className="text-xs sm:text-sm font-bold text-white drop-shadow-md truncate flex items-center gap-1.5">
                                       <span>{camName}</span>
                                       {isCamerasGroup && surveillanceCameras.length > 1 && (
-                                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-purple-500/20 text-purple-200 border border-purple-400/30 font-mono">
+                                        <span className="text-[11px] font-bold px-1.5 py-0.2 rounded-md bg-purple-500/20 text-purple-200 border border-purple-400/30 font-mono">
                                           {(activeCamerasIndex % surveillanceCameras.length) + 1}/{surveillanceCameras.length}
                                         </span>
                                       )}
                                     </div>
-                                    <div className="text-[10px] text-slate-300/90 font-medium drop-shadow-sm truncate">
+                                    <div className="text-[11px] text-slate-300/90 font-medium drop-shadow-sm truncate">
                                       {camArea ? `${camArea} • ` : ''}Live Feed
                                     </div>
                                   </div>
@@ -4877,12 +4877,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   )}
 
                                   {isMotionActive ? (
-                                    <span className="inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-500/30 text-amber-200 border border-amber-400/40 backdrop-blur-md shadow-md animate-pulse">
+                                    <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-500/30 text-amber-200 border border-amber-400/40 backdrop-blur-md shadow-md animate-pulse">
                                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
                                       Motion
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/30 backdrop-blur-md shadow-md">
+                                    <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/30 backdrop-blur-md shadow-md">
                                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                                       Live
                                     </span>
@@ -4917,7 +4917,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                           key={cam.entity_id}
                                           type="button"
                                           onClick={() => setActiveCamerasIndex(idx)}
-                                          className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all shrink-0 cursor-pointer ${
+                                          className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
                                             isSelected
                                               ? 'bg-purple-500 text-white shadow-md'
                                               : 'bg-black/50 hover:bg-black/75 text-slate-300 border border-white/10'
@@ -4934,7 +4934,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   </span>
                                 )}
 
-                                <div className="text-[10px] text-slate-200/90 font-medium drop-shadow-sm truncate ml-auto flex items-center gap-1 shrink-0">
+                                <div className="text-[11px] text-slate-200/90 font-medium drop-shadow-sm truncate ml-auto flex items-center gap-1 shrink-0">
                                   <span>{isCamerasGroup && surveillanceCameras.length > 1 ? `${surveillanceCameras.length} Cameras` : 'Tap for Stream'}</span>
                                   <CaretRight size={12} weight="bold" className="group-hover:translate-x-0.5 transition-transform shrink-0 text-slate-300" />
                                 </div>
@@ -4981,7 +4981,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   <VideoCamera size={15} weight="fill" />
                                 </div>
                                 {isCamerasGroup && surveillanceCameras.length > 1 && (
-                                  <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-purple-500/25 text-purple-200 border border-purple-400/30 font-mono backdrop-blur-md">
+                                  <span className="text-[11px] sm:text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-purple-500/25 text-purple-200 border border-purple-400/30 font-mono backdrop-blur-md">
                                     {(activeCamerasIndex % surveillanceCameras.length) + 1}/{surveillanceCameras.length}
                                   </span>
                                 )}
@@ -5013,12 +5013,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 )}
 
                                 {isMotionActive ? (
-                                  <span className="inline-flex items-center gap-1 text-[8px] sm:text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-200 border border-amber-400/40 backdrop-blur-md shadow-md animate-pulse">
+                                  <span className="inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-200 border border-amber-400/40 backdrop-blur-md shadow-md animate-pulse">
                                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
                                     Motion
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center gap-1 text-[8px] sm:text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/30 backdrop-blur-md shadow-md">
+                                  <span className="inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/30 backdrop-blur-md shadow-md">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                                     Live
                                   </span>
@@ -5047,7 +5047,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 {camName}
                               </div>
                               {isMotionActive && !isCamerasGroup && (
-                                <span className="text-[10px] font-bold text-amber-300 drop-shadow-sm truncate ml-2 shrink-0">
+                                <span className="text-[11px] font-bold text-amber-300 drop-shadow-sm truncate ml-2 shrink-0">
                                   {motionStatus.lastMotionText}
                                 </span>
                               )}
@@ -5113,17 +5113,17 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                     </div>
                                     <div className="min-w-0">
                                       <div className="text-xs sm:text-sm font-bold text-white drop-shadow-md truncate">{camName}</div>
-                                      <div className="text-[10px] text-slate-300/90 font-medium drop-shadow-sm truncate">{camArea ? `${camArea} • ` : ''}Live Feed</div>
+                                      <div className="text-[11px] text-slate-300/90 font-medium drop-shadow-sm truncate">{camArea ? `${camArea} • ` : ''}Live Feed</div>
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-1.5 shrink-0">
                                     {isMotionActive ? (
-                                      <span className="inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-500/30 text-amber-200 border border-amber-400/40 backdrop-blur-md shadow-md animate-pulse">
+                                      <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-500/30 text-amber-200 border border-amber-400/40 backdrop-blur-md shadow-md animate-pulse">
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
                                         Motion
                                       </span>
                                     ) : (
-                                      <span className="inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/30 backdrop-blur-md shadow-md">
+                                      <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/30 backdrop-blur-md shadow-md">
                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                                         Live
                                       </span>
@@ -5148,7 +5148,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                   <span className="text-[11px] text-slate-300/90 font-medium drop-shadow-sm truncate">
                                     {isMotionActive ? motionStatus.lastMotionText : 'Surveillance stream online'}
                                   </span>
-                                  <div className="text-[10px] text-slate-200/90 font-medium drop-shadow-sm truncate ml-auto flex items-center gap-1 shrink-0">
+                                  <div className="text-[11px] text-slate-200/90 font-medium drop-shadow-sm truncate ml-auto flex items-center gap-1 shrink-0">
                                     <span>Tap for Stream</span>
                                     <CaretRight size={12} weight="bold" className="group-hover:translate-x-0.5 transition-transform shrink-0 text-slate-300" />
                                   </div>
@@ -5187,12 +5187,12 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
                                   {isMotionActive ? (
-                                    <span className="inline-flex items-center gap-1 text-[8px] sm:text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-200 border border-amber-400/40 backdrop-blur-md shadow-md animate-pulse">
+                                    <span className="inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-200 border border-amber-400/40 backdrop-blur-md shadow-md animate-pulse">
                                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
                                       Motion
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 text-[8px] sm:text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/30 backdrop-blur-md shadow-md">
+                                    <span className="inline-flex items-center gap-1 text-[11px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/30 backdrop-blur-md shadow-md">
                                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                                       Live
                                     </span>
@@ -5218,7 +5218,7 @@ export default function OverviewHeader({ darkMode = true }: OverviewHeaderProps)
                               <div className="relative z-10 mt-auto flex items-center justify-between p-3 sm:p-3.5 pt-0">
                                 <div className="text-xs sm:text-sm font-bold text-white drop-shadow-md truncate">{camName}</div>
                                 {isMotionActive && (
-                                  <span className="text-[10px] font-bold text-amber-300 drop-shadow-sm truncate ml-2 shrink-0">
+                                  <span className="text-[11px] font-bold text-amber-300 drop-shadow-sm truncate ml-2 shrink-0">
                                     {motionStatus.lastMotionText}
                                   </span>
                                 )}

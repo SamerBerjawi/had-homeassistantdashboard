@@ -564,7 +564,7 @@ export default function ClimateControlView({ entity, darkMode = true, customIcon
           <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
             {outsideTemp !== undefined ? `${Math.round(outsideTemp)}°` : '--'}
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Outside
           </span>
         </div>
@@ -590,7 +590,7 @@ export default function ClimateControlView({ entity, darkMode = true, customIcon
           <span className="text-lg sm:text-xl font-black tracking-tight uppercase" style={{ color: !isOff ? currentModeDef.activeColor : undefined }}>
             {!isOff ? 'ON' : 'OFF'}
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Power
           </span>
         </button>
@@ -612,7 +612,7 @@ export default function ClimateControlView({ entity, darkMode = true, customIcon
           <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
             {caps.currentTemp !== undefined ? `${caps.currentTemp}°` : '--'}
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Inside
           </span>
         </div>

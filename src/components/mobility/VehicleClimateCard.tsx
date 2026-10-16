@@ -129,10 +129,10 @@ export function VehicleClimateCard({
         {/* Interior vs Exterior Temp Comparison */}
         <div className="flex items-center gap-2">
           <div className="px-3 py-1 rounded-xl bg-white/5 border border-white/10 text-xs font-mono font-bold flex items-center gap-1.5">
-            <span className="text-slate-400 text-[10px]">IN:</span>
+            <span className="text-slate-400 text-[11px]">IN:</span>
             <span className="text-white">{metrics.cabinTemp}°</span>
             <span className="text-slate-500">|</span>
-            <span className="text-slate-400 text-[10px]">OUT:</span>
+            <span className="text-slate-400 text-[11px]">OUT:</span>
             <span className="text-slate-300">{metrics.outdoorTemp}°</span>
           </div>
         </div>
@@ -150,7 +150,7 @@ export function VehicleClimateCard({
         </button>
 
         <div className="text-center space-y-0.5">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">
             Target Temperature
           </span>
           <div className="text-5xl sm:text-6xl font-black tracking-tight text-white font-mono flex items-baseline justify-center">

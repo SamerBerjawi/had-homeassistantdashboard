@@ -162,7 +162,7 @@ export default function SensorsOverviewDrawer({
                       </p>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[10px] font-extrabold uppercase shrink-0 animate-pulse">
+                  <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[11px] font-extrabold uppercase shrink-0 animate-pulse">
                     LEAK ALERT
                   </span>
                 </div>
@@ -185,7 +185,7 @@ export default function SensorsOverviewDrawer({
                       </p>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[10px] font-extrabold uppercase shrink-0 animate-pulse">
+                  <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[11px] font-extrabold uppercase shrink-0 animate-pulse">
                     SMOKE ALERT
                   </span>
                 </div>
@@ -208,7 +208,7 @@ export default function SensorsOverviewDrawer({
                       </p>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold uppercase shrink-0">
+                  <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] font-extrabold uppercase shrink-0">
                     MOTION
                   </span>
                 </div>
@@ -337,7 +337,7 @@ export default function SensorsOverviewDrawer({
                             {areaGroup.areaName}
                           </span>
                         </div>
-                        <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                        <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
                           {areaGroup.entities.length} sensor{areaGroup.entities.length === 1 ? '' : 's'}
                         </span>
                       </div>
@@ -417,7 +417,7 @@ export default function SensorsOverviewDrawer({
                             {/* Single State Badge on the right */}
                             <div className="shrink-0 flex items-center">
                               <span
-                                className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full ${
+                                className={`text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full ${
                                   isAlert
                                     ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300 animate-pulse'
                                     : isActiveMotion

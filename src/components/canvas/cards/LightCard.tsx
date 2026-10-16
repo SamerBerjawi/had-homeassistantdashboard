@@ -54,7 +54,7 @@ export default function LightCard({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{title}</h4>
-              <span className="px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400">
+              <span className="px-1.5 py-0.2 rounded text-[11px] font-extrabold uppercase bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400">
                 {caps.typeBadge}
               </span>
             </div>
@@ -85,7 +85,7 @@ export default function LightCard({
       {/* Interactive Brightness Bar Indicator (Only for lights supporting brightness) */}
       {caps.supportsBrightness ? (
         <div className="mt-3">
-          <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
             <span className="flex items-center gap-1">
               <Sun size={12} weight="duotone" /> Level
             </span>
@@ -104,7 +104,7 @@ export default function LightCard({
           </div>
         </div>
       ) : (
-        <div className="mt-2 text-[10px] text-slate-400 font-medium">
+        <div className="mt-2 text-[11px] text-slate-400 font-medium">
           <span>{isOn ? 'Switch Active' : 'Switch Inactive'}</span>
         </div>
       )}

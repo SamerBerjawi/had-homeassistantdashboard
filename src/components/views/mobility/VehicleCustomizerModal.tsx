@@ -1,3 +1,4 @@
+import { useDialogA11y } from '../../../hooks/useDialogA11y';
 import React, { useState, useRef, ChangeEvent, DragEvent } from 'react';
 import { X, UploadSimple, Trash, Sparkle, Car, Bicycle, Check, Sliders, BatteryCharging, Lightning, Warning } from '@phosphor-icons/react';
 import { resolveAssetUrl } from '../../../utils/assetUrl';
@@ -51,6 +52,7 @@ export function VehicleCustomizerModal({
   onResetAssets,
   darkMode = true
 }: VehicleCustomizerModalProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   const [activeTab, setActiveTab] = useState<'car' | 'bike'>(initialTarget);
   const [carNameDraft, setCarNameDraft] = useState<string>(currentCarName);
   const [carTargetSocDraft, setCarTargetSocDraft] = useState<number>(currentCarTargetSoc);
@@ -192,7 +194,7 @@ export function VehicleCustomizerModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Customize vehicle" tabIndex={-1}
         className={`w-full max-w-xl rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-all ${
           darkMode
             ? 'bg-slate-900/95 border-white/15 text-white shadow-black/80'
@@ -331,7 +333,7 @@ export function VehicleCustomizerModal({
                       ? 'border-cyan-500/50 bg-cyan-500/5'
                       : 'border-slate-300 dark:border-white/15 hover:border-cyan-500/50 bg-slate-50 dark:bg-white/[0.02]'
                   }`}
-                >
+                 role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                   <input
                     ref={carImgInputRef}
                     type="file"
@@ -341,7 +343,7 @@ export function VehicleCustomizerModal({
                   />
                   {carImageDraft ? (
                     <div className="space-y-2">
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={resolveAssetUrl(carImageDraft)}
                         alt="Car Preview"
                         className="max-h-28 max-w-full object-contain mx-auto drop-shadow-xl"
@@ -354,7 +356,7 @@ export function VehicleCustomizerModal({
                       <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
                         Click to browse or drag & drop PNG/JPG/WebP
                       </p>
-                      <p className="text-[10px] text-slate-500">Supports transparent Mach-E / Taycan / Model Y cutouts</p>
+                      <p className="text-[11px] text-slate-500">Supports transparent Mach-E / Taycan / Model Y cutouts</p>
                     </div>
                   )}
                 </div>
@@ -386,7 +388,7 @@ export function VehicleCustomizerModal({
                       ? 'border-cyan-500/50 bg-cyan-500/5'
                       : 'border-slate-300 dark:border-white/15 hover:border-cyan-500/50 bg-slate-50 dark:bg-white/[0.02]'
                   }`}
-                >
+                 role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                   <input
                     ref={carLogoInputRef}
                     type="file"
@@ -396,7 +398,7 @@ export function VehicleCustomizerModal({
                   />
                   {carLogoDraft ? (
                     <div className="space-y-2">
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={resolveAssetUrl(carLogoDraft)}
                         alt="Logo Preview"
                         className="max-h-12 max-w-[120px] object-contain mx-auto drop-shadow-md"
@@ -455,7 +457,7 @@ export function VehicleCustomizerModal({
                       ? 'border-amber-500/50 bg-amber-500/5'
                       : 'border-slate-300 dark:border-white/15 hover:border-amber-500/50 bg-slate-50 dark:bg-white/[0.02]'
                   }`}
-                >
+                 role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                   <input
                     ref={bikeImgInputRef}
                     type="file"
@@ -465,7 +467,7 @@ export function VehicleCustomizerModal({
                   />
                   {bikeImageDraft ? (
                     <div className="space-y-2">
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={resolveAssetUrl(bikeImageDraft)}
                         alt="Bike Preview"
                         className="max-h-28 max-w-full object-contain mx-auto drop-shadow-xl"
@@ -509,7 +511,7 @@ export function VehicleCustomizerModal({
                       ? 'border-amber-500/50 bg-amber-500/5'
                       : 'border-slate-300 dark:border-white/15 hover:border-amber-500/50 bg-slate-50 dark:bg-white/[0.02]'
                   }`}
-                >
+                 role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                   <input
                     ref={bikeLogoInputRef}
                     type="file"
@@ -519,7 +521,7 @@ export function VehicleCustomizerModal({
                   />
                   {bikeLogoDraft ? (
                     <div className="space-y-2">
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={resolveAssetUrl(bikeLogoDraft)}
                         alt="Logo Preview"
                         className="max-h-12 max-w-[120px] object-contain mx-auto drop-shadow-md"

@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import ViewErrorState from '../../ui/ViewErrorState';
 import { useAdGuardData } from '../../../hooks/useAdGuardData';
 import { AdGuardProtectionSection } from './adguard/AdGuardProtectionSection';
 import { AdGuardSparklineGrid } from './adguard/AdGuardSparklineGrid';
@@ -21,11 +22,22 @@ export const AdGuardTab: React.FC<AdGuardTabProps> = ({ darkMode = true }) => {
     historyData,
     timeRange,
     setTimeRange,
-    toggleSwitch
+    toggleSwitch,
+    historyError,
+    refreshHistory
   } = useAdGuardData();
 
   return (
     <div className="space-y-6 sm:space-y-7 pb-10">
+      {historyError && (
+        <ViewErrorState
+          inline
+          darkMode={darkMode}
+          title="AdGuard history unavailable"
+          message={historyError}
+          onRetry={() => void refreshHistory()}
+        />
+      )}
       {/* Section 1: Native AdGuard 4-Card Sparkline Overview Grid */}
       <AdGuardSparklineGrid
         metrics={metrics}

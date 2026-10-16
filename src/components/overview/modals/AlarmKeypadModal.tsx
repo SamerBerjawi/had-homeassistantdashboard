@@ -159,7 +159,7 @@ export default function AlarmKeypadModal({
                 <MapPin size={14} weight="duotone" className="text-indigo-500" />
                 Select Alarm Panel
               </span>
-              <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+              <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
                 {alarmEntities.length} panels installed
               </span>
             </div>
@@ -189,7 +189,7 @@ export default function AlarmKeypadModal({
             </div>
           </div>
 
-          <span className={`text-[10px] font-extrabold uppercase px-3 py-1 rounded-full ${badge.color}`}>
+          <span className={`text-[11px] font-extrabold uppercase px-3 py-1 rounded-full ${badge.color}`}>
             Live Active
           </span>
         </div>
@@ -251,7 +251,7 @@ export default function AlarmKeypadModal({
 
         {/* PIN Code Display */}
         <div className="flex flex-col items-center justify-center p-4 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-black/20 backdrop-blur-sm shadow-xs">
-          <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">
+          <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">
             Optional Keypad PIN
           </div>
           <div className="flex items-center gap-3 my-2">
@@ -309,7 +309,7 @@ export default function AlarmKeypadModal({
             0
           </button>
 
-          <button
+          <button aria-label="Delete last digit"
             type="button"
             onClick={handleBackspace}
             className="h-12 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/85 hover:bg-white dark:bg-black/20 dark:hover:bg-black/30 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-xs"

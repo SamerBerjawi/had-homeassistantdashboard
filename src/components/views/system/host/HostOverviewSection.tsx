@@ -45,12 +45,12 @@ export function HostOverviewSection({
               <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
                 Host Infrastructure Overview
               </span>
-              <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+              <span className="text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Live Host
               </span>
             </div>
-            <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">
+            <span className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
               System Monitor Integration (Core Telemetry)
             </span>
           </div>
@@ -64,7 +64,7 @@ export function HostOverviewSection({
               <Clock size={16} weight="duotone" />
             </div>
             <div className="min-w-0">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">Host Uptime</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block truncate">Host Uptime</span>
               <span className="text-xs font-black font-mono text-slate-800 dark:text-slate-200 truncate block">
                 {metrics.uptime || '1 week'}
               </span>
@@ -77,7 +77,7 @@ export function HostOverviewSection({
               <WifiHigh size={16} weight="duotone" />
             </div>
             <div className="min-w-0">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">IPv4 (end0)</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block truncate">IPv4 (end0)</span>
               <span className="text-xs font-black font-mono text-slate-800 dark:text-slate-200 truncate block">
                 {metrics.ipv4Address || '192.168.68.71'}
               </span>

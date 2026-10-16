@@ -169,7 +169,7 @@ export default function EnergyHeroCards({
           <span className="text-[11px] font-extrabold text-slate-800 dark:text-white truncate leading-tight">
             Self-Sufficiency
           </span>
-          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
             Off-Grid Autarky
           </span>
         </div>
@@ -224,7 +224,7 @@ export default function EnergyHeroCards({
           <span className="text-[11px] font-extrabold text-slate-800 dark:text-white truncate leading-tight">
             Self-Consumption
           </span>
-          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
             {hasSolar ? `${solarConsumedKWh.toFixed(1)} / ${solarYieldKWh.toFixed(1)} kWh` : 'Solar Utilized'}
           </span>
         </div>
@@ -245,14 +245,14 @@ export default function EnergyHeroCards({
             <span className="text-base sm:text-lg font-black font-mono tracking-tight leading-tight">
               {co2Data.value}
             </span>
-            <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400">
+            <span className="text-[11px] font-bold text-cyan-600 dark:text-cyan-400">
               {co2Data.unit}
             </span>
           </div>
           <span className="text-[11px] font-extrabold text-slate-800 dark:text-white truncate leading-tight">
             CO₂ Avoided
           </span>
-          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
             {co2Data.sublabel}
           </span>
         </div>
@@ -273,14 +273,14 @@ export default function EnergyHeroCards({
             <span className="text-base sm:text-lg font-black font-mono tracking-tight leading-tight">
               {treeData.value}
             </span>
-            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
               Trees
             </span>
           </div>
           <span className="text-[11px] font-extrabold text-slate-800 dark:text-white truncate leading-tight">
             Trees Planted
           </span>
-          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
             {treeData.sublabel}
           </span>
         </div>
@@ -301,14 +301,14 @@ export default function EnergyHeroCards({
             <span className="text-base sm:text-lg font-black font-mono tracking-tight leading-tight">
               {coalData.value}
             </span>
-            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
               {coalData.unit}
             </span>
           </div>
           <span className="text-[11px] font-extrabold text-slate-800 dark:text-white truncate leading-tight">
             Coal Conserved
           </span>
-          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
             {coalData.sublabel}
           </span>
         </div>

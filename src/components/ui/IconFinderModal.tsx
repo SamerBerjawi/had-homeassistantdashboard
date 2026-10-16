@@ -9,6 +9,7 @@
  * Can be rendered embedded (inside a parent modal like EntityCustomizerModal) or as a portal.
  */
 
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -94,6 +95,7 @@ export default function IconFinderModal({
   accentColor = '#0ea5e9',
   embedded = false
 }: IconFinderModalProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('popular');
   const [selectedWeight, setSelectedWeight] = useState<IconWeight>('duotone');
@@ -251,7 +253,7 @@ export default function IconFinderModal({
                 <X size={13} weight="bold" />
               </button>
             )}
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-white/40 dark:bg-white/10 text-slate-700 dark:text-slate-400 border border-white/40 dark:border-white/10">
+            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-white/40 dark:bg-white/10 text-slate-700 dark:text-slate-400 border border-white/40 dark:border-white/10">
               {matchedIcons.length}
             </span>
           </div>
@@ -419,7 +421,7 @@ export default function IconFinderModal({
         />
 
         {/* Modal Window */}
-        <motion.div
+        <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Choose an icon" tabIndex={-1}
           initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 12 }}

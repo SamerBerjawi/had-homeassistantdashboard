@@ -69,10 +69,10 @@ export const VirtualGrid: React.FC<VirtualGridProps> = ({
                   i >= 4 ? 'hidden sm:flex' : 'flex'
                 } ${i >= 6 ? 'sm:hidden lg:flex' : ''}`}
               >
-                <span className="text-[9px] font-mono font-bold text-sky-400/50 text-center select-none">
+                <span className="text-[11px] font-mono font-bold text-sky-400/50 text-center select-none">
                   C{i + 1}
                 </span>
-                <span className="text-[9px] font-mono font-bold text-sky-400/40 text-center select-none">
+                <span className="text-[11px] font-mono font-bold text-sky-400/40 text-center select-none">
                   ⋮
                 </span>
               </div>

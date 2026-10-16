@@ -51,7 +51,7 @@ export default function CameraNoSignalPlaceholder({
       </div>
 
       {/* Bottom subtle status indicator */}
-      <div className="absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/60 border border-white/10 text-[9px] font-mono text-slate-400">
+      <div className="absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/60 border border-white/10 text-[11px] font-mono text-slate-400">
         <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
         <span>NO SIGNAL</span>
       </div>

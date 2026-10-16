@@ -129,7 +129,7 @@ export default function CanvasHeader({
                 onClick={() => setShowProfileMenu(false)} 
               />
               <div className="absolute top-full left-0 mt-2 w-72 rounded-2xl bg-slate-900/95 backdrop-blur-md border border-white/20 p-2.5 shadow-2xl z-40 text-white space-y-1">
-                <span className="text-[10px] font-black uppercase text-slate-400 px-2 py-1 block">
+                <span className="text-[11px] font-black uppercase text-slate-400 px-2 py-1 block">
                   Dashboard Profiles
                 </span>
 
@@ -145,7 +145,7 @@ export default function CanvasHeader({
                         ? 'bg-indigo-600/30 border border-indigo-500/40 text-white font-bold'
                         : 'hover:bg-white/10 text-slate-300'
                     }`}
-                  >
+                   role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-xs truncate">{p.name}</span>
                     </div>
@@ -248,7 +248,7 @@ export default function CanvasHeader({
             <>
               <div className="fixed inset-0 z-30" onClick={() => setShowWeatherMenu(false)} />
               <div className="absolute top-full right-0 mt-2 w-56 rounded-2xl bg-slate-900/95 backdrop-blur-md border border-white/20 p-2 shadow-2xl z-40 text-white space-y-1">
-                <span className="text-[10px] font-black uppercase text-slate-400 px-2 py-1 block">
+                <span className="text-[11px] font-black uppercase text-slate-400 px-2 py-1 block">
                   Atmospheric Backdrops
                 </span>
                 {WEATHER_OPTIONS.map((opt) => {

@@ -275,7 +275,7 @@ export function ChargingControlCard({
         }`}
       >
         <div className="flex items-center justify-between text-xs font-bold">
-          <span className={`uppercase tracking-wider text-[10px] ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+          <span className={`uppercase tracking-wider text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
             Target Charge Limit
           </span>
           <div className="flex items-center gap-1.5 font-mono font-bold text-cyan-600 dark:text-cyan-400">
@@ -398,7 +398,7 @@ export function ChargingControlCard({
             darkMode ? 'border-white/10 text-slate-400' : 'border-slate-200 text-slate-600'
           }`}
         >
-          <span className="font-semibold uppercase tracking-wider text-[10px]">Last Session:</span>
+          <span className="font-semibold uppercase tracking-wider text-[11px]">Last Session:</span>
           <span className={`font-mono truncate max-w-[220px] font-bold ${darkMode ? 'text-slate-300' : 'text-slate-800'}`}>
             {metrics.lastChargingLog}
           </span>

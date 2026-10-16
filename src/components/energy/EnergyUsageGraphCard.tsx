@@ -210,7 +210,7 @@ export default function EnergyUsageGraphCard({
               {/* Left Y-Axis Scale */}
               <div className="w-10 sm:w-12 flex-shrink-0 flex flex-col justify-between select-none relative pointer-events-none pb-5">
                 {/* Y-Axis Label / Unit */}
-                <div className={`text-[10px] font-bold uppercase tracking-wider text-right pr-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <div className={`text-[11px] font-bold uppercase tracking-wider text-right pr-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                   kWh
                 </div>
 
@@ -218,27 +218,27 @@ export default function EnergyUsageGraphCard({
                 <div className="flex-1 relative flex flex-col justify-between">
                   {/* Positive Section Ticks */}
                   <div className="w-full relative flex flex-col justify-between" style={{ height: `${positiveRatio}%` }}>
-                    <span className={`text-[9px] sm:text-[10px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <span className={`text-[11px] sm:text-[11px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                       +{maxPositive >= 10 ? maxPositive.toFixed(0) : maxPositive.toFixed(1)}
                     </span>
-                    <span className={`text-[9px] sm:text-[10px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    <span className={`text-[11px] sm:text-[11px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                       +{(maxPositive * 0.5) >= 10 ? (maxPositive * 0.5).toFixed(0) : (maxPositive * 0.5).toFixed(1)}
                     </span>
                   </div>
 
                   {/* Baseline Zero */}
                   <div className="relative w-full flex items-center justify-end">
-                    <span className={`text-[9px] sm:text-[10px] font-mono font-bold text-right pr-1 leading-none -translate-y-1/2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <span className={`text-[11px] sm:text-[11px] font-mono font-bold text-right pr-1 leading-none -translate-y-1/2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                       0.0
                     </span>
                   </div>
 
                   {/* Negative Section Ticks */}
                   <div className="w-full relative flex flex-col justify-between" style={{ height: `${negativeRatio}%` }}>
-                    <span className={`text-[9px] sm:text-[10px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    <span className={`text-[11px] sm:text-[11px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                       -{(maxNegative * 0.5) >= 10 ? (maxNegative * 0.5).toFixed(0) : (maxNegative * 0.5).toFixed(1)}
                     </span>
-                    <span className={`text-[9px] sm:text-[10px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <span className={`text-[11px] sm:text-[11px] font-mono font-medium text-right pr-1 leading-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                       -{maxNegative >= 10 ? maxNegative.toFixed(0) : maxNegative.toFixed(1)}
                     </span>
                   </div>
@@ -362,7 +362,7 @@ export default function EnergyUsageGraphCard({
                 {xTicks.map((tick) => (
                   <span
                     key={tick.label}
-                    className={`absolute top-1 text-[9px] sm:text-[10px] font-mono font-bold whitespace-nowrap ${
+                    className={`absolute top-1 text-[11px] sm:text-[11px] font-mono font-bold whitespace-nowrap ${
                       tick.pos
                     } ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}
                   >
@@ -378,7 +378,7 @@ export default function EnergyUsageGraphCard({
                   return (
                     <span
                       key={idx}
-                      className={`text-[9px] sm:text-[10px] font-mono font-bold whitespace-nowrap text-center flex-1 ${
+                      className={`text-[11px] sm:text-[11px] font-mono font-bold whitespace-nowrap text-center flex-1 ${
                         darkMode ? 'text-slate-400' : 'text-slate-600'
                       }`}
                     >
@@ -390,7 +390,7 @@ export default function EnergyUsageGraphCard({
             )}
 
             {/* X-Axis Label */}
-            <div className={`w-full text-center text-[10px] font-bold uppercase tracking-wider select-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            <div className={`w-full text-center text-[11px] font-bold uppercase tracking-wider select-none ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               {isHourly ? 'Time (24 Hours)' : 'Time'}
             </div>
           </div>

@@ -630,7 +630,7 @@ export default function EnergyDistributionCard({
               <foreignObject x="-18" y="-18" width="36" height="36">
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
                   <Fire size={15} weight="duotone" className="text-orange-500" />
-                  <span className={`text-[9px] font-bold font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  <span className={`text-[11px] font-bold font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {totals.gasUsage.toFixed(2)}
                   </span>
                 </div>
@@ -650,7 +650,7 @@ export default function EnergyDistributionCard({
               <foreignObject x="-18" y="-18" width="36" height="36">
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
                   <Drop size={15} weight="duotone" className="text-cyan-500" />
-                  <span className={`text-[9px] font-bold font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  <span className={`text-[11px] font-bold font-mono leading-none mt-0.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {totals.waterUsage.toFixed(2)}
                   </span>
                 </div>

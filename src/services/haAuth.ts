@@ -30,6 +30,47 @@ export interface TokenRefreshResult {
 /**
  * Standardize Home Assistant Base URL (ensure no trailing slashes or /api/websocket)
  */
+/**
+ * Returns a message when the text cannot be a Home Assistant address, otherwise null.
+ * An empty value is allowed because normalizeHAUrl falls back to the default address.
+ */
+export function validateHaUrl(rawUrl: string): string | null {
+  const trimmed = (rawUrl || '').trim();
+  if (!trimmed) return null;
+  if (/\s/.test(trimmed)) return 'Enter a valid Home Assistant URL (it must not contain spaces).';
+  const { httpUrl } = normalizeHAUrl(trimmed);
+  try {
+    const parsed = new URL(httpUrl);
+    if (!/^https?:$/.test(parsed.protocol) || !parsed.hostname) throw new Error('bad url');
+  } catch {
+    return 'Enter a valid Home Assistant URL, for example http://homeassistant.local:8123';
+  }
+  return null;
+}
+
+/**
+ * Revokes the stored OAuth refresh token at Home Assistant (SEC-010). Best effort: sign-out must
+ * never wait on or fail because of the network.
+ */
+export function revokeStoredRefreshToken(): void {
+  try {
+    const stored = getStoredAuthConfig();
+    const tokens = stored?.tokens;
+    if (!tokens?.refresh_token || tokens.auth_type !== 'oauth') return;
+    const { httpUrl } = normalizeHAUrl(tokens.server_url || stored?.httpUrl || '');
+    const body = new URLSearchParams({ token: tokens.refresh_token, action: 'revoke' });
+    void fetch(`${httpUrl}/auth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: body.toString(),
+      keepalive: true,
+      signal: AbortSignal.timeout(5000)
+    }).catch(() => undefined);
+  } catch {
+    // ignore
+  }
+}
+
 export function normalizeHAUrl(rawUrl: string): { httpUrl: string; wsUrl: string } {
   let cleaned = (rawUrl || '').trim();
   if (!cleaned) {

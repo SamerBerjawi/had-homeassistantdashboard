@@ -60,7 +60,7 @@ export const WideTile: React.FC<WideTileProps> = ({
       {/* Background Hero Picture / Album Art */}
       {backdropImage && (
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none rounded-3xl opacity-20 dark:opacity-25 group-hover:opacity-30 transition-opacity duration-500">
-          <img
+          <img loading="lazy" decoding="async"
             src={backdropImage}
             alt=""
             className="w-full h-full object-cover rounded-3xl blur-[1px]"

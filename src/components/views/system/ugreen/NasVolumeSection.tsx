@@ -69,7 +69,7 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
             Volume (Pool 1 | Volume 1)
           </span>
         </div>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-400 border border-blue-500/25">
+        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-400 border border-blue-500/25">
           {volume.filesystem}
         </span>
       </div>
@@ -84,12 +84,12 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
                 <h4 className="text-sm font-black text-slate-900 dark:text-white leading-tight">
                   {volume.label}
                 </h4>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400">{volume.name}</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">{volume.name}</p>
               </div>
 
               {/* Health Badge */}
               <span
-                className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-lg border flex items-center gap-1 ${
+                className={`text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-lg border flex items-center gap-1 ${
                   isHealthy
                     ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                     : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
@@ -132,7 +132,7 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
             <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white truncate">
               Capacity
             </span>
-            <span className="text-[10px] font-mono font-bold text-blue-400">{volume.totalSize}</span>
+            <span className="text-[11px] font-mono font-bold text-blue-400">{volume.totalSize}</span>
           </div>
 
           <div className="relative w-[130px] h-[130px] sm:w-[145px] sm:h-[145px] my-auto flex items-center justify-center">
@@ -153,13 +153,13 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
               >
                 {({ value, isHovered, data }) => (
                   <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none px-1">
-                    <span className="text-[7px] sm:text-[8px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="text-[7px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400">
                       {isHovered ? data.label : 'Total Size'}
                     </span>
                     <span className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white tracking-tight leading-none my-0.5">
                       {isHovered ? `${value.toFixed(1)} TB` : volume.totalSize}
                     </span>
-                    <span className="text-[7px] sm:text-[8px] font-bold text-blue-400">Btrfs</span>
+                    <span className="text-[7px] sm:text-[11px] font-bold text-blue-400">Btrfs</span>
                   </div>
                 )}
               </PieCenter>
@@ -168,12 +168,12 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
 
           <div className="w-full pt-2 border-t border-slate-200/60 dark:border-white/10 grid grid-cols-2 gap-1.5 text-center text-xs">
             <div className="p-1 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <span className="text-[8px] sm:text-[9px] text-slate-400 block">Used</span>
-              <span className="text-[10px] sm:text-[11px] font-mono font-black text-blue-400 truncate block">{volume.usedSize}</span>
+              <span className="text-[11px] sm:text-[11px] text-slate-400 block">Used</span>
+              <span className="text-[11px] sm:text-[11px] font-mono font-black text-blue-400 truncate block">{volume.usedSize}</span>
             </div>
             <div className="p-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <span className="text-[8px] sm:text-[9px] text-slate-400 block">Avail</span>
-              <span className="text-[10px] sm:text-[11px] font-mono font-black text-emerald-400 truncate block">{volume.availableSize}</span>
+              <span className="text-[11px] sm:text-[11px] text-slate-400 block">Avail</span>
+              <span className="text-[11px] sm:text-[11px] font-mono font-black text-emerald-400 truncate block">{volume.availableSize}</span>
             </div>
           </div>
         </div>
@@ -185,7 +185,7 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
               Volume Load
             </span>
             <span
-              className="text-[8px] sm:text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
+              className="text-[11px] sm:text-[11px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
               style={{
                 backgroundColor: `${utilColor}1A`,
                 color: utilColor
@@ -212,12 +212,12 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
 
           <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 grid grid-cols-2 gap-1.5 text-center text-xs">
             <div className="p-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
-              <span className="text-[8px] sm:text-[9px] text-slate-400 block">Read IOPS</span>
-              <span className="text-[10px] sm:text-[11px] font-mono font-black text-cyan-400 truncate block">{volume.readIops}</span>
+              <span className="text-[11px] sm:text-[11px] text-slate-400 block">Read IOPS</span>
+              <span className="text-[11px] sm:text-[11px] font-mono font-black text-cyan-400 truncate block">{volume.readIops}</span>
             </div>
             <div className="p-1 rounded-lg bg-purple-500/10 border border-purple-500/20">
-              <span className="text-[8px] sm:text-[9px] text-slate-400 block">Write IOPS</span>
-              <span className="text-[10px] sm:text-[11px] font-mono font-black text-purple-400 truncate block">{volume.writeIops}</span>
+              <span className="text-[11px] sm:text-[11px] text-slate-400 block">Write IOPS</span>
+              <span className="text-[11px] sm:text-[11px] font-mono font-black text-purple-400 truncate block">{volume.writeIops}</span>
             </div>
           </div>
         </div>
@@ -234,7 +234,7 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setIopsViewMode('unified')}
-                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                  className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
                     iopsViewMode === 'unified'
                       ? 'bg-cyan-500 text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -246,7 +246,7 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setIopsViewMode('split')}
-                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                  className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
                     iopsViewMode === 'split'
                       ? 'bg-cyan-500 text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -287,7 +287,7 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
           ) : (
             <div className="space-y-1.5 my-auto">
               <div className="p-1.5 rounded-xl bg-white/[0.02] border border-slate-200/40 dark:border-white/5">
-                <div className="flex items-center justify-between text-[9px] font-mono font-bold px-1 text-cyan-400">
+                <div className="flex items-center justify-between text-[11px] font-mono font-bold px-1 text-cyan-400">
                   <span>Read IOPS</span>
                   <span>{volume.readIops}</span>
                 </div>
@@ -312,7 +312,7 @@ export const NasVolumeSection: React.FC<NasVolumeSectionProps> = ({
               </div>
 
               <div className="p-1.5 rounded-xl bg-white/[0.02] border border-slate-200/40 dark:border-white/5">
-                <div className="flex items-center justify-between text-[9px] font-mono font-bold px-1 text-purple-400">
+                <div className="flex items-center justify-between text-[11px] font-mono font-bold px-1 text-purple-400">
                   <span>Write IOPS</span>
                   <span>{volume.writeIops}</span>
                 </div>

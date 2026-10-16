@@ -48,7 +48,7 @@ export default function WeatherCard({
       className={`relative w-full h-full p-4 flex flex-col justify-between overflow-hidden rounded-3xl cursor-pointer group ${
         darkMode ? 'text-white' : 'text-slate-900 shadow-slate-200/60'
       }`}
-    >
+     role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
       {/* Contained Animated Atmospheric Weather Backdrop */}
       <AnimatedWeatherBackdrop condition={state} isNight={isNight} darkMode={darkMode} />
 
@@ -103,9 +103,9 @@ export default function WeatherCard({
                   key={f.datetime || i}
                   className="flex flex-col items-center px-2 py-1 rounded-xl bg-white/80 dark:bg-black/40 backdrop-blur-md border border-slate-200/80 dark:border-white/15 text-center shadow-xs"
                 >
-                  <span className="text-[9px] text-slate-500 dark:text-slate-300 font-bold uppercase">{dayLabel.slice(0, 3)}</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-300 font-bold uppercase">{dayLabel.slice(0, 3)}</span>
                   <span className="text-xs font-bold text-slate-900 dark:text-white font-mono my-0.5">{high}°</span>
-                  <span className="text-[9px] text-sky-600 dark:text-slate-300 font-mono">{low}°</span>
+                  <span className="text-[11px] text-sky-600 dark:text-slate-300 font-mono">{low}°</span>
                 </div>
               );
             })}
@@ -114,7 +114,7 @@ export default function WeatherCard({
       </div>
 
       {/* Bottom stats: Wind & Humidity */}
-      <div className="relative z-10 flex items-center justify-between text-[10px] text-slate-700 dark:text-slate-200 pt-1.5 border-t border-slate-200/60 dark:border-white/15">
+      <div className="relative z-10 flex items-center justify-between text-[11px] text-slate-700 dark:text-slate-200 pt-1.5 border-t border-slate-200/60 dark:border-white/15">
         <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-200">
           <Wind size={13} weight="duotone" className="text-teal-600 dark:text-sky-300" /> {windSpeed !== undefined ? `${windSpeed} ${windSpeedUnit}` : '--'}
         </span>

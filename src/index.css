@@ -495,16 +495,16 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
   --color-chart-tooltip-background: var(--chart-tooltip-background);
   --color-chart-tooltip-foreground: var(--chart-tooltip-foreground);
   --color-chart-tooltip-muted: var(--chart-tooltip-muted);
-  --color-chart-marker-background: var(----chart-marker-background);
-  --color-chart-marker-border: var(----chart-marker-border);
-  --color-chart-marker-foreground: var(----chart-marker-foreground);
-  --color-chart-label: var(----chart-label);
-  --color-chart-scale-01: var(----chart-scale-01);
-  --color-chart-scale-02: var(----chart-scale-02);
-  --color-chart-scale-03: var(----chart-scale-03);
-  --color-chart-scale-04: var(----chart-scale-04);
-  --color-chart-scale-05: var(----chart-scale-05);
-  --color-chart-scale-pattern-color: var(----chart-scale-pattern-color);
+  --color-chart-marker-background: var(--chart-marker-background);
+  --color-chart-marker-border: var(--chart-marker-border);
+  --color-chart-marker-foreground: var(--chart-marker-foreground);
+  --color-chart-label: var(--chart-label);
+  --color-chart-scale-01: var(--chart-scale-01);
+  --color-chart-scale-02: var(--chart-scale-02);
+  --color-chart-scale-03: var(--chart-scale-03);
+  --color-chart-scale-04: var(--chart-scale-04);
+  --color-chart-scale-05: var(--chart-scale-05);
+  --color-chart-scale-pattern-color: var(--chart-scale-pattern-color);
   --animate-shine: shine var(--duration) infinite linear;
   @keyframes shine {
   0% {
@@ -978,4 +978,27 @@ input[type="range"].glow-slider-thumb::-moz-range-thumb {
 /* Hide Leaflet default attribution footer control across all mini-maps */
 .leaflet-control-attribution {
   display: none !important;
+}
+/* ---------------------------------------------------------------------------
+   Accessibility baselines
+   --------------------------------------------------------------------------- */
+
+/* UI-006: a visible keyboard focus indicator everywhere. Components that suppress the default
+   outline with `outline-none` still get this ring, because it is applied on :focus-visible with
+   !important only for keyboard-modality focus. */
+:where(a, button, input, select, textarea, summary, [role="button"], [role="tab"], [role="switch"], [tabindex]):focus-visible {
+  outline: 2px solid #38bdf8 !important;
+  outline-offset: 2px !important;
+}
+
+/* UI-009: respect the OS "reduce motion" setting for decorative and looping animation */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

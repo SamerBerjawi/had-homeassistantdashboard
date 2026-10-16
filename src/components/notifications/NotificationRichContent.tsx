@@ -72,8 +72,8 @@ export default function NotificationRichContent({
     }
     workingText = workingText.replace(mdImageRegex, '');
 
-    // 2. Extract HTML Images: <img ... src="..." ... />
-    const htmlImageRegex = /<img\s+[^>]*src=["']([^"']+)["'][^>]*>/gi;
+    // 2. Extract HTML Images: <img loading="lazy" decoding="async" ... src="..." ... />
+    const htmlImageRegex = /<img loading="lazy" decoding="async"\s+[^>]*src=["']([^"']+)["'][^>]*>/gi;
     while ((match = htmlImageRegex.exec(workingText)) !== null) {
       const src = resolveImageUrl(match[1].trim());
       if (src && !rawImages.some(img => img.src === src)) {
@@ -193,8 +193,8 @@ export default function NotificationRichContent({
                 if (img.src) safeOpenExternalUrl(img.src);
               }}
               title="Click to view full image"
-            >
-              <img
+             role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
+              <img decoding="async"
                 src={img.src}
                 alt={img.alt || 'Notification image'}
                 loading="lazy"

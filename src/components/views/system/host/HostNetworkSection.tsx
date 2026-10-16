@@ -39,7 +39,7 @@ export function HostNetworkSection({
         <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
           Network Interface (end0)
         </h3>
-        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-800 dark:text-cyan-400 border-cyan-500/25">
+        <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded border bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-800 dark:text-cyan-400 border-cyan-500/25">
           Section 5
         </span>
       </div>
@@ -54,7 +54,7 @@ export function HostNetworkSection({
                 Network Throughput
               </span>
             </div>
-            <div className="flex items-center gap-3 text-[10px] font-mono">
+            <div className="flex items-center gap-3 text-[11px] font-mono">
               <span className="flex items-center gap-1 text-cyan-400 font-bold">
                 <span className="w-2 h-2 rounded-full bg-cyan-400" /> In: {metrics.networkInRate} {metrics.networkInUnit}
               </span>
@@ -90,7 +90,7 @@ export function HostNetworkSection({
                 Packets Rate (In / Out)
               </span>
             </div>
-            <div className="flex items-center gap-3 text-[10px] font-mono">
+            <div className="flex items-center gap-3 text-[11px] font-mono">
               <span className="flex items-center gap-1 text-emerald-400 font-bold">
                 <span className="w-2 h-2 rounded-full bg-emerald-400" /> In: {metrics.packetsIn.toLocaleString()}
               </span>

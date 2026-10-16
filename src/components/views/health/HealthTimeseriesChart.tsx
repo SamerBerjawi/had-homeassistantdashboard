@@ -124,7 +124,7 @@ export const HealthTimeseriesChart: React.FC<HealthTimeseriesChartProps> = ({
                 {def.label}
               </h2>
               {isCumulativeApplicable && (
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                   {plotMode === 'cumulative' ? 'Cumulative Curve' : 'Interval View'}
                 </span>
               )}

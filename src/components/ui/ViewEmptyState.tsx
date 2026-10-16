@@ -40,7 +40,7 @@ export default function ViewEmptyState({
       </div>
 
       {badgeText && (
-        <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 mb-3">
+        <span className="text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 mb-3">
           {badgeText}
         </span>
       )}

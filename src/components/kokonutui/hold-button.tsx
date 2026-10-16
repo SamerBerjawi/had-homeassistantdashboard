@@ -203,7 +203,7 @@ export function HoldButton({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 2, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md bg-slate-900/95 dark:bg-black/95 text-[10px] font-bold text-rose-400 whitespace-nowrap shadow-lg border border-rose-500/30 pointer-events-none z-30"
+            className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md bg-slate-900/95 dark:bg-black/95 text-[11px] font-bold text-rose-400 whitespace-nowrap shadow-lg border border-rose-500/30 pointer-events-none z-30"
           >
             {holdingLabel || "Holding..."}
           </motion.div>
@@ -214,7 +214,7 @@ export function HoldButton({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 2, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md bg-slate-900/95 dark:bg-black/95 text-[10px] font-bold text-rose-400 whitespace-nowrap shadow-lg border border-rose-500/30 pointer-events-none z-30"
+            className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md bg-slate-900/95 dark:bg-black/95 text-[11px] font-bold text-rose-400 whitespace-nowrap shadow-lg border border-rose-500/30 pointer-events-none z-30"
           >
             Hold to Arm
           </motion.div>

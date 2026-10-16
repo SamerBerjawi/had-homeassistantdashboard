@@ -308,7 +308,7 @@ export function VehicleHeroCard({
               ? 'bg-black/20 hover:bg-black/30 text-white'
               : 'bg-white/20 hover:bg-white/30 text-slate-900'
           }`}
-        >
+         role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
           {/* Top: Liquid Wave in Rounded Rectangle */}
           <div className="flex justify-center my-auto py-1">
             <LiquidWaveBattery
@@ -323,7 +323,7 @@ export function VehicleHeroCard({
           <div className="space-y-1 sm:space-y-1.5 pt-1 border-t border-white/5">
             {/* Range */}
             <div className="flex items-baseline justify-between">
-              <span className={`text-[10px] font-semibold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <span className={`text-[11px] font-semibold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 Range
               </span>
               <span className={`font-mono text-sm sm:text-base font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -333,11 +333,11 @@ export function VehicleHeroCard({
 
             {/* 12V Battery Health */}
             <div className="flex items-center justify-between text-[11px]">
-              <span className={`text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <span className={`text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 <BatteryMedium size={12} weight="bold" className="text-emerald-500" />
                 12V Aux
               </span>
-              <span className={`font-mono text-[10px] font-bold ${
+              <span className={`font-mono text-[11px] font-bold ${
                 metrics.battery12V !== undefined && Number(metrics.battery12V) > 12 ? 'text-emerald-500' : 'text-amber-500'
               }`}>
                 {metrics.battery12V !== undefined ? `${formatDecimal(metrics.battery12V)}V` : '--'}
@@ -346,10 +346,10 @@ export function VehicleHeroCard({
 
             {/* Charging State Pill */}
             <div className="flex items-center justify-between text-[11px]">
-              <span className={`text-[10px] font-semibold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <span className={`text-[11px] font-semibold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 Status
               </span>
-              <span className={`font-mono text-[10px] font-bold truncate max-w-[85px] ${
+              <span className={`font-mono text-[11px] font-bold truncate max-w-[85px] ${
                 isCharging ? 'text-emerald-400 font-black' : isPluggedIn ? 'text-sky-400' : darkMode ? 'text-slate-400' : 'text-slate-600'
               }`}>
                 {isCharging ? 'Active' : isPluggedIn ? 'Plugged' : 'Standby'}
@@ -368,7 +368,7 @@ export function VehicleHeroCard({
                 ? 'bg-black/20 hover:bg-black/30 text-white'
                 : 'bg-white/20 hover:bg-white/30 text-slate-900'
             }`}
-          >
+           role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
             <div
               className={`w-7 h-7 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${
                 darkMode ? 'bg-white/5 text-cyan-400' : 'bg-cyan-100 text-cyan-800'
@@ -386,7 +386,7 @@ export function VehicleHeroCard({
                 {metrics.odometer !== undefined ? `${formatDecimal(metrics.odometer)} ${metrics.odometerUnit || 'km'}` : '--'}
               </span>
               <span
-                className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider truncate ${
+                className={`text-[11px] sm:text-[11px] font-semibold uppercase tracking-wider truncate ${
                   darkMode ? 'text-slate-400' : 'text-slate-500'
                 }`}
               >
@@ -403,7 +403,7 @@ export function VehicleHeroCard({
                 ? 'bg-black/20 hover:bg-black/30 text-white'
                 : 'bg-white/20 hover:bg-white/30 text-slate-900'
             }`}
-          >
+           role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
             <div
               className={`w-7 h-7 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${
                 darkMode ? 'bg-white/5 text-amber-400' : 'bg-amber-100 text-amber-800'
@@ -421,7 +421,7 @@ export function VehicleHeroCard({
                 {metrics.cabinTemp ? `${formatDecimal(metrics.cabinTemp)}°C` : '--'}
               </span>
               <span
-                className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider truncate ${
+                className={`text-[11px] sm:text-[11px] font-semibold uppercase tracking-wider truncate ${
                   darkMode ? 'text-slate-400' : 'text-slate-500'
                 }`}
               >
@@ -442,7 +442,7 @@ export function VehicleHeroCard({
                 ? 'bg-black/20 hover:bg-black/30 text-white'
                 : 'bg-white/20 hover:bg-white/30 text-slate-900'
             }`}
-          >
+           role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
             <div
               className={`w-7 h-7 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${
                 isOtaAvailable
@@ -468,7 +468,7 @@ export function VehicleHeroCard({
                 {isOtaAvailable ? 'Update Available' : 'Up to Date'}
               </span>
               <span
-                className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider truncate ${
+                className={`text-[11px] sm:text-[11px] font-semibold uppercase tracking-wider truncate ${
                   darkMode ? 'text-slate-400' : 'text-slate-500'
                 }`}
               >

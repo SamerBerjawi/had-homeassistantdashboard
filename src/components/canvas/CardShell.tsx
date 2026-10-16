@@ -99,7 +99,7 @@ export default function CardShell({
           }
         }}
         className="w-full h-full p-4 sm:p-5 flex flex-col justify-between cursor-pointer"
-      >
+       role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
         <ErrorBoundary variant="card">{children}</ErrorBoundary>
       </div>
     </div>

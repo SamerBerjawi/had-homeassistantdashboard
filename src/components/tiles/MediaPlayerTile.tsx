@@ -166,11 +166,11 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
             ? 'bg-black/20 text-white border-white/10'
             : 'bg-white/70 text-slate-900 border-slate-200/80'
         }`}
-      >
+       role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
         {/* Dynamic Blurred Album Artwork Background */}
         {albumArtUrl && !imgError && (
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none z-0">
-            <img
+            <img loading="lazy" decoding="async"
               src={albumArtUrl}
               alt=""
               onError={() => setImgError(true)}
@@ -195,7 +195,7 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
           <div className="flex items-stretch gap-3.5 min-w-0 flex-1">
             <div className="relative aspect-square w-16 sm:w-20 rounded-2xl overflow-hidden shadow-xl ring-2 ring-white/30 dark:ring-white/10 shrink-0 group/art self-stretch flex items-center justify-center">
               {albumArtUrl && !imgError ? (
-                <img
+                <img loading="lazy" decoding="async"
                   src={albumArtUrl}
                   alt={title}
                   onError={() => setImgError(true)}
@@ -213,7 +213,7 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
               {/* Device Output Badge */}
               <div className="flex items-center gap-2 mb-0.5">
                 <span
-                  className="px-2 py-0.5 rounded-md text-[10px] font-bold border flex items-center gap-1 truncate max-w-[150px] transition-colors duration-300 shadow-2xs"
+                  className="px-2 py-0.5 rounded-md text-[11px] font-bold border flex items-center gap-1 truncate max-w-[150px] transition-colors duration-300 shadow-2xs"
                   style={{
                     backgroundColor: palette.badgeBg,
                     borderColor: palette.badgeBorder,
@@ -245,7 +245,7 @@ export const MediaPlayerTile: React.FC<MediaPlayerTileProps> = ({
               </p>
 
               {album && (
-                <p className="text-[10px] text-slate-600 dark:text-slate-400 font-semibold truncate">
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 font-semibold truncate">
                   {album}
                 </p>
               )}

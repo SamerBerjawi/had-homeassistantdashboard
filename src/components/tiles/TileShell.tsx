@@ -80,7 +80,7 @@ export const TileShell: React.FC<TileShellProps> = ({
       className={`group relative w-full h-full rounded-3xl backdrop-blur-xl border ${borderClass} shadow-[4px_6px_12px_rgba(0,0,0,0.12)] transition-all duration-200 flex flex-col justify-center overflow-hidden isolate ${bgClass} ${
         onClick ? 'cursor-pointer active:scale-[0.985]' : ''
       } ${className}`}
-    >
+     role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
       {/* Top Ambient Glow Bloom if Active (Soft & Subtle) */}
       {isActive && (
         <div

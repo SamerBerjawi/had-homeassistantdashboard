@@ -13,16 +13,18 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  confirmingReset: boolean;
 }
 
 export default class RootErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    error: null
+    error: null,
+    confirmingReset: false
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error, confirmingReset: false };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -46,6 +48,11 @@ export default class RootErrorBoundary extends Component<Props, State> {
   };
 
   private handleClearCacheAndReset = () => {
+    // REL-010: this wipes every local setting and signs the user out, so it needs a second click
+    if (!this.state.confirmingReset) {
+      this.setState({ confirmingReset: true });
+      return;
+    }
     try {
       localStorage.clear();
       sessionStorage.clear();
@@ -57,7 +64,7 @@ export default class RootErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-6 bg-slate-950 text-white font-sans select-none">
-          <div className="max-w-md w-full p-6 sm:p-8 rounded-3xl bg-white/[0.04] border border-white/10 shadow-2xl backdrop-blur-xl text-center space-y-5">
+          <div role="alertdialog" aria-modal="true" aria-label="Dashboard error" className="max-w-md w-full p-6 sm:p-8 rounded-3xl bg-white/[0.04] border border-white/10 shadow-2xl backdrop-blur-xl text-center space-y-5">
             <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
               <WarningCircle size={32} weight="duotone" />
             </div>
@@ -94,7 +101,11 @@ export default class RootErrorBoundary extends Component<Props, State> {
                 className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-transparent hover:bg-rose-500/10 text-rose-400 font-medium text-xs transition-all active:scale-95 cursor-pointer"
               >
                 <Trash size={14} />
-                <span>Reset Stored Cache & Re-login</span>
+                <span>
+                  {this.state.confirmingReset
+                    ? 'Click again to confirm: clears local settings and signs you out'
+                    : 'Reset Stored Cache & Re-login'}
+                </span>
               </button>
             </div>
           </div>

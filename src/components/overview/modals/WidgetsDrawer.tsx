@@ -499,7 +499,7 @@ export default function WidgetsDrawer({
                       <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
                         {widget.title}
                       </h4>
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-200/60 dark:bg-white/10 text-slate-600 dark:text-slate-400 shrink-0">
+                      <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-200/60 dark:bg-white/10 text-slate-600 dark:text-slate-400 shrink-0">
                         {widget.defaultSize === '2x' ? '2× Wide' : '1×'}
                       </span>
                     </div>
@@ -520,7 +520,7 @@ export default function WidgetsDrawer({
                     <button
                       type="button"
                       onClick={() => handleModeChange(widget.id, 'all_on')}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+                      className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                         isAllOn
                           ? 'bg-emerald-500 text-white shadow-xs'
                           : darkMode
@@ -537,7 +537,7 @@ export default function WidgetsDrawer({
                     <button
                       type="button"
                       onClick={() => handleModeChange(widget.id, 'tab_only')}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+                      className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                         isTabOnly
                           ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
                           : darkMode
@@ -554,7 +554,7 @@ export default function WidgetsDrawer({
                     <button
                       type="button"
                       onClick={() => handleModeChange(widget.id, 'all_off')}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+                      className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                         isAllOff
                           ? 'bg-rose-500 text-white shadow-xs'
                           : darkMode

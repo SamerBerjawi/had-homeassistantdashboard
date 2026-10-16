@@ -7,6 +7,7 @@
  * update changelogs, and official documentation links.
  */
 
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React, { useState, useMemo } from 'react';
 import { 
   X, 
@@ -50,6 +51,7 @@ export default function IntegrationDetailDrawer({
   onClose,
   darkMode = true
 }: IntegrationDetailDrawerProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   const [activeTab, setActiveTab] = useState<DetailTab>('overview');
   const [deviceSearch, setDeviceSearch] = useState('');
   const [entitySearch, setEntitySearch] = useState('');
@@ -148,7 +150,7 @@ export default function IntegrationDetailDrawer({
       />
 
       {/* Drawer Panel */}
-      <div className={`relative w-full max-w-xl h-full flex flex-col z-10 shadow-2xl overflow-hidden transition-transform animate-slideInRight ${
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Integration details" tabIndex={-1} className={`relative w-full max-w-xl h-full flex flex-col z-10 shadow-2xl overflow-hidden transition-transform animate-slideInRight ${
         darkMode ? 'bg-slate-900/95 text-white border-l border-white/10' : 'bg-slate-50/95 text-slate-900 border-l border-slate-200'
       }`}>
         {/* Status Bar Safe-Area Clearance (PWA / Mobile) */}
@@ -189,10 +191,10 @@ export default function IntegrationDetailDrawer({
         <div className={`px-6 py-3 flex flex-wrap items-center gap-2 border-b ${
           darkMode ? 'border-white/5 bg-slate-950/40' : 'border-slate-200/50 bg-slate-100/50'
         }`}>
-          <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${categoryConfig.bg}`}>
+          <span className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${categoryConfig.bg}`}>
             {categoryConfig.label}
           </span>
-          <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+          <span className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
             integration.state === 'loaded' || integration.state === 'running'
               ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
               : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30'
@@ -200,12 +202,12 @@ export default function IntegrationDetailDrawer({
             ● {integration.state.toUpperCase()}
           </span>
           {integration.version && (
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-500/10 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
+            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-500/10 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
               v{integration.version}
             </span>
           )}
           {integration.iotClass && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-500/10 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-500/10 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
               {iotClassLabels[integration.iotClass] || integration.iotClass}
             </span>
           )}
@@ -334,12 +336,12 @@ export default function IntegrationDetailDrawer({
               {/* Metrics Breakdown Bento */}
               <div className="grid grid-cols-2 gap-3">
                 <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'}`}>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Total Devices</span>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Devices</span>
                   <div className="text-2xl font-black mt-1 font-mono">{integration.devicesCount}</div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Hardware units paired</p>
                 </div>
                 <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'}`}>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Total Entities</span>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Entities</span>
                   <div className="text-2xl font-black mt-1 font-mono">{integration.entitiesCount}</div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Telemetry endpoints</p>
                 </div>
@@ -399,7 +401,7 @@ export default function IntegrationDetailDrawer({
                           <div className="flex items-center gap-2">
                             <h4 className="text-xs font-bold truncate">{dev.name_by_user || dev.name || 'Unnamed Device'}</h4>
                             {areaName && (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-500/15 text-slate-700 dark:text-slate-300">
+                              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-500/15 text-slate-700 dark:text-slate-300">
                                 {areaName}
                               </span>
                             )}
@@ -454,17 +456,17 @@ export default function IntegrationDetailDrawer({
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <h4 className="text-xs font-bold truncate">{entity.name || entity.entity_id}</h4>
-                            <span className="text-[10px] font-mono uppercase px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300">
+                            <span className="text-[11px] font-mono uppercase px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300">
                               {entity.domain}
                             </span>
                           </div>
-                          <p className="text-[10px] text-slate-400 font-mono truncate mt-0.5">
+                          <p className="text-[11px] text-slate-400 font-mono truncate mt-0.5">
                             {entity.entity_id}
                           </p>
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                          <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-md ${
                             isOn 
                               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
                               : 'bg-slate-500/15 text-slate-400 border border-slate-200 dark:border-white/10'

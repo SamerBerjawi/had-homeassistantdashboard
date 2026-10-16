@@ -283,7 +283,7 @@ export default function FanControlView({ entity, darkMode = true, customIcon }: 
             )}
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
               {entity.attributes.room || entity.attributes.area || 'CLIMATE & AIR'}
             </span>
             <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">
@@ -551,7 +551,7 @@ export default function FanControlView({ entity, darkMode = true, customIcon }: 
               <span className="text-xs font-bold text-slate-800 dark:text-white truncate max-w-full">
                 Oscillate
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 {isOscillating ? (activeAngle ? `${activeAngle}°` : 'Active') : 'Off'}
               </span>
             </button>
@@ -581,7 +581,7 @@ export default function FanControlView({ entity, darkMode = true, customIcon }: 
               <span className="text-xs font-bold text-slate-800 dark:text-white truncate max-w-full">
                 Mode
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate max-w-full capitalize">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate max-w-full capitalize">
                 {activePreset || 'Normal'}
               </span>
             </button>
@@ -611,7 +611,7 @@ export default function FanControlView({ entity, darkMode = true, customIcon }: 
               <span className="text-xs font-bold text-slate-800 dark:text-white truncate max-w-full">
                 Direction
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 capitalize">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 capitalize">
                 {currentDir === 'forward' ? 'Down' : 'Up'}
               </span>
             </button>
@@ -639,7 +639,7 @@ export default function FanControlView({ entity, darkMode = true, customIcon }: 
               <span className="text-xs font-bold text-slate-800 dark:text-white truncate max-w-full">
                 Angle
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 {activeAngle ? `${activeAngle}°` : 'Default'}
               </span>
             </button>
@@ -661,7 +661,7 @@ export default function FanControlView({ entity, darkMode = true, customIcon }: 
               <span className="text-xs font-bold text-slate-800 dark:text-white truncate max-w-full">
                 Room Temp
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 {caps.currentTemperature}{caps.temperatureUnit || '°C'}
               </span>
             </div>

@@ -182,13 +182,13 @@ export default function DevicesEnergyGraphCard({
               <PieCenter defaultLabel="Total Tracked">
                 {({ value, label, isHovered }) => (
                   <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none px-2 max-w-full">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 max-w-[95px] truncate leading-tight">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 max-w-[95px] truncate leading-tight">
                       {isHovered ? label : 'Total Tracked'}
                     </span>
                     <span className="text-base sm:text-lg font-black font-mono tracking-tight text-slate-900 dark:text-white leading-tight my-0.5">
                       {value.toFixed(2)}
                     </span>
-                    <span className="text-[10px] font-bold font-mono text-indigo-500 dark:text-indigo-400 leading-tight">
+                    <span className="text-[11px] font-bold font-mono text-indigo-500 dark:text-indigo-400 leading-tight">
                       {isHovered
                         ? `${((value / Math.max(0.01, totalDevicesKwh)) * 100).toFixed(1)}%`
                         : 'kWh'}
@@ -262,7 +262,7 @@ export default function DevicesEnergyGraphCard({
                         ? darkMode ? 'text-indigo-300' : 'text-indigo-600'
                         : darkMode ? 'text-white' : 'text-slate-900'
                     }`}>
-                      {device.kwh.toFixed(2)} <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500">kWh</span>
+                      {device.kwh.toFixed(2)} <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">kWh</span>
                     </span>
                   </div>
                 </div>
@@ -300,7 +300,7 @@ export default function DevicesEnergyGraphCard({
                     {untrackedPercentage.toFixed(1)}%
                   </span>
                   <span className="text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-400 w-16 sm:w-18 text-right">
-                    {untrackedKwh.toFixed(2)} <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500">kWh</span>
+                    {untrackedKwh.toFixed(2)} <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">kWh</span>
                   </span>
                 </div>
               </div>

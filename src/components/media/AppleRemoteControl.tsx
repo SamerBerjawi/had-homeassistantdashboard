@@ -101,7 +101,7 @@ export default function AppleRemoteControl({
                   ? 'bg-emerald-500' 
                   : 'bg-slate-500'
             }`} />
-            <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-slate-400 dark:text-slate-400">
+            <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-slate-400 dark:text-slate-400">
               {lastCommand}
             </span>
           </div>
@@ -294,7 +294,7 @@ export default function AppleRemoteControl({
 
         {/* Entity ID Subtitle Tag */}
         <div className="text-center mt-5 pt-3 border-t border-slate-300/60 dark:border-white/5">
-          <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate block">
+          <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 truncate block">
             {targetRemoteId}
           </span>
         </div>

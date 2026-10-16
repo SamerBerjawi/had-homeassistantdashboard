@@ -224,7 +224,7 @@ export default function UsersPresenceModal({
                   className="w-20 h-20 shadow-xl"
                 />
                 <span
-                  className={`absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md ${
+                  className={`absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider shadow-md ${
                     isHome
                       ? 'bg-emerald-500 text-white dark:text-slate-950'
                       : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
@@ -258,7 +258,7 @@ export default function UsersPresenceModal({
 
                 {battery !== undefined && (
                   <div className="flex items-center gap-2 font-black text-xs shrink-0">
-                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                    <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300">
                       {batteryState}
                     </span>
                     <span className={`flex items-center gap-1 ${
@@ -297,7 +297,7 @@ export default function UsersPresenceModal({
             {/* Information Grid */}
             <div className="grid grid-cols-2 gap-2.5 text-xs">
               <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04]">
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                   Presence State
                 </span>
                 <span className="font-bold text-slate-900 dark:text-white capitalize mt-0.5 block truncate">
@@ -306,7 +306,7 @@ export default function UsersPresenceModal({
               </div>
 
               <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04]">
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                   Device Power State
                 </span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400 capitalize mt-0.5 block truncate">
@@ -315,7 +315,7 @@ export default function UsersPresenceModal({
               </div>
 
               <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04]">
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block flex items-center gap-1">
                   <Clock size={12} weight="duotone" className="text-indigo-400" />
                   <span>Last Update</span>
                 </span>
@@ -323,14 +323,14 @@ export default function UsersPresenceModal({
                   {formattedLastUpdated}
                 </span>
                 {relativeLastUpdated && (
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block truncate mt-0.5">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block truncate mt-0.5">
                     {relativeLastUpdated}
                   </span>
                 )}
               </div>
 
               <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04]">
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                   HA Entity ID
                 </span>
                 <span className="font-mono text-slate-600 dark:text-slate-300 truncate mt-0.5 block text-[11px]">
@@ -348,7 +348,7 @@ export default function UsersPresenceModal({
                   <Globe size={16} weight="duotone" className="text-emerald-600 dark:text-emerald-400" />
                   <span>Location Map</span>
                   <span
-                    className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold uppercase tracking-wider ${
+                    className={`text-[11px] px-1.5 py-0.2 rounded font-mono font-bold uppercase tracking-wider ${
                       cartoApiKey
                         ? 'bg-sky-500/25 text-sky-400 border border-sky-500/30'
                         : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
@@ -415,11 +415,11 @@ export default function UsersPresenceModal({
 
                   {/* GPS Coordinates Badge & Last Update Footer Overlay */}
                   <div className="absolute bottom-2 inset-x-2 flex items-center justify-between pointer-events-none z-[400] gap-2">
-                    <div className="px-2.5 py-1 rounded-xl bg-slate-900/85 text-white backdrop-blur-md text-[10px] font-mono shadow-md">
+                    <div className="px-2.5 py-1 rounded-xl bg-slate-900/85 text-white backdrop-blur-md text-[11px] font-mono shadow-md">
                       {lat.toFixed(4)}° N, {Math.abs(lon).toFixed(4)}° {lon >= 0 ? 'E' : 'W'}
                     </div>
 
-                    <div className="px-2.5 py-1 rounded-xl bg-slate-900/85 text-slate-300 backdrop-blur-md text-[10px] font-mono shadow-md flex items-center gap-1.5 truncate">
+                    <div className="px-2.5 py-1 rounded-xl bg-slate-900/85 text-slate-300 backdrop-blur-md text-[11px] font-mono shadow-md flex items-center gap-1.5 truncate">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                       <span className="truncate">Updated {formattedLastUpdated}</span>
                     </div>
@@ -431,7 +431,7 @@ export default function UsersPresenceModal({
                 }`}>
                   <Globe size={28} weight="duotone" className="mb-1.5 opacity-60 text-slate-400" />
                   <span className="text-xs font-bold">Location Coordinates Unavailable</span>
-                  <span className="text-[10px] opacity-75 mt-0.5">No GPS location reported for this person or zone.</span>
+                  <span className="text-[11px] opacity-75 mt-0.5">No GPS location reported for this person or zone.</span>
                 </div>
               )}
             </div>

@@ -109,7 +109,7 @@ export function MobilityMap({
           <Globe size={14} weight="duotone" className="text-emerald-400 shrink-0" />
           <span className="truncate max-w-[130px] sm:max-w-[180px]">{title}</span>
           <span
-            className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold uppercase tracking-wider ${
+            className={`text-[11px] px-1.5 py-0.2 rounded font-mono font-bold uppercase tracking-wider ${
               cartoApiKey
                 ? 'bg-sky-500/25 text-sky-300 border border-sky-500/30'
                 : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
@@ -118,7 +118,7 @@ export function MobilityMap({
             {cartoApiKey ? 'CARTO' : 'OSM'}
           </span>
           {isMoving && (
-            <span className="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 text-[9px] font-black uppercase tracking-wider animate-pulse">
+            <span className="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 text-[11px] font-black uppercase tracking-wider animate-pulse">
               {speedKmh} km/h
             </span>
           )}
@@ -146,7 +146,7 @@ export function MobilityMap({
             target="_blank"
             rel="noopener noreferrer"
             title="Open in OpenStreetMap"
-            className="h-7 px-2 rounded-lg bg-indigo-600/90 hover:bg-indigo-500 border border-indigo-400/30 text-white flex items-center gap-1 text-[10px] font-black uppercase tracking-wider transition-colors shadow-md"
+            className="h-7 px-2 rounded-lg bg-indigo-600/90 hover:bg-indigo-500 border border-indigo-400/30 text-white flex items-center gap-1 text-[11px] font-black uppercase tracking-wider transition-colors shadow-md"
           >
             <span>Live Map</span>
             <NavigationArrow size={11} weight="bold" />
@@ -156,12 +156,12 @@ export function MobilityMap({
 
       {/* Bottom Telemetry HUD */}
       <div className="absolute bottom-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none gap-2 z-[400]">
-        <div className="px-2.5 py-1 rounded-xl bg-slate-950/80 text-white backdrop-blur-md border border-white/15 text-[10px] font-mono shadow-md flex items-center gap-2">
+        <div className="px-2.5 py-1 rounded-xl bg-slate-950/80 text-white backdrop-blur-md border border-white/15 text-[11px] font-mono shadow-md flex items-center gap-2">
           <span>{latitude.toFixed(4)}° N, {Math.abs(longitude).toFixed(4)}° {longitude >= 0 ? 'E' : 'W'}</span>
         </div>
 
         {lastUpdated && (
-          <div className="px-2 py-1 rounded-xl bg-slate-950/80 text-slate-300 backdrop-blur-md border border-white/15 text-[10px] font-mono shadow-md truncate">
+          <div className="px-2 py-1 rounded-xl bg-slate-950/80 text-slate-300 backdrop-blur-md border border-white/15 text-[11px] font-mono shadow-md truncate">
             {formatLastUpdated(lastUpdated)}
           </div>
         )}

@@ -150,7 +150,7 @@ export default function CameraFeedSection({
               >
                 <span>{tab.label}</span>
                 {tab.id !== 'all' && (
-                  <span className={`text-[10px] px-1 py-0.2 rounded-full font-bold ${
+                  <span className={`text-[11px] px-1 py-0.2 rounded-full font-bold ${
                     areaFilter === tab.id ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-900/[0.06] dark:bg-white/10 text-slate-500 dark:text-slate-400'
                   }`}>
                     {tab.count}
@@ -199,7 +199,7 @@ export default function CameraFeedSection({
                     ? 'bg-black/20 hover:bg-black/30 text-white'
                     : 'bg-white/20 hover:bg-white/30 text-slate-900'
                 }`}
-              >
+               role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
                 {/* Camera Feed Viewport */}
                 <div className="relative w-full aspect-video bg-black overflow-hidden">
                   <CameraFeed
@@ -238,7 +238,7 @@ export default function CameraFeedSection({
 
                   {/* Bottom HUD: Motion Alert Indicator */}
                   <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none z-20">
-                    <div className={`px-2.5 py-1 rounded-xl backdrop-blur-md text-[10px] sm:text-[11px] font-semibold border flex items-center gap-1.5 shadow-md ${
+                    <div className={`px-2.5 py-1 rounded-xl backdrop-blur-md text-[11px] sm:text-[11px] font-semibold border flex items-center gap-1.5 shadow-md ${
                       motionStatus.isMotionActive
                         ? 'bg-rose-600/90 text-white border-rose-400 animate-pulse shadow-rose-600/40'
                         : 'bg-black/65 text-slate-200 border-white/10'

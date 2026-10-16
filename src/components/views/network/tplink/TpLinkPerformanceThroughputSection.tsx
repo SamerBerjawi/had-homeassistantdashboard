@@ -77,7 +77,7 @@ export const TpLinkPerformanceThroughputSection: React.FC<TpLinkPerformanceThrou
               key={range}
               type="button"
               onClick={() => onTimeRangeChange(range)}
-              className={`px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
+              className={`px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer ${
                 timeRange === range
                   ? 'bg-emerald-500 text-white shadow-sm'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -103,7 +103,7 @@ export const TpLinkPerformanceThroughputSection: React.FC<TpLinkPerformanceThrou
               </span>
             </div>
             <span
-              className="text-[8px] sm:text-[9px] font-mono font-extrabold uppercase px-1.5 sm:px-2 py-0.5 rounded-full"
+              className="text-[11px] sm:text-[11px] font-mono font-extrabold uppercase px-1.5 sm:px-2 py-0.5 rounded-full"
               style={{
                 backgroundColor: `${cpuUsageColor}1A`,
                 color: cpuUsageColor
@@ -141,7 +141,7 @@ export const TpLinkPerformanceThroughputSection: React.FC<TpLinkPerformanceThrou
               </span>
             </div>
             <span
-              className="text-[8px] sm:text-[9px] font-mono font-extrabold uppercase px-1.5 sm:px-2 py-0.5 rounded-full"
+              className="text-[11px] sm:text-[11px] font-mono font-extrabold uppercase px-1.5 sm:px-2 py-0.5 rounded-full"
               style={{
                 backgroundColor: `${memUsageColor}1A`,
                 color: memUsageColor

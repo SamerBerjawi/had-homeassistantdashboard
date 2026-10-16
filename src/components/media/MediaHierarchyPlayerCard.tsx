@@ -122,13 +122,13 @@ export default function MediaHierarchyPlayerCard({
           ? 'bg-black/20 hover:bg-black/30 text-white'
           : 'bg-white/20 hover:bg-white/30 text-slate-900'
       }`}
-    >
+     role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
       {/* Top Row: Thumbnail + Details + Badges */}
       <div className="flex items-center gap-3 min-w-0">
         {/* Artwork / Icon Thumbnail */}
         <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-800 flex items-center justify-center shadow-xs">
           {albumArt && !imgError ? (
-            <img
+            <img loading="lazy" decoding="async"
               src={albumArt}
               alt={visual.title}
               onError={() => setImgError(true)}
@@ -156,7 +156,7 @@ export default function MediaHierarchyPlayerCard({
               {visual.title}
             </h4>
             <span
-              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shrink-0 shadow-2xs ${
+              className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shrink-0 shadow-2xs ${
                 isPlaying
                   ? 'bg-purple-500/20 text-purple-800 dark:text-purple-300 animate-pulse'
                   : isPaused
@@ -228,7 +228,7 @@ export default function MediaHierarchyPlayerCard({
             onTouchEnd={handleVolumeCommit}
             className="w-full h-1 rounded-lg bg-slate-200 dark:bg-white/15 appearance-none cursor-pointer accent-purple-500 disabled:opacity-30"
           />
-          <span className="text-[10px] font-mono text-slate-400 shrink-0 min-w-[22px] text-right">
+          <span className="text-[11px] font-mono text-slate-400 shrink-0 min-w-[22px] text-right">
             {volume}%
           </span>
         </div>

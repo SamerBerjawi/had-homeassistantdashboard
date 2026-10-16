@@ -106,7 +106,7 @@ export default function NotificationBell({
 
       {totalCount > 0 && (
         <span
-          className={`absolute -top-1 -right-1 min-w-[19px] h-[19px] px-1 rounded-full text-[10px] font-black flex items-center justify-center ring-2 ${
+          className={`absolute -top-1 -right-1 min-w-[19px] h-[19px] px-1 rounded-full text-[11px] font-black flex items-center justify-center ring-2 ${
             darkMode ? 'ring-black' : 'ring-white'
           } ${badgeColorClass}`}
         >

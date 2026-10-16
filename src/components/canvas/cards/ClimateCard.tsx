@@ -71,7 +71,7 @@ export default function ClimateCard({
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">Target</span>
           </div>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
             Ambient: <span className="text-slate-700 dark:text-slate-200 font-semibold">{currentTemp.toFixed(1)}°C</span>
           </p>
         </div>
@@ -96,7 +96,7 @@ export default function ClimateCard({
       </div>
 
       {/* Bottom status bar */}
-      <div className="flex items-center justify-between text-[10px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
+      <div className="flex items-center justify-between text-[11px] text-slate-550 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-white/10">
         <span className="flex items-center gap-1 text-slate-750 dark:text-slate-300">
           <Wind size={13} weight="duotone" className="text-sky-400" /> {fanMode} Fan
         </span>

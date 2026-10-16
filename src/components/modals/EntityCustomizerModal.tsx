@@ -7,6 +7,7 @@
  * and visibility preferences. Synced to remote config and live auto-layout store.
  */
 
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -64,6 +65,7 @@ export default function EntityCustomizerModal({
   floorName,
   addToast
 }: EntityCustomizerModalProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   const { config, updateConfig, flushPendingSave } = useUserConfig();
   const { resolvedEntities, entityCustomizations, setEntityHidden } = useAutoLayoutStore(useShallow((s) => ({ resolvedEntities: s.resolvedEntities, entityCustomizations: s.entityCustomizations, setEntityHidden: s.setEntityHidden })));
 
@@ -232,7 +234,7 @@ export default function EntityCustomizerModal({
         />
 
         {/* Modal Card: Luminous frosted glass in light mode, deep dark glass in dark mode */}
-        <motion.div
+        <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Customize entity" tabIndex={-1}
           initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 12 }}
@@ -278,7 +280,7 @@ export default function EntityCustomizerModal({
                   </div>
                 </div>
 
-                <button
+                <button aria-label="Close"
                   type="button"
                   onClick={onClose}
                   className="w-8 h-8 rounded-xl bg-white/40 hover:bg-white/60 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white border border-white/50 dark:border-white/10 flex items-center justify-center transition-all cursor-pointer shadow-xs"

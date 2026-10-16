@@ -8,6 +8,7 @@
  * and converts Unix epoch seconds to JavaScript milliseconds.
  */
 
+import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 import { haWebSocketService } from './haWebSocket';
 import { getActiveHAToken } from './haAuth';
 import { getHAHttpBaseUrl } from './haImageService';
@@ -138,12 +139,12 @@ export async function fetchLiveEntityHistory(
     const token = getActiveHAToken();
     if (baseUrl && token) {
       const url = `${baseUrl}/api/history/period/${encodeURIComponent(startTimeISO)}?filter_entity_id=${encodeURIComponent(entityId)}&minimal_response=1&no_attributes=1`;
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
-      });
+      }, 15000);
 
       if (response.ok) {
         const data = await response.json();

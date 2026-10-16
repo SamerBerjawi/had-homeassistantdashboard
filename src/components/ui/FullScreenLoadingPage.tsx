@@ -109,7 +109,7 @@ export default function FullScreenLoadingPage({
             ? 'bg-white/5 border-white/10'
             : 'bg-white/80 border-slate-200/80 shadow-sm'
         }`}>
-          <img src="/app-icon.png" alt="HAD" className="w-7 h-7 rounded-lg object-contain shadow-xs" />
+          <img loading="lazy" decoding="async" src="/app-icon.png" alt="HAD" className="w-7 h-7 rounded-lg object-contain shadow-xs" />
           <span className={`text-sm font-black tracking-widest uppercase ${
             isDark ? 'text-slate-200' : 'text-slate-900'
           }`}>

@@ -116,7 +116,7 @@ export default function VacuumControlView({ entity, darkMode = true, customIcon 
             )}
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
               {entity.attributes.room || entity.attributes.area || 'CLEANING & ROBOTICS'}
             </span>
             <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white truncate max-w-[180px] sm:max-w-xs">
@@ -352,7 +352,7 @@ export default function VacuumControlView({ entity, darkMode = true, customIcon 
       {/* ========================================================================= */}
       {caps.fanSpeedList.length > 0 && (
         <div className={`p-4 sm:p-5 rounded-3xl space-y-3 ${bentoStaticCardStyle}`}>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 px-0.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 px-0.5">
             <Fan size={14} weight="duotone" className="text-teal-500" />
             <span>Suction Fan Speed</span>
           </span>
@@ -385,7 +385,7 @@ export default function VacuumControlView({ entity, darkMode = true, customIcon 
       {/* ========================================================================= */}
       {caps.waterFlowList.length > 0 && (
         <div className={`p-4 sm:p-5 rounded-3xl space-y-3 ${bentoStaticCardStyle}`}>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 px-0.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 px-0.5">
             <Drop size={14} weight="duotone" className="text-sky-500" />
             <span>Mopping Water Flow</span>
           </span>
@@ -420,7 +420,7 @@ export default function VacuumControlView({ entity, darkMode = true, customIcon 
         <div className={`p-4 sm:p-5 rounded-3xl space-y-3.5 ${bentoStaticCardStyle}`}>
           <div className="flex items-center gap-2 px-0.5">
             <Wrench size={16} weight="duotone" className="text-indigo-400" />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               Consumables & Maintenance
             </span>
           </div>

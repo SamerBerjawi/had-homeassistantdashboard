@@ -80,4 +80,43 @@ describe('RemoteStorageDriver', () => {
     // Recorded so it's replayed if the request never arrives
     expect((driver.getUnsyncedChanges() as any)?.theme?.mode).toBe('light');
   });
+
+  describe('conflict retry (REL-001)', () => {
+    const conflict = () =>
+      new Response(JSON.stringify({ conflict: true, serverVersion: 9, config: { theme: { mode: 'light' } } }), { status: 409 });
+
+    it.each([500, 503, 401])('keeps the edit queued when the retry fails with HTTP %i', async (status) => {
+      let posts = 0;
+      const { driver } = await createDriver(async (url) => {
+        if (url !== '/api/config') return new Response('{}', { status: 200 });
+        posts++;
+        return posts === 1 ? conflict() : new Response('{}', { status });
+      });
+      await driver.saveConfig({ theme: { backgroundStyle: 'flat' } } as any, { attempts: 1 });
+      expect(posts).toBe(2);
+      expect((driver.getUnsyncedChanges() as any)?.theme?.backgroundStyle).toBe('flat');
+      expect(lastSyncStatus()).not.toBe('synced');
+    });
+
+    it('accepts the server config only on a second conflict', async () => {
+      const { driver } = await createDriver(async () => conflict());
+      await driver.saveConfig({ theme: { backgroundStyle: 'flat' } } as any, { attempts: 1 });
+      expect(driver.getUnsyncedChanges()).toBeNull();
+    });
+
+    it('re-sends the merged edit on top of the server config and clears the queue on success', async () => {
+      let posts = 0;
+      const bodies: any[] = [];
+      const { driver } = await createDriver(async (url, init) => {
+        if (url !== '/api/config') return new Response('{}', { status: 200 });
+        posts++;
+        bodies.push(JSON.parse(String(init?.body)));
+        return posts === 1 ? conflict() : ok();
+      });
+      await driver.saveConfig({ theme: { backgroundStyle: 'flat' } } as any, { attempts: 1 });
+      expect(bodies[1].expectedVersion).toBe(9);
+      expect(bodies[1].config.theme).toMatchObject({ mode: 'light', backgroundStyle: 'flat' });
+      expect(driver.getUnsyncedChanges()).toBeNull();
+    });
+  });
 });

@@ -24,7 +24,7 @@ Every application view or page canvas uses a fixed background layer with 3 calib
 
 ```tsx
 // Canvas Structure
-<div className="relative min-h-screen w-full bg-[#f8fafc] text-slate-900 dark:bg-slate-950 dark:text-white overflow-x-hidden">
+<div className="relative min-h-screen w-full bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white overflow-x-hidden">
   {/* Ambient Radiances Container (Fixed / Absolute behind content) */}
   <div className="pointer-events-none fixed inset-0 overflow-hidden isolate z-0">
     {/* Glow 1: Top-Right (Primary Identity) */}

@@ -284,7 +284,7 @@ export default function WeatherHeaderSentence({
         darkMode ? 'text-slate-300' : 'text-slate-600'
       } ${className}`}
       title="Click to view detailed hourly & 7-day weather forecast"
-    >
+     role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
       {weatherData.temperature !== undefined ? (
         <>
           {/* 1. Introductory prefix */}

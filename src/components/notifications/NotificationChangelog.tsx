@@ -126,7 +126,7 @@ function FormattedChangelog({ content, darkMode = true }: { content: string; dar
           const bulletText = line.replace(/^[-*•]\s+/, '');
           return (
             <div key={`bullet-${idx}`} className="flex items-start gap-2 pl-1 leading-relaxed">
-              <span className="text-sky-400 mt-1 select-none text-[10px] shrink-0">•</span>
+              <span className="text-sky-400 mt-1 select-none text-[11px] shrink-0">•</span>
               <div className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
                 {formatInlineText(bulletText)}
               </div>
@@ -215,7 +215,7 @@ export default function NotificationChangelog({
         <Article size={13} weight="duotone" className="text-sky-400 shrink-0" />
         <span>Changelog & Release Notes</span>
         {item.latestVersion && (
-          <span className={`text-[10px] px-1 py-0.2 rounded font-mono ${darkMode ? 'bg-white/10 text-sky-200' : 'bg-slate-200 text-slate-800'}`}>
+          <span className={`text-[11px] px-1 py-0.2 rounded font-mono ${darkMode ? 'bg-white/10 text-sky-200' : 'bg-slate-200 text-slate-800'}`}>
             v{item.latestVersion}
           </span>
         )}
@@ -249,11 +249,11 @@ export default function NotificationChangelog({
                 <div className={`pt-2.5 mt-2 border-t flex items-center justify-between flex-wrap gap-2 ${
                   darkMode ? 'border-white/5' : 'border-slate-200'
                 }`}>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500">
                     Official release announcement & full changelog
                   </span>
                   <a
-                    href={item.releaseUrl}
+                    href={sanitizeSafeUrl(item.releaseUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => {

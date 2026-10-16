@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import DialogShell from '../../../ui/DialogShell';
 import React, { useState } from 'react';
 import {
   HardDrives,
@@ -175,11 +176,11 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 <span className="text-sm font-black text-slate-900 dark:text-white truncate">
                   {identity.name}
                 </span>
-                <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400">
+                <span className="text-[11px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400">
                   {identity.model}
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 truncate mt-0.5">
+              <p className="text-[11px] text-slate-400 truncate mt-0.5">
                 {identity.ugosVersion} • {identity.type}
               </p>
             </div>
@@ -189,12 +190,12 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
         {/* Server Online Status */}
         <div className={`${cardStyle} flex items-center justify-between`}>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Server Status</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Server Status</span>
             <span className="text-xs font-black font-mono mt-0.5 block text-slate-900 dark:text-white truncate">
               {identity.serverStatus}
             </span>
           </div>
-          <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${serverBadgeClass}`}>
+          <span className={`text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${serverBadgeClass}`}>
             {isServerOnline ? '● Online' : '○ Offline'}
           </span>
         </div>
@@ -202,7 +203,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
         {/* System & Temp Status */}
         <div className={`${cardStyle} flex items-center justify-between`}>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Health State</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Health State</span>
             <div className="flex items-center gap-2 mt-0.5">
               <span className={`text-xs font-mono font-bold ${isSystemOk ? 'text-emerald-400' : 'text-amber-400'}`}>
                 Sys: {identity.systemStatusCode}
@@ -218,7 +219,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
         {/* System Total Runtime */}
         <div className={`${cardStyle} flex items-center justify-between`}>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Runtime</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Total Runtime</span>
             <span className="text-xs font-black font-mono text-slate-900 dark:text-white mt-0.5 block truncate">
               {identity.totalRuntime}
             </span>
@@ -231,7 +232,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
         {/* Serial Number */}
         <div className={`${cardStyle} flex items-center justify-between`}>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Serial Number</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Serial Number</span>
             <span className="text-xs font-black font-mono text-slate-900 dark:text-white mt-0.5 block truncate">
               {identity.serial}
             </span>
@@ -256,7 +257,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
               </span>
             </div>
             {activeAction && (
-              <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 animate-pulse">
+              <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 animate-pulse">
                 Executed: {activeAction}
               </span>
             )}
@@ -274,7 +275,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
               </div>
               <div className="text-left min-w-0">
                 <span className="text-[11px] font-black block truncate leading-tight">Wake Up</span>
-                <span className="text-[9px] font-mono text-amber-400/80 block">WoL Packet</span>
+                <span className="text-[11px] font-mono text-amber-400/80 block">WoL Packet</span>
               </div>
             </button>
 
@@ -289,7 +290,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
               </div>
               <div className="text-left min-w-0">
                 <span className="text-[11px] font-black block truncate leading-tight">Adopt Disk</span>
-                <span className="text-[9px] font-mono text-cyan-400/80 block">Bay 4 Provision</span>
+                <span className="text-[11px] font-mono text-cyan-400/80 block">Bay 4 Provision</span>
               </div>
             </button>
 
@@ -304,7 +305,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
               </div>
               <div className="text-left min-w-0">
                 <span className="text-[11px] font-black block truncate leading-tight">Reboot NAS</span>
-                <span className="text-[9px] font-mono text-slate-400 block">Graceful Restart</span>
+                <span className="text-[11px] font-mono text-slate-400 block">Graceful Restart</span>
               </div>
             </button>
 
@@ -319,7 +320,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
               </div>
               <div className="text-left min-w-0">
                 <span className="text-[11px] font-black block truncate leading-tight">Shutdown</span>
-                <span className="text-[9px] font-mono text-rose-400/80 block">Power Off System</span>
+                <span className="text-[11px] font-mono text-rose-400/80 block">Power Off System</span>
               </div>
             </button>
           </div>
@@ -337,10 +338,10 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-3 text-[10px] font-mono font-bold">
+            <div className="flex items-center gap-3 text-[11px] font-mono font-bold">
               <span className="text-slate-400">CPU: <strong className="text-teal-400">{fansPower.cpuFan}</strong></span>
               <span className="text-slate-400">Device: <strong className="text-cyan-400">{fansPower.deviceFan}</strong></span>
-              <span className="px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-400 border border-teal-500/20 uppercase text-[9px]">
+              <span className="px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-400 border border-teal-500/20 uppercase text-[11px]">
                 {fansPower.fanStatusOverall}
               </span>
             </div>
@@ -349,7 +350,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-1">
             {/* Fan Profile Segmented Controls */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 <span className="flex items-center gap-1">
                   <Wind size={12} className="text-teal-400" /> Fan Profile
                 </span>
@@ -372,7 +373,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                       key={opt}
                       type="button"
                       onClick={() => onSetFanMode(opt)}
-                      className={`px-1.5 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer text-center truncate ${
+                      className={`px-1.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer text-center truncate ${
                         isActive
                           ? 'bg-teal-500 text-black shadow-md shadow-teal-500/20 font-black'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -387,7 +388,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
 
             {/* Power Mode Segmented Controls */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 <span className="flex items-center gap-1">
                   <Lightning size={12} className="text-amber-400" /> Power Mode
                 </span>
@@ -411,7 +412,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                       key={opt}
                       type="button"
                       onClick={() => onSetPowerMode(opt)}
-                      className={`px-1.5 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer text-center truncate ${
+                      className={`px-1.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer text-center truncate ${
                         isActive
                           ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20 font-black'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -435,18 +436,18 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
             <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
               <Cpu size={15} weight="duotone" className="text-emerald-400" /> Compute Resources
             </span>
-            <span className="text-[10px] text-slate-500 font-mono">Telemetry Window: {timeRange}</span>
+            <span className="text-[11px] text-slate-500 font-mono">Telemetry Window: {timeRange}</span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 py-2 items-center flex-1">
             {/* CPU Usage Gauge (1/2 on mobile) */}
             <div className="col-span-1 flex flex-col justify-between p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 min-h-[175px] sm:min-h-[190px]">
               <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/50 dark:border-white/5">
-                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                <span className="text-[11px] sm:text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
                   <Cpu size={13} className="text-emerald-400" /> CPU Load
                 </span>
                 <span
-                  className="text-[8px] sm:text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
+                  className="text-[11px] sm:text-[11px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
                   style={{
                     backgroundColor: `${cpuUsageColor}1A`,
                     color: cpuUsageColor
@@ -475,11 +476,11 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
             {/* CPU Temperature Gauge (1/2 on mobile) */}
             <div className="col-span-1 flex flex-col justify-between p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 min-h-[175px] sm:min-h-[190px]">
               <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/50 dark:border-white/5">
-                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                <span className="text-[11px] sm:text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
                   <Thermometer size={13} className="text-cyan-400" /> CPU Temp
                 </span>
                 <span
-                  className="text-[8px] sm:text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
+                  className="text-[11px] sm:text-[11px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
                   style={{
                     backgroundColor: `${cpuTempColor}1A`,
                     color: cpuTempColor
@@ -508,11 +509,11 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
             {/* RAM Usage Gauge (Full width on mobile, 1/3 on desktop) */}
             <div className="col-span-2 sm:col-span-1 flex flex-col justify-between p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5 min-h-[175px] sm:min-h-[190px]">
               <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/50 dark:border-white/5">
-                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                <span className="text-[11px] sm:text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
                   <Memory size={13} className="text-indigo-400" /> RAM Usage
                 </span>
                 <span
-                  className="text-[8px] sm:text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
+                  className="text-[11px] sm:text-[11px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
                   style={{
                     backgroundColor: `${ramUsageColor}1A`,
                     color: ramUsageColor
@@ -546,7 +547,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
             <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
               <Cpu size={15} weight="duotone" className="text-amber-400" /> Hardware Specs
             </span>
-            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400">x86_64</span>
+            <span className="text-[11px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400">x86_64</span>
           </div>
 
           <div className="space-y-2 py-2 text-xs flex-1 flex flex-col justify-center">
@@ -600,7 +601,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block leading-tight">
                   Network Throughput
                 </span>
-                <span className="text-[9px] text-slate-500">LAN Traffic</span>
+                <span className="text-[11px] text-slate-500">LAN Traffic</span>
               </div>
             </div>
 
@@ -609,7 +610,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setNetViewMode('unified')}
-                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                  className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
                     netViewMode === 'unified'
                       ? 'bg-emerald-500 text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -621,7 +622,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setNetViewMode('split')}
-                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                  className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
                     netViewMode === 'split'
                       ? 'bg-emerald-500 text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -632,7 +633,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 </button>
               </div>
 
-              <div className="text-right text-[10px] font-mono font-bold leading-tight">
+              <div className="text-right text-[11px] font-mono font-bold leading-tight">
                 <div className="text-emerald-400">↓ {throughput.netDownload}</div>
                 <div className="text-indigo-400">↑ {throughput.netUpload}</div>
               </div>
@@ -667,7 +668,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
             <div className="space-y-1.5 my-1">
               {/* Download Mini-Chart */}
               <div className="p-1.5 rounded-xl bg-white/[0.02] border border-slate-200/40 dark:border-white/5">
-                <div className="flex items-center justify-between text-[9px] font-mono font-bold px-1 text-emerald-400">
+                <div className="flex items-center justify-between text-[11px] font-mono font-bold px-1 text-emerald-400">
                   <span>↓ Download Rate</span>
                   <span>{throughput.netDownload}</span>
                 </div>
@@ -693,7 +694,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
 
               {/* Upload Mini-Chart */}
               <div className="p-1.5 rounded-xl bg-white/[0.02] border border-slate-200/40 dark:border-white/5">
-                <div className="flex items-center justify-between text-[9px] font-mono font-bold px-1 text-indigo-400">
+                <div className="flex items-center justify-between text-[11px] font-mono font-bold px-1 text-indigo-400">
                   <span>↑ Upload Rate</span>
                   <span>{throughput.netUpload}</span>
                 </div>
@@ -731,7 +732,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block leading-tight">
                   Overall Disk I/O
                 </span>
-                <span className="text-[9px] text-slate-500">Physical HDD R/W</span>
+                <span className="text-[11px] text-slate-500">Physical HDD R/W</span>
               </div>
             </div>
 
@@ -740,7 +741,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setDiskViewMode('unified')}
-                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                  className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
                     diskViewMode === 'unified'
                       ? 'bg-amber-500 text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -752,7 +753,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setDiskViewMode('split')}
-                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                  className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
                     diskViewMode === 'split'
                       ? 'bg-amber-500 text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -763,7 +764,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 </button>
               </div>
 
-              <div className="text-right text-[10px] font-mono font-bold leading-tight">
+              <div className="text-right text-[11px] font-mono font-bold leading-tight">
                 <div className="text-amber-400">R: {throughput.diskReadRate}</div>
                 <div className="text-rose-400">W: {throughput.diskWriteRate}</div>
               </div>
@@ -798,7 +799,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
             <div className="space-y-1.5 my-1">
               {/* Read Mini-Chart */}
               <div className="p-1.5 rounded-xl bg-white/[0.02] border border-slate-200/40 dark:border-white/5">
-                <div className="flex items-center justify-between text-[9px] font-mono font-bold px-1 text-amber-400">
+                <div className="flex items-center justify-between text-[11px] font-mono font-bold px-1 text-amber-400">
                   <span>Physical Disk Read</span>
                   <span>{throughput.diskReadRate}</span>
                 </div>
@@ -824,7 +825,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
 
               {/* Write Mini-Chart */}
               <div className="p-1.5 rounded-xl bg-white/[0.02] border border-slate-200/40 dark:border-white/5">
-                <div className="flex items-center justify-between text-[9px] font-mono font-bold px-1 text-rose-400">
+                <div className="flex items-center justify-between text-[11px] font-mono font-bold px-1 text-rose-400">
                   <span>Physical Disk Write</span>
                   <span>{throughput.diskWriteRate}</span>
                 </div>
@@ -862,7 +863,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block leading-tight">
                   Volume I/O
                 </span>
-                <span className="text-[9px] text-slate-500">Logical Volume R/W</span>
+                <span className="text-[11px] text-slate-500">Logical Volume R/W</span>
               </div>
             </div>
 
@@ -871,7 +872,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setVolViewMode('unified')}
-                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                  className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
                     volViewMode === 'unified'
                       ? 'bg-cyan-500 text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -883,7 +884,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setVolViewMode('split')}
-                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                  className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
                     volViewMode === 'split'
                       ? 'bg-cyan-500 text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -894,7 +895,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 </button>
               </div>
 
-              <div className="text-right text-[10px] font-mono font-bold leading-tight">
+              <div className="text-right text-[11px] font-mono font-bold leading-tight">
                 <div className="text-cyan-400">R: {throughput.volumeReadRate}</div>
                 <div className="text-purple-400">W: {throughput.volumeWriteRate}</div>
               </div>
@@ -929,7 +930,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
             <div className="space-y-1.5 my-1">
               {/* Volume Read Mini-Chart */}
               <div className="p-1.5 rounded-xl bg-white/[0.02] border border-slate-200/40 dark:border-white/5">
-                <div className="flex items-center justify-between text-[9px] font-mono font-bold px-1 text-cyan-400">
+                <div className="flex items-center justify-between text-[11px] font-mono font-bold px-1 text-cyan-400">
                   <span>Logical Volume Read</span>
                   <span>{throughput.volumeReadRate}</span>
                 </div>
@@ -955,7 +956,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
 
               {/* Volume Write Mini-Chart */}
               <div className="p-1.5 rounded-xl bg-white/[0.02] border border-slate-200/40 dark:border-white/5">
-                <div className="flex items-center justify-between text-[9px] font-mono font-bold px-1 text-purple-400">
+                <div className="flex items-center justify-between text-[11px] font-mono font-bold px-1 text-purple-400">
                   <span>Logical Volume Write</span>
                   <span>{throughput.volumeWriteRate}</span>
                 </div>
@@ -985,12 +986,9 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
 
       {/* Universal Action Confirmation Modal for Power & Hardware Actions */}
       {activeConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div
-            className={`max-w-md w-full rounded-2xl border p-5 sm:p-6 shadow-2xl space-y-4 ${
+        <DialogShell label={activeConfirm.title} onClose={() => setActiveConfirm(null)} overlayClassName="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" className={`max-w-md w-full rounded-2xl border p-5 sm:p-6 shadow-2xl space-y-4 ${
               darkMode ? 'bg-neutral-900 border-white/15 text-white' : 'bg-white border-slate-200 text-slate-900'
-            }`}
-          >
+            }`}>
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center shrink-0">
                 {activeConfirm.icon}
@@ -1032,8 +1030,7 @@ export const NasOverviewSection: React.FC<NasOverviewSectionProps> = ({
                 {activeConfirm.confirmLabel}
               </button>
             </div>
-          </div>
-        </div>
+          </DialogShell>
       )}
     </div>
   );

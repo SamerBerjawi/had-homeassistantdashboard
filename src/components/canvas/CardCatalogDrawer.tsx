@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -153,6 +154,7 @@ export default function CardCatalogDrawer({
   availableEntities,
   onAddCard
 }: CardCatalogDrawerProps) {
+  const dialogRef = useDialogA11y({ open: isOpen, onClose });
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   
@@ -230,7 +232,7 @@ export default function CardCatalogDrawer({
           />
 
           {/* Drawer Panel */}
-          <motion.div
+          <motion.div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Card catalog" tabIndex={-1}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -254,7 +256,7 @@ export default function CardCatalogDrawer({
                 </div>
               </div>
 
-              <button
+              <button aria-label="Close"
                 onClick={onClose}
                 className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
               >

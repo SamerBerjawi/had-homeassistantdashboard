@@ -58,7 +58,7 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
             Physical Disks & Bays (4-Bay Matrix)
           </span>
         </div>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">
+        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">
           3 Active Disks • 1 Empty Bay
         </span>
       </div>
@@ -84,10 +84,10 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
                     </div>
                     <div>
                       <h4 className="text-xs font-black text-slate-700 dark:text-slate-300">Bay 4</h4>
-                      <span className="text-[9px] text-slate-400">Slot 4 (SATA 6Gb/s)</span>
+                      <span className="text-[11px] text-slate-400">Slot 4 (SATA 6Gb/s)</span>
                     </div>
                   </div>
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-500/15 text-slate-400 border border-slate-500/20">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-500/15 text-slate-400 border border-slate-500/20">
                     Empty
                   </span>
                 </div>
@@ -101,7 +101,7 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
                       No disk detected
                     </span>
-                    <p className="text-[10px] text-slate-400 mt-1 max-w-[200px] leading-relaxed">
+                    <p className="text-[11px] text-slate-400 mt-1 max-w-[200px] leading-relaxed">
                       Install a 3.5&quot; SATA HDD or 2.5&quot; SSD in Bay 4 to expand Storage Pool 1.
                     </p>
                   </div>
@@ -153,7 +153,7 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
                       <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate">
                         Bay {disk.bay}
                       </span>
-                      <span className="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+                      <span className="text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
                         {disk.brand}
                       </span>
                     </div>
@@ -165,7 +165,7 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
 
                 {/* Status Badge (top-right) */}
                 <span
-                  className={`text-[10px] sm:text-xs font-extrabold uppercase px-2.5 py-1 rounded-lg border shrink-0 flex items-center gap-1.5 ${isHealthy
+                  className={`text-[11px] sm:text-xs font-extrabold uppercase px-2.5 py-1 rounded-lg border shrink-0 flex items-center gap-1.5 ${isHealthy
                     ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                     : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
                     }`}
@@ -224,7 +224,7 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
                       <Thermometer size={13} className="text-cyan-400" /> Temp
                     </span>
                     <span
-                      className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
+                      className="text-[11px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
                       style={{
                         backgroundColor: `${tempColor}1A`,
                         color: tempColor
@@ -257,7 +257,7 @@ export const NasDisksSection: React.FC<NasDisksSectionProps> = ({
                       <Pulse size={13} className="text-indigo-400" /> Load
                     </span>
                     <span
-                      className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
+                      className="text-[11px] font-extrabold uppercase px-1.5 py-0.2 rounded-md"
                       style={{
                         backgroundColor: `${utilColor}1A`,
                         color: utilColor

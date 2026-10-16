@@ -75,7 +75,7 @@ export const AlertItem: React.FC<AlertItemProps> = ({ alert, onDismiss }) => {
             <h4 className="text-xs sm:text-[13px] font-bold text-white truncate leading-snug">
               {alert.title}
             </h4>
-            <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-slate-400">
+            <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-400">
               <span className="flex items-center gap-1">
                 <Clock size={11} weight="regular" />
                 <span>{formatRelativeTime(alert.timestamp)}</span>
@@ -112,13 +112,13 @@ export const AlertItem: React.FC<AlertItemProps> = ({ alert, onDismiss }) => {
       {/* Category / Source Tag */}
       <div className="pl-8.5 flex items-center justify-between pt-0.5">
         <span
-          className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded border ${styles.badge}`}
+          className={`text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded border ${styles.badge}`}
         >
           {alert.category.replace('_', ' ')}
         </span>
 
         {alert.haNotificationId && (
-          <span className="text-[9px] font-mono text-slate-500">
+          <span className="text-[11px] font-mono text-slate-500">
             HA: {alert.haNotificationId}
           </span>
         )}

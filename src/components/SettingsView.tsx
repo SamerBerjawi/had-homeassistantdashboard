@@ -7,6 +7,7 @@
  * Single unified header architecture (matches Rooms & Area detail views).
  */
 
+import { planRestore } from '../lib/backupRestore';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { HAEntity, Room, LogMessage, ToastNotification } from '../types';
@@ -424,149 +425,95 @@ export default function SettingsView({
     };
   };
 
+  const [isBackupBusy, setIsBackupBusy] = useState(false);
+
   // 2. Comprehensive Restore Engine (Shared by file import & local snapshots)
-  const performComprehensiveRestore = async (parsed: any, sourceName: string) => {
-    if (!parsed || typeof parsed !== 'object') {
-      throw new Error('Invalid backup data');
+  const performComprehensiveRestore = async (parsed: unknown, sourceName: string) => {
+    // Phase 1 (pure): validate and plan. Throws before anything has been changed.
+    const plan = planRestore(parsed);
+    const prefs = plan.rawPrefs;
+
+    // Phase 2: the only fallible step, the remote config update. If it fails nothing local is touched.
+    if (plan.config) {
+      const incomingConfig = plan.config;
+      await updateConfig((prev) => ({
+        ...prev,
+        ...incomingConfig,
+        theme: {
+          ...prev.theme,
+          ...(incomingConfig.theme || {}),
+          backgroundStyle: prefs?.backgroundStyle || incomingConfig.theme?.backgroundStyle || prev.theme?.backgroundStyle
+        },
+        mobility: {
+          car: { ...(prev.mobility?.car || {}), ...(incomingConfig.mobility?.car || {}) },
+          bike: { ...(prev.mobility?.bike || {}), ...(incomingConfig.mobility?.bike || {}) }
+        },
+        vacuums: {
+          ...(prev.vacuums || {}),
+          ...(incomingConfig.vacuums || {}),
+          robot: { ...(prev.vacuums?.robot || {}), ...(incomingConfig.vacuums?.robot || {}) },
+          stick: { ...(prev.vacuums?.stick || {}), ...(incomingConfig.vacuums?.stick || {}) }
+        },
+        cameras: { ...(prev.cameras || {}), ...(incomingConfig.cameras || {}) },
+        rooms: { ...(prev.rooms || {}), ...(incomingConfig.rooms || {}) },
+        entities: { ...(prev.entities || {}), ...(incomingConfig.entities || {}) },
+        preferences: { ...(prev.preferences || {}), ...(incomingConfig.preferences || {}), ...(prefs || {}) }
+      }));
+      await flushPendingSave();
     }
 
-    const restoredParts: string[] = [];
+    // Phase 3: synchronous local state, applied only after the remote step succeeded.
+    if (plan.canvasProfiles) {
+      importProfilesJson(JSON.stringify(plan.canvasProfiles), plan.activeProfileId);
+    }
+    if (plan.pin !== undefined) setPinCode(plan.pin);
+    if (plan.backdrop) setWeatherBackdrop(plan.backdrop as any);
 
-    // A. Restore Canvas Profiles, Cards, Active Profile, Pin, and Backdrop
-    const canvasData = parsed.canvasProfiles || parsed.profiles || parsed.canvas?.profiles || (parsed.id && parsed.layout ? { [parsed.id]: parsed } : null);
-    if (canvasData && typeof canvasData === 'object' && Object.keys(canvasData).length > 0) {
-      const targetActiveId = parsed.activeProfileId || parsed.canvas?.activeProfileId;
-      importProfilesJson(JSON.stringify(canvasData), targetActiveId);
-      restoredParts.push('Canvas layouts & cards');
+    if (plan.prefs) {
+      const p = plan.prefs;
+      if (p.tempUnit) setTempUnit(p.tempUnit);
+      if (p.clockFormat) setClockFormat(p.clockFormat);
+      if (p.energyTariff !== undefined) setEnergyTariff(p.energyTariff);
+      if (p.currencySymbol) setCurrencySymbol(p.currencySymbol);
+      if (p.backgroundStyle) {
+        setInternalBgStyle(p.backgroundStyle);
+        setBackgroundStyle?.(p.backgroundStyle);
+      }
+      if (p.themeMode) setThemeMode?.(p.themeMode);
+      if (typeof p.darkMode === 'boolean' && p.darkMode !== darkMode) toggleDarkMode(p.darkMode);
     }
 
-    const incomingPin = parsed.pinCode !== undefined ? parsed.pinCode : parsed.canvas?.pinCode;
-    if (typeof incomingPin === 'string') {
-      setPinCode(incomingPin);
-    }
-
-    const incomingBackdrop = parsed.weatherBackdrop || parsed.canvas?.weatherBackdrop || parsed.preferences?.weatherBackdrop;
-    if (incomingBackdrop && typeof incomingBackdrop === 'string') {
-      setWeatherBackdrop(incomingBackdrop as any);
-    }
-
-    // B. Restore System Preferences & Appearance
-    const prefs = parsed.preferences || parsed.settings || parsed.dashboardConfig?.preferences;
-    if (prefs && typeof prefs === 'object') {
-      if (prefs.tempUnit === 'C' || prefs.tempUnit === 'F') {
-        setTempUnit(prefs.tempUnit);
-      }
-      if (prefs.clockFormat === '24h' || prefs.clockFormat === '12h') {
-        setClockFormat(prefs.clockFormat);
-      }
-      if (typeof prefs.energyTariff === 'number') {
-        setEnergyTariff(prefs.energyTariff);
-      }
-      if (typeof prefs.currencySymbol === 'string' && prefs.currencySymbol) {
-        setCurrencySymbol(prefs.currencySymbol);
-      }
-      if (prefs.backgroundStyle === 'glow' || prefs.backgroundStyle === 'flat') {
-        setInternalBgStyle(prefs.backgroundStyle);
-        setBackgroundStyle?.(prefs.backgroundStyle);
-      }
-      if (prefs.themeMode && (prefs.themeMode === 'auto' || prefs.themeMode === 'dark' || prefs.themeMode === 'light')) {
-        setThemeMode?.(prefs.themeMode);
-      }
-      if (typeof prefs.darkMode === 'boolean' && prefs.darkMode !== darkMode) {
-        toggleDarkMode(prefs.darkMode);
-      }
-      restoredParts.push('Preferences & theme');
-    }
-
-    // C. Restore User Profile
-    const profile = parsed.userProfile || parsed.profileData || parsed.dashboardConfig?.profile;
-    if (profile && typeof profile === 'object') {
-      const updatedProf: UserProfileData = {
+    if (plan.profile) {
+      const profile = plan.profile;
+      setProfileData({
         displayName: profile.displayName || profile.name || profileData.displayName,
         email: profile.email || profileData.email,
         role: (profile.role as any) || profileData.role,
         avatarInitials: profile.avatarInitials || profile.avatar || profileData.avatarInitials,
         homeName: profile.homeName || profileData.homeName
-      };
-      setProfileData(updatedProf);
-      restoredParts.push('User profile');
+      } as UserProfileData);
     }
 
-    // D. Restore Full Unified Dashboard Configuration (Vehicles, Vacuums, Cameras, Network, Energy, Area/Floor overrides)
-    const incomingConfig = parsed.dashboardConfig || (parsed.mobility || parsed.cameras || parsed.vacuums ? parsed : null);
-    if (incomingConfig && typeof incomingConfig === 'object') {
-      try {
-        await updateConfig((prev) => ({
-          ...prev,
-          ...incomingConfig,
-          theme: {
-            ...prev.theme,
-            ...(incomingConfig.theme || {}),
-            backgroundStyle: prefs?.backgroundStyle || incomingConfig.theme?.backgroundStyle || prev.theme?.backgroundStyle
-          },
-          mobility: {
-            car: { ...(prev.mobility?.car || {}), ...(incomingConfig.mobility?.car || {}) },
-            bike: { ...(prev.mobility?.bike || {}), ...(incomingConfig.mobility?.bike || {}) }
-          },
-          vacuums: {
-            ...(prev.vacuums || {}),
-            ...(incomingConfig.vacuums || {}),
-            robot: { ...(prev.vacuums?.robot || {}), ...(incomingConfig.vacuums?.robot || {}) },
-            stick: { ...(prev.vacuums?.stick || {}), ...(incomingConfig.vacuums?.stick || {}) }
-          },
-          cameras: {
-            ...(prev.cameras || {}),
-            ...(incomingConfig.cameras || {})
-          },
-          rooms: {
-            ...(prev.rooms || {}),
-            ...(incomingConfig.rooms || {})
-          },
-          entities: {
-            ...(prev.entities || {}),
-            ...(incomingConfig.entities || {})
-          },
-          preferences: {
-            ...(prev.preferences || {}),
-            ...(incomingConfig.preferences || {}),
-            ...(prefs || {})
-          }
-        }));
-        await flushPendingSave();
-        applyConfigCustomizations(incomingConfig);
-        if (incomingConfig.cartoApiKey !== undefined) {
-          setCartoApiKey(incomingConfig.cartoApiKey);
-        }
-        restoredParts.push('Mobility, cameras, vacuums & rooms');
-      } catch (cfgErr) {
-        console.warn('Failed to sync incoming dashboard config:', cfgErr);
-      }
+    if (plan.config) {
+      applyConfigCustomizations(plan.config);
+      if (plan.config.cartoApiKey !== undefined) setCartoApiKey(plan.config.cartoApiKey);
     }
 
-    // E. Restore Entity Customizations directly into useAutoLayoutStore
-    const entityCustoms = parsed.entityCustomizations || parsed.dashboardConfig?.entities?.customizations;
-    if (entityCustoms && typeof entityCustoms === 'object') {
-      useAutoLayoutStore.setState(s => ({
-        entityCustomizations: {
-          ...s.entityCustomizations,
-          ...entityCustoms
-        }
+    if (plan.entityCustomizations) {
+      const entityCustoms = plan.entityCustomizations as Record<string, any>;
+      useAutoLayoutStore.setState((s) => ({
+        entityCustomizations: { ...s.entityCustomizations, ...entityCustoms }
       }));
       useAutoLayoutStore.getState().recomputeGraph();
     }
 
-    // F. Restore Entities & Rooms lists if present in backup
-    if (Array.isArray(parsed.entities) && parsed.entities.length > 0) {
-      setEntities(parsed.entities);
-    }
-    if (Array.isArray(parsed.rooms) && parsed.rooms.length > 0) {
-      setRooms(parsed.rooms);
-    }
+    if (plan.entities) setEntities(plan.entities as any);
+    if (plan.rooms) setRooms(plan.rooms as any);
 
     addToast?.({
       type: 'success',
       title: 'Restoration Complete',
-      message: `Restored ${restoredParts.length > 0 ? restoredParts.join(', ') : 'all configuration'} from "${sourceName}".`
+      message: `Restored ${plan.parts.length > 0 ? plan.parts.join(', ') : 'all configuration'} from "${sourceName}".`
     });
   };
 
@@ -595,15 +542,19 @@ export default function SettingsView({
   };
 
   const handleRestoreSnapshot = async (snap: LocalSnapshot) => {
+    if (isBackupBusy) return;
+    setIsBackupBusy(true);
     try {
       const parsed = JSON.parse(snap.data);
       await performComprehensiveRestore(parsed, snap.name);
-    } catch (err) {
+    } catch (err: any) {
       addToast?.({
         type: 'warning',
         title: 'Restore Failed',
-        message: 'Could not restore snapshot data.'
+        message: err?.message ? `Could not restore snapshot: ${err.message}` : 'Could not restore snapshot data.'
       });
+    } finally {
+      setIsBackupBusy(false);
     }
   };
 
@@ -662,19 +613,26 @@ export default function SettingsView({
     if (!file) return;
 
     const fileName = file.name;
+    if (isBackupBusy) return;
+    setIsBackupBusy(true);
     const reader = new FileReader();
+    reader.onerror = () => {
+      setIsBackupBusy(false);
+      addToast?.({ type: 'warning', title: 'Import Error', message: 'Could not read the selected file.' });
+    };
     reader.onload = async (ev) => {
       try {
         const text = ev.target?.result as string;
         const parsed = JSON.parse(text);
         await performComprehensiveRestore(parsed, fileName);
-      } catch (err) {
+      } catch (err: any) {
         addToast?.({
           type: 'warning',
           title: 'Import Error',
-          message: 'Invalid JSON backup file format.'
+          message: err instanceof SyntaxError ? 'Invalid JSON backup file format.' : (err?.message || 'Could not import the backup.')
         });
       } finally {
+        setIsBackupBusy(false);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -684,7 +642,22 @@ export default function SettingsView({
   };
 
   const handleFactoryReset = async () => {
-    await resetDashboardConfig();
+    if (isBackupBusy) return;
+    setIsBackupBusy(true);
+    try {
+      await resetDashboardConfig();
+    } catch (err: any) {
+      // Leave local state untouched: resetting only this device would silently diverge from the server
+      setIsBackupBusy(false);
+      setShowResetConfirm(false);
+      addToast?.({
+        type: 'warning',
+        title: 'Factory Reset Failed',
+        message: err?.message ? `Could not reset the dashboard: ${err.message}` : 'Could not reset the dashboard. Nothing was changed.'
+      });
+      return;
+    }
+    setIsBackupBusy(false);
     resetToDefaults();
     setTempUnit('C');
     setClockFormat('24h');

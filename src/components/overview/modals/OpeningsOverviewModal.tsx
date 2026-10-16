@@ -181,7 +181,7 @@ export default function OpeningsOverviewModal({
                     </div>
                   </div>
 
-                  <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold uppercase shrink-0">
+                  <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] font-extrabold uppercase shrink-0">
                     OPEN
                   </span>
                 </div>
@@ -309,7 +309,7 @@ export default function OpeningsOverviewModal({
                             {areaGroup.areaName}
                           </span>
                         </div>
-                        <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                        <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
                           {areaGroup.entities.filter((e) => e.state === 'on').length}/{areaGroup.entities.length} open
                         </span>
                       </div>
@@ -375,7 +375,7 @@ export default function OpeningsOverviewModal({
                             {/* Single State Badge on the right */}
                             <div className="shrink-0 flex items-center">
                               <span
-                                className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full ${
+                                className={`text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-full ${
                                   isOpen
                                     ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 animate-pulse'
                                     : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'

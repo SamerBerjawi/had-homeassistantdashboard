@@ -51,7 +51,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
             <span className="truncate">
               Bound to <strong className="text-slate-900 dark:text-white font-bold">{activeDevice.deviceName}</strong>
             </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-slate-200/80 dark:bg-white/10 text-slate-500 dark:text-slate-400">
+            <span className="text-[11px] font-mono px-1.5 py-0.5 rounded-md bg-slate-200/80 dark:bg-white/10 text-slate-500 dark:text-slate-400">
               {activeDevice.sensorCount} sensors
             </span>
           </div>

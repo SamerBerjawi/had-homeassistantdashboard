@@ -113,7 +113,7 @@ export default function CameraControlView({ entity, darkMode = true, customIcon 
             )}
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
               {entity.attributes.room || entity.attributes.area || 'SECURITY & VIDEO'}
             </span>
             <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white truncate max-w-[180px] sm:max-w-xs">
@@ -133,7 +133,7 @@ export default function CameraControlView({ entity, darkMode = true, customIcon 
           >
             <span className={`w-1.5 h-1.5 rounded-full ${!caps.isOffline ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'}`} />
             <span>{!caps.isOffline ? 'LIVE' : 'OFFLINE'}</span>
-            {caps.resolution && <span className="opacity-60 text-[10px]">• {caps.resolution}</span>}
+            {caps.resolution && <span className="opacity-60 text-[11px]">• {caps.resolution}</span>}
           </div>
         </div>
       </div>
@@ -247,11 +247,11 @@ export default function CameraControlView({ entity, darkMode = true, customIcon 
       {caps.supportsPtz && (
         <div className={`p-5 rounded-3xl space-y-3 ${bentoStaticCardStyle}`}>
           <div className="flex items-center justify-between px-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               PTZ Pan / Tilt / Zoom Controls
             </span>
             {ptzStatusMsg && (
-              <span className="text-[10px] font-mono text-cyan-500 dark:text-cyan-400 animate-pulse font-bold">
+              <span className="text-[11px] font-mono text-cyan-500 dark:text-cyan-400 animate-pulse font-bold">
                 {ptzStatusMsg}
               </span>
             )}
@@ -261,7 +261,7 @@ export default function CameraControlView({ entity, darkMode = true, customIcon 
             {/* Directional D-Pad */}
             <div className="grid grid-cols-3 gap-1.5 w-32 h-32">
               <div />
-              <button
+              <button aria-label="Pan up"
                 type="button"
                 onClick={() => handlePtzMove('up')}
                 className={`flex items-center justify-center rounded-2xl transition-all active:scale-90 cursor-pointer border ${
@@ -276,7 +276,7 @@ export default function CameraControlView({ entity, darkMode = true, customIcon 
               </button>
               <div />
 
-              <button
+              <button aria-label="Pan left"
                 type="button"
                 onClick={() => handlePtzMove('left')}
                 className={`flex items-center justify-center rounded-2xl transition-all active:scale-90 cursor-pointer border ${
@@ -290,11 +290,11 @@ export default function CameraControlView({ entity, darkMode = true, customIcon 
                 <CaretLeft size={20} weight="bold" />
               </button>
 
-              <div className="rounded-2xl flex items-center justify-center text-[9px] font-mono font-black text-slate-400 border border-transparent">
+              <div className="rounded-2xl flex items-center justify-center text-[11px] font-mono font-black text-slate-400 border border-transparent">
                 PTZ
               </div>
 
-              <button
+              <button aria-label="Pan right"
                 type="button"
                 onClick={() => handlePtzMove('right')}
                 className={`flex items-center justify-center rounded-2xl transition-all active:scale-90 cursor-pointer border ${
@@ -309,7 +309,7 @@ export default function CameraControlView({ entity, darkMode = true, customIcon 
               </button>
 
               <div />
-              <button
+              <button aria-label="Pan down"
                 type="button"
                 onClick={() => handlePtzMove('down')}
                 className={`flex items-center justify-center rounded-2xl transition-all active:scale-90 cursor-pointer border ${

@@ -180,12 +180,12 @@ function AreaTileComponent({
 
         {/* Small active badge */}
         {isLightActive ? (
-          <span className="mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 flex items-center gap-0.5">
+          <span className="mt-1 text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 flex items-center gap-0.5">
             <span className="w-1 h-1 rounded-full bg-amber-400" />
             {activeLightsCount}
           </span>
         ) : sensors.temperature !== undefined ? (
-          <span className="mt-1 text-[10px] font-semibold text-slate-400">
+          <span className="mt-1 text-[11px] font-semibold text-slate-400">
             {sensors.temperature}°C
           </span>
         ) : null}

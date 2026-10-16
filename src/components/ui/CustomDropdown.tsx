@@ -136,7 +136,7 @@ export default function CustomDropdown({
   return (
     <div className={`relative inline-block w-full text-left ${className}`} ref={dropdownRef}>
       {label && (
-        <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
           {label}
         </label>
       )}
@@ -163,7 +163,7 @@ export default function CustomDropdown({
             {selectedOption ? selectedOption.label : placeholder}
           </span>
           {selectedOption?.badge && (
-            <span className="px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-800 dark:text-cyan-300 border border-cyan-500/30 text-[9px] font-extrabold shrink-0">
+            <span className="px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-800 dark:text-cyan-300 border border-cyan-500/30 text-[11px] font-extrabold shrink-0">
               {selectedOption.badge}
             </span>
           )}
@@ -239,7 +239,7 @@ export default function CustomDropdown({
                         <div className="min-w-0 truncate">
                           <span className="block truncate">{option.label}</span>
                           {option.sublabel && (
-                            <span className="block text-[10px] font-normal text-slate-400 dark:text-slate-500 truncate">
+                            <span className="block text-[11px] font-normal text-slate-400 dark:text-slate-500 truncate">
                               {option.sublabel}
                             </span>
                           )}
@@ -248,7 +248,7 @@ export default function CustomDropdown({
 
                       <div className="flex items-center gap-1.5 shrink-0 ml-2">
                         {option.badge && (
-                          <span className="px-1.5 py-0.2 rounded-md bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300 text-[9px] font-bold">
+                          <span className="px-1.5 py-0.2 rounded-md bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300 text-[11px] font-bold">
                             {option.badge}
                           </span>
                         )}

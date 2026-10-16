@@ -66,7 +66,7 @@ export const SpeedTestOverviewSection: React.FC<SpeedTestOverviewSectionProps> =
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
             Speed Test &amp; WAN Performance
           </h2>
-          <span className="text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+          <span className="text-[11px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
             <CheckCircle size={10} weight="fill" /> Ookla Verified
           </span>
         </div>
@@ -135,16 +135,16 @@ export const SpeedTestOverviewSection: React.FC<SpeedTestOverviewSectionProps> =
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                 <Buildings size={14} weight="duotone" className="text-emerald-400" />
-                <span className="text-[10px] font-black uppercase tracking-wider">ISP Provider</span>
+                <span className="text-[11px] font-black uppercase tracking-wider">ISP Provider</span>
               </div>
-              <span className="text-[8px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+              <span className="text-[11px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
                 Active WAN
               </span>
             </div>
             <div className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate font-mono">
               {metrics.isp}
             </div>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
               Gateway Service
             </p>
           </div>
@@ -154,16 +154,16 @@ export const SpeedTestOverviewSection: React.FC<SpeedTestOverviewSectionProps> =
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                 <HardDrives size={14} weight="duotone" className="text-cyan-400" />
-                <span className="text-[10px] font-black uppercase tracking-wider">Test Server</span>
+                <span className="text-[11px] font-black uppercase tracking-wider">Test Server</span>
               </div>
-              <span className="text-[8px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400 border border-cyan-500/20">
+              <span className="text-[11px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400 border border-cyan-500/20">
                 Measurement
               </span>
             </div>
             <div className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate font-mono">
               {metrics.server}
             </div>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
               Active Speedtest host
             </p>
           </div>
@@ -173,9 +173,9 @@ export const SpeedTestOverviewSection: React.FC<SpeedTestOverviewSectionProps> =
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                 <Medal size={14} weight="duotone" className={gradeColors.text} />
-                <span className="text-[10px] font-black uppercase tracking-wider">Bufferbloat</span>
+                <span className="text-[11px] font-black uppercase tracking-wider">Bufferbloat</span>
               </div>
-              <span className={`text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded-full border ${gradeColors.bg} ${gradeColors.text} ${gradeColors.border}`}>
+              <span className={`text-[11px] font-mono font-black uppercase px-2 py-0.5 rounded-full border ${gradeColors.bg} ${gradeColors.text} ${gradeColors.border}`}>
                 Grade {metrics.bufferbloatGrade}
               </span>
             </div>
@@ -187,7 +187,7 @@ export const SpeedTestOverviewSection: React.FC<SpeedTestOverviewSectionProps> =
                 {metrics.bufferbloatGrade.startsWith('A') ? 'Low Latency Under Load' : metrics.bufferbloatGrade === 'B' ? 'Good Stability' : 'Moderate Queueing'}
               </span>
             </div>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
               Quality under heavy load
             </p>
           </div>
@@ -197,9 +197,9 @@ export const SpeedTestOverviewSection: React.FC<SpeedTestOverviewSectionProps> =
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                 <CheckCircle size={14} weight="duotone" className="text-indigo-400" />
-                <span className="text-[10px] font-black uppercase tracking-wider">Plan SLA</span>
+                <span className="text-[11px] font-black uppercase tracking-wider">Plan SLA</span>
               </div>
-              <span className="text-[8px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+              <span className="text-[11px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
                 {metrics.downloadPlanCompliancePercent > 0 ? 'Compliance' : 'Bandwidth'}
               </span>
             </div>
@@ -213,7 +213,7 @@ export const SpeedTestOverviewSection: React.FC<SpeedTestOverviewSectionProps> =
                   : `Down / ${metrics.uploadSpeedMbps.toFixed(1)}M Up`}
               </span>
             </div>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
               {metrics.downloadPlanCompliancePercent > 0 ? 'Subscribed speed achieved' : 'Observed throughput'}
             </p>
           </div>

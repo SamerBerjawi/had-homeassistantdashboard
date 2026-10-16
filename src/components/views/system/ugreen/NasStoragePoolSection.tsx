@@ -49,7 +49,7 @@ export const NasStoragePoolSection: React.FC<NasStoragePoolSectionProps> = ({
             Storage Pool (Pool 1)
           </span>
         </div>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/25">
+        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/25">
           {pool.level} Array
         </span>
       </div>
@@ -64,7 +64,7 @@ export const NasStoragePoolSection: React.FC<NasStoragePoolSectionProps> = ({
                 <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
                   {pool.label}
                 </h4>
-                <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <span className="text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
                   {pool.level}
                 </span>
               </div>
@@ -73,7 +73,7 @@ export const NasStoragePoolSection: React.FC<NasStoragePoolSectionProps> = ({
 
             {/* Health Badge */}
             <span
-              className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
+              className={`text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
                 isHealthy
                   ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                   : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
@@ -87,7 +87,7 @@ export const NasStoragePoolSection: React.FC<NasStoragePoolSectionProps> = ({
           {/* Key Metrics Grid */}
           <div className="grid grid-cols-2 gap-2.5 text-xs pt-1">
             <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
                 <HardDrives size={12} className="text-amber-400" /> Member Disks
               </span>
               <span className="text-sm font-black font-mono mt-0.5 text-slate-900 dark:text-white block">
@@ -96,7 +96,7 @@ export const NasStoragePoolSection: React.FC<NasStoragePoolSectionProps> = ({
             </div>
 
             <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
                 <Database size={12} className="text-cyan-400" /> Total Capacity
               </span>
               <span className="text-sm font-black font-mono mt-0.5 text-slate-900 dark:text-white block">
@@ -144,13 +144,13 @@ export const NasStoragePoolSection: React.FC<NasStoragePoolSectionProps> = ({
               >
                 {({ value, isHovered, data }) => (
                   <div className="flex flex-col items-center justify-center text-center select-none pointer-events-none">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                       {isHovered ? data.label : 'Pool Total'}
                     </span>
                     <span className="text-base sm:text-lg font-black font-mono text-slate-900 dark:text-white tracking-tight leading-none my-0.5">
                       {isHovered ? `${value.toFixed(2)} TB` : pool.totalSize}
                     </span>
-                    <span className="text-[9px] font-bold text-amber-400">
+                    <span className="text-[11px] font-bold text-amber-400">
                       {isHovered ? `${((value / (pool.usedSizeVal + pool.freeSizeVal)) * 100).toFixed(0)}%` : 'RAID 5'}
                     </span>
                   </div>
@@ -163,19 +163,19 @@ export const NasStoragePoolSection: React.FC<NasStoragePoolSectionProps> = ({
           <div className="flex items-center gap-3 mt-2 text-xs">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20">
               <span className="w-2 h-2 rounded-full bg-amber-500" />
-              <span className="text-slate-500 dark:text-slate-400 text-[10px]">Used:</span>
+              <span className="text-slate-500 dark:text-slate-400 text-[11px]">Used:</span>
               <span className="font-mono font-black text-slate-900 dark:text-white text-[11px]">{pool.usedSize}</span>
             </div>
 
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-500/10 border border-blue-500/20">
               <span className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-slate-500 dark:text-slate-400 text-[10px]">Free:</span>
+              <span className="text-slate-500 dark:text-slate-400 text-[11px]">Free:</span>
               <span className="font-mono font-black text-slate-900 dark:text-white text-[11px]">{pool.freeSize}</span>
             </div>
           </div>
 
           {/* Small Caption under chart as requested */}
-          <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-1.5 text-center">
+          <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1.5 text-center">
             {pool.availableSize}
           </p>
         </div>

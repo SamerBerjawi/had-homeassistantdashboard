@@ -142,7 +142,7 @@ export const HealthActivityRings: React.FC<HealthActivityRingsProps> = ({
 
         {/* Center Sparkle / Pulse */}
         <div className="absolute flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Activity
           </span>
           <span className="text-sm font-black text-slate-900 dark:text-white">

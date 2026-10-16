@@ -83,7 +83,7 @@ export function HostCpuSection({
           <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
             CPU &amp; Processor Load
           </h3>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border-emerald-500/25">
+          <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded border bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border-emerald-500/25">
             Section 2
           </span>
         </div>
@@ -100,7 +100,7 @@ export function HostCpuSection({
             <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
               Processor Metrics
             </span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono font-semibold">60% / 85% Limits</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono font-semibold">60% / 85% Limits</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 py-2 items-stretch">
@@ -111,7 +111,7 @@ export function HostCpuSection({
                   <Cpu size={13} weight="duotone" className="text-emerald-500 dark:text-emerald-400" /> Use
                 </span>
                 <span
-                  className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md"
+                  className="text-[11px] font-extrabold uppercase px-1.5 py-0.5 rounded-md"
                   style={{
                     backgroundColor: `${cpuUsageColor}1A`,
                     color: cpuUsageColor
@@ -144,7 +144,7 @@ export function HostCpuSection({
                   <Thermometer size={13} weight="duotone" className="text-cyan-400" /> Temp
                 </span>
                 <span
-                  className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md"
+                  className="text-[11px] font-extrabold uppercase px-1.5 py-0.5 rounded-md"
                   style={{
                     backgroundColor: `${cpuTempColor}1A`,
                     color: cpuTempColor
@@ -188,7 +188,7 @@ export function HostCpuSection({
                 <button
                   type="button"
                   onClick={() => setLoadViewMode('unified')}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer ${
                     loadViewMode === 'unified'
                       ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -201,7 +201,7 @@ export function HostCpuSection({
                 <button
                   type="button"
                   onClick={() => setLoadViewMode('split')}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer ${
                     loadViewMode === 'split'
                       ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -213,7 +213,7 @@ export function HostCpuSection({
                 </button>
               </div>
 
-              <div className="hidden sm:flex items-center gap-2.5 text-[10px] font-mono">
+              <div className="hidden sm:flex items-center gap-2.5 text-[11px] font-mono">
                 {loadSeries.map((s) => (
                   <span key={s.key} className="flex items-center gap-1 font-bold" style={{ color: s.color }}>
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
@@ -268,7 +268,7 @@ export function HostCpuSection({
                   className="p-2.5 rounded-xl bg-slate-900/[0.02] dark:bg-white/[0.03] flex flex-col justify-between"
                 >
                   <div className="flex items-center justify-between pb-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
                       {s.label}
                     </span>
                     <span

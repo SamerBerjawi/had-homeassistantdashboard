@@ -491,7 +491,7 @@ export default function SensorHistoryView({ entity, darkMode = true, customIcon 
             )}
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
               {entity.attributes.room || entity.attributes.area || (isBinaryOrStatusSensor ? 'BINARY SENSOR' : 'TELEMETRY SENSOR')}
             </span>
             <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white truncate max-w-[180px] sm:max-w-xs">
@@ -621,7 +621,7 @@ export default function SensorHistoryView({ entity, darkMode = true, customIcon 
 
           {/* Continuous Segmented Status Ribbon */}
           <div className="space-y-1.5">
-            <div className="flex justify-between text-[10px] font-mono text-slate-400 px-0.5">
+            <div className="flex justify-between text-[11px] font-mono text-slate-400 px-0.5">
               <span>{timeRange} ago</span>
               <span>Now (Live)</span>
             </div>
@@ -645,7 +645,7 @@ export default function SensorHistoryView({ entity, darkMode = true, customIcon 
               ))}
             </div>
 
-            <div className="flex items-center justify-between text-[10px] pt-1 text-slate-400 dark:text-slate-500 px-0.5">
+            <div className="flex items-center justify-between text-[11px] pt-1 text-slate-400 dark:text-slate-500 px-0.5">
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -662,7 +662,7 @@ export default function SensorHistoryView({ entity, darkMode = true, customIcon 
 
           {/* Chronological State Transition Log */}
           <div className={`space-y-2 pt-2 border-t ${darkMode ? 'border-white/5' : 'border-slate-200/50'}`}>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block px-0.5">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block px-0.5">
               Activity Log
             </label>
 
@@ -705,7 +705,7 @@ export default function SensorHistoryView({ entity, darkMode = true, customIcon 
                           <div className="font-bold uppercase tracking-wide truncate text-slate-900 dark:text-white">
                             {formatStateLabel(evt.state)}
                             {evt.isCurrent && (
-                              <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30">
+                              <span className="ml-1.5 text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30">
                                 Current
                               </span>
                             )}
@@ -720,7 +720,7 @@ export default function SensorHistoryView({ entity, darkMode = true, customIcon 
                         <span className="font-mono font-black text-slate-800 dark:text-slate-200">
                           {formatDuration(evt.durationMs)}
                         </span>
-                        <div className="text-[10px] text-slate-400">duration</div>
+                        <div className="text-[11px] text-slate-400">duration</div>
                       </div>
                     </div>
                   );
@@ -820,7 +820,7 @@ export default function SensorHistoryView({ entity, darkMode = true, customIcon 
                           <div className={`p-2.5 rounded-2xl border backdrop-blur-xl shadow-xl text-xs ${
                             darkMode ? 'bg-black/80 border-cyan-500/30 text-white' : 'bg-white/90 border-cyan-500/40 text-slate-900'
                           }`}>
-                            <p className="text-[10px] text-slate-400 font-mono">{data.time}</p>
+                            <p className="text-[11px] text-slate-400 font-mono">{data.time}</p>
                             <p className="font-mono font-black text-cyan-500 text-sm mt-0.5">
                               {data.value} {unit}
                             </p>

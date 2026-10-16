@@ -157,7 +157,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
               />
               {stickImage ? (
                 <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex items-center justify-center">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={stickImage}
                     alt="Stick Vacuum"
                     className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
@@ -189,7 +189,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
                   title="Upload Stick Vacuum Image"
                 >
                   <Camera size={20} weight="duotone" className="group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-bold">Upload</span>
+                  <span className="text-[11px] font-bold">Upload</span>
                 </button>
               )}
             </div>
@@ -237,7 +237,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
                   style={{ width: `${metrics.batteryPercent}%` }}
                 />
               </div>
-              <span className="text-[10px] font-mono font-bold text-slate-400">
+              <span className="text-[11px] font-mono font-bold text-slate-400">
                 {metrics.cleanerState}
               </span>
             </div>
@@ -353,7 +353,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
           {/* Live Power Draw Hero Card */}
           <div className="relative z-10 p-4 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
                 Current Station Draw
               </span>
               <div className="flex items-baseline gap-1 mt-0.5">
@@ -375,15 +375,15 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
             <div
               onClick={() => openStickEntityModal('energy')}
               className="p-3.5 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm cursor-pointer hover:bg-white/30 dark:hover:bg-black/30 transition-all flex flex-col justify-between"
-            >
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+             role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 Total Energy
               </span>
               <div className="flex items-baseline gap-1 mt-1">
                 <span className="text-xl font-black font-mono text-slate-900 dark:text-white">
                   {metrics.totalEnergyKwh}
                 </span>
-                <span className="text-[10px] font-bold text-slate-400">kWh</span>
+                <span className="text-[11px] font-bold text-slate-400">kWh</span>
               </div>
             </div>
 
@@ -391,9 +391,9 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
             <div
               onClick={() => openStickEntityModal('energySaved')}
               className="p-3.5 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm cursor-pointer hover:bg-white/30 dark:hover:bg-black/30 transition-all flex flex-col justify-between"
-            >
+             role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                   Energy Saved
                 </span>
                 <Leaf size={12} weight="fill" className="text-emerald-500" />
@@ -402,7 +402,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
                 <span className="text-xl font-black font-mono text-emerald-500 dark:text-emerald-400">
                   {metrics.energySavedKwh}
                 </span>
-                <span className="text-[10px] font-bold text-emerald-500">kWh</span>
+                <span className="text-[11px] font-bold text-emerald-500">kWh</span>
               </div>
             </div>
 
@@ -410,15 +410,15 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
             <div
               onClick={() => openStickEntityModal('energyDiff')}
               className="p-3.5 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm cursor-pointer hover:bg-white/30 dark:hover:bg-black/30 transition-all flex flex-col justify-between"
-            >
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+             role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 Difference
               </span>
               <div className="flex items-baseline gap-1 mt-1">
                 <span className="text-xl font-black font-mono text-slate-900 dark:text-white">
                   {metrics.energyDifferenceKwh}
                 </span>
-                <span className="text-[10px] font-bold text-slate-400">kWh</span>
+                <span className="text-[11px] font-bold text-slate-400">kWh</span>
               </div>
             </div>
 
@@ -426,15 +426,15 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
             <div
               onClick={() => openStickEntityModal('powerEnergy')}
               className="p-3.5 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm cursor-pointer hover:bg-white/30 dark:hover:bg-black/30 transition-all flex flex-col justify-between"
-            >
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+             role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 Power Energy
               </span>
               <div className="flex items-baseline gap-1 mt-1">
                 <span className="text-xl font-black font-mono text-slate-900 dark:text-white">
                   {metrics.powerEnergyValue}
                 </span>
-                <span className="text-[10px] font-bold text-slate-400">W/h</span>
+                <span className="text-[11px] font-bold text-slate-400">W/h</span>
               </div>
             </div>
           </div>
@@ -515,7 +515,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
           {/* Cycles Counter Card */}
           <div className="relative z-10 p-4 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                 Dust Bag Evacuation Cycles
               </span>
               <div className="flex items-baseline gap-2 mt-0.5">

@@ -101,7 +101,7 @@ export default function UserProfileSection({
               <span className="text-xs font-black text-slate-900 dark:text-white truncate">
                 {authState.user?.name || profileData.displayName}
               </span>
-              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
                 authState.isAuthenticated
                   ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
                   : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30'
@@ -112,7 +112,7 @@ export default function UserProfileSection({
             <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
               <span className="truncate">{authState.user?.username ? `@${authState.user.username}` : profileData.email}</span>
               <span>•</span>
-              <span className="flex items-center gap-1 font-mono text-[10px] text-slate-400">
+              <span className="flex items-center gap-1 font-mono text-[11px] text-slate-400">
                 <HardDrives size={12} weight="duotone" className="text-sky-500" />
                 {driverName || 'Local'}
               </span>
@@ -230,7 +230,7 @@ export default function UserProfileSection({
               Kiosk Security PIN
             </span>
           </div>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
             pinCode
               ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
               : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-white/10'
@@ -336,7 +336,7 @@ export default function UserProfileSection({
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs font-bold truncate">{d.deviceName}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">{d.sensorCount} Sensors</div>
+                      <div className="text-[11px] text-slate-400 font-mono">{d.sensorCount} Sensors</div>
                     </div>
                   </div>
                   {isSelected && (

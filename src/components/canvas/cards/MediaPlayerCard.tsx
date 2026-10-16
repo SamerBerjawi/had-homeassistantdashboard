@@ -65,7 +65,7 @@ export default function MediaPlayerCard({
   const renderBadge = () => {
     if (classification.kind === 'apple_tv') {
       return (
-        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-sky-500/15 border border-sky-500/30 text-sky-600 dark:text-sky-300 text-[10px] font-bold">
+        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-sky-500/15 border border-sky-500/30 text-sky-600 dark:text-sky-300 text-[11px] font-bold">
           <Television size={12} weight="duotone" />
           <span>{isPlaying ? 'Apple TV' : 'Idle'}</span>
         </div>
@@ -73,7 +73,7 @@ export default function MediaPlayerCard({
     }
     if (classification.kind === 'homepod') {
       return (
-        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-300 text-[10px] font-bold">
+        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-300 text-[11px] font-bold">
           <Radio size={12} weight="duotone" />
           <span>HomePod</span>
         </div>
@@ -81,7 +81,7 @@ export default function MediaPlayerCard({
     }
     if (classification.kind === 'sonos') {
       return (
-        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-600 dark:text-purple-300 text-[10px] font-bold">
+        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-600 dark:text-purple-300 text-[11px] font-bold">
           <MusicNotes size={12} weight="duotone" className={isPlaying ? 'animate-bounce' : ''} />
           <span>{isPlaying ? 'Sonos Live' : 'Sonos'}</span>
         </div>
@@ -89,7 +89,7 @@ export default function MediaPlayerCard({
     }
     if (classification.kind === 'cast') {
       return (
-        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 text-[10px] font-bold">
+        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 text-[11px] font-bold">
           <Airplay size={12} weight="duotone" />
           <span>Google Cast</span>
         </div>
@@ -99,7 +99,7 @@ export default function MediaPlayerCard({
       const AppIcon = visual.appInfo.icon;
       return (
         <div 
-          className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-colors duration-300"
+          className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold border transition-colors duration-300"
           style={{
             backgroundColor: visual.appInfo.badgeBg,
             borderColor: visual.appInfo.badgeBorder,
@@ -113,7 +113,7 @@ export default function MediaPlayerCard({
     }
     return (
       <div 
-        className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-colors duration-300"
+        className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold border transition-colors duration-300"
         style={{
           backgroundColor: palette.badgeBg,
           borderColor: palette.badgeBorder,
@@ -132,7 +132,7 @@ export default function MediaPlayerCard({
     <div 
       onClick={onOpenModal}
       className="relative w-full h-full flex flex-col justify-between overflow-hidden cursor-pointer"
-    >
+     role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
       {/* Ambient Artwork Glow */}
       {albumArt && !imgError ? (
         <div 
@@ -151,7 +151,7 @@ export default function MediaPlayerCard({
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-white/20 shadow-md shrink-0 flex items-center justify-center bg-slate-800">
             {albumArt && !imgError ? (
-              <img
+              <img loading="lazy" decoding="async"
                 src={albumArt}
                 alt={title}
                 onError={() => setImgError(true)}
