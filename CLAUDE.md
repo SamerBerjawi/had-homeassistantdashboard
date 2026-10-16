@@ -49,7 +49,7 @@ docker compose up -d      # image ghcr.io/samerberjawi/had-homeassistantdashboar
 ## Architecture
 - Data flow: browser logs in with an HA token and talks to HA directly over WebSocket (`src/services/haWebSocket.ts`) for live entities, services and history. Dashboard layout/config is saved via `POST /api/config` and fanned out to other screens by SSE (`/api/config/stream`) plus `BroadcastChannel`. Energy/statistics history is synced by the server into SQLite and read via `/api/statistics/*` (`/api/energy/*` are aliases).
 - Auth: no own user store. API routes use `requireHAAuth` (server.ts): `Authorization: Bearer <HA token>` is validated by calling `<HA>/api/` and cached briefly. Query `?token=` is accepted only for `/api/config/stream` and `/api/image-proxy`, then stripped from the URL. The validating HA instance is fixed by env var, or pinned on first successful sign-in (trust on first use) in `ha-instance.json`. Client does not choose it afterwards. Tokens persist client-side via `src/services/authStorage.ts` (legacy keys are migrated).
-- External services: Home Assistant (REST and WebSocket), go2rtc (`GO2RTC_URL`, default compose `http://go2rtc:1984`) for WebRTC/HLS, CARTO basemaps (Leaflet).
+- External services: Home Assistant (REST and WebSocket), go2rtc (`GO2RTC_URL`, default compose `http://go2rtc:1984`) for WebRTC/HLS, OpenFreeMap vector basemaps (Liberty/Dark via MapLibre GL in Leaflet).
 - Config writes are atomic (temp file then rename) with `.bak` and `backups/`. Body limit is 15 MB.
 - Deploy: GitHub Action `.github/workflows/docker-publish.yml` publishes the image. The Dockerfile copies prebuilt `node_modules` and `dist` (build outside the image first). Container runs as non-root and `/api/health` is its healthcheck.
 

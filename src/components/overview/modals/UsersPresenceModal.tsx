@@ -17,7 +17,7 @@ import {
   MagnifyingGlassMinus,
   Clock
 } from '@phosphor-icons/react';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ResolvedEntity } from '../../../types';
@@ -25,7 +25,8 @@ import DetailsRightDrawer from '../DetailsRightDrawer';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { haWebSocketService } from '../../../services/haWebSocket';
 import PersonAvatar from '../../ui/PersonAvatar';
-import { useCartoBasemap } from '../../../hooks/useCartoBasemap';
+import { useBasemap } from '../../../hooks/useBasemap';
+import { BasemapLayer } from '../../map/BasemapLayer';
 import { formatLastUpdated, getLastUpdatedDetail } from '../../../utils/dateFormat';
 
 interface UsersPresenceModalProps {
@@ -56,7 +57,7 @@ export default function UsersPresenceModal({
     selectedUser?.entity_id || users[0]?.entity_id || ''
   );
   const [zoom, setZoom] = useState<number>(16);
-  const { tileUrl, attribution, isCarto, cartoApiKey } = useCartoBasemap(darkMode);
+  const { styleUrl } = useBasemap(darkMode);
 
   React.useEffect(() => {
     if (selectedUser?.entity_id) {
@@ -340,7 +341,7 @@ export default function UsersPresenceModal({
             </div>
 
             {/* ------------------------------------------------------------- */}
-            {/* CARTO MINIMALIST / OSM LOCATION MAP (BORDERLESS & NO FOOTER)  */}
+            {/* OPENFREEMAP LOCATION MAP (BORDERLESS & NO FOOTER)  */}
             {/* ------------------------------------------------------------- */}
             <div className="space-y-2 pt-2">
               <div className="flex items-center justify-between px-1">
@@ -348,13 +349,9 @@ export default function UsersPresenceModal({
                   <Globe size={16} weight="duotone" className="text-emerald-600 dark:text-emerald-400" />
                   <span>Location Map</span>
                   <span
-                    className={`text-[11px] px-1.5 py-0.2 rounded font-mono font-bold uppercase tracking-wider ${
-                      cartoApiKey
-                        ? 'bg-sky-500/25 text-sky-400 border border-sky-500/30'
-                        : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                    }`}
+                    className="text-[11px] px-1.5 py-0.2 rounded font-mono font-bold uppercase tracking-wider bg-sky-500/25 text-sky-400 border border-sky-500/30"
                   >
-                    {cartoApiKey ? 'CARTO' : 'OSM'}
+                    OFM
                   </span>
                 </div>
                 {hasGps && (
@@ -388,15 +385,11 @@ export default function UsersPresenceModal({
                 )}
               </div>
 
-              {/* Embedded Carto / OSM Leaflet Map */}
+              {/* Embedded OpenFreeMap Leaflet Map */}
               {hasGps && lat !== undefined && lon !== undefined ? (
                 <div className="relative w-full h-48 rounded-2xl overflow-hidden shadow-inner border border-slate-200/50 dark:border-white/10 group">
                   <div
-                    className={`w-full h-full ${
-                      !isCarto && darkMode
-                        ? '[&_.leaflet-tile]:invert-[.9] [&_.leaflet-tile]:hue-rotate-180 [&_.leaflet-tile]:brightness-[.88] [&_.leaflet-tile]:contrast-[.98]'
-                        : ''
-                    }`}
+                    className="w-full h-full"
                   >
                     <MapContainer
                       center={[lat, lon]}
@@ -406,8 +399,7 @@ export default function UsersPresenceModal({
                       className="w-full h-full z-0"
                       style={{ width: '100%', height: '100%' }}
                     >
-                      {/* The 'key' prop is mandatory to force a remount when the URL changes */}
-                      <TileLayer attribution={attribution} key={tileUrl} url={tileUrl} />
+                      <BasemapLayer styleUrl={styleUrl} />
                       <Marker position={[lat, lon]} icon={personMarkerIcon} />
                       <PersonMapController center={[lat, lon]} zoom={zoom} />
                     </MapContainer>

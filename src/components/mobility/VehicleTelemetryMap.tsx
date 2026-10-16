@@ -13,7 +13,9 @@ import {
   CheckCircle,
   Pulse
 } from '@phosphor-icons/react';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, Marker, useMap } from 'react-leaflet';
+import { BasemapLayer } from '../map/BasemapLayer';
+import { getBasemapStyleUrl } from '../../hooks/useBasemap';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { CarEvMetrics } from '../../types/mobility';
@@ -22,7 +24,6 @@ import { Line } from '../charts/line';
 import { formatDecimal } from '../../utils/numberFormat';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 import { haWebSocketService } from '../../services/haWebSocket';
-import { useUserConfig } from '../../contexts/ConfigContext';
 import { formatLastUpdated } from '../../utils/dateFormat';
 
 interface VehicleTelemetryMapProps {
@@ -42,19 +43,9 @@ export function VehicleTelemetryMap({
   metrics,
   darkMode = true
 }: VehicleTelemetryMapProps) {
-  const { config } = useUserConfig();
-  const cartoApiKey = config.cartoApiKey?.trim();
   const isDarkMode = darkMode;
 
-  let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-  let attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-
-  if (cartoApiKey) {
-    tileUrl = isDarkMode
-      ? `https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${cartoApiKey}`
-      : `https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png?key=${cartoApiKey}`;
-    attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
-  }
+  const styleUrl = getBasemapStyleUrl(isDarkMode);
 
   const [zoom, setZoom] = useState<number>(16);
 
@@ -147,11 +138,7 @@ export function VehicleTelemetryMap({
       {hasGps && lat !== undefined && lon !== undefined ? (
         <div className="relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md group border border-slate-200/50 dark:border-white/10">
           <div
-            className={`w-full h-full ${
-              !cartoApiKey && isDarkMode
-                ? '[&_.leaflet-tile]:invert-[.9] [&_.leaflet-tile]:hue-rotate-180 [&_.leaflet-tile]:brightness-[.88] [&_.leaflet-tile]:contrast-[.98]'
-                : ''
-            }`}
+            className="w-full h-full"
           >
             <MapContainer
               center={[lat, lon]}
@@ -161,8 +148,7 @@ export function VehicleTelemetryMap({
               className="w-full h-full z-0"
               style={{ width: '100%', height: '100%' }}
             >
-              {/* The 'key' prop is mandatory to force a remount when the URL changes */}
-              <TileLayer attribution={attribution} key={tileUrl} url={tileUrl} />
+              <BasemapLayer styleUrl={styleUrl} />
               <Marker position={[lat, lon]} icon={vehicleMarkerIcon} />
               <MapController center={[lat, lon]} zoom={zoom} />
             </MapContainer>
@@ -176,13 +162,9 @@ export function VehicleTelemetryMap({
                 {lat.toFixed(4)}°, {lon.toFixed(4)}°
               </span>
               <span
-                className={`text-[11px] px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wider ${
-                  cartoApiKey
-                    ? 'bg-sky-500/25 text-sky-300 border border-sky-500/30'
-                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                }`}
+                className="text-[11px] px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wider bg-sky-500/25 text-sky-300 border border-sky-500/30"
               >
-                {cartoApiKey ? 'CARTO' : 'OSM'}
+                OFM
               </span>
             </div>
 

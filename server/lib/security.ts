@@ -75,7 +75,6 @@ export function validateDashboardConfigShape(body: unknown): string | null {
   if (Object.keys(body).length === 0) return 'config must not be empty';
   if (body.version !== undefined && typeof body.version !== 'number') return 'version must be a number';
   if (body.updatedAt !== undefined && typeof body.updatedAt !== 'string') return 'updatedAt must be a string';
-  if (body.cartoApiKey !== undefined && typeof body.cartoApiKey !== 'string') return 'cartoApiKey must be a string';
 
   for (const key of OBJECT_SECTIONS) {
     const v = body[key];

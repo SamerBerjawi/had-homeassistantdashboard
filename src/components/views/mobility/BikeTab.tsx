@@ -40,10 +40,11 @@ import { ActionConfirmModal } from './ActionConfirmModal';
 import { formatDecimal } from '../../../utils/numberFormat';
 import { useAutoLayoutStore } from '../../../store/useAutoLayoutStore';
 import { haWebSocketService } from '../../../services/haWebSocket';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useCartoBasemap } from '../../../hooks/useCartoBasemap';
+import { useBasemap } from '../../../hooks/useBasemap';
+import { BasemapLayer } from '../../map/BasemapLayer';
 import { formatLastUpdated } from '../../../utils/dateFormat';
 
 function BikeMapController({ center, zoom }: { center: [number, number]; zoom: number }) {
@@ -78,7 +79,7 @@ export function BikeTab({
   const [imageError, setImageError] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [zoom, setZoom] = useState<number>(16);
-  const { tileUrl, attribution, isCarto, cartoApiKey } = useCartoBasemap(darkMode);
+  const { styleUrl } = useBasemap(darkMode);
 
   const resolvedZones = useAutoLayoutStore((s) => s.resolvedZones);
   const homeZone = resolvedZones?.find(
@@ -770,11 +771,7 @@ export function BikeTab({
             {hasGps && lat !== undefined && lon !== undefined ? (
               <div className="relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md group border border-slate-200/50 dark:border-white/10">
                 <div
-                  className={`w-full h-full ${
-                    !isCarto && darkMode
-                      ? '[&_.leaflet-tile]:invert-[.9] [&_.leaflet-tile]:hue-rotate-180 [&_.leaflet-tile]:brightness-[.88] [&_.leaflet-tile]:contrast-[.98]'
-                      : ''
-                  }`}
+                  className="w-full h-full"
                 >
                   <MapContainer
                     center={[lat, lon]}
@@ -784,8 +781,7 @@ export function BikeTab({
                     className="w-full h-full z-0"
                     style={{ width: '100%', height: '100%' }}
                   >
-                    {/* The 'key' prop is mandatory to force a remount when the URL changes */}
-                    <TileLayer attribution={attribution} key={tileUrl} url={tileUrl} />
+                    <BasemapLayer styleUrl={styleUrl} />
                     <Marker position={[lat, lon]} icon={bikeMarkerIcon} />
                     <BikeMapController center={[lat, lon]} zoom={zoom} />
                   </MapContainer>
@@ -799,13 +795,9 @@ export function BikeTab({
                       {lat.toFixed(4)}°, {lon.toFixed(4)}°
                     </span>
                     <span
-                      className={`text-[11px] px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wider ${
-                        cartoApiKey
-                          ? 'bg-sky-500/25 text-sky-300 border border-sky-500/30'
-                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                      }`}
+                      className="text-[11px] px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wider bg-sky-500/25 text-sky-300 border border-sky-500/30"
                     >
-                      {cartoApiKey ? 'CARTO' : 'OSM'}
+                      OFM
                     </span>
                   </div>
 

@@ -249,9 +249,6 @@ export default function SettingsView({
   const [tileLayoutMode, setTileLayoutModeState] = useState<TileLayoutMode>(() => {
     return config?.rooms?.tileLayout || (config?.rooms?.fullWidthTiles ? 'full' : 'compact');
   });
-  const [cartoApiKey, setCartoApiKey] = useState<string>(() => {
-    return config?.cartoApiKey || '';
-  });
 
   const handleSetFullWidthTiles = (val: boolean) => {
     setFullWidthTilesState(val);
@@ -297,9 +294,6 @@ export default function SettingsView({
       if (config.preferences.currencySymbol) setCurrencySymbol(config.preferences.currencySymbol);
       if (config.preferences.backgroundStyle) setInternalBgStyle(config.preferences.backgroundStyle);
     }
-    if (config?.cartoApiKey !== undefined) {
-      setCartoApiKey(config.cartoApiKey);
-    }
     if (config?.rooms?.tileLayout) {
       setTileLayoutModeState(config.rooms.tileLayout);
       setFullWidthTilesState(config.rooms.tileLayout === 'full');
@@ -312,7 +306,6 @@ export default function SettingsView({
   const handleSavePreferences = async () => {
     await updateConfig((prev) => ({
       ...prev,
-      cartoApiKey: cartoApiKey.trim(),
       rooms: {
         ...(prev.rooms || {}),
         tileLayout: tileLayoutMode,
@@ -496,7 +489,6 @@ export default function SettingsView({
 
     if (plan.config) {
       applyConfigCustomizations(plan.config);
-      if (plan.config.cartoApiKey !== undefined) setCartoApiKey(plan.config.cartoApiKey);
     }
 
     if (plan.entityCustomizations) {
@@ -771,7 +763,6 @@ export default function SettingsView({
               snapshotsCount={snapshots.length}
               logsCount={logs.length}
               authType={authType}
-              hasCartoKey={Boolean(cartoApiKey)}
               camerasCount={Object.keys(config.cameras?.sources || {}).length}
             />
           </motion.div>
@@ -820,8 +811,6 @@ export default function SettingsView({
               setTileLayoutMode={handleSetTileLayoutMode}
               fullWidthTiles={fullWidthTiles}
               setFullWidthTiles={handleSetFullWidthTiles}
-              cartoApiKey={cartoApiKey}
-              setCartoApiKey={setCartoApiKey}
               handleSavePreferences={handleSavePreferences}
             />
           </motion.div>

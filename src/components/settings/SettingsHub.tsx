@@ -64,7 +64,6 @@ interface SettingsHubProps {
   snapshotsCount: number;
   logsCount: number;
   authType: 'oauth' | 'llat' | 'demo';
-  hasCartoKey?: boolean;
   camerasCount?: number;
 }
 
@@ -88,7 +87,6 @@ export default function SettingsHub({
   snapshotsCount,
   logsCount,
   authType,
-  hasCartoKey = false,
   camerasCount = 0
 }: SettingsHubProps) {
 
@@ -122,7 +120,7 @@ export default function SettingsHub({
       badgeType: 'info',
       metrics: [
         { label: 'Theme', value: themeMode === 'auto' ? 'System' : darkMode ? 'Dark' : 'Light' },
-        { label: 'Map Tiles', value: hasCartoKey ? 'CartoDB' : 'OSM' },
+        { label: 'Map Tiles', value: 'OpenFreeMap' },
         { label: 'Style', value: backgroundStyle === 'flat' ? 'Solid' : 'Ambient' }
       ]
     },
@@ -276,7 +274,7 @@ export default function SettingsHub({
                     Theme & Customization
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">
-                    Theme ({themeMode === 'auto' ? 'Auto' : darkMode ? 'Dark' : 'Light'}), Map ({hasCartoKey ? 'CartoDB' : 'OSM'})
+                    Theme ({themeMode === 'auto' ? 'Auto' : darkMode ? 'Dark' : 'Light'}), Map (OpenFreeMap)
                   </div>
                 </div>
               </div>
