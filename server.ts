@@ -257,6 +257,12 @@ async function startServer() {
     });
   });
 
+  // Unauthenticated: lets the login screen prefill the Home Assistant URL configured via HASS_URL.
+  app.get('/api/public-config', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ haUrl: envHaUrl || null });
+  });
+
   // In-process write lock queue to serialize concurrent config file writes
   let configWriteQueue: Promise<any> = Promise.resolve();
   function withConfigWriteLock<T>(fn: () => Promise<T>): Promise<T> {
@@ -1293,6 +1299,44 @@ async function startServer() {
     } catch (err: any) {
       console.error('[NAS Assets] Error saving asset:', err);
       return res.status(500).json({ success: false, error: 'Failed to save asset to persistent volume' });
+    }
+  });
+
+  // -------------------------------------------------------------
+  // AdGuard Home native stats proxy (/control/stats). The HA sensors are
+  // rolling-window totals, so per-bucket history must come from AdGuard itself.
+  // Configure with ADGUARD_URL (+ ADGUARD_USERNAME / ADGUARD_PASSWORD).
+  // -------------------------------------------------------------
+  app.get('/api/adguard/stats', requireHAAuth, async (req, res) => {
+    applyCorsHeaders(req, res, 'GET, OPTIONS');
+    const base = (process.env.ADGUARD_URL || '').replace(/\/+$/, '');
+    if (!base) {
+      return res.status(503).json({ error: 'ADGUARD_URL is not configured' });
+    }
+    try {
+      const headers: Record<string, string> = {};
+      if (process.env.ADGUARD_USERNAME) {
+        const cred = `${process.env.ADGUARD_USERNAME}:${process.env.ADGUARD_PASSWORD || ''}`;
+        headers.Authorization = `Basic ${Buffer.from(cred).toString('base64')}`;
+      }
+      const upstream = await undiciFetch(`${base}/control/stats`, {
+        headers,
+        signal: AbortSignal.timeout(8000)
+      });
+      if (!upstream.ok) {
+        return res.status(502).json({ error: `AdGuard responded ${upstream.status}` });
+      }
+      const body = (await upstream.json()) as Record<string, unknown>;
+      res.json({
+        time_units: body.time_units,
+        dns_queries: body.dns_queries,
+        blocked_filtering: body.blocked_filtering,
+        replaced_safebrowsing: body.replaced_safebrowsing,
+        replaced_parental: body.replaced_parental
+      });
+    } catch (err: any) {
+      console.warn('[AdGuard Proxy] stats fetch failed:', err?.message || err);
+      res.status(502).json({ error: 'AdGuard Home unreachable' });
     }
   });
 

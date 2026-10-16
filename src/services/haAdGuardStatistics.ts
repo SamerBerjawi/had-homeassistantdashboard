@@ -19,6 +19,7 @@ import {
   normalizeHATimestamp,
   fetchLiveEntityHistory
 } from './haHistoryService';
+import { getAuthHeadersAsync } from './configStorageService';
 import { AdGuardTimeseriesPoint, NetworkTimeRange } from '../types/network';
 
 export interface HAStatisticRecord {
@@ -163,6 +164,50 @@ function binStatisticRecords(
 }
 
 /**
+ * The HA AdGuard sensors hold a rolling total over AdGuard's retention window (24h by default),
+ * not a monotonic counter. Per-bucket traffic is therefore
+ *   new(t) = total(t) - total(t-1) + expired(t)
+ * where expired(t) is unknown; it is approximated by the window's mean bucket (total/buckets).
+ * This is an estimate; the native /control/stats proxy is exact.
+ */
+const ADGUARD_WINDOW_HOURS = 24;
+
+function reconstructFromWindowTotals(
+  records: HAStatisticRecord[],
+  hourSlots: number[]
+): Map<number, number> {
+  const hourMs = 3600 * 1000;
+  const byHour = new Map<number, number>();
+  for (const r of records || []) {
+    const t = normalizeHATimestamp(r.start);
+    const v = typeof r.mean === 'number' ? r.mean : typeof r.state === 'number' ? r.state : null;
+    if (!isNaN(t) && v !== null && !isNaN(v)) byHour.set(Math.floor(t / hourMs) * hourMs, v);
+  }
+  const out = new Map<number, number>();
+  let prev: number | null = null;
+  for (const slot of hourSlots) {
+    const cur = byHour.get(slot);
+    if (cur === undefined) continue;
+    if (prev !== null) {
+      const expired = prev / ADGUARD_WINDOW_HOURS;
+      out.set(slot, Math.max(0, cur - prev + expired));
+    }
+    prev = cur;
+  }
+  return out;
+}
+
+function sumIntoSlots(hourly: Map<number, number>, slots: number[], stepMs: number): Map<number, number> {
+  if (stepMs <= 3600 * 1000) return hourly;
+  const out = new Map<number, number>();
+  for (const [t, v] of hourly) {
+    const slot = Math.floor(t / stepMs) * stepMs;
+    out.set(slot, (out.get(slot) || 0) + v);
+  }
+  return out;
+}
+
+/**
  * Bins raw historical state changes into uniform slot deltas for cumulative sensors.
  */
 function binHistoryIntoDeltas(
@@ -215,6 +260,53 @@ function binHistoryIntoDeltas(
   return slotMap;
 }
 
+
+interface NativeAdGuardStats {
+  time_units?: 'hours' | 'days';
+  dns_queries?: number[];
+  blocked_filtering?: number[];
+  replaced_safebrowsing?: number[];
+  replaced_parental?: number[];
+}
+
+/**
+ * Per-bucket history from AdGuard Home's own /control/stats (via server proxy),
+ * the same data the native dashboard charts. Returns null when not configured.
+ * AdGuard only keeps its configured retention (hourly buckets for 24h, daily beyond),
+ * so ranges are slices of the newest buckets.
+ */
+async function fetchNativeAdGuardStats(range: NetworkTimeRange): Promise<AdGuardTimeseriesPoint[] | null> {
+  try {
+    const res = await fetch('/api/adguard/stats', { headers: await getAuthHeadersAsync(), signal: AbortSignal.timeout(10000) });
+    if (!res.ok) return null;
+    const d = (await res.json()) as NativeAdGuardStats;
+    const total = d.dns_queries;
+    if (!Array.isArray(total) || total.length === 0) return null;
+
+    const unitMs = d.time_units === 'days' ? 24 * 3600 * 1000 : 3600 * 1000;
+    const { totalHours } = getTimeWindow(range);
+    const wanted = Math.max(1, Math.round((totalHours * 3600 * 1000) / unitMs));
+    const n = total.length;
+    const from = Math.max(0, n - wanted);
+    const now = Date.now();
+    const at = (arr: number[] | undefined, i: number) => Number(arr?.[i]) || 0;
+
+    const points: AdGuardTimeseriesPoint[] = [];
+    for (let i = from; i < n; i++) {
+      points.push({
+        date: new Date(now - (n - 1 - i) * unitMs),
+        totalQueries: at(total, i),
+        blockedQueries: at(d.blocked_filtering, i),
+        safeBrowsingBlocked: at(d.replaced_safebrowsing, i),
+        parentalBlocked: at(d.replaced_parental, i)
+      });
+    }
+    return points;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Fetch Home Assistant AdGuard Statistics strictly for the 4 requested entities:
  * - sensor.adguard_home_dns_queries
@@ -264,6 +356,12 @@ export async function fetchAdGuardStatistics(
     canonicalSlots.push(t);
   }
 
+  const native = await fetchNativeAdGuardStats(range);
+  if (native) {
+    statsCache.set(cacheKey, { data: native, expiresAt: Date.now() + 60000 });
+    return native;
+  }
+
   // If running in offline demo mode, return demo points
   if (haWebSocketService.isDemo() || haWebSocketService.getStatus() !== 'connected') {
     return generateDemoTimeseries(range, _liveMetrics);
@@ -271,7 +369,10 @@ export async function fetchAdGuardStatistics(
 
   // 1. Primary: Check NAS SQLite first, fallback to Home Assistant Long-Term Statistics
   try {
-    let statsRes = await queryStoredStatistics(targetIds, startTime, endTime, period);
+    const hourMs = 3600 * 1000;
+    const hourSlots: number[] = [];
+    for (let t = Math.floor(startMs / hourMs) * hourMs; t <= endMs; t += hourMs) hourSlots.push(t);
+    let statsRes = await queryStoredStatistics(targetIds, startTime, endTime, 'hour');
 
     if (!statsRes) {
       statsRes = await haWebSocketService.sendRequest<Record<string, HAStatisticRecord[]>>(
@@ -280,21 +381,21 @@ export async function fetchAdGuardStatistics(
           start_time: startTime,
           end_time: endTime,
           statistic_ids: targetIds,
-          period,
+          period: 'hour',
           types: ['change', 'sum', 'mean', 'state', 'max', 'min']
         }
       ).catch(() => null);
 
       if (statsRes && typeof statsRes === 'object') {
-        syncStoredStatistics(statsRes, period);
+        syncStoredStatistics(statsRes, 'hour');
       }
     }
 
     if (statsRes && typeof statsRes === 'object') {
-      const totalSlots = binStatisticRecords(statsRes[totalId] || [], canonicalSlots, stepMs);
-      const blockedSlots = binStatisticRecords(statsRes[blockedId] || [], canonicalSlots, stepMs);
-      const sbSlots = binStatisticRecords(statsRes[safeBrowsingId] || [], canonicalSlots, stepMs);
-      const parentalSlots = binStatisticRecords(statsRes[parentalId] || [], canonicalSlots, stepMs);
+      const totalSlots = sumIntoSlots(reconstructFromWindowTotals(statsRes[totalId] || [], hourSlots), canonicalSlots, stepMs);
+      const blockedSlots = sumIntoSlots(reconstructFromWindowTotals(statsRes[blockedId] || [], hourSlots), canonicalSlots, stepMs);
+      const sbSlots = sumIntoSlots(reconstructFromWindowTotals(statsRes[safeBrowsingId] || [], hourSlots), canonicalSlots, stepMs);
+      const parentalSlots = sumIntoSlots(reconstructFromWindowTotals(statsRes[parentalId] || [], hourSlots), canonicalSlots, stepMs);
 
       const points: AdGuardTimeseriesPoint[] = canonicalSlots.map(t => ({
         date: new Date(t),

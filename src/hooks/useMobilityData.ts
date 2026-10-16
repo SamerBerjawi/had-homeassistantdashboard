@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { fetchLiveEntityHistory } from '../services/haHistoryService';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useUserConfig } from './useUserConfig';
@@ -182,6 +183,65 @@ export function useMobilityData() {
   // Local state for optimistic UI feedback
   const [optimisticCar, setOptimisticCar] = useState<Partial<CarEvMetrics>>({});
   const [optimisticBike, setOptimisticBike] = useState<Partial<BikeMetrics>>({});
+
+  // 24h speed history from the FordPass speed sensor's recorder history
+  const speedEntityId = useMemo(
+    () =>
+      findEntity(states, 'sensor', [
+        'sensor.fordpass_wf0tk1em3pma07438_speed',
+        'fordpass_wf0tk1em3pma07438_speed',
+        '_speed'
+      ])?.entity_id as string | undefined,
+    [states]
+  );
+  const [speedHistory, setSpeedHistory] = useState<Array<{ date: Date; speed: number; timeLabel: string }>>([]);
+
+  useEffect(() => {
+    if (!isLiveMode || !speedEntityId) {
+      setSpeedHistory([]);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      const bucketMs = 15 * 60 * 1000;
+      const end = Date.now();
+      const start = end - 24 * 3600 * 1000;
+      // Start a little earlier so the state held at the window start is known
+      const raw = await fetchLiveEntityHistory(speedEntityId, new Date(start - 6 * 3600 * 1000).toISOString(), new Date(end).toISOString());
+      const pts = raw
+        .map((h) => ({ t: h.timestamp, v: parseNumOptional(h.state) }))
+        .filter((h): h is { t: number; v: number } => h.v !== undefined && !isNaN(h.t))
+        .sort((a, b) => a.t - b.t);
+      if (cancelled || pts.length === 0) {
+        if (!cancelled) setSpeedHistory([]);
+        return;
+      }
+      const out: Array<{ date: Date; speed: number; timeLabel: string }> = [];
+      let i = 0;
+      let last = 0;
+      for (let t = Math.ceil(start / bucketMs) * bucketMs; t <= end; t += bucketMs) {
+        // Peak speed seen in this bucket; sensor only records on change, so carry the last value forward
+        let peak = last;
+        while (i < pts.length && pts[i].t <= t) {
+          peak = Math.max(peak, pts[i].v);
+          last = pts[i].v;
+          i++;
+        }
+        out.push({
+          date: new Date(t),
+          speed: Math.max(0, Math.round(peak)),
+          timeLabel: new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+        });
+      }
+      setSpeedHistory(out);
+    };
+    load().catch(() => !cancelled && setSpeedHistory([]));
+    const timer = setInterval(() => load().catch(() => {}), 5 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [isLiveMode, speedEntityId]);
 
   // -------------------------------------------------------------
   // Resolving Car EV Metrics (FordPass / Standard HA EV Integrations)
@@ -637,7 +697,7 @@ export function useMobilityData() {
       isAtHome,
       lastRefreshed: lastRefreshEntity?.state || (isDemo ? 'Just now' : 'Unavailable'),
 
-      speedTimeseries: isDemo ? generateSpeedTimeseries(speed ?? 0) : [],
+      speedTimeseries: isDemo ? generateSpeedTimeseries(speed ?? 0) : speedHistory,
 
       controls: {
         lockDoorButtonId: 'button.fordpass_wf0tk1em3pma07438_doorlock',
@@ -658,7 +718,7 @@ export function useMobilityData() {
     };
 
     return { ...base, ...optimisticCar };
-  }, [states, resolvedZones, effectiveCarLogo, effectiveCarImage, optimisticCar, config.mobility?.car?.targetSocDefault]);
+  }, [states, resolvedZones, effectiveCarLogo, effectiveCarImage, optimisticCar, config.mobility?.car?.targetSocDefault, speedHistory]);
 
   // -------------------------------------------------------------
   // Resolving Smart E-Bike Metrics (Cowboy / Dark Avenger E-Bike)

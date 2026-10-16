@@ -8,7 +8,7 @@
  */
 
 import { useDialogA11y } from '../../hooks/useDialogA11y';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Key, 
@@ -63,6 +63,20 @@ export default function AuthModal({ darkMode = true }: AuthModalProps) {
     }
     return 'http://homeassistant.local:8123';
   });
+
+  // Server-configured HASS_URL wins over any stale saved value: it is the only instance the server accepts
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/public-config')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((cfg) => {
+        if (!cancelled && cfg && typeof cfg.haUrl === 'string' && cfg.haUrl) setHaUrl(cfg.haUrl);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const [llatToken, setLlatToken] = useState<string>('');
   const [showLlatToken, setShowLlatToken] = useState<boolean>(false);
