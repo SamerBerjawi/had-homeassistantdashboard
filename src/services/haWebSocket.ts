@@ -132,6 +132,8 @@ const ENTITY_SNAPSHOT_TIMEOUT_MS = 20000;
 
 const HEARTBEAT_INTERVAL_MS = 30000;
 const HEARTBEAT_TIMEOUT_MS = 10000;
+// A socket that never opens or never completes auth (blackholed network) fires neither onclose nor onerror
+const CONNECT_TIMEOUT_MS = 15000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 60000;
 
 // Weather entity feature bits (WeatherEntityFeature)
@@ -158,6 +160,7 @@ class HAWebSocketClient {
   private visibilityHandler: (() => void) | null = null;
   private haVersion: string | null = null;
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private connectTimer: ReturnType<typeof setTimeout> | null = null;
   private isCheckingHealth = false;
   // Latest weather states and their subscribed forecasts. HA no longer includes forecasts in
   // weather state attributes, so they're re-attached to every weather state update.
@@ -467,7 +470,14 @@ class HAWebSocketClient {
     this.callbacks?.onLogMessage('info', `Connecting to WebSocket: ${normalizedUrl}`);
 
     try {
-      this.socket = new WebSocket(normalizedUrl);
+      const socket = new WebSocket(normalizedUrl);
+      this.socket = socket;
+      this.connectTimer = setTimeout(() => {
+        this.connectTimer = null;
+        if (this.socket === socket && this.status === 'connecting') {
+          this.handleSocketLost('Timed out connecting to Home Assistant');
+        }
+      }, CONNECT_TIMEOUT_MS);
 
       this.socket.onopen = () => {
         this.callbacks?.onLogMessage('info', 'WebSocket TCP connection opened. Awaiting auth challenge...');
@@ -517,6 +527,10 @@ class HAWebSocketClient {
   /** Detaches handlers and closes the current socket without triggering reconnect logic. */
   private detachSocket() {
     this.stopHeartbeat();
+    if (this.connectTimer) {
+      clearTimeout(this.connectTimer);
+      this.connectTimer = null;
+    }
     if (this.socket) {
       this.socket.onopen = null;
       this.socket.onmessage = null;
@@ -599,6 +613,10 @@ class HAWebSocketClient {
     }
 
     if (msg.type === 'auth_ok') {
+      if (this.connectTimer) {
+        clearTimeout(this.connectTimer);
+        this.connectTimer = null;
+      }
       this.reconnectAttempts = 0;
       this.emitStatus('connected');
       const liveVersion = msg.ha_version ? String(msg.ha_version) : null;
