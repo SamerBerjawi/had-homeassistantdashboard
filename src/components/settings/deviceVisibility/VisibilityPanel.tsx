@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { classifyBinarySensor, classifySensor } from '../../../services/entitySubcategoryClassification';
 import { motion, AnimatePresence } from 'motion/react';
 import { SlidersHorizontal, HouseLine, Cpu, Eye, EyeSlash, MagnifyingGlass, CaretDown, CaretRight, DoorOpen, Gauge, ListBullets, X, CheckSquare, Square, WarningOctagon, FolderSimple } from '@phosphor-icons/react';
 import type { DeviceVisibilityState } from './useDeviceVisibilityState';
@@ -22,8 +23,6 @@ export default function VisibilityPanel({ s }: { s: DeviceVisibilityState }) {
     binarySubcategoryConfigs,
     categoryConfigs,
     categoryFilter,
-    classifyBinarySensor,
-    classifySensor,
     collapsedGroups,
     groupedData,
     groupingMode,

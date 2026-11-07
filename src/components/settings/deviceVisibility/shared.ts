@@ -164,30 +164,6 @@ export const NAVIGATION_PAGES: NavigationPageMeta[] = [
 ];
 
 
-// --- Subcategory Definitions for Binary Sensors ---
-export type BinarySensorSubcategory =
-  | 'all'
-  | 'door'
-  | 'window'
-  | 'motion'
-  | 'presence'
-  | 'safety'
-  | 'moisture'
-  | 'connectivity'
-  | 'power_binary'
-  | 'other_binary';
-
-
-// --- Subcategory Definitions for Sensors ---
-export type SensorSubcategory =
-  | 'all'
-  | 'temperature'
-  | 'humidity'
-  | 'environmental'
-  | 'energy'
-  | 'battery'
-  | 'network'
-  | 'other_sensor';
-
+export type { BinarySensorSubcategory, SensorSubcategory } from '../../../services/entitySubcategoryClassification';
 
 export type GroupingMode = 'domain' | 'area' | 'device' | 'flat';
