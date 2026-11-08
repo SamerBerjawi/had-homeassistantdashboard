@@ -21,6 +21,7 @@ import {
 import { loadMockRegistries } from '../data/loadMockRegistries';
 import { getStoredAuthConfig, isTokenExpired } from './authStorage';
 import { alertService } from './alertService';
+import { applyActiveUrl, refreshHaRoute, recordHaVersion, getConfiguredInternalUrl } from './haUrlResolver';
 
 export type { HAConnectionStatus };
 
@@ -132,6 +133,8 @@ const ENTITY_SNAPSHOT_TIMEOUT_MS = 20000;
 
 const HEARTBEAT_INTERVAL_MS = 30000;
 const HEARTBEAT_TIMEOUT_MS = 10000;
+// A socket that never opens or never completes auth (blackholed network) fires neither onclose nor onerror
+const CONNECT_TIMEOUT_MS = 15000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 60000;
 
 // Weather entity feature bits (WeatherEntityFeature)
@@ -151,6 +154,8 @@ class HAWebSocketClient {
   private isRefreshingAuth = false;
   private isDemoMode = true;
   private isExplicitDisconnect = false;
+  /** URL as requested by the caller (external form); currentUrl may be rewritten to the internal one. */
+  private requestedUrl = '';
   private reconnectTimer: any = null;
   private reconnectAttempts = 0;
   private networkListenersAttached = false;
@@ -158,6 +163,7 @@ class HAWebSocketClient {
   private visibilityHandler: (() => void) | null = null;
   private haVersion: string | null = null;
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private connectTimer: ReturnType<typeof setTimeout> | null = null;
   private isCheckingHealth = false;
   // Latest weather states and their subscribed forecasts. HA no longer includes forecasts in
   // weather state attributes, so they're re-attached to every weather state update.
@@ -428,7 +434,13 @@ class HAWebSocketClient {
         this.status !== 'connected' &&
         this.status !== 'connecting'
       ) {
-        this.connect(this.currentUrl, this.currentToken, true);
+        const retry = () => this.connect(this.requestedUrl || this.currentUrl, this.currentToken, true);
+        if (getConfiguredInternalUrl()) {
+          // The network may have changed (left/arrived home): re-pick internal vs external first
+          void refreshHaRoute().then(retry, retry);
+        } else {
+          retry();
+        }
       }
     }, delay);
   }
@@ -448,7 +460,8 @@ class HAWebSocketClient {
       this.reconnectAttempts = 0;
     }
 
-    const normalizedUrl = normalizeHAWebSocketUrl(url);
+    this.requestedUrl = url;
+    const normalizedUrl = normalizeHAWebSocketUrl(applyActiveUrl(url));
     this.currentUrl = normalizedUrl;
     this.currentToken = token;
     this.isExplicitDisconnect = false;
@@ -467,7 +480,14 @@ class HAWebSocketClient {
     this.callbacks?.onLogMessage('info', `Connecting to WebSocket: ${normalizedUrl}`);
 
     try {
-      this.socket = new WebSocket(normalizedUrl);
+      const socket = new WebSocket(normalizedUrl);
+      this.socket = socket;
+      this.connectTimer = setTimeout(() => {
+        this.connectTimer = null;
+        if (this.socket === socket && this.status === 'connecting') {
+          this.handleSocketLost('Timed out connecting to Home Assistant');
+        }
+      }, CONNECT_TIMEOUT_MS);
 
       this.socket.onopen = () => {
         this.callbacks?.onLogMessage('info', 'WebSocket TCP connection opened. Awaiting auth challenge...');
@@ -517,6 +537,10 @@ class HAWebSocketClient {
   /** Detaches handlers and closes the current socket without triggering reconnect logic. */
   private detachSocket() {
     this.stopHeartbeat();
+    if (this.connectTimer) {
+      clearTimeout(this.connectTimer);
+      this.connectTimer = null;
+    }
     if (this.socket) {
       this.socket.onopen = null;
       this.socket.onmessage = null;
@@ -599,11 +623,16 @@ class HAWebSocketClient {
     }
 
     if (msg.type === 'auth_ok') {
+      if (this.connectTimer) {
+        clearTimeout(this.connectTimer);
+        this.connectTimer = null;
+      }
       this.reconnectAttempts = 0;
       this.emitStatus('connected');
       const liveVersion = msg.ha_version ? String(msg.ha_version) : null;
       if (liveVersion) {
         this.haVersion = liveVersion;
+        recordHaVersion(liveVersion);
         this.callbacks?.onVersionLoaded?.(liveVersion);
       }
       this.callbacks?.onLogMessage('info', `Authentication successful! Home Assistant version: ${liveVersion || '2026.x'}`);

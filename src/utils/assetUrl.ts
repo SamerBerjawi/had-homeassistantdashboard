@@ -9,6 +9,7 @@
 
 import { getStoredHAAuth } from '../services/haAuth';
 import { getStoredAuthConfig } from '../services/authStorage';
+import { applyActiveUrl } from '../services/haUrlResolver';
 
 /**
  * Resolves a raw asset URL to a fully qualified, cache-busted, cross-device accessible URL.
@@ -69,7 +70,7 @@ export function resolveAssetUrl(
     const auth: any = getStoredHAAuth() || getStoredAuthConfig();
     const serverUrl = auth?.serverUrl || auth?.server_url || auth?.httpUrl;
     if (serverUrl) {
-      const baseUrl = serverUrl.replace(/\/+$/, '').replace(/\/api\/websocket\/?$/, '').replace(/^ws/, 'http');
+      const baseUrl = applyActiveUrl(serverUrl).replace(/\/+$/, '').replace(/\/api\/websocket\/?$/, '').replace(/^ws/, 'http');
       return appendVersion(`${baseUrl}${normalizedPath}`);
     }
   }

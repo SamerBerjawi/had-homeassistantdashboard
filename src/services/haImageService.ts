@@ -2,6 +2,7 @@ import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 import { useState, useEffect } from 'react';
 import { getActiveHAToken } from './haAuth';
 import { getStoredAuthConfig } from './authStorage';
+import { applyActiveUrl } from './haUrlResolver';
 
 // In-memory cache for resolved Blob URLs to prevent duplicate network requests
 const blobUrlCache = new Map<string, string>();
@@ -23,7 +24,7 @@ export function getHAHttpBaseUrl(serverUrl?: string | null): string {
 
   if (!target) return '';
 
-  return target
+  return applyActiveUrl(target)
     .replace(/^wss:\/\//i, 'https://')
     .replace(/^ws:\/\//i, 'http://')
     .replace(/\/api\/websocket\/?$/i, '')

@@ -26,7 +26,9 @@ export interface StoredAuthConfig {
   version: number;
   authMethod: AuthMethod;
   serverUrl: string; // WebSocket URL (ws://... or wss://...)
-  httpUrl: string;   // HTTP URL (http://... or https://...)
+  httpUrl: string;   // HTTP URL (http://... or https://...) - the external / primary URL
+  internalUrl?: string; // Optional local-network URL, used when reachable (see haUrlResolver)
+  haVersion?: string;   // HA version last seen, used to recognise the instance on the internal URL
   tokens?: AuthTokens;
   lastUpdated: number;
 }
