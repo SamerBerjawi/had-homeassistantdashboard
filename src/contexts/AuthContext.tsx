@@ -7,6 +7,7 @@
  * Handles proactive silent token refresh, resilient network reconnection, and persistent storage.
  */
 
+import { onHaRouteChange, watchNetworkChanges, refreshHaRoute, getConfiguredInternalUrl } from '../services/haUrlResolver';
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AuthState, AuthContextType, AuthUser, AuthTokens } from '../types/auth';
 import { 
@@ -191,6 +192,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
   }, [scheduleProactiveTokenRefresh]);
+
+  // Internal/external URL switching: probe the local address on start and on network changes,
+  // and reconnect when the device moves between the home network and the outside world.
+  useEffect(() => {
+    if (!authState.isAuthenticated || authState.isDemo) return;
+    const reconnectOnRouteChange = onHaRouteChange(() => {
+      const stored = getStoredAuthConfig();
+      const token = stored?.tokens?.access_token;
+      if (stored?.tokens && token) haWebSocketService.connect(stored.tokens.server_url, token);
+    });
+    const stopWatching = watchNetworkChanges();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void refreshHaRoute();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    if (getConfiguredInternalUrl()) void refreshHaRoute();
+    return () => {
+      reconnectOnRouteChange();
+      stopWatching();
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [authState.isAuthenticated, authState.isDemo]);
 
   // Listen for BroadcastChannel / postMessage OAuth success from external auth popup/tab
   useEffect(() => {

@@ -21,6 +21,7 @@ import {
   Lightning
 } from '@phosphor-icons/react';
 import { LogMessage } from '../../types';
+import InternalUrlCard from './InternalUrlCard';
 
 interface ConnectionWebSocketSectionProps {
   darkMode: boolean;
@@ -140,6 +141,8 @@ export default function ConnectionWebSocketSection({
           </button>
         </div>
       </div>
+
+      {isLiveMode && authType !== 'demo' && <InternalUrlCard />}
 
       {/* 2. Authentication Mode Segmented Pill */}
       <div className="space-y-1.5">

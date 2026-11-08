@@ -21,6 +21,7 @@ import {
 import { loadMockRegistries } from '../data/loadMockRegistries';
 import { getStoredAuthConfig, isTokenExpired } from './authStorage';
 import { alertService } from './alertService';
+import { applyActiveUrl, refreshHaRoute, recordHaVersion, getConfiguredInternalUrl } from './haUrlResolver';
 
 export type { HAConnectionStatus };
 
@@ -153,6 +154,8 @@ class HAWebSocketClient {
   private isRefreshingAuth = false;
   private isDemoMode = true;
   private isExplicitDisconnect = false;
+  /** URL as requested by the caller (external form); currentUrl may be rewritten to the internal one. */
+  private requestedUrl = '';
   private reconnectTimer: any = null;
   private reconnectAttempts = 0;
   private networkListenersAttached = false;
@@ -431,7 +434,13 @@ class HAWebSocketClient {
         this.status !== 'connected' &&
         this.status !== 'connecting'
       ) {
-        this.connect(this.currentUrl, this.currentToken, true);
+        const retry = () => this.connect(this.requestedUrl || this.currentUrl, this.currentToken, true);
+        if (getConfiguredInternalUrl()) {
+          // The network may have changed (left/arrived home): re-pick internal vs external first
+          void refreshHaRoute().then(retry, retry);
+        } else {
+          retry();
+        }
       }
     }, delay);
   }
@@ -451,7 +460,8 @@ class HAWebSocketClient {
       this.reconnectAttempts = 0;
     }
 
-    const normalizedUrl = normalizeHAWebSocketUrl(url);
+    this.requestedUrl = url;
+    const normalizedUrl = normalizeHAWebSocketUrl(applyActiveUrl(url));
     this.currentUrl = normalizedUrl;
     this.currentToken = token;
     this.isExplicitDisconnect = false;
@@ -622,6 +632,7 @@ class HAWebSocketClient {
       const liveVersion = msg.ha_version ? String(msg.ha_version) : null;
       if (liveVersion) {
         this.haVersion = liveVersion;
+        recordHaVersion(liveVersion);
         this.callbacks?.onVersionLoaded?.(liveVersion);
       }
       this.callbacks?.onLogMessage('info', `Authentication successful! Home Assistant version: ${liveVersion || '2026.x'}`);
