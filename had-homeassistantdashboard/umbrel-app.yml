@@ -1,17 +1,23 @@
 manifestVersion: 1
 id: had-homeassistantdashboard
+storage:
+  dataRoot: data
 category: automation
-name: HOMZ Dashboard
-version: "0.4.0"
+name: HAD - Home Assistant Dashboard
+version: "0.7.0"
 tagline: Sleek, high-performance Home Assistant dashboard with responsive bento grid
 description: >-
-  HOMZ is a modern, high-performance dashboard for Home Assistant engineered for wall-mounted tablets, touch displays, desktops, and mobile devices.
+  HAD is a modern, high-performance dashboard for Home Assistant engineered for wall-mounted tablets, touch displays, desktops, and mobile devices. It requires an existing Home Assistant instance.
 
 
-  Featuring a fluid responsive grid, real-time WebSocket state synchronization, interactive climate controls, media players, and automated scene activation, HOMZ brings an elevated, futuristic aesthetic to your smart home.
+  On first launch, sign in with your Home Assistant URL and a long-lived access token (created from your Home Assistant user profile). HAD then pins that Home Assistant instance for all later sign-ins.
+
+
+  Featuring a fluid responsive grid, real-time WebSocket state synchronization, interactive climate controls, media players, and automated scene activation, HAD brings an elevated, futuristic aesthetic to your smart home.
 
 
   Features:
+
 
   - Instant Auto-Discovery: Seamlessly reads your Home Assistant areas, entities, and devices.
 
@@ -20,6 +26,7 @@ description: >-
   - Multi-Device Synchronization: Saved layouts and settings persist locally and sync across all your displays.
 
   - Private & Sovereign: Runs 100% locally with zero cloud dependencies or external tracking.
+releaseNotes: ""
 developer: Samer Berjawi
 website: https://github.com/SamerBerjawi/had-homeassistantdashboard
 dependencies: []
@@ -28,6 +35,7 @@ support: https://github.com/SamerBerjawi/had-homeassistantdashboard/issues
 port: 8124
 gallery: []
 path: ""
+defaultUsername: ""
 defaultPassword: ""
 submitter: Samer Berjawi
-submission: ""
+submission: https://github.com/getumbrel/umbrel-apps/pull/6325
