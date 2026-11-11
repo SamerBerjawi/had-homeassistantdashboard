@@ -10,7 +10,6 @@ const BASELINE: Record<string, number> = {
   'src/data/mockRegistries.ts': 4026,
   'src/components/energy/PowerSourcesChart.tsx': 1453,
   'src/components/overview/useOverviewHeaderState.ts': 1347,
-  'src/services/energyDataTransformer.ts': 1215,
   'src/hooks/useMobilityData.ts': 1196,
   'src/services/haWebSocket.ts': 967,
   'src/components/modals/entity-controls/LightControlView.tsx': 1038,
