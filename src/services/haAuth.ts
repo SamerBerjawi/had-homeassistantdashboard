@@ -15,6 +15,7 @@ import {
   setPendingOAuthState,
   getPendingOAuthState,
   clearPendingOAuthState,
+  getLegacyHaToken,
   StoredAuthConfig
 } from './authStorage';
 
@@ -425,9 +426,9 @@ export function getActiveHAToken(): string | null {
   if (stored?.access_token) {
     return stored.access_token;
   }
-  const legacyToken = localStorage.getItem('ha_token');
-  if (legacyToken && legacyToken.trim()) {
-    return legacyToken.trim();
+  const legacyToken = getLegacyHaToken();
+  if (legacyToken) {
+    return legacyToken;
   }
   return null;
 }

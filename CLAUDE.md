@@ -12,7 +12,7 @@ HAD / HOMZ: a Home Assistant (HA) dashboard. A React SPA plus a single Express s
 - External runtime deps: Home Assistant instance, optional go2rtc (cameras).
 
 ## Commands
-Verified in this repo: `npm run lint` (tsc --noEmit, passes) and `npm test` (6 files, 32 tests, pass).
+Verified in this repo: `npm run lint` (tsc --noEmit, passes) and `npm test` (22 files, 180 tests, pass).
 Not run while writing this file: the others below (taken from package.json / Dockerfile).
 ```
 npm install
@@ -28,12 +28,14 @@ npm run pwa:assets        # regenerate icons via sharp
 docker compose up -d      # image ghcr.io/samerberjawi/had-homeassistantdashboard + go2rtc
 ```
 - There is NO seed script. State is created on first run under `data/` (gitignored). `src/data/mockRegistries.ts` holds mock registries for the UI.
-- Env (`.env.example` only lists `PORT`). Others read in server.ts: `HASS_URL`/`HA_URL`/`HOME_ASSISTANT_URL`/`HOMEASSISTANT_URL`, `DATA_DIR`, `DASHBOARD_CONFIG_DIR`, `DASHBOARD_ASSETS_DIR`, `GO2RTC_URL`, `CORS_ALLOWED_ORIGINS`/`ALLOWED_ORIGIN`, `ALLOW_MOCK_TOKENS`, `NODE_ENV`.
+- Env (`.env.example` only lists `PORT`). Others read in server.ts: `HASS_URL`/`HA_URL`/`HOME_ASSISTANT_URL`/`HOMEASSISTANT_URL`, `DATA_DIR`, `DASHBOARD_CONFIG_DIR`, `DASHBOARD_ASSETS_DIR`, `GO2RTC_URL`, `CORS_ALLOWED_ORIGINS`/`ALLOWED_ORIGIN`, `ALLOW_MOCK_TOKENS`, `ALLOW_TOFU_PIN` (ignored in production), `TRUST_PROXY`, `NODE_ENV`.
 - Dev auth shortcut: outside production, tokens starting with `test_` or `mock_` are accepted without HA (also if `ALLOW_MOCK_TOKENS=true`; never set in prod).
 
 ## Directory structure
-- `server.ts`: the whole backend (about 1760 lines): middleware, auth, config API, assets upload, statistics API, image proxy, go2rtc/WebRTC camera routes, SSE, static serving, graceful shutdown.
-- `server/services/`: `energyDbService.ts` (SQLite via `node:sqlite`), `energySyncService.ts` (pulls HA statistics into SQLite).
+- `server.ts`: thin composition root (about 260 lines): env/dispatchers, wiring of the modules below, error handler, listen, graceful shutdown.
+- `server/auth/haAuth.ts` (token auth, admin gate, HA pinning), `server/lib/` (pure helpers: security, network, imageValidation, configRules).
+- `server/routes/` (config + SSE, assets, adguard, cameras, imageProxy, statistics; each exports `registerXRoutes(app, deps)`), `server/middleware/securityHeaders.ts`, `server/static.ts` (Vite dev / dist serving).
+- `server/services/`: `configStore.ts` (atomic config persistence, backups, cache, write lock), `energyDbService.ts` (SQLite via `node:sqlite`), `energySyncService.ts` (pulls HA statistics into SQLite).
 - `src/main.tsx`, `src/App.tsx`: entry, providers, view routing.
 - `src/components/`: UI by domain (`camera`, `energy`, `rooms`, `vacuums`, `mobility`, `weather`, `tiles`, `modals`, `settings`, `canvas`, `auth`, `pwa`, `ui` primitives, etc.).
 - `src/views/`: `HealthView`, `MobilityView`. Other pages live under `src/components/views/`.
@@ -48,7 +50,7 @@ docker compose up -d      # image ghcr.io/samerberjawi/had-homeassistantdashboar
 
 ## Architecture
 - Data flow: browser logs in with an HA token and talks to HA directly over WebSocket (`src/services/haWebSocket.ts`) for live entities, services and history. Dashboard layout/config is saved via `POST /api/config` and fanned out to other screens by SSE (`/api/config/stream`) plus `BroadcastChannel`. Energy/statistics history is synced by the server into SQLite and read via `/api/statistics/*` (`/api/energy/*` are aliases).
-- Auth: no own user store. API routes use `requireHAAuth` (server.ts): `Authorization: Bearer <HA token>` is validated by calling `<HA>/api/` and cached briefly. Query `?token=` is accepted only for `/api/config/stream` and `/api/image-proxy`, then stripped from the URL. The validating HA instance is fixed by env var, or pinned on first successful sign-in (trust on first use) in `ha-instance.json`. Client does not choose it afterwards. Tokens persist client-side via `src/services/authStorage.ts` (legacy keys are migrated).
+- Auth: no own user store. API routes use `requireHAAuth` (server.ts): `Authorization: Bearer <HA token>` is validated by calling `<HA>/api/` and cached briefly. Query `?token=` is accepted only for `/api/config/stream` and `/api/image-proxy`, then stripped from the URL. The validating HA instance is fixed by env var, or, outside production only and with `ALLOW_TOFU_PIN=true`, pinned on first successful sign-in in `ha-instance.json`. Production requires `HASS_URL`. Client does not choose it afterwards. Tokens persist client-side via `src/services/authStorage.ts` (legacy keys are migrated).
 - External services: Home Assistant (REST and WebSocket), go2rtc (`GO2RTC_URL`, default compose `http://go2rtc:1984`) for WebRTC/HLS, OpenFreeMap vector basemaps (Liberty/Dark via MapLibre GL in Leaflet).
 - Config writes are atomic (temp file then rename) with `.bak` and `backups/`. Body limit is 15 MB.
 - Deploy: GitHub Action `.github/workflows/docker-publish.yml` publishes the image. The Dockerfile copies prebuilt `node_modules` and `dist` (build outside the image first). Container runs as non-root and `/api/health` is its healthcheck.
@@ -62,7 +64,7 @@ docker compose up -d      # image ghcr.io/samerberjawi/had-homeassistantdashboar
 - Tests: unit tests in `tests/*.test.ts` named after the module. Integration scripts in `scripts/test-*.ts`.
 
 ## Fragile, legacy, out of scope
-- `server.ts` is a monolith. Edit narrowly and re-run `npm run lint && npm test`. Auth and token-handling code is security-sensitive (see `scripts/test-token-security.ts`).
+- Server code is split under `server/` (see Directory structure). Edit narrowly and re-run `npm run lint && npm test`; for auth/camera/config changes also `npm run build && npm run test:integration`. Auth and token-handling code is security-sensitive (see `scripts/test-token-security.ts`).
 - Legacy token/URL localStorage keys in `authStorage.ts` and the `/api/energy/*` aliases exist for backwards compatibility. Do not remove.
 - `node:sqlite` is used. It needs Node 22+ and may log an experimental warning.
 - `@visx/*` packages are alpha (4.0.1-alpha); pin carefully when upgrading. `cn` (npm) is also listed but the local `cn()` is from `src/lib/utils.ts`.

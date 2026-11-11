@@ -240,6 +240,19 @@ export function updateStoredTokens(updatedTokens: Partial<AuthTokens> & { access
 /**
  * Remove all stored authentication credentials and reset to logged-out state
  */
+/**
+ * Legacy plain `ha_token` key. Kept for backwards compatibility; every read goes through here so
+ * token storage stays in this module (tests/authStorageBoundary.test.ts enforces it).
+ */
+export function getLegacyHaToken(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    return (localStorage.getItem(STORAGE_KEYS.LEGACY_HA_TOKEN) || '').trim();
+  } catch {
+    return '';
+  }
+}
+
 export function clearStoredAuthConfig(): void {
   if (typeof window === 'undefined') return;
 

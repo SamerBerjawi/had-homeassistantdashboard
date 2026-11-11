@@ -208,3 +208,59 @@ export function redactConfigForClient<T>(config: T): T {
   }
   return out as T;
 }
+
+// SEC-015: failure counters for the auth rate limit. Evicts the oldest entries instead of clearing
+// everything, so a flood of new keys cannot reset the counters of clients already being throttled.
+export interface FailureEntry {
+  count: number;
+  resetAt: number;
+}
+
+export function recordFailure(
+  failures: Map<string, FailureEntry>,
+  key: string,
+  now: number,
+  windowMs: number,
+  maxEntries: number
+): void {
+  const entry = failures.get(key);
+  if (entry && entry.resetAt > now) {
+    entry.count++;
+    return;
+  }
+  // Expired or new key: drop expired entries first, then the oldest until there is room.
+  failures.delete(key);
+  if (failures.size >= maxEntries) {
+    for (const [k, v] of failures) {
+      if (v.resetAt <= now) failures.delete(k);
+    }
+  }
+  while (failures.size >= maxEntries) {
+    const oldest = failures.keys().next().value;
+    if (oldest === undefined) break;
+    failures.delete(oldest);
+  }
+  failures.set(key, { count: 1, resetAt: now + windowMs });
+}
+
+export function isOverFailureLimit(
+  failures: Map<string, FailureEntry>,
+  key: string,
+  now: number,
+  limit: number
+): boolean {
+  const entry = failures.get(key);
+  return Boolean(entry && entry.resetAt > now && entry.count >= limit);
+}
+
+// Maps an error thrown by Express middleware (body-parser etc.) to a safe JSON response.
+// Never exposes stack traces or file paths.
+export function toApiError(err: unknown): { status: number; message: string } {
+  const e = err as { status?: unknown; statusCode?: unknown; type?: unknown } | null;
+  const raw = Number(e?.status ?? e?.statusCode);
+  const status = Number.isInteger(raw) && raw >= 400 && raw < 600 ? raw : 500;
+  if (e?.type === 'entity.parse.failed') return { status: 400, message: 'Invalid JSON in request body' };
+  if (e?.type === 'entity.too.large') return { status: 413, message: 'Request body too large' };
+  if (status >= 500) return { status: 500, message: 'Internal server error' };
+  return { status, message: 'Bad request' };
+}

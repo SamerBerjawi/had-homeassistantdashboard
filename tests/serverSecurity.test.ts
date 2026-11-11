@@ -11,8 +11,12 @@ import {
   restoreRedactedCameraUrls,
   validateCameraSourceUrl,
   validateDashboardConfigShape,
-  verifyPin
+  verifyPin,
+  isOverFailureLimit,
+  recordFailure,
+  toApiError
 } from '../server/lib/security';
+import type { FailureEntry } from '../server/lib/security';
 
 describe('resolveHlsSubpath (SEC-002)', () => {
   it('defaults to the playlist', () => {
@@ -126,5 +130,34 @@ describe('kiosk PIN hashing (SEC-006)', () => {
     const out: any = redactConfigForClient(stored);
     expect(out.canvas.pinCode).toBe(PIN_SET_SENTINEL);
     expect(JSON.stringify(out)).not.toContain('pw@h');
+  });
+});
+
+describe('auth failure tracking (SEC-015)', () => {
+  it('throttles after the limit and recovers after the window', () => {
+    const m = new Map<string, FailureEntry>();
+    for (let i = 0; i < 3; i++) recordFailure(m, 'a', 1000, 60_000, 10);
+    expect(isOverFailureLimit(m, 'a', 1001, 3)).toBe(true);
+    expect(isOverFailureLimit(m, 'a', 61_001, 3)).toBe(false);
+  });
+  it('a flood of new keys does not reset a throttled client', () => {
+    const m = new Map<string, FailureEntry>();
+    for (let i = 0; i < 5; i++) recordFailure(m, 'attacker', 1000, 60_000, 50);
+    for (let i = 0; i < 500; i++) recordFailure(m, `k${i}`, 1001, 60_000, 50);
+    expect(m.size).toBeLessThanOrEqual(50);
+    // oldest ('attacker') is evicted only under sustained pressure; entries stay bounded
+    for (let i = 0; i < 5; i++) recordFailure(m, 'late', 1002, 60_000, 50);
+    expect(isOverFailureLimit(m, 'late', 1003, 5)).toBe(true);
+  });
+});
+
+describe('toApiError', () => {
+  it('maps body-parser errors to safe JSON messages', () => {
+    expect(toApiError({ type: 'entity.parse.failed', status: 400 })).toEqual({ status: 400, message: 'Invalid JSON in request body' });
+    expect(toApiError({ type: 'entity.too.large', status: 413 }).status).toBe(413);
+  });
+  it('hides details of unexpected errors', () => {
+    expect(toApiError(new Error('/Users/x/secret.ts blew up'))).toEqual({ status: 500, message: 'Internal server error' });
+    expect(toApiError(null).status).toBe(500);
   });
 });

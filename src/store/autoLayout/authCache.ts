@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getStoredAuthConfig, clearStoredAuthConfig } from '../../services/authStorage';
+import { getStoredAuthConfig, clearStoredAuthConfig, getLegacyHaToken } from '../../services/authStorage';
 
 // Browser Caching Helpers for WebSocket Endpoint & Access Token
 export const getCachedServerUrl = (): string => {
@@ -20,8 +20,8 @@ export const getCachedHaToken = (): string => {
   if (typeof window !== 'undefined') {
     const config = getStoredAuthConfig();
     if (config?.tokens?.access_token) return config.tokens.access_token;
-    const saved = localStorage.getItem('ha_token');
-    if (saved && saved.trim()) return saved;
+    const saved = getLegacyHaToken();
+    if (saved) return saved;
   }
   return '';
 };
@@ -42,8 +42,7 @@ export const hasConfiguredHACredentials = (): boolean => {
   if (typeof window !== 'undefined') {
     const config = getStoredAuthConfig();
     if (config?.tokens?.access_token) return true;
-    const token = localStorage.getItem('ha_token');
-    if (token && token.trim()) return true;
+    if (getLegacyHaToken()) return true;
   }
   return false;
 };
