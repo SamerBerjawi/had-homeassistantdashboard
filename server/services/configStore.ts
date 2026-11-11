@@ -7,6 +7,7 @@
 import path from 'path';
 import fs from 'fs';
 import type { PersistedConfig, ServerConfig } from '../lib/configTypes';
+import { errorMessage } from '../lib/errors';
 
 export function createConfigStore({ configDir }: { configDir: string }) {
   const configFilePath = path.join(configDir, 'dashboard-config.json');
@@ -38,9 +39,9 @@ export function createConfigStore({ configDir }: { configDir: string }) {
       fs.mkdirSync(configDir, { recursive: true });
     }
     fs.accessSync(configDir, fs.constants.W_OK);
-  } catch (err: any) {
+  } catch (err: unknown) {
     isConfigStorageWritable = false;
-    console.warn(`[NAS Storage Warning] DASHBOARD_CONFIG_DIR "${configDir}" is not writable or reachable: ${err.message}. Config endpoints will return service unavailable errors.`);
+    console.warn(`[NAS Storage Warning] DASHBOARD_CONFIG_DIR "${configDir}" is not writable or reachable: ${errorMessage(err)}. Config endpoints will return service unavailable errors.`);
   }
 
   // In-process write lock queue to serialize concurrent config file writes
@@ -175,12 +176,12 @@ export function createConfigStore({ configDir }: { configDir: string }) {
               cachedServerVersion = version;
               return { config: conf, serverVersion: version };
             }
-          } catch (snapshotErr: any) {
-            console.warn(`[NAS Config] Snapshot ${file} unreadable: ${snapshotErr?.message || snapshotErr}`);
+          } catch (snapshotErr: unknown) {
+            console.warn(`[NAS Config] Snapshot ${file} unreadable: ${errorMessage(snapshotErr)}`);
           }
         }
-      } catch (dirErr: any) {
-        console.warn(`[NAS Config] Could not read backups directory: ${dirErr?.message || dirErr}`);
+      } catch (dirErr: unknown) {
+        console.warn(`[NAS Config] Could not read backups directory: ${errorMessage(dirErr)}`);
       }
     }
 
@@ -193,8 +194,8 @@ export function createConfigStore({ configDir }: { configDir: string }) {
         cachedServerConfig = parsed;
         cachedServerVersion = 1;
         return { config: parsed, serverVersion: 1 };
-      } catch (legacyErr: any) {
-        console.warn(`[NAS Config] Legacy config.json unreadable: ${legacyErr?.message || legacyErr}`);
+      } catch (legacyErr: unknown) {
+        console.warn(`[NAS Config] Legacy config.json unreadable: ${errorMessage(legacyErr)}`);
       }
     }
 

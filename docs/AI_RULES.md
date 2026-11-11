@@ -12,4 +12,4 @@ Optimise for long-term maintainability over speed. Preserve behaviour. Make the 
 8. Prefer `unknown` over `any`. Do not add `@ts-ignore`.
 9. Put business rules in `src/services` or `server/services`, not in components or route handlers, and add a unit test.
 10. State with three or more related booleans becomes a discriminated union.
-11. Record non-obvious decisions in `docs/DECISIONS.md` (to be created).
+11. Record non-obvious decisions in `docs/DECISIONS.md`. Business rules live in `docs/DOMAIN_RULES.md`; UI rules in `docs/DESIGN_SYSTEM.md`.

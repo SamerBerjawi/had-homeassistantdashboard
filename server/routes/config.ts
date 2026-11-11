@@ -112,7 +112,7 @@ export function registerConfigRoutes(app: express.Express, deps: ConfigRoutesDep
         success: false,
         message: 'Config not found'
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[NAS Config] Error reading persistent config:', err);
       return res.status(500).json({ success: false, error: 'Failed to read persistent config' });
     }
@@ -274,7 +274,7 @@ export function registerConfigRoutes(app: express.Express, deps: ConfigRoutesDep
       }
 
       return res.status(result.statusCode).json(result.payload);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[NAS Config] Error saving persistent config:', err);
       return res.status(500).json({ success: false, error: 'Failed to save persistent config' });
     }

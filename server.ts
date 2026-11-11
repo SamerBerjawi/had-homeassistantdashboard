@@ -23,6 +23,7 @@ import { createConfigStore } from './server/services/configStore';
 import { createHaAuth } from './server/auth/haAuth';
 import { deepMergeConfig, hasMaterialDashboardConfig, isValidDashboardConfig } from './server/lib/configRules';
 import { isValidImageMagicBytes } from './server/lib/imageValidation';
+import { errorMessage } from './server/lib/errors';
 
 // Request fields set by requireHAAuth (REL-012: typed instead of `(req as any)`)
 declare module 'express-serve-static-core' {
@@ -101,16 +102,16 @@ async function startServer() {
       fs.mkdirSync(assetsDir, { recursive: true });
     }
     fs.accessSync(assetsDir, fs.constants.W_OK);
-  } catch (err: any) {
+  } catch (err: unknown) {
     isAssetsStorageWritable = false;
-    console.warn(`[NAS Storage Warning] DASHBOARD_ASSETS_DIR "${assetsDir}" is not writable or reachable: ${err.message}. Asset upload endpoints will return service unavailable errors.`);
+    console.warn(`[NAS Storage Warning] DASHBOARD_ASSETS_DIR "${assetsDir}" is not writable or reachable: ${errorMessage(err)}. Asset upload endpoints will return service unavailable errors.`);
   }
 
   // Initialize embedded SQLite database for NAS Energy History and Backups
   try {
     initEnergyDatabase();
-  } catch (err: any) {
-    console.warn('[EnergyDB Warning] Failed to initialize NAS energy SQLite database:', err.message);
+  } catch (err: unknown) {
+    console.warn('[EnergyDB Warning] Failed to initialize NAS energy SQLite database:', errorMessage(err));
   }
 
   // Payload Limit Middleware (allows asset sync, large configs, and SDP text payloads)

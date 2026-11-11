@@ -11,6 +11,7 @@ import {
   HLS_FORWARDED_QUERY_KEYS
 } from '../lib/security';
 import type { ConfigStore } from '../services/configStore';
+import { errorMessage } from '../lib/errors';
 
 export interface CameraRoutesDeps {
   requireHAAuth: express.RequestHandler;
@@ -115,8 +116,8 @@ export function registerCameraRoutes(app: express.Express, deps: CameraRoutesDep
       }
       console.warn(`[go2rtc Proxy] Failed to register stream "${streamName}": status ${res.status}`);
       return false;
-    } catch (err: any) {
-      logGo2RtcUnreachable(err?.message);
+    } catch (err: unknown) {
+      logGo2RtcUnreachable(errorMessage(err));
       return false;
     }
   }
@@ -138,7 +139,7 @@ export function registerCameraRoutes(app: express.Express, deps: CameraRoutesDep
         return res.json({ success: true, go2rtcOnline: true, streams });
       }
       return res.json({ success: true, go2rtcOnline: false, error: `go2rtc returned status ${ping.status}` });
-    } catch (err: any) {
+    } catch (err: unknown) {
       return res.json({ success: true, go2rtcOnline: false, error: 'go2rtc unreachable' });
     }
   });
@@ -197,8 +198,8 @@ export function registerCameraRoutes(app: express.Express, deps: CameraRoutesDep
         type: 'answer',
         sdp: answerSdp
       });
-    } catch (err: any) {
-      logGo2RtcUnreachable(err?.message);
+    } catch (err: unknown) {
+      logGo2RtcUnreachable(errorMessage(err));
       return res.status(502).json({
         error: 'Failed to negotiate WebRTC stream with go2rtc'
       });
@@ -273,8 +274,8 @@ export function registerCameraRoutes(app: express.Express, deps: CameraRoutesDep
       upstream.on('error', () => res.destroy());
       res.on('close', () => upstream.destroy());
       return void upstream.pipe(res);
-    } catch (err: any) {
-      logGo2RtcUnreachable(err?.message);
+    } catch (err: unknown) {
+      logGo2RtcUnreachable(errorMessage(err));
       return res.status(502).json({
         error: 'Failed to fetch HLS stream from go2rtc'
       });
@@ -317,8 +318,8 @@ export function registerCameraRoutes(app: express.Express, deps: CameraRoutesDep
               signal: AbortSignal.timeout(3000)
             });
             console.log(`[Camera API] Removed stream "${streamName}" from go2rtc`);
-          } catch (err: any) {
-            console.warn(`[Camera API] Could not delete stream "${streamName}" from go2rtc:`, err?.message);
+          } catch (err: unknown) {
+            console.warn(`[Camera API] Could not delete stream "${streamName}" from go2rtc:`, errorMessage(err));
           }
         }
 
@@ -331,7 +332,7 @@ export function registerCameraRoutes(app: express.Express, deps: CameraRoutesDep
 
       applyCorsHeaders(req, res, 'DELETE, OPTIONS');
       return res.json({ success: true, cameraId, removed: result.removed });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(`[Camera API] Failed to delete camera "${cameraId}":`, err);
       return res.status(500).json({ success: false, error: 'Failed to delete camera source' });
     }

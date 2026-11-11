@@ -4,6 +4,7 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import { errorMessage } from './lib/errors';
 
 export async function registerFrontend(app: express.Express) {
   // Vite middleware for development vs static build in production
@@ -56,8 +57,8 @@ export async function registerFrontend(app: express.Express) {
     };
     try {
       indexPrecompressed(distPath);
-    } catch (err: any) {
-      console.warn('[HAD Server] Could not index precompressed assets:', err?.message || err);
+    } catch (err: unknown) {
+      console.warn('[HAD Server] Could not index precompressed assets:', errorMessage(err));
     }
 
     app.use((req, res, next) => {

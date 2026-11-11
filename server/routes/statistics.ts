@@ -32,7 +32,7 @@ export function registerStatisticsRoutes(app: express.Express, deps: StatisticsD
     try {
       const status = getEnergyDbStatus();
       res.json({ success: true, status });
-    } catch (err: any) {
+    } catch (err: unknown) {
       res.status(500).json({ success: false, error: 'Internal server error' });
     }
   });
@@ -43,7 +43,7 @@ export function registerStatisticsRoutes(app: express.Express, deps: StatisticsD
     try {
       const entities = getStoredEntities();
       res.json({ success: true, count: entities.length, entities });
-    } catch (err: any) {
+    } catch (err: unknown) {
       res.status(500).json({ success: false, error: 'Internal server error' });
     }
   });
@@ -106,7 +106,7 @@ export function registerStatisticsRoutes(app: express.Express, deps: StatisticsD
         coverage,
         data
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Statistics API] /api/statistics/history error:', err);
       res.status(500).json({ success: false, error: 'Internal server error' });
     }
@@ -140,7 +140,7 @@ export function registerStatisticsRoutes(app: express.Express, deps: StatisticsD
         return res.status(400).json(result);
       }
       res.json(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Statistics API] /api/statistics/sync error:', err);
       res.status(500).json({ success: false, error: 'Internal server error' });
     }

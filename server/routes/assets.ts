@@ -102,7 +102,7 @@ export function registerAssetRoutes(app: express.Express, deps: AssetRoutesDeps)
 
       const publicUrl = `/api/assets/${uniqueFilename}`;
       return res.json({ success: true, url: publicUrl, filename: uniqueFilename });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[NAS Assets] Error saving asset:', err);
       return res.status(500).json({ success: false, error: 'Failed to save asset to persistent volume' });
     }

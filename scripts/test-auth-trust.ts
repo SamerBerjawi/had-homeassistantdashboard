@@ -173,6 +173,31 @@ async function main() {
   haWs.close();
   console.log('✓ admin role comes from HA auth/current_user');
 
+  console.log('--- 6. Repeated bad tokens are throttled with 429 (SEC-015) ---');
+  await withServer(19887, { HASS_URL: 'http://127.0.0.1:19871' }, async () => {
+    for (let i = 0; i < 30; i++) {
+      assert.strictEqual(await request(19887, '/api/config', { Authorization: `Bearer bad-${i}` }), 401);
+    }
+    assert.strictEqual(await request(19887, '/api/config', { Authorization: 'Bearer bad-final' }), 429, 'limit reached');
+    assert.strictEqual(await request(19887, '/api/config', auth), 429, 'a throttled client is blocked even with a valid token');
+    assert.strictEqual(await request(19887, '/api/health'), 200, 'unauthenticated routes are unaffected');
+  });
+  console.log('✓ auth failures are rate limited per client');
+
+  if (fs.existsSync(path.resolve('dist/index.html'))) {
+    console.log('--- 7. ALLOW_TOFU_PIN is ignored in production: HASS_URL is required ---');
+    await withServer(19888, { ALLOW_TOFU_PIN: 'true', NODE_ENV: 'production' }, async () => {
+      assert.strictEqual(
+        await request(19888, '/api/config', { ...auth, 'X-HA-URL': 'http://127.0.0.1:19871' }),
+        503,
+        'production must not bootstrap trust from the client'
+      );
+    });
+    console.log('✓ production ignores first-run pinning');
+  } else {
+    console.log('--- 7. skipped (run `npm run build` first to cover the production TOFU rule) ---');
+  }
+
   fake.server.close();
   evil.server.close();
   console.log('\nAll auth-trust checks passed');

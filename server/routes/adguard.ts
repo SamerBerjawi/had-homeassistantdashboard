@@ -3,6 +3,7 @@
  */
 import type express from 'express';
 import { fetch as undiciFetch } from 'undici';
+import { errorMessage } from '../lib/errors';
 
 export interface AdguardDeps {
   requireHAAuth: express.RequestHandler;
@@ -44,8 +45,8 @@ export function registerAdguardRoutes(app: express.Express, deps: AdguardDeps) {
         replaced_safebrowsing: body.replaced_safebrowsing,
         replaced_parental: body.replaced_parental
       });
-    } catch (err: any) {
-      console.warn('[AdGuard Proxy] stats fetch failed:', err?.message || err);
+    } catch (err: unknown) {
+      console.warn('[AdGuard Proxy] stats fetch failed:', errorMessage(err));
       res.status(502).json({ error: 'AdGuard Home unreachable' });
     }
   });
