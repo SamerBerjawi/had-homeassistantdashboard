@@ -1,3 +1,4 @@
+import { deriveStartupState } from './services/startupPhase';
 import ViewErrorState from './components/ui/ViewErrorState';
 import ViewLoadingState from './components/ui/ViewLoadingState';
 import React, { useState, useEffect, lazy, Suspense } from 'react';
@@ -522,10 +523,16 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  const isConnectingToHA = !hasStartupTimeoutElapsed && (isLiveMode || hasConfiguredHACredentials()) && connectionStatus !== 'connected' && connectionStatus !== 'auth_failed';
-  const isInitialSyncPending = !hasStartupTimeoutElapsed && isLiveMode && !hasInitialLoaded && connectionStatus !== 'auth_failed';
-  // With last session's data on screen, there's nothing to block on: live data replaces it
-  const isAppLoading = !authState.isDemo && !showingCachedSnapshot && (isConnectingToHA || isInitialSyncPending || (isAuthInitializing && hasConfiguredHACredentials()));
+  const { isAppLoading, isConnectionDegraded } = deriveStartupState({
+    isDemo: authState.isDemo,
+    showingCachedSnapshot,
+    isLiveMode,
+    hasCredentials: hasConfiguredHACredentials(),
+    connectionStatus,
+    hasInitialLoaded,
+    hasStartupTimeoutElapsed,
+    isAuthInitializing
+  });
 
   const [loadingProgress, setLoadingProgress] = useState<number>(15);
 
@@ -833,7 +840,7 @@ export default function App() {
           )}
 
           {/* Live connection lost: one shared, retryable error state for every page (REL-005) */}
-          {isLiveMode && hasStartupTimeoutElapsed && (connectionStatus === 'disconnected' || connectionStatus === 'error') && (
+          {isConnectionDegraded && (
             <ViewErrorState
               inline
               darkMode={darkMode}

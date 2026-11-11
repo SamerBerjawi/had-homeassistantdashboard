@@ -26,13 +26,15 @@ import {
   StoredAuthConfig 
 } from '../services/authStorage';
 import { haWebSocketService, HAConnectionStatus } from '../services/haWebSocket';
+import {
+  authenticatedAuthState,
+  demoAuthState,
+  deriveAuthStatus,
+  signedOutAuthState
+} from '../services/authStatus';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 
-const initialAuthState: AuthState = {
-  isAuthenticated: false,
-  isDemo: false,
-  authMethod: null
-};
+const initialAuthState: AuthState = signedOutAuthState();
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -102,11 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('[AuthContext] OAuth refresh token rejected by Home Assistant. Logging out.');
           clearStoredAuthConfig();
           haWebSocketService.disconnect();
-          setAuthState({
-            isAuthenticated: false,
-            isDemo: false,
-            authMethod: null
-          });
+          setAuthState(signedOutAuthState());
           setError('Session expired. Please sign in again.');
           setIsAuthModalOpen(true);
         } else {
@@ -161,11 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } else if (result.isFatal) {
               clearStoredAuthConfig();
               haWebSocketService.disconnect();
-              setAuthState({
-                isAuthenticated: false,
-                isDemo: false,
-                authMethod: null
-              });
+              setAuthState(signedOutAuthState());
               setError('Session expired. Please sign in again.');
               setIsAuthModalOpen(true);
             }
@@ -228,14 +222,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             haWebSocketService.connect(tokens.server_url, tokens.access_token);
             scheduleProactiveTokenRefresh(tokens);
 
-            setAuthState({
-              isAuthenticated: true,
-              isDemo: false,
+            setAuthState(authenticatedAuthState({
               authMethod: 'oauth',
               haUrl: tokens.server_url,
               user: { id: 'oauth_user', name: 'Home Assistant User', isOwner: true },
               tokens
-            });
+            }));
             setIsAuthModalOpen(false);
             setIsLoading(false);
             setIsInitializing(false);
@@ -257,14 +249,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         haWebSocketService.connect(tokens.server_url, tokens.access_token);
         scheduleProactiveTokenRefresh(tokens);
 
-        setAuthState({
-          isAuthenticated: true,
-          isDemo: false,
+        setAuthState(authenticatedAuthState({
           authMethod: 'oauth',
           haUrl: tokens.server_url,
           user: { id: 'oauth_user', name: 'Home Assistant User', isOwner: true },
           tokens
-        });
+        }));
         setIsAuthModalOpen(false);
         setIsLoading(false);
         setIsInitializing(false);
@@ -300,14 +290,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           haWebSocketService.connect(tokens.server_url, tokens.access_token);
           scheduleProactiveTokenRefresh(tokens);
 
-          setAuthState({
-            isAuthenticated: true,
-            isDemo: false,
+          setAuthState(authenticatedAuthState({
             authMethod: 'oauth',
             haUrl: tokens.server_url,
             user: { id: 'oauth_user', name: 'Home Assistant User', isOwner: true },
             tokens
-          });
+          }));
           setIsAuthModalOpen(false);
           setIsLoading(false);
           setIsInitializing(false);
@@ -343,11 +331,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } else if (refreshResult.isFatal) {
               console.warn('[AuthContext] Stored OAuth token revoked. Clearing credentials.');
               clearStoredAuthConfig();
-              setAuthState({
-                isAuthenticated: false,
-                isDemo: false,
-                authMethod: null
-              });
+              setAuthState(signedOutAuthState());
               setIsAuthModalOpen(true);
               setIsLoading(false);
               setIsInitializing(false);
@@ -362,14 +346,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           haWebSocketService.connect(activeTokens.server_url, activeTokens.access_token);
           scheduleProactiveTokenRefresh(activeTokens);
 
-          setAuthState({
-            isAuthenticated: true,
-            isDemo: false,
+          setAuthState(authenticatedAuthState({
             authMethod: 'oauth',
             haUrl: activeTokens.server_url,
             user: { id: 'oauth_user', name: 'Home Assistant User', isOwner: true },
             tokens: activeTokens
-          });
+          }));
           setIsAuthModalOpen(false);
           setIsLoading(false);
           setIsInitializing(false);
@@ -387,26 +369,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           haWebSocketService.setDemoMode(false);
           haWebSocketService.connect(storedConfig.tokens.server_url, storedConfig.tokens.access_token);
 
-          setAuthState({
-            isAuthenticated: true,
-            isDemo: false,
+          setAuthState(authenticatedAuthState({
             authMethod: 'llat',
             haUrl: storedConfig.tokens.server_url,
             user: { id: 'kiosk_user', name: 'Wall Kiosk Operator', isOwner: true },
             tokens: storedConfig.tokens
-          });
+          }));
           setIsAuthModalOpen(false);
           setIsLoading(false);
           setIsInitializing(false);
           return;
         } else if (storedConfig.authMethod === 'demo') {
           haWebSocketService.setDemoMode(true);
-          setAuthState({
-            isAuthenticated: false,
-            isDemo: true,
-            authMethod: 'demo',
-            user: { id: 'demo_user', name: 'Demo Guest', isOwner: false }
-          });
+          setAuthState(demoAuthState());
           setIsAuthModalOpen(false);
           setIsLoading(false);
           setIsInitializing(false);
@@ -416,11 +391,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 3. Unauthenticated — Open AuthModal
       if (isMounted) {
-        setAuthState({
-          isAuthenticated: false,
-          isDemo: false,
-          authMethod: null
-        });
+        setAuthState(signedOutAuthState());
         setIsAuthModalOpen(true);
         setIsLoading(false);
         setIsInitializing(false);
@@ -518,14 +489,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       haWebSocketService.setDemoMode(false);
       haWebSocketService.connect(wsUrl, token);
 
-      setAuthState({
-        isAuthenticated: true,
-        isDemo: false,
+      setAuthState(authenticatedAuthState({
         authMethod: 'llat',
         haUrl: wsUrl,
         user: { id: 'kiosk_user', name: 'Wall Kiosk Operator', isOwner: true },
         tokens
-      });
+      }));
 
       setIsAuthModalOpen(false);
       setIsLoading(false);
@@ -555,12 +524,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     haWebSocketService.setDemoMode(true);
     reloadDemoData();
 
-    setAuthState({
-      isAuthenticated: false,
-      isDemo: true,
-      authMethod: 'demo',
-      user: { id: 'demo_user', name: 'Demo Guest', isOwner: false }
-    });
+    setAuthState(demoAuthState());
 
     setIsAuthModalOpen(false);
     setIsLoading(false);
@@ -576,13 +540,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     haWebSocketService.disconnect();
     haWebSocketService.setDemoMode(false);
 
-    setAuthState({
-      isAuthenticated: false,
-      isDemo: false,
-      authMethod: null,
-      tokens: undefined,
-      user: undefined
-    });
+    setAuthState(signedOutAuthState());
 
     setIsAuthModalOpen(true);
     setError(null);
@@ -591,6 +549,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Memoized so consumers only re-render when auth state actually changes
   const contextValue = useMemo<AuthContextType>(() => ({
     authState,
+    status: deriveAuthStatus(authState, isLoading, isInitializing),
     isLoading,
     isInitializing,
     error,

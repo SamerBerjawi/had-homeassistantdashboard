@@ -20,6 +20,7 @@ import {
   Sparkle
 } from '@phosphor-icons/react';
 import { useAuth } from '../../contexts/AuthContext';
+import { deriveAuthStatus } from '../../services/authStatus';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { useHealthData } from '../../hooks/useHealthData';
 
@@ -53,6 +54,8 @@ export default function UserProfileSection({
   profileSavedNotice
 }: UserProfileSectionProps) {
   const { authState, openAuthModal, logout } = useAuth();
+  // Flags only (ignore transient loading) so the badge doesn't flicker during token refresh
+  const sessionStatus = deriveAuthStatus(authState, false, false);
   const { driverName, isSyncingRemote } = useUserConfig() as any;
   const { devices, selectedDeviceId, setSelectedDeviceId, timeRange, setTimeRange } = useHealthData();
 
@@ -102,11 +105,11 @@ export default function UserProfileSection({
                 {authState.user?.name || profileData.displayName}
               </span>
               <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                authState.isAuthenticated
+                sessionStatus === 'authenticated'
                   ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
                   : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30'
               }`}>
-                {authState.isAuthenticated ? (authState.isDemo ? 'Demo' : 'Online') : 'Guest'}
+                {sessionStatus === 'authenticated' ? 'Online' : sessionStatus === 'demo' ? 'Demo' : 'Guest'}
               </span>
             </div>
             <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
@@ -121,7 +124,7 @@ export default function UserProfileSection({
         </div>
 
         <div className="self-end sm:self-auto shrink-0">
-          {authState.isAuthenticated && !authState.isDemo ? (
+          {sessionStatus === 'authenticated' ? (
             <button
               type="button"
               onClick={() => logout()}

@@ -23,6 +23,13 @@ import {
   readFileAsDataUrl
 } from '../services/configStorageService';
 import { configSyncService, SyncConnectionState } from '../services/configSyncService';
+import {
+  SyncStatus,
+  decideRemoteApply,
+  hasPendingDelta,
+  reconcileRemoteConfig,
+  reduceSyncStatus
+} from '../services/configSyncRules';
 import { useAuth } from './AuthContext';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 
@@ -38,7 +45,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [driverType, setDriverType] = useState<StorageDriverType>('local_storage');
   const [driverName, setDriverName] = useState<string>('Isolated LocalStorage');
-  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline_fallback' | 'error'>('synced');
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('synced');
   const [lastSuccessfulSync, setLastSuccessfulSync] = useState<string | null>(null);
 
   const activeDriverRef = useRef<IConfigStorageDriver>(new LocalStorageDriver());
@@ -56,8 +63,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!active && deferredRemoteConfigRef.current) {
       const deferred = deferredRemoteConfigRef.current;
       deferredRemoteConfigRef.current = null;
-      const hasPendingDelta = pendingDeltaRef.current && Object.keys(pendingDeltaRef.current).length > 0;
-      const merged = hasPendingDelta ? mergeConfig(deferred, pendingDeltaRef.current) : deferred;
+      const merged = reconcileRemoteConfig(deferred, { pendingDelta: pendingDeltaRef.current }, mergeConfig);
       latestConfigRef.current = merged;
       setConfig(merged);
       try {
@@ -84,24 +90,26 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const loadData = async (silent = false) => {
       if (!silent) setIsLoading(true);
-      setSyncStatus('syncing');
+      setSyncStatus((cur) => reduceSyncStatus(cur, { type: 'load_started' }));
       try {
         const loaded = await driver.loadConfig();
         if (isMounted && loaded) {
-          if (isDragActiveRef.current) {
+          if (decideRemoteApply(isDragActiveRef.current) === 'defer') {
             // Guard: Drag session in progress! Defer applying remote config
             // so active drag coordinates, sorting indices, and DOM elements are never interrupted.
             deferredRemoteConfigRef.current = loaded;
-            setSyncStatus('synced');
+            setSyncStatus((cur) => reduceSyncStatus(cur, { type: 'load_deferred' }));
             setLastSuccessfulSync(new Date().toISOString());
             return;
           }
           // Reconcile local edits on top of remote config so incoming SSE broadcasts or sync polls
           // don't revert them: changes that never reached the NAS, then in-flight debounced edits
           const unsynced = driver.getUnsyncedChanges?.() || null;
-          const withUnsynced = unsynced ? mergeConfig(loaded, unsynced) : loaded;
-          const hasPendingDelta = pendingDeltaRef.current && Object.keys(pendingDeltaRef.current).length > 0;
-          const merged = hasPendingDelta ? mergeConfig(withUnsynced, pendingDeltaRef.current) : withUnsynced;
+          const merged = reconcileRemoteConfig(
+            loaded,
+            { unsynced, pendingDelta: pendingDeltaRef.current },
+            mergeConfig
+          );
           if (unsynced) {
             void driver.replayUnsyncedChanges?.().catch((err) => {
               console.warn('[ConfigProvider] Replaying unsynced changes failed:', err);
@@ -111,12 +119,12 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setConfig(merged);
           setLastSaved(loaded.updatedAt);
           applyToSubsystems(merged);
-          setSyncStatus('synced');
+          setSyncStatus((cur) => reduceSyncStatus(cur, { type: 'load_succeeded' }));
           setLastSuccessfulSync(new Date().toISOString());
         }
       } catch (err) {
         console.error('[ConfigProvider] Error loading user configuration:', err);
-        setSyncStatus('offline_fallback');
+        setSyncStatus((cur) => reduceSyncStatus(cur, { type: 'load_failed' }));
       } finally {
         if (isMounted && !silent) {
           setIsLoading(false);
@@ -138,7 +146,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // 2. Listen to custom sync status change events dispatched by storage driver
     const handleSyncStatus = (e: any) => {
       if (e?.detail?.status && isMounted) {
-        setSyncStatus(e.detail.status);
+        setSyncStatus((cur) => reduceSyncStatus(cur, { type: 'driver_status', status: e.detail.status }));
         if (e.detail.lastSync) {
           setLastSuccessfulSync(e.detail.lastSync);
         }
@@ -149,12 +157,11 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // 3. Listen to local/cross-tab broadcast updates
     const handleLocalUpdated = (e: any) => {
       if (e?.detail && isMounted) {
-        if (isDragActiveRef.current) {
+        if (decideRemoteApply(isDragActiveRef.current) === 'defer') {
           deferredRemoteConfigRef.current = e.detail;
           return;
         }
-        const hasPendingDelta = pendingDeltaRef.current && Object.keys(pendingDeltaRef.current).length > 0;
-        const merged = hasPendingDelta ? mergeConfig(e.detail, pendingDeltaRef.current) : e.detail;
+        const merged = reconcileRemoteConfig(e.detail, { pendingDelta: pendingDeltaRef.current }, mergeConfig);
         latestConfigRef.current = merged;
         setConfig(merged);
         setLastSaved(e.detail.updatedAt);
@@ -206,11 +213,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         },
         onStatusChanged: (status: SyncConnectionState) => {
           if (!isMounted) return;
-          if (status === 'connected') {
-            setSyncStatus('synced');
-          } else if (status === 'reconnecting') {
-            setSyncStatus('syncing');
-          }
+          setSyncStatus((cur) => reduceSyncStatus(cur, { type: 'stream', state: status }));
         }
       });
     }
@@ -283,7 +286,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           const saved = await activeDriverRef.current.saveConfig(deltaToSave);
           // If additional local edits accumulated while saveConfig was in-flight,
           // preserve them on top of saved to prevent temporary UI reverting.
-          const hasMorePending = pendingDeltaRef.current && Object.keys(pendingDeltaRef.current).length > 0;
+          const hasMorePending = hasPendingDelta(pendingDeltaRef.current);
           const merged = hasMorePending ? mergeConfig(saved, pendingDeltaRef.current) : saved;
           latestConfigRef.current = merged;
           setConfig(merged);

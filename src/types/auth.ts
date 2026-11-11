@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { AuthStatus } from '../services/authStatus';
+
 export type AuthMethod = 'oauth' | 'llat' | 'demo';
 
 export interface AuthUser {
@@ -34,6 +36,8 @@ export interface AuthState {
 
 export interface AuthContextType {
   authState: AuthState;
+  /** Single named lifecycle status derived from the flags below (see services/authStatus.ts). */
+  status: AuthStatus;
   isLoading: boolean;
   isInitializing: boolean;
   error: string | null;

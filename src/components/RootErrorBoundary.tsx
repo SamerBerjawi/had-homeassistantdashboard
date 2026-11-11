@@ -4,6 +4,7 @@
  */
 
 import React, { Component, ErrorInfo } from 'react';
+import { STORAGE_KEYS } from '../services/authStorage';
 import { WarningCircle, ArrowsClockwise, Trash, Sparkle } from '@phosphor-icons/react';
 
 interface Props {
@@ -41,7 +42,7 @@ export default class RootErrorBoundary extends Component<Props, State> {
         authMethod: 'demo',
         savedAt: Date.now()
       }));
-      localStorage.removeItem('ha_token');
+      localStorage.removeItem(STORAGE_KEYS.LEGACY_HA_TOKEN);
       localStorage.setItem('ha_live_mode', 'false');
     } catch {}
     window.location.href = '/';
