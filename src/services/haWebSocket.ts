@@ -24,110 +24,21 @@ import { alertService } from './alertService';
 import { applyActiveUrl, refreshHaRoute, recordHaVersion, getConfiguredInternalUrl } from './haUrlResolver';
 
 export type { HAConnectionStatus };
+import {
+  applyCompressedDiff,
+  expandCompressedState,
+  normalizeHAWebSocketUrl,
+  type EntitiesMessage,
+  type HAWebSocketCallbacks
+} from './haWebSocketProtocol';
+import { forecastSubscriptionsFor, withCachedForecast } from './haWeatherForecast';
+import { DEMO_HA_VERSION, buildDemoRegistriesPayload } from './haWebSocketDemo';
 
-export interface HAWebSocketCallbacks {
-  onStatusChange: (status: HAConnectionStatus, errorMsg?: string) => void;
-  onAuthInvalid?: () => Promise<string | null>;
-  onRegistriesLoaded: (payload: {
-    areas: HAArea[];
-    devices: HADevice[];
-    entityRegistry: HAEntityRegistryEntry[];
-    floors: HAFloor[];
-    labels?: HALabel[];
-    states: Record<string, HAState>;
-    nativeNotifications?: HANativePersistentNotification[];
-    nativeRepairs?: HANativeRepairIssue[];
-    haVersion?: string;
-  }) => void;
-  onVersionLoaded?: (version: string) => void;
-  onNativeNotificationsLoaded?: (notifications: HANativePersistentNotification[], repairs: HANativeRepairIssue[]) => void;
-  onStateChanged: (entityId: string, newState: HAState) => void;
-  onStatesBatchUpdated?: (statesList: HAState[]) => void;
-  onLogMessage: (type: 'info' | 'service_call' | 'state_changed' | 'warning' | 'error', msg: string, details?: any) => void;
-}
+type MockRegistries = typeof import('../data/mockRegistries');
 
-export function normalizeHAWebSocketUrl(rawUrl: string): string {
-  let url = (rawUrl || '').trim();
-  if (!url) return '';
+export { normalizeHAWebSocketUrl };
+export type { HAWebSocketCallbacks };
 
-  // Auto-convert HTTP(S) to WS(S)
-  if (url.startsWith('http://')) {
-    url = 'ws://' + url.slice(7);
-  } else if (url.startsWith('https://')) {
-    url = 'wss://' + url.slice(8);
-  } else if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
-    url = 'ws://' + url;
-  }
-
-  // Remove trailing slashes
-  url = url.replace(/\/+$/, '');
-
-  // Ensure /api/websocket suffix
-  if (!url.endsWith('/api/websocket')) {
-    url = url + '/api/websocket';
-  }
-
-  return url;
-}
-
-// Compressed entity state from `subscribe_entities`: s=state, a=attributes, c=context,
-// lc=last_changed, lu=last_updated (epoch seconds; lu omitted when equal to lc)
-interface CompressedState {
-  s: string;
-  a?: Record<string, any>;
-  c?: string | { id: string; parent_id?: string | null; user_id?: string | null };
-  lc: number;
-  lu?: number;
-}
-
-interface CompressedStateDiff {
-  '+'?: Partial<CompressedState>;
-  '-'?: { a?: string[] };
-}
-
-interface EntitiesMessage {
-  a?: Record<string, CompressedState>;
-  c?: Record<string, CompressedStateDiff>;
-  r?: string[];
-}
-
-const toIsoTime = (epochSeconds: number) => new Date(epochSeconds * 1000).toISOString();
-const toContext = (c: CompressedState['c']) =>
-  typeof c === 'string' ? { id: c, parent_id: null, user_id: null } : c;
-
-function expandCompressedState(entityId: string, cs: CompressedState): HAState {
-  return {
-    entity_id: entityId,
-    state: cs.s,
-    attributes: cs.a || {},
-    last_changed: toIsoTime(cs.lc),
-    last_updated: toIsoTime(cs.lu ?? cs.lc),
-    ...(cs.c !== undefined ? { context: toContext(cs.c) } : {})
-  } as HAState;
-}
-
-function applyCompressedDiff(previous: HAState, diff: CompressedStateDiff): HAState {
-  const added = diff['+'];
-  const removedAttrs = diff['-']?.a;
-  const next: any = { ...previous };
-
-  // Keep the attributes object when they didn't change, so downstream identity checks hold
-  if (added?.a || removedAttrs?.length) {
-    const attributes = { ...previous.attributes, ...(added?.a || {}) };
-    for (const key of removedAttrs || []) delete attributes[key];
-    next.attributes = attributes;
-  }
-  if (added) {
-    if (added.s !== undefined) next.state = added.s;
-    if (added.c !== undefined) next.context = toContext(added.c);
-    if (added.lc !== undefined) {
-      next.last_changed = next.last_updated = toIsoTime(added.lc);
-    } else if (added.lu !== undefined) {
-      next.last_updated = toIsoTime(added.lu);
-    }
-  }
-  return next;
-}
 
 const ENTITY_SNAPSHOT_TIMEOUT_MS = 20000;
 
@@ -136,11 +47,6 @@ const HEARTBEAT_TIMEOUT_MS = 10000;
 // A socket that never opens or never completes auth (blackholed network) fires neither onclose nor onerror
 const CONNECT_TIMEOUT_MS = 15000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 60000;
-
-// Weather entity feature bits (WeatherEntityFeature)
-const WEATHER_FORECAST_DAILY = 1;
-const WEATHER_FORECAST_HOURLY = 2;
-const WEATHER_FORECAST_TWICE_DAILY = 4;
 
 class HAWebSocketClient {
   private socket: WebSocket | null = null;
@@ -309,9 +215,9 @@ class HAWebSocketClient {
   }
 
   public loadDemoRegistries() {
-    this.haVersion = '2026.8.0';
+    this.haVersion = DEMO_HA_VERSION;
     this.emitStatus('connected');
-    this.callbacks?.onVersionLoaded?.('2026.8.0');
+    this.callbacks?.onVersionLoaded?.(DEMO_HA_VERSION);
     loadMockRegistries()
       .then((mocks) => {
         if (this.isDemoMode) this.emitDemoRegistries(mocks);
@@ -319,88 +225,9 @@ class HAWebSocketClient {
       .catch((err) => console.error('[haWebSocket] Failed to load demo data:', err));
   }
 
-  private emitDemoRegistries({ MOCK_AREAS, MOCK_DEVICES, MOCK_ENTITY_REGISTRY, MOCK_FLOORS, MOCK_STATES }: typeof import('../data/mockRegistries')) {
+  private emitDemoRegistries(mocks: MockRegistries) {
     this.callbacks?.onLogMessage('info', 'Loaded Home Assistant Registries from Auto-Layout Graph Ingestion Engine (Demo/Simulated Mode)');
-    this.callbacks?.onRegistriesLoaded({
-      areas: [...MOCK_AREAS],
-      devices: [...MOCK_DEVICES],
-      entityRegistry: [...MOCK_ENTITY_REGISTRY],
-      floors: [...MOCK_FLOORS],
-      states: { ...MOCK_STATES },
-      haVersion: '2026.8.0',
-      nativeNotifications: [
-        {
-          notification_id: 'apple_tv_disc_1',
-          title: 'New Device Discovered',
-          message: 'Apple TV 4K in Living Room has been discovered and is ready for 1-tap HomeKit integration.',
-          created_at: '2026-08-27T10:15:00Z',
-          status: 'unread'
-        },
-        {
-          notification_id: 'backup_ok_1',
-          title: 'Automated Snapshot Backup',
-          message: 'Nightly cloud backup completed successfully (1.42 GB encrypted archive stored).',
-          created_at: '2026-08-27T04:00:00Z',
-          status: 'unread'
-        }
-      ],
-      nativeRepairs: [
-        {
-          issue_id: 'restart_required_grocy',
-          domain: 'hacs',
-          issue_domain: 'grocy',
-          title: 'Restart required',
-          message: 'Grocy custom integration was updated and requires a Home Assistant restart to take effect.',
-          severity: 'warning',
-          learn_more_url: 'https://github.com/custom-components/grocy',
-          created: new Date(Date.now() - 23 * 60 * 1000).toISOString(),
-          is_fixable: true
-        },
-        {
-          issue_id: 'restart_required_tplink',
-          domain: 'hacs',
-          issue_domain: 'tplink',
-          title: 'Restart required',
-          message: 'TP-Link Smart Home integration was updated. Restart Home Assistant to load the new version.',
-          severity: 'warning',
-          learn_more_url: 'https://www.home-assistant.io/integrations/tplink/',
-          created: new Date(Date.now() - 23 * 60 * 1000).toISOString(),
-          is_fixable: true
-        },
-        {
-          issue_id: 'restart_required_core_update',
-          domain: 'hacs',
-          issue_domain: 'homeassistant',
-          title: 'Restart required',
-          message: 'A system restart is required to finish installing Home Assistant Core 2026.8.4 update.',
-          severity: 'warning',
-          learn_more_url: 'https://www.home-assistant.io/latest-blogs/',
-          created: new Date(Date.now() - 23 * 60 * 1000).toISOString(),
-          is_fixable: true
-        },
-        {
-          issue_id: 'restart_required_legacy_custom',
-          domain: 'hacs',
-          issue_domain: 'custom_legacy_device',
-          title: 'Restart required',
-          message: 'Custom legacy hardware integration updated. Restart required.',
-          severity: 'warning',
-          created: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          is_fixable: true
-        },
-        {
-          issue_id: 'mqtt_yaml_dep_1',
-          domain: 'mqtt',
-          issue_domain: 'mqtt',
-          title: 'Legacy MQTT YAML Config Detected',
-          message: 'Legacy YAML configuration for MQTT sensors is deprecated. Please migrate to UI config flow.',
-          severity: 'warning',
-          learn_more_url: 'https://www.home-assistant.io/integrations/mqtt/',
-          created: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-          is_fixable: true
-        }
-      ]
-    });
+    this.callbacks?.onRegistriesLoaded(buildDemoRegistriesPayload(mocks));
   }
 
   private scheduleReconnect() {
@@ -950,16 +777,7 @@ class HAWebSocketClient {
   }
 
   private withForecast(state: HAState): HAState {
-    const cached = state?.entity_id ? this.weatherForecasts.get(state.entity_id) : undefined;
-    if (!cached) return state;
-    return {
-      ...state,
-      attributes: {
-        ...state.attributes,
-        ...(cached.daily ? { forecast: cached.daily } : {}),
-        ...(cached.hourly ? { hourly_forecast: cached.hourly } : {})
-      }
-    };
+    return withCachedForecast(state, state?.entity_id ? this.weatherForecasts.get(state.entity_id) : undefined);
   }
 
   /**
@@ -970,17 +788,7 @@ class HAWebSocketClient {
     if (this.isDemoMode || this.status !== 'connected' || this.forecastSubscriptions.has(entityId)) return;
     this.forecastSubscriptions.add(entityId);
 
-    const features = Number(this.weatherStates.get(entityId)?.attributes?.supported_features);
-    const knowsFeatures = Number.isFinite(features);
-    const forecastTypes: Array<{ type: 'daily' | 'twice_daily' | 'hourly'; slot: 'daily' | 'hourly' }> = [];
-    if (!knowsFeatures || features & WEATHER_FORECAST_DAILY) {
-      forecastTypes.push({ type: 'daily', slot: 'daily' });
-    } else if (features & WEATHER_FORECAST_TWICE_DAILY) {
-      forecastTypes.push({ type: 'twice_daily', slot: 'daily' });
-    }
-    if (knowsFeatures && features & WEATHER_FORECAST_HOURLY) {
-      forecastTypes.push({ type: 'hourly', slot: 'hourly' });
-    }
+    const forecastTypes = forecastSubscriptionsFor(this.weatherStates.get(entityId)?.attributes?.supported_features);
 
     await Promise.all(forecastTypes.map(({ type, slot }) =>
       this.subscribeMessage<{ forecast?: any[] | null }>((event) => {

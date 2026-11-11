@@ -13,7 +13,7 @@ const BASELINE: Record<string, number> = {
   'src/services/energyDataTransformer.ts': 1215,
   'src/hooks/useMobilityData.ts': 1196,
   'src/services/notificationsService.ts': 1187,
-  'src/services/haWebSocket.ts': 1159,
+  'src/services/haWebSocket.ts': 967,
   'src/components/modals/entity-controls/LightControlView.tsx': 1038,
   'src/components/views/system/ugreen/NasOverviewSection.tsx': 1037,
   'src/App.tsx': 1010,

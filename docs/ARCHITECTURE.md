@@ -23,4 +23,4 @@ Browser (React SPA)
 5. Client data flow: hooks (`src/hooks`) wrap services (`src/services`), which hold pure classification/transform logic (`*Classification.ts`, `energyDataTransformer.ts`). Keep new business rules in services, not components.
 
 ## Known weak spots
-Giant client files (`haWebSocket.ts`, `useMobilityData.ts`, `useOverviewHeaderState.ts`, `notificationsService.ts`; see the baseline in `tests/fileSizeGuard.test.ts`), remaining boolean-flag state (`isSaving`/`isLoading`, see `STATE_MACHINE.md`), and untested live-stream render cost (see `PERFORMANCE.md`).
+Giant client files (`haWebSocket.ts` is 967 lines after extracting protocol, demo and forecast helpers; `useMobilityData.ts`, `useOverviewHeaderState.ts`, `notificationsService.ts`; see the baseline in `tests/fileSizeGuard.test.ts`), remaining boolean-flag state (`isSaving`/`isLoading`, see `STATE_MACHINE.md`), and untested live-stream render cost (see `PERFORMANCE.md`).
