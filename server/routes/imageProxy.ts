@@ -7,6 +7,7 @@ import dns from 'node:dns';
 import type express from 'express';
 import { Agent as UndiciAgent, fetch as undiciFetch } from 'undici';
 import { isPrivateOrLocalHost, isSameOriginHost } from '../lib/network';
+import { errorCode, errorMessage } from '../lib/errors';
 
 export interface ImageProxyDeps {
   requireHAAuth: express.RequestHandler;
@@ -143,11 +144,11 @@ export function registerImageProxyRoutes(app: express.Express, deps: ImageProxyD
       // Only reachable with a valid token, so keep it out of shared caches
       res.setHeader('Cache-Control', 'private, max-age=86400, stale-while-revalidate=604800');
       return res.send(Buffer.concat(chunks, totalBytes));
-    } catch (err: any) {
-      if (err?.cause?.code === 'EPRIVATEADDR' || err?.code === 'EPRIVATEADDR') {
+    } catch (err: unknown) {
+      if (errorCode(err) === 'EPRIVATEADDR') {
         return res.status(403).json({ error: 'Access to private, local, or cloud metadata network addresses is prohibited' });
       }
-      console.warn('[Image Proxy] Upstream fetch failed:', err?.message || err);
+      console.warn('[Image Proxy] Upstream fetch failed:', errorMessage(err));
       return res.status(502).json({ error: 'Failed to proxy image' });
     }
   });

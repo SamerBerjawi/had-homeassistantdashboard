@@ -110,7 +110,7 @@ export class EnergySyncService {
         insertedCount: totalInserted,
         entitiesUpdated
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[EnergySyncService] Failed to ingest statistics batch:', err);
       // Earlier chunks are already committed (REL-009): report them so the client can retry the rest
       return {

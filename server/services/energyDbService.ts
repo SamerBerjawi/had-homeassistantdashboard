@@ -395,7 +395,7 @@ function computeEnergyDbStatus(): EnergyDbStatus {
       periodBreakdown,
       isReady: true
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       dbPath: activeDbPath,
       fileSizeBytes: 0,

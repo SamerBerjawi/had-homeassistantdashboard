@@ -17,10 +17,10 @@ Browser (React SPA)
 
 ## Rules of the road
 1. HA is the identity provider. There is no user table. Admin routes use `requireHAAdmin`.
-2. The server pins one HA instance (env var or first sign-in). Clients never choose it afterwards.
+2. The server validates tokens against one HA instance: `HASS_URL` (required in production) or, in development only with `ALLOW_TOFU_PIN=true`, the first sign-in. Clients never choose it afterwards.
 3. Config writes go through `withConfigWriteLock`, and carry an expected version. Conflicts return 409.
 4. `server.ts` only composes modules: `server/auth` (token auth), `server/services/configStore`, `server/routes/*`, `server/middleware`, `server/static.ts`. Routes take dependencies via `registerXRoutes(app, deps)`; no module reads another's closure.
 5. Client data flow: hooks (`src/hooks`) wrap services (`src/services`), which hold pure classification/transform logic (`*Classification.ts`, `energyDataTransformer.ts`). Keep new business rules in services, not components.
 
 ## Known weak spots
-Giant files (`server.ts`, `haWebSocket.ts`, `useMobilityData.ts`, `useOverviewHeaderState.ts`), scattered `localStorage` token access, boolean-flag state (see `STATE_MACHINE.md`).
+Giant client files (`haWebSocket.ts`, `useMobilityData.ts`, `useOverviewHeaderState.ts`, `notificationsService.ts`; see the baseline in `tests/fileSizeGuard.test.ts`), remaining boolean-flag state (`isSaving`/`isLoading`, see `STATE_MACHINE.md`), and untested live-stream render cost (see `PERFORMANCE.md`).

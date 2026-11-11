@@ -11,6 +11,7 @@ import { fetch as undiciFetch } from 'undici';
 import type { Agent as UndiciAgent } from 'undici';
 import { isOverFailureLimit, recordFailure } from '../lib/security';
 import type { FailureEntry } from '../lib/security';
+import { errorCode as errorCodeOf, errorMessage } from '../lib/errors';
 
 export interface HaAuthOptions {
   /** Directory holding ha-instance.json (the pinned HA instance). */
@@ -105,8 +106,8 @@ export function createHaAuth({ configDir, haDispatcher }: HaAuthOptions) {
       const tempFile = `${pinnedHaInstancePath}.tmp.${process.pid}`;
       await fs.promises.writeFile(tempFile, JSON.stringify({ haUrl: haBase, pinnedAt: new Date().toISOString() }, null, 2), 'utf-8');
       await fs.promises.rename(tempFile, pinnedHaInstancePath);
-    } catch (err: any) {
-      console.warn(`[Auth] Could not persist pinned Home Assistant instance (kept in memory only): ${err?.message || err}`);
+    } catch (err: unknown) {
+      console.warn(`[Auth] Could not persist pinned Home Assistant instance (kept in memory only): ${errorMessage(err)}`);
     }
   }
 
@@ -176,9 +177,9 @@ export function createHaAuth({ configDir, haDispatcher }: HaAuthOptions) {
       }
 
       return isValid;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const now = Date.now();
-      const errorCode = (error as any)?.cause?.code || error?.code || 'UNKNOWN';
+      const errorCode = errorCodeOf(error) ?? 'UNKNOWN';
 
       // Cloudflare / proxy connection reset retry: if a pooled TLS connection was closed, retry once with a fresh connection
       if (errorCode === 'ECONNRESET' || errorCode === 'UND_ERR_SOCKET' || errorCode === 'ETIMEDOUT') {
