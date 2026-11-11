@@ -271,7 +271,8 @@ docker run -d \
 | `DATA_DIR` | No | `/app/data` | Base directory for persistent files inside container |
 | `DASHBOARD_CONFIG_DIR` | No | `/app/data/config` | Directory where `dashboard-config.json` and backups are stored |
 | `DASHBOARD_ASSETS_DIR` | No | `/app/data/assets` | Directory where uploaded vehicle PNGs and icons are stored |
-| `HASS_URL` | No | `http://homeassistant.local:8123` | Default fallback Home Assistant URL (can also be configured in the UI) |
+| `HASS_URL` | **Yes in production** | `http://homeassistant.local:8123` | Home Assistant instance that validates tokens. `ALLOW_TOFU_PIN` is ignored when `NODE_ENV=production` |
+| `TRUST_PROXY` | No | _(unset)_ | Reverse-proxy hops (e.g. `1`), `true`, or a CIDR list, so the auth rate limit sees real client IPs |
 | `GO2RTC_URL` | No | `http://127.0.0.1:1984` | URL of the go2rtc sidecar instance for WebRTC and HLS conversion |
 
 
