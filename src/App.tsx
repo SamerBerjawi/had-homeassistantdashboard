@@ -1,4 +1,6 @@
 import { deriveStartupState } from './services/startupPhase';
+import { effectiveSyncStatus } from './services/configSyncRules';
+import SyncStatusBadge from './components/ui/SyncStatusBadge';
 import ViewErrorState from './components/ui/ViewErrorState';
 import ViewLoadingState from './components/ui/ViewLoadingState';
 import React, { useState, useEffect, lazy, Suspense } from 'react';
@@ -704,27 +706,12 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Offline Fallback Cache Indicator */}
-                {syncStatus === 'offline_fallback' && (
-                  <div
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-semibold backdrop-blur-sm animate-pulse"
-                    title={`NAS storage currently unreachable. Displaying cached settings mirror (last synced: ${lastSuccessfulSync || 'recent'}).`}
-                  >
-                    <Warning size={14} weight="fill" className="text-amber-500 shrink-0" />
-                    <span className="hidden sm:inline">Offline (Cached)</span>
-                  </div>
-                )}
-
-                {/* Subtle Boot & Background Sync Indicator */}
-                {isConfigLoading && (
-                  <div
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/30 text-sky-600 dark:text-sky-400 text-xs font-semibold backdrop-blur-sm animate-pulse"
-                    title="Synchronizing configuration across devices..."
-                  >
-                    <ArrowsClockwise size={14} className="animate-spin text-sky-500 dark:text-sky-400" />
-                    <span className="hidden sm:inline">Syncing…</span>
-                  </div>
-                )}
+                {/* Config sync state: syncing, offline cache, or changes not saved */}
+                <SyncStatusBadge
+                  status={effectiveSyncStatus(syncStatus, isConfigLoading)}
+                  lastSuccessfulSync={lastSuccessfulSync}
+                  onRetry={() => window.dispatchEvent(new CustomEvent('had_manual_refresh'))}
+                />
 
                 {/* Edit Mode Toggle (Single edit button in page header) */}
                 {(activeTab === 'overview' || activeTab === 'settings') && (

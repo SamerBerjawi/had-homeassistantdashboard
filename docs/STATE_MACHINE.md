@@ -17,6 +17,7 @@ Status: discovered from code reading, not yet refactored. "Proposed" is a recomm
 - Server side: 409 on version conflict, refusal to overwrite material config with an empty payload unless `allowEmpty`, partial merge.
 - Done (phase 2, step 2): `src/services/configSyncRules.ts` holds the pure rules: `reduceSyncStatus(current, event)` for every `syncStatus` transition, `decideRemoteApply(isDragActive)` (defer vs apply), and `reconcileRemoteConfig` (remote + unsynced + pending edits), which replaced three copy-pasted merge blocks in `ConfigContext` (initial/SSE load, broadcast, end of drag).
 - Server side: `checkConfigWriteGuards()` and `cameraSourcesChanged()` in `server/lib/configRules.ts` decide the material-data guard, the 409 version conflict and the admin-only camera check, with unit tests.
+- UI: `SyncStatusBadge` renders `effectiveSyncStatus(syncStatus, isConfigLoading)` (failures win over loading), replacing two duplicate pills and covering the previously invisible `error` state.
 - Still open: `isSaving` and `isLoading` remain separate booleans.
 
 ## App startup (`src/App.tsx`)

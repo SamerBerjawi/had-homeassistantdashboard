@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   decideRemoteApply,
+  effectiveSyncStatus,
   hasPendingDelta,
   reconcileRemoteConfig,
   reduceSyncStatus
@@ -47,5 +48,16 @@ describe('reduceSyncStatus', () => {
     expect(reduceSyncStatus('synced', { type: 'stream', state: 'reconnecting' })).toBe('syncing');
     expect(reduceSyncStatus('error', { type: 'stream', state: 'disconnected' })).toBe('error');
     expect(reduceSyncStatus('offline_fallback', { type: 'stream', state: 'connecting' })).toBe('offline_fallback');
+  });
+});
+
+describe('effectiveSyncStatus', () => {
+  it('counts the initial load as syncing', () => {
+    expect(effectiveSyncStatus('synced', true)).toBe('syncing');
+    expect(effectiveSyncStatus('synced', false)).toBe('synced');
+  });
+  it('lets failures win over the loading flag', () => {
+    expect(effectiveSyncStatus('error', true)).toBe('error');
+    expect(effectiveSyncStatus('offline_fallback', true)).toBe('offline_fallback');
   });
 });

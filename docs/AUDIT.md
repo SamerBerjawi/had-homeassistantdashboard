@@ -92,7 +92,7 @@ Gaps: C1, C2, C4, C5 above, plus:
 
 **Phase 1 (stability/security):** C1 JSON error handler; decide D1 on pinning; C4 LRU eviction plus test of the 429 path; refresh CLAUDE.md numbers.
 **Phase 2 (maintainability) status: done** (auth status, config-sync rules, startup phase, `checkConfigWriteGuards`, central token storage, file-size guard, `server.ts` split). Original list: split `server.ts` by route group; discriminated-union auth state; `decideConfigWrite()` pure function; centralise token storage; file-size CI guard.
-**Phase 3 (UX):** persistent sync indicator, plain-language trust prompt, run and fix the accessibility e2e, `GlassSurface` primitive.
+**Phase 3 (UX) status:** persistent sync indicator done (`SyncStatusBadge`: syncing / offline cache / "Changes not saved" with retry, polite live region; the `error` sync state previously had no indicator at all). Accessibility e2e suite run: 15/15 pass on desktop, and the mobile run of a11y + shell + settings-sync passed 54 with 1 skipped. Plain-language trust prompt dropped: first-run pinning is now opt-in and off in production, so there is no prompt to explain. `GlassSurface` primitive not started (143 `backdrop-blur` usages need a design decision first). Dead code found: `src/components/layout/Header.tsx` is not imported anywhere (App.tsx has its own inline header). Original list: persistent sync indicator, plain-language trust prompt, run and fix the accessibility e2e, `GlassSurface` primitive.
 **Phase 4 (scale):** profile context re-renders, memoise chart data, consider config sharding only if configs grow.
 
 ## 12. Decisions needed from you

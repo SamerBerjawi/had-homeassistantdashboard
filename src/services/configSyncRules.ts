@@ -59,3 +59,12 @@ export function reconcileRemoteConfig<T extends object>(
   const withUnsynced = local.unsynced ? merge(remote, local.unsynced) : remote;
   return hasPendingDelta(local.pendingDelta) ? merge(withUnsynced, local.pendingDelta) : withUnsynced;
 }
+
+/**
+ * Status shown in the UI: a failure always wins; otherwise the initial load counts as syncing so
+ * one indicator covers both (previously two separate pills).
+ */
+export function effectiveSyncStatus(status: SyncStatus, isConfigLoading: boolean): SyncStatus {
+  if (status === 'offline_fallback' || status === 'error') return status;
+  return isConfigLoading ? 'syncing' : status;
+}
