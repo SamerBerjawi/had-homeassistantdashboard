@@ -24,6 +24,8 @@ import {
 } from '@phosphor-icons/react';
 import { WeatherBackdropType } from '../../types/canvas';
 import { TileLayoutMode } from '../../types/userConfig';
+import { cn } from '../../lib/utils';
+import { glass } from '../../lib/glass';
 
 interface ThemeCustomizationSectionProps {
   darkMode: boolean;
@@ -78,7 +80,7 @@ export default function ThemeCustomizationSection({
             </span>
           </div>
 
-          <div className="grid grid-cols-3 p-1 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs gap-1">
+          <div className={cn(glass.field, 'grid grid-cols-3 p-1 rounded-2xl shadow-xs gap-1')}>
             <button
               type="button"
               onClick={() => setThemeMode('auto')}
@@ -135,7 +137,7 @@ export default function ThemeCustomizationSection({
             </span>
           </div>
 
-          <div className="grid grid-cols-3 p-1 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs gap-1">
+          <div className={cn(glass.field, 'grid grid-cols-3 p-1 rounded-2xl shadow-xs gap-1')}>
             <button
               type="button"
               onClick={() => handleSelectTileMode('compact')}
@@ -188,7 +190,7 @@ export default function ThemeCustomizationSection({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 p-1 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs gap-1">
+          <div className={cn(glass.field, 'grid grid-cols-2 p-1 rounded-2xl shadow-xs gap-1')}>
             <button
               type="button"
               onClick={() => setBackgroundStyle('glow')}
@@ -231,7 +233,7 @@ export default function ThemeCustomizationSection({
             </span>
           </div>
 
-          <div className="grid grid-cols-4 p-1 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs gap-1">
+          <div className={cn(glass.field, 'grid grid-cols-4 p-1 rounded-2xl shadow-xs gap-1')}>
             {[
               { id: 'auto' as WeatherBackdropType, label: 'Auto', icon: CloudSun },
               { id: 'sunny' as WeatherBackdropType, label: 'Sunny', icon: SunHorizon },

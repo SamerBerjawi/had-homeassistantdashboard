@@ -13,6 +13,8 @@ import { HealthStatisticChart } from './health/HealthStatisticChart';
 import { HealthMetricCard } from './health/HealthMetricCard';
 import { HealthSleepDurationCard, HealthSleepStagesCard } from './health/HealthSleepTile';
 import { HealthOnboardingEmptyState } from './health/HealthOnboardingEmptyState';
+import { cn } from '../../lib/utils';
+import { glass } from '../../lib/glass';
 
 interface HealthViewProps {
   darkMode?: boolean;
@@ -80,7 +82,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
         {/* SECTION 1: Daily Activity & Concentric Rings Hero                       */}
         {/* ======================================================================= */}
         <div className="lg:col-span-4 flex flex-col gap-4">
-          <div className="p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
+          <div className={cn(glass.panel, 'p-4 sm:p-5 rounded-3xl flex flex-col gap-4')}>
             {/* Card Section Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -161,7 +163,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
         {/* SECTION 2: Cardiovascular & Vitals Signals                              */}
         {/* ======================================================================= */}
         <div className="lg:col-span-4 flex flex-col gap-4">
-          <div className="p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
+          <div className={cn(glass.panel, 'p-4 sm:p-5 rounded-3xl flex flex-col gap-4')}>
             {/* Card Section Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -246,7 +248,7 @@ export default function HealthView({ darkMode = true }: HealthViewProps) {
         {/* SECTION 3: Biometric Trends & Body Analytics                            */}
         {/* ======================================================================= */}
         <div className="lg:col-span-4 flex flex-col gap-4">
-          <div className="p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]">
+          <div className={cn(glass.panel, 'p-4 sm:p-5 rounded-3xl flex flex-col gap-4')}>
             {/* Card Section Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">

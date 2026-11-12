@@ -17,6 +17,8 @@ import {
   Clock,
   FloppyDisk
 } from '@phosphor-icons/react';
+import { cn } from '../../lib/utils';
+import { glass } from '../../lib/glass';
 
 interface LocalSnapshot {
   id: string;
@@ -85,7 +87,7 @@ export default function BackupRestoreSection({
           </button>
 
           {/* Import Button */}
-          <label className="flex items-center justify-center gap-2 h-11 px-3.5 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-slate-200 font-bold text-xs shadow-xs hover:border-sky-500/50 transition-all cursor-pointer active:scale-98">
+          <label className={cn(glass.field, 'flex items-center justify-center gap-2 h-11 px-3.5 rounded-2xl text-slate-800 dark:text-slate-200 font-bold text-xs shadow-xs hover:border-sky-500/50 transition-all cursor-pointer active:scale-98')}>
             <UploadSimple size={17} weight="bold" className="text-sky-500" />
             <span>Restore from File</span>
             <input
@@ -117,7 +119,7 @@ export default function BackupRestoreSection({
             placeholder="New snapshot title..."
             value={snapshotNameInput}
             onChange={(e) => setSnapshotNameInput(e.target.value)}
-            className="flex-1 h-10 px-3 rounded-xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs"
+            className={cn(glass.field, 'flex-1 h-10 px-3 rounded-xl text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs')}
           />
           <button
             type="button"
@@ -139,7 +141,7 @@ export default function BackupRestoreSection({
             {snapshots.map((snap) => (
               <div
                 key={snap.id}
-                className="p-2.5 rounded-xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-2 shadow-xs"
+                className={cn(glass.field, 'p-2.5 rounded-xl flex items-center justify-between gap-2 shadow-xs')}
               >
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold text-slate-900 dark:text-white truncate">

@@ -18,6 +18,8 @@ import {
   isInternalUrlBlockedByMixedContent,
   type HaUrlRoute
 } from '../../services/haUrlResolver';
+import { cn } from '../../lib/utils';
+import { glass } from '../../lib/glass';
 
 export default function InternalUrlCard() {
   const [value, setValue] = useState(getConfiguredInternalUrl());
@@ -46,7 +48,7 @@ export default function InternalUrlCard() {
   return (
     <form
       onSubmit={save}
-      className="p-3 sm:p-3.5 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs space-y-2"
+      className={cn(glass.field, 'p-3 sm:p-3.5 rounded-2xl shadow-xs space-y-2')}
     >
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
