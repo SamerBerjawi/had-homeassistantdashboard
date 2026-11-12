@@ -35,6 +35,7 @@ Verified baseline: `tsc --noEmit` clean, 19 test files / 139 tests pass, `npm au
 
 ## 4. Architecture improvements
 - Giant files (lines): `server.ts` 2062, `PowerSourcesChart` 1453, `useOverviewHeaderState` 1347, `energyDataTransformer` 1215, `useMobilityData` 1196, `notificationsService` 1187, `haWebSocket` 1159, `LightControlView` 1038, `App.tsx` 1003, `configStorageService` 995. `src/data/mockRegistries.ts` (4026) is data and can stay.
+- **Split status (giant files):** `server.ts`, `haWebSocket`, `notificationsService`, `energyDataTransformer`, `useMobilityData` and `PowerSourcesChart` (1453 to 770; pure logic in `services/energy/powerSources/`, tooltip in `PowerSourcesTooltip.tsx`) are done. Still over 800: `useOverviewHeaderState` (in progress), `LightControlView`, `App.tsx`, `configStorageService`.
 - Pattern already proven in recent commits (store, integrationsService, sensor classification splits): extract pure functions into tested modules, keep the original file as a thin composer. Reuse it for `haWebSocket`, `useMobilityData`, `useOverviewHeaderState`.
 - 260 uses of `any`/`@ts-ignore`. Start with `catch (err: any)` in `server.ts` (use `unknown` plus a helper) and the SSE `handleSyncStatus = (e: any)` event handler.
 - Dependencies: `@visx/*` alpha pins and `cn` listed alongside the local `cn()` (per CLAUDE.md). Remove the npm `cn` if unused.
