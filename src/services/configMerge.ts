@@ -47,12 +47,31 @@ function mergePlainDelta(base: Record<string, any>, delta: Record<string, any>):
   return result;
 }
 
+/** Fields read by hasMaterialDashboardConfig; every one is checked at runtime before use. */
+interface MaterialConfigProbe {
+  rooms?: { floorOrder?: unknown; areaOrder?: unknown; favoriteAreas?: unknown; areaOverrides?: unknown };
+  entities?: { hiddenEntityIds?: unknown; nameOverrides?: unknown; iconOverrides?: unknown; customizations?: unknown };
+  areas?: unknown;
+  floors?: unknown;
+  labels?: unknown;
+  mobility?: {
+    car?: { selectedCarEntityId?: unknown; customVehiclePngUrl?: unknown };
+    bike?: { selectedBikeEntityId?: unknown; customVehiclePngUrl?: unknown };
+  };
+  theme?: { customThemes?: unknown; preset?: unknown };
+  cameras?: { favoriteCameras?: unknown; sources?: unknown };
+  overview?: { tileOrder?: unknown; hiddenTiles?: unknown; hiddenFromAllTiles?: unknown; tileSizes?: unknown; hideBadges?: unknown };
+  preferences?: unknown;
+  profile?: unknown;
+}
+
 /**
  * Client-side Material Data Checker: inspects if configuration has meaningful customizations
  * to prevent wiping out persistent NAS data with uninitialized or empty state.
  */
-export function hasMaterialDashboardConfig(data: any): boolean {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+export function hasMaterialDashboardConfig(input: unknown): boolean {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return false;
+  const data = input as MaterialConfigProbe;
 
   if (data.rooms && typeof data.rooms === 'object') {
     if (Array.isArray(data.rooms.floorOrder) && data.rooms.floorOrder.length > 0) return true;

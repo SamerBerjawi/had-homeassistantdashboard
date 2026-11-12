@@ -38,7 +38,7 @@ interface SettingsViewProps {
   setEntities: React.Dispatch<React.SetStateAction<HAEntity[]>>;
   rooms: Room[];
   setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
-  addLog: (type: LogMessage['type'], message: string, details?: any) => void;
+  addLog: (type: LogMessage['type'], message: string, details?: unknown) => void;
   logs: LogMessage[];
   setLogs: React.Dispatch<React.SetStateAction<LogMessage[]>>;
   setActiveTab: (tab: string) => void;
@@ -178,7 +178,7 @@ export default function SettingsView({
   const [profileData, setProfileData] = useState<UserProfileData>(() => ({
     displayName: config?.profile?.name || DEFAULT_PROFILE_DATA.displayName,
     email: config?.profile?.email || DEFAULT_PROFILE_DATA.email,
-    role: (config?.profile?.role as any) || DEFAULT_PROFILE_DATA.role,
+    role: (config?.profile?.role as UserProfileData['role']) || DEFAULT_PROFILE_DATA.role,
     avatarInitials: config?.profile?.avatar || DEFAULT_PROFILE_DATA.avatarInitials,
     homeName: 'My Smart Home'
   }));
@@ -283,7 +283,7 @@ export default function SettingsView({
         ...prev,
         displayName: config.profile?.name || prev.displayName,
         email: config.profile?.email || prev.email,
-        role: (config.profile?.role as any) || prev.role,
+        role: (config.profile?.role as UserProfileData['role']) || prev.role,
         avatarInitials: config.profile?.avatar || prev.avatarInitials
       }));
     }
@@ -481,7 +481,7 @@ export default function SettingsView({
       setProfileData({
         displayName: profile.displayName || profile.name || profileData.displayName,
         email: profile.email || profileData.email,
-        role: (profile.role as any) || profileData.role,
+        role: (profile.role as UserProfileData['role']) || profileData.role,
         avatarInitials: profile.avatarInitials || profile.avatar || profileData.avatarInitials,
         homeName: profile.homeName || profileData.homeName
       } as UserProfileData);

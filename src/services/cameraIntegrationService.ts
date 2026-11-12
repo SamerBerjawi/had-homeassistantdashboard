@@ -101,7 +101,7 @@ export function getCameraMotionStatus(
   // If a real sensor is found
   if (matchedSensor) {
     const isMotion = matchedSensor.state === 'on';
-    const lastChanged = (matchedSensor as any).last_changed || matchedSensor.attributes?.last_triggered;
+    const lastChanged = (matchedSensor as typeof matchedSensor & { last_changed?: string }).last_changed || matchedSensor.attributes?.last_triggered;
     const relTime = formatRelativeTime(lastChanged);
     const sensorName = matchedSensor.name || matchedSensor.attributes?.friendly_name || 'Motion Sensor';
 

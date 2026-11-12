@@ -16,6 +16,14 @@ export type EnergyHistoryPeriod =
   | 'yesterday'
   | '7d';
 
+/** Optional external HA connection (home-assistant-js-websocket style); callers currently pass none. */
+export interface HAStatisticsConnection {
+  socket?: { readyState?: number } | null;
+  connected?: boolean;
+  sendMessagePromise?: <T>(payload: object) => Promise<T>;
+  sendRequest?: <T>(type: string, payload: object) => Promise<T>;
+}
+
 export interface HAStatisticEntry {
   start: number | string;
   end?: number | string;
@@ -281,7 +289,7 @@ async function waitForConnection(timeoutMs = 2500): Promise<boolean> {
 // -------------------------------------------------------------
 
 export async function fetchHAStatisticsMetadata(
-  connection?: any,
+  connection?: HAStatisticsConnection,
   statisticIds: string[] = []
 ): Promise<Record<string, StatisticsMetaData>> {
   const cleanIds = Array.from(new Set(statisticIds.filter(Boolean)));
@@ -314,7 +322,7 @@ export async function fetchHAStatisticsMetadata(
       } else if (connection && typeof connection.sendRequest === 'function') {
         result = await connection.sendRequest('recorder/get_statistics_metadata', payload);
       } else {
-        result = await haWebSocketService.sendRequest<any>('recorder/get_statistics_metadata', payload);
+        result = await haWebSocketService.sendRequest<StatisticsMetaData[] | Record<string, StatisticsMetaData>>('recorder/get_statistics_metadata', payload);
       }
 
       if (Array.isArray(result)) {
@@ -353,7 +361,7 @@ export async function fetchHAStatisticsMetadata(
 // -------------------------------------------------------------
 
 export async function fetchHAEnergySolarForecasts(
-  connection?: any
+  connection?: HAStatisticsConnection
 ): Promise<Record<string, SolarForecastData> | null> {
   if (solarForecastCache && solarForecastCache.expiresAt > Date.now()) {
     return solarForecastCache.data;
@@ -365,11 +373,11 @@ export async function fetchHAEnergySolarForecasts(
   if (isLive) {
     try {
       const payload = { type: 'energy/solar_forecast' };
-      let result: any = null;
+      let result: unknown = null;
       if (connection && typeof connection.sendMessagePromise === 'function') {
         result = await connection.sendMessagePromise(payload);
       } else {
-        result = await haWebSocketService.sendRequest<any>('energy/solar_forecast');
+        result = await haWebSocketService.sendRequest<unknown>('energy/solar_forecast');
       }
 
       if (result && typeof result === 'object') {
@@ -403,7 +411,7 @@ export const fetchNasEnergyDbEntities = fetchStoredStatisticsEntities;
 // -------------------------------------------------------------
 
 export async function fetchHAEnergyStatistics(
-  connection: any | undefined,
+  connection: HAStatisticsConnection | undefined,
   statisticIds: string[],
   period: EnergyHistoryPeriod = 'today',
   referenceDate: Date = new Date(),

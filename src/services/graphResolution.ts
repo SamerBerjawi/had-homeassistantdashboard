@@ -50,8 +50,8 @@ function isSameResolvedEntity(prev: ResolvedEntity, next: ResolvedEntity): boole
   const prevKeys = Object.keys(prev);
   if (prevKeys.length !== Object.keys(next).length) return false;
   for (const key of prevKeys) {
-    const a = (prev as any)[key];
-    const b = (next as any)[key];
+    const a = prev[key as keyof ResolvedEntity];
+    const b = next[key as keyof ResolvedEntity];
     if (Object.is(a, b)) continue;
     if (key === 'labels' && isSameArray(a, b)) continue;
     return false;
@@ -368,8 +368,8 @@ export function resolveHAGraph(
       batteryPct,
       icon: customOverride?.customIcon || customOverride?.icon || regEntry?.icon || liveState.attributes.icon,
       labels: regEntry?.labels || liveState.attributes.labels || matchedDevice?.labels || [],
-      last_changed: (liveState as any).last_changed,
-      last_updated: (liveState as any).last_updated
+      last_changed: (liveState as HAState).last_changed,
+      last_updated: (liveState as HAState).last_updated
     };
 
     const previous = options.previousEntities?.[entityId];

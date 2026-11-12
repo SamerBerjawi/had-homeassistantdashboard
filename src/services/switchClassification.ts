@@ -41,7 +41,7 @@ export function detectSwitchCapabilities(
 
   const attrs = entity.attributes || {};
   const isOn = entity.state === 'on';
-  const resolvedName = 'name' in entity ? (entity as any).name : undefined;
+  const resolvedName = 'name' in entity ? entity.name : undefined;
   const friendlyName = attrs.friendly_name || resolvedName || entity.entity_id;
 
   // 1. Device Class
@@ -66,7 +66,7 @@ export function detectSwitchCapabilities(
     attrs.power ??
     attrs.power_consumption ??
     attrs.current_power ??
-    ('powerWatts' in entity ? (entity as any).powerWatts : undefined);
+    ('powerWatts' in entity ? entity.powerWatts : undefined);
 
   if (typeof rawPower === 'number' && !isNaN(rawPower)) {
     currentPowerWatts = Math.round(rawPower * 10) / 10;
@@ -99,7 +99,7 @@ export function detectSwitchCapabilities(
   const currentAmps = typeof attrs.current === 'number' ? attrs.current : typeof attrs.current_a === 'number' ? attrs.current_a : undefined;
 
   // 5. Last Changed Timestamp
-  const lastChanged = (entity as any).last_changed || (entity as any).last_updated || attrs.last_changed;
+  const lastChanged = entity.last_changed || entity.last_updated || attrs.last_changed;
 
   return {
     isOn,

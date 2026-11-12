@@ -5,8 +5,8 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { HouseLine, SquaresFour, Lightbulb, Broom, DoorOpen, Lightning, Armchair, ShieldCheck, MusicNotes, HardDrives, ShareNetwork, Car, Heartbeat, GitFork, PuzzlePiece, GearSix } from '@phosphor-icons/react';
-import { HAEntity, HAArea, HAFloor, HALabel, HAZone, HADevice, ResolvedEntity } from '../../../types';
+import { HouseLine, SquaresFour, Lightbulb, Broom, DoorOpen, Lightning, Armchair, ShieldCheck, MusicNotes, HardDrives, ShareNetwork, Car, Heartbeat, GitFork, PuzzlePiece, GearSix, type Icon as PhosphorIcon } from '@phosphor-icons/react';
+import { HAEntity, HAArea, HAFloor, HALabel, HAZone, HADevice, ResolvedEntity, LogMessage, ToastNotification } from '../../../types';
 
 
 export interface DeviceVisibilitySectionProps {
@@ -23,10 +23,10 @@ export interface DeviceVisibilitySectionProps {
   updateArea: (areaId: string, updates: Partial<HAArea>) => void;
   reorderFloors: (newFloors: HAFloor[]) => void;
   reorderAreas: (newAreas: HAArea[]) => void;
-  callHAService: (domain: string, service: string, serviceData?: any, target?: any) => Promise<void>;
-  updateEntityState: (entityId: string, newState: string, newAttributes?: any) => void;
-  addToast?: (toast: any) => void;
-  addLog: (type: any, message: string, details?: any) => void;
+  callHAService: (domain: string, service: string, serviceData?: Record<string, unknown>, target?: unknown) => Promise<void>;
+  updateEntityState: (entityId: string, newState: string, newAttributes?: Record<string, unknown>) => void;
+  addToast?: (toast: Omit<ToastNotification, 'id' | 'timestamp'>) => void;
+  addLog: (type: LogMessage['type'], message: string, details?: unknown) => void;
 }
 
 
@@ -49,7 +49,7 @@ export const AREA_ICON_OPTIONS = [
 export interface NavigationPageMeta {
   id: string;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: PhosphorIcon;
   mandatory?: boolean;
   description: string;
   color: string;

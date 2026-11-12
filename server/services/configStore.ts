@@ -45,7 +45,7 @@ export function createConfigStore({ configDir }: { configDir: string }) {
   }
 
   // In-process write lock queue to serialize concurrent config file writes
-  let configWriteQueue: Promise<any> = Promise.resolve();
+  let configWriteQueue: Promise<unknown> = Promise.resolve();
   function withConfigWriteLock<T>(fn: () => Promise<T>): Promise<T> {
     const next = configWriteQueue.then(fn, fn);
     configWriteQueue = next.then(() => {}, () => {});

@@ -69,7 +69,7 @@ export function detectSensorCapabilities(
   const domain = entity.entity_id ? entity.entity_id.split('.')[0] : 'sensor';
   const rawClass = String(attrs.device_class || '').toLowerCase();
   const eid = entity.entity_id.toLowerCase();
-  const resolvedName = 'name' in entity ? (entity as any).name : undefined;
+  const resolvedName = 'name' in entity ? entity.name : undefined;
   const friendlyName = attrs.friendly_name || resolvedName || entity.entity_id;
   const fn = friendlyName.toLowerCase();
   const unit = String(attrs.unit_of_measurement || '');
@@ -220,12 +220,12 @@ export function detectSensorCapabilities(
   }
 
   // Battery
-  const rawBattery = attrs.battery_level ?? attrs.battery ?? ('batteryPct' in entity ? (entity as any).batteryPct : undefined);
+  const rawBattery = attrs.battery_level ?? attrs.battery ?? ('batteryPct' in entity ? entity.batteryPct : undefined);
   const batteryPct = typeof rawBattery === 'number'
     ? (rawBattery >= 0 && rawBattery <= 100 ? Math.round(rawBattery) : undefined)
     : (kind === 'battery' && isNum && numValue >= 0 && numValue <= 100 ? Math.round(numValue) : undefined);
 
-  const lastChanged = (entity as any).last_changed || (entity as any).last_updated || attrs.last_changed;
+  const lastChanged = entity.last_changed || entity.last_updated || attrs.last_changed;
 
   return {
     kind,

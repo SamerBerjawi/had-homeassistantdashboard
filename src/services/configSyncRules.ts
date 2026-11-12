@@ -49,7 +49,7 @@ export function decideRemoteApply(isDragActive: boolean): RemoteApplyDecision {
   return isDragActive ? 'defer' : 'apply';
 }
 
-export function hasPendingDelta(delta: object | null | undefined): boolean {
+export function hasPendingDelta(delta: object | null | undefined): delta is object {
   return Boolean(delta) && Object.keys(delta as object).length > 0;
 }
 
@@ -60,7 +60,7 @@ export function hasPendingDelta(delta: object | null | undefined): boolean {
 export function reconcileRemoteConfig<T extends object>(
   remote: T,
   local: { unsynced?: object | null; pendingDelta?: object | null },
-  merge: (base: T, patch: any) => T
+  merge: (base: T, patch: object) => T
 ): T {
   const withUnsynced = local.unsynced ? merge(remote, local.unsynced) : remote;
   return hasPendingDelta(local.pendingDelta) ? merge(withUnsynced, local.pendingDelta) : withUnsynced;

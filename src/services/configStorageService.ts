@@ -162,8 +162,8 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
   }
 
   public async loadConfig(): Promise<UserDashboardConfig> {
-    let haConfig: any = null;
-    let nasConfig: any = null;
+    let haConfig: Partial<UserDashboardConfig> | null = null;
+    let nasConfig: Partial<UserDashboardConfig> | null = null;
     let nasServerVersion: number | undefined = undefined;
 
     // 1. Prioritize NAS REST backend (/api/config)
@@ -217,7 +217,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
 
         if (haWebSocketService.getStatus() === 'connected') {
           try {
-            const res = await haWebSocketService.sendRequest<any>('frontend/get_user_data', {
+            const res = await haWebSocketService.sendRequest<{ value?: Partial<UserDashboardConfig> | string | null } | null>('frontend/get_user_data', {
               key: HA_USER_DATA_KEY
             });
             if (res && res.value !== undefined && res.value !== null) {

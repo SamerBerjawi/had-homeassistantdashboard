@@ -297,7 +297,7 @@ export interface LogMessage {
   type: 'info' | 'service_call' | 'state_changed' | 'warning' | 'error';
   message: string;
   entity_id?: string;
-  details?: any;
+  details?: unknown;
 }
 
 export interface ToastNotification {

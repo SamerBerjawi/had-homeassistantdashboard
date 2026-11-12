@@ -144,7 +144,7 @@ export default function NotificationDrawer({
     // Call dismiss services for persistent notifications, issues & alerts
     for (const notif of allNotifications) {
       if (notif.category === 'persistent_notification' && notif.entity_id) {
-        const cleanHaId = (notif as any).notificationId || (notif.id.startsWith('pn_') ? notif.id.replace('pn_', '') : notif.id.startsWith('ha_notif_') ? notif.id.replace('ha_notif_', '') : notif.id);
+        const cleanHaId = (notif as typeof notif & { notificationId?: string }).notificationId || (notif.id.startsWith('pn_') ? notif.id.replace('pn_', '') : notif.id.startsWith('ha_notif_') ? notif.id.replace('ha_notif_', '') : notif.id);
         await callHAService('persistent_notification', 'dismiss', { notification_id: cleanHaId }).catch(() => { });
         if (updateEntityState) updateEntityState(notif.entity_id, 'dismissed');
       } else if (notif.category === 'repair' && notif.issueId) {

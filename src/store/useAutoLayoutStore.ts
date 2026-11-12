@@ -71,7 +71,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
     ? (() => {
         try {
           const raw = JSON.parse(localStorage.getItem('ha_dismissed_notifications') || '[]');
-          const cleaned = Array.isArray(raw) ? raw.filter((id: any) => typeof id === 'string') : [];
+          const cleaned = Array.isArray(raw) ? raw.filter((id: unknown) => typeof id === 'string') : [];
           return cleaned;
         } catch {
           return [];

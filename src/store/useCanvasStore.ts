@@ -519,7 +519,7 @@ if (typeof window !== 'undefined') {
   const syncRemoteCanvas = async () => {
     if (!haWebSocketService.isDemo() && haWebSocketService.getStatus() === 'connected') {
       try {
-        const res = await haWebSocketService.sendRequest<any>('frontend/get_user_data', {
+        const res = await haWebSocketService.sendRequest<{ value?: { profiles?: unknown; activeProfileId?: string } } | null>('frontend/get_user_data', {
           key: 'had_canvas_profiles'
         });
         if (res && res.value && res.value.profiles) {
@@ -539,7 +539,7 @@ if (typeof window !== 'undefined') {
     }
   };
 
-  window.addEventListener('ha_connection_status' as any, (e: any) => {
+  window.addEventListener('ha_connection_status', (e) => {
     if (e?.detail?.status === 'connected') {
       syncRemoteCanvas();
     }

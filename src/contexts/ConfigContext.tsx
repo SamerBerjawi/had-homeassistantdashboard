@@ -50,7 +50,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [lastSuccessfulSync, setLastSuccessfulSync] = useState<string | null>(null);
 
   const activeDriverRef = useRef<IConfigStorageDriver>(new LocalStorageDriver());
-  const pendingSaveTimeoutRef = useRef<any>(null);
+  const pendingSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestConfigRef = useRef<UserDashboardConfig>(DEFAULT_USER_CONFIG);
 
   // Active Drag Session Guard: Prevents incoming SSE or cross-tab updates from interrupting in-progress drag
@@ -157,7 +157,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     window.addEventListener('had_sync_status_changed', handleSyncStatus);
 
     // 3. Listen to local/cross-tab broadcast updates
-    const handleLocalUpdated = (e: any) => {
+    const handleLocalUpdated = (e: WindowEventMap['had_config_updated']) => {
       if (e?.detail && isMounted) {
         if (decideRemoteApply(isDragActiveRef.current) === 'defer') {
           deferredRemoteConfigRef.current = e.detail;
@@ -170,7 +170,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         applyToSubsystems(merged);
       }
     };
-    window.addEventListener('had_config_updated' as any, handleLocalUpdated);
+    window.addEventListener('had_config_updated', handleLocalUpdated);
 
     // 3.1 Listen to global drag session lifecycle events
     const handleDragSessionStart = () => setDragActive(true);
@@ -179,7 +179,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     window.addEventListener('had_drag_session_end', handleDragSessionEnd);
 
     // 3.5 Listen for dismissed notifications synchronization across tabs/devices
-    const handleDismissedSync = (e: any) => {
+    const handleDismissedSync = (e: WindowEventMap['had_sync_dismissed_notifications']) => {
       if (Array.isArray(e?.detail) && isMounted) {
         updateConfig({
           preferences: {
@@ -188,7 +188,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         });
       }
     };
-    window.addEventListener('had_sync_dismissed_notifications' as any, handleDismissedSync);
+    window.addEventListener('had_sync_dismissed_notifications', handleDismissedSync);
 
     // 4. Global / Manual Refresh Event Listener
     const handleGlobalRefresh = () => {
@@ -224,10 +224,10 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       isMounted = false;
       window.removeEventListener('ha_connection_status', handleConnectionStatus);
       window.removeEventListener('had_sync_status_changed', handleSyncStatus);
-      window.removeEventListener('had_config_updated' as any, handleLocalUpdated);
+      window.removeEventListener('had_config_updated', handleLocalUpdated);
       window.removeEventListener('had_drag_session_start', handleDragSessionStart);
       window.removeEventListener('had_drag_session_end', handleDragSessionEnd);
-      window.removeEventListener('had_sync_dismissed_notifications' as any, handleDismissedSync);
+      window.removeEventListener('had_sync_dismissed_notifications', handleDismissedSync);
       window.removeEventListener('had_manual_refresh', handleGlobalRefresh);
       if (unsubscribeSync) unsubscribeSync();
       configSyncService.stop();
@@ -252,12 +252,13 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       | ((prev: UserDashboardConfig) => DeepPartial<UserDashboardConfig> | Partial<UserDashboardConfig>)
   ): Promise<UserDashboardConfig> => {
     const currentBase = latestConfigRef.current;
-    let nextPartial: any;
+    // DeepPartial is deep-merged by mergeConfig/mergeDelta; their signatures only say Partial
+    let nextPartial: Partial<UserDashboardConfig>;
 
     if (typeof partialOrUpdater === 'function') {
-      nextPartial = partialOrUpdater(currentBase);
+      nextPartial = partialOrUpdater(currentBase) as Partial<UserDashboardConfig>;
     } else {
-      nextPartial = partialOrUpdater;
+      nextPartial = partialOrUpdater as Partial<UserDashboardConfig>;
     }
 
     const merged = mergeConfig(currentBase, nextPartial);

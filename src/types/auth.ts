@@ -14,6 +14,15 @@ export interface AuthUser {
   username?: string;
 }
 
+/** Result of the HA WebSocket `auth/current_user` command (fields we read). */
+export interface HACurrentUserResponse {
+  id?: string;
+  name?: string;
+  username?: string;
+  is_owner?: boolean;
+  is_admin?: boolean;
+}
+
 export interface AuthTokens {
   access_token: string;
   refresh_token?: string;

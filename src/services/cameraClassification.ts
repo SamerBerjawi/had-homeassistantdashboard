@@ -52,7 +52,7 @@ export function detectCameraCapabilities(
   const isIdle = state === 'idle';
 
   const eid = entity.entity_id.toLowerCase();
-  const resolvedName = 'name' in entity ? (entity as any).name : undefined;
+  const resolvedName = 'name' in entity ? entity.name : undefined;
   const friendlyName = attrs.friendly_name || resolvedName || entity.entity_id;
   const fn = friendlyName.toLowerCase();
 
@@ -82,7 +82,7 @@ export function detectCameraCapabilities(
   const resolution = String(attrs.resolution || attrs.stream_resolution || (isDoorbell ? '1080p Full HD' : (attrs.fps ? `${attrs.fps} FPS` : 'HD Live Stream')));
   const modelName = String(attrs.model_name || attrs.brand || attrs.model || (isDoorbell ? 'Smart Video Doorbell' : 'Live Stream Camera'));
 
-  const lastChanged = (entity as any).last_changed || (entity as any).last_updated || attrs.last_changed;
+  const lastChanged = entity.last_changed || entity.last_updated || attrs.last_changed;
 
   return {
     state,

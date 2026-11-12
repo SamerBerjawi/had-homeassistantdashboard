@@ -52,7 +52,7 @@ export function useShellOverlays() {
       const id = w.requestIdleCallback(prefetch, { timeout: 5000 });
       return () => {
         cancelled = true;
-        (window as any).cancelIdleCallback?.(id);
+        window.cancelIdleCallback?.(id);
       };
     }
     const timer = setTimeout(prefetch, 3000);

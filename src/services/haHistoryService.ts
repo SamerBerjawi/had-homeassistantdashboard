@@ -34,7 +34,7 @@ export interface HAStateChangeEvent {
  * Normalizes any timestamp from Home Assistant (seconds, float, ms, or ISO string)
  * into a valid JavaScript epoch millisecond number.
  */
-export function normalizeHATimestamp(raw: any, fallbackMs = Date.now()): number {
+export function normalizeHATimestamp(raw: unknown, fallbackMs = Date.now()): number {
   if (raw === undefined || raw === null) return fallbackMs;
 
   if (typeof raw === 'number') {
@@ -54,14 +54,25 @@ export function normalizeHATimestamp(raw: any, fallbackMs = Date.now()): number 
   return fallbackMs;
 }
 
+/** A history point in minimal (s/lu/lc) or full (state/last_updated/last_changed) form. */
+interface HAHistoryPointRaw {
+  s?: unknown;
+  state?: unknown;
+  lu?: unknown;
+  last_updated?: unknown;
+  lc?: unknown;
+  last_changed?: unknown;
+}
+
 /**
  * Extracts raw state string from any Home Assistant history point format.
  * HA minimal_response uses `p.s`, standard uses `p.state`.
  */
-export function extractHAState(point: any): string | null {
+export function extractHAState(point: unknown): string | null {
   if (!point || typeof point !== 'object') return null;
-  if (point.s !== undefined && point.s !== null) return String(point.s);
-  if (point.state !== undefined && point.state !== null) return String(point.state);
+  const p = point as HAHistoryPointRaw;
+  if (p.s !== undefined && p.s !== null) return String(p.s);
+  if (p.state !== undefined && p.state !== null) return String(p.state);
   return null;
 }
 
@@ -69,9 +80,10 @@ export function extractHAState(point: any): string | null {
  * Extracts timestamp in milliseconds from any Home Assistant history point format.
  * HA minimal_response uses `p.lu` (last_updated) or `p.lc` (last_changed) in epoch seconds.
  */
-export function extractHATimestamp(point: any, fallbackMs = Date.now()): number {
+export function extractHATimestamp(point: unknown, fallbackMs = Date.now()): number {
   if (!point || typeof point !== 'object') return fallbackMs;
-  const raw = point.lu ?? point.last_updated ?? point.lc ?? point.last_changed;
+  const p = point as HAHistoryPointRaw;
+  const raw = p.lu ?? p.last_updated ?? p.lc ?? p.last_changed;
   return normalizeHATimestamp(raw, fallbackMs);
 }
 
@@ -99,9 +111,9 @@ export async function fetchLiveEntityHistory(
         payload.end_time = endTimeISO;
       }
 
-      const res = await haWebSocketService.sendRequest<any>('history/history_during_period', payload);
+      const res = await haWebSocketService.sendRequest<unknown[][] | unknown[] | Record<string, unknown[]> | null>('history/history_during_period', payload);
 
-      let rawPoints: any[] = [];
+      let rawPoints: unknown[] = [];
       if (res) {
         if (Array.isArray(res)) {
           if (res.length > 0 && Array.isArray(res[0])) {
@@ -148,7 +160,7 @@ export async function fetchLiveEntityHistory(
 
       if (response.ok) {
         const data = await response.json();
-        let rawPoints: any[] = [];
+        let rawPoints: unknown[] = [];
         if (Array.isArray(data) && data.length > 0) {
           rawPoints = Array.isArray(data[0]) ? data[0] : data;
         }

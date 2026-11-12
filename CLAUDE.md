@@ -12,7 +12,7 @@ HAD / HOMZ: a Home Assistant (HA) dashboard. A React SPA plus a single Express s
 - External runtime deps: Home Assistant instance, optional go2rtc (cameras).
 
 ## Commands
-Verified in this repo: `npm run lint` (tsc --noEmit, passes) and `npm test` (39 files, 354 tests, pass).
+Verified in this repo: `npm run lint` (tsc --noEmit, passes) and `npm test` (40 files, 356 tests, pass).
 Not run while writing this file: the others below (taken from package.json / Dockerfile).
 ```
 npm install

@@ -37,7 +37,7 @@ export interface HAWebSocketCallbacks {
   onNativeNotificationsLoaded?: (notifications: HANativePersistentNotification[], repairs: HANativeRepairIssue[]) => void;
   onStateChanged: (entityId: string, newState: HAState) => void;
   onStatesBatchUpdated?: (statesList: HAState[]) => void;
-  onLogMessage: (type: 'info' | 'service_call' | 'state_changed' | 'warning' | 'error', msg: string, details?: any) => void;
+  onLogMessage: (type: 'info' | 'service_call' | 'state_changed' | 'warning' | 'error', msg: string, details?: unknown) => void;
 }
 
 export function normalizeHAWebSocketUrl(rawUrl: string): string {
@@ -79,6 +79,27 @@ export interface CompressedStateDiff {
   '-'?: { a?: string[] };
 }
 
+/** state_changed payload shape, as delivered by subscribe_events or inside an event message. */
+export interface HAStateChangeData {
+  entity_id?: string;
+  new_state?: HAState;
+  state?: HAState;
+  old_state?: HAState;
+}
+
+/** A parsed frame received from the HA WebSocket (fields read by handleIncomingMessage). */
+export interface HAIncomingMessage {
+  type?: string;
+  id: number;
+  ha_version?: unknown;
+  message?: string;
+  success?: boolean;
+  result?: unknown;
+  error?: unknown;
+  event?: { data?: HAStateChangeData; entity_id?: string; new_state?: HAState };
+  data?: HAStateChangeData;
+}
+
 export interface EntitiesMessage {
   a?: Record<string, CompressedState>;
   c?: Record<string, CompressedStateDiff>;
@@ -103,7 +124,7 @@ export function expandCompressedState(entityId: string, cs: CompressedState): HA
 export function applyCompressedDiff(previous: HAState, diff: CompressedStateDiff): HAState {
   const added = diff['+'];
   const removedAttrs = diff['-']?.a;
-  const next: any = { ...previous };
+  const next: HAState = { ...previous };
 
   // Keep the attributes object when they didn't change, so downstream identity checks hold
   if (added?.a || removedAttrs?.length) {

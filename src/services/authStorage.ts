@@ -79,7 +79,7 @@ function migrateLegacyStorage(): StoredAuthConfig | null {
   try {
     // 1. Check legacy had_ha_auth_tokens
     const legacyAuthRaw = localStorage.getItem(STORAGE_KEYS.LEGACY_AUTH_TOKENS);
-    const legacyAuth = safeJsonParse<any>(legacyAuthRaw);
+    const legacyAuth = safeJsonParse<Partial<AuthTokens>>(legacyAuthRaw);
     if (legacyAuth && legacyAuth.access_token) {
       const serverUrl = legacyAuth.server_url || localStorage.getItem(STORAGE_KEYS.LAST_HA_URL) || 'http://homeassistant.local:8123';
       const { httpUrl, wsUrl } = normalizeHAUrl(serverUrl);

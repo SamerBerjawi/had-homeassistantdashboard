@@ -32,8 +32,8 @@ export function collectPersistentNotifications(ctx: NotificationContext): void {
       title.toLowerCase().includes('reboot') || 
       message.toLowerCase().includes('reboot');
 
-    const domain = (notif as any).domain || (isRestartNotif ? 'homeassistant' : undefined);
-    const source = (notif as any).source || (isRestartNotif ? 'Home Assistant' : undefined);
+    const domain = (notif as typeof notif & { domain?: string }).domain || (isRestartNotif ? 'homeassistant' : undefined);
+    const source = (notif as typeof notif & { source?: string }).source || (isRestartNotif ? 'Home Assistant' : undefined);
 
     items.push({
       id: notifId,

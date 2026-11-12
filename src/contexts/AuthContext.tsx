@@ -10,7 +10,7 @@
 import { errorMessageField } from '@/lib/errors';
 import { onHaRouteChange, watchNetworkChanges, refreshHaRoute, getConfiguredInternalUrl } from '../services/haUrlResolver';
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { AuthState, AuthContextType, AuthUser, AuthTokens } from '../types/auth';
+import { AuthState, AuthContextType, AuthUser, AuthTokens, HACurrentUserResponse } from '../types/auth';
 import { 
   handleHAOAuthCallback, 
   startHAOAuthFlow, 
@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
-  const refreshTimerRef = useRef<any>(null);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reloadDemoData = useAutoLayoutStore((s) => s.reloadDemoData);
 
   const clearRefreshTimer = useCallback(() => {
@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchHAUserProfile = useCallback(async (): Promise<AuthUser> => {
     try {
-      const userRes = await haWebSocketService.sendRequest<any>('auth/current_user');
+      const userRes = await haWebSocketService.sendRequest<HACurrentUserResponse | null>('auth/current_user');
       if (userRes && userRes.id) {
         return {
           id: userRes.id,
@@ -124,7 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Hook into haWebSocketService onAuthInvalid for seamless socket-level token recovery
   useEffect(() => {
     // Also listen for connection status auth_failed
-    const handleAuthStatus = (event: any) => {
+    const handleAuthStatus = (event: WindowEventMap['ha_connection_status']) => {
       const status: HAConnectionStatus = event?.detail?.status;
       if (status === 'auth_failed') {
         setError('Authentication expired or invalid token. Please sign in again.');
@@ -132,9 +132,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    window.addEventListener('ha_connection_status' as any, handleAuthStatus);
+    window.addEventListener('ha_connection_status', handleAuthStatus);
     return () => {
-      window.removeEventListener('ha_connection_status' as any, handleAuthStatus);
+      window.removeEventListener('ha_connection_status', handleAuthStatus);
     };
   }, []);
 

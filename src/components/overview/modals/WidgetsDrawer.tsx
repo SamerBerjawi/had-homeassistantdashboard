@@ -28,7 +28,8 @@ import {
   Sun,
   MusicNotes,
   Broom,
-  VideoCamera
+  VideoCamera,
+  type Icon as PhosphorIcon
 } from '@phosphor-icons/react';
 import type { OverviewTileVisibilityMode } from '../../../types/userConfig';
 import DetailsRightDrawer from '../DetailsRightDrawer';
@@ -41,7 +42,7 @@ export interface WidgetCatalogItem {
   title: string;
   description: string;
   category: (typeof CATEGORIES)[number];
-  icon: React.ComponentType<any>;
+  icon: PhosphorIcon;
   color: string;
   defaultSize: '1x' | '2x';
 }

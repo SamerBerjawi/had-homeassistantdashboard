@@ -17,7 +17,7 @@ export interface ForecastSubscription {
   type: 'daily' | 'twice_daily' | 'hourly';
   slot: ForecastSlot;
 }
-export type CachedForecast = Partial<Record<ForecastSlot, any[]>>;
+export type CachedForecast = Partial<Record<ForecastSlot, unknown[]>>;
 
 /**
  * Which forecast subscriptions an entity supports. When `supported_features` is unknown we try

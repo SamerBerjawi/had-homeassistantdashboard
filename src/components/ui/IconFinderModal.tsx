@@ -63,7 +63,7 @@ class IconErrorBoundary extends React.Component<{ children: React.ReactNode }, {
   static getDerivedStateFromError() {
     return { hasError: true };
   }
-  componentDidCatch(error: any) {
+  componentDidCatch(error: unknown) {
     console.warn('[IconFinderModal] Error caught in icon grid:', error);
   }
   render() {

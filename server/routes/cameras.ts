@@ -4,6 +4,7 @@
  */
 import type express from 'express';
 import { Readable } from 'node:stream';
+import type { ReadableStream as NodeWebReadableStream } from 'node:stream/web';
 import {
   redactCredentialsInText,
   resolveHlsSubpath,
@@ -45,7 +46,7 @@ export function registerCameraRoutes(app: express.Express, deps: CameraRoutesDep
     const entry =
       sources[cameraId] ||
       Object.values(sources).find(
-        (s: any) =>
+        (s) =>
           s?.id === cameraId ||
           s?.haEntityId === cameraId ||
           (s?.id && `camera.${s.id}` === cameraId) ||
@@ -270,7 +271,7 @@ export function registerCameraRoutes(app: express.Express, deps: CameraRoutesDep
       if (req.method === 'HEAD' || !go2rtcRes.body) {
         return res.end();
       }
-      const upstream = Readable.fromWeb(go2rtcRes.body as any);
+      const upstream = Readable.fromWeb(go2rtcRes.body as NodeWebReadableStream);
       upstream.on('error', () => res.destroy());
       res.on('close', () => upstream.destroy());
       return void upstream.pipe(res);

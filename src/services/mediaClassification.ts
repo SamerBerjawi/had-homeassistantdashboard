@@ -114,7 +114,7 @@ export function detectMediaCapabilities(
   const isOff = state === 'off' || state === 'standby' || state === 'unavailable';
   const isIdle = state === 'idle' || state === 'buffering';
 
-  const resolvedName = 'name' in entity ? (entity as any).name : undefined;
+  const resolvedName = 'name' in entity ? entity.name : undefined;
   const friendlyName = attrs.friendly_name || resolvedName || entity.entity_id;
 
   // Device classification
@@ -189,7 +189,7 @@ export function detectMediaCapabilities(
 
   const shuffle = Boolean(attrs.shuffle);
   const repeat = String(attrs.repeat || 'off');
-  const lastChanged = (entity as any).last_changed || (entity as any).last_updated || attrs.last_changed;
+  const lastChanged = entity.last_changed || entity.last_updated || attrs.last_changed;
 
   return {
     deviceType,

@@ -96,8 +96,8 @@ export default function MiniSensorSparkline({
             for (const p of liveHistory) {
               const v = parseFloat(p.state);
               if (!isNaN(v)) {
-                const ts = typeof (p as any).timestamp === 'number'
-                  ? ((p as any).timestamp < 1e12 ? (p as any).timestamp * 1000 : (p as any).timestamp)
+                const ts = typeof p.timestamp === 'number'
+                  ? (p.timestamp < 1e12 ? p.timestamp * 1000 : p.timestamp)
                   : Date.now();
                 rawPoints.push({ timestamp: ts, value: v });
               }

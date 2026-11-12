@@ -25,6 +25,8 @@ import { useUserConfig } from '../../contexts/ConfigContext';
 import { useHealthData } from '../../hooks/useHealthData';
 import { cn } from '../../lib/utils';
 import { glass } from '../../lib/glass';
+import type { ToastNotification } from '../../types';
+import type { HealthTimeRange } from '../../types/health';
 
 interface UserProfileData {
   displayName: string;
@@ -41,7 +43,7 @@ interface UserProfileSectionProps {
   handleSaveProfile: (e: React.FormEvent) => void;
   pinCode: string;
   setPinCode: (pin: string) => void;
-  addToast?: (toast: any) => void;
+  addToast?: (toast: Omit<ToastNotification, 'id' | 'timestamp'>) => void;
   profileSavedNotice: boolean;
 }
 
@@ -58,7 +60,7 @@ export default function UserProfileSection({
   const { authState, openAuthModal, logout } = useAuth();
   // Flags only (ignore transient loading) so the badge doesn't flicker during token refresh
   const sessionStatus = deriveAuthStatus(authState, false, false);
-  const { driverName, isSyncingRemote } = useUserConfig() as any;
+  const { driverName, isSyncingRemote } = useUserConfig();
   const { devices, selectedDeviceId, setSelectedDeviceId, timeRange, setTimeRange } = useHealthData();
 
   const [newPinInput, setNewPinInput] = useState('');
@@ -194,7 +196,7 @@ export default function UserProfileSection({
             </label>
             <select
               value={profileData.role}
-              onChange={(e) => setProfileData({ ...profileData, role: e.target.value as any })}
+              onChange={(e) => setProfileData({ ...profileData, role: e.target.value as UserProfileData['role'] })}
               className={cn(glass.field, 'w-full h-10 px-3 rounded-xl text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs')}
             >
               <option value="Administrator">Administrator (Full Control)</option>
@@ -370,7 +372,7 @@ export default function UserProfileSection({
               <button
                 key={range.id}
                 type="button"
-                onClick={() => setTimeRange(range.id as any)}
+                onClick={() => setTimeRange(range.id as HealthTimeRange)}
                 className={`h-8 sm:h-9 rounded-xl flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
                   isSelected
                     ? 'bg-rose-500 text-white shadow-sm'

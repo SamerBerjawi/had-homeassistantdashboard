@@ -29,7 +29,7 @@ export function registerImageProxyRoutes(app: express.Express, deps: ImageProxyD
   const publicOnlyDispatcher = new UndiciAgent({
     connect: {
       lookup: (hostname, opts, cb) => {
-        dns.lookup(hostname, opts as dns.LookupOptions, (err, address: any, family) => {
+        dns.lookup(hostname, opts as dns.LookupOptions, (err, address: string | dns.LookupAddress[], family) => {
           if (err) return cb(err, address, family);
           const addresses: string[] = Array.isArray(address) ? address.map((a: dns.LookupAddress) => a.address) : [address];
           if (addresses.some((a) => isPrivateOrLocalHost(a))) {

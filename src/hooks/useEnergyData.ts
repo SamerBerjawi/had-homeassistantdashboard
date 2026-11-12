@@ -177,7 +177,7 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
   useEffect(() => {
     if (isLiveMode && connectionStatus === 'connected' && haWebSocketService && !haWebSocketService.isDemo()) {
       haWebSocketService
-        .sendRequest<any>('get_config')
+        .sendRequest<{ currency?: string } | null>('get_config')
         .then((cfg) => {
           if (cfg?.currency) setHaCurrency(cfg.currency);
         })
