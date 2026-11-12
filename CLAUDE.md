@@ -12,7 +12,7 @@ HAD / HOMZ: a Home Assistant (HA) dashboard. A React SPA plus a single Express s
 - External runtime deps: Home Assistant instance, optional go2rtc (cameras).
 
 ## Commands
-Verified in this repo: `npm run lint` (tsc --noEmit, passes) and `npm test` (32 files, 247 tests, pass).
+Verified in this repo: `npm run lint` (tsc --noEmit, passes) and `npm test` (39 files, 354 tests, pass).
 Not run while writing this file: the others below (taken from package.json / Dockerfile).
 ```
 npm install
@@ -43,7 +43,7 @@ docker compose up -d      # image ghcr.io/samerberjawi/had-homeassistantdashboar
 - `src/store/`: zustand stores (`useAlertStore`, `useAutoLayoutStore`, `useCanvasStore`).
 - `src/hooks/`: data hooks (`useEnergyData`, `useRoomsData`, `useMobilityData`, `useSystemMetrics`, ...).
 - `src/services/`: HA clients (`haAuth`, `haWebSocket` plus its pure helpers `haWebSocketProtocol`, `haWebSocketDemo`, `haWeatherForecast`, `haHistoryService`, `ha*Statistics`), config persistence (`configStorageService`, `configSyncService`), per-domain `*Classification.ts` entity classifiers, `notificationsService.ts` (thin composer over `services/notifications/`) and `energyDataTransformer.ts` (composer over `services/energy/`: timeGrid, slotBinning, buckets, totals, devices, financials, powerStatistics), and `services/mobility/` (pure car/bike metric derivation behind `hooks/useMobilityData.ts`).
-- `src/lib`, `src/utils`, `src/types`, `src/config/pageThemes.ts`: helpers, types, themes.
+- `src/lib` (incl. `glass.ts` frosted-surface class constants; use them for new surfaces), `src/utils`, `src/types`, `src/config/pageThemes.ts`: helpers, types, themes.
 - `tests/`: vitest unit tests (`tests/helpers`). `scripts/`: build helpers and `test-*.ts` integration suites.
 - `data/` (runtime, gitignored): `config/dashboard-config.json` (+ `.bak`, `backups/`), `assets/`, `energy/energy_history.sqlite`, `config/ha-instance.json` (pinned HA URL).
 - `dist/`: build output. `public/`: PWA icons/manifest. `had-homeassistantdashboard/`: Umbrel app packaging. `.agents/rules/design_system.md`: UI design rules. `scratch/`: ad-hoc experiments (gitignored test dirs).

@@ -65,6 +65,19 @@ Standardize container glassmorphism across 3 strict layers:
 > [!IMPORTANT]
 > **Backdrop Filter Rule**: Avoid heavy, opaque blurs (`backdrop-blur-2xl` or `3xl`) on cards as they degrade GPU performance and turn the background mud-grey. Stick strictly to `backdrop-blur-md` (8px–12px) or `backdrop-blur-xl` on top-level outer cards.
 
+### Glass surface roles (`glass.*` in `src/lib/glass.ts`)
+These constants hold the surface material (background, border, blur, shadow) that the code actually renders today. Where they differ from the numbers above (for example Level 1 above says `bg-white/60`, the code uses `bg-white/20`), the constants reflect the shipped UI. Shape, spacing and layout stay at the call site: `cn(glass.tile, 'rounded-2xl p-4 flex items-center')`.
+
+| Role | Use | Classes |
+|---|---|---|
+| `glass.panel` | Primary section container | `backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 shadow-[4px_6px_12px_rgba(0,0,0,0.15)]` |
+| `glass.tile` | Tile or stat row inside a panel | `bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm` |
+| `glass.field` | Inputs, segmented controls, settings sub-cards | `bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10` |
+| `glass.chip` | Small telemetry chips on overview tiles | `bg-white/50 dark:bg-black/30 backdrop-blur-xs border border-white/30 dark:border-white/10` |
+| `glass.iconWell` | Icon well on overview tiles | `bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/80 dark:border-white/10` |
+
+New surfaces should use a `glass.*` role instead of writing these class strings by hand. Change a role only on purpose: it restyles every surface that uses it.
+
 ---
 
 ## 4. The 4-Row Metric Micro-Card Anatomy

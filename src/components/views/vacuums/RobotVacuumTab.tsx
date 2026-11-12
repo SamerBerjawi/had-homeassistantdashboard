@@ -40,6 +40,8 @@ import { useEntityPopup } from '../../../contexts/EntityPopupContext';
 import { useHAImage } from '../../../services/haImageService';
 import { useUserConfig } from '../../../contexts/ConfigContext';
 import { optimizeImageForUpload } from '../../../utils/imageOptimizer';
+import { cn } from '../../../lib/utils';
+import { glass } from '../../../lib/glass';
 
 interface RobotVacuumTabProps {
   vacuums: VacuumDeviceData[];
@@ -144,7 +146,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
       {/* COLUMN 1: Controls & Cockpit (Hero, Battery, Action Dock, Speeds)        */}
       {/* ========================================================================= */}
       <div className="lg:col-span-4 xl:col-span-4 flex flex-col gap-4">
-        <div className="relative p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] overflow-hidden">
+        <div className={cn(glass.panel, 'relative p-4 sm:p-5 rounded-3xl flex flex-col gap-4 overflow-hidden')}>
           {/* Ambient Glow with corner containment */}
           <div
             className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
@@ -250,7 +252,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
 
           {/* Multiple Robot Switcher (if user has > 1 robot) */}
           {vacuums.length > 1 && (
-            <div className="relative z-10 flex items-center gap-1 p-1 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm">
+            <div className={cn(glass.tile, 'relative z-10 flex items-center gap-1 p-1 rounded-2xl')}>
               {vacuums.map((vac) => (
                 <button
                   key={vac.entityId}
@@ -268,7 +270,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
           )}
 
           {/* Battery & Charging Card */}
-          <div className="relative z-10 p-4 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between gap-4">
+          <div className={cn(glass.tile, 'relative z-10 p-4 rounded-2xl flex items-center justify-between gap-4')}>
             <div className="flex items-center gap-3">
               <div
                 className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xs transition-all ${activeVacuum?.batteryCharging
@@ -377,7 +379,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-4 gap-1.5 p-1 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm">
+            <div className={cn(glass.tile, 'grid grid-cols-4 gap-1.5 p-1 rounded-2xl')}>
               {(activeVacuum?.fanSpeedList || ['Quiet', 'Balanced', 'Turbo', 'Max']).map((spd) => {
                 const isSelected = (activeVacuum?.fanSpeed || 'Balanced').toLowerCase() === spd.toLowerCase();
                 return (
@@ -399,7 +401,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
 
           {/* Cleaning Session Telemetry HUD */}
           <div className="relative z-10 grid grid-cols-2 gap-2.5 sm:gap-3 pt-1">
-            <div className="p-3 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center gap-2.5">
+            <div className={cn(glass.tile, 'p-3 rounded-2xl flex items-center gap-2.5')}>
               <div className="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-500 flex items-center justify-center">
                 <Gauge size={16} weight="bold" />
               </div>
@@ -413,7 +415,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
               </div>
             </div>
 
-            <div className="p-3 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center gap-2.5">
+            <div className={cn(glass.tile, 'p-3 rounded-2xl flex items-center gap-2.5')}>
               <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center">
                 <Clock size={16} weight="bold" />
               </div>
@@ -434,7 +436,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
       {/* COLUMN 2: Live Multi-Floor Cleaning Map                                   */}
       {/* ========================================================================= */}
       <div className="lg:col-span-4 xl:col-span-4 flex flex-col gap-4">
-        <div className="relative p-3 sm:p-4 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-3 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] overflow-hidden">
+        <div className={cn(glass.panel, 'relative p-3 sm:p-4 rounded-3xl flex flex-col gap-3 overflow-hidden')}>
           {/* Ambient Glow */}
           <div
             className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
@@ -468,7 +470,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
 
           {/* Floor / Map Switcher Pills */}
           {availableMaps.length > 1 && (
-            <div className="relative z-10 flex items-center gap-1 p-1 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm overflow-x-auto scrollbar-none">
+            <div className={cn(glass.tile, 'relative z-10 flex items-center gap-1 p-1 rounded-2xl overflow-x-auto scrollbar-none')}>
               {availableMaps.map((mapItem) => {
                 const isMapActive = mapItem.id === selectedMapId;
                 return (
@@ -533,7 +535,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
           </div>
 
           {/* Current Room & Target Telemetry */}
-          <div className="relative z-10 p-3.5 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between">
+          <div className={cn(glass.tile, 'relative z-10 p-3.5 rounded-2xl flex items-center justify-between')}>
             <div className="flex items-center gap-2">
               <NavigationArrow size={18} weight="duotone" className="text-cyan-400" />
               <div>
@@ -557,7 +559,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
       {/* COLUMN 3: Maintenance, Consumables & Station Tanks                        */}
       {/* ========================================================================= */}
       <div className="lg:col-span-4 xl:col-span-4 flex flex-col gap-4">
-        <div className="relative p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] overflow-hidden">
+        <div className={cn(glass.panel, 'relative p-4 sm:p-5 rounded-3xl flex flex-col gap-4 overflow-hidden')}>
           {/* Ambient Glow */}
           <div
             className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
@@ -581,7 +583,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
           </div>
 
           {/* Consumables Progress Bars */}
-          <div className="relative z-10 p-3.5 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm space-y-3">
+          <div className={cn(glass.tile, 'relative z-10 p-3.5 rounded-2xl space-y-3')}>
             {/* 1. Main Brush */}
             <div className="space-y-1">
               <div className="flex items-center justify-between text-xs">
@@ -662,7 +664,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
             </span>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between">
+              <div className={cn(glass.tile, 'p-2.5 rounded-xl flex items-center justify-between')}>
                 <div className="flex items-center gap-1.5">
                   <Drop size={14} weight="fill" className="text-sky-400" />
                   <span>Clean Water</span>
@@ -670,7 +672,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                 <span className="font-mono font-bold text-[11px] text-emerald-400">Full</span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between">
+              <div className={cn(glass.tile, 'p-2.5 rounded-xl flex items-center justify-between')}>
                 <div className="flex items-center gap-1.5">
                   <Drop size={14} weight="bold" className="text-amber-400" />
                   <span>Dirty Water</span>
@@ -678,7 +680,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                 <span className="font-mono font-bold text-[11px] text-slate-400">Empty</span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between">
+              <div className={cn(glass.tile, 'p-2.5 rounded-xl flex items-center justify-between')}>
                 <div className="flex items-center gap-1.5">
                   <CheckCircle size={14} weight="fill" className="text-emerald-500" />
                   <span>Dustbin</span>
@@ -688,7 +690,7 @@ export const RobotVacuumTab: React.FC<RobotVacuumTabProps> = ({
                 </span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between">
+              <div className={cn(glass.tile, 'p-2.5 rounded-xl flex items-center justify-between')}>
                 <div className="flex items-center gap-1.5">
                   <Sparkle size={14} weight="fill" className="text-indigo-400" />
                   <span>Mop Pad</span>

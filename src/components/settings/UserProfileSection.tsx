@@ -23,6 +23,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { deriveAuthStatus } from '../../services/authStatus';
 import { useUserConfig } from '../../contexts/ConfigContext';
 import { useHealthData } from '../../hooks/useHealthData';
+import { cn } from '../../lib/utils';
+import { glass } from '../../lib/glass';
 
 interface UserProfileData {
   displayName: string;
@@ -94,7 +96,7 @@ export default function UserProfileSection({
   return (
     <div className="w-full max-w-xl mx-auto space-y-4 sm:space-y-5 animate-in fade-in duration-200 px-1 sm:px-0">
       {/* 1. Account & Session Floating Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs">
+      <div className={cn(glass.field, 'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl shadow-xs')}>
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white font-black text-base flex items-center justify-center shadow-md shadow-sky-500/20 shrink-0">
             {authState.user?.name ? authState.user.name.charAt(0).toUpperCase() : profileData.avatarInitials || 'AM'}
@@ -168,7 +170,7 @@ export default function UserProfileSection({
               type="text"
               value={profileData.displayName}
               onChange={(e) => setProfileData({ ...profileData, displayName: e.target.value })}
-              className="w-full h-10 px-3 rounded-xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs"
+              className={cn(glass.field, 'w-full h-10 px-3 rounded-xl text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs')}
               required
             />
           </div>
@@ -181,7 +183,7 @@ export default function UserProfileSection({
               type="email"
               value={profileData.email}
               onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-              className="w-full h-10 px-3 rounded-xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs"
+              className={cn(glass.field, 'w-full h-10 px-3 rounded-xl text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs')}
               required
             />
           </div>
@@ -193,7 +195,7 @@ export default function UserProfileSection({
             <select
               value={profileData.role}
               onChange={(e) => setProfileData({ ...profileData, role: e.target.value as any })}
-              className="w-full h-10 px-3 rounded-xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs"
+              className={cn(glass.field, 'w-full h-10 px-3 rounded-xl text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs')}
             >
               <option value="Administrator">Administrator (Full Control)</option>
               <option value="Resident">Resident (Standard Controls)</option>
@@ -210,7 +212,7 @@ export default function UserProfileSection({
               maxLength={3}
               value={profileData.avatarInitials}
               onChange={(e) => setProfileData({ ...profileData, avatarInitials: e.target.value.toUpperCase() })}
-              className="w-full h-10 px-3 rounded-xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-white text-xs font-mono font-bold uppercase focus:outline-hidden focus:border-sky-500 shadow-xs"
+              className={cn(glass.field, 'w-full h-10 px-3 rounded-xl text-slate-900 dark:text-white text-xs font-mono font-bold uppercase focus:outline-hidden focus:border-sky-500 shadow-xs')}
             />
           </div>
         </div>
@@ -242,7 +244,7 @@ export default function UserProfileSection({
           </span>
         </div>
 
-        <div className="p-2.5 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs">
+        <div className={cn(glass.field, 'p-2.5 rounded-2xl shadow-xs')}>
           {isEditingPin ? (
             <div className="flex items-center gap-2 flex-wrap">
               <input
@@ -350,13 +352,13 @@ export default function UserProfileSection({
             })}
           </div>
         ) : (
-          <div className="p-2.5 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-xs text-slate-400 italic">
+          <div className={cn(glass.field, 'p-2.5 rounded-2xl text-xs text-slate-400 italic')}>
             No Companion App devices detected. Install Home Assistant on iOS to bind biometrics.
           </div>
         )}
 
         {/* Timeline Segmented Pill */}
-        <div className="grid grid-cols-4 p-1 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs gap-1 mt-2">
+        <div className={cn(glass.field, 'grid grid-cols-4 p-1 rounded-2xl shadow-xs gap-1 mt-2')}>
           {[
             { id: 'today', label: 'Today' },
             { id: 'week', label: 'Week' },

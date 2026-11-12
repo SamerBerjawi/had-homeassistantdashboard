@@ -33,6 +33,8 @@ import {
 import { useStickVacuumData } from '../../../hooks/useStickVacuumData';
 import { useUserConfig } from '../../../contexts/ConfigContext';
 import { optimizeImageForUpload } from '../../../utils/imageOptimizer';
+import { cn } from '../../../lib/utils';
+import { glass } from '../../../lib/glass';
 
 interface StickVacuumTabProps {
   darkMode?: boolean;
@@ -98,7 +100,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
       {/* COLUMN 1: Station & Stick Cleaner Cockpit (Hero, Battery, Actions)        */}
       {/* ========================================================================= */}
       <div className="lg:col-span-4 flex flex-col gap-4">
-        <div className="relative p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] overflow-hidden">
+        <div className={cn(glass.panel, 'relative p-4 sm:p-5 rounded-3xl flex flex-col gap-4 overflow-hidden')}>
           {/* Ambient Glow with corner containment */}
           <div
             className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
@@ -196,7 +198,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
           </div>
 
           {/* Hero Visual & Battery Display */}
-          <div className="relative z-10 p-4 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between gap-4">
+          <div className={cn(glass.tile, 'relative z-10 p-4 rounded-2xl flex items-center justify-between gap-4')}>
             <div className="flex items-center gap-3">
               <div
                 className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xs transition-all ${
@@ -272,7 +274,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
           </div>
 
           {/* Clean Station Lamp Controls */}
-          <div className="relative z-10 p-3.5 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between gap-3">
+          <div className={cn(glass.tile, 'relative z-10 p-3.5 rounded-2xl flex items-center justify-between gap-3')}>
             <div className="flex items-center gap-2">
               <Lightbulb size={18} weight="duotone" className="text-amber-400" />
               <span className="text-xs font-bold text-slate-900 dark:text-white">
@@ -318,7 +320,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
       {/* COLUMN 2: Clean Station Power & Energy Telemetry                          */}
       {/* ========================================================================= */}
       <div className="lg:col-span-4 flex flex-col gap-4">
-        <div className="relative p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] overflow-hidden">
+        <div className={cn(glass.panel, 'relative p-4 sm:p-5 rounded-3xl flex flex-col gap-4 overflow-hidden')}>
           {/* Ambient Glow */}
           <div
             className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
@@ -351,7 +353,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
           </div>
 
           {/* Live Power Draw Hero Card */}
-          <div className="relative z-10 p-4 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between">
+          <div className={cn(glass.tile, 'relative z-10 p-4 rounded-2xl flex items-center justify-between')}>
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
                 Current Station Draw
@@ -374,7 +376,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
             {/* Tile 1: Cumulative Energy */}
             <div
               onClick={() => openStickEntityModal('energy')}
-              className="p-3.5 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm cursor-pointer hover:bg-white/30 dark:hover:bg-black/30 transition-all flex flex-col justify-between"
+              className={cn(glass.tile, 'p-3.5 rounded-2xl cursor-pointer hover:bg-white/30 dark:hover:bg-black/30 transition-all flex flex-col justify-between')}
              role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 Total Energy
@@ -390,7 +392,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
             {/* Tile 2: Energy Saved */}
             <div
               onClick={() => openStickEntityModal('energySaved')}
-              className="p-3.5 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm cursor-pointer hover:bg-white/30 dark:hover:bg-black/30 transition-all flex flex-col justify-between"
+              className={cn(glass.tile, 'p-3.5 rounded-2xl cursor-pointer hover:bg-white/30 dark:hover:bg-black/30 transition-all flex flex-col justify-between')}
              role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
@@ -409,7 +411,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
             {/* Tile 3: Energy Difference */}
             <div
               onClick={() => openStickEntityModal('energyDiff')}
-              className="p-3.5 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm cursor-pointer hover:bg-white/30 dark:hover:bg-black/30 transition-all flex flex-col justify-between"
+              className={cn(glass.tile, 'p-3.5 rounded-2xl cursor-pointer hover:bg-white/30 dark:hover:bg-black/30 transition-all flex flex-col justify-between')}
              role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 Difference
@@ -425,7 +427,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
             {/* Tile 4: Power Energy */}
             <div
               onClick={() => openStickEntityModal('powerEnergy')}
-              className="p-3.5 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm cursor-pointer hover:bg-white/30 dark:hover:bg-black/30 transition-all flex flex-col justify-between"
+              className={cn(glass.tile, 'p-3.5 rounded-2xl cursor-pointer hover:bg-white/30 dark:hover:bg-black/30 transition-all flex flex-col justify-between')}
              role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.currentTarget.click(); } }}>
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 Power Energy
@@ -445,7 +447,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
       {/* COLUMN 3: Dust Bag & Maintenance Telemetry                                */}
       {/* ========================================================================= */}
       <div className="lg:col-span-4 flex flex-col gap-4">
-        <div className="relative p-4 sm:p-5 rounded-3xl backdrop-blur-xl bg-white/20 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 flex flex-col gap-4 shadow-[4px_6px_12px_rgba(0,0,0,0.15)] overflow-hidden">
+        <div className={cn(glass.panel, 'relative p-4 sm:p-5 rounded-3xl flex flex-col gap-4 overflow-hidden')}>
           {/* Ambient Glow */}
           <div
             className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none"
@@ -513,7 +515,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
           </div>
 
           {/* Cycles Counter Card */}
-          <div className="relative z-10 p-4 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm flex items-center justify-between">
+          <div className={cn(glass.tile, 'relative z-10 p-4 rounded-2xl flex items-center justify-between')}>
             <div>
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                 Dust Bag Evacuation Cycles
@@ -537,7 +539,7 @@ export const StickVacuumTab: React.FC<StickVacuumTabProps> = ({ darkMode = true 
               Stick Vacuum Checklist
             </span>
 
-            <div className="p-3 rounded-2xl bg-white/20 dark:bg-black/20 border border-slate-200/40 dark:border-white/5 backdrop-blur-sm space-y-2 text-xs">
+            <div className={cn(glass.tile, 'p-3 rounded-2xl space-y-2 text-xs')}>
               <div className="flex items-center justify-between">
                 <span className="text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <CheckCircle size={14} weight="fill" className="text-emerald-500" />

@@ -8,6 +8,8 @@ import { CaretRight, Drop, Wind, ArrowUp, ArrowDown } from '@phosphor-icons/reac
 import { getWeatherConditionInfo } from '../../weather/weatherIcons';
 import AnimatedWeatherBackdrop from '../../weather/AnimatedWeatherBackdrop';
 import type { TileProps } from './types';
+import { cn } from '../../../lib/utils';
+import { glass } from '../../../lib/glass';
 
 export default function WeatherTile({ s, is2x }: TileProps) {
   const {
@@ -40,7 +42,7 @@ export default function WeatherTile({ s, is2x }: TileProps) {
           <div className="flex-1 flex flex-col justify-between min-w-0 pr-1">
             {/* Top: Icon + Title (No condition pill) */}
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/80 dark:border-white/10 flex items-center justify-center shadow-xs shrink-0">
+              <div className={cn(glass.iconWell, 'w-8 h-8 rounded-xl flex items-center justify-center shadow-xs shrink-0')}>
                 {weatherCondInfo.icon}
               </div>
               <div className="min-w-0">
@@ -70,18 +72,18 @@ export default function WeatherTile({ s, is2x }: TileProps) {
 
             {/* Bottom: Live Telemetry Row */}
             <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] font-bold text-slate-700 dark:text-slate-200">
-              <span className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-white/50 dark:bg-black/30 backdrop-blur-xs border border-white/30 dark:border-white/10 shrink-0">
+              <span className={cn(glass.chip, 'flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg shrink-0')}>
                 <Drop size={11} weight="fill" className="text-sky-400 shrink-0" />
                 <span>{humidity}%</span>
               </span>
               {typeof windSpeed === 'number' && (
-                <span className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-white/50 dark:bg-black/30 backdrop-blur-xs border border-white/30 dark:border-white/10 truncate">
+                <span className={cn(glass.chip, 'flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg truncate')}>
                   <Wind size={11} weight="bold" className="text-teal-400 shrink-0" />
                   <span className="truncate">{Math.round(windSpeed)} {windUnit}</span>
                 </span>
               )}
               {typeof precip === 'number' && precip > 0 && (
-                <span className="hidden sm:flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-white/50 dark:bg-black/30 backdrop-blur-xs border border-white/30 dark:border-white/10 shrink-0">
+                <span className={cn(glass.chip, 'hidden sm:flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg shrink-0')}>
                   <span>{precip}mm</span>
                 </span>
               )}
@@ -159,7 +161,7 @@ export default function WeatherTile({ s, is2x }: TileProps) {
 
       {/* Top row: Weather icon on left, Condition Badge on right */}
       <div className="flex items-center justify-between relative z-10">
-        <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/80 dark:border-white/10 flex items-center justify-center shadow-xs shrink-0">
+        <div className={cn(glass.iconWell, 'w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center shadow-xs shrink-0')}>
           {weatherCondInfo.icon}
         </div>
 

@@ -22,6 +22,8 @@ import {
 } from '@phosphor-icons/react';
 import { LogMessage } from '../../types';
 import InternalUrlCard from './InternalUrlCard';
+import { cn } from '../../lib/utils';
+import { glass } from '../../lib/glass';
 
 interface ConnectionWebSocketSectionProps {
   darkMode: boolean;
@@ -95,7 +97,7 @@ export default function ConnectionWebSocketSection({
   return (
     <div className="w-full max-w-xl mx-auto space-y-4 sm:space-y-5 animate-in fade-in duration-200 px-1 sm:px-0">
       {/* 1. Live Connection Status Floating Pill */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs">
+      <div className={cn(glass.field, 'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl shadow-xs')}>
         <div className="flex items-center gap-3 min-w-0">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
             isConnected
@@ -155,7 +157,7 @@ export default function ConnectionWebSocketSection({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 p-1 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs gap-1">
+        <div className={cn(glass.field, 'grid grid-cols-2 p-1 rounded-2xl shadow-xs gap-1')}>
           <button
             type="button"
             onClick={() => setAuthMethodTab('oauth')}
@@ -196,7 +198,7 @@ export default function ConnectionWebSocketSection({
               placeholder="http://homeassistant.local:8123"
               value={haHttpUrlInput}
               onChange={(e) => setHaHttpUrlInput(e.target.value)}
-              className="w-full h-10 px-3 rounded-xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs"
+              className={cn(glass.field, 'w-full h-10 px-3 rounded-xl text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs')}
               required
             />
           </div>
@@ -231,7 +233,7 @@ export default function ConnectionWebSocketSection({
               placeholder="ws://homeassistant.local:8123/api/websocket"
               value={wsUrlInput}
               onChange={(e) => setWsUrlInput(e.target.value)}
-              className="w-full h-10 px-3 rounded-xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs"
+              className={cn(glass.field, 'w-full h-10 px-3 rounded-xl text-slate-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-sky-500 shadow-xs')}
               required
             />
           </div>
@@ -246,7 +248,7 @@ export default function ConnectionWebSocketSection({
                 placeholder="Bearer eyJhbGci..."
                 value={tokenInput}
                 onChange={(e) => setTokenInput(e.target.value)}
-                className="w-full h-10 px-3 pr-10 rounded-xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-white text-xs font-mono focus:outline-hidden focus:border-sky-500 shadow-xs"
+                className={cn(glass.field, 'w-full h-10 px-3 pr-10 rounded-xl text-slate-900 dark:text-white text-xs font-mono focus:outline-hidden focus:border-sky-500 shadow-xs')}
                 required
               />
               <button
@@ -295,7 +297,7 @@ export default function ConnectionWebSocketSection({
           </button>
         </div>
 
-        <div className="p-2.5 rounded-2xl bg-white/60 dark:bg-black/25 backdrop-blur-md border border-slate-200/80 dark:border-white/10 max-h-40 overflow-y-auto font-mono text-[11px] space-y-1 touch-scroll-container">
+        <div className={cn(glass.field, 'p-2.5 rounded-2xl max-h-40 overflow-y-auto font-mono text-[11px] space-y-1 touch-scroll-container')}>
           {logs.length === 0 ? (
             <div className="text-slate-400 text-center py-3">No connection events recorded yet.</div>
           ) : (
