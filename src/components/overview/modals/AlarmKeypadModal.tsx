@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { errorMessageField } from '@/lib/errors';
 import React, { useState } from 'react';
 import { 
   ShieldCheck, 
@@ -99,8 +100,8 @@ export default function AlarmKeypadModal({
       setErrorMessage(null);
       setSuccessMessage(`Alarm successfully ${mode === 'disarmed' ? 'disarmed' : `armed (${mode.replace('armed_', '')})`}`);
       setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to update alarm state');
+    } catch (err) {
+      setErrorMessage(errorMessageField(err) || 'Failed to update alarm state');
     }
   };
 

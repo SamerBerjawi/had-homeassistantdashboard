@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { errorMessageField } from '@/lib/errors';
 import React, { useState } from 'react';
 import { 
   ShieldCheck, 
@@ -124,8 +125,8 @@ export default function AlarmPanelSection({
       setErrorMessage(null);
       setSuccessMessage(`Alarm successfully changed to ${mode.replace('_', ' ').toUpperCase()}`);
       setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err: any) {
-      setErrorMessage(err?.message || 'Failed to update alarm status');
+    } catch (err) {
+      setErrorMessage(errorMessageField(err) || 'Failed to update alarm status');
     }
   };
 
@@ -138,7 +139,7 @@ export default function AlarmPanelSection({
       });
       setShowPanicConfirm(false);
       setSuccessMessage('Emergency Panic Siren Broadcasted');
-    } catch (err: any) {
+    } catch {
       setErrorMessage('Failed to trigger panic alarm');
     }
   };

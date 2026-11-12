@@ -9,10 +9,7 @@ const MAX_LINES = 800;
 const BASELINE: Record<string, number> = {
   'src/data/mockRegistries.ts': 4026,
   'src/services/haWebSocket.ts': 967,
-  'src/components/modals/entity-controls/LightControlView.tsx': 1038,
   'src/components/views/system/ugreen/NasOverviewSection.tsx': 1037,
-  'src/App.tsx': 1010,
-  'src/services/configStorageService.ts': 995,
   'src/components/SettingsView.tsx': 942,
   'src/components/views/mobility/BikeTab.tsx': 931,
   'src/components/settings/deviceVisibility/useDeviceVisibilityState.tsx': 906,

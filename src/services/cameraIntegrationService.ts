@@ -9,6 +9,7 @@
  * - High-resolution snapshot capture and download
  */
 
+import { errorMessageField } from '@/lib/errors';
 import { ResolvedEntity } from '../types';
 import { haWebSocketService } from './haWebSocket';
 
@@ -240,8 +241,8 @@ export async function toggleCameraSiren(
       const service = turnOn ? 'turn_on' : 'turn_off';
       await haWebSocketService.callService(targetSiren.domain, service, { entity_id: targetSiren.entity_id }, { entity_id: targetSiren.entity_id });
       return { success: true, entityId: targetSiren.entity_id };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'Failed to toggle siren' };
+    } catch (err) {
+      return { success: false, error: errorMessageField(err) || 'Failed to toggle siren' };
     }
   }
 

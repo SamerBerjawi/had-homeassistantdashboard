@@ -11,6 +11,12 @@
  */
 export type SyncStatus = 'synced' | 'syncing' | 'offline_fallback' | 'error';
 
+/** `detail` of the `had_sync_status_changed` window CustomEvent dispatched by the storage driver. */
+export interface SyncStatusEventDetail {
+  status: SyncStatus;
+  lastSync?: string;
+}
+
 export type SyncEvent =
   | { type: 'load_started' }
   | { type: 'load_succeeded' }

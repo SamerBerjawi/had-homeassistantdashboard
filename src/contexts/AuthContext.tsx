@@ -7,6 +7,7 @@
  * Handles proactive silent token refresh, resilient network reconnection, and persistent storage.
  */
 
+import { errorMessageField } from '@/lib/errors';
 import { onHaRouteChange, watchNetworkChanges, refreshHaRoute, getConfiguredInternalUrl } from '../services/haUrlResolver';
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AuthState, AuthContextType, AuthUser, AuthTokens } from '../types/auth';
@@ -313,7 +314,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setError(oauthResult.error);
           setIsAuthModalOpen(true);
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('[AuthContext] OAuth callback error:', err);
       }
 
@@ -499,8 +500,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthModalOpen(false);
       setIsLoading(false);
       return { success: true };
-    } catch (err: any) {
-      const errMsg = `Failed to connect to Home Assistant: ${err?.message || 'Network error / Host unreachable'}`;
+    } catch (err) {
+      const errMsg = `Failed to connect to Home Assistant: ${errorMessageField(err) || 'Network error / Host unreachable'}`;
       setError(errMsg);
       setIsLoading(false);
       return { success: false, error: errMsg };

@@ -6,6 +6,7 @@
  * Fetches and transforms historical recorder statistics for the corresponding period in previous years.
  */
 
+import { errorMessageField } from '@/lib/errors';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import {
@@ -289,10 +290,10 @@ export function useEnergyComparison(options: UseEnergyComparisonOptions): UseEne
         setCompareBuckets(transformed.buckets);
         setCompareTotals(transformed.totals);
         setIsLoadingCompare(false);
-      } catch (err: any) {
+      } catch (err) {
         if (cancelled) return;
         console.warn('[useEnergyComparison] Failed to load comparison statistics:', err);
-        setCompareError(err.message || 'Failed to load comparison data');
+        setCompareError(errorMessageField(err) || 'Failed to load comparison data');
         setIsLoadingCompare(false);
       }
     })();

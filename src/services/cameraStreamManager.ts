@@ -11,6 +11,7 @@
  * 5. Reference counting with 7s graceful teardown to avoid thrashing on fast navigations / modal transitions
  */
 
+import { errorMessageField } from '@/lib/errors';
 import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 import type Hls from 'hls.js';
 import { loadHls } from '../lib/loadHls';
@@ -464,8 +465,8 @@ class CameraStreamManager {
           this.connectHls(session);
         }
       }, 4500);
-    } catch (err: any) {
-      console.warn(`[CameraStreamManager] WebRTC negotiation failed for ${session.streamId}: ${err?.message}. Failing over to HLS.`);
+    } catch (err) {
+      console.warn(`[CameraStreamManager] WebRTC negotiation failed for ${session.streamId}: ${errorMessageField(err)}. Failing over to HLS.`);
       this.cleanupPeerConnection(session);
       this.connectHls(session);
     }
