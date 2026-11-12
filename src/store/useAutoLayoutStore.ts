@@ -14,6 +14,7 @@ import { clearDashboardSnapshots } from '../services/dashboardSnapshot';
 import { INITIAL_SECURITY_OVERVIEW, INITIAL_OVERVIEW_SUMMARY } from './autoLayout/initialState';
 import { getCachedServerUrl, getCachedHaToken, getCachedLiveMode, hasConfiguredHACredentialsAtLoad, clearAllStoredHACredentials } from './autoLayout/authCache';
 import { scheduleRecompute } from './autoLayout/recompute';
+import { createStateBatcher } from './autoLayout/stateBatcher';
 import { confirmedStates, rememberConfirmedStates } from './autoLayout/optimistic';
 import { SNAPSHOT_READ_BUDGET_MS, earlySnapshot, saveSnapshotNow, scheduleSnapshotSave, getHasLiveRegistries, setHasLiveRegistries } from './autoLayout/snapshotCache';
 import { createServiceSlice } from './autoLayout/serviceSlice';
@@ -25,6 +26,18 @@ import type { AutoLayoutStoreState } from './autoLayout/types';
 
 export type { AutoLayoutStoreState } from './autoLayout/types';
 export { hasConfiguredHACredentials } from './autoLayout/authCache';
+
+// Coalesces bursts of state_changed events into one store update per window (see stateBatcher.ts).
+const STATE_EVENT_WINDOW_MS = 250;
+const stateBatcher = createStateBatcher<HAState>((batch) => {
+  const map: Record<string, HAState> = Object.fromEntries(batch);
+  useAutoLayoutStore.setState((prev) => ({
+    states: { ...prev.states, ...map },
+    rawStates: { ...prev.rawStates, ...map }
+  }));
+  scheduleRecompute(useAutoLayoutStore.getState);
+  scheduleSnapshotSave(useAutoLayoutStore.getState);
+}, STATE_EVENT_WINDOW_MS);
 
 export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   isLiveMode: getCachedLiveMode(),
@@ -145,6 +158,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         return null;
       },
       onRegistriesLoaded: (payload) => {
+        stateBatcher.clear();
         setHasLiveRegistries(true);
         confirmedStates.clear();
         rememberConfirmedStates(Object.values(payload.states || {}));
@@ -187,6 +201,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
         });
       },
       onStatesBatchUpdated: (statesList) => {
+        stateBatcher.flush();
         rememberConfirmedStates(statesList);
         const map: Record<string, HAState> = {};
         for (const s of statesList) {
@@ -201,18 +216,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
       },
       onStateChanged: (entityId, newState) => {
         confirmedStates.set(entityId, newState);
-        set(prev => ({
-          states: {
-            ...prev.states,
-            [entityId]: newState
-          },
-          rawStates: {
-            ...prev.rawStates,
-            [entityId]: newState
-          }
-        }));
-        scheduleRecompute(get);
-        scheduleSnapshotSave(get);
+        stateBatcher.push(entityId, newState);
       },
       onLogMessage: (type, msg, details) => {
         if (typeof window !== 'undefined') {
@@ -242,6 +246,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
           if (get().snapshotStatus === 'pending') set({ snapshotStatus: 'none' });
           return;
         }
+        stateBatcher.clear();
         set({
           areas: snapshot.areas,
           devices: snapshot.devices,
@@ -400,6 +405,7 @@ export const useAutoLayoutStore = create<AutoLayoutStoreState>((set, get) => ({
   },
 
   reloadDemoData: () => {
+    stateBatcher.clear();
     loadMockRegistries()
       .then(({ MOCK_AREAS, MOCK_DEVICES, MOCK_ENTITY_REGISTRY, MOCK_FLOORS, MOCK_LABELS, MOCK_STATES }) => {
         // The user may have signed in to a live instance while the sample data was loading
