@@ -460,7 +460,7 @@ export default function SettingsView({
       importProfilesJson(JSON.stringify(plan.canvasProfiles), plan.activeProfileId);
     }
     if (plan.pin !== undefined) setPinCode(plan.pin);
-    if (plan.backdrop) setWeatherBackdrop(plan.backdrop as any);
+    if (plan.backdrop) setWeatherBackdrop(plan.backdrop);
 
     if (plan.prefs) {
       const p = plan.prefs;
@@ -499,8 +499,8 @@ export default function SettingsView({
       useAutoLayoutStore.getState().recomputeGraph();
     }
 
-    if (plan.entities) setEntities(plan.entities as any);
-    if (plan.rooms) setRooms(plan.rooms as any);
+    if (plan.entities) setEntities(plan.entities);
+    if (plan.rooms) setRooms(plan.rooms);
 
     addToast?.({
       type: 'success',

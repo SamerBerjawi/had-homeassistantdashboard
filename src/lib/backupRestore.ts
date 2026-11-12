@@ -5,6 +5,11 @@
  * a failure leaves the dashboard exactly as it was.
  */
 import { validateBackupShape } from './backupValidation';
+import type { HAEntity, Room } from '../types';
+import type { WeatherBackdropType } from '../types/canvas';
+
+const BACKDROPS: readonly WeatherBackdropType[] = ['auto', 'sunny', 'partly-cloudy', 'cloudy', 'rain', 'storm', 'snow', 'starry-night'];
+const isBackdrop = (v: unknown): v is WeatherBackdropType => typeof v === 'string' && (BACKDROPS as readonly string[]).includes(v);
 
 const isObject = (v: unknown): v is Record<string, any> => v !== null && typeof v === 'object' && !Array.isArray(v);
 
@@ -12,7 +17,7 @@ export interface RestorePlan {
   canvasProfiles?: Record<string, unknown>;
   activeProfileId?: string;
   pin?: string;
-  backdrop?: string;
+  backdrop?: WeatherBackdropType;
   prefs?: {
     tempUnit?: 'C' | 'F';
     clockFormat?: '24h' | '12h';
@@ -27,8 +32,8 @@ export interface RestorePlan {
   profile?: Record<string, any>;
   config?: Record<string, any>;
   entityCustomizations?: Record<string, unknown>;
-  entities?: unknown[];
-  rooms?: unknown[];
+  entities?: HAEntity[];
+  rooms?: Room[];
   /** Human readable names of the parts that will be restored */
   parts: string[];
 }
@@ -54,7 +59,7 @@ export function planRestore(parsed: unknown): RestorePlan {
   }
 
   const backdrop = b.weatherBackdrop || b.canvas?.weatherBackdrop || b.preferences?.weatherBackdrop;
-  if (backdrop && typeof backdrop === 'string') plan.backdrop = backdrop;
+  if (isBackdrop(backdrop)) plan.backdrop = backdrop;
 
   const prefs = b.preferences || b.settings || b.dashboardConfig?.preferences;
   if (isObject(prefs)) {
@@ -85,8 +90,11 @@ export function planRestore(parsed: unknown): RestorePlan {
   const customs = b.entityCustomizations || b.dashboardConfig?.entities?.customizations;
   if (isObject(customs)) plan.entityCustomizations = customs;
 
-  if (Array.isArray(b.entities) && b.entities.length > 0) plan.entities = b.entities;
-  if (Array.isArray(b.rooms) && b.rooms.length > 0) plan.rooms = b.rooms;
+  // Keep only well-formed items so a hand-edited backup cannot put junk into app state
+  const entities = Array.isArray(b.entities) ? b.entities.filter((e): e is HAEntity => isObject(e) && typeof e.entity_id === 'string') : [];
+  if (entities.length > 0) plan.entities = entities;
+  const rooms = Array.isArray(b.rooms) ? b.rooms.filter((r): r is Room => isObject(r) && typeof r.id === 'string' && typeof r.name === 'string') : [];
+  if (rooms.length > 0) plan.rooms = rooms;
 
   return plan;
 }
