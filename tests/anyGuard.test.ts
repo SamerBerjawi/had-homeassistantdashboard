@@ -7,7 +7,7 @@ import path from 'node:path';
 //   grep -rnE ":\s*any\b|\bas any\b|<any>|any\[\]|@ts-ignore|@ts-expect-error" src server server.ts
 // The count may only go down. When you remove some, lower BASELINE_ANY to the new count.
 // Never raise it: use `unknown` plus narrowing, generics or a real type instead.
-const BASELINE_ANY = 55;
+const BASELINE_ANY = 52;
 
 const PATTERN = /:\s*any\b|\bas any\b|<any>|any\[\]|@ts-ignore|@ts-expect-error/;
 const ROOT = path.resolve(__dirname, '..');

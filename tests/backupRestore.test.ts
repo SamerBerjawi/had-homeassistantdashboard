@@ -37,3 +37,14 @@ describe('planRestore (REL-004)', () => {
     expect(plan.prefs).toEqual({});
   });
 });
+
+describe('planRestore backdrop validation', () => {
+  it('ignores an unknown weather backdrop', () => {
+    expect(planRestore({ weatherBackdrop: 'lava', theme: {} }).backdrop).toBeUndefined();
+  });
+  it('keeps a valid weather backdrop', () => {
+    expect(planRestore({ weatherBackdrop: 'rain', theme: {} }).backdrop).toBe('rain');
+  });
+  // Top-level `entities`/`rooms` arrays are rejected by validateBackupShape (those keys are config
+  // sections, objects), so the array paths in planRestore are defensive only.
+});
