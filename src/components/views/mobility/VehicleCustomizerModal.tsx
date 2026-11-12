@@ -1,3 +1,4 @@
+import { errorMessageField } from '@/lib/errors';
 import { useDialogA11y } from '../../../hooks/useDialogA11y';
 import React, { useState, useRef, ChangeEvent, DragEvent } from 'react';
 import { X, UploadSimple, Trash, Sparkle, Car, Bicycle, Check, Sliders, BatteryCharging, Lightning, Warning } from '@phosphor-icons/react';
@@ -107,8 +108,8 @@ export function VehicleCustomizerModal({
       if (type === 'car_logo') setCarLogoDraft(optimized.dataUrl);
       if (type === 'bike_image') setBikeImageDraft(optimized.dataUrl);
       if (type === 'bike_logo') setBikeLogoDraft(optimized.dataUrl);
-    } catch (err: any) {
-      setUploadError(err.message || 'Could not process image.');
+    } catch (err) {
+      setUploadError(errorMessageField(err) || 'Could not process image.');
     }
   };
 

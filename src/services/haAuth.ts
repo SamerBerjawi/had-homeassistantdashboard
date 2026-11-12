@@ -6,6 +6,7 @@
  * Compatible with Home Assistant auth/authorize and auth/token flows (as used by home-assistant-js-websocket)
  */
 
+import { errorMessageField } from '@/lib/errors';
 import { AuthTokens } from '../types/auth';
 import {
   getStoredAuthConfig,
@@ -280,8 +281,8 @@ export async function handleHAOAuthCallback(): Promise<{ success: boolean; token
       } catch {}
 
       return { success: true, tokens };
-    } catch (err: any) {
-      return { success: false, error: `Failed to exchange token: ${err?.message || err}` };
+    } catch (err) {
+      return { success: false, error: `Failed to exchange token: ${errorMessageField(err) || err}` };
     } finally {
       inFlightOAuthPromise = null;
     }
@@ -366,10 +367,10 @@ export async function refreshHAOAuthTokenWithStatus(tokens?: HAAuthTokens): Prom
       }
 
       return { success: true, tokens: updated, isFatal: false };
-    } catch (e: any) {
-      console.warn('[HA Auth] Transient error during token refresh:', e?.message || e);
+    } catch (e) {
+      console.warn('[HA Auth] Transient error during token refresh:', errorMessageField(e) || e);
       // Network failures, aborts, DNS errors are transient and non-fatal
-      return { success: false, isFatal: false, error: e?.message || 'Network error' };
+      return { success: false, isFatal: false, error: errorMessageField(e) || 'Network error' };
     } finally {
       inFlightRefreshPromise = null;
     }

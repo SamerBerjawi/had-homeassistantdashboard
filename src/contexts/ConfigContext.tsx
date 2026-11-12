@@ -25,6 +25,7 @@ import {
 import { configSyncService, SyncConnectionState } from '../services/configSyncService';
 import {
   SyncStatus,
+  SyncStatusEventDetail,
   decideRemoteApply,
   hasPendingDelta,
   reconcileRemoteConfig,
@@ -136,23 +137,24 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     loadData();
 
     // 1. Re-sync when WebSocket connection status transitions to 'connected'
-    const handleConnectionStatus = (e: any) => {
-      if (e?.detail?.status === 'connected') {
+    const handleConnectionStatus = (e: Event) => {
+      if ((e as CustomEvent<{ status?: string } | null>).detail?.status === 'connected') {
         loadData(true);
       }
     };
-    window.addEventListener('ha_connection_status' as any, handleConnectionStatus);
+    window.addEventListener('ha_connection_status', handleConnectionStatus);
 
     // 2. Listen to custom sync status change events dispatched by storage driver
-    const handleSyncStatus = (e: any) => {
-      if (e?.detail?.status && isMounted) {
-        setSyncStatus((cur) => reduceSyncStatus(cur, { type: 'driver_status', status: e.detail.status }));
-        if (e.detail.lastSync) {
-          setLastSuccessfulSync(e.detail.lastSync);
+    const handleSyncStatus = (e: Event) => {
+      const detail = (e as CustomEvent<SyncStatusEventDetail | null>).detail;
+      if (detail?.status && isMounted) {
+        setSyncStatus((cur) => reduceSyncStatus(cur, { type: 'driver_status', status: detail.status }));
+        if (detail.lastSync) {
+          setLastSuccessfulSync(detail.lastSync);
         }
       }
     };
-    window.addEventListener('had_sync_status_changed' as any, handleSyncStatus);
+    window.addEventListener('had_sync_status_changed', handleSyncStatus);
 
     // 3. Listen to local/cross-tab broadcast updates
     const handleLocalUpdated = (e: any) => {
@@ -220,8 +222,8 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     return () => {
       isMounted = false;
-      window.removeEventListener('ha_connection_status' as any, handleConnectionStatus);
-      window.removeEventListener('had_sync_status_changed' as any, handleSyncStatus);
+      window.removeEventListener('ha_connection_status', handleConnectionStatus);
+      window.removeEventListener('had_sync_status_changed', handleSyncStatus);
       window.removeEventListener('had_config_updated' as any, handleLocalUpdated);
       window.removeEventListener('had_drag_session_start', handleDragSessionStart);
       window.removeEventListener('had_drag_session_end', handleDragSessionEnd);

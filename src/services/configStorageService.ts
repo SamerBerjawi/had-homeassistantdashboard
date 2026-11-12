@@ -14,6 +14,7 @@ import {
   SaveConfigOptions
 } from '../types/userConfig';
 import { AuthState } from '../types/auth';
+import type { SyncStatusEventDetail } from './configSyncRules';
 import { haWebSocketService } from './haWebSocket';
 import { getStoredHAAuth, getActiveHAToken, refreshHAOAuthToken } from './haAuth';
 import { getStoredAuthConfig } from './authStorage';
@@ -273,7 +274,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
       } catch {}
 
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('had_sync_status_changed', {
+        window.dispatchEvent(new CustomEvent<SyncStatusEventDetail>('had_sync_status_changed', {
           detail: { status: 'synced', lastSync: shadowRecord.last_successful_sync }
         }));
       }
@@ -289,7 +290,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
           const parsed: ShadowCacheRecord = JSON.parse(cachedShadow);
           if (parsed && parsed.config) {
             console.warn(`[RemoteStorageDriver] NAS & HA offline. Serving shadow mirror cache (last synced: ${parsed.last_successful_sync})`);
-            window.dispatchEvent(new CustomEvent('had_sync_status_changed', {
+            window.dispatchEvent(new CustomEvent<SyncStatusEventDetail>('had_sync_status_changed', {
               detail: { status: 'offline_fallback', lastSync: parsed.last_successful_sync }
             }));
             return mergeConfig(DEFAULT_USER_CONFIG, parsed.config);
@@ -602,7 +603,7 @@ export class RemoteStorageDriver implements IConfigStorageDriver {
           bc.close();
         }
         window.dispatchEvent(new CustomEvent('had_config_updated', { detail: updated }));
-        window.dispatchEvent(new CustomEvent('had_sync_status_changed', {
+        window.dispatchEvent(new CustomEvent<SyncStatusEventDetail>('had_sync_status_changed', {
           detail: nasSaved
             ? { status: 'synced', lastSync: shadowRecord.last_successful_sync }
             : { status: 'offline_fallback', lastSync: shadowRecord.last_successful_sync || undefined }

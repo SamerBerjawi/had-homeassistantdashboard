@@ -7,6 +7,7 @@
  * seamless token refresh on auth challenge, and registry ingestion.
  */
 
+import { errorMessageField } from '@/lib/errors';
 import {
   HAArea,
   HADevice,
@@ -38,7 +39,6 @@ type MockRegistries = typeof import('../data/mockRegistries');
 
 export { normalizeHAWebSocketUrl };
 export type { HAWebSocketCallbacks };
-
 
 const ENTITY_SNAPSHOT_TIMEOUT_MS = 20000;
 
@@ -324,8 +324,8 @@ class HAWebSocketClient {
         try {
           const data = JSON.parse(event.data);
           this.handleIncomingMessage(data);
-        } catch (e: any) {
-          this.callbacks?.onLogMessage('error', `Failed to parse WS frame: ${e.message}`);
+        } catch (e) {
+          this.callbacks?.onLogMessage('error', `Failed to parse WS frame: ${errorMessageField(e)}`);
         }
       };
 
@@ -338,9 +338,9 @@ class HAWebSocketClient {
       this.socket.onclose = () => {
         this.handleSocketLost('WebSocket connection closed');
       };
-    } catch (err: any) {
-      this.emitStatus('error', err.message);
-      this.callbacks?.onLogMessage('error', `Failed to initialize WebSocket: ${err.message}`);
+    } catch (err) {
+      this.emitStatus('error', errorMessageField(err));
+      this.callbacks?.onLogMessage('error', `Failed to initialize WebSocket: ${errorMessageField(err)}`);
       if (!this.isExplicitDisconnect) {
         this.scheduleReconnect();
       }
@@ -763,8 +763,8 @@ class HAWebSocketClient {
       }
 
       this.callbacks?.onLogMessage('info', `Ingested ${areas.length} areas, ${devices.length} devices, ${entityRegistry.length} entities, ${labels?.length || 0} labels, ${nativeNotifications?.length || 0} notifications, and ${statesList.length} live states.`);
-    } catch (e: any) {
-      this.callbacks?.onLogMessage('error', `Failed to fetch HA registries: ${e.message}`);
+    } catch (e) {
+      this.callbacks?.onLogMessage('error', `Failed to fetch HA registries: ${errorMessageField(e)}`);
     }
   }
 
@@ -814,7 +814,7 @@ class HAWebSocketClient {
         issue_id: issueId,
         ignore
       });
-    } catch (e: any) {
+    } catch (e) {
       console.warn(`[haWebSocket] Failed to ignore repair issue ${domain}/${issueId}:`, e);
     }
   }

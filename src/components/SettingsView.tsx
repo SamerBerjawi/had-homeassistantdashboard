@@ -7,6 +7,7 @@
  * Single unified header architecture (matches Rooms & Area detail views).
  */
 
+import { errorMessageField } from '@/lib/errors';
 import { planRestore } from '../lib/backupRestore';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -18,7 +19,6 @@ import { WeatherBackdropType } from '../types/canvas';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserConfig } from '../contexts/ConfigContext';
 import { TileLayoutMode } from '../types/userConfig';
-
 import SettingsHub, { SettingsSection } from './settings/SettingsHub';
 import UserProfileSection from './settings/UserProfileSection';
 import ThemeCustomizationSection from './settings/ThemeCustomizationSection';
@@ -539,11 +539,11 @@ export default function SettingsView({
     try {
       const parsed = JSON.parse(snap.data);
       await performComprehensiveRestore(parsed, snap.name);
-    } catch (err: any) {
+    } catch (err) {
       addToast?.({
         type: 'warning',
         title: 'Restore Failed',
-        message: err?.message ? `Could not restore snapshot: ${err.message}` : 'Could not restore snapshot data.'
+        message: errorMessageField(err) ? `Could not restore snapshot: ${errorMessageField(err)}` : 'Could not restore snapshot data.'
       });
     } finally {
       setIsBackupBusy(false);
@@ -617,11 +617,11 @@ export default function SettingsView({
         const text = ev.target?.result as string;
         const parsed = JSON.parse(text);
         await performComprehensiveRestore(parsed, fileName);
-      } catch (err: any) {
+      } catch (err) {
         addToast?.({
           type: 'warning',
           title: 'Import Error',
-          message: err instanceof SyntaxError ? 'Invalid JSON backup file format.' : (err?.message || 'Could not import the backup.')
+          message: err instanceof SyntaxError ? 'Invalid JSON backup file format.' : (errorMessageField(err) || 'Could not import the backup.')
         });
       } finally {
         setIsBackupBusy(false);
@@ -638,14 +638,14 @@ export default function SettingsView({
     setIsBackupBusy(true);
     try {
       await resetDashboardConfig();
-    } catch (err: any) {
+    } catch (err) {
       // Leave local state untouched: resetting only this device would silently diverge from the server
       setIsBackupBusy(false);
       setShowResetConfirm(false);
       addToast?.({
         type: 'warning',
         title: 'Factory Reset Failed',
-        message: err?.message ? `Could not reset the dashboard: ${err.message}` : 'Could not reset the dashboard. Nothing was changed.'
+        message: errorMessageField(err) ? `Could not reset the dashboard: ${errorMessageField(err)}` : 'Could not reset the dashboard. Nothing was changed.'
       });
       return;
     }

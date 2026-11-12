@@ -95,7 +95,7 @@ export function useStartupState({
         message: 'All entities, sensors, and telemetry have been updated.',
         type: 'info'
       });
-    } catch (err: any) {
+    } catch (err) {
       console.warn('[App] Manual refresh error:', err);
     } finally {
       setTimeout(() => setIsManualRefreshing(false), 600);

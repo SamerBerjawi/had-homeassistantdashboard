@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { errorMessageField } from '@/lib/errors';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAutoLayoutStore } from '../store/useAutoLayoutStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -331,12 +332,12 @@ export function useEnergyData(options: UseEnergyDataOptions = {}): UseEnergyData
             })
             .catch(() => {});
         }
-      } catch (err: any) {
+      } catch (err) {
         if (cancelled) return;
         console.warn('[useEnergyData] Failed to load energy dashboard:', err);
         setIsFetchingStats(false);
         if (!hasLoadedOnceRef.current) {
-          setError(err.message || 'Failed to load energy statistics');
+          setError(errorMessageField(err) || 'Failed to load energy statistics');
           setLoadState('error');
         }
       }
