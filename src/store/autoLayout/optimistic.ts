@@ -6,7 +6,7 @@
 import { HAState } from '../../types';
 import { useAlertStore } from '../useAlertStore';
 import { scheduleRecompute } from './recompute';
-import type { AutoLayoutStoreState } from './types';
+import type { AutoLayoutStoreState, GetState, SetState } from './types';
 
 // Last state reported by Home Assistant for each entity. Optimistic writes from updateEntityState
 // never touch this, so a failed service call can restore what HA actually said.
@@ -23,7 +23,7 @@ export const rememberConfirmedStates = (statesList: Iterable<HAState>) => {
 export const isSecurityCriticalEntity = (entityId: string) =>
   entityId.startsWith('lock.') || entityId.startsWith('alarm_control_panel.');
 
-export const collectServiceEntityIds = (serviceData: Record<string, any>, target: any): string[] => {
+export const collectServiceEntityIds = (serviceData: Record<string, any>, target: { entity_id?: unknown } | null | undefined): string[] => {
   const ids = new Set<string>();
   for (const raw of [target?.entity_id, serviceData?.entity_id]) {
     if (!raw) continue;
@@ -35,14 +35,15 @@ export const collectServiceEntityIds = (serviceData: Record<string, any>, target
 };
 
 // HA rejects with plain { code, message } objects; normalize so callers can rely on err.message.
-export const toServiceError = (err: any): Error => {
+type ServiceErrorLike = { message?: string; code?: unknown } | null | undefined;
+export const toServiceError = (err: unknown): Error => {
   if (err instanceof Error) return err;
-  const error = new Error(err?.message || String(err || 'Service call failed'));
-  if (err?.code) (error as any).code = err.code;
+  const error = new Error((err as ServiceErrorLike)?.message || String(err || 'Service call failed'));
+  if ((err as ServiceErrorLike)?.code) (error as Error & { code?: unknown }).code = (err as ServiceErrorLike)?.code;
   return error;
 };
 
-export const restoreConfirmedStates = (set: any, get: any, entityIds: string[]) => {
+export const restoreConfirmedStates = (set: SetState, get: GetState, entityIds: string[]) => {
   const restored: Record<string, HAState> = {};
   for (const id of entityIds) {
     const confirmed = confirmedStates.get(id);

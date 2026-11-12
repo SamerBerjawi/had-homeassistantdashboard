@@ -13,6 +13,17 @@ import { isOverFailureLimit, recordFailure } from '../lib/security';
 import type { FailureEntry } from '../lib/security';
 import { errorCode as errorCodeOf, errorMessage } from '../lib/errors';
 
+/** Shape probed on a caught fetch error when logging its cause. */
+type ErrorWithCause = { cause?: { message?: unknown } };
+
+/** Messages of the HA WebSocket auth / auth/current_user exchange (parsed JSON, so fields are unknown). */
+interface HaWsAdminMessage {
+  type?: unknown;
+  id?: unknown;
+  success?: unknown;
+  result?: { is_admin?: unknown } | null;
+}
+
 export interface HaAuthOptions {
   /** Directory holding ha-instance.json (the pinned HA instance). */
   configDir: string;
@@ -227,8 +238,8 @@ export function createHaAuth({ configDir, haDispatcher }: HaAuthOptions) {
       if (now - lastAuthErrorLog > 30000) {
         lastAuthErrorLog = now;
         console.error(`[Auth Middleware] Could not reach Home Assistant for token validation at ${targetUrl} (${errorCode})`);
-        if ((error as any)?.cause) {
-          console.error('[Auth Middleware] Error Cause:', (error as any)?.cause?.message || (error as any)?.cause);
+        if ((error as ErrorWithCause | null)?.cause) {
+          console.error('[Auth Middleware] Error Cause:', (error as ErrorWithCause | null)?.cause?.message || (error as ErrorWithCause | null)?.cause);
         }
       }
       return false;
@@ -323,7 +334,7 @@ export function createHaAuth({ configDir, haDispatcher }: HaAuthOptions) {
       ws.onerror = () => finish(null);
       ws.onclose = () => finish(null);
       ws.onmessage = (ev: MessageEvent) => {
-        let msg: any;
+        let msg: HaWsAdminMessage;
         try { msg = JSON.parse(String(ev.data)); } catch { return; }
         if (msg.type === 'auth_required') {
           ws!.send(JSON.stringify({ type: 'auth', access_token: token }));

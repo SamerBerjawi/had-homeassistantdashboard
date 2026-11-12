@@ -45,6 +45,9 @@ import LockControlView from './entity-controls/LockControlView';
 import FanControlView from './entity-controls/FanControlView';
 import CameraControlView from './entity-controls/CameraControlView';
 
+/** Resolved entities carry a top-level icon; raw HA states do not. */
+type EntityWithIcon = HAEntity & { icon?: string | null };
+
 interface ErrorBoundaryProps {
   children: ReactNode;
   fallback: ReactNode;
@@ -145,7 +148,7 @@ export default function EntityDetailModal() {
       entityCustomizations?.[selectedEntityId]?.customIcon ||
       entityCustomizations?.[selectedEntityId]?.icon ||
       selectedResolved?.icon ||
-      (entity as any)?.icon ||
+      (entity as EntityWithIcon | null)?.icon ||
       entity?.attributes?.icon ||
       null
     );
@@ -370,9 +373,9 @@ export default function EntityDetailModal() {
                         weight="duotone"
                         className={domainTheme.color}
                       />
-                    ) : (entity as any)?.icon || entity?.attributes?.icon ? (
+                    ) : (entity as EntityWithIcon | null)?.icon || entity?.attributes?.icon ? (
                       <DynamicPhosphorIcon
-                        name={(entity as any)?.icon || entity?.attributes?.icon}
+                        name={(entity as EntityWithIcon | null)?.icon || entity?.attributes?.icon}
                         size={24}
                         weight="duotone"
                         className={domainTheme.color}
@@ -647,7 +650,7 @@ export default function EntityDetailModal() {
         onClose={() => setCustomizerOpen(false)}
         entityId={selectedEntityId}
         defaultName={entityTitle || ''}
-        defaultIcon={customIcon || (entity as any)?.icon || entity?.attributes?.icon || ''}
+        defaultIcon={customIcon || (entity as EntityWithIcon | null)?.icon || entity?.attributes?.icon || ''}
         domain={domain}
         areaName={metadata?.areaName ?? undefined}
         floorName={metadata?.floorName ?? undefined}

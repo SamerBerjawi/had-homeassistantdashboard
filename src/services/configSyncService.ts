@@ -13,11 +13,12 @@
 import { getStoredHAAuth, getActiveHAToken } from './haAuth';
 import { getStoredAuthConfig } from './authStorage';
 import { SseParser } from '../lib/sseParser';
+import type { UserDashboardConfig } from '../types/userConfig';
 
 export type SyncConnectionState = 'connected' | 'connecting' | 'reconnecting' | 'disconnected';
 
 export interface ConfigSyncEventListener {
-  onConfigChanged?: (data?: any) => void;
+  onConfigChanged?: (data?: unknown) => void;
   onReconcileNeeded?: () => void;
   onStatusChanged?: (status: SyncConnectionState) => void;
 }
@@ -34,8 +35,8 @@ class ConfigSyncService {
 
   private status: SyncConnectionState = 'disconnected';
   private retryCount = 0;
-  private reconnectTimer: any = null;
-  private watchdogTimer: any = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private watchdogTimer: ReturnType<typeof setInterval> | null = null;
   private lastActivityTimestamp = 0;
   private isEnabled = false;
 
@@ -175,7 +176,7 @@ class ConfigSyncService {
           this.lastActivityTimestamp = Date.now();
           for (const message of parser.push(value)) {
             if (message.event !== 'config_updated') continue;
-            let payload: any = null;
+            let payload: unknown = null;
             try {
               payload = message.data ? JSON.parse(message.data) : null;
             } catch {}
@@ -276,7 +277,7 @@ class ConfigSyncService {
     return this.status;
   }
 
-  public broadcastLocalChange(config: any) {
+  public broadcastLocalChange(config: UserDashboardConfig) {
     if (this.broadcastChannel) {
       try {
         this.broadcastChannel.postMessage({ type: 'config_saved', config });
@@ -287,7 +288,7 @@ class ConfigSyncService {
     }
   }
 
-  private notifyConfigChanged(data?: any) {
+  private notifyConfigChanged(data?: unknown) {
     for (const listener of this.listeners) {
       listener.onConfigChanged?.(data);
     }

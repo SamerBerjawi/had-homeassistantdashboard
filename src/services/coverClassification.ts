@@ -76,7 +76,7 @@ export function detectCoverCapabilities(
   const isOpening = stateStr === 'opening';
   const isClosing = stateStr === 'closing';
 
-  const resolvedName = 'name' in entity ? (entity as any).name : undefined;
+  const resolvedName = 'name' in entity ? entity.name : undefined;
   const friendlyName = attrs.friendly_name || resolvedName || entity.entity_id;
 
   // Device Class
@@ -136,7 +136,7 @@ export function detectCoverCapabilities(
   const currentTilt =
     typeof attrs.current_tilt_position === 'number' ? attrs.current_tilt_position : undefined;
 
-  const lastChanged = (entity as any).last_changed || (entity as any).last_updated || attrs.last_changed;
+  const lastChanged = entity.last_changed || entity.last_updated || attrs.last_changed;
 
   return {
     deviceClass,

@@ -66,7 +66,7 @@ export function detectMediaPlayerType(
 
   // 1. Resolve Device Registry Entry
   let matchedDevice: HADevice | undefined;
-  const entityDeviceId = (entity as ResolvedEntity).device_id || (entity as any).deviceId;
+  const entityDeviceId = (entity as ResolvedEntity).device_id || (entity as { deviceId?: string }).deviceId;
 
   if (deviceRegistry) {
     if (Array.isArray(deviceRegistry)) {
@@ -158,7 +158,7 @@ export function detectMediaPlayerType(
     if (matchedDevice?.id) {
       const remoteByDev = entityList.find(e => 
         e.entity_id.startsWith('remote.') && 
-        ((e as ResolvedEntity).device_id === matchedDevice?.id || (e as any).attributes?.device_id === matchedDevice?.id)
+        ((e as ResolvedEntity).device_id === matchedDevice?.id || e.attributes?.device_id === matchedDevice?.id)
       );
       if (remoteByDev) {
         remoteEntityId = remoteByDev.entity_id;

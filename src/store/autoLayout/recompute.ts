@@ -3,9 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-let recomputeTimer: any = null;
+import type { GetState } from './types';
 
-export const scheduleRecompute = (get: any) => {
+let recomputeTimer: ReturnType<typeof setTimeout> | number | null = null;
+
+export const scheduleRecompute = (get: GetState) => {
   if (recomputeTimer) return;
   if (typeof requestAnimationFrame !== 'undefined') {
     recomputeTimer = requestAnimationFrame(() => {

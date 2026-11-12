@@ -4,7 +4,7 @@
  */
 
 import { HAEntityRegistryEntry, HADevice, HAState, ResolvedEntity } from '../../types';
-import { IntegrationItem, IntegrationCategory, IoTClass, IntegrationState } from '../../types/integrations';
+import { IntegrationItem, IntegrationCategory, IoTClass, IntegrationState, HAConfigEntryRaw, HacsRepositoryRaw, SupervisorAddonRaw } from '../../types/integrations';
 import { haWebSocketService } from '../haWebSocket';
 import { HELPER_DOMAINS, INTEGRATION_DISPLAY_NAMES, KNOWN_INTEGRATIONS_META, KnownIntegrationMeta } from './catalog';
 import { isHelper, formatIntegrationName } from './naming';
@@ -12,9 +12,9 @@ import { isHacsIntegrationDevice, extractHacsDomain } from './hacs';
 
 /** Raw data fetched live from Home Assistant; empty in demo/offline mode. */
 export interface LiveIntegrationData {
-  configEntries: any[];
-  hacsRepos: any[];
-  addons: any[];
+  configEntries: HAConfigEntryRaw[];
+  hacsRepos: HacsRepositoryRaw[];
+  addons: SupervisorAddonRaw[];
 }
 
 function toResolvedEntity(
@@ -61,7 +61,7 @@ function createContext(
 
     // 0. Identify helper config entries to exclude them completely
     const helperConfigEntryIds = new Set<string>();
-    const configEntriesByDomain: Record<string, any[]> = {};
+    const configEntriesByDomain: Record<string, HAConfigEntryRaw[]> = {};
 
     if (live.configEntries.length > 0) {
       live.configEntries.forEach(entry => {

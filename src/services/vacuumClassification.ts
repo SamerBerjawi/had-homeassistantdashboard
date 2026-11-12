@@ -83,7 +83,7 @@ export function detectVacuumCapabilities(
   const isDocked = state === 'docked';
   const isError = state === 'error';
 
-  const resolvedName = 'name' in entity ? (entity as any).name : undefined;
+  const resolvedName = 'name' in entity ? entity.name : undefined;
   const friendlyName = attrs.friendly_name || resolvedName || entity.entity_id;
 
   // Supported Features
@@ -97,7 +97,7 @@ export function detectVacuumCapabilities(
   const supportsCleanSpot = hasFeature(VacuumEntityFeature.CLEAN_SPOT);
 
   // Battery
-  const rawBattery = attrs.battery_level ?? attrs.battery ?? ('batteryPct' in entity ? (entity as any).batteryPct : undefined);
+  const rawBattery = attrs.battery_level ?? attrs.battery ?? ('batteryPct' in entity ? entity.batteryPct : undefined);
   const batteryLevel = typeof rawBattery === 'number' ? Math.round(rawBattery) : undefined;
   const isCharging = Boolean(
     attrs.battery_icon?.includes('charging') ||
@@ -125,7 +125,7 @@ export function detectVacuumCapabilities(
     filterLeft !== undefined ||
     sensorDirtyLeft !== undefined;
 
-  const lastChanged = (entity as any).last_changed || (entity as any).last_updated || attrs.last_changed;
+  const lastChanged = entity.last_changed || entity.last_updated || attrs.last_changed;
 
   return {
     state,

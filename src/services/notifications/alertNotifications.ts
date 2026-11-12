@@ -115,10 +115,10 @@ export function collectStoreAlertNotifications(ctx: NotificationContext): void {
       severity,
       title: alert.title,
       message: alert.message,
-      image: (alert as any).imageUrl,
+      image: (alert as typeof alert & { imageUrl?: string }).imageUrl,
       domain: storeAlertDomain,
       source: alert.entityId ? 'Device Alert' : 'System',
-      createdAt: (alert as any).createdAt || new Date(alert.timestamp).toISOString(),
+      createdAt: (alert as typeof alert & { createdAt?: string }).createdAt || new Date(alert.timestamp).toISOString(),
       timestamp: alert.timestamp,
       dismissable: true,
       actions: [

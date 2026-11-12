@@ -226,7 +226,7 @@ export function watchNetworkChanges(onChange?: () => void): () => void {
       void refreshHaRoute().then(() => onChange?.());
     }, 800);
   };
-  const conn = (navigator as any).connection;
+  const conn = (navigator as Navigator & { connection?: EventTarget }).connection;
   window.addEventListener('online', trigger);
   window.addEventListener('offline', trigger);
   conn?.addEventListener?.('change', trigger);

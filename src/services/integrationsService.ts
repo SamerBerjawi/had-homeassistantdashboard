@@ -9,7 +9,7 @@
  */
 
 import { HAEntityRegistryEntry, HADevice, HAState } from '../types';
-import { IntegrationItem } from '../types/integrations';
+import { IntegrationItem, HAConfigEntryRaw, HacsRepositoryRaw, SupervisorAddonRaw } from '../types/integrations';
 import { haWebSocketService } from './haWebSocket';
 import { buildIntegrations } from './integrations/buildIntegrations';
 
@@ -18,9 +18,9 @@ export { isHelper, formatIntegrationName } from './integrations/naming';
 export { isHacsIntegrationDevice, extractHacsDomain } from './integrations/hacs';
 
 class IntegrationsService {
-  private liveConfigEntries: any[] = [];
-  private liveHacsRepos: any[] = [];
-  private liveAddons: any[] = [];
+  private liveConfigEntries: HAConfigEntryRaw[] = [];
+  private liveHacsRepos: HacsRepositoryRaw[] = [];
+  private liveAddons: SupervisorAddonRaw[] = [];
   private hasQueriedLive = false;
 
   /**
@@ -34,19 +34,19 @@ class IntegrationsService {
 
     try {
       // 1. Fetch live config entries
-      const entries = await haWebSocketService.sendRequest<any[]>('config_entries/get').catch(() => []);
+      const entries = await haWebSocketService.sendRequest<HAConfigEntryRaw[]>('config_entries/get').catch(() => []);
       if (Array.isArray(entries) && entries.length > 0) {
         this.liveConfigEntries = entries;
       }
 
       // 2. Fetch live HACS repositories if HACS is installed
-      const hacs = await haWebSocketService.sendRequest<any[]>('hacs/repositories').catch(() => []);
+      const hacs = await haWebSocketService.sendRequest<HacsRepositoryRaw[]>('hacs/repositories').catch(() => []);
       if (Array.isArray(hacs) && hacs.length > 0) {
         this.liveHacsRepos = hacs;
       }
 
       // 3. Fetch supervisor add-ons if available
-      const addons = await haWebSocketService.sendRequest<any>('supervisor/api', {
+      const addons = await haWebSocketService.sendRequest<{ data?: { addons?: SupervisorAddonRaw[] } } | null>('supervisor/api', {
         endpoint: '/addons',
         method: 'get'
       }).catch(() => null);

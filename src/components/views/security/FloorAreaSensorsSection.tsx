@@ -124,7 +124,7 @@ export default function FloorAreaSensorsSection({
 
     if (resolvedFloors.length > 0) {
       resolvedFloors.forEach((f) => {
-        tabs.push({ id: f.floor_id, label: f.name, color: (f as any).color || '#6366f1' });
+        tabs.push({ id: f.floor_id, label: f.name, color: f.color || '#6366f1' });
       });
     }
 

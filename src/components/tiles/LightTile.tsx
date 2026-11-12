@@ -48,7 +48,7 @@ const LightTileComponent: React.FC<LightTileProps> = ({
   const lastChangedStr = formatRelativeTime(entity.last_changed || entity.last_updated);
   
   // Power & Battery telemetry
-  const rawPower = entity.attributes?.current_power_w ?? entity.attributes?.power ?? (entity as any).powerWatts;
+  const rawPower = entity.attributes?.current_power_w ?? entity.attributes?.power ?? entity.powerWatts;
   const powerWatts = typeof rawPower === 'number' && rawPower > 0 && isOn ? (rawPower >= 10 ? Math.round(rawPower) : parseFloat(rawPower.toFixed(1))) : undefined;
 
   const rawBattery = entity.attributes?.battery_level ?? entity.attributes?.battery ?? entity.attributes?.battery_percentage;

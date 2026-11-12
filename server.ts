@@ -25,7 +25,7 @@ import { deepMergeConfig, hasMaterialDashboardConfig, isValidDashboardConfig } f
 import { isValidImageMagicBytes } from './server/lib/imageValidation';
 import { errorMessage } from './server/lib/errors';
 
-// Request fields set by requireHAAuth (REL-012: typed instead of `(req as any)`)
+// Request fields set by requireHAAuth (REL-012: typed instead of casting req to any)
 declare module 'express-serve-static-core' {
   interface Request {
     haToken?: string;

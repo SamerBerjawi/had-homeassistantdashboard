@@ -3,6 +3,7 @@
  * Kept free of Express/fs so they can be unit tested (tests/serverSecurity.test.ts).
  */
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import type { ServerConfig } from './configTypes';
 
 // ---------------------------------------------------------------------------
 // go2rtc HLS proxy (SEC-002)
@@ -137,14 +138,14 @@ export function containsRedactedCredentials(value: string): boolean {
  * The client only ever sees redacted camera URLs, so a save that echoes one back must not
  * overwrite the stored credentials. Mutates `incomingConfig` in place.
  */
-export function restoreRedactedCameraUrls(incomingConfig: any, storedConfig: any): void {
+export function restoreRedactedCameraUrls(incomingConfig: ServerConfig, storedConfig: ServerConfig | null): void {
   const incoming = incomingConfig?.cameras?.sources;
   const stored = storedConfig?.cameras?.sources;
   if (!isPlainObject(incoming) || !isPlainObject(stored)) return;
   for (const [id, src] of Object.entries(incoming)) {
     if (!isPlainObject(src) || typeof src.rtspUrl !== 'string') continue;
     if (!containsRedactedCredentials(src.rtspUrl)) continue;
-    const storedUrl = (stored as any)[id]?.rtspUrl;
+    const storedUrl = stored[id]?.rtspUrl;
     if (typeof storedUrl === 'string' && redactCredentialsInText(storedUrl) === src.rtspUrl) {
       src.rtspUrl = storedUrl;
     }
@@ -183,7 +184,7 @@ export const PIN_SET_SENTINEL = '__pin_set__';
  * Prepares `canvas.pinCode` of an incoming config for persistence, in place:
  * a plaintext PIN is hashed, the sentinel keeps the stored hash, and an empty value clears it.
  */
-export function applyPinOnWrite(incomingConfig: any, storedConfig: any): void {
+export function applyPinOnWrite(incomingConfig: ServerConfig, storedConfig: ServerConfig | null): void {
   const canvas = incomingConfig?.canvas;
   if (!isPlainObject(canvas) || canvas.pinCode === undefined) return;
   const pin = canvas.pinCode;
@@ -202,11 +203,12 @@ export function applyPinOnWrite(incomingConfig: any, storedConfig: any): void {
 
 /** Config as sent to clients: URL credentials redacted and the PIN hash replaced by a marker. */
 export function redactConfigForClient<T>(config: T): T {
-  const out: any = redactCredentialsDeep(config);
-  if (isPlainObject(out?.canvas) && isHashedPin(out.canvas.pinCode)) {
-    out.canvas.pinCode = PIN_SET_SENTINEL;
+  const out = redactCredentialsDeep(config);
+  const view = out as { canvas?: unknown } | null | undefined;
+  if (isPlainObject(view?.canvas) && isHashedPin(view.canvas.pinCode)) {
+    view.canvas.pinCode = PIN_SET_SENTINEL;
   }
-  return out as T;
+  return out;
 }
 
 // SEC-015: failure counters for the auth rate limit. Evicts the oldest entries instead of clearing

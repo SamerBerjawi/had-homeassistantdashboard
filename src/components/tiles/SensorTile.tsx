@@ -20,7 +20,8 @@ import {
   Lightning,
   Wind,
   Gauge,
-  Pulse
+  Pulse,
+  type Icon as PhosphorIcon
 } from '@phosphor-icons/react';
 import { ResolvedEntity } from '../../types';
 import { formatEntityDisplayName, formatRelativeTime } from '../../lib/utils';
@@ -154,7 +155,7 @@ const SensorTileComponent: React.FC<SensorTileProps> = ({
   }
 
   // Compact Binary & Telemetry Sensors (2x1)
-  let Icon: React.ComponentType<any> = Gauge;
+  let Icon: PhosphorIcon = Gauge;
   let iconClass = 'text-slate-400';
   let badgeText = caps.isBinary
     ? caps.alertLabel || entity.state

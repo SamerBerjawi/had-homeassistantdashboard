@@ -38,7 +38,7 @@ export function isMotionSensor(e: { attributes?: Record<string, any>; entity_id:
 export function isRainOrWeatherSensor(e: { attributes?: Record<string, any>; entity_id: string; name?: string }): boolean {
   const dc = (e.attributes?.device_class || '').toLowerCase();
   const id = e.entity_id.toLowerCase();
-  const name = (e.attributes?.friendly_name || (e as any).name || '').toLowerCase();
+  const name = (e.attributes?.friendly_name || e.name || '').toLowerCase();
   const attr = String(e.attributes?.attribution || '').toLowerCase();
 
   return (
@@ -86,7 +86,7 @@ export function isLeakSensor(e: { attributes?: Record<string, any>; entity_id: s
 
   const dc = (e.attributes?.device_class || '').toLowerCase();
   const id = e.entity_id.toLowerCase();
-  const name = (e.attributes?.friendly_name || (e as any).name || '').toLowerCase();
+  const name = (e.attributes?.friendly_name || e.name || '').toLowerCase();
 
   return (
     dc === 'moisture' ||
@@ -139,7 +139,7 @@ export function isOtherContactSensor(e: { attributes?: Record<string, any>; enti
  * - Rejects enum / options sensors and accumulator state_classes ('total', 'total_increasing').
  * Adapts dynamically and generically to any user's naming conventions and integrations.
  */
-export function isBatteryEntity(e: { attributes?: Record<string, any>; entity_id: string; domain?: string; name?: string; device?: any }): boolean {
+export function isBatteryEntity(e: { attributes?: Record<string, any>; entity_id: string; domain?: string; name?: string; device?: unknown }): boolean {
   const domain = e.domain || e.entity_id.split('.')[0];
   const attrs = e.attributes || {};
   const dc = (attrs.device_class || '').toLowerCase().trim();

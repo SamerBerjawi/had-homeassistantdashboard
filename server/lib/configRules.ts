@@ -1,4 +1,5 @@
 // Pure config merge/validation rules used by POST /api/config.
+import { isJsonObject } from './configTypes';
 import type { JsonObject, ServerConfig } from './configTypes';
 
 // Server-side recursive deep merge utility for plain objects (arrays are wholesale replaced, undefined skipped)
@@ -28,8 +29,8 @@ export function deepMergeConfig(base: JsonObject = {}, partial: JsonObject = {})
 }
 
 // Config validation helper
-export function isValidDashboardConfig(body: any): body is ServerConfig {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+export function isValidDashboardConfig(body: unknown): body is ServerConfig {
+  if (!isJsonObject(body)) {
     return false;
   }
   const keys = Object.keys(body);
@@ -51,10 +52,28 @@ export function isValidDashboardConfig(body: any): body is ServerConfig {
   return true;
 }
 
+/** Fields read by hasMaterialDashboardConfig; every one is checked at runtime before use. */
+interface MaterialConfigProbe {
+  rooms?: { floorOrder?: unknown; areaOrder?: unknown; favoriteAreas?: unknown; areaOverrides?: unknown };
+  entities?: { hiddenEntityIds?: unknown; nameOverrides?: unknown; iconOverrides?: unknown; customizations?: unknown };
+  areas?: unknown;
+  floors?: unknown;
+  labels?: unknown;
+  mobility?: {
+    car?: { selectedCarEntityId?: unknown; customVehiclePngUrl?: unknown };
+    bike?: { selectedBikeEntityId?: unknown; customVehiclePngUrl?: unknown };
+  };
+  theme?: { customThemes?: unknown; preset?: unknown };
+  cameras?: { favoriteCameras?: unknown; sources?: unknown };
+  preferences?: unknown;
+  profile?: unknown;
+}
+
 // Material Data Checker: inspects if configuration has meaningful user customizations
 // Mirroring Crystal's data loss prevention safeguards
-export function hasMaterialDashboardConfig(data: any): boolean {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+export function hasMaterialDashboardConfig(input: unknown): boolean {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return false;
+  const data = input as MaterialConfigProbe;
 
   // Check rooms configuration
   if (data.rooms && typeof data.rooms === 'object') {
@@ -124,7 +143,7 @@ export interface ConfigWriteInput {
  */
 export function checkConfigWriteGuards(input: ConfigWriteInput): ConfigWriteGuard {
   const { currentConfig, currentServerVersion, targetConfig, allowEmpty, isPartialMerge, clientExpectedVersion } = input;
-  const isExplicitCameraSourcesUpdate = (targetConfig as any).cameras?.sources !== undefined;
+  const isExplicitCameraSourcesUpdate = (targetConfig as ServerConfig).cameras?.sources !== undefined;
   if (
     !isPartialMerge &&
     !allowEmpty &&
@@ -149,9 +168,9 @@ export function checkConfigWriteGuards(input: ConfigWriteInput): ConfigWriteGuar
 
 /** Changing camera sources needs admin rights; ordinary saves echo the sources back unchanged. */
 export function cameraSourcesChanged(currentConfig: ServerConfig | null, targetConfig: JsonObject): boolean {
-  const target = (targetConfig as any).cameras?.sources;
+  const target = (targetConfig as ServerConfig).cameras?.sources;
   if (target === undefined) return false;
-  const before = JSON.stringify((currentConfig as any)?.cameras?.sources ?? {});
+  const before = JSON.stringify(currentConfig?.cameras?.sources ?? {});
   const after = JSON.stringify(target ?? {});
   return before !== after;
 }

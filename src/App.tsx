@@ -16,7 +16,7 @@ import NotificationBell from './components/notifications/NotificationBell';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
 import { UpdateToast } from './components/pwa/UpdateToast';
 import DemoBanner from './components/auth/DemoBanner';
-import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power, ArrowsClockwise, SlidersHorizontal, Palette, User, WifiHigh, DownloadSimple, GearSix, Warning, PencilSimpleLine, CheckCircle } from '@phosphor-icons/react';
+import { Key, SignIn, ArrowLeft, Lightbulb, Lock, LockOpen, Power, ArrowsClockwise, SlidersHorizontal, Palette, User, WifiHigh, DownloadSimple, GearSix, Warning, PencilSimpleLine, CheckCircle, type Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { useUserConfig } from './contexts/ConfigContext';
 import { useAuth } from './contexts/AuthContext';
 import { useEditMode } from './contexts/EditModeContext';
@@ -37,7 +37,7 @@ const AuthModal = lazy(() => import('./components/auth/AuthModal'));
 const EntityDetailModal = lazy(() => import('./components/modals/EntityDetailModal'));
 const CriticalAlertModal = lazy(() => import('./components/alerts/CriticalAlertModal'));
 
-const SETTINGS_SECTIONS_META: Record<string, { title: string; subtitle: string; icon: React.ComponentType<any>; color: string }> = {
+const SETTINGS_SECTIONS_META: Record<string, { title: string; subtitle: string; icon: PhosphorIcon; color: string }> = {
   devices_rooms: {
     title: 'Navigation & Entity Visibility',
     subtitle: 'Manage page navigation toggles, device visibility, room styling, and zones.',
@@ -179,7 +179,7 @@ export default function App() {
 
   // Diagnostics Logs
   const [logs, setLogs] = useState<LogMessage[]>([]);
-  const addLog = (type: LogMessage['type'], message: string, details?: any) => {
+  const addLog = (type: LogMessage['type'], message: string, details?: unknown) => {
     const newLog: LogMessage = {
       id: Math.random().toString(36).substring(2, 9),
       timestamp: new Date().toLocaleTimeString(),

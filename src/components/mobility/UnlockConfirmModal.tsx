@@ -40,14 +40,14 @@ export function UnlockConfirmModal({
 
   if (!isOpen) return null;
 
-  const handleDrag = (_: any, info: { point: { x: number; y: number }; offset: { x: number; y: number } }) => {
+  const handleDrag = (_: unknown, info: { point: { x: number; y: number }; offset: { x: number; y: number } }) => {
     if (!trackRef.current) return;
     const trackWidth = trackRef.current.clientWidth - 56; // 56px handle width
     const progress = Math.min(Math.max(info.offset.x, 0), trackWidth);
     setSliderPos(progress);
   };
 
-  const handleDragEnd = async (_: any, info: { offset: { x: number } }) => {
+  const handleDragEnd = async (_: unknown, info: { offset: { x: number } }) => {
     if (!trackRef.current) return;
     const trackWidth = trackRef.current.clientWidth - 56;
     if (info.offset.x >= trackWidth * 0.8) {

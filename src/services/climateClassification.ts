@@ -55,7 +55,7 @@ export function detectClimateCapabilities(
   const attrs = entity.attributes || {};
   const stateStr = String(entity.state || 'off').toLowerCase();
   const isOn = stateStr !== 'off' && stateStr !== 'unavailable';
-  const resolvedName = 'name' in entity ? (entity as any).name : undefined;
+  const resolvedName = 'name' in entity ? entity.name : undefined;
   const friendlyName = attrs.friendly_name || resolvedName || entity.entity_id;
 
   // Temperature values
@@ -87,7 +87,7 @@ export function detectClimateCapabilities(
 
   const currentHumidity = typeof attrs.current_humidity === 'number' ? attrs.current_humidity : typeof attrs.humidity === 'number' ? attrs.humidity : undefined;
   const unit = typeof attrs.temperature_unit === 'string' ? attrs.temperature_unit : '°C';
-  const lastChanged = (entity as any).last_changed || (entity as any).last_updated || attrs.last_changed;
+  const lastChanged = entity.last_changed || entity.last_updated || attrs.last_changed;
 
   return {
     isOn,

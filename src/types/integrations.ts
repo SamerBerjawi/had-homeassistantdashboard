@@ -53,3 +53,42 @@ export interface IntegrationItem {
   isCustom?: boolean;
   disabledBy?: string | null;
 }
+
+/** Raw `config_entries/get` item (fields we read; HA sends more). */
+export interface HAConfigEntryRaw {
+  entry_id: string;
+  domain?: string;
+  title?: string;
+  source?: string;
+  state?: string;
+  disabled_by?: string | null;
+}
+
+/** Raw `hacs/repositories` item (fields we read). */
+export interface HacsRepositoryRaw {
+  id?: string;
+  domain?: string;
+  name?: string;
+  full_name?: string;
+  category?: string;
+  installed?: boolean;
+  downloaded?: boolean;
+  installed_version?: string;
+  available_version?: string;
+  description?: string;
+  documentation?: string;
+  authors?: string[];
+}
+
+/** Raw Supervisor `/addons` item (fields we read). */
+export interface SupervisorAddonRaw {
+  slug?: string;
+  name?: string;
+  installed?: boolean;
+  description?: string;
+  url?: string;
+  update_available?: boolean;
+  state?: string;
+  version?: string;
+  version_latest?: string;
+}

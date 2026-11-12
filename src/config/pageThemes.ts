@@ -12,14 +12,15 @@ import {
   Broom,
   GitFork,
   PuzzlePiece,
-  GearSix
+  GearSix,
+  type Icon as PhosphorIcon
 } from '@phosphor-icons/react';
 
 export interface PageThemeConfig {
   id: string;
   title: string;
   subtitle: string;
-  icon: React.ComponentType<any>;
+  icon: PhosphorIcon;
   color: string;           // Icon text color class
   accentHex: string;       // Primary accent hex code
   glow1: string;           // Ambient blob 1 class

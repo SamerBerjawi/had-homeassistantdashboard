@@ -20,7 +20,7 @@ import {
   SignIn,
   Lightning
 } from '@phosphor-icons/react';
-import { LogMessage } from '../../types';
+import { LogMessage, ToastNotification } from '../../types';
 import InternalUrlCard from './InternalUrlCard';
 import { cn } from '../../lib/utils';
 import { glass } from '../../lib/glass';
@@ -56,7 +56,7 @@ interface ConnectionWebSocketSectionProps {
   entitiesCount: number;
   roomsCount: number;
   devicesCount: number;
-  addToast?: (toast: any) => void;
+  addToast?: (toast: Omit<ToastNotification, 'id' | 'timestamp'>) => void;
 }
 
 export default function ConnectionWebSocketSection({

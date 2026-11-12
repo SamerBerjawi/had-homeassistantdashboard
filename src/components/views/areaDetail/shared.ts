@@ -19,8 +19,8 @@ export interface AreaDetailViewProps {
     domain: string,
     service: string,
     serviceData?: Record<string, any>,
-    target?: any
-  ) => Promise<any>;
+    target?: unknown
+  ) => Promise<unknown>;
   updateEntityState: (
     entityId: string,
     newState: string,

@@ -28,11 +28,11 @@ export type { HAConnectionStatus };
 import {
   applyCompressedDiff,
   expandCompressedState,
-  normalizeHAWebSocketUrl,
+  normalizeHAWebSocketUrl, type HAIncomingMessage,
   type EntitiesMessage,
   type HAWebSocketCallbacks
 } from './haWebSocketProtocol';
-import { forecastSubscriptionsFor, withCachedForecast } from './haWeatherForecast';
+import { forecastSubscriptionsFor, withCachedForecast, type CachedForecast } from './haWeatherForecast';
 import { DEMO_HA_VERSION, buildDemoRegistriesPayload } from './haWebSocketDemo';
 
 type MockRegistries = typeof import('../data/mockRegistries');
@@ -51,8 +51,8 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 60000;
 class HAWebSocketClient {
   private socket: WebSocket | null = null;
   private messageId = 1;
-  private pendingRequests = new Map<number, { resolve: (res: any) => void; reject: (err: any) => void; timer?: ReturnType<typeof setTimeout> }>();
-  private subscriptions = new Map<number, (event: any) => void>();
+  private pendingRequests = new Map<number, { resolve: (res: unknown) => void; reject: (err: unknown) => void; timer?: ReturnType<typeof setTimeout> }>();
+  private subscriptions = new Map<number, (event: unknown) => void>();
   private callbacks: HAWebSocketCallbacks | null = null;
   private status: HAConnectionStatus = 'disconnected';
   private currentUrl = '';
@@ -62,10 +62,10 @@ class HAWebSocketClient {
   private isExplicitDisconnect = false;
   /** URL as requested by the caller (external form); currentUrl may be rewritten to the internal one. */
   private requestedUrl = '';
-  private reconnectTimer: any = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
   private networkListenersAttached = false;
-  private pollTimer: any = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
   private visibilityHandler: (() => void) | null = null;
   private haVersion: string | null = null;
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -74,7 +74,7 @@ class HAWebSocketClient {
   // Latest weather states and their subscribed forecasts. HA no longer includes forecasts in
   // weather state attributes, so they're re-attached to every weather state update.
   private weatherStates = new Map<string, HAState>();
-  private weatherForecasts = new Map<string, { daily?: any[]; hourly?: any[] }>();
+  private weatherForecasts = new Map<string, CachedForecast>();
   private forecastSubscriptions = new Set<string>();
   // Current entity states maintained from subscribe_entities diffs
   private liveStates = new Map<string, HAState>();
@@ -103,7 +103,7 @@ class HAWebSocketClient {
     this.networkListenersAttached = true;
 
     // Listen for background token updates from AuthContext / haAuth
-    window.addEventListener('ha_token_refreshed' as any, (event: any) => {
+    window.addEventListener('ha_token_refreshed', (event) => {
       const refreshedTokens = event?.detail?.tokens;
       if (refreshedTokens?.access_token) {
         this.updateToken(refreshedTokens.access_token);
@@ -159,31 +159,31 @@ class HAWebSocketClient {
       const timer = setTimeout(() => {
         if (!resolved) {
           resolved = true;
-          window.removeEventListener('ha_connection_status' as any, handler);
+          window.removeEventListener('ha_connection_status', handler);
           resolve(this.status === 'connected');
         }
       }, timeoutMs);
 
-      const handler = (e: any) => {
+      const handler = (e: WindowEventMap['ha_connection_status']) => {
         const s = e.detail?.status;
         if (s === 'connected') {
           if (!resolved) {
             resolved = true;
             clearTimeout(timer);
-            window.removeEventListener('ha_connection_status' as any, handler);
+            window.removeEventListener('ha_connection_status', handler);
             resolve(true);
           }
         } else if (s === 'auth_failed') {
           if (!resolved) {
             resolved = true;
             clearTimeout(timer);
-            window.removeEventListener('ha_connection_status' as any, handler);
+            window.removeEventListener('ha_connection_status', handler);
             resolve(false);
           }
         }
       };
 
-      window.addEventListener('ha_connection_status' as any, handler);
+      window.addEventListener('ha_connection_status', handler);
     });
   }
 
@@ -439,7 +439,7 @@ class HAWebSocketClient {
     }
   }
 
-  private handleIncomingMessage(msg: any) {
+  private handleIncomingMessage(msg: HAIncomingMessage) {
     if (msg.type === 'auth_required') {
       this.callbacks?.onLogMessage('info', 'Received auth_required challenge. Sending bearer token...');
       this.socket?.send(JSON.stringify({
@@ -712,7 +712,7 @@ class HAWebSocketClient {
         this.sendRequest<HALabel[]>('config/label_registry/list').catch(() => []),
         this.sendRequest<HANativePersistentNotification[]>('persistent_notification/get').catch(() => []),
         this.sendRequest<{ issues?: HANativeRepairIssue[] }>('repairs/list_issues').catch(() => ({ issues: [] })),
-        this.sendRequest<any>('get_config').catch(() => null)
+        this.sendRequest<{ version?: string } | null>('get_config').catch(() => null)
       ]);
 
       const usingEntitySubscription = await entitySnapshot;
@@ -791,7 +791,7 @@ class HAWebSocketClient {
     const forecastTypes = forecastSubscriptionsFor(this.weatherStates.get(entityId)?.attributes?.supported_features);
 
     await Promise.all(forecastTypes.map(({ type, slot }) =>
-      this.subscribeMessage<{ forecast?: any[] | null }>((event) => {
+      this.subscribeMessage<{ forecast?: unknown[] | null }>((event) => {
         if (!Array.isArray(event?.forecast)) return;
         const cached = this.weatherForecasts.get(entityId) || {};
         this.weatherForecasts.set(entityId, { ...cached, [slot]: event.forecast });
@@ -830,7 +830,7 @@ class HAWebSocketClient {
   ): Promise<T> {
     return new Promise((resolve, reject) => {
       if (this.isDemoMode) {
-        resolve(null as any);
+        resolve(null as T);
         return;
       }
 
@@ -849,7 +849,7 @@ class HAWebSocketClient {
             }
           }, timeoutMs)
         : undefined;
-      this.pendingRequests.set(id, { resolve, reject, timer });
+      this.pendingRequests.set(id, { resolve: resolve as (res: unknown) => void, reject, timer });
       try {
         this.socket.send(JSON.stringify(payload));
       } catch (err) {
@@ -887,18 +887,18 @@ class HAWebSocketClient {
         }
       };
 
-      this.subscriptions.set(id, (event: T) => {
+      this.subscriptions.set(id, (event: unknown) => {
         if (!unsubscribed) {
-          callback(event);
+          callback(event as T);
         }
       });
 
       this.pendingRequests.set(id, {
-        resolve: (result: any) => {
+        resolve: (result: unknown) => {
           if (!unsubscribed) {
             if (result !== undefined && result !== null) {
               try {
-                callback(result);
+                callback(result as T);
               } catch (cbErr) {
                 console.warn('[haWebSocket] Error in subscription callback:', cbErr);
               }
@@ -927,7 +927,7 @@ class HAWebSocketClient {
     service: string,
     serviceData: Record<string, any> = {},
     target: { entity_id?: string | string[]; area_id?: string | string[]; device_id?: string | string[] } = {}
-  ): Promise<any> {
+  ): Promise<unknown> {
     this.callbacks?.onLogMessage('service_call', `call_service -> ${domain}.${service}`, { serviceData, target });
 
     if (this.isDemoMode) {
@@ -953,7 +953,7 @@ class HAWebSocketClient {
       return null;
     }
     try {
-      const res = await this.sendRequest<any>('update/release_notes', { entity_id: entityId });
+      const res = await this.sendRequest<string | { release_notes?: unknown } | null>('update/release_notes', { entity_id: entityId });
       if (typeof res === 'string') return res;
       if (res && typeof res.release_notes === 'string') return res.release_notes;
       return null;

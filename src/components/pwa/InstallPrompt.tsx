@@ -34,7 +34,7 @@ export const InstallPrompt: React.FC = () => {
     // 1. Check if running in standalone mode (installed PWA)
     const checkStandalone = () => {
       const isStandaloneMedia = window.matchMedia('(display-mode: standalone)').matches;
-      const isIosStandalone = (window.navigator as any).standalone === true;
+      const isIosStandalone = (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
       return isStandaloneMedia || isIosStandalone;
     };
 
@@ -53,7 +53,7 @@ export const InstallPrompt: React.FC = () => {
 
     // 3. Detect iOS Safari
     const ua = window.navigator.userAgent;
-    const isIosDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+    const isIosDevice = /iPad|iPhone|iPod/.test(ua) && !(window as Window & { MSStream?: unknown }).MSStream;
     const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
     setIsIos(isIosDevice && isSafari);
 

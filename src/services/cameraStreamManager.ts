@@ -62,16 +62,19 @@ export interface StreamSubscribeOptions {
   isUnavailable?: boolean;
 }
 
+/** captureStream is not in the TS DOM lib; Firefox exposes it as mozCaptureStream. */
+type CapturableVideo = HTMLVideoElement & { captureStream?: () => MediaStream; mozCaptureStream?: () => MediaStream };
+
 interface StreamSession {
   streamId: string;
   options: StreamSubscribeOptions;
   state: CameraStreamState;
   subscribers: Set<(state: CameraStreamState) => void>;
   pc: RTCPeerConnection | null;
-  iceTimeoutId: any;
+  iceTimeoutId: ReturnType<typeof setTimeout> | null;
   retryCount: number;
-  retryTimer: any;
-  countdownInterval: any;
+  retryTimer: ReturnType<typeof setTimeout> | null;
+  countdownInterval: ReturnType<typeof setInterval> | null;
   hls: Hls | null;
   masterVideo: HTMLVideoElement | null;
   /** Bumped on every HLS attempt and cleanup, so a slow hls.js load can't attach to a stale session. */
@@ -522,10 +525,11 @@ class CameraStreamManager {
         session.retryCount = 0;
 
         let capturedStream: MediaStream | null = null;
-        if (typeof (masterVideo as any).captureStream === 'function') {
-          capturedStream = (masterVideo as any).captureStream();
-        } else if (typeof (masterVideo as any).mozCaptureStream === 'function') {
-          capturedStream = (masterVideo as any).mozCaptureStream();
+        const capturable: CapturableVideo = masterVideo;
+        if (typeof capturable.captureStream === 'function') {
+          capturedStream = capturable.captureStream();
+        } else if (typeof capturable.mozCaptureStream === 'function') {
+          capturedStream = capturable.mozCaptureStream();
         }
 
         session.state = {

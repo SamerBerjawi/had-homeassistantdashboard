@@ -175,7 +175,7 @@ export function detectLightCapabilities(
 
   const attrs = entity.attributes || {};
   const isOn = entity.state === 'on';
-  const resolvedName = 'name' in entity ? (entity as any).name : undefined;
+  const resolvedName = 'name' in entity ? entity.name : undefined;
   const friendlyName = attrs.friendly_name || resolvedName || entity.entity_id;
   const feat = typeof attrs.supported_features === 'number' ? attrs.supported_features : 0;
 

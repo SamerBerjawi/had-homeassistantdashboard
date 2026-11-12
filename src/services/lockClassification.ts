@@ -47,7 +47,7 @@ export function detectLockCapabilities(
   const isUnlocking = state === 'unlocking';
   const isJammed = state === 'jammed';
 
-  const resolvedName = 'name' in entity ? (entity as any).name : undefined;
+  const resolvedName = 'name' in entity ? entity.name : undefined;
   const friendlyName = attrs.friendly_name || resolvedName || entity.entity_id;
 
   // Supported Features Bitmask
@@ -60,11 +60,11 @@ export function detectLockCapabilities(
       ? attrs.battery_level
       : typeof attrs.battery === 'number'
       ? attrs.battery
-      : 'batteryPct' in entity && typeof (entity as any).batteryPct === 'number'
-      ? (entity as any).batteryPct
+      : 'batteryPct' in entity && typeof entity.batteryPct === 'number'
+      ? entity.batteryPct
       : undefined;
 
-  const lastChanged = (entity as any).last_changed || (entity as any).last_updated || attrs.last_changed;
+  const lastChanged = entity.last_changed || entity.last_updated || attrs.last_changed;
 
   return {
     isLocked,
