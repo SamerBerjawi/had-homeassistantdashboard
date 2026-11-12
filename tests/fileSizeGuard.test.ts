@@ -11,7 +11,6 @@ const BASELINE: Record<string, number> = {
   'src/hooks/useMobilityData.ts': 1196,
   'src/services/haWebSocket.ts': 967,
   'src/components/views/system/ugreen/NasOverviewSection.tsx': 1037,
-  'src/App.tsx': 1010,
   'src/services/configStorageService.ts': 995,
   'src/components/SettingsView.tsx': 942,
   'src/components/views/mobility/BikeTab.tsx': 931,

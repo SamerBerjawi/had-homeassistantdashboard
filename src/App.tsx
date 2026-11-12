@@ -1,4 +1,3 @@
-import { deriveStartupState } from './services/startupPhase';
 import { effectiveSyncStatus } from './services/configSyncRules';
 import SyncStatusBadge from './components/ui/SyncStatusBadge';
 import ViewErrorState from './components/ui/ViewErrorState';
@@ -6,7 +5,7 @@ import ViewLoadingState from './components/ui/ViewLoadingState';
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
-import { HAEntity, Room, LogMessage, ToastNotification } from './types';
+import { HAEntity, Room, LogMessage } from './types';
 import { useAutoLayoutStore } from './store/useAutoLayoutStore';
 import { resolvedEntityToHAEntity } from './services/graphResolution';
 
@@ -22,17 +21,14 @@ import { useUserConfig } from './contexts/ConfigContext';
 import { useAuth } from './contexts/AuthContext';
 import { useEditMode } from './contexts/EditModeContext';
 import FullScreenLoadingPage from './components/ui/FullScreenLoadingPage';
-import { hasConfiguredHACredentials } from './store/useAutoLayoutStore';
 
 import { PAGE_THEMES } from './config/pageThemes';
 import AmbientBackground from './components/common/AmbientBackground';
 import DynamicPhosphorIcon from './components/ui/DynamicPhosphorIcon';
 import { haWebSocketService } from './services/haWebSocket';
 import { alertService } from './services/alertService';
-import { useAlertStore } from './store/useAlertStore';
 import ToastContainer from './components/alerts/ToastContainer';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import { useEntityPopup } from './contexts/EntityPopupContext';
 
 // Lazy-loaded drawers and modals (loaded on demand)
 const NotificationDrawer = lazy(() => import('./components/notifications/NotificationDrawer'));
@@ -103,307 +99,41 @@ const RoomsHeaderSentence = lazy(() => import('./components/rooms/RoomsHeaderSen
 const MediaHeaderSentence = lazy(() => import('./components/media/MediaHeaderSentence'));
 const VacuumsHeaderSentence = lazy(() => import('./components/vacuums/VacuumsHeaderSentence'));
 
-const VALID_TABS = [
-  'overview',
-  'rooms',
-  'energy',
-  'security',
-  'media',
-  'system',
-  'network',
-  'mobility',
-  'health',
-  'vacuums',
-  'automations',
-  'integrations',
-  'settings'
-] as const;
-
-type TabKey = typeof VALID_TABS[number];
+import { hasAnyKey } from './services/appShell';
+import { useAppTheme } from './hooks/app/useAppTheme';
+import { useActiveTab } from './hooks/app/useActiveTab';
+import { useShellOverlays } from './hooks/app/useShellOverlays';
+import { useStartupState } from './hooks/app/useStartupState';
 
 const EMPTY_RESOLVED_ENTITIES: Record<string, never> = {};
-
-function hasAnyKey(obj: Record<string, unknown>): boolean {
-  for (const _ in obj) return true;
-  return false;
-}
-
-function getTabFromUrl(): TabKey {
-  if (typeof window === 'undefined') return 'overview';
-  const searchParams = new URLSearchParams(window.location.search);
-  const tabParam = searchParams.get('tab')?.toLowerCase();
-  if (tabParam && VALID_TABS.includes(tabParam as TabKey)) {
-    return tabParam as TabKey;
-  }
-  const rawPath = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
-  if (VALID_TABS.includes(rawPath as TabKey)) {
-    return rawPath as TabKey;
-  }
-  return 'overview';
-}
 
 export default function App() {
   const { config, updateConfig, flushPendingSave, isLoading: isConfigLoading, syncStatus, lastSuccessfulSync } = useUserConfig();
   const { isEditMode, setEditMode, toggleEditMode } = useEditMode();
 
-  // Theme Mode State: 'auto' (system OS) | 'dark' (OLED) | 'light' (Daylight)
-  const [themeMode, setThemeMode] = useState<'auto' | 'dark' | 'light'>(() => {
-    if (config?.theme?.mode) return config.theme.mode;
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme_mode');
-      if (saved === 'auto' || saved === 'dark' || saved === 'light') return saved;
-      const oldTheme = localStorage.getItem('theme');
-      if (oldTheme === 'dark') return 'dark';
-      if (oldTheme === 'light') return 'light';
-    }
-    return 'auto';
-  });
+  // Theme mode, dark mode and background style (src/hooks/app/useAppTheme.ts)
+  const { themeMode, setThemeMode, darkMode, handleToggleDarkMode, backgroundStyle, handleSetBackgroundStyle } = useAppTheme(config, updateConfig);
 
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const savedMode = config?.theme?.mode || config?.theme?.themeMode || localStorage.getItem('theme_mode');
-      if (savedMode === 'dark') return true;
-      if (savedMode === 'light') return false;
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return false;
-  });
+  // Tab State with URL Path Synchronization (src/hooks/app/useActiveTab.ts)
+  const { activeTab, setActiveTab } = useActiveTab(config);
 
-  // Sync theme with config when remote config changes
-  useEffect(() => {
-    const currentConfigMode = config?.theme?.mode || config?.theme?.themeMode;
-    if (currentConfigMode && currentConfigMode !== themeMode) {
-      setThemeMode(currentConfigMode);
-    }
-  }, [config?.theme?.mode, config?.theme?.themeMode]);
-
-  const handleToggleDarkMode = (next?: boolean) => {
-    const nextDark = next !== undefined ? next : !darkMode;
-    const nextMode = nextDark ? 'dark' : 'light';
-    setThemeMode(nextMode);
-    setDarkMode(nextDark);
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', nextDark ? '#020617' : '#f8fafc');
-    }
-    if (nextDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    updateConfig((prev) => ({
-      ...prev,
-      theme: {
-        ...prev.theme,
-        mode: nextMode,
-        themeMode: nextMode
-      }
-    }));
-  };
-
-  useEffect(() => {
-    const applyTheme = () => {
-      let isDark = false;
-      if (themeMode === 'dark') {
-        isDark = true;
-      } else if (themeMode === 'light') {
-        isDark = false;
-      } else {
-        isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      }
-      setDarkMode(isDark);
-      const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-      if (metaThemeColor) {
-        metaThemeColor.setAttribute('content', isDark ? '#020617' : '#f8fafc');
-      }
-      if (isDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    };
-
-    applyTheme();
-
-    const mql = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleSystemChange = () => {
-      if (themeMode === 'auto') {
-        applyTheme();
-      }
-    };
-    mql.addEventListener('change', handleSystemChange);
-    return () => mql.removeEventListener('change', handleSystemChange);
-  }, [themeMode]);
-
-  // Background Style State: 'glow' (Ambient Blobs) | 'flat' (Minimalist Solid)
-  const [backgroundStyle, setBackgroundStyle] = useState<'glow' | 'flat'>(() => {
-    if (config?.theme?.backgroundStyle) return config.theme.backgroundStyle;
-    if (config?.preferences?.backgroundStyle) return config.preferences.backgroundStyle;
-    return 'glow';
-  });
-
-  useEffect(() => {
-    const style = config?.theme?.backgroundStyle || config?.preferences?.backgroundStyle;
-    if (style && style !== backgroundStyle) {
-      setBackgroundStyle(style);
-    }
-  }, [config?.theme?.backgroundStyle, config?.preferences?.backgroundStyle]);
-
-  const handleSetBackgroundStyle = (style: 'glow' | 'flat') => {
-    setBackgroundStyle(style);
-    updateConfig((prev) => ({
-      ...prev,
-      theme: {
-        ...prev.theme,
-        backgroundStyle: style
-      },
-      preferences: {
-        ...(prev.preferences || {}),
-        backgroundStyle: style
-      }
-    }));
-  };
-
-  // Tab State with URL Path Synchronization
-  const [activeTab, setActiveTabState] = useState<string>(getTabFromUrl);
-
-  const setActiveTab = (tab: string) => {
-    if (tab === 'rooms') {
-      useAutoLayoutStore.getState().setSelectedAreaId(null);
-    }
-    if (tab === 'settings') {
-      useAutoLayoutStore.getState().setSelectedSettingsSection(null);
-    }
-    const validTab = VALID_TABS.includes(tab as TabKey) ? tab : 'overview';
-    setActiveTabState(validTab);
-    const targetPath = `/${validTab}`;
-    if (window.location.pathname !== targetPath) {
-      window.history.pushState({ tab: validTab }, '', targetPath);
-    }
-  };
-
-  // Listen for browser Back/Forward navigation
-  useEffect(() => {
-    const handlePopState = () => {
-      const currentTab = getTabFromUrl();
-      if (currentTab === 'rooms') {
-        useAutoLayoutStore.getState().setSelectedAreaId(null);
-      }
-      if (currentTab === 'settings') {
-        useAutoLayoutStore.getState().setSelectedSettingsSection(null);
-      }
-      setActiveTabState(currentTab);
-    };
-
-    window.addEventListener('popstate', handlePopState);
-
-    // Ensure root '/' or malformed path cleanly normalizes in the address bar while preserving query params (e.g. ?code=...&state=...)
-    const initialTab = getTabFromUrl();
-    const expectedPath = `/${initialTab}`;
-    if (window.location.pathname !== expectedPath) {
-      const search = window.location.search || '';
-      window.history.replaceState({ tab: initialTab }, '', `${expectedPath}${search}`);
-    }
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, []);
-
-  // Update browser tab title to match the active view
-  useEffect(() => {
-    const theme = PAGE_THEMES[activeTab];
-    const label = theme?.title || (activeTab.charAt(0).toUpperCase() + activeTab.slice(1));
-    document.title = activeTab === 'overview' ? 'HAD - Home Assistant Dashboard' : `HAD • ${label}`;
-  }, [activeTab]);
-
-  // Fallback redirect if current page is hidden by user configuration
-  useEffect(() => {
-    const hidden = config?.navigation?.hiddenPages || [];
-    if (hidden.includes(activeTab) && activeTab !== 'overview' && activeTab !== 'settings') {
-      setActiveTab('overview');
-    }
-  }, [config?.navigation?.hiddenPages, activeTab]);
-
-  const [toasts, setToasts] = useState<ToastNotification[]>([]);
-  const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState<boolean>(false);
-  const [isWeatherDrawerOpen, setIsWeatherDrawerOpen] = useState<boolean>(false);
-  const { isDrawerOpen: isAlertDrawerOpen, setDrawerOpen: setAlertDrawerOpen } = useAlertStore();
-
-  const isNotificationOpen = isNotificationDrawerOpen || isAlertDrawerOpen;
-  const handleOpenNotifications = () => {
-    // Mount the drawer in the same render instead of waiting for the effect below
-    setHasOpenedNotifications(true);
-    setIsNotificationDrawerOpen(true);
-    setAlertDrawerOpen(true);
-  };
-  const handleCloseNotifications = () => {
-    setIsNotificationDrawerOpen(false);
-    setAlertDrawerOpen(false);
-  };
-
-  // Track first open of lazy modals/drawers to preserve exit animations while avoiding eager chunk download
-  const { isOpen: isEntityPopupOpen } = useEntityPopup();
-  const criticalAlert = useAlertStore((s) => s.criticalAlert);
-  const { isAuthModalOpen } = useAuth();
-
-  const [hasOpenedNotifications, setHasOpenedNotifications] = useState(false);
-
-  // Load frequently opened drawers while the app is idle. The notification drawer is then
-  // mounted closed (it does no work while closed): opening a lazy component that hasn't
-  // rendered yet suspends, and React holds back revealing suspended content for ~300ms.
-  useEffect(() => {
-    let cancelled = false;
-    const prefetch = () => {
-      import('./components/notifications/NotificationDrawer')
-        .then(() => {
-          if (!cancelled) setHasOpenedNotifications(true);
-        })
-        .catch(() => {});
-      import('./components/modals/EntityDetailModal')
-        .then(() => {
-          if (!cancelled) setHasOpenedEntityDetail(true);
-        })
-        .catch(() => {});
-    };
-    const w = window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number };
-    if (w.requestIdleCallback) {
-      const id = w.requestIdleCallback(prefetch, { timeout: 5000 });
-      return () => {
-        cancelled = true;
-        (window as any).cancelIdleCallback?.(id);
-      };
-    }
-    const timer = setTimeout(prefetch, 3000);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, []);
-  const [hasOpenedWeather, setHasOpenedWeather] = useState(false);
-  const [hasOpenedAuth, setHasOpenedAuth] = useState(false);
-  const [hasCriticalAlert, setHasCriticalAlert] = useState(false);
-  const [hasOpenedEntityDetail, setHasOpenedEntityDetail] = useState(false);
-
-  useEffect(() => {
-    if (isNotificationOpen) setHasOpenedNotifications(true);
-  }, [isNotificationOpen]);
-
-  useEffect(() => {
-    if (isWeatherDrawerOpen) setHasOpenedWeather(true);
-  }, [isWeatherDrawerOpen]);
-
-  useEffect(() => {
-    if (isAuthModalOpen) setHasOpenedAuth(true);
-  }, [isAuthModalOpen]);
-
-  useEffect(() => {
-    if (criticalAlert) setHasCriticalAlert(true);
-  }, [criticalAlert]);
-
-  useEffect(() => {
-    if (isEntityPopupOpen) setHasOpenedEntityDetail(true);
-  }, [isEntityPopupOpen]);
+  // Toasts, drawers and lazy modal mount flags (src/hooks/app/useShellOverlays.ts)
+  const {
+    toasts,
+    setToasts,
+    addToast,
+    dismissToast,
+    isNotificationOpen,
+    handleOpenNotifications,
+    handleCloseNotifications,
+    isWeatherDrawerOpen,
+    setIsWeatherDrawerOpen,
+    hasOpenedNotifications,
+    hasOpenedWeather,
+    hasOpenedAuth,
+    hasCriticalAlert,
+    hasOpenedEntityDetail
+  } = useShellOverlays();
 
   // Authentication Context
   const { authState, enterDemoMode, isInitializing: isAuthInitializing } = useAuth();
@@ -460,21 +190,6 @@ export default function App() {
     setLogs((prev) => [newLog, ...prev.slice(0, 99)]);
   };
 
-  // Toast System
-  const addToast = (toast: Omit<ToastNotification, 'id' | 'timestamp'>) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    const newToast: ToastNotification = {
-      ...toast,
-      id,
-      timestamp: new Date().toLocaleTimeString()
-    };
-    setToasts(prev => [...prev.slice(-4), newToast]);
-  };
-
-  const dismissToast = (id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
-
   // Primary User & Dynamic Greeting
   const primaryPersonName = useAutoLayoutStore(s => s.domainGroups['person']?.[0]?.name);
   const userName = primaryPersonName?.split(' ')[0] || 'Samer';
@@ -506,83 +221,24 @@ export default function App() {
         ? currentSettingsMeta.title
         : currentTheme.title;
 
-  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
-  const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
-
-  useEffect(() => {
-    if (connectionStatus === 'connected' && hasResolvedEntities) {
-      setHasInitialLoaded(true);
-    }
-  }, [connectionStatus, hasResolvedEntities]);
-
-  const [hasStartupTimeoutElapsed, setHasStartupTimeoutElapsed] = useState(false);
-
-  useEffect(() => {
-    // Graceful startup connection window: after 5.5s, drop full-screen blocking loader so user can interact
-    const timer = setTimeout(() => {
-      setHasStartupTimeoutElapsed(true);
-    }, 5500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const { isAppLoading, isConnectionDegraded } = deriveStartupState({
-    isDemo: authState.isDemo,
+  // Startup window, loading progress and manual refresh (src/hooks/app/useStartupState.ts)
+  const {
+    isManualRefreshing,
+    setHasStartupTimeoutElapsed,
+    isAppLoading,
+    isConnectionDegraded,
+    loadingProgress,
+    handleManualRefresh
+  } = useStartupState({
+    authState,
+    isAuthInitializing,
+    connectionStatus,
+    hasResolvedEntities,
     showingCachedSnapshot,
     isLiveMode,
-    hasCredentials: hasConfiguredHACredentials(),
-    connectionStatus,
-    hasInitialLoaded,
-    hasStartupTimeoutElapsed,
-    isAuthInitializing
+    addToast
   });
 
-  const [loadingProgress, setLoadingProgress] = useState<number>(15);
-
-  useEffect(() => {
-    if (!isAppLoading) {
-      setLoadingProgress(100);
-      return;
-    }
-
-    setLoadingProgress(15);
-    const t1 = setTimeout(() => setLoadingProgress(35), 400);
-    const t2 = setTimeout(() => setLoadingProgress(65), 1000);
-    const t3 = setTimeout(() => setLoadingProgress(82), 2000);
-
-    const interval = setInterval(() => {
-      setLoadingProgress((prev) => {
-        if (prev >= 95) return 92;
-        return prev + 1;
-      });
-    }, 500);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearInterval(interval);
-    };
-  }, [isAppLoading]);
-
-  const handleManualRefresh = async () => {
-    if (isManualRefreshing) return;
-    setIsManualRefreshing(true);
-    try {
-      if (haWebSocketService && !haWebSocketService.isDemo()) {
-        await haWebSocketService.refreshStates();
-      }
-      window.dispatchEvent(new CustomEvent('had_manual_refresh'));
-      addToast({
-        title: 'Dashboard Refreshed',
-        message: 'All entities, sensors, and telemetry have been updated.',
-        type: 'info'
-      });
-    } catch (err: any) {
-      console.warn('[App] Manual refresh error:', err);
-    } finally {
-      setTimeout(() => setIsManualRefreshing(false), 600);
-    }
-  };
 
   // Briefly wait for the cached snapshot (a few ms from IndexedDB) instead of flashing the loader
   if (isAppLoading && snapshotStatus === 'pending') {
