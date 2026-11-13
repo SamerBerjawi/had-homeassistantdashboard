@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User } from '@phosphor-icons/react';
-import { resolveHAImageUrl, loadHAImageBlob } from '../../services/haImageService';
+import { resolveHAImageUrl, loadHAImageBlob, getHAHttpBaseUrl } from '../../services/haImageService';
 import { useAutoLayoutStore } from '../../store/useAutoLayoutStore';
 
 interface PersonAvatarProps {
@@ -99,9 +99,19 @@ function PersonAvatar({
         normalizedState !== 'unknown'
       );
 
-  const initialUrl = resolveHAImageUrl(entity_picture, serverUrl);
+  const haHttpBase = getHAHttpBaseUrl(serverUrl);
+  const needsAuthFetch = Boolean(
+    entity_picture &&
+    !entity_picture.startsWith('blob:') &&
+    !entity_picture.startsWith('data:') &&
+    (entity_picture.startsWith('/') || (haHttpBase && entity_picture.startsWith(haHttpBase)))
+  );
 
-  const [imageSrc, setImageSrc] = useState<string>(initialUrl);
+  // Never render a protected HA URL directly in <img src> before loadHAImageBlob resolves,
+  // or the browser sends an unauthenticated request that triggers HA's "Login attempt failed" alert.
+  const [imageSrc, setImageSrc] = useState<string>(() =>
+    needsAuthFetch ? '' : resolveHAImageUrl(entity_picture, serverUrl)
+  );
   const [hasImageError, setHasImageError] = useState(false);
 
   useEffect(() => {
@@ -113,24 +123,25 @@ function PersonAvatar({
       return;
     }
 
-    const targetUrl = resolveHAImageUrl(entity_picture, serverUrl);
-    setImageSrc(targetUrl);
-
-    // If it's a relative path or requires authentication (e.g. /api/image/serve), load authenticated blob
-    if (entity_picture.startsWith('/') || (serverUrl && targetUrl.startsWith(serverUrl))) {
+    if (needsAuthFetch) {
+      setImageSrc('');
       loadHAImageBlob(entity_picture, serverUrl, haToken).then((blobUrl) => {
-        if (isMounted && blobUrl) {
+        if (isMounted) {
           setImageSrc(blobUrl);
         }
       }).catch(() => {
-        // Handled by onError on img
+        if (isMounted) {
+          setImageSrc('');
+        }
       });
+    } else {
+      setImageSrc(resolveHAImageUrl(entity_picture, serverUrl));
     }
 
     return () => {
       isMounted = false;
     };
-  }, [entity_picture, serverUrl, haToken]);
+  }, [entity_picture, serverUrl, haToken, needsAuthFetch]);
 
   const config = SIZE_CONFIGS[size] || SIZE_CONFIGS.md;
   const gradient = getGradientForName(name || 'User');

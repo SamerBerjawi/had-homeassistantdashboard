@@ -351,17 +351,17 @@ async function extractPaletteFromUrl(url: string): Promise<{ h: number; s: numbe
   };
 
   // Tier 1: Try direct in-browser anonymous CORS load
-  // If it's a relative URL, resolve it first
+  // If it's a relative URL, resolve it via authenticated blob/proxy first
   let directSrc = url;
   if (url.startsWith('/')) {
     try {
       directSrc = await loadHAImageBlob(url);
     } catch {
-      directSrc = url;
+      directSrc = '';
     }
   }
 
-  const directResult = await tryExtractFromSrc(directSrc, false);
+  const directResult = directSrc ? await tryExtractFromSrc(directSrc, false) : null;
   if (directResult) {
     return directResult;
   }

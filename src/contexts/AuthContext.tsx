@@ -49,6 +49,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reloadDemoData = useAutoLayoutStore((s) => s.reloadDemoData);
 
+  const syncStoreAuth = useCallback((tokens: AuthTokens) => {
+    useAutoLayoutStore.setState({
+      isLiveMode: true,
+      serverUrl: tokens.server_url,
+      haToken: tokens.access_token,
+      authType: tokens.auth_type || 'oauth'
+    });
+  }, []);
+
   const clearRefreshTimer = useCallback(() => {
     if (refreshTimerRef.current) {
       clearTimeout(refreshTimerRef.current);
@@ -96,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const result = await refreshHAOAuthTokenWithStatus(tokens);
         if (result.success && result.tokens) {
           haWebSocketService.updateToken(result.tokens.access_token);
+          syncStoreAuth(result.tokens);
           setAuthState((prev) => ({
             ...prev,
             tokens: result.tokens
@@ -152,6 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const result = await refreshHAOAuthTokenWithStatus(stored.tokens);
             if (result.success && result.tokens) {
               haWebSocketService.updateToken(result.tokens.access_token);
+              syncStoreAuth(result.tokens);
               setAuthState((prev) => ({
                 ...prev,
                 tokens: result.tokens
@@ -221,6 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const tokens: AuthTokens = event.data.tokens;
             haWebSocketService.setDemoMode(false);
             haWebSocketService.connect(tokens.server_url, tokens.access_token);
+            syncStoreAuth(tokens);
             scheduleProactiveTokenRefresh(tokens);
 
             setAuthState(authenticatedAuthState({
@@ -248,6 +260,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const tokens: AuthTokens = event.data.tokens;
         haWebSocketService.setDemoMode(false);
         haWebSocketService.connect(tokens.server_url, tokens.access_token);
+        syncStoreAuth(tokens);
         scheduleProactiveTokenRefresh(tokens);
 
         setAuthState(authenticatedAuthState({
@@ -289,6 +302,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const tokens = oauthResult.tokens;
           haWebSocketService.setDemoMode(false);
           haWebSocketService.connect(tokens.server_url, tokens.access_token);
+          syncStoreAuth(tokens);
           scheduleProactiveTokenRefresh(tokens);
 
           setAuthState(authenticatedAuthState({
@@ -345,6 +359,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           haWebSocketService.setDemoMode(false);
           haWebSocketService.connect(activeTokens.server_url, activeTokens.access_token);
+          syncStoreAuth(activeTokens);
           scheduleProactiveTokenRefresh(activeTokens);
 
           setAuthState(authenticatedAuthState({
@@ -369,6 +384,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else if (storedConfig.authMethod === 'llat' && storedConfig.tokens?.access_token) {
           haWebSocketService.setDemoMode(false);
           haWebSocketService.connect(storedConfig.tokens.server_url, storedConfig.tokens.access_token);
+          syncStoreAuth(storedConfig.tokens);
 
           setAuthState(authenticatedAuthState({
             authMethod: 'llat',
@@ -489,6 +505,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       haWebSocketService.setDemoMode(false);
       haWebSocketService.connect(wsUrl, token);
+      syncStoreAuth(tokens);
 
       setAuthState(authenticatedAuthState({
         authMethod: 'llat',
@@ -523,6 +540,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveStoredAuthConfig(config);
 
     haWebSocketService.setDemoMode(true);
+    useAutoLayoutStore.setState({ isLiveMode: false, authType: 'demo', haToken: '', serverUrl: '' });
     reloadDemoData();
 
     setAuthState(demoAuthState());
@@ -540,6 +558,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     haWebSocketService.disconnect();
     haWebSocketService.setDemoMode(false);
+    useAutoLayoutStore.setState({ isLiveMode: false, authType: 'demo', haToken: '', serverUrl: '' });
 
     setAuthState(signedOutAuthState());
 

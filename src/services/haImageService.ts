@@ -49,6 +49,45 @@ export function resolveHAImageUrl(url?: string | null, serverUrl?: string | null
 }
 
 /**
+ * Returns true if the URL targets a Home Assistant `/api/` endpoint without an embedded `?token=`
+ * query parameter. Such URLs must never be handed to `<img src>` unauthenticated, or HA logs a
+ * "Login attempt failed" 401 notification.
+ */
+function isProtectedHaApiUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url, 'http://placeholder.local');
+    return parsed.pathname.startsWith('/api/') && !parsed.searchParams.has('token');
+  } catch {
+    return url.includes('/api/') && !url.includes('token=');
+  }
+}
+
+async function fetchViaImageProxy(
+  rawUrl: string,
+  token: string,
+  haBase: string
+): Promise<string | null> {
+  if (typeof window === 'undefined' || !token) return null;
+  try {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`
+    };
+    if (haBase) {
+      headers['X-HA-URL'] = haBase;
+    }
+    const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(rawUrl)}`;
+    const res = await fetchWithTimeout(proxyUrl, { headers }, 10000);
+    if (!res.ok) return null;
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType && !contentType.startsWith('image/')) return null;
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Fetches an image from Home Assistant using Bearer token authentication
  * and returns a cached Object URL (blob:...).
  */
@@ -77,6 +116,7 @@ export async function loadHAImageBlob(
   if (!targetUrl) return '';
 
   const activeToken = token || getActiveHAToken();
+  const haBase = getHAHttpBaseUrl(serverUrl);
 
   // Check cache
   const cacheKey = `${targetUrl}_${activeToken || ''}`;
@@ -88,6 +128,18 @@ export async function loadHAImageBlob(
   if (pendingPromises.has(cacheKey)) {
     return pendingPromises.get(cacheKey)!;
   }
+
+  const fallbackResult = async (): Promise<string> => {
+    if (activeToken) {
+      const proxied = await fetchViaImageProxy(url, activeToken, haBase);
+      if (proxied) {
+        blobUrlCache.set(cacheKey, proxied);
+        return proxied;
+      }
+    }
+    // Never hand a protected HA /api/ URL to <img src> without auth — HA logs a 401 notification.
+    return isProtectedHaApiUrl(targetUrl) ? '' : targetUrl;
+  };
 
   const fetchPromise = (async () => {
     try {
@@ -102,14 +154,12 @@ export async function loadHAImageBlob(
       }, 10000);
 
       if (!response.ok) {
-        // If authenticated fetch fails with 404 or 401, return direct URL as fallback
-        return targetUrl;
+        return await fallbackResult();
       }
 
       const contentType = response.headers.get('content-type') || '';
       if (contentType && !contentType.startsWith('image/')) {
-        // Received non-image payload (e.g. SPA HTML fallback) - return direct URL
-        return targetUrl;
+        return await fallbackResult();
       }
 
       const blob = await response.blob();
@@ -117,8 +167,7 @@ export async function loadHAImageBlob(
       blobUrlCache.set(cacheKey, objectUrl);
       return objectUrl;
     } catch {
-      // Return direct URL on network/CORS error so <img> can attempt standard load
-      return targetUrl;
+      return await fallbackResult();
     } finally {
       pendingPromises.delete(cacheKey);
     }
@@ -180,7 +229,7 @@ export function useHAImage(
 
     loadHAImageBlob(rawUrl, serverUrl).then((resolved) => {
       if (isMounted) {
-        setImageUrl(resolved || rawUrl);
+        setImageUrl(resolved);
         setIsLoading(false);
       }
     });
